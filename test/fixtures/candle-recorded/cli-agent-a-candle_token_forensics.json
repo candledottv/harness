@@ -1,0 +1,164 @@
+{
+  "tool": "candle_token_forensics",
+  "args": {
+    "chain": "solana",
+    "mint": "PepeFake11111111111111111111111111111111111"
+  },
+  "ms": 0,
+  "outcome": {
+    "kind": "ok",
+    "result": {
+      "success": true,
+      "forensics": {
+        "chain": "solana",
+        "mint": "PepeFake11111111111111111111111111111111111",
+        "computedAt": 1793071347528,
+        "deployer": {
+          "address": "DevFake111111111111111111111111111111111111",
+          "method": "indexer_dev",
+          "confidence": "medium",
+          "reason": "attributed to this account by the token indexer",
+          "priorLaunches": 0,
+          "graduated": 0,
+          "onCurve": 0,
+          "recovery": 0,
+          "firstLaunchAt": null,
+          "record": {
+            "total": 0,
+            "judged": 0,
+            "died": 0,
+            "alive": 0,
+            "tooNew": 0,
+            "unknown": 0,
+            "diedRate": null,
+            "recent": [],
+            "verdict": "first_launch",
+            "summary": "This is the first token this account has launched that we can find."
+          },
+          "attribution": null
+        },
+        "deployWindow": {
+          "coverage": "unavailable",
+          "note": "not launched on Candle: no deploy-time record here",
+          "window": "deploy slot",
+          "launchSignature": null,
+          "summary": null
+        },
+        "coverage": {
+          "covered": false,
+          "reason": "external_launchpad",
+          "checked": [
+            "deployer_history",
+            "token_safety"
+          ],
+          "unavailable": [
+            "deploy_window",
+            "disclosed_wallets"
+          ],
+          "note": "This token launched on another launchpad, so Candle has no deploy-time record of it: deploy_window, disclosed_wallets could not be checked and their absence means unknown, not clean. What did run: deployer_history, token_safety."
+        },
+        "fundingLineage": null,
+        "fundingLineageNote": "same-funder clustering now lives in `insiders` and `cluster`; this field stays null so older clients do not read a new shape as a clean v1 result",
+        "insiders": {
+          "coverage": "unavailable",
+          "note": "the developer has more than 80 transactions, so the walk never reached the wallet's first inbound transfer; its funder is unknown",
+          "funder": null,
+          "wallets": null,
+          "supplyBps": null,
+          "summary": "the developer has more than 80 transactions, so the walk never reached the wallet's first inbound transfer; its funder is unknown"
+        },
+        "cluster": {
+          "coverage": "unavailable",
+          "note": "the developer has more than 80 transactions, so the walk never reached the wallet's first inbound transfer; its funder is unknown",
+          "funder": null,
+          "deployerCount": null,
+          "diedRate": null,
+          "summary": "the developer has more than 80 transactions, so the walk never reached the wallet's first inbound transfer; its funder is unknown"
+        },
+        "safety": {
+          "summary": "flagged",
+          "asOf": "2026-10-27T03:26:30.256Z",
+          "flags": {
+            "mintAuthority": {
+              "status": "flagged",
+              "value": "AuthorityFake111111111111111111111111111111",
+              "source": "chain",
+              "checkedAt": "2026-10-27T03:18:21.339Z",
+              "detail": null
+            },
+            "freezeAuthority": {
+              "status": "clear",
+              "value": null,
+              "source": "chain",
+              "checkedAt": "2026-10-27T03:18:21.339Z",
+              "detail": null
+            },
+            "tokenExtensions": {
+              "status": "clear",
+              "value": [],
+              "source": "chain",
+              "checkedAt": "2026-10-27T03:18:21.339Z",
+              "detail": "spl mint, no extensions possible"
+            },
+            "lpLock": {
+              "status": "clear",
+              "value": null,
+              "source": "rugcheck",
+              "checkedAt": "2026-10-27T03:26:30.256Z",
+              "detail": null
+            },
+            "sellability": {
+              "status": "clear",
+              "value": "sellable",
+              "source": "jupiter_shield",
+              "checkedAt": "2026-10-27T03:26:30.256Z",
+              "detail": null
+            },
+            "liquidityDrain": {
+              "status": "clear",
+              "value": 1034,
+              "source": "candle_feed",
+              "checkedAt": "2026-10-27T03:22:18.807Z",
+              "detail": null
+            }
+          },
+          "launch": null,
+          "haccVerdicts": [],
+          "mintFacts": {
+            "mintAuthority": "AuthorityFake111111111111111111111111111111",
+            "freezeAuthority": null,
+            "updateAuthority": null,
+            "tokenProgram": "spl",
+            "decimals": 11,
+            "supply": "51361537399365454",
+            "renounced": false,
+            "extensionNames": [],
+            "extensionRisks": [],
+            "traps": [],
+            "asOf": "2026-10-27T03:18:21.339Z",
+            "slot": 461915307,
+            "source": "safety_route",
+            "firstSeenAt": "2026-10-01T03:04:28.131Z",
+            "changedAt": null,
+            "servedFrom": "stored"
+          },
+          "mintChanges": [],
+          "sellProbe": {
+            "at": "2026-10-01T03:04:28.404Z",
+            "source": "paper_guard",
+            "provider": "jupiter",
+            "routable": true,
+            "usdSize": 50,
+            "qty": "0.43124809214",
+            "outAmountRaw": "49854025",
+            "priceUsd": 115.60404766687161,
+            "impactBps": null,
+            "roundTripBps": null,
+            "reason": null,
+            "retryable": null
+          }
+        }
+      }
+    }
+  }
+}

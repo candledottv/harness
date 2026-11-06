@@ -1,0 +1,181 @@
+{
+  "name": "research-pattern-intra_book",
+  "method": "GET",
+  "route": "/v1/signals",
+  "query": {
+    "pattern": "intra_book",
+    "limit": "50"
+  },
+  "status": 200,
+  "ms": 158,
+  "bytes": 41809,
+  "contentType": "application/json; charset=utf-8",
+  "answer": {
+    "signals": [
+      {
+        "id": 118499140,
+        "rule_id": 5,
+        "pattern": "intra_book",
+        "wallet_id": 111788,
+        "asset_id": 129426611,
+        "event_id": 78531406,
+        "event_kind": "transfer",
+        "summary": "fake-summary-33",
+        "payload": {
+          "amount": "18810356.800367",
+          "tx_hash": "fake-tx_hash-15",
+          "direction": "in",
+          "counterparty_address": "HaccFake1111111111111111111111111111111112B",
+          "counterparty_wallet_id": 584677
+        },
+        "created_at": "2026-10-30T13:39:51.540Z",
+        "wallet_address": "HaccFake1111111111111111111111111111111112C",
+        "wallet_label": null,
+        "wallet_chain": "solana",
+        "wallet_entity": null,
+        "wallet_groups": [
+          "fake-wallet_groups-1",
+          "fake-wallet_groups-20",
+          "fake-wallet_groups-21",
+          "fake-wallet_groups-22"
+        ],
+        "display_label": null,
+        "label_source": null,
+        "asset_symbol": "fake-asset_symbol-5",
+        "asset_address": "HaccFake1111111111111111111111111111111111h",
+        "asset_chain": "solana",
+        "burst": false
+      },
+      {
+        "id": 118497049,
+        "rule_id": 5,
+        "pattern": "intra_book",
+        "wallet_id": 222136,
+        "asset_id": 8195,
+        "event_id": 78530930,
+        "event_kind": "transfer",
+        "summary": "fake-summary-34",
+        "payload": {
+          "amount": "27.58079884",
+          "tx_hash": "fake-tx_hash-16",
+          "direction": "out",
+          "counterparty_address": "HaccFake1111111111111111111111111111111112D",
+          "counterparty_wallet_id": 223115
+        },
+        "created_at": "2026-10-30T13:38:34.178Z",
+        "wallet_address": "HaccFake1111111111111111111111111111111112E",
+        "wallet_label": null,
+        "wallet_chain": "solana",
+        "wallet_entity": null,
+        "wallet_groups": [
+          "fake-wallet_groups-23",
+          "fake-wallet_groups-1"
+        ],
+        "display_label": null,
+        "label_source": null,
+        "asset_symbol": "fake-asset_symbol-18",
+        "asset_address": "HaccFake1111111111111111111111111111111112F",
+        "asset_chain": "solana",
+        "burst": false
+      },
+      {
+        "id": 118496412,
+        "rule_id": 5,
+        "pattern": "intra_book",
+        "wallet_id": 222136,
+        "asset_id": 8195,
+        "event_id": 78530760,
+        "event_kind": "transfer",
+        "summary": "fake-summary-35",
+        "payload": {
+          "amount": "27.5153247",
+          "tx_hash": "fake-tx_hash-17",
+          "direction": "out",
+          "counterparty_address": "HaccFake1111111111111111111111111111111112D",
+          "counterparty_wallet_id": 223115
+        },
+        "created_at": "2026-10-30T13:38:09.360Z",
+        "wallet_address": "HaccFake1111111111111111111111111111111112E",
+        "wallet_label": null,
+        "wallet_chain": "solana",
+        "wallet_entity": null,
+        "wallet_groups": [
+          "fake-wallet_groups-23",
+          "fake-wallet_groups-1"
+        ],
+        "display_label": null,
+        "label_source": null,
+        "asset_symbol": "fake-asset_symbol-18",
+        "asset_address": "HaccFake1111111111111111111111111111111112F",
+        "asset_chain": "solana",
+        "burst": false
+      },
+      {
+        "id": 118496403,
+        "rule_id": 5,
+        "pattern": "intra_book",
+        "wallet_id": 182506,
+        "asset_id": 12889,
+        "event_id": 78530707,
+        "event_kind": "transfer",
+        "summary": "fake-summary-36",
+        "payload": {
+          "amount": "4.69162549564",
+          "tx_hash": "fake-tx_hash-18",
+          "direction": "out",
+          "counterparty_address": "HaccFake1111111111111111111111111111111112G",
+          "counterparty_wallet_id": 717373
+        },
+        "created_at": "2026-10-30T13:38:09.360Z",
+        "wallet_address": "HaccFake1111111111111111111111111111111112H",
+        "wallet_label": null,
+        "wallet_chain": "solana",
+        "wallet_entity": null,
+        "wallet_groups": [
+          "fake-wallet_groups-1",
+          "fake-wallet_groups-24"
+        ],
+        "display_label": "fake-display_label-7",
+        "label_source": "identity",
+        "asset_symbol": "fake-asset_symbol-19",
+        "asset_address": "HaccFake1111111111111111111111111111111112J",
+        "asset_chain": "solana",
+        "burst": false
+      },
+      {
+        "id": 118494662,
+        "rule_id": 5,
+        "pattern": "intra_book",
+        "wallet_id": 24945,
+        "asset_id": 129658499,
+        "event_id": 78530210,
+        "event_kind": "transfer",
+        "summary": "fake-summary-37",
+        "payload": {
+          "amount": "14895991.940161",
+          "tx_hash": "fake-tx_hash-19",
+          "direction": "in",
+          "counterparty_address": "HaccFake1111111111111111111111111111111112K",
+          "counterparty_wallet_id": 6834
+        },
+        "created_at": "2026-10-30T13:36:41.262Z",
+        "wallet_address": "HaccFake1111111111111111111111111111111112L",
+        "wallet_label": null,
+        "wallet_chain": "solana",
+        "wallet_entity": null,
+        "wallet_groups": [
+          "fake-wallet_groups-22"
+        ],
+        "display_label": null,
+        "label_source": null,
+        "asset_symbol": "fake-asset_symbol-20",
+        "asset_address": "HaccFake1111111111111111111111111111111112M",
+        "asset_chain": "solana",
+        "burst": false
+      }
+    ]
+  },
+  "truncated": {
+    "$.signals": 50
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "name": "refused-unknown-live-key",
+  "method": "GET",
+  "route": "/v1/signals",
+  "query": {
+    "limit": "1"
+  },
+  "status": 401,
+  "ms": 123,
+  "bytes": 27,
+  "contentType": "application/json; charset=utf-8",
+  "answer": {
+    "error": "invalid api key"
+  }
+}

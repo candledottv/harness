@@ -1,0 +1,15 @@
+{
+  "name": "lab-edges-pattern",
+  "method": "GET",
+  "route": "/v1/strategy-lab/edges",
+  "query": {
+    "pattern": "confluence"
+  },
+  "status": 400,
+  "ms": 502,
+  "bytes": 52,
+  "contentType": "application/json; charset=utf-8",
+  "answer": {
+    "error": "Unrecognized key(s) in object: 'pattern'"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "name": "wallet-book-legs-realtime-7d",
+  "method": "GET",
+  "route": "/v1/market/wallet/HaccFake1111111111111111111111111111111116P/book-legs",
+  "query": {
+    "days": "7"
+  },
+  "status": 400,
+  "ms": 130,
+  "bytes": 51,
+  "contentType": "application/json; charset=utf-8",
+  "answer": {
+    "error": ": Unrecognized key(s) in object: 'days'"
+  }
+}

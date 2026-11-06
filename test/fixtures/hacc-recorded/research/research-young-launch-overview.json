@@ -1,0 +1,303 @@
+{
+  "name": "research-young-launch-overview",
+  "method": "GET",
+  "route": "/v1/market/token/HaccFake1111111111111111111111111111111112p/launch-overview",
+  "query": {},
+  "status": 200,
+  "ms": 533,
+  "bytes": 5552,
+  "contentType": "application/json; charset=utf-8",
+  "answer": {
+    "mint": "HaccFake1111111111111111111111111111111112p",
+    "chain": "solana",
+    "symbol": "fake-symbol-2",
+    "as_of": "2026-10-30T13:40:08.701Z",
+    "identity": {
+      "launched_at": "2026-10-30T13:31:28.085Z",
+      "deployer": "HaccFake1111111111111111111111111111111112q",
+      "deployer_identity": null,
+      "pool": "pump",
+      "initial_buy": "60000000",
+      "initial_quote": "1.776900297",
+      "quote_mint": "So11111111111111111111111111111111111111112",
+      "quote_symbol": "SOL",
+      "token_program": "token-2022",
+      "token_extensions": [
+        "metadataPointer",
+        "tokenMetadata"
+      ],
+      "extension_risks": [],
+      "mint_authority_at_launch": null,
+      "freeze_authority_at_launch": null,
+      "deployer_launches": 14,
+      "deployer_hits": {
+        "with_ticks": 9,
+        "reached_10x": 1,
+        "never_doubled": 1,
+        "considered": 13,
+        "prior_launches": 13
+      }
+    },
+    "market": {
+      "mcap_now": 9593.31680878398,
+      "mcap_ath": 15740.030980856282,
+      "mcap_ath_at": "2026-10-30T13:36:42.000Z",
+      "price_now": 0.00000959331680878398,
+      "ticks": 296,
+      "first_tick_at": "2026-10-30T13:32:14.000Z",
+      "last_tick_at": "2026-10-30T13:40:05.000Z",
+      "vendor_ok": true,
+      "vendor_missing": [],
+      "holders": 129,
+      "liquidity_usd": 980.9117849558453,
+      "volume_24h_usd": 33905.46587633106,
+      "top10_share_pct": 86.2193,
+      "mint_authority": null,
+      "freeze_authority": null
+    },
+    "tracked": {
+      "buyers": 6,
+      "sellers": 4,
+      "buys_priced_pct": 100,
+      "swaps": 16,
+      "volume_usd": 1137.195016494,
+      "first_tracked_buy_at": "2026-10-30T13:31:52.000Z",
+      "earliest": [
+        {
+          "address": "HaccFake1111111111111111111111111111111112r",
+          "label": null,
+          "display_label": "fake-display_label-15",
+          "minutes_after_launch": 0.4,
+          "usd": 1.7714745873,
+          "groups": [
+            "fake-groups-5"
+          ]
+        },
+        {
+          "address": "HaccFake1111111111111111111111111111111112s",
+          "label": null,
+          "display_label": "fake-display_label-16",
+          "minutes_after_launch": 3.1,
+          "usd": 62.150647234290005,
+          "groups": [
+            "fake-groups-5"
+          ]
+        },
+        {
+          "address": "HaccFake1111111111111111111111111111111111k",
+          "label": null,
+          "display_label": null,
+          "minutes_after_launch": 3.5,
+          "usd": 357.98474906802,
+          "groups": [
+            "fake-groups-1",
+            "fake-groups-6",
+            "fake-groups-7",
+            "fake-groups-5"
+          ]
+        },
+        {
+          "address": "HaccFake1111111111111111111111111111111112t",
+          "label": "fake-label-6",
+          "display_label": "fake-display_label-17",
+          "minutes_after_launch": 4.8,
+          "usd": 296.36765678471994,
+          "groups": [
+            "fake-groups-8",
+            "fake-groups-9",
+            "fake-groups-6",
+            "fake-groups-10",
+            "fake-groups-5"
+          ]
+        },
+        {
+          "address": "HaccFake1111111111111111111111111111111112u",
+          "label": null,
+          "display_label": null,
+          "minutes_after_launch": 4.8,
+          "usd": 9.463703598419999,
+          "groups": [
+            "fake-groups-11",
+            "fake-groups-12",
+            "fake-groups-1",
+            "fake-groups-5"
+          ]
+        }
+      ],
+      "realized": {
+        "round_trippers": 4,
+        "in_profit": 3,
+        "top": [
+          {
+            "address": "HaccFake1111111111111111111111111111111112t",
+            "label": "fake-label-6",
+            "display_label": "fake-display_label-17",
+            "bought_usd": 296.36765678471994,
+            "sold_usd": 324.65347220735003,
+            "realized_usd": 28.285815422630094,
+            "groups": [
+              "fake-groups-8",
+              "fake-groups-9",
+              "fake-groups-6",
+              "fake-groups-10",
+              "fake-groups-5"
+            ]
+          },
+          {
+            "address": "HaccFake1111111111111111111111111111111112u",
+            "label": null,
+            "display_label": null,
+            "bought_usd": 9.463703598419999,
+            "sold_usd": 10.38680195364,
+            "realized_usd": 0.9230983552200005,
+            "groups": [
+              "fake-groups-11",
+              "fake-groups-12",
+              "fake-groups-1",
+              "fake-groups-5"
+            ]
+          },
+          {
+            "address": "HaccFake1111111111111111111111111111111112s",
+            "label": null,
+            "display_label": "fake-display_label-16",
+            "bought_usd": 62.150647234290005,
+            "sold_usd": 63.04140529912,
+            "realized_usd": 0.8907580648299955,
+            "groups": [
+              "fake-groups-5"
+            ]
+          },
+          {
+            "address": "HaccFake1111111111111111111111111111111112r",
+            "label": null,
+            "display_label": "fake-display_label-15",
+            "bought_usd": 1.7714745873,
+            "sold_usd": 1.51226637192,
+            "realized_usd": -0.25920821537999994,
+            "groups": [
+              "fake-groups-5"
+            ]
+          }
+        ]
+      },
+      "holding": {
+        "still_hold_some": 2,
+        "fully_exited": 4,
+        "top": [
+          {
+            "address": "HaccFake1111111111111111111111111111111111k",
+            "label": null,
+            "display_label": null,
+            "remaining_qty": "37549865.523385",
+            "transferred_in_qty": "0",
+            "transferred_out_qty": "0",
+            "usd_value": null,
+            "usd_as_of_minutes": null
+          },
+          {
+            "address": "HaccFake1111111111111111111111111111111112v",
+            "label": null,
+            "display_label": null,
+            "remaining_qty": "1035875.633231",
+            "transferred_in_qty": "0",
+            "transferred_out_qty": "0",
+            "usd_value": null,
+            "usd_as_of_minutes": null
+          }
+        ]
+      },
+      "cohorts": {
+        "proven-follow": 0,
+        "bot": 0,
+        "kol": 1,
+        "noise": 0,
+        "serial": 6,
+        "leading-indicator": 2,
+        "top-pnl": 0
+      },
+      "sell_pressure_30m": {
+        "buys": 12,
+        "sells": 4
+      }
+    },
+    "signals": {
+      "total": 7,
+      "by_pattern": [
+        {
+          "pattern": "new_ticker",
+          "count": 6,
+          "first_at": "2026-10-30T13:31:54.739Z",
+          "first_mc": 5844.147328275778,
+          "last_mc": 9361.661690647792
+        },
+        {
+          "pattern": "confluence",
+          "count": 1,
+          "first_at": "2026-10-30T13:36:17.138Z",
+          "first_mc": 13726.157102756495,
+          "last_mc": 13726.157102756495
+        }
+      ],
+      "first_three": [
+        {
+          "at": "2026-10-30T13:31:54.739Z",
+          "pattern": "new_ticker",
+          "mc": 5844.147328275778,
+          "summary": "fake-summary-61"
+        },
+        {
+          "at": "2026-10-30T13:34:35.113Z",
+          "pattern": "new_ticker",
+          "mc": 10173.367980828865,
+          "summary": "fake-summary-62"
+        },
+        {
+          "at": "2026-10-30T13:35:03.595Z",
+          "pattern": "new_ticker",
+          "mc": 11200.617387395056,
+          "summary": "fake-summary-63"
+        }
+      ],
+      "minutes_signal_to_first_peak": 4.1
+    },
+    "kol_tweets": {
+      "window": {
+        "from": "2026-10-30T13:31:28.085Z",
+        "to": "2026-10-30T13:40:08.701Z",
+        "basis": "launch"
+      },
+      "total": 0,
+      "handles": 0,
+      "first_at": null,
+      "minutes_after_launch": null,
+      "accounts": [],
+      "tweets": []
+    },
+    "phases": [
+      {
+        "n": 1,
+        "kind": "launch",
+        "open": true,
+        "from": "2026-10-30T13:32:00.000Z",
+        "to": "2026-10-30T13:40:00.000Z",
+        "minutes": 8,
+        "mc_start": 5852.283686133657,
+        "mc_peak": 15740.030980856282,
+        "mc_peak_at": "2026-10-30T13:36:00.000Z",
+        "mc_end": 9593.31680878398,
+        "drawdown_pct": -39.05147441925753,
+        "gate_trough": 5852.283686133657,
+        "ticks": 9
+      }
+    ],
+    "phase_params": {
+      "peak_rise": 1,
+      "phase_drawdown": 0.3,
+      "smooth_minutes": 5
+    }
+  },
+  "truncated": {
+    "$.tracked.earliest": 6
+  }
+}

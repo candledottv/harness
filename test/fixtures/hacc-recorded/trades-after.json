@@ -1,0 +1,13 @@
+{
+  "name": "trades-after",
+  "method": "GET",
+  "route": "/v1/trades",
+  "query": {},
+  "status": 400,
+  "ms": 128,
+  "bytes": 44,
+  "contentType": "application/json; charset=utf-8",
+  "answer": {
+    "error": ": run_id or asset_id is required"
+  }
+}

@@ -1,0 +1,97 @@
+{
+  "name": "token-top-traders-hood",
+  "method": "GET",
+  "route": "/v1/market/token/0xfa4e000000000000000000000000000000000001/top-traders",
+  "query": {
+    "chain": "hood"
+  },
+  "status": 200,
+  "ms": 1483,
+  "bytes": 3034,
+  "contentType": "application/json; charset=utf-8",
+  "answer": {
+    "chain": "hood",
+    "time_frame": "24h",
+    "limit": 10,
+    "traders": [
+      {
+        "address": "0xfa4e00000000000000000000000000000000001d",
+        "volume_usd": 4384.5128597027015,
+        "trades": 35,
+        "buys": 18,
+        "sells": 17,
+        "realized_pnl_usd": -73.8935855648317,
+        "unrealized_pnl_usd": 15.375573269365043,
+        "total_pnl_usd": -58.518012295466654,
+        "tracked": false,
+        "watch_level": "none",
+        "groups": [],
+        "entity": null,
+        "x_handle": null
+      },
+      {
+        "address": "0xfa4e00000000000000000000000000000000001e",
+        "volume_usd": 3318.3610751826936,
+        "trades": 16,
+        "buys": 11,
+        "sells": 5,
+        "realized_pnl_usd": -254.75151264651794,
+        "unrealized_pnl_usd": 0,
+        "total_pnl_usd": -254.75151264651794,
+        "tracked": false,
+        "watch_level": "none",
+        "groups": [],
+        "entity": null,
+        "x_handle": null
+      },
+      {
+        "address": "0xfa4e00000000000000000000000000000000001f",
+        "volume_usd": 2155.0617276611174,
+        "trades": 11,
+        "buys": 3,
+        "sells": 8,
+        "realized_pnl_usd": 536.8274600476936,
+        "unrealized_pnl_usd": 139.8017466063175,
+        "total_pnl_usd": 676.6292066540111,
+        "tracked": false,
+        "watch_level": "none",
+        "groups": [],
+        "entity": null,
+        "x_handle": null
+      },
+      {
+        "address": "0xfa4e000000000000000000000000000000000020",
+        "volume_usd": 1702.405118174326,
+        "trades": 10,
+        "buys": 4,
+        "sells": 6,
+        "realized_pnl_usd": 305.03749420214143,
+        "unrealized_pnl_usd": 0,
+        "total_pnl_usd": 305.03749420214143,
+        "tracked": false,
+        "watch_level": "none",
+        "groups": [],
+        "entity": null,
+        "x_handle": null
+      },
+      {
+        "address": "0xfa4e000000000000000000000000000000000021",
+        "volume_usd": 1582.934063131064,
+        "trades": 10,
+        "buys": 4,
+        "sells": 6,
+        "realized_pnl_usd": 185.56643915887952,
+        "unrealized_pnl_usd": 0,
+        "total_pnl_usd": 185.56643915887952,
+        "tracked": false,
+        "watch_level": "none",
+        "groups": [],
+        "entity": null,
+        "x_handle": null
+      }
+    ]
+  },
+  "truncated": {
+    "$.traders": 10
+  }
+}

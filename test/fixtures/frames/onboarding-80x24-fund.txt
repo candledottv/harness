@@ -1,0 +1,50 @@
+ ▲ candle   SETUP   nothing trades until your agent and its limits exist        
+ ✓ 0  ✓ 1  ✓ 2  ▸ 3 Wallet and limits  · 4  · 5                                 
+╭──────────────────────────────────────────────────────────────── step 3 of 5 ─╮
+│                                                                              │
+│  Fund main, or start on paper                                                │
+│                                                                              │
+│  ▸ main  EmbedFake1111111111111111111111111111111111             ⧉ address   │
+│    0 SOL  ⠋ waiting for a deposit                                            │
+│                                                                              │
+│  Send SOL from any wallet of yours. This moves on by itself when it lands.   │
+│                                                                              │
+│    Start on paper  paper trades need no funds; go live from the status bar   │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+ ↑/↓ moves · ⏎ or a click picks · esc back                      ctrl-c ×2 quits 
+
+--- colours ---
+0: f6f8fb/0e1115×11 f6f8fb/2a2f3a×7 959dab/0e1115×54 ffffff/0e1115×8
+1: 3ddc84/0b0d10×15 f6f8fb/0b0d10×23 959dab/0b0d10×10 ffffff/0b0d10×32
+2: 32fe9f/111419×65 959dab/111419×13 32fe9f/111419×2
+3: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
+4: 32fe9f/111419×1 ffffff/111419×2 b392f0/111419×28 ffffff/111419×48 32fe9f/111419×1
+5: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
+6: 32fe9f/111419×1 ffffff/111419×2 32fe9f/1d2430×2 f6f8fb/1d2430×6 dde2ea/1d2430×43 ffffff/1d2430×13 6cb6ff/1d2430×10 ffffff/111419×2 32fe9f/111419×1
+7: 32fe9f/111419×1 ffffff/111419×2 dde2ea/111419×9 f5a524/111419×2 959dab/111419×21 ffffff/111419×44 32fe9f/111419×1
+8: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
+9: 32fe9f/111419×1 ffffff/111419×2 dde2ea/111419×73 ffffff/111419×3 32fe9f/111419×1
+10: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
+11: 32fe9f/111419×1 ffffff/111419×2 32fe9f/111419×2 6cb6ff/111419×14 ffffff/111419×2 959dab/111419×56 ffffff/111419×2 32fe9f/111419×1
+12: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
+13: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
+14: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
+15: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
+16: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
+17: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
+18: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
+19: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
+20: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
+21: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
+22: 32fe9f/111419×80
+23: 959dab/0e1115×42 ffffff/0e1115×22 959dab/0e1115×16

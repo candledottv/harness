@@ -1,0 +1,45 @@
+{
+  "tool": "candle_get_staking",
+  "args": {},
+  "ms": 512,
+  "outcome": {
+    "kind": "ok",
+    "result": {
+      "success": true,
+      "pool": {
+        "withdrawalTimelockSeconds": 604800,
+        "paused": false,
+        "maxActiveWithdrawals": 10
+      },
+      "wallets": [
+        {
+          "payer": "main",
+          "delegated": true,
+          "address": "WalletFake111111111111111111111111111111111",
+          "cndl": {
+            "mint": "9dXSV8VWuYvGfTzqvkBeoFwH9ihVTybDuWo5VaJPCNDL",
+            "decimals": 6,
+            "amountRaw": "0"
+          },
+          "staked": {
+            "mint": "LuPsFmtvdFMuCjd6GBMVUErTiBAkkP6ECUVjsPcCNDL",
+            "decimals": 6,
+            "amountRaw": "0",
+            "cndlValueRaw": "0"
+          },
+          "pendingWithdrawalRaw": "0",
+          "withdrawals": {
+            "active": [],
+            "finished": []
+          },
+          "unclaimedRewards": []
+        }
+      ],
+      "notes": [
+        "Solana staking rewards are earned by the wallet that holds the sCNDL. sCNDL in any of the account's eligible wallets counts toward Pro and earns the account's Hood staking reward; a wallet another account also claims, past the 200-wallet cap, or on an account with no EVM wallet earns none.",
+        "CNDL inside a pending withdrawal is in neither the CNDL nor the sCNDL balance, so it counts toward nothing for Pro during the wait.",
+        "Instant unstake is not offered to agents. A withdrawal waits for the pool's withdrawalTimelockSeconds before it can be finished."
+      ]
+    }
+  }
+}

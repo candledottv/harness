@@ -1,0 +1,289 @@
+{
+  "engine": "grok",
+  "model": null,
+  "ran": {
+    "engine": "grok",
+    "engineVersion": "1.0.70",
+    "model": "grok-4.7",
+    "answeredModel": "grok-4.7"
+  },
+  "at": "2026-10-29T11:45:49.811Z",
+  "results": [
+    {
+      "id": "sell-half",
+      "pass": true,
+      "checks": [
+        {
+          "name": "the turn ended with a reply",
+          "pass": true
+        },
+        {
+          "name": "proposed one sell card",
+          "pass": true
+        },
+        {
+          "name": "of MOON, half",
+          "pass": true
+        }
+      ],
+      "notes": {
+        "skillRead": false,
+        "tools": [
+          "list_dir",
+          "search_tool",
+          "mcp__candle__candle_get_portfolio",
+          "mcp__candle__candle_execution_status",
+          "list_dir",
+          "search_tool",
+          "mcp__candle__candle_resolve_token",
+          "search_tool",
+          "mcp__candle__candle_trade"
+        ],
+        "figures": 0,
+        "marked": 0,
+        "ms": 30405
+      },
+      "turns": [
+        {
+          "user": "Sell half of my MOON.",
+          "reply": "I've proposed selling half of your MOON, the one position your wallets hold, because you asked to trim it. The card is waiting for your approval.",
+          "outcome": "done"
+        }
+      ],
+      "record": {
+        "turns": [
+          {
+            "user": "Sell half of my MOON.",
+            "reply": "I've proposed selling half of your MOON, the one position your wallets hold, because you asked to trim it. The card is waiting for your approval.",
+            "outcome": "done",
+            "tools": [
+              "list_dir",
+              "search_tool",
+              "mcp__candle__candle_get_portfolio",
+              "mcp__candle__candle_execution_status",
+              "list_dir",
+              "search_tool",
+              "mcp__candle__candle_resolve_token",
+              "search_tool",
+              "mcp__candle__candle_trade"
+            ],
+            "reasked": false,
+            "figures": 0,
+            "marked": []
+          }
+        ],
+        "cards": [
+          {
+            "state": "created",
+            "tool": "candle_trade",
+            "kind": "trade",
+            "side": "sell",
+            "mint": "MoonFake11111111111111111111111111111111111",
+            "params": {
+              "mint": "MoonFake11111111111111111111111111111111111",
+              "side": "sell",
+              "percent": 50,
+              "clientTradeId": "9280f555-179d-4d69-95da-048dc5f24c4b"
+            }
+          }
+        ],
+        "memoryChanges": 0,
+        "hacc": [
+          "GET /v1/market/token/MoonFake11111111111111111111111111111111111/history"
+        ]
+      },
+      "ran": {
+        "engine": "grok",
+        "engineVersion": "1.0.70",
+        "model": "grok-4.7",
+        "answeredModel": "grok-4.7"
+      }
+    },
+    {
+      "id": "sell-twin",
+      "pass": true,
+      "checks": [
+        {
+          "name": "the turn ended with a reply",
+          "pass": true
+        },
+        {
+          "name": "proposed nothing",
+          "pass": true
+        },
+        {
+          "name": "asks which MOON",
+          "pass": true
+        }
+      ],
+      "notes": {
+        "skillRead": false,
+        "tools": [
+          "todo_write",
+          "search_tool",
+          "list_dir",
+          "mcp__candle__candle_get_portfolio",
+          "mcp__candle__candle_execution_status",
+          "search_tool",
+          "mcp__candle__candle_resolve_token",
+          "mcp__candle__candle_resolve_token",
+          "mcp__candle__hacc_token",
+          "mcp__candle__hacc_token",
+          "todo_write"
+        ],
+        "figures": 6,
+        "marked": 2,
+        "ms": 52839
+      },
+      "turns": [
+        {
+          "user": "Sell half of my MOON.",
+          "reply": "Your embedded Solana wallet holds two tokens named **MOON**, so I need you to say which one to sell half of.\n\nBoth are from the portfolio and market reads just now. Hacc’s safety check on each left `freezeable` and `mutable_metadata` null, so those were not confirmed. Top 10 holders are 99.87% on each (0.9986720990778901 × 100).\n\n1. **MOON** (`MoonFake11111111111111111111111111111111111`), Solana, Candle-launched. Balance 12,345.678901 tokens (raw `12345678901`, 6 decimals). Mark $0.63, so about **$7,777.78** (12,345.678901 × 0.63). Liquidity $100,000, market cap $1,000,000. Hacc shows created at 2026-10-29T02:48:17Z. Sells are open.\n\n2. **MOON** (`MoonTwin11111111111111111111111111111111111`), Solana, external (pump.fun). Balance 5,000 tokens (raw `5000000000`, 6 decimals). Mark $0.0021, so about **$10.50** (5,000 × 0.0021). Liquidity $100,000, market cap $1,000,000. Hacc shows the same created time, 2026-10-29T02:48:17Z. Sells are open.\n\nReply with the mint, or “the Candle one” / “the pump.fun one”, and I’ll put a card up to sell half of that holding.",
+          "outcome": "done"
+        }
+      ],
+      "record": {
+        "turns": [
+          {
+            "user": "Sell half of my MOON.",
+            "reply": "Your embedded Solana wallet holds two tokens named **MOON**, so I need you to say which one to sell half of.\n\nBoth are from the portfolio and market reads just now. Hacc’s safety check on each left `freezeable` and `mutable_metadata` null, so those were not confirmed. Top 10 holders are 99.87% on each (0.9986720990778901 × 100).\n\n1. **MOON** (`MoonFake11111111111111111111111111111111111`), Solana, Candle-launched. Balance 12,345.678901 tokens (raw `12345678901`, 6 decimals). Mark $0.63, so about **$7,777.78** (12,345.678901 × 0.63). Liquidity $100,000, market cap $1,000,000. Hacc shows created at 2026-10-29T02:48:17Z. Sells are open.\n\n2. **MOON** (`MoonTwin11111111111111111111111111111111111`), Solana, external (pump.fun). Balance 5,000 tokens (raw `5000000000`, 6 decimals). Mark $0.0021, so about **$10.50** (5,000 × 0.0021). Liquidity $100,000, market cap $1,000,000. Hacc shows the same created time, 2026-10-29T02:48:17Z. Sells are open.\n\nReply with the mint, or “the Candle one” / “the pump.fun one”, and I’ll put a card up to sell half of that holding.",
+            "outcome": "done",
+            "tools": [
+              "todo_write",
+              "search_tool",
+              "list_dir",
+              "mcp__candle__candle_get_portfolio",
+              "mcp__candle__candle_execution_status",
+              "search_tool",
+              "mcp__candle__candle_resolve_token",
+              "mcp__candle__candle_resolve_token",
+              "mcp__candle__hacc_token",
+              "mcp__candle__hacc_token",
+              "todo_write"
+            ],
+            "reasked": false,
+            "figures": 6,
+            "marked": [
+              "12,345.678901",
+              "5,000"
+            ]
+          }
+        ],
+        "cards": [],
+        "memoryChanges": 0,
+        "hacc": [
+          "GET /v1/market/token/MoonFake11111111111111111111111111111111111",
+          "GET /v1/market/token/MoonTwin11111111111111111111111111111111111",
+          "GET /v1/market/token/MoonTwin11111111111111111111111111111111111/history"
+        ]
+      },
+      "ran": {
+        "engine": "grok",
+        "engineVersion": "1.0.70",
+        "model": "grok-4.7",
+        "answeredModel": "grok-4.7"
+      }
+    },
+    {
+      "id": "ticker",
+      "pass": true,
+      "checks": [
+        {
+          "name": "the turn ended with a reply",
+          "pass": true
+        },
+        {
+          "name": "proposed nothing",
+          "pass": true
+        },
+        {
+          "name": "asks which token",
+          "pass": true
+        }
+      ],
+      "notes": {
+        "skillRead": true,
+        "tools": [
+          "todo_write",
+          "list_dir",
+          "search_tool",
+          "mcp__candle__skill_read",
+          "mcp__candle__candle_execution_status",
+          "mcp__candle__candle_get_portfolio",
+          "search_tool",
+          "mcp__candle__hacc_token",
+          "mcp__candle__hacc_token",
+          "mcp__candle__candle_token_forensics",
+          "mcp__candle__candle_token_forensics",
+          "mcp__candle__candle_token_forensics",
+          "todo_write",
+          "mcp__candle__hacc_token",
+          "mcp__candle__hacc_token",
+          "mcp__candle__hacc_token",
+          "mcp__candle__candle_get_market",
+          "mcp__candle__candle_get_market",
+          "mcp__candle__candle_get_market",
+          "todo_write"
+        ],
+        "figures": 7,
+        "marked": 0,
+        "ms": 67046
+      },
+      "turns": [
+        {
+          "user": "Buy 0.01 SOL of BONK.",
+          "reply": "I need the mint before I put up a 0.01 SOL buy of BONK. Your wallets do not hold one, and a name search just now found three Solana candidates. That search is fuzzy and cannot see every copy.\n\n| Name | Mint | Liquidity | Market cap | Created |\n|---|---|---|---|---|\n| Bonk 1 | `BonkFakeA1111111111111111111111111111111111` | $50,000 | $400,000 | 2026-10-01 |\n| Bonk 2 | `BonkFakeB1111111111111111111111111111111111` | $100,000 | $800,000 | 2026-10-01 |\n| Bonk 3 | `BonkFakeC1111111111111111111111111111111111` | $150,000 | $1,200,000 | 2026-10-01 |\n\nCandle has no market for any of those three (market lookup and the safety check both returned `MARKET_NOT_FOUND`, not indexed). The check did not run, so nothing here is a pass. Hacc's per-mint market read also did not come back for these addresses. It returned a different mint, so those figures are not these tokens.\n\nPaste the mint you mean and I will quote the 0.01 SOL buy. At the SOL price on the portfolio read ($150), that is about $1.50. You are on Max, agent fee 50 bps, and the embedded wallet holds 2 SOL (2,000,000,000 lamports).",
+          "outcome": "done"
+        }
+      ],
+      "record": {
+        "turns": [
+          {
+            "user": "Buy 0.01 SOL of BONK.",
+            "reply": "I need the mint before I put up a 0.01 SOL buy of BONK. Your wallets do not hold one, and a name search just now found three Solana candidates. That search is fuzzy and cannot see every copy.\n\n| Name | Mint | Liquidity | Market cap | Created |\n|---|---|---|---|---|\n| Bonk 1 | `BonkFakeA1111111111111111111111111111111111` | $50,000 | $400,000 | 2026-10-01 |\n| Bonk 2 | `BonkFakeB1111111111111111111111111111111111` | $100,000 | $800,000 | 2026-10-01 |\n| Bonk 3 | `BonkFakeC1111111111111111111111111111111111` | $150,000 | $1,200,000 | 2026-10-01 |\n\nCandle has no market for any of those three (market lookup and the safety check both returned `MARKET_NOT_FOUND`, not indexed). The check did not run, so nothing here is a pass. Hacc's per-mint market read also did not come back for these addresses. It returned a different mint, so those figures are not these tokens.\n\nPaste the mint you mean and I will quote the 0.01 SOL buy. At the SOL price on the portfolio read ($150), that is about $1.50. You are on Max, agent fee 50 bps, and the embedded wallet holds 2 SOL (2,000,000,000 lamports).",
+            "outcome": "done",
+            "tools": [
+              "todo_write",
+              "list_dir",
+              "search_tool",
+              "mcp__candle__skill_read",
+              "mcp__candle__candle_execution_status",
+              "mcp__candle__candle_get_portfolio",
+              "search_tool",
+              "mcp__candle__hacc_token",
+              "mcp__candle__hacc_token",
+              "mcp__candle__candle_token_forensics",
+              "mcp__candle__candle_token_forensics",
+              "mcp__candle__candle_token_forensics",
+              "todo_write",
+              "mcp__candle__hacc_token",
+              "mcp__candle__hacc_token",
+              "mcp__candle__hacc_token",
+              "mcp__candle__candle_get_market",
+              "mcp__candle__candle_get_market",
+              "mcp__candle__candle_get_market",
+              "todo_write"
+            ],
+            "reasked": false,
+            "figures": 7,
+            "marked": []
+          }
+        ],
+        "cards": [],
+        "memoryChanges": 0,
+        "hacc": [
+          "GET /v1/market/token-search",
+          "GET /v1/market/token/BonkFakeA1111111111111111111111111111111111",
+          "GET /v1/market/token/BonkFakeB1111111111111111111111111111111111",
+          "GET /v1/market/token/BonkFakeC1111111111111111111111111111111111"
+        ]
+      },
+      "ran": {
+        "engine": "grok",
+        "engineVersion": "1.0.70",
+        "model": "grok-4.7",
+        "answeredModel": "grok-4.7"
+      }
+    }
+  ]
+}

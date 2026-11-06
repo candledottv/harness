@@ -1,0 +1,16 @@
+{
+  "name": "signals-group",
+  "method": "GET",
+  "route": "/v1/signals",
+  "query": {
+    "group": "57107",
+    "limit": "5"
+  },
+  "status": 500,
+  "ms": 30128,
+  "bytes": 26,
+  "contentType": "application/json; charset=utf-8",
+  "answer": {
+    "error": "internal error"
+  }
+}

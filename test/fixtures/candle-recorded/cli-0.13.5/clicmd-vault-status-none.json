@@ -1,0 +1,14 @@
+{
+  "command": "candle vault status --keystore <missing file> --json",
+  "exit": 1,
+  "stdout": {
+    "ok": false,
+    "code": "VAULT_MISSING",
+    "message": "No vault at ~/s5/no-vault-here.enc (from --keystore).",
+    "suggestion": "If the path is wrong, check it: ls -l ~/s5/no-vault-here.enc. If you have never made one: candle vault init -k ~/s5/no-vault-here.enc",
+    "details": {
+      "path": "~/s5/no-vault-here.enc",
+      "pathSource": "flag"
+    }
+  }
+}

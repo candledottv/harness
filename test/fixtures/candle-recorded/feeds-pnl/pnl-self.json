@@ -1,0 +1,146 @@
+{
+  "name": "pnl-self",
+  "tool": "candle_get_profile_pnl",
+  "args": {
+    "keyPrefix": "FakeKey3"
+  },
+  "route": "/api/v1/agent/keys/FakeKey3/pnl",
+  "query": {},
+  "status": 200,
+  "ms": 802,
+  "bytes": 1954,
+  "answer": {
+    "success": true,
+    "keyPrefix": "FakeKey3",
+    "pnl": {
+      "byChain": {
+        "hood": {
+          "closed": {
+            "closed": 0,
+            "costUnknown": 0,
+            "losses": 0,
+            "lostUsd": 0,
+            "madeUsd": 0,
+            "partialSellsUsd": 0,
+            "wins": 0
+          },
+          "closedRounds": 0,
+          "counted": 0,
+          "feesUsd": 0,
+          "friction": {
+            "feesUsd": 0,
+            "measured": 0,
+            "slippageUsd": 0,
+            "unmeasured": 0
+          },
+          "openPositions": 0,
+          "openPositionsExDust": 0,
+          "realizedGrossUsd": 0,
+          "realizedNetUsd": 0,
+          "totalUsd": 0,
+          "tradesConsidered": 0,
+          "unmarkedPositions": 0,
+          "unrealizedUsd": 0,
+          "unresolved": 0,
+          "unresolvedMints": [],
+          "unvalued": 0
+        },
+        "solana": {
+          "closed": {
+            "closed": 0,
+            "costUnknown": 0,
+            "losses": 0,
+            "lostUsd": 0,
+            "madeUsd": 0,
+            "partialSellsUsd": 0,
+            "wins": 0
+          },
+          "closedRounds": 0,
+          "counted": 0,
+          "feesUsd": 0,
+          "friction": {
+            "feesUsd": 0,
+            "measured": 0,
+            "slippageUsd": 0,
+            "unmeasured": 0
+          },
+          "openPositions": 0,
+          "openPositionsExDust": 0,
+          "realizedGrossUsd": 0,
+          "realizedNetUsd": 0,
+          "totalUsd": 0,
+          "tradesConsidered": 0,
+          "unmarkedPositions": 0,
+          "unrealizedUsd": 0,
+          "unresolved": 0,
+          "unresolvedMints": [],
+          "unvalued": 0
+        }
+      },
+      "byWallet": [],
+      "closed": {
+        "closed": 0,
+        "costUnknown": 0,
+        "losses": 0,
+        "lostUsd": 0,
+        "madeUsd": 0,
+        "partialSellsUsd": 0,
+        "wins": 0
+      },
+      "closedPositions": [],
+      "closedRounds": 0,
+      "counted": 0,
+      "feesUsd": 0,
+      "friction": {
+        "feesUsd": 0,
+        "measured": 0,
+        "slippageUsd": 0,
+        "unmeasured": 0
+      },
+      "lookback": 2000,
+      "openPositions": [],
+      "openPositionsExDust": 0,
+      "realizedGrossUsd": 0,
+      "realizedNetUsd": 0,
+      "totalUsd": 0,
+      "tradesConsidered": 0,
+      "truncated": false,
+      "unmarkedPositions": 0,
+      "unrealizedUsd": 0,
+      "unresolved": 0,
+      "unresolvedMints": [],
+      "unvalued": 0
+    },
+    "hyperliquid": {
+      "read": true,
+      "network": "mainnet",
+      "coverage": "profile",
+      "realizedGrossUsd": 0,
+      "feesUsd": 0,
+      "fundingUsd": 0,
+      "realizedNetUsd": 0,
+      "unrealizedUsd": "0",
+      "netUsd": "0",
+      "markedAt": null,
+      "perpsSnapshotId": null,
+      "completeThroughMs": null,
+      "positions": [],
+      "fills": 0,
+      "fundingPayments": 0,
+      "byWallet": [],
+      "historyPartial": false,
+      "partialReasons": [],
+      "truncated": false,
+      "fillsLimit": 2000,
+      "fundingLimit": 500,
+      "walletsLimit": 20
+    },
+    "perpsInTotal": true,
+    "board": {
+      "creatorFeesUsd": 0,
+      "feeClaimsPartial": false,
+      "feeClaimsUnvalued": 0,
+      "profileId": "fake-profileId-3"
+    }
+  }
+}

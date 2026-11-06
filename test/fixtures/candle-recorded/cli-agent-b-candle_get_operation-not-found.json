@@ -1,0 +1,23 @@
+{
+  "tool": "candle_get_operation",
+  "args": {
+    "clientId": "00000000-0000-4000-8000-000000000003",
+    "kind": "trade"
+  },
+  "ms": 272,
+  "outcome": {
+    "kind": "error",
+    "code": "JOB_NOT_FOUND",
+    "retryable": false,
+    "body": {
+      "success": false,
+      "error": {
+        "code": "JOB_NOT_FOUND",
+        "message": "No trade with that clientTradeId for this account",
+        "retryable": false
+      },
+      "outcome": "unknown",
+      "next": "No trade record under id \"00000000-0000-4000-8000-000000000003\" yet. That does not prove the write did not run: a write that is still starting has no record yet. If a write was sent with this id, send the SAME request again with the SAME id (\"00000000-0000-4000-8000-000000000003\"). It returns the stored outcome, or reports the one still running. It never executes a second time. A refusal of that resend (a conflict or a limit) is an answer about the resend, not about the write: read candle_get_operation again before reporting an outcome. Never send it under a new id: a new id is a second trade. This read asked kind \"trade\": a launch id has no record there, and a swap id is not read by this tool at all, so replay the swap with its clientSwapId."
+    }
+  }
+}

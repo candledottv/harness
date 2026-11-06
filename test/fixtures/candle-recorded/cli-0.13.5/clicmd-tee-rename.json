@@ -1,0 +1,18 @@
+{
+  "command": "candle tee rename <tee address> <label> --json (at a terminal)",
+  "exit": 0,
+  "stdout": {
+    "ok": true,
+    "renamed": [
+      {
+        "id": "teefakeid1",
+        "chain": "solana",
+        "address": "TeeFake111111111111111111111111111111111111",
+        "from": "tee-wallet-1-renamed",
+        "to": "tee-wallet-1",
+        "server": "renamed",
+        "vault": "renamed"
+      }
+    ]
+  }
+}

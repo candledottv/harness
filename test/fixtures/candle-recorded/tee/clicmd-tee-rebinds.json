@@ -1,0 +1,9 @@
+{
+  "command": "tee rebinds <tee> --json (owner, after the rebind)",
+  "exit": 0,
+  "stdout": {
+    "success": true,
+    "rebinds": [],
+    "command": "tee rebinds"
+  }
+}

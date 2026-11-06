@@ -1,0 +1,141 @@
+{
+  "command": "doctor --json (agent-a's key, owner's device)",
+  "exit": 0,
+  "stdout": {
+    "rows": [
+      {
+        "check": "Runtime version",
+        "state": "PASS",
+        "detail": "node 24.3.0",
+        "id": "runtime"
+      },
+      {
+        "check": "Keychain backend",
+        "state": "PASS",
+        "detail": "keychain",
+        "id": "keychain"
+      },
+      {
+        "check": "Config directory",
+        "state": "PASS",
+        "detail": "~/.config/candle (the default)",
+        "id": "config_dir"
+      },
+      {
+        "check": "Vault",
+        "state": "PASS",
+        "detail": "~/.config/candle/vault.enc",
+        "id": "vault"
+      },
+      {
+        "check": "Credentials present",
+        "state": "PASS",
+        "detail": "device token and API key; role: owner",
+        "id": "credentials"
+      },
+      {
+        "check": "API URL",
+        "state": "PASS",
+        "detail": "https://api.candle.example (from profile production)",
+        "id": "api_url_provenance"
+      },
+      {
+        "check": "API key",
+        "state": "PASS",
+        "detail": "from CANDLE_API_KEY; FakeKey1",
+        "id": "api_key_provenance"
+      },
+      {
+        "check": "Device token",
+        "state": "PASS",
+        "detail": "from profile production",
+        "id": "device_token_provenance"
+      },
+      {
+        "check": "API reachable",
+        "state": "PASS",
+        "detail": "https://api.candle.example",
+        "id": "api_reachable"
+      },
+      {
+        "check": "Device token valid",
+        "state": "PASS",
+        "detail": "valid",
+        "id": "device_token"
+      },
+      {
+        "check": "API key valid",
+        "state": "PASS",
+        "detail": "scopes: account:read, activity:write, launch:read, launch:write, swap:write",
+        "id": "api_key"
+      },
+      {
+        "check": "Plan",
+        "state": "PASS",
+        "detail": "max (0.25% trade fee)",
+        "id": "plan"
+      },
+      {
+        "check": "Launch wallet delegated",
+        "state": "PASS",
+        "detail": "delegated",
+        "id": "embedded_wallet"
+      },
+      {
+        "check": "Account",
+        "state": "PASS",
+        "detail": "WalletFake111111111111111111111111111111111",
+        "id": "account"
+      },
+      {
+        "check": "Install",
+        "state": "PASS",
+        "detail": "binary at ~/.local/bin/candle",
+        "id": "install"
+      },
+      {
+        "check": "Security key helper",
+        "state": "PASS",
+        "detail": "~/.local/bin/candle-fido2 (beside the binary)",
+        "id": "security_key_helper"
+      },
+      {
+        "check": "Update",
+        "state": "PASS",
+        "detail": "0.12.0 available: candle update",
+        "id": "update"
+      },
+      {
+        "check": "TEE limits",
+        "state": "PASS",
+        "detail": "USD limit set; no cap for SOL, USDC, CNDL (unlimited)",
+        "id": "tee_limits"
+      }
+    ],
+    "role": "owner",
+    "provenance": {
+      "apiUrl": {
+        "value": "https://api.candle.example",
+        "source": "profile production"
+      },
+      "apiKey": {
+        "source": "CANDLE_API_KEY",
+        "prefix": "FakeKey1"
+      },
+      "deviceToken": {
+        "source": "profile production"
+      }
+    },
+    "account": "WalletFake111111111111111111111111111111111",
+    "cachedAccount": "WalletFake111111111111111111111111111111111",
+    "install": {
+      "method": "binary",
+      "path": "~/.local/bin/candle"
+    },
+    "update": {
+      "current": "0.11.41",
+      "latest": "0.12.0",
+      "available": true
+    }
+  }
+}

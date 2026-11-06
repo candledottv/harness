@@ -1,0 +1,13 @@
+{
+  "name": "token-holders-solana",
+  "method": "GET",
+  "route": "/v1/market/token/HaccFake1111111111111111111111111111111112c/holders",
+  "query": {},
+  "status": 502,
+  "ms": 266,
+  "bytes": 52,
+  "contentType": "application/json; charset=utf-8",
+  "answer": {
+    "error": "market data unavailable: cvc holders 400"
+  }
+}

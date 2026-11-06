@@ -1,0 +1,37 @@
+{
+  "name": "token-wallet-pnl",
+  "method": "GET",
+  "route": "/v1/market/token/HaccFake1111111111111111111111111111111112c/wallet-pnl",
+  "query": {
+    "wallets": "fake-wallets-1"
+  },
+  "status": 200,
+  "ms": 963,
+  "bytes": 434,
+  "contentType": "application/json; charset=utf-8",
+  "answer": {
+    "chain": "solana",
+    "wallets": [
+      {
+        "address": "HaccFake1111111111111111111111111111111112n",
+        "realized_pnl_usd": null,
+        "unrealized_usd": null,
+        "total_usd": null,
+        "win_rate": null,
+        "trades": null,
+        "holding": null,
+        "reason": "no data for this wallet"
+      },
+      {
+        "address": "HaccFake1111111111111111111111111111111112p",
+        "realized_pnl_usd": null,
+        "unrealized_usd": null,
+        "total_usd": null,
+        "win_rate": null,
+        "trades": null,
+        "holding": null,
+        "reason": "no data for this wallet"
+      }
+    ]
+  }
+}

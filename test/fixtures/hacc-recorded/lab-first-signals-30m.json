@@ -1,0 +1,104 @@
+{
+  "name": "lab-first-signals-30m",
+  "method": "GET",
+  "route": "/v1/strategy-lab/first-signals",
+  "query": {
+    "minutes": "30",
+    "launched_after": "2026-10-28T02:53:38.845Z"
+  },
+  "status": 200,
+  "ms": 6448,
+  "bytes": 145226,
+  "contentType": "application/json; charset=utf-8",
+  "answer": {
+    "minutes": 30,
+    "assets_asked": 500,
+    "assets_omitted": 59,
+    "signals": [
+      {
+        "asset_id": 124436604,
+        "launched_at": "2026-10-28T02:53:54.822Z",
+        "signal_id": 114015731,
+        "created_at": "2026-10-28T02:53:55.682Z",
+        "pattern": "new_ticker",
+        "wallet_id": 605485,
+        "wallet_groups": [
+          "fake-wallet_groups-1",
+          "fake-wallet_groups-2"
+        ],
+        "mcap_usd": null,
+        "mcap_at_signal": null,
+        "born_at": "2026-10-28T02:53:54.822Z",
+        "age_minutes": 0.01,
+        "venue_at_signal": "raydium-launchpad"
+      },
+      {
+        "asset_id": 124436930,
+        "launched_at": "2026-10-28T02:54:18.915Z",
+        "signal_id": 114016402,
+        "created_at": "2026-10-28T02:54:19.224Z",
+        "pattern": "new_ticker",
+        "wallet_id": 605454,
+        "wallet_groups": [
+          "fake-wallet_groups-3"
+        ],
+        "mcap_usd": null,
+        "mcap_at_signal": null,
+        "born_at": "2026-10-28T02:54:18.915Z",
+        "age_minutes": 0.01,
+        "venue_at_signal": null
+      },
+      {
+        "asset_id": 124436938,
+        "launched_at": "2026-10-28T02:54:18.648Z",
+        "signal_id": 114016432,
+        "created_at": "2026-10-28T02:54:20.533Z",
+        "pattern": "new_ticker",
+        "wallet_id": 141980,
+        "wallet_groups": [
+          "fake-wallet_groups-3"
+        ],
+        "mcap_usd": null,
+        "mcap_at_signal": null,
+        "born_at": "2026-10-28T02:54:18.648Z",
+        "age_minutes": 0.03,
+        "venue_at_signal": "pump"
+      },
+      {
+        "asset_id": 124437034,
+        "launched_at": "2026-10-28T02:54:31.000Z",
+        "signal_id": 114016701,
+        "created_at": "2026-10-28T02:54:32.304Z",
+        "pattern": "new_ticker",
+        "wallet_id": 675032,
+        "wallet_groups": [
+          "fake-wallet_groups-4",
+          "fake-wallet_groups-5",
+          "fake-wallet_groups-3"
+        ],
+        "mcap_usd": null,
+        "mcap_at_signal": null,
+        "born_at": "2026-10-28T02:54:31.000Z",
+        "age_minutes": 0.02,
+        "venue_at_signal": null
+      },
+      {
+        "asset_id": 124437531,
+        "launched_at": "2026-10-28T02:54:43.450Z",
+        "signal_id": 114017784,
+        "created_at": "2026-10-28T02:55:05.351Z",
+        "pattern": "new_ticker",
+        "wallet_id": 662813,
+        "wallet_groups": [],
+        "mcap_usd": null,
+        "mcap_at_signal": null,
+        "born_at": "2026-10-28T02:54:43.450Z",
+        "age_minutes": 0.37,
+        "venue_at_signal": "pump"
+      }
+    ]
+  },
+  "truncated": {
+    "$.signals": 441
+  }
+}

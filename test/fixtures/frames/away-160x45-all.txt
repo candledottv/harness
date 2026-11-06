@@ -1,0 +1,92 @@
+ ▲ candle  agent-a ▾  LIVE  today $12.00 / $100.00  exposure $412.50  P&L 24h +$3.40  ● 0 cards waiting                                          ctrl-x ×2 kill 
+ 1 Trade  2 Cockpit  3 Trending  4 Signals  5 P&L  6 Research  7 Journal  8 Perps   settings ▾                                                                  
+                              ╭─ While you were away · 3h 12m ───────────────────────────────────────────────────────────────────╮                              
+╭─ agent-a ───────────────────│ From 04:47 to 07:59.                                                                             │t ──────────────────── pin ──╮
+│ ╭───────────────────────────│                                                                                                  │                             │
+│ │ While you were away · 3h 1│ Stopped or refused · 1                                                                           │                             │
+│ │   refused agent-b's trade:│ 05:48  refused agent-b's trade: over agent-b's $2.00 a trade                                     │liq $18.4M                   │
+│ │   3 trades: 2 filled (2 wi│                                                                                                  │                             │
+│ │   1 trade outside the Cand│ Trades · 3                                                                                       │                             │
+│ │   P&L since last session +│ 04:51  agent-a proposed SELL 100% JUPF (≈$1.04) from embedded · without a card, inside its       │                             │
+│ │   6 of your signals on Hac│        wallet's limits · filled in 4.8 s                                                         │  ╷ ╻ ┃ ┃ ┃ ┃ │     $0.424   │
+│ ╰───────────────────────────│ 04:49  agent-a proposed BUY $1.00 of JUPF from embedded · without a card, inside its wallet's    │┃ ╿ ╵   ╵ ╵ ┃ ╽ ╻   ◂$0.418  │
+│                             │        limits · filled in 4.8 s                                                                  │            ╿                │
+│ you › how's JUPF looking?   │ 04:47  agent-b proposed BUY $2.00 of JUPF from embedded · expired, never ran                     │                    $0.412   │
+│                             │                                                                                                  │                now          │
+│   JUPF on the hour          │ Outside the Candle Harness · 1                                                                   │0m: Hacc's history, then     │
+│                             │   Trades the agents' keys made that the Candle Harness didn't send: the CLI, a script, the web   │                             │
+│   Volume is up and the book │   app.                                                                                           │─────────────────────────────╯
+│                             │ 06:57  SELL JUPF $4.20 on agent-a's key                                                          │                              
+│                  Now   1h ag│        wallet EmbF…1111  ⧉                                                                       │───────────── all agents ▾ ──╮
+│   Price      $0.4249  $0.412│                                                                                                  │-b                           │
+│   Liquidity   $18.4M   $18.1│ P&L                                                                                              │agent-a                      │
+│                             │   P&L since last session +$0.42                                                                  │agent-b                      │
+│   Mint JupF…1111. Want a sma│   agent-a +$0.53                                                                                 │agent-a                      │
+│                             │   agent-b -$0.11                                                                                 │                             │
+│                             │                                                                                                  │agent-a                      │
+│                             │ Your signals on Hacc · 6                                                                         │─────────────────────────────╯
+│                             │ ORBIT     first buy of a new ticker    $293  Solana   23m  Wal0…1111                             │                              
+│                             │ BASAL     first buy of a new ticker    $971  Solana   22m  fast hands                            │───────────── all agents ▾ ──╮
+│                             │ MARRO     3 wallets bought in 60m            Solana   21m  desk seven, Conf…1111, early bird     │                             │
+│                             │ PYLON     big sell                   $11.6K  Hood     21m  desk seven                            │                             │
+│                             │ KETTL     wallet woke after 27d              Solana   20m  Wal4…1111                             │ ≈$75.00 · 1 token  ⧉        │
+│                             │ FENNE     wallet distributing           $30  Solana   19m  Wal5…1111                             │─────────────────────────────╯
+│                             │                                                                                                  │                              
+│                             │ Turns that ended · 1                                                                             │───────────── all agents ▾ ──╮
+│                             │ 04:46  you asked agent-a: "buy $1 of JUPF, sell it if it's up 3%" · answered in 5m 00s · 2 tool  │→ JUPF (Enter) #23           │
+│                             │        calls                                                                                     │ · 35.2 JUPF #24             │
+│                             │                                                                                                  │ SOL → LUMEN #25             │
+│                             │ Wallets since 04:45                                                                              │ → LUMEN #26                 │
+│                             │   embedded wallet: JUPF 11.6 → 0                                                                 │ade: BUY 0.1 SOL → LUMEN     │
+│                             │                                                                                                  │                             │
+│                             │ a token's row picks it · esc closes                                                              │ on Hacc #28  undo           │
+╰─────────────────────────────╰──────────────────────────────────────────────────────────────────────────────────────────────────╯.21 SOL #29                  │
+                                                                                                │ 07:58  filled BUY 0.04 SOL → LUMEN #30                       │
+› type a command or ask the agent                                   ctrl-k palette    ? help    ╰─ ⇱ ──────────────────────────────────────────────────────────╯
+
+--- colours ---
+0: ffffff/0e1115×1 f6f8fb/0e1115×8 ffffff/0e1115×1 6cb6ff/16263a×11 0b0d10/3ddc84×6 ffffff/0e1115×1 959dab/0e1115×6 f6f8fb/0e1115×6 959dab/0e1115×10 ffffff/0e1115×2 959dab/0e1115×9 f6f8fb/0e1115×7 ffffff/0e1115×2 959dab/0e1115×8 3ddc84/0e1115×6 ffffff/0e1115×2 959dab/0e1115×17 ffffff/0e1115×41 ff5c5c/3a1619×16
+1: ffffff/0b0d10×1 f6f8fb/0b0d10+9×7 ffffff/0b0d10×2 6cb6ff/0b0d10×9 ffffff/0b0d10×2 6cb6ff/0b0d10×10 ffffff/0b0d10×2 6cb6ff/0b0d10×9 ffffff/0b0d10×2 6cb6ff/0b0d10×5 ffffff/0b0d10×2 6cb6ff/0b0d10×10 ffffff/0b0d10×2 6cb6ff/0b0d10×9 ffffff/0b0d10×2 6cb6ff/0b0d10×7 ffffff/0b0d10×2 6cb6ff/16263a×12 ffffff/0b0d10×65
+2: ffffff/0b0d10×30 32fe9f/111419×2 b392f0/111419×30 32fe9f/111419×68 ffffff/0b0d10×30
+3: 32fe9f/111419×2 b392f0/111419×9 32fe9f/111419×20 ffffff/111419×1 959dab/111419×20 ffffff/111419×77 32fe9f/111419×1 b392f0/111419×2 252a33/111419×20 6cb6ff/16263a×5 252a33/111419×3
+4: 32fe9f/111419×1 ffffff/111419×1 b392f0/111419×28 32fe9f/111419×1 ffffff/111419×98 32fe9f/111419×1 ffffff/111419×29 252a33/111419×1
+5: 32fe9f/111419×1 ffffff/111419×1 b392f0/111419×2 b392f0/111419+1×19 959dab/111419×7 32fe9f/111419×1 ffffff/111419×1 b392f0/111419×22 ffffff/111419×75 32fe9f/111419×1 ffffff/111419×29 252a33/111419×1
+6: 32fe9f/111419×1 ffffff/111419×1 b392f0/111419×2 ff5c5c/111419×26 32fe9f/111419×1 ffffff/111419×1 959dab/111419×7 ff5c5c/111419×53 ffffff/111419×37 32fe9f/111419×1 959dab/111419×4 dde2ea/111419×6 ffffff/111419×19 252a33/111419×1
+7: 32fe9f/111419×1 ffffff/111419×1 b392f0/111419×2 dde2ea/111419×26 32fe9f/111419×1 ffffff/111419×98 32fe9f/111419×1 ffffff/111419×29 252a33/111419×1
+8: 32fe9f/111419×1 ffffff/111419×1 b392f0/111419×2 f5a524/111419×26 32fe9f/111419×1 ffffff/111419×1 b392f0/111419×10 ffffff/111419×87 32fe9f/111419×1 ffffff/111419×29 252a33/111419×1
+9: 32fe9f/111419×1 ffffff/111419×1 b392f0/111419×2 3ddc84/111419×26 32fe9f/111419×1 ffffff/111419×1 959dab/111419×7 3ddc84/111419×83 ffffff/111419×7 32fe9f/111419×1 ffffff/111419×29 252a33/111419×1
+10: 32fe9f/111419×1 ffffff/111419×1 b392f0/111419×2 dde2ea/111419×26 32fe9f/111419×1 ffffff/111419×1 959dab/111419×7 dde2ea/111419×33 ffffff/111419×57 32fe9f/111419×1 959dab/111419×2 ff5c5c/111419×1 959dab/111419×1 3ddc84/111419×1 959dab/111419×1 3ddc84/111419×1 959dab/111419×1 3ddc84/111419×1 959dab/111419×1 3ddc84/111419×1 959dab/111419×1 ff5c5c/111419×1 959dab/111419×1 3ddc84/111419×1 959dab/111419×11 ffffff/111419×3 252a33/111419×1
+11: 32fe9f/111419×1 ffffff/111419×1 b392f0/111419×28 32fe9f/111419×1 ffffff/111419×1 959dab/111419×7 3ddc84/111419×86 ffffff/111419×4 32fe9f/111419×1 3ddc84/111419×1 959dab/111419×1 ff5c5c/111419×1 959dab/111419×1 3ddc84/111419×1 959dab/111419×3 3ddc84/111419×1 959dab/111419×1 3ddc84/111419×1 959dab/111419×1 ff5c5c/111419×1 959dab/111419×1 3ddc84/111419×1 959dab/111419×1 3ddc84/111419×1 959dab/111419×2 f6f8fb/111419×8 ffffff/111419×2 252a33/111419×1
+12: 32fe9f/111419×1 ffffff/111419×29 32fe9f/111419×1 ffffff/111419×1 959dab/111419×7 dde2ea/111419×24 ffffff/111419×66 32fe9f/111419×1 959dab/111419×12 ff5c5c/111419×1 959dab/111419×7 ffffff/111419×9 252a33/111419×1
+13: 32fe9f/111419×1 ffffff/111419×1 959dab/111419×6 f6f8fb/111419×19 ffffff/111419×3 32fe9f/111419×1 ffffff/111419×1 959dab/111419×7 dde2ea/111419×69 ffffff/111419×21 32fe9f/111419×1 959dab/111419×26 ffffff/111419×3 252a33/111419×1
+14: 32fe9f/111419×1 ffffff/111419×29 32fe9f/111419×1 ffffff/111419×98 32fe9f/111419×1 959dab/111419×19 ffffff/111419×10 252a33/111419×1
+15: 32fe9f/111419×1 ffffff/111419×1 dde2ea/111419×2 b392f0/111419+1×16 ffffff/111419×10 32fe9f/111419×1 ffffff/111419×1 b392f0/111419×30 ffffff/111419×67 32fe9f/111419×1 959dab/111419×24 ffffff/111419×5 252a33/111419×1
+16: 32fe9f/111419×1 ffffff/111419×1 dde2ea/111419×2 ffffff/111419×26 32fe9f/111419×1 ffffff/111419×1 959dab/111419×94 ffffff/111419×3 32fe9f/111419×1 ffffff/111419×29 252a33/111419×1
+17: 32fe9f/111419×1 ffffff/111419×1 dde2ea/111419×28 32fe9f/111419×1 ffffff/111419×1 959dab/111419×6 ffffff/111419×91 32fe9f/111419×1 252a33/111419×30
+18: 32fe9f/111419×1 ffffff/111419×1 dde2ea/111419×2 ffffff/111419×26 32fe9f/111419×1 ffffff/111419×1 959dab/111419×7 f5a524/111419×32 ffffff/111419×58 32fe9f/111419×1 ffffff/0b0d10×30
+19: 32fe9f/111419×1 ffffff/111419×1 dde2ea/111419×17 959dab/111419×3 dde2ea/111419×3 959dab/111419×5 32fe9f/111419×1 ffffff/111419×1 959dab/111419×24 6cb6ff/16263a×3 ffffff/111419×70 32fe9f/111419×1 252a33/111419×13 6cb6ff/16263a×14 252a33/111419×3
+20: 32fe9f/111419×1 ffffff/111419×1 dde2ea/111419×28 32fe9f/111419×1 ffffff/111419×98 32fe9f/111419×1 959dab/111419×2 ffffff/111419×27 252a33/111419×1
+21: 32fe9f/111419×1 ffffff/111419×1 dde2ea/111419×28 32fe9f/111419×1 ffffff/111419×1 b392f0/111419×3 ffffff/111419×94 32fe9f/111419×1 959dab/111419×7 ffffff/111419×22 252a33/111419×1
+22: 32fe9f/111419×1 ffffff/111419×1 dde2ea/111419×2 ffffff/111419×26 32fe9f/111419×1 ffffff/111419×1 3ddc84/111419×31 ffffff/111419×66 32fe9f/111419×1 959dab/111419×7 ffffff/111419×22 252a33/111419×1
+23: 32fe9f/111419×1 ffffff/111419×1 dde2ea/111419×7 f6f8fb/111419×9 dde2ea/111419×12 32fe9f/111419×1 ffffff/111419×1 dde2ea/111419×16 ffffff/111419×81 32fe9f/111419×1 959dab/111419×7 ffffff/111419×22 252a33/111419×1
+24: 32fe9f/111419×1 ffffff/111419×29 32fe9f/111419×1 ffffff/111419×1 dde2ea/111419×16 ffffff/111419×81 32fe9f/111419×1 ffffff/111419×29 252a33/111419×1
+25: 32fe9f/111419×1 ffffff/111419×29 32fe9f/111419×1 ffffff/111419×98 32fe9f/111419×1 959dab/111419×7 ffffff/111419×22 252a33/111419×1
+26: 32fe9f/111419×1 ffffff/111419×29 32fe9f/111419×1 ffffff/111419×1 b392f0/111419×24 ffffff/111419×73 32fe9f/111419×1 252a33/111419×30
+27: 32fe9f/111419×1 ffffff/111419×29 32fe9f/111419×1 ffffff/111419×1 f6f8fb/111419×10 dde2ea/111419×26 f6f8fb/111419×7 959dab/111419×25 ffffff/111419×29 32fe9f/111419×1 ffffff/0b0d10×30
+28: 32fe9f/111419×1 ffffff/111419×29 32fe9f/111419×1 ffffff/111419×1 f6f8fb/111419×10 dde2ea/111419×26 f6f8fb/111419×7 959dab/111419×26 ffffff/111419×28 32fe9f/111419×1 252a33/111419×13 6cb6ff/16263a×14 252a33/111419×3
+29: 32fe9f/111419×1 ffffff/111419×29 32fe9f/111419×1 ffffff/111419×1 f6f8fb/111419×10 dde2ea/111419×26 f6f8fb/111419×7 959dab/111419×49 ffffff/111419×5 32fe9f/111419×1 ffffff/111419×29 252a33/111419×1
+30: 32fe9f/111419×1 ffffff/111419×29 32fe9f/111419×1 ffffff/111419×1 f6f8fb/111419×10 dde2ea/111419×26 f6f8fb/111419×7 959dab/111419×26 ffffff/111419×28 32fe9f/111419×1 ffffff/111419×29 252a33/111419×1
+31: 32fe9f/111419×1 ffffff/111419×29 32fe9f/111419×1 ffffff/111419×1 f6f8fb/111419×10 dde2ea/111419×26 f6f8fb/111419×7 959dab/111419×25 ffffff/111419×29 32fe9f/111419×1 959dab/111419×8 dde2ea/111419×11 6cb6ff/16263a×3 ffffff/111419×7 252a33/111419×1
+32: 32fe9f/111419×1 ffffff/111419×29 32fe9f/111419×1 ffffff/111419×1 f6f8fb/111419×10 dde2ea/111419×26 f6f8fb/111419×7 959dab/111419×25 ffffff/111419×29 32fe9f/111419×1 252a33/111419×30
+33: 32fe9f/111419×1 ffffff/111419×29 32fe9f/111419×1 ffffff/111419×98 32fe9f/111419×1 ffffff/0b0d10×30
+34: 32fe9f/111419×1 ffffff/111419×29 32fe9f/111419×1 ffffff/111419×1 b392f0/111419×20 ffffff/111419×77 32fe9f/111419×1 252a33/111419×13 6cb6ff/16263a×14 252a33/111419×3
+35: 32fe9f/111419×1 ffffff/111419×29 32fe9f/111419×1 ffffff/111419×1 959dab/111419×7 dde2ea/111419×88 ffffff/111419×2 32fe9f/111419×1 dde2ea/111419×18 ffffff/111419×11 252a33/111419×1
+36: 32fe9f/111419×1 ffffff/111419×29 32fe9f/111419×1 ffffff/111419×1 959dab/111419×7 dde2ea/111419×5 ffffff/111419×85 32fe9f/111419×1 dde2ea/111419×16 ffffff/111419×13 252a33/111419×1
+37: 32fe9f/111419×1 ffffff/111419×29 32fe9f/111419×1 ffffff/111419×98 32fe9f/111419×1 dde2ea/111419×16 ffffff/111419×13 252a33/111419×1
+38: 32fe9f/111419×1 ffffff/111419×29 32fe9f/111419×1 ffffff/111419×1 b392f0/111419×19 ffffff/111419×78 32fe9f/111419×1 dde2ea/111419×12 ffffff/111419×17 252a33/111419×1
+39: 32fe9f/111419×1 ffffff/111419×29 32fe9f/111419×1 ffffff/111419×1 dde2ea/111419×32 ffffff/111419×65 32fe9f/111419×1 dde2ea/111419×24 ffffff/111419×5 252a33/111419×1
+40: 32fe9f/111419×1 ffffff/111419×29 32fe9f/111419×1 ffffff/111419×98 32fe9f/111419×1 ffffff/111419×29 252a33/111419×1
+41: 32fe9f/111419×1 ffffff/111419×29 32fe9f/111419×1 ffffff/111419×1 959dab/111419×35 ffffff/111419×62 32fe9f/111419×1 dde2ea/111419×13 6cb6ff/16263a×6 ffffff/111419×10 252a33/111419×1
+42: 32fe9f/111419×130 dde2ea/111419×11 ffffff/111419×18 252a33/111419×1
+43: 959dab/0b0d10×1 ffffff/0b0d10×95 252a33/111419×1 ffffff/111419×1 959dab/111419×7 3ddc84/111419×6 dde2ea/111419×25 ffffff/111419×23 252a33/111419×1
+44: f6f8fb/0e1115×2 959dab/0e1115×31 ffffff/0e1115×34 6cb6ff/16263a×16 959dab/0e1115×2 6cb6ff/16263a×8 959dab/0e1115×2 ffffff/0b0d10×1 252a33/111419×2 6cb6ff/16263a×3 252a33/111419×59

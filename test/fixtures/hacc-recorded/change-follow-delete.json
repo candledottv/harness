@@ -1,0 +1,10 @@
+{
+  "name": "change-follow-delete",
+  "method": "DELETE",
+  "route": "/v1/me/follows/5",
+  "query": {},
+  "status": 204,
+  "ms": 217,
+  "bytes": 0,
+  "answer": "fake-<root>-1"
+}

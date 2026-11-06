@@ -1,0 +1,16 @@
+{
+  "tool": "candle_get_fees",
+  "args": {
+    "limit": 5
+  },
+  "ms": 162,
+  "outcome": {
+    "kind": "ok",
+    "result": {
+      "success": true,
+      "page": [],
+      "isDone": true,
+      "continueCursor": null
+    }
+  }
+}

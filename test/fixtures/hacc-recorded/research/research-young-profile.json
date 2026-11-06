@@ -1,0 +1,30 @@
+{
+  "name": "research-young-profile",
+  "method": "GET",
+  "route": "/v1/market/token/HaccFake1111111111111111111111111111111112p/profile",
+  "query": {},
+  "status": 200,
+  "ms": 323,
+  "bytes": 732,
+  "contentType": "application/json; charset=utf-8",
+  "answer": {
+    "address": "HaccFake1111111111111111111111111111111112p",
+    "symbol": "fake-symbol-2",
+    "stage": "bonding_curve",
+    "launchpad": "pump",
+    "launchpad_progress": 0.6392631728724474,
+    "migrated_at": null,
+    "created_at": "2026-10-30T13:31:28.000Z",
+    "holder_count": 129,
+    "venues": [
+      "pumpfun"
+    ],
+    "pair_count": 1,
+    "total_liquidity_usd": 0,
+    "top_pool_share": null,
+    "rug_mechanics": "Still on the launchpad bonding curve. Liquidity CANNOT be pulled: the curve contract holds it and the dev has no LP position to remove. The failure mode here is bundled buys at launch, accumulation of the incoming SOL, then dumping the supply onto later buyers. Watch net SOL inflow against the deployer’s historical extraction, not liquidity.",
+    "notes": [
+      "fake-notes-1"
+    ]
+  }
+}

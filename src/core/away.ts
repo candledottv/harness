@@ -1,0 +1,766 @@
+// While you were away: what happened between the main view's last close and
+// its next open, in the Candle Harness's own words, built from what the core records, never by a model.
+//
+// The gap runs from the last session's mark (pnl.ts `lastSessionEnd`: the main view's last close, or, after a
+// core that died with the view open, the journal's last row before the next `core.started`) to the attach
+// that opens the view again. A gap under 10 minutes makes no summary, and the last one stays.
+//
+// From the records:
+//   - when the core wasn't running in the gap, from its start and stop rows;
+//   - the journal's rows in the gap, grouped as the Journal groups them and in its words: each agent's
+//     turns that ended, every trade with or without a card and how it ended, the other cards (one that
+//     waited and expired among them), what the agents changed on Hacc and in memory, and what was stopped or
+//     refused (the kill switch, refusals at proposal, a Candle connection or Hacc key that failed);
+//   - P&L over the gap from the samples, as harness_pnl's "since last session" reads it, so the agent's answer
+//     to `ask` is the same figure: from the mark's own sample, so a gap with the core stopped is counted
+//     whole.
+// From three reads at start, each as a read the person asked for (key-budget.ts `ask`), never waiting:
+//   - each agent's P&L book, for "now";
+//   - each agent key's fills (`candle_get_profile_trades`) since the mark that the Candle Harness didn't send: Candle
+//     books each fill with its `clientTradeId`, which is the core's opId on both routes, so the Candle Harness's own are
+//     known by id; a fill with no id is the Candle Harness's by signature; and a Candle Harness trade whose outcome is still unknown
+//     claims a fill of the same agent, token and side made after it was sent, or, where it could be either,
+//     the fill says "may be the Candle Harness's". Nothing the Candle Harness sent is ever called outside it;
+//   - Hacc's personal signals (`/v1/me/signals`) since the mark, by date, counted with the newest few kept.
+// And what the wallets hold now against the last read before the view closed, from the portfolio read the
+// view's attach makes anyway (no extra read).
+//
+// Each read that fails says so in its place, never as nothing. The summary is kept in `state/away.json`
+// (0600) until the next gap, so a restart or a second view shows the same one.
+import { randomBytes } from "node:crypto"
+import { readFileSync } from "node:fs"
+import { chmod, rename, writeFile } from "node:fs/promises"
+import type { Redactor } from "../shared/redact"
+import type { ToolOutcome } from "./candle-mcp"
+import { type HaccAnswer, haccCursor } from "./hacc"
+import type { JournalRow } from "./journal"
+import { entryWords, isAnchor, isLifeRow, type JournalEntry, keysOf } from "./journal-query"
+import { type PnlTrade, signatureOf, tradesFrom, type WindowFigure } from "./pnl"
+import { cleanRow, type SignalRow } from "./signal-stream"
+
+/** A gap shorter than this makes no summary. */
+export const AWAY_MIN_GAP_MS = 10 * 60_000
+/** Rows this far before the gap are read too: a card proposed before the close can end in the gap (a trade's card lives a minute, any other ten). */
+export const LOOKBACK_MS = 15 * 60_000
+/** The most journal rows a summary reads; past that, the oldest in the gap are left out, and it says so. */
+export const MAX_ROWS = 20_000
+/** The core counts as not running for a stretch this long or longer with no rows between a stop and a start. */
+export const DOWN_MIN_MS = 60_000
+/** Each list's entries at most; the counts hold every one. */
+export const LISTED = 100
+/** Candle's fills read per agent key: its default, the newest that many. */
+export const FILLS_LIMIT = 200
+/** Personal signals: Hacc's pages read at most, and the newest kept. */
+export const MINE_PAGES = 5
+export const MINE_PAGE = 100
+export const MINE_NEWEST = 6
+/** The portfolio read after the attach is waited for this long, then the holdings say they weren't read. */
+export const HOLDINGS_WAIT_MS = 60_000
+/** A holdings snapshot counts as "then" when it was taken this close to the gap's start. */
+export const THEN_SLACK_MS = 2 * 60_000
+
+type Tone = JournalEntry["tone"]
+
+export interface AwayEntry {
+  at: string
+  /** Its last row: a turn's end, a card's close. */
+  last: string
+  agent?: string
+  mode: "paper" | "live"
+  text: string
+  tone: Tone
+  mint?: string
+  symbol?: string
+  /** Its rows, for the Journal's details. */
+  seqs: number[]
+}
+
+/** `not-sold`: a live sell Candle closed as the key's paper position, so nothing live was sold. */
+export type TradeOutcome = "filled" | "not-sold" | "failed" | "refused" | "unknown" | "sent" | "abandoned" | "rejected" | "withdrawn" | "expired" | "waiting" | "approved"
+
+export interface AwayCard extends AwayEntry {
+  outcome: TradeOutcome
+  kind?: string
+  side?: string
+  /** The card's value when proposed, ≈. */
+  usd?: number
+  /** It ran without a card, inside its wallet's limits. */
+  withoutCard?: true
+  /** Typed, run at once under `cards.typedTrades = "instant"`. */
+  instant?: true
+  paper?: true
+}
+
+export interface OutsideFill {
+  at: number
+  agent: string
+  mint: string
+  symbol?: string
+  side: string
+  usd: number | null
+  wallet?: string
+  signature?: string
+}
+
+export interface AgentFills {
+  agent: string
+  state: "reading" | "read" | "failed"
+  words?: string
+  /** Fills the Candle Harness didn't send. */
+  fills: OutsideFill[]
+  /** Fills that may be a Candle Harness trade whose outcome is unknown, or may not. */
+  maybe: OutsideFill[]
+  /** Fills a Candle Harness trade of unknown outcome claimed. */
+  claimed: number
+  /** Candle's newest FILLS_LIMIT didn't reach back to the gap's start: they reach this far. */
+  reachesBack?: number
+}
+
+export interface HoldingChange {
+  wallet: string
+  name: string
+  /** A token's mint, or "SOL". */
+  asset: string
+  symbol?: string
+  then: number
+  now: number
+}
+
+export interface HoldingsSnapshot {
+  /** When it was taken: the main view's close. */
+  at: number
+  /** When that portfolio was read. */
+  readAt: number | null
+  wallets: { address: string; name: string; sol: number | null; tokens: { mint: string; symbol?: string; amount: number }[] | null }[]
+}
+
+export type ReadState = "reading" | "read" | "failed"
+
+export interface AwaySummary {
+  id: string
+  from: number
+  to: number
+  madeAt: number
+  /** The view whose attach made it: that view shows the note on startup. */
+  forView?: string
+  /** Stretches in the gap when the core wasn't running: nothing ran in the Candle Harness then. */
+  coreDown: { from: number; to: number }[]
+  /** The core wasn't running at all from the mark until this attach started it. */
+  coreGoneThroughout: boolean
+  turns: AwayEntry[]
+  trades: AwayCard[]
+  cards: AwayCard[]
+  /** What the agents changed on Hacc and in memory. */
+  changes: AwayEntry[]
+  stopped: AwayEntry[]
+  /** Cards still waiting for the person when it was made. */
+  waitingNow: number
+  /** The gap held more rows than a summary reads: it covers from here. */
+  cut?: { from: string }
+  pnl: { state: ReadState; label: string; usd: number | null; from: number | null; short: boolean; agents: Record<string, { usd: number | null; from: number | null }>; words?: string }
+  outside: { state: ReadState; agents: AgentFills[] }
+  signals: { state: ReadState | "off" | "needs-plan" | "no-key"; count: number; newest: SignalRow[]; more?: true; words?: string }
+  holdings: { state: "reading" | "read" | "unknown" | "failed"; then?: number; changes: HoldingChange[]; words?: string }
+  counts: { turns: number; trades: number; withoutCard: number; cards: number; expired: number; changes: number; stopped: number; outside: number; maybe: number; signals: number; holdings: number }
+  happened: boolean
+}
+
+export interface AwayView {
+  summary: AwaySummary | null
+  /** No gap has been seen yet: the Candle Harness hasn't been closed and opened again since its record began. */
+  firstRun?: true
+}
+
+const record = (value: unknown): Record<string, unknown> | undefined => (typeof value === "object" && value !== null && !Array.isArray(value) ? (value as Record<string, unknown>) : undefined)
+const str = (value: unknown): string | undefined => (typeof value === "string" && value.length > 0 ? value : undefined)
+const num = (value: unknown): number | undefined => (typeof value === "number" && Number.isFinite(value) ? value : undefined)
+const ms = (iso: string) => Date.parse(iso)
+
+/** "45m", "3h 12m", "2d 3h": how long the gap ran. */
+export function gapLength(ms: number): string {
+  const m = Math.max(0, Math.round(ms / 60_000))
+  if (m < 60) return `${m}m`
+  const h = Math.floor(m / 60)
+  if (h < 48) return `${h}h ${String(m % 60).padStart(2, "0")}m`
+  return `${Math.floor(h / 24)}d ${h % 24}h`
+}
+
+// --- The gap's records ---------------------------------------------------------------------------------
+
+/** Stretches in (from, to] when the core wasn't running: from a stop (or, for a core that died, its last row) to the next start. */
+export function coreDown(rows: readonly JournalRow[], from: number, to: number): { from: number; to: number }[] {
+  const out: { from: number; to: number }[] = []
+  let prev = from
+  let stoppedAt: number | undefined
+  for (const row of rows) {
+    const at = ms(row.at)
+    if (!(at > from) || at > to) {
+      if (at <= from) prev = Math.max(prev, at)
+      continue
+    }
+    if (row.type === "core.stopped") stoppedAt = at
+    else if (row.type === "core.started") {
+      // No stop row: the core before died, after its last row.
+      const down = stoppedAt ?? prev
+      if (at - down >= DOWN_MIN_MS) out.push({ from: down, to: at })
+      stoppedAt = undefined
+    }
+    prev = Math.max(prev, at)
+  }
+  return out
+}
+
+const CARD_END: Record<string, TradeOutcome> = {
+  "card.rejected": "rejected",
+  "card.withdrawn": "withdrawn",
+  "card.expired": "expired",
+  "operation.submitting": "sent",
+  "operation.pending": "sent",
+  "operation.succeeded": "filled",
+  "operation.failed": "failed",
+  "operation.refused": "refused",
+  "operation.unknown": "unknown",
+  "operation.abandoned": "abandoned",
+}
+const TRADE_TOOLS = new Set(["candle_trade", "candle_swap"])
+const isTradeRow = (row: JournalRow | undefined) => !!row && (row.kind === "trade" || row.kind === "swap" || TRADE_TOOLS.has(String(row.tool)))
+
+/** Single rows that say something was stopped or refused. */
+function stopRow(row: JournalRow): boolean {
+  switch (row.type) {
+    case "kill.on":
+    case "kill.off":
+    case "card.refused":
+    case "tool.refused":
+    case "cli.refused":
+    case "candle.start_failed":
+    case "agent.message_refused":
+    case "core.bug":
+      return true
+    case "hacc.stream":
+      return row.event === "key_refused" || row.event === "full" || row.event === "gap"
+    default:
+      return false
+  }
+}
+const CHANGE_TYPES = new Set(["hacc.change", "hacc.replay", "memory.change"])
+
+/** What a Candle Harness trade tells the fill matcher: its id, its signature, and, while its outcome is unknown, what it was. */
+interface HarnessTrade {
+  opId: string
+  agent?: string
+  mint?: string
+  side?: string
+  signature?: string
+  unknown: boolean
+  sentAt?: number
+}
+
+export interface Records {
+  coreDown: { from: number; to: number }[]
+  coreGoneThroughout: boolean
+  turns: AwayEntry[]
+  trades: AwayCard[]
+  cards: AwayCard[]
+  changes: AwayEntry[]
+  stopped: AwayEntry[]
+  /** Every live trade the rows hold, for matching Candle's fills. */
+  harness: HarnessTrade[]
+}
+
+/**
+ * The gap's records from the journal's rows (oldest first, from LOOKBACK_MS before the gap): each group (a
+ * card's life, a turn) that has a row in (from, to], and each single row in it that says something.
+ */
+export function awayRecords(rows: readonly JournalRow[], from: number, to: number, symbolOf: (mint: string) => string | undefined): Records {
+  const groups: JournalRow[][] = []
+  const byKey = new Map<string, JournalRow[]>()
+  const singles: JournalRow[] = []
+  for (const row of rows) {
+    const keys = keysOf(row)
+    if (keys.length === 0) {
+      singles.push(row)
+      continue
+    }
+    // A proposal or a turn's start begins its own group; any other row joins its keys' group, tying two together.
+    const found = isAnchor(row) ? [] : [...new Set(keys.map((k) => byKey.get(k)).filter((g): g is JournalRow[] => g !== undefined))]
+    let g = found[0]
+    if (!g) {
+      g = []
+      groups.push(g)
+    }
+    for (const other of found.slice(1)) {
+      g.push(...other)
+      other.length = 0
+    }
+    g.push(row)
+    for (const k of keys) byKey.set(k, g)
+  }
+  const inGap = (row: JournalRow) => ms(row.at) > from && ms(row.at) <= to
+  const turns: AwayEntry[] = []
+  const trades: AwayCard[] = []
+  const cards: AwayCard[] = []
+  const changes: AwayEntry[] = []
+  const stopped: AwayEntry[] = []
+  const harness: HarnessTrade[] = []
+  const entry = (group: readonly JournalRow[]): AwayEntry => {
+    const e = entryWords(group, symbolOf)
+    return { at: e.at, last: e.last, ...(e.agent ? { agent: e.agent } : {}), mode: e.mode, text: e.text, tone: e.tone, ...(e.mint ? { mint: e.mint } : {}), ...(e.symbol ? { symbol: e.symbol } : {}), seqs: e.seqs }
+  }
+
+  for (const raw of groups) {
+    if (raw.length === 0) continue
+    const group = [...raw].sort((a, b) => a.seq - b.seq)
+    const isLife = group.some(isLifeRow)
+    const created = group.find((r) => r.type === "card.created")
+    const trade = isLife && (isTradeRow(created) || isTradeRow(group.find((r) => r.type === "operation.submitting")))
+    if (trade && created && created.mode === "live" && typeof created.opId === "string") {
+      const end = group.findLast((r) => CARD_END[r.type] !== undefined)
+      const done = group.find((r) => r.type === "operation.succeeded")
+      const sig = done ? signatureOf(done.result) : undefined
+      const params = record(created.params)
+      const sent = group.find((r) => r.type === "operation.submitting")
+      const outcome = end ? CARD_END[end.type]! : undefined
+      harness.push({
+        opId: created.opId,
+        ...(created.agent ? { agent: created.agent } : {}),
+        ...(str(created.mint) ?? str(params?.mint) ? { mint: str(created.mint) ?? str(params?.mint) } : {}),
+        ...(str(created.side) ? { side: str(created.side) } : {}),
+        ...(sig ? { signature: sig } : {}),
+        unknown: outcome === "unknown" || outcome === "sent",
+        ...(sent ? { sentAt: ms(sent.at) } : {}),
+      })
+    }
+    if (!group.some(inGap)) continue
+    if (isLife) {
+      const e = entry(group)
+      const approved = group.find((r) => r.type === "card.approved")
+      const end = group.findLast((r) => CARD_END[r.type] !== undefined)
+      const closedAsPaper = end?.type === "operation.succeeded" && end.paper === true
+      const outcome: TradeOutcome = closedAsPaper ? "not-sold" : end ? CARD_END[end.type]! : approved ? "approved" : group.some((r) => r.type === "approval.refused") ? "refused" : "waiting"
+      const value = record(created?.value)
+      const usd = num(value?.usd)
+      const card: AwayCard = {
+        ...e,
+        outcome,
+        ...(str(created?.kind) ? { kind: str(created?.kind) } : {}),
+        ...(str(created?.side) ? { side: str(created?.side) } : {}),
+        ...(usd !== undefined ? { usd } : {}),
+        ...(approved?.how === "inside-limits" ? { withoutCard: true as const } : {}),
+        ...(approved?.how === "instant" ? { instant: true as const } : {}),
+      }
+      ;(trade ? trades : cards).push(card)
+      continue
+    }
+    // A turn: only one that ended in the gap (a turn still running shows as running, from the agent pane).
+    const ended = group.find((r) => r.type === "agent.turn" || r.type === "agent.turn_failed")
+    if (ended && inGap(ended)) turns.push(entry(group))
+  }
+
+  for (const row of singles) {
+    if (!inGap(row)) continue
+    if (row.type === "paper.call") {
+      const e = entry([row])
+      const args = record(row.args)
+      trades.push({ ...e, outcome: row.isError === true ? "refused" : "filled", paper: true, ...(str(args?.side) ? { side: str(args?.side) } : {}) })
+    } else if (row.type === "agent.turn_failed") turns.push(entry([row]))
+    else if (CHANGE_TYPES.has(row.type)) changes.push(entry([row]))
+    else if (stopRow(row)) stopped.push(entry([row]))
+  }
+  const down = coreDown(rows, from, to)
+  // The core started by this attach, with no row of its own between the mark and its start.
+  const gone = down.length === 1 && down[0]!.from === from && !rows.some((r) => ms(r.at) > from && ms(r.at) < down[0]!.to)
+  const newestFirst = <T extends { at: string }>(list: T[]) => list.sort((a, b) => ms(b.at) - ms(a.at))
+  return { coreDown: down, coreGoneThroughout: gone, turns: newestFirst(turns), trades: newestFirst(trades), cards: newestFirst(cards), changes: newestFirst(changes), stopped: newestFirst(stopped), harness }
+}
+
+// --- Fills outside the Candle Harness -------------------------------------------------------------------------------
+
+/**
+ * An agent key's fills since `from` that the Candle Harness didn't send. A fill is the Candle Harness's by its `clientTradeId` (the
+ * core's opId), else its signature. A Candle Harness trade whose outcome is unknown claims the one fill of its agent,
+ * token and side made after it was sent; where there are several, each "may be the Candle Harness's".
+ */
+export function outsideFills(result: unknown, agent: string, from: number, harness: readonly HarnessTrade[], symbolOf?: (mint: string) => string | undefined): Omit<AgentFills, "state"> | undefined {
+  const all = tradesFrom(result, agent, symbolOf)
+  if (!all) return undefined
+  const ids = new Set(harness.map((t) => t.opId))
+  const sigs = new Set(harness.flatMap((t) => (t.signature ? [t.signature] : [])))
+  const theirs = (t: PnlTrade) => (t.clientTradeId !== undefined && ids.has(t.clientTradeId)) || (t.signature !== undefined && sigs.has(t.signature))
+  // A failed trade moved nothing.
+  const since = all.filter((t) => t.at >= from && !t.error && t.status !== "failed")
+  let left = since.filter((t) => !theirs(t))
+  // A fill with an id the Candle Harness never used is someone else's for certain (the Candle Harness's carry theirs); one with none may be a lost Candle Harness trade.
+  const unsure = (t: PnlTrade) => t.clientTradeId === undefined
+  let claimed = 0
+  const maybe = new Set<PnlTrade>()
+  for (const lost of harness.filter((t) => t.unknown && t.agent === agent)) {
+    const could = left.filter((f) => unsure(f) && f.mint === lost.mint && f.side === lost.side && (lost.sentAt === undefined || f.at >= lost.sentAt - 5_000))
+    if (could.length === 1) {
+      left = left.filter((f) => f !== could[0])
+      claimed++
+    } else for (const f of could) maybe.add(f)
+  }
+  const fill = (t: PnlTrade): OutsideFill => ({ at: t.at, agent, mint: t.mint, ...(t.symbol ? { symbol: t.symbol } : {}), side: t.side, usd: t.usd, ...(t.wallet ? { wallet: t.wallet } : {}), ...(t.signature ? { signature: t.signature } : {}) })
+  const oldest = all.at(-1)
+  return {
+    agent,
+    fills: left.filter((f) => !maybe.has(f)).map(fill),
+    maybe: [...maybe].map(fill),
+    claimed,
+    ...(all.length >= FILLS_LIMIT && oldest && oldest.at > from ? { reachesBack: oldest.at } : {}),
+  }
+}
+
+// --- Holdings ------------------------------------------------------------------------------------------
+
+/** What changed in each wallet between two snapshots: a token or SOL whose amount moved. */
+export function holdingChanges(then: HoldingsSnapshot, now: HoldingsSnapshot): HoldingChange[] {
+  const out: HoldingChange[] = []
+  const moved = (a: number, b: number) => Math.abs(a - b) > 1e-9 * Math.max(1, Math.abs(a), Math.abs(b))
+  for (const w of now.wallets) {
+    const before = then.wallets.find((x) => x.address === w.address)
+    if (!before) continue
+    if (w.sol !== null && before.sol !== null && moved(before.sol, w.sol)) out.push({ wallet: w.address, name: w.name, asset: "SOL", symbol: "SOL", then: before.sol, now: w.sol })
+    if (!w.tokens || !before.tokens) continue
+    const mints = new Set([...w.tokens.map((t) => t.mint), ...before.tokens.map((t) => t.mint)])
+    for (const mint of mints) {
+      const a = before.tokens.find((t) => t.mint === mint)
+      const b = w.tokens.find((t) => t.mint === mint)
+      const symbol = b?.symbol ?? a?.symbol
+      if (moved(a?.amount ?? 0, b?.amount ?? 0)) out.push({ wallet: w.address, name: w.name, asset: mint, ...(symbol ? { symbol } : {}), then: a?.amount ?? 0, now: b?.amount ?? 0 })
+    }
+  }
+  return out
+}
+
+// --- The desk --------------------------------------------------------------------------------------------
+
+export interface AwayDeps {
+  statePath: string
+  now: () => number
+  redactor: Redactor
+  /** The journal's rows from a time on, oldest first, at most `max` (journal-query.ts `rowsSince`). */
+  rowsSince: (from: number, max: number) => Promise<{ rows: JournalRow[]; cut?: true }>
+  /** The rows in memory: a fill's id is matched against these too. */
+  memoryRows: () => readonly JournalRow[]
+  symbolOf: (mint: string) => string | undefined
+  /** Cards waiting for the person now. */
+  waitingCards: () => number
+  /** Candle is up (the core's children started): the reads wait for it. */
+  ready: () => Promise<unknown>
+  /** The agents with a key, and its prefix. */
+  agents: () => { agent: string; prefix: string }[]
+  /** Each agent's P&L book read now, as asked; then the figure from a start. */
+  readPnl: () => Promise<void>
+  /** The figure from the mark: its own sample is the start (pnl.ts `windowFigure`'s `mark`). */
+  pnlFigure: (start: number, label: string) => WindowFigure
+  /** Why an agent's last P&L read failed, if it did. */
+  pnlFailed: (agent: string) => string | undefined
+  /** One read of an agent key's fills, through its own key, as asked. */
+  fills: (agent: string, prefix: string) => Promise<ToolOutcome>
+  /**
+   * A page of Hacc's personal signals, with the first agent key Hacc takes; undefined when Hacc is off. `after`
+   * is only ever Hacc's own `next_after`: Hacc takes a whole number there and refuses a date.
+   */
+  mine?: (after: string | undefined) => Promise<HaccAnswer> | undefined
+  /** What the wallets hold now, from the last portfolio read. */
+  holdings: () => HoldingsSnapshot | undefined
+  publish: (view: AwayView) => void
+  /** Tests: waits for the portfolio read. */
+  holdingsWaitMs?: number
+}
+
+interface State {
+  summary: AwaySummary | null
+  then?: HoldingsSnapshot
+  sawGap?: boolean
+}
+
+function readState(path: string): State {
+  try {
+    const raw = JSON.parse(readFileSync(path, "utf8")) as Record<string, unknown>
+    const summary = record(raw.summary) ? (raw.summary as unknown as AwaySummary) : null
+    const then = record(raw.then) ? (raw.then as unknown as HoldingsSnapshot) : undefined
+    return { summary: summary && typeof summary.from === "number" && typeof summary.to === "number" ? summary : null, ...(then && Array.isArray(then.wallets) ? { then } : {}), ...(raw.sawGap === true ? { sawGap: true } : {}) }
+  } catch {
+    return { summary: null }
+  }
+}
+
+const refusalWords = (o: ToolOutcome): string => {
+  if (o.kind === "ok") return "Candle's answer had no fills"
+  if (o.kind === "lost") return "Candle didn't answer"
+  const body = record(o.body)
+  const message = str(body?.message) ?? str(record(body?.error)?.message)
+  return message ? `${o.code}: ${message}` : o.code
+}
+
+export class AwayDesk {
+  private state: State
+  private writing: Promise<void> = Promise.resolve()
+  private holdingsTimer: ReturnType<typeof setTimeout> | undefined
+  /** The summary the reads at start are filling, by id: an older one's late answers are dropped. */
+  private filling: string | undefined
+
+  constructor(private readonly deps: AwayDeps) {
+    this.state = readState(deps.statePath)
+  }
+
+  view(): AwayView {
+    return { summary: this.state.summary, ...(!this.state.summary && !this.state.sawGap ? { firstRun: true as const } : {}) }
+  }
+
+  /** The main view closed: what the wallets hold now is "then" for the next summary. */
+  closed(): void {
+    const snap = this.deps.holdings()
+    if (!snap) return
+    this.state.then = snap
+    this.save()
+  }
+
+  /**
+   * A main view opened with no other open: the gap since `mark` (undefined before the main view has ever
+   * closed) ends now. A gap of AWAY_MIN_GAP_MS or more makes a summary; the reads at start fill it after.
+   */
+  async opened(clientId: string, mark: number | undefined): Promise<AwaySummary | undefined> {
+    const to = this.deps.now()
+    if (mark === undefined || to - mark < AWAY_MIN_GAP_MS) return undefined
+    const read = await this.deps.rowsSince(mark - LOOKBACK_MS, MAX_ROWS)
+    const rows = read.rows
+    const r = awayRecords(rows, mark, to, this.deps.symbolOf)
+    const firstInGap = rows.find((row) => Date.parse(row.at) > mark)
+    const id = `${mark}-${to}-${randomBytes(3).toString("hex")}`
+    const cap = <T>(list: T[]) => list.slice(0, LISTED)
+    const summary: AwaySummary = {
+      id,
+      from: mark,
+      to,
+      madeAt: to,
+      forView: clientId,
+      coreDown: r.coreDown,
+      coreGoneThroughout: r.coreGoneThroughout,
+      turns: cap(r.turns),
+      trades: cap(r.trades),
+      cards: cap(r.cards),
+      changes: cap(r.changes),
+      stopped: cap(r.stopped),
+      waitingNow: this.deps.waitingCards(),
+      ...(read.cut && firstInGap ? { cut: { from: firstInGap.at } } : read.cut && rows[0] ? { cut: { from: rows[0].at } } : {}),
+      pnl: { state: "reading", label: "since last session", usd: null, from: null, short: false, agents: {} },
+      outside: { state: "reading", agents: this.deps.agents().map(({ agent }) => ({ agent, state: "reading", fills: [], maybe: [], claimed: 0 })) },
+      signals: this.deps.mine ? { state: "reading", count: 0, newest: [] } : { state: "off", count: 0, newest: [], words: "Hacc is off in this Candle Harness's config ([hacc] enabled = false)." },
+      holdings: { state: "reading", changes: [] },
+      counts: {
+        turns: r.turns.length,
+        trades: r.trades.length,
+        withoutCard: r.trades.filter((t) => t.withoutCard).length,
+        cards: r.cards.length,
+        expired: [...r.trades, ...r.cards].filter((c) => c.outcome === "expired").length,
+        changes: r.changes.length,
+        stopped: r.stopped.length,
+        outside: 0,
+        maybe: 0,
+        signals: 0,
+        holdings: 0,
+      },
+      happened: false,
+    }
+    // The rows are redacted as written; they're redacted again on the way out, as the Journal's are.
+    this.state = { summary: this.finish(this.deps.redactor.value(summary)), ...(this.state.then ? { then: this.state.then } : {}), sawGap: true }
+    this.filling = id
+    this.changed()
+    // The Candle Harness's trades in memory too, older than the rows read, so a fill's id is matched against every one.
+    const read_ = new Set(rows.map((row) => row.seq))
+    const older = this.deps.memoryRows().filter((row) => !read_.has(row.seq))
+    const harness = [...r.harness, ...awayRecords(older, Number.NEGATIVE_INFINITY, Number.NEGATIVE_INFINITY, this.deps.symbolOf).harness]
+    this.waitHoldings(id)
+    await this.deps.ready()
+    await Promise.all([this.readPnl(id), this.readFills(id, harness), this.readMine(id)])
+    return this.state.summary ?? undefined
+  }
+
+  /** A portfolio read landed: the holdings, if a summary waits for them. */
+  portfolioRead(): void {
+    const s = this.state.summary
+    if (!s || s.holdings.state !== "reading" || s.id !== this.filling) return
+    const now = this.deps.holdings()
+    if (!now || now.readAt === null || now.readAt < s.to) return
+    const then = this.state.then
+    clearTimeout(this.holdingsTimer)
+    if (!then || Math.abs(then.at - s.from) > THEN_SLACK_MS) {
+      // Two reasons, said apart (an older build kept no record, and was wrongly told the core had stopped with the view open).
+      const words = then
+        ? "The Candle Harness didn't see what the wallets held when it closed (the core stopped with the view open), so there's nothing to compare against."
+        : "The Candle Harness has no record of what the wallets held when it last closed, so there's nothing to compare against."
+      this.update(s.id, (x) => {
+        x.holdings = { state: "unknown", changes: [], words }
+      })
+      return
+    }
+    // A token the snapshots didn't name is named as the views name it.
+    const changes = holdingChanges(then, now).map((c) => (c.symbol || c.asset === "SOL" ? c : { ...c, ...(this.deps.symbolOf(c.asset) ? { symbol: this.deps.symbolOf(c.asset)! } : {}) }))
+    this.update(s.id, (x) => {
+      x.holdings = { state: "read", then: then.readAt ?? then.at, changes: changes.slice(0, LISTED) }
+      x.counts.holdings = changes.length
+    })
+  }
+
+  private waitHoldings(id: string): void {
+    clearTimeout(this.holdingsTimer)
+    this.holdingsTimer = setTimeout(() => {
+      this.update(id, (x) => {
+        if (x.holdings.state === "reading") x.holdings = { state: "failed", changes: [], words: "Candle's portfolio wasn't read after the Candle Harness opened, so the wallets aren't compared." }
+      })
+    }, this.deps.holdingsWaitMs ?? HOLDINGS_WAIT_MS)
+    this.holdingsTimer.unref?.()
+    // A read already newer than the attach (a second view's) counts.
+    this.portfolioRead()
+  }
+
+  private async readPnl(id: string): Promise<void> {
+    try {
+      await this.deps.readPnl()
+      const s = this.state.summary
+      if (!s || s.id !== id) return
+      const f = this.deps.pnlFigure(s.from, "since last session")
+      const failed = this.deps.agents().flatMap(({ agent }) => {
+        const why = this.deps.pnlFailed(agent)
+        return why ? [`${agent}: ${why}`] : []
+      })
+      this.update(id, (x) => {
+        x.pnl = {
+          state: f.usd === null && failed.length ? "failed" : "read",
+          label: f.label,
+          usd: f.usd,
+          from: f.from,
+          short: f.short,
+          agents: Object.fromEntries(Object.entries(f.agents).map(([a, v]) => [a, { usd: v.usd, from: v.from }])),
+          ...(failed.length ? { words: `Candle's P&L didn't answer for ${failed.join("; ")}` } : f.usd === null ? { words: "No P&L sample in the gap yet." } : {}),
+        }
+      })
+    } catch (e) {
+      this.update(id, (x) => {
+        x.pnl = { ...x.pnl, state: "failed", words: `P&L wasn't read: ${e instanceof Error ? e.message : String(e)}` }
+      })
+    }
+  }
+
+  private async readFills(id: string, harness: HarnessTrade[]): Promise<void> {
+    await Promise.all(
+      this.deps.agents().map(async ({ agent, prefix }) => {
+        let one: AgentFills
+        try {
+          const outcome = await this.deps.fills(agent, prefix)
+          const s = this.state.summary
+          const read = outcome.kind === "ok" && s ? outsideFills(outcome.result, agent, s.from, harness, this.deps.symbolOf) : undefined
+          one = read ? { ...read, state: "read" } : { agent, state: "failed", words: refusalWords(outcome), fills: [], maybe: [], claimed: 0 }
+        } catch (e) {
+          one = { agent, state: "failed", words: e instanceof Error ? e.message : String(e), fills: [], maybe: [], claimed: 0 }
+        }
+        this.update(id, (x) => {
+          x.outside.agents = x.outside.agents.map((a) => (a.agent === agent ? one : a))
+          if (!x.outside.agents.some((a) => a.agent === agent)) x.outside.agents.push(one)
+          x.outside.state = x.outside.agents.some((a) => a.state === "reading") ? "reading" : x.outside.agents.every((a) => a.state === "failed") && x.outside.agents.length ? "failed" : "read"
+          x.counts.outside = x.outside.agents.reduce((n, a) => n + a.fills.length, 0)
+          x.counts.maybe = x.outside.agents.reduce((n, a) => n + a.maybe.length, 0)
+        })
+      }),
+    )
+    // No agent at all: nothing to read.
+    this.update(id, (x) => {
+      if (x.outside.agents.length === 0) x.outside.state = "read"
+    })
+  }
+
+  private async readMine(id: string): Promise<void> {
+    const s = this.state.summary
+    if (!s || !this.deps.mine) return
+    const rows: SignalRow[] = []
+    const seen = new Set<number>()
+    // No cursor of our own: the first page is Hacc's, then its `next_after`, and rows are kept by their date.
+    let after: string | undefined
+    let more = false
+    try {
+      for (let page = 0; page < MINE_PAGES; page++) {
+        const answer = await this.deps.mine(after)
+        if (!answer) {
+          this.update(id, (x) => {
+            x.signals = { state: "off", count: 0, newest: [], words: "Hacc is off in this Candle Harness's config ([hacc] enabled = false)." }
+          })
+          return
+        }
+        if (answer.kind !== "ok") {
+          const state = answer.code === "PLAN_REQUIRED" ? "needs-plan" : answer.code === "HACC_NO_KEY" || answer.code === "HACC_KEY_REFUSED" ? "no-key" : "failed"
+          const words = state === "needs-plan" ? `Personal signals need Pro or Max (${answer.message})` : answer.message
+          this.update(id, (x) => {
+            x.signals = { state, count: 0, newest: [], words }
+          })
+          return
+        }
+        const body = record(answer.body)
+        const got = (Array.isArray(body?.signals) ? body.signals : []).map(cleanRow).filter((r): r is SignalRow => r !== undefined)
+        for (const r of got) if (!seen.has(r.id) && Date.parse(r.created_at) >= s.from && Date.parse(r.created_at) <= s.to) {
+          seen.add(r.id)
+          rows.push(r)
+        }
+        const next = haccCursor(body?.next_after)
+        if (got.length < MINE_PAGE || !next || next === after) break
+        after = next
+        if (page === MINE_PAGES - 1) more = true
+      }
+    } catch (e) {
+      this.update(id, (x) => {
+        x.signals = { state: "failed", count: 0, newest: [], words: e instanceof Error ? e.message : String(e) }
+      })
+      return
+    }
+    rows.sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at))
+    this.update(id, (x) => {
+      x.signals = { state: "read", count: rows.length, newest: rows.slice(0, MINE_NEWEST), ...(more ? { more: true as const } : {}) }
+      x.counts.signals = rows.length
+    })
+  }
+
+  /** Changes the summary `id` if it's still the one kept, then saves and publishes it. */
+  private update(id: string, change: (s: AwaySummary) => void): void {
+    const s = this.state.summary
+    if (!s || s.id !== id) return
+    change(s)
+    this.state.summary = this.finish(this.deps.redactor.value(s))
+    this.changed()
+  }
+
+  private finish(s: AwaySummary): AwaySummary {
+    const c = s.counts
+    s.happened = c.turns + c.trades + c.cards + c.changes + c.stopped + c.outside + c.maybe + c.signals + c.holdings > 0
+    return s
+  }
+
+  private changed(): void {
+    this.save()
+    this.deps.publish(this.view())
+  }
+
+  private save(): void {
+    const body = `${JSON.stringify(this.state)}\n`
+    const path = this.deps.statePath
+    this.writing = this.writing
+      .then(async () => {
+        const temp = `${path}.tmp-${randomBytes(6).toString("base64url")}`
+        await writeFile(temp, body, { mode: 0o600, flag: "wx" })
+        await chmod(temp, 0o600)
+        await rename(temp, path)
+      })
+      .catch(() => {})
+  }
+
+  /** Waits for the writes so far. */
+  flush(): Promise<void> {
+    return this.writing
+  }
+
+  stop(): void {
+    clearTimeout(this.holdingsTimer)
+  }
+}

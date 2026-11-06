@@ -1,0 +1,50 @@
+ ▲ candle   SETUP   nothing trades until your agent and its limits exist        
+ ✓ 0  ✓ 1  ▸ 2 Connect your agent  · 3  · 4  · 5                                
+╭──────────────────────────────────────────────────────────────── step 2 of 5 ─╮
+│                                                                              │
+│  Connect your agent                                                          │
+│                                                                              │
+│  Your agent runs on a harness you already use, signed in as you. The Candle  │
+│  Harness keeps your own setup out of it and never stores a model key.        │
+│                                                                              │
+│  ▸ Claude Code 2.1.316 · signed in                                           │
+│       ● sonnet · Claude Sonnet 5.5 · default                                 │
+│         opus · Claude Opus 5.5                                               │
+│         haiku · Claude Haiku 5.5                                             │
+│    Codex 0.165.0 · not signed in                                   sign in   │
+│    Grok 1.0.70 · signed in                                            pick   │
+│    OpenCode 1.19.5 · no models yet                                 sign in   │
+│    Pi · not installed     ⧉ npm install -g @earendil-works/pi-coding-agent   │
+│                                                                              │
+│  ── test it ───────────────────────────────────────────────────────────────  │
+│                                                                              │
+│    Send a test message              one word, run the way a real turn runs   │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+ ↑/↓ moves · ⏎ or a click picks · esc back                      ctrl-c ×2 quits 
+
+--- colours ---
+0: f6f8fb/0e1115×11 f6f8fb/2a2f3a×7 959dab/0e1115×54 ffffff/0e1115×8
+1: 3ddc84/0b0d10×10 f6f8fb/0b0d10×24 959dab/0b0d10×15 ffffff/0b0d10×31
+2: 32fe9f/111419×65 959dab/111419×13 32fe9f/111419×2
+3: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
+4: 32fe9f/111419×1 ffffff/111419×2 b392f0/111419×18 ffffff/111419×58 32fe9f/111419×1
+5: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
+6: 32fe9f/111419×1 ffffff/111419×2 dde2ea/111419×74 ffffff/111419×2 32fe9f/111419×1
+7: 32fe9f/111419×1 ffffff/111419×2 dde2ea/111419×68 ffffff/111419×8 32fe9f/111419×1
+8: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
+9: 32fe9f/111419×1 ffffff/111419×2 32fe9f/1d2430×2 b392f0/1d2430×31 ffffff/1d2430×41 ffffff/111419×2 32fe9f/111419×1
+10: 32fe9f/111419×1 ffffff/111419×2 32fe9f/111419×7 f6f8fb/111419×36 ffffff/111419×33 32fe9f/111419×1
+11: 32fe9f/111419×1 ffffff/111419×2 32fe9f/111419×7 6cb6ff/111419×22 ffffff/111419×47 32fe9f/111419×1
+12: 32fe9f/111419×1 ffffff/111419×2 32fe9f/111419×7 6cb6ff/111419×24 ffffff/111419×45 32fe9f/111419×1
+13: 32fe9f/111419×1 ffffff/111419×2 32fe9f/111419×2 959dab/111419×29 ffffff/111419×35 6cb6ff/111419×8 ffffff/111419×2 32fe9f/111419×1
+14: 32fe9f/111419×1 ffffff/111419×2 32fe9f/111419×2 6cb6ff/111419×23 ffffff/111419×44 959dab/111419×5 ffffff/111419×2 32fe9f/111419×1
+15: 32fe9f/111419×1 ffffff/111419×2 32fe9f/111419×2 959dab/111419×31 ffffff/111419×33 6cb6ff/111419×8 ffffff/111419×2 32fe9f/111419×1
+16: 32fe9f/111419×1 ffffff/111419×2 32fe9f/111419×2 959dab/111419×18 ffffff/111419×5 6cb6ff/111419×49 ffffff/111419×2 32fe9f/111419×1
+17: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
+18: 32fe9f/111419×1 ffffff/111419×2 252a33/111419×74 ffffff/111419×2 32fe9f/111419×1
+19: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
+20: 32fe9f/111419×1 ffffff/111419×2 32fe9f/111419×2 6cb6ff/111419×19 ffffff/111419×14 959dab/111419×39 ffffff/111419×2 32fe9f/111419×1
+21: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
+22: 32fe9f/111419×80
+23: 959dab/0e1115×42 ffffff/0e1115×22 959dab/0e1115×16

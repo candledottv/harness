@@ -1,0 +1,20 @@
+{
+  "name": "replay-after-cancel",
+  "method": "GET",
+  "route": "/v1/strategy-lab/replay/186",
+  "query": {},
+  "status": 200,
+  "ms": 128,
+  "bytes": 227,
+  "contentType": "application/json; charset=utf-8",
+  "answer": {
+    "job_id": 186,
+    "status": "failed",
+    "error": "cancelled",
+    "result": null,
+    "requested_by": "HaccFake11111111111111111111111111111111112",
+    "created_at": "2026-10-29T03:04:32.183Z",
+    "started_at": null,
+    "finished_at": "2026-10-29T03:04:32.316Z"
+  }
+}

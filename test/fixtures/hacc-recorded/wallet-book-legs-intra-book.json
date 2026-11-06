@@ -1,0 +1,175 @@
+{
+  "name": "wallet-book-legs-intra-book",
+  "method": "GET",
+  "route": "/v1/market/wallet/HaccFake1111111111111111111111111111111112p/book-legs",
+  "query": {},
+  "status": 200,
+  "ms": 1328,
+  "bytes": 236725,
+  "contentType": "application/json; charset=utf-8",
+  "answer": {
+    "chain": "solana",
+    "address": "HaccFake1111111111111111111111111111111112p",
+    "from": "2026-09-29T02:50:59.483Z",
+    "to": "2026-10-29T02:50:59.483Z",
+    "legs": [
+      {
+        "id": "48687330",
+        "kind": "transfer",
+        "block_time": "2026-09-29T15:08:08.000Z",
+        "direction": "out",
+        "mint": "native",
+        "symbol": "SOL",
+        "amount": "9.011922631",
+        "amount_scaled": true,
+        "quote_asset": null,
+        "quote_amount": null,
+        "usd": {
+          "value": null,
+          "source": "unknown",
+          "minute_age_s": null
+        },
+        "tx_hash": "fake-tx_hash-87"
+      },
+      {
+        "id": "48688445",
+        "kind": "transfer",
+        "block_time": "2026-09-29T15:09:40.000Z",
+        "direction": "in",
+        "mint": "native",
+        "symbol": "SOL",
+        "amount": "0.00001",
+        "amount_scaled": true,
+        "quote_asset": null,
+        "quote_amount": null,
+        "usd": {
+          "value": null,
+          "source": "unknown",
+          "minute_age_s": null
+        },
+        "tx_hash": "fake-tx_hash-88"
+      },
+      {
+        "id": "48921099",
+        "kind": "transfer",
+        "block_time": "2026-09-29T18:26:55.000Z",
+        "direction": "in",
+        "mint": "HaccFake1111111111111111111111111111111116J",
+        "symbol": "fake-symbol-47",
+        "amount": "374820.100094",
+        "amount_scaled": true,
+        "quote_asset": null,
+        "quote_amount": null,
+        "usd": {
+          "value": null,
+          "source": "unknown",
+          "minute_age_s": null
+        },
+        "tx_hash": "fake-tx_hash-89"
+      },
+      {
+        "id": "49256569",
+        "kind": "transfer",
+        "block_time": "2026-09-29T22:14:56.000Z",
+        "direction": "in",
+        "mint": "HaccFake1111111111111111111111111111111116J",
+        "symbol": "fake-symbol-47",
+        "amount": "226965.399942",
+        "amount_scaled": true,
+        "quote_asset": null,
+        "quote_amount": null,
+        "usd": {
+          "value": null,
+          "source": "unknown",
+          "minute_age_s": null
+        },
+        "tx_hash": "fake-tx_hash-90"
+      },
+      {
+        "id": "49542240",
+        "kind": "transfer",
+        "block_time": "2026-09-30T03:06:24.000Z",
+        "direction": "in",
+        "mint": "HaccFake1111111111111111111111111111111116K",
+        "symbol": "fake-symbol-48",
+        "amount": "12465292.207122",
+        "amount_scaled": true,
+        "quote_asset": null,
+        "quote_amount": null,
+        "usd": {
+          "value": null,
+          "source": "unknown",
+          "minute_age_s": null
+        },
+        "tx_hash": "fake-tx_hash-91"
+      }
+    ],
+    "next_cursor": "fake-next_cursor-1",
+    "as_of": "2026-10-29T02:50:59.491Z",
+    "coverage": {
+      "legs_total": 2123,
+      "swaps": 1459,
+      "transfers": 664,
+      "buy_legs": 999,
+      "buy_legs_priced": 997,
+      "swaps_priced_observed": 1272,
+      "swaps_priced_derived_stable": 7,
+      "swaps_priced_derived_minute": 173,
+      "swaps_unpriced": 7,
+      "unknown_asset_legs": 0,
+      "unscaled_amount_legs": 0,
+      "transfers_stored_valuation": 0,
+      "first_leg_at": "2026-09-29T15:08:08.000Z",
+      "last_leg_at": "2026-10-29T02:50:03.000Z",
+      "minute_table": "sol_usd_minutes",
+      "minute_table_last_at": "2026-10-29T02:48:00.000Z"
+    },
+    "assets": [
+      {
+        "mint": "native",
+        "launched_at": "2021-05-03T20:21:07.000Z",
+        "launch_source": "first_event",
+        "supply": null,
+        "supply_source": null,
+        "ath_mc_usd": null
+      },
+      {
+        "mint": "HaccFake1111111111111111111111111111111116L",
+        "launched_at": "2026-10-01T16:55:06.893Z",
+        "launch_source": "token_launches",
+        "supply": "1000000000.000000047181807275992",
+        "supply_source": "tick_implied",
+        "ath_mc_usd": "282847960.34551555"
+      },
+      {
+        "mint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+        "launched_at": "2021-12-02T14:51:59.000Z",
+        "launch_source": "first_event",
+        "supply": "7323608930.7919461618511896",
+        "supply_source": "tick_implied",
+        "ath_mc_usd": "12456548937707.4"
+      },
+      {
+        "mint": "HaccFake1111111111111111111111111111111116M",
+        "launched_at": "2026-10-05T02:25:38.383Z",
+        "launch_source": "token_launches",
+        "supply": "1000000000.000000000000000000",
+        "supply_source": "tick_implied",
+        "ath_mc_usd": "2034784.152408344"
+      },
+      {
+        "mint": "HaccFake1111111111111111111111111111111116N",
+        "launched_at": "2026-10-03T20:09:40.561Z",
+        "launch_source": "token_launches",
+        "supply": "1000000000.000000110470104571094",
+        "supply_source": "tick_implied",
+        "ath_mc_usd": "1907959.1010976091"
+      }
+    ],
+    "assets_truncated": 0
+  },
+  "truncated": {
+    "$.legs": 500,
+    "$.assets": 98
+  }
+}

@@ -1,0 +1,4614 @@
+{
+  "about": "Read from the Candle CLI's source by scripts/read-cli-source.ts, as text, never imported or run: the dispatch table, each handler's own parseArgs flags (and flags it lifts out before the parse, as value flags), --json, its identity from what it calls, whether it unlocks the vault and which streams it needs to be a terminal (following its calls into other files), and the access presets' scopes.",
+  "source": {
+    "repo": "candledottv/cli",
+    "path": "packages/cli/src",
+    "commit": "fabd576b91a0c3ca0a3ebacde56aec0e20f23f76",
+    "cliVersion": "0.13.11"
+  },
+  "aliases": {
+    "wallet": "wallets"
+  },
+  "helpTopics": [
+    "setup",
+    "auth",
+    "doctor",
+    "swap",
+    "stake",
+    "lp",
+    "perps",
+    "transfer",
+    "launch",
+    "image",
+    "scan",
+    "portfolio",
+    "agent",
+    "fees",
+    "pnl",
+    "token",
+    "spend",
+    "quant",
+    "lab",
+    "plan",
+    "plans",
+    "accounts",
+    "keys",
+    "wallets",
+    "profile",
+    "vault",
+    "tee",
+    "external",
+    "sign",
+    "secrets",
+    "plugins",
+    "mcp",
+    "tui",
+    "core",
+    "update",
+    "verify",
+    "completion",
+    "help"
+  ],
+  "groups": [
+    "Start here",
+    "Trade",
+    "Account",
+    "Custody, on this machine",
+    "Your own services",
+    "Maintain"
+  ],
+  "help": {
+    "setup": {
+      "group": "Start here",
+      "summary": "One wizard: authorize, fund, connect, verify",
+      "rows": []
+    },
+    "auth": {
+      "group": "Start here",
+      "summary": "Authorize this device, or show and clear its credentials",
+      "rows": [
+        {
+          "invocation": "login [--api-url <url>] [--scopes <a,b,c>] [--label <name>] [--embedded-wallet deny|allow] [--no-browser] [--profile <name>]",
+          "description": "Authorize this device and mint its API key; --label names both"
+        },
+        {
+          "invocation": "status",
+          "description": "Show credential status"
+        },
+        {
+          "invocation": "logout [--keep-key]",
+          "description": "Clear local credentials"
+        }
+      ]
+    },
+    "doctor": {
+      "group": "Start here",
+      "summary": "Diagnose CLI setup: credentials, storage backend, API reachability, security key helper",
+      "rows": []
+    },
+    "swap": {
+      "group": "Trade",
+      "summary": "Quote, confirm and swap on Solana or Hood, bridge between them; read an operation by id",
+      "rows": [
+        {
+          "invocation": "<from> <to> --amount <n>|--percent <n> --wallet <tee> [--to <tee>] [--wait]",
+          "description": "Quote, confirm and swap on Solana or Hood, or bridge between them"
+        },
+        {
+          "invocation": "status <id> [--kind trade|swap|launch] [--wait]",
+          "description": "Read an operation without resending it; --wait follows a bridge until it ends"
+        }
+      ]
+    },
+    "stake": {
+      "group": "Trade",
+      "summary": "Stake CNDL, start and finish withdrawals, claim Solana staking rewards",
+      "rows": [
+        {
+          "invocation": "add <amount>",
+          "description": "Stake decimal CNDL in the selected wallet"
+        },
+        {
+          "invocation": "remove <amount>",
+          "description": "Start a withdrawal of decimal sCNDL"
+        },
+        {
+          "invocation": "finish [<withdrawal>]",
+          "description": "Finish a matured withdrawal; omit only when exactly one is ready in the selected wallet"
+        },
+        {
+          "invocation": "claim <rewardId> | --all",
+          "description": "Claim one reward or all listed unclaimed rewards, including unresolved claims"
+        }
+      ]
+    },
+    "lp": {
+      "group": "Trade",
+      "summary": "Meteora DAMM v2 liquidity from a TEE wallet: pools, add, positions, remove, claim",
+      "rows": [
+        {
+          "invocation": "pools <token> [--page <n>]",
+          "description": "Pools listing a token: liquidity, fee, 24h volume, estimated yield"
+        },
+        {
+          "invocation": "add <pool> --amount <n> <token> --wallet <tee> [--position <nft>]",
+          "description": "Open a position, or add to one; the other side follows the pool's ratio"
+        },
+        {
+          "invocation": "positions [--wallet <tee>]",
+          "description": "Every position across your TEE wallets"
+        },
+        {
+          "invocation": "remove <position> --percent <n> [--wallet <tee>]",
+          "description": "Withdraw; at 100% also claims fees and closes the position"
+        },
+        {
+          "invocation": "claim <position> [--wallet <tee>]",
+          "description": "Claim fees and any rewards"
+        }
+      ]
+    },
+    "perps": {
+      "group": "Trade",
+      "summary": "Trade Hyperliquid perpetuals from this key's EVM TEE wallet",
+      "rows": [
+        {
+          "invocation": "markets [--sort <volume|oi|funding|change|name>] [--limit <n>] [--all]",
+          "description": "List live main-perp markets directly from Hyperliquid; any Candle agent key required"
+        },
+        {
+          "invocation": "market <coin>",
+          "description": "Market detail, margin tiers, impact prices and precision rules"
+        },
+        {
+          "invocation": "book <coin> [--depth <1-20>] [--sig-figs <2-5>]",
+          "description": "Live order book, spread and mid, directly from Hyperliquid"
+        },
+        {
+          "invocation": "candles <coin> [--interval <i>] [--count <1-5000>] [--end <time>]",
+          "description": "OHLCV candles (default 1h, 100); oldest first, directly from Hyperliquid"
+        },
+        {
+          "invocation": "deposit <amount> <SOL|USDC|ETH|USDG> [--wallet <tee>] [--to <evm tee>] | deposit status <id>",
+          "description": "Move funds onto the Hyperliquid account through Relay, from the key's Solana or Hood TEE wallet (swap:write); only configured raw caps and USD limits apply (unset means unlimited, zero still binds); --no-submit is a dry run that holds no wallet and uses no limit; status reads one"
+        },
+        {
+          "invocation": "setup [--wallet <tee>]",
+          "description": "After the first deposit has landed, approve Candle's builder fee once; shows the account's mode and balance. Refused, with nothing signed, while the account has never received a deposit or unless Hyperliquid shows it in standard mode"
+        },
+        {
+          "invocation": "open <coin> <long|short> <size> [--price <px>]",
+          "description": "Market (IOC) without --price, limit with it; optional --tp and --sl"
+        },
+        {
+          "invocation": "close <coin> [--size <n> | --pct <1-100>]",
+          "description": "Reduce-only IOC close of all or part of a position; --pct closes a percentage (at most 4 decimals), rounded down to the market's size step, and a result of zero is refused, never rounded up"
+        },
+        {
+          "invocation": "cancel <cloid>",
+          "description": "Cancel an order Candle built, by its cloid"
+        },
+        {
+          "invocation": "modify --cloid <cloid> [--price <px>] [--size <n>]",
+          "description": "Change a resting order Candle built; side, time in force and reduce-only are kept from Hyperliquid's record. A trigger leg is not modified (use tpsl)"
+        },
+        {
+          "invocation": "margin <coin> --amount <usd> | --mode cross|isolated [--leverage <n>]",
+          "description": "Add isolated margin (positive only), or set the coin's margin mode keeping its leverage unless --leverage names one; a mode change needs no position and no resting order in the coin"
+        },
+        {
+          "invocation": "tpsl <coin> [--take-profit <px>] [--stop-loss <px>] [--remove-tp] [--remove-sl] [--target-tp <cloid>] [--target-sl <cloid>]",
+          "description": "Attach, change or remove position take-profit / stop-loss legs, sized to the position now. A change cancels the old leg first (a protection gap). Legs Candle did not build are listed and left alone"
+        },
+        {
+          "invocation": "schedule-cancel <seconds> | schedule-cancel --clear",
+          "description": "Set (at least 5 s ahead) or clear Hyperliquid's cancel-all timer. Wallet-wide: it cancels every open order, protection included, not positions; 10 triggers per UTC day, not counted by Candle"
+        },
+        {
+          "invocation": "flatten [--wallet <tee>]",
+          "description": "Cancel every open main-perp order, then close every main-perp position, then read again; at most 100 signed steps a run. Spot, HIP-3 and vaults are not reached"
+        },
+        {
+          "invocation": "reduce-only [on|off] [--key <self|prefix|label>]",
+          "description": "Read or set the key's reduce-only restriction. This key may turn itself on; off, or another key, needs the owner's device token. Limits new Candle builds only"
+        },
+        {
+          "invocation": "orders [--wallet <tee>]",
+          "description": "Open orders on Hyperliquid, and every action Candle built"
+        },
+        {
+          "invocation": "withdraw <amount> --to solana|hood [--wallet <evm tee>] | withdraw status <id>",
+          "description": "Move USDC from the Hyperliquid account to this key's own Solana or Hood TEE wallet through Relay (perps:withdraw); at least 10 USDC, with Relay's fees at most 5% (Hyperliquid's one-time 1 USDC activation fee on a first withdrawal not counted); one vault unlock and a typed confirm, no --yes"
+        },
+        {
+          "invocation": "positions [--wallet <tee>]",
+          "description": "Positions, account value and withdrawable USDC, read live, and any withdrawal in flight"
+        },
+        {
+          "invocation": "fills [--start-time <ms>] [--end-time <ms>] [--limit <n>] [--cursor <c>]",
+          "description": "One page of the wallet's fills, read directly from Hyperliquid (any read-capable key; no signer). Default: the last 7 days, 100 rows. Closed P&L is gross and the fee already includes the builder fee. Hyperliquid keeps only the 10,000 most recent fills"
+        },
+        {
+          "invocation": "funding [--start-time <ms>] [--end-time <ms>] [--limit <n>] [--cursor <c>]",
+          "description": "One page of the wallet's funding payments, signed (paid or received), read directly from Hyperliquid; at most 500 rows a page"
+        },
+        {
+          "invocation": "leverage <coin> <x> [--isolated]",
+          "description": "Set a market's leverage and margin mode"
+        },
+        {
+          "invocation": "account [--wallet <tee>] [--since <30m|24h|7d|ISO>]",
+          "description": "Account value, margin used, free margin, withdrawable, margin ratio, and realized P&L, fees and funding over a window (default 24h, at most 30 days)"
+        },
+        {
+          "invocation": "risk [--wallet <tee>]",
+          "description": "The level now (ok, warn, critical) with what drives it; exit 0, 10 or 11, and 1 when unknown"
+        },
+        {
+          "invocation": "watch [--interval <s>] [--heartbeat <s>] [--on-warn <cmd>] [--on-critical <cmd>] [--once-level-change]",
+          "description": "Poll from this machine and print one JSON line per level change, heartbeat or error; runs until stopped and exits with the last level's code"
+        },
+        {
+          "invocation": "thresholds | thresholds set [--warn-distance <pct>] ... [--key <prefix|label|self>] | thresholds clear",
+          "description": "Show this key's risk thresholds; set or clear them. As self (the default) a key may only tighten; a prefix or label uses the device token and may loosen"
+        }
+      ]
+    },
+    "transfer": {
+      "group": "Trade",
+      "summary": "Move funds out of a TEE wallet to your own wallets or its vault, through its bound key",
+      "rows": []
+    },
+    "launch": {
+      "group": "Trade",
+      "summary": "Create a token on Solana or Hood, with an optional first buy",
+      "rows": [
+        {
+          "invocation": "status <mint-or-client-launch-id> [--wait]",
+          "description": "One state for a mint or a clientLaunchId: build, signed, confirmed, trading, bonded, migrated. Uses the market's lifecycle and migration fields. --wait follows until the token is trading, the launch has failed, or ten minutes pass. Reads only."
+        }
+      ]
+    },
+    "image": {
+      "group": "Trade",
+      "summary": "Host an image file from this machine and print its https URL",
+      "rows": [
+        {
+          "invocation": "upload <path>",
+          "description": "Upload the file and print its URL; --json adds the content type and the size in bytes; --banner hosts a wide banner uncropped"
+        }
+      ]
+    },
+    "scan": {
+      "group": "Trade",
+      "summary": "The token card for one contract: market, all-time high, safety facts, tracked wallets",
+      "rows": []
+    },
+    "portfolio": {
+      "group": "Account",
+      "summary": "Every wallet's holdings, prices and value on Solana and Hood (vault read over your own RPCs)",
+      "rows": [
+        {
+          "invocation": "<filter>",
+          "description": "Keep the wallets whose label or address contains this text, in every group. Vault keys it leaves out are never sent to your RPC"
+        }
+      ]
+    },
+    "agent": {
+      "group": "Account",
+      "summary": "This agent's public page and posts; any agent's positions",
+      "rows": [
+        {
+          "invocation": "profile show|set",
+          "description": "Read the displayed profile or edit allowed fields"
+        },
+        {
+          "invocation": "post create|delete|list",
+          "description": "Publish or delete a post on this agent's page; list an agent's posts (this key's own by default)"
+        },
+        {
+          "invocation": "positions <profile-id|slug>",
+          "description": "A published agent's open positions, spot and Hyperliquid perps, with amounts; under $1 hidden. No key"
+        }
+      ]
+    },
+    "fees": {
+      "group": "Account",
+      "summary": "Creator fees your launched tokens can pay, and the claim",
+      "rows": [
+        {
+          "invocation": "claim <mint> [--dry-run]",
+          "description": "Claim one token's creator fees; --dry-run sends nothing"
+        }
+      ]
+    },
+    "pnl": {
+      "group": "Account",
+      "summary": "P&L per chain and combined: realized, fees, unrealized and open positions (--profile for one key's share)",
+      "rows": []
+    },
+    "token": {
+      "group": "Account",
+      "summary": "Token About pages, creator metadata edits, events, cluster analysis, forensics and the vamp finder",
+      "rows": [
+        {
+          "invocation": "edit <mint>",
+          "description": "As the token's creator, set or --clear its description and links (not name, symbol or image)"
+        },
+        {
+          "invocation": "clusters <mint>",
+          "description": "Read cluster analysis, or its unavailable reason"
+        },
+        {
+          "invocation": "events <mint>",
+          "description": "Signals, callouts and tracked-wallet trades for one token, one per line"
+        },
+        {
+          "invocation": "forensics <mint>",
+          "description": "Token forensics; may cost a per-use payment past the free rate"
+        },
+        {
+          "invocation": "vamp-candidates",
+          "description": "Tokens near graduation whose ticker others copy; may cost a per-use payment"
+        },
+        {
+          "invocation": "about <address>",
+          "description": "The token's About page: claim, sections and measured supply; --capabilities adds your eligibility"
+        },
+        {
+          "invocation": "claim <address>",
+          "description": "Join the page's editors as a holder, or as its creator with --creator (a signed message)"
+        },
+        {
+          "invocation": "section set|restore <address> <section>",
+          "description": "Write a section from --file, or restore an earlier --version-id, at --base-revision"
+        },
+        {
+          "invocation": "history <address> [<section>]",
+          "description": "The token's metadata edits, newest first; with a section, that section's versions"
+        },
+        {
+          "invocation": "update <address>",
+          "description": "Post an immutable holder update from --file (1000 characters)"
+        },
+        {
+          "invocation": "comment <address>",
+          "description": "Post an immutable comment from --file (500 characters); never pushed to holders"
+        },
+        {
+          "invocation": "comments <address>",
+          "description": "The token's comments, newest first, with tombstones"
+        },
+        {
+          "invocation": "post delete <address> <post-id>",
+          "description": "Delete your own update or comment, including after selling"
+        },
+        {
+          "invocation": "flag <address>",
+          "description": "Report one exact version, update or comment to Candle's review queue"
+        }
+      ]
+    },
+    "spend": {
+      "group": "Account",
+      "summary": "x402 per-use payments: the local log, the daily limit, the per-call ceiling, pause",
+      "rows": [
+        {
+          "invocation": "limit [<usd>]",
+          "description": "Show or set the daily per-use limit (default $5)"
+        },
+        {
+          "invocation": "max-per-call [<usd>]",
+          "description": "Show or set the per-call ceiling (default $1)"
+        },
+        {
+          "invocation": "pause",
+          "description": "Stop every per-use payment until resumed"
+        },
+        {
+          "invocation": "resume",
+          "description": "Allow per-use payments again"
+        }
+      ]
+    },
+    "quant": {
+      "group": "Account",
+      "summary": "Quant's terms, which per-use Quant answers need accepted first",
+      "rows": [
+        {
+          "invocation": "terms",
+          "description": "Show Quant's terms and record acceptance"
+        }
+      ]
+    },
+    "lab": {
+      "group": "Account",
+      "summary": "Strategy lab: replay a definition and read measured runners and edges",
+      "rows": [
+        {
+          "invocation": "status",
+          "description": "Plan, admission, replay cap and usage, reset time and active job"
+        },
+        {
+          "invocation": "replay --definition <file|-> --from <iso> --to <iso>",
+          "description": "Submit and wait for a replay; replay get <job-id> reads it; replay cancel <job-id> cancels it"
+        },
+        {
+          "invocation": "runners [--hours n] [--min-wallets n]",
+          "description": "Measured runners in the window"
+        },
+        {
+          "invocation": "edges [--days n] [--min-n n]",
+          "description": "Signal edges net of the cost already used by the table"
+        }
+      ]
+    },
+    "plan": {
+      "group": "Account",
+      "summary": "Pro or Max for 30 days, paid by x402 from a vault key; signup and auto-renew",
+      "rows": [
+        {
+          "invocation": "buy pro|max",
+          "description": "Buy 30 days; signs up when this machine has no key"
+        },
+        {
+          "invocation": "status",
+          "description": "Plan, period end, auto-renew, last x402 payment"
+        },
+        {
+          "invocation": "renew",
+          "description": "Pay the next 30 days now"
+        },
+        {
+          "invocation": "auto-renew on|off",
+          "description": "Renew from 3 days before the period ends"
+        }
+      ]
+    },
+    "plans": {
+      "group": "Account",
+      "summary": "The plans this API serves: prices, fees, limits and what each can do",
+      "rows": []
+    },
+    "accounts": {
+      "group": "Account",
+      "summary": "Create a staging test member from fleet keychain items, with no browser",
+      "rows": [
+        {
+          "invocation": "create --env staging --name <fleet-name>",
+          "description": "Create the test member, its TEE wallets and first key; store the key through the sibling"
+        }
+      ]
+    },
+    "keys": {
+      "group": "Account",
+      "summary": "API keys, and the wallets each key may use",
+      "rows": [
+        {
+          "invocation": "list [--scopes] [--all]",
+          "description": "List live API keys: name and Read, Write or Withdraw access; --all includes revoked keys; --scopes adds the raw scopes"
+        },
+        {
+          "invocation": "create [--access read|write|withdraw|trade-perps | --scopes <a,b,c>] [--label <name>] [--expires-in <days>] [--tx-limit <usd> [--reset daily|weekly|monthly|never]] [--embedded-wallet deny|allow]",
+          "description": "Create an API key; --access mints one of the levels (write trades and launches; only withdraw can move funds; trade-perps is exactly account:read and perps:write, for Hyperliquid perps setup and orders, and it cannot fund its own Hyperliquid account: a Relay deposit needs swap:write and a withdrawal needs perps:withdraw, each a separate grant through --scopes). A trade-perps key trades from an EVM TEE wallet promoted onto it (candle vault new-key --chain evm, then candle vault promote --from <cold> --to-key <prefix>; candle tee new is Solana only) and a signer on the trading machine (candle tee signer new --key <prefix>). --embedded-wallet defaults to deny; allow lets the key spend the account's embedded wallet and is confirmed at a terminal"
+        },
+        {
+          "invocation": "access <prefix|label|self> (--access read|write|withdraw [--yes] | --history)",
+          "description": "Change an existing key's level in place (same key, wallets and caps). Widening needs the device token and the prefix typed back at a terminal; --yes skips the prompt when narrowing; self narrows the profile's own key. --history lists the key's changes and who made them"
+        },
+        {
+          "invocation": "update <prefix|label> --embedded-wallet allow|deny [--yes]",
+          "description": "Allow or deny a key the account's embedded wallet, with the device token. Allowing needs the prefix typed back at a terminal; --yes skips the prompt when denying"
+        },
+        {
+          "invocation": "limit <prefix|label> (--tx-limit <usd> [--reset daily|weekly|monthly|never] | --clear)",
+          "description": "Set or clear the USD transaction cap on an existing key, with the device token. --reset defaults to daily"
+        },
+        {
+          "invocation": "self embedded-wallet deny",
+          "description": "The profile's own key gives up the embedded wallet, with no prompt. A key can never allow itself: the owner does that with keys update"
+        },
+        {
+          "invocation": "revoke <prefix>",
+          "description": "Revoke an API key"
+        },
+        {
+          "invocation": "signer approve <code> --key <prefix|label> [--reject]",
+          "description": "Approve (or reject) a key's signer request with the device token; type the full fingerprint the trading machine printed"
+        },
+        {
+          "invocation": "  move <prefix|label> [--to-key <prefix|label>]",
+          "description": "On the machine holding a wallet's current signer: move every wallet on the key onto its active signer (legacy per-wallet ones too). --to-key moves a revoked key's wallets to a live key (device token). Resumable"
+        },
+        {
+          "invocation": "wallets <prefix>",
+          "description": "Wallets an agent profile can use. TEE wallets move between keys with candle tee rebind"
+        },
+        {
+          "invocation": "  set <prefix> --wallets <id,id>",
+          "description": "Replace the profile's wallet set; from a key it can only narrow. To move TEE wallets to a key: candle tee rebind"
+        },
+        {
+          "invocation": "  scope <prefix> --scope <all|selected>",
+          "description": "Limit a profile to assigned wallets"
+        }
+      ]
+    },
+    "wallets": {
+      "group": "Account",
+      "display": "wallet",
+      "summary": "Launch and linked wallets; import or revoke one (wallets is an alias)",
+      "rows": [
+        {
+          "invocation": "import --chain <solana|evm> [options]",
+          "description": "Import a wallet you own (key via --key-file or hidden prompt). A fresh key, without solana-keygen: candle vault new-key --chain solana, candle vault export-key <label> --to <file>, import that file, then delete the file"
+        },
+        {
+          "invocation": "revoke <wallet-id>",
+          "description": "Revoke a linked wallet"
+        },
+        {
+          "invocation": "trust <label|address|id|prefix*>...",
+          "description": "Mark linked wallets yours, so agents can move funds into them (owner only; typed confirm)"
+        },
+        {
+          "invocation": "untrust <label|address|id|prefix*>... [--yes]",
+          "description": "Clear the mark; moving funds in needs the withdrawal allowlist again (owner only)"
+        },
+        {
+          "invocation": "allow-launch <label|address|id|prefix*>...",
+          "description": "Let TEE wallets pay for a launch (candle launch), after a screen of label, address and bound key (owner only; typed confirm)"
+        },
+        {
+          "invocation": "disallow-launch <label|address|id|prefix*>... [--yes]",
+          "description": "Stop TEE wallets paying for a launch; trading is unchanged (owner only)"
+        },
+        {
+          "invocation": "close-empty [--wallet embedded|<tee address|label>] [--keep <mint>]... [--client-trade-id <id>] [--yes]",
+          "description": "Close a wallet's empty token accounts and return their rent to it, after a preview: the embedded wallet (transfer:write), or a TEE wallet bound to this key, signed by its key signer (swap:write)"
+        }
+      ]
+    },
+    "profile": {
+      "group": "Account",
+      "summary": "Named profiles, one per account or environment",
+      "rows": [
+        {
+          "invocation": "list",
+          "description": "Profiles on this machine, with cached accounts, and each one's Solana RPC host"
+        },
+        {
+          "invocation": "add <name> --api-url <url>",
+          "description": "Create a profile before authenticating it"
+        },
+        {
+          "invocation": "use <name>",
+          "description": "Make a profile the active one"
+        },
+        {
+          "invocation": "rename <old> <new>",
+          "description": "Rename a profile"
+        },
+        {
+          "invocation": "remove <name> --yes",
+          "description": "Delete a profile and its stored credentials"
+        },
+        {
+          "invocation": "set <name> --rpc-url <url> | --clear-rpc-url",
+          "description": "This profile's Solana RPC, used when --rpc-url and CANDLE_SOLANA_RPC_URL are not given. Stored in config.json; only its host is ever shown"
+        }
+      ]
+    },
+    "vault": {
+      "group": "Custody, on this machine",
+      "summary": "Your vault: factors, keys, backup, restore, transfer, promote",
+      "rows": [
+        {
+          "invocation": "init [--own-passphrase]",
+          "description": "Create the vault: one passphrase factor and an HD root"
+        },
+        {
+          "invocation": "status [--unlock]",
+          "description": "What the vault holds, and what opens it"
+        },
+        {
+          "invocation": "list [<filter>] [--all] [--balances] [--rpc-url <url>] [--evm-rpc-url <url>]",
+          "description": "One line per key: address, label, role, TEE lifecycle, derivation. Retired TEE wallets are hidden unless --all. Prompts for the passphrase. --balances reads SOL over your Solana RPC and ETH (plus USDG on Hood) for EVM keys over --evm-rpc-url, CANDLE_EVM_RPC_URL, or the built-in Hood RPC"
+        },
+        {
+          "invocation": "new-key --chain solana|evm [--label <name>] [--count <n>] [--labels-from <file>]",
+          "description": "Derive the next Solana key (m/44'/501'/n'/0') or EVM key (m/44'/60'/n'/0/0), or n of them under one unlock; the name must be free"
+        },
+        {
+          "invocation": "rename <label|address|id> <new-label> [--id <entry-id>]",
+          "description": "Rename one vault or external key, or a retired TEE wallet. New names: at most 64 characters, no edge whitespace. The address, the derivation and the key blob do not change"
+        },
+        {
+          "invocation": "  rename --pairs-from <file> [--dry-run]",
+          "description": "Rename 1–256 vault or external keys (or retired TEE wallets) under one unlock and one commit. All findings refuse the whole file; swaps are allowed. --dry-run prints the plan and writes nothing; --json returns the renamed rows"
+        },
+        {
+          "invocation": "phrase show",
+          "description": "Show the 24-word recovery phrase (terminal only)"
+        },
+        {
+          "invocation": "restore --phrase [--own-passphrase] [--count <n>] [--tee-count <k>] [--external-count <e>] [--evm-count <m>] [--evm-tee-count <k>] [--rpc-url <url>]",
+          "description": "Rebuild a vault from the recovery phrase; it gets a new passphrase. --evm-count derives EVM indices 0..m-1 and --evm-tee-count Hood TEE wallets 0..k-1 on m/44'/60'/n'/1'/0' (default 0, never gap-scanned; the sealed EVM record does not come back, so a sweep then needs --from-block or --token). A gap scan needs --rpc-url on this command; no default or stored endpoint is used for it"
+        },
+        {
+          "invocation": "reconcile-exposure",
+          "description": "Re-read this account and add exposure; clears nothing"
+        },
+        {
+          "invocation": "factor list | add <kind> [--install-helper] | remove <id>",
+          "description": "Manage the factors that open the vault: …. --install-helper (security-key) fetches and verifies this release's candle-fido2 first"
+        },
+        {
+          "invocation": "enroll <kind> [--label <name>] [--install-helper]",
+          "description": "Same as factor add: …"
+        },
+        {
+          "invocation": "backup --to <path>|icloud [--accept-shared-domain]",
+          "description": "Copy the vault and verify the copy in full; icloud is iCloud Drive; sealed copies carry the passphrase and security keys. A vault with Hood TEE wallets also writes its sealed EVM record beside the copy (<copy minus .enc>.evm-record.sealed), the lines that decrypt only"
+        },
+        {
+          "invocation": "verify-backup <path>",
+          "description": "Verify a copy in full (all eight steps; a ninth for a vault with Hood TEE wallets: every line of the record beside the copy decrypts under the copy's key)"
+        },
+        {
+          "invocation": "import-legacy --tee [--from <path>]",
+          "description": "Migrate tee-wallets.enc into the vault"
+        },
+        {
+          "invocation": "retire-legacy [--from <path>]",
+          "description": "Rename the Phase 1 store after a verified backup"
+        },
+        {
+          "invocation": "transfer <to> --amount <n|max> --asset SOL|<mint>|ETH|USDG|<0x token> --from <label> [--rpc-url <url>]",
+          "description": "Sign a transfer locally from a vault key or a promoted TEE wallet (Solana, or Hood: refused while a sequenced trade holds the wallet's nonce, and when that cannot be read). From an EVM key: ETH or an ERC-20, on Hood by default (--rpc-url for any EVM chain; the chain id is read from the RPC), exit 0 means depth-confirmed (1 block on Hood, 2 elsewhere), not finalized. A Solana key reads and sends over --rpc-url, else CANDLE_SOLANA_RPC_URL, else the profile's RPC, else the public endpoint. Max sends SOL minus the quoted fee (zero source reserve when emptied), or the whole token balance; EVM native max deducts the fee cap. SOL max refreshes before signing; a changed amount or fee requires a fresh confirm. One verification: the unlock names the send; after the decoded display you type confirm. No --yes"
+        },
+        {
+          "invocation": "promote --from|--in-place <label> [--sweep-to <label>] [--rpc-url <url>] [--to-key <prefix|label>]",
+          "description": "Fresh TEE key, or promote one vault key in place. Reads, over your RPC, whether each key is a token mint, freeze, program upgrade or stake authority (9 requests per key; public endpoints refuse the token scans). Multisig membership is not checked. An EVM key becomes a Hood TEE wallet (--from derives m/44'/60'/n'/1'/0'; --sweep-to is a cold EVM vault key; --rpc-url is the Hood RPC); the vault becomes version 4 and records the promote height as the wallet's scan start."
+        },
+        {
+          "invocation": "promote-batch --pairs-from <file> [--rpc-url <url>] [--to-key <prefix|label>] [--token-holdings]",
+          "description": "Promote many vault keys in place: one unlock, one reviewed acknowledgement. Reads, over your RPC, whether each key is a token mint, freeze, program upgrade or stake authority (9 requests per key; public endpoints refuse the token scans). Multisig membership is not checked. A file of EVM keys promotes them to Hood TEE wallets (ETH shown, no authority read); one file is one chain."
+        },
+        {
+          "invocation": "fund <tee-address|external> --amount <n> --asset SOL|USDC|ETH|USDG [--rpc-url <url>] [--from <label>]",
+          "description": "Fund a TEE or external wallet from a vault key. A Hood TEE wallet takes ETH or USDG from its pinned EVM vault key. One verification: the unlock names the send; after the decoded display you type confirm. No --yes"
+        },
+        {
+          "invocation": "demote <tee-address>... | --all --empty [--rpc-url <url>] [--emergency] [--sweep-to <label>] [--yes] [--token <0x...>] [--from-block <n>]",
+          "description": "Disable then sweep a TEE wallet back to its pin. A Hood wallet takes tee sweep's --token and --from-block (one wallet only). Several addresses, or --all --empty, demote one at a time under one unlock: every wallet and its sweep destination is listed, then you type confirm once (--yes skips it; it stands in for each sweep's confirm). A failure does not stop the rest; each wallet gets a result line and a summary counts done, incomplete, failed and skipped with reasons. --json writes one document: wallets[] and summary"
+        },
+        {
+          "invocation": "export-key <label> --to <new-file>",
+          "description": "Export one key as plaintext (interactive ceremony: unlock, then type confirm under the address)"
+        }
+      ]
+    },
+    "tee": {
+      "group": "Custody, on this machine",
+      "summary": "Dedicated TEE wallet keys for agents: seal, delegate, fund, sweep",
+      "rows": [
+        {
+          "invocation": "new [--label <name>]",
+          "description": "Add a Solana key to an existing tee-wallets.enc. With no store, refuses: candle vault new-key --chain solana, then candle vault promote --from <label> --to-key <prefix>. --factor does not apply"
+        },
+        {
+          "invocation": "enable <address> --vault <address>",
+          "description": "Delegate a TEE wallet key; pin the sweep vault (--vault-key <label> also)"
+        },
+        {
+          "invocation": "fund <address> --amount <n> [--asset SOL|USDC]",
+          "description": "Print the funding instruction for your vault to sign"
+        },
+        {
+          "invocation": "status <address> [--rpc-url <url>] [--verify]",
+          "description": "Server lifecycle state and on-chain balances without unlocking; --verify opens the vault and checks the key. On Hood, ETH, USDG, the gas reserve and gas: low"
+        },
+        {
+          "invocation": "disable <address>",
+          "description": "Stop the agent; verified stop or pending, never \"done\" on a 200"
+        },
+        {
+          "invocation": "sweep <address> [--rpc-url <url>] [--emergency] [--token <0x...>] [--from-block <n>]",
+          "description": "Sign locally and move everything to the pinned vault; closes DAMM v2 LP positions after verifying each server-built close (--emergency moves the position NFT instead, with no API). A Hood wallet (0x): USDG, WETH, the sealed EVM record, the server's list (not under --emergency), every --token, and Transfer logs from its recorded scan start or --from-block, then ETH last; it refuses while a sequenced trade holds the wallet's nonce"
+        },
+        {
+          "invocation": "rebind <wallet...> --to-key <prefix|label> [--label-prefix <p>]",
+          "description": "Move TEE wallets to another key on this account, which is how a key gets TEE wallets. Name them, or --label-prefix for every wallet whose label starts with it (owner only; funds do not move)"
+        },
+        {
+          "invocation": "rebinds [wallet]",
+          "description": "List TEE wallet rebinds for this account (owner only)"
+        },
+        {
+          "invocation": "rename <label|address|id> <new-label>",
+          "description": "Rename one TEE wallet: the label Candle holds and, when its key is in this vault, the vault entry (owner only). New names: at most 64 characters, no edge whitespace. Funds, the address and the key do not change. A retired (demoted) TEE wallet is no longer on Candle: rename it with vault rename"
+        },
+        {
+          "invocation": "  rename --pairs-from <file> [--dry-run]",
+          "description": "Rename 1–256 TEE wallets with one server call, all or nothing, then one vault commit. Every finding refuses the whole file. The vault is unlocked once, only when a named TEE wallet may be in it. --dry-run prints the plan and changes nothing; if the vault write fails after the server accepted, it prints address-keyed rows to re-run"
+        },
+        {
+          "invocation": "signer new --key <prefix|label> [--out <pem>] [--force] [--no-wait]",
+          "description": "On the trading machine, with that key's API key: generate the key's signer here and wait for the owner to approve it. Its wallets then trade from this machine. --out also writes a plaintext P-256 authorization key for Privy wallet RPC; it cannot sign Solana transactions (the TEE signs them). --no-wait exits 0 once pending. --json emits newline-delimited JSON: a pending event with userCode, verificationUriComplete, expiresAt and fingerprint immediately, then an active result or error if waiting. Retrying re-attaches to the same live request;  --force adds a signer while an older signer on THIS machine still owns wallets; it moves, revokes and deletes nothing"
+        },
+        {
+          "invocation": "  signer status --key <prefix|label>",
+          "description": "Read the server signer state once without generating a pair or requesting approval. --json prints one value; on the requesting machine it includes the cached code and URL while that request is live"
+        },
+        {
+          "invocation": "  signer remove --key <prefix|label>",
+          "description": "Remove this machine's key signer once it owns no wallets, and tell the server it is gone. Refuses while a wallet is still owned by it. The device token, or the key's own API key"
+        }
+      ]
+    },
+    "external": {
+      "group": "Custody, on this machine",
+      "summary": "External wallets for outside tools, never delegated",
+      "rows": [
+        {
+          "invocation": "new [--label <name>]",
+          "description": "Derive an external wallet for outside tools (never delegated, never registered)"
+        },
+        {
+          "invocation": "list",
+          "description": "The external wallets in the vault"
+        },
+        {
+          "invocation": "sweep <external> --to <vault> [--rpc-url <url>]",
+          "description": "Send everything an external wallet holds back to a vault key. One verification: the unlock names the send; after the display you type confirm"
+        }
+      ]
+    },
+    "sign": {
+      "group": "Custody, on this machine",
+      "summary": "Sign a transaction or a message with an external wallet",
+      "rows": [
+        {
+          "invocation": "[--file <path>] --wallet <external>... [--broadcast] [--yes]",
+          "description": "Decode, simulate and sign a base64 transaction with an external wallet"
+        },
+        {
+          "invocation": "message --wallet <external> [--file <path>] [--yes]",
+          "description": "Sign an off-chain message (the exact bytes of the file or stdin)"
+        }
+      ]
+    },
+    "secrets": {
+      "group": "Your own services",
+      "summary": "Your third-party API keys, in their own keychain namespace",
+      "rows": [
+        {
+          "invocation": "set <name>",
+          "description": "Store one of your own third-party API keys (hidden prompt, never sent to Candle)"
+        },
+        {
+          "invocation": "list",
+          "description": "The names of your stored secrets"
+        },
+        {
+          "invocation": "remove <name>",
+          "description": "Delete a stored secret"
+        }
+      ]
+    },
+    "plugins": {
+      "group": "Your own services",
+      "summary": "The candle-<name> executables on your PATH",
+      "rows": []
+    },
+    "mcp": {
+      "group": "Maintain",
+      "summary": "Run the Candle MCP server with stored credentials",
+      "rows": []
+    },
+    "tui": {
+      "group": "Start here",
+      "summary": "The Candle TUI: holdings, the feed, your agents and approval cards, in the terminal (preview)",
+      "rows": []
+    },
+    "core": {
+      "group": "Maintain",
+      "summary": "Run the local Candle core the Candle TUI attaches to (preview)",
+      "rows": [
+        {
+          "invocation": "serve",
+          "description": "Start the core for the profile in play; one per profile"
+        },
+        {
+          "invocation": "mcp [--token <t>] [--harness <kind>]",
+          "description": "A stdio MCP server for any harness, attached to the running core: money writes become cards"
+        }
+      ]
+    },
+    "update": {
+      "group": "Maintain",
+      "summary": "Update the CLI and its security key helper to the latest signed release",
+      "rows": []
+    },
+    "verify": {
+      "group": "Maintain",
+      "summary": "Verify a release asset's Sigstore bundle",
+      "rows": []
+    },
+    "completion": {
+      "group": "Maintain",
+      "summary": "Shell completions for zsh, bash or fish",
+      "rows": [
+        {
+          "invocation": "zsh",
+          "description": "candle completion zsh > \"${fpath[1]}/_candle\""
+        },
+        {
+          "invocation": "bash",
+          "description": "candle completion bash > ~/.local/share/bash-completion/completions/candle"
+        },
+        {
+          "invocation": "fish",
+          "description": "candle completion fish > ~/.config/fish/completions/candle.fish"
+        }
+      ]
+    },
+    "help": {
+      "group": "Maintain",
+      "summary": "This screen, or a command's own: candle help vault",
+      "rows": []
+    }
+  },
+  "commands": [
+    {
+      "command": "stake",
+      "subcommand": null,
+      "handler": "stake",
+      "file": "commands/stake.ts",
+      "flags": {
+        "value": [
+          "--client-stake-id",
+          "--wallet"
+        ],
+        "boolean": [
+          "--all",
+          "--yes"
+        ],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "agent",
+      "json": true,
+      "unlocks": "never",
+      "tty": [
+        "stdin"
+      ]
+    },
+    {
+      "command": "stake",
+      "subcommand": "add",
+      "handler": "stakeAdd",
+      "file": "commands/stake.ts",
+      "flags": {
+        "value": [
+          "--client-stake-id",
+          "--wallet"
+        ],
+        "boolean": [
+          "--all",
+          "--yes"
+        ],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "agent",
+      "json": true,
+      "unlocks": "never",
+      "tty": [
+        "stdin"
+      ]
+    },
+    {
+      "command": "stake",
+      "subcommand": "remove",
+      "handler": "stakeRemove",
+      "file": "commands/stake.ts",
+      "flags": {
+        "value": [
+          "--client-stake-id",
+          "--wallet"
+        ],
+        "boolean": [
+          "--all",
+          "--yes"
+        ],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "agent",
+      "json": true,
+      "unlocks": "never",
+      "tty": [
+        "stdin"
+      ]
+    },
+    {
+      "command": "stake",
+      "subcommand": "finish",
+      "handler": "stakeFinish",
+      "file": "commands/stake.ts",
+      "flags": {
+        "value": [
+          "--client-stake-id",
+          "--wallet"
+        ],
+        "boolean": [
+          "--all",
+          "--yes"
+        ],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "agent",
+      "json": true,
+      "unlocks": "never",
+      "tty": [
+        "stdin"
+      ]
+    },
+    {
+      "command": "stake",
+      "subcommand": "claim",
+      "handler": "stakeClaim",
+      "file": "commands/stake.ts",
+      "flags": {
+        "value": [
+          "--client-stake-id",
+          "--wallet"
+        ],
+        "boolean": [
+          "--all",
+          "--yes"
+        ],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "agent",
+      "json": true,
+      "unlocks": "never",
+      "tty": [
+        "stdin"
+      ]
+    },
+    {
+      "command": "swap",
+      "subcommand": null,
+      "handler": "swap",
+      "file": "commands/swap.ts",
+      "flags": {
+        "value": [
+          "--amount",
+          "--client-trade-id",
+          "--percent",
+          "--rpc-url",
+          "--slippage-bps",
+          "--to",
+          "--wallet"
+        ],
+        "boolean": [
+          "--wait",
+          "--yes"
+        ],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "agent",
+      "json": true,
+      "unlocks": "never",
+      "tty": [
+        "stdin"
+      ]
+    },
+    {
+      "command": "swap",
+      "subcommand": "status",
+      "handler": "swapStatus",
+      "file": "commands/swap.ts",
+      "flags": {
+        "value": [
+          "--kind"
+        ],
+        "boolean": [
+          "--wait"
+        ],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "agent",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
+    },
+    {
+      "command": "transfer",
+      "subcommand": null,
+      "handler": "transfer",
+      "file": "commands/transfer.ts",
+      "flags": {
+        "value": [
+          "--amount",
+          "--asset",
+          "--mint",
+          "--rpc-url",
+          "--to",
+          "--token",
+          "--wallet"
+        ],
+        "boolean": [
+          "--yes"
+        ],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "agent",
+      "json": true,
+      "unlocks": "never",
+      "tty": [
+        "stdin"
+      ]
+    },
+    {
+      "command": "launch",
+      "subcommand": null,
+      "handler": "launch",
+      "file": "commands/launch.ts",
+      "flags": {
+        "value": [
+          "--banner",
+          "--buy",
+          "--client-trade-id",
+          "--creator-fee-bps",
+          "--curve-g",
+          "--curve-v",
+          "--description",
+          "--dex-version",
+          "--discord",
+          "--exp-pool-shape",
+          "--fee-wallet",
+          "--fee-wallet-multisig",
+          "--fee-wallet-multisig-vault-index",
+          "--image",
+          "--image-url",
+          "--mode",
+          "--name",
+          "--pool-fee",
+          "--pool-fee-from",
+          "--pool-fee-minutes",
+          "--pool-open",
+          "--quote-asset",
+          "--rpc-url",
+          "--staker-allocation-bps",
+          "--symbol",
+          "--telegram",
+          "--visibility",
+          "--wallet",
+          "--website",
+          "--x"
+        ],
+        "boolean": [
+          "--check",
+          "--dry-run",
+          "--require-fee-wallet",
+          "--yes"
+        ],
+        "path": [
+          "--banner",
+          "--image"
+        ],
+        "pathPositionals": []
+      },
+      "identity": "agent",
+      "json": true,
+      "unlocks": "never",
+      "tty": [
+        "stdin"
+      ]
+    },
+    {
+      "command": "launch",
+      "subcommand": "status",
+      "handler": "launchStatus",
+      "file": "commands/launch-status.ts",
+      "flags": {
+        "value": [],
+        "boolean": [
+          "--wait"
+        ],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "agent",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
+    },
+    {
+      "command": "image",
+      "subcommand": "upload",
+      "handler": "imageUpload",
+      "file": "commands/image.ts",
+      "flags": {
+        "value": [],
+        "boolean": [
+          "--banner"
+        ],
+        "path": [],
+        "pathPositionals": [
+          "<path>"
+        ]
+      },
+      "identity": "agent",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
+    },
+    {
+      "command": "pnl",
+      "subcommand": null,
+      "handler": "pnl",
+      "file": "commands/pnl.ts",
+      "flags": {
+        "value": [],
+        "boolean": [
+          "--dust"
+        ],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "agent",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
+    },
+    {
+      "command": "portfolio",
+      "subcommand": null,
+      "handler": "portfolio",
+      "file": "commands/portfolio.ts",
+      "flags": {
+        "value": [
+          "--chain",
+          "--evm-rpc-url",
+          "--keystore",
+          "--rpc-url"
+        ],
+        "boolean": [
+          "--no-perps"
+        ],
+        "path": [
+          "--keystore"
+        ],
+        "pathPositionals": []
+      },
+      "identity": "both",
+      "json": true,
+      "unlocks": "always",
+      "tty": [
+        "stdin",
+        "stderr"
+      ]
+    },
+    {
+      "command": "agent",
+      "subcommand": "profile",
+      "handler": "agentProfile",
+      "file": "commands/agent-profile.ts",
+      "flags": {
+        "value": [
+          "--avatar",
+          "--avatar-file",
+          "--banner",
+          "--banner-file",
+          "--bio",
+          "--links",
+          "--models",
+          "--strategy",
+          "--strategy-note"
+        ],
+        "boolean": [],
+        "path": [
+          "--avatar-file",
+          "--banner-file"
+        ],
+        "pathPositionals": []
+      },
+      "identity": "agent",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
+    },
+    {
+      "command": "agent",
+      "subcommand": "post",
+      "handler": "agentPost",
+      "file": "commands/agent-post.ts",
+      "flags": {
+        "value": [
+          "--chain",
+          "--cursor",
+          "--limit",
+          "--mint",
+          "--text"
+        ],
+        "boolean": [],
+        "path": [],
+        "pathPositionals": [],
+        "byAction": {
+          "create": [
+            "--text",
+            "--chain",
+            "--mint"
+          ],
+          "delete": [],
+          "list": [
+            "--limit",
+            "--cursor"
+          ]
+        }
+      },
+      "identity": "agent",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
+    },
+    {
+      "command": "agent",
+      "subcommand": "positions",
+      "handler": "agentPositions",
+      "file": "commands/agent-positions.ts",
+      "flags": {
+        "value": [
+          "--kind"
+        ],
+        "boolean": [],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "none",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
+    },
+    {
+      "command": "fees",
+      "subcommand": null,
+      "handler": "feesList",
+      "file": "commands/fees.ts",
+      "flags": {
+        "value": [
+          "--cursor",
+          "--limit"
+        ],
+        "boolean": [],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "agent",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
+    },
+    {
+      "command": "fees",
+      "subcommand": "claim",
+      "handler": "feesClaim",
+      "file": "commands/fees.ts",
+      "flags": {
+        "value": [],
+        "boolean": [
+          "--dry-run"
+        ],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "agent",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
+    },
+    {
+      "command": "plans",
+      "subcommand": null,
+      "handler": "plans",
+      "file": "commands/plans.ts",
+      "flags": {
+        "value": [],
+        "boolean": [],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "none",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
+    },
+    {
+      "command": "accounts",
+      "subcommand": "create",
+      "handler": "accountsCreate",
+      "file": "commands/accounts.ts",
+      "flags": {
+        "value": [
+          "--env",
+          "--key-item",
+          "--name",
+          "--scopes",
+          "--signer-item",
+          "--username"
+        ],
+        "boolean": [
+          "--use",
+          "--yes"
+        ],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "none",
+      "json": true,
+      "unlocks": "never",
+      "tty": [
+        "stdin",
+        "stdout"
+      ]
+    },
+    {
+      "command": "token",
+      "subcommand": "clusters",
+      "handler": "tokenClusters",
+      "file": "commands/token-clusters.ts",
+      "flags": {
+        "value": [
+          "--chain"
+        ],
+        "boolean": [],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "none",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
+    },
+    {
+      "command": "token",
+      "subcommand": "events",
+      "handler": "tokenEvents",
+      "file": "commands/token-events.ts",
+      "flags": {
+        "value": [
+          "--before",
+          "--chain",
+          "--kind",
+          "--limit",
+          "--since"
+        ],
+        "boolean": [],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "agent",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
+    },
+    {
+      "command": "token",
+      "subcommand": "forensics",
+      "handler": "tokenForensics",
+      "file": "commands/token-paid.ts",
+      "flags": {
+        "value": [
+          "--chain",
+          "--wallet"
+        ],
+        "boolean": [
+          "--yes"
+        ],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "agent",
+      "json": true,
+      "unlocks": "always",
+      "tty": [
+        "stdin",
+        "stdout"
+      ]
+    },
+    {
+      "command": "token",
+      "subcommand": "vamp-candidates",
+      "handler": "tokenVampCandidates",
+      "file": "commands/token-paid.ts",
+      "flags": {
+        "value": [
+          "--limit",
+          "--min-copies",
+          "--stage",
+          "--wallet"
+        ],
+        "boolean": [
+          "--yes"
+        ],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "agent",
+      "json": true,
+      "unlocks": "always",
+      "tty": [
+        "stdin",
+        "stdout"
+      ]
+    },
+    {
+      "command": "token",
+      "subcommand": "about",
+      "handler": "tokenAbout",
+      "file": "commands/token-pages.ts",
+      "flags": {
+        "value": [
+          "--chain"
+        ],
+        "boolean": [
+          "--capabilities"
+        ],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "agent",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
+    },
+    {
+      "command": "token",
+      "subcommand": "claim",
+      "handler": "tokenClaim",
+      "file": "commands/token-pages.ts",
+      "flags": {
+        "value": [
+          "--chain",
+          "--challenge-id",
+          "--idempotency-key",
+          "--message-out",
+          "--signature"
+        ],
+        "boolean": [
+          "--challenge",
+          "--creator"
+        ],
+        "path": [
+          "--message-out"
+        ],
+        "pathPositionals": []
+      },
+      "identity": "agent",
+      "json": true,
+      "unlocks": "never",
+      "tty": [],
+      "actions": {
+        "unknown": {
+          "unlocks": "never",
+          "tty": []
+        }
+      }
+    },
+    {
+      "command": "token",
+      "subcommand": "section",
+      "handler": "tokenSection",
+      "file": "commands/token-pages.ts",
+      "flags": {
+        "value": [
+          "--base-revision",
+          "--chain",
+          "--file",
+          "--idempotency-key",
+          "--version-id"
+        ],
+        "boolean": [
+          "--clear"
+        ],
+        "path": [
+          "--file"
+        ],
+        "pathPositionals": [],
+        "byAction": {
+          "set": [
+            "--chain",
+            "--file",
+            "--base-revision",
+            "--idempotency-key"
+          ],
+          "restore": [
+            "--chain",
+            "--version-id",
+            "--base-revision",
+            "--idempotency-key"
+          ]
+        }
+      },
+      "identity": "agent",
+      "json": true,
+      "unlocks": "never",
+      "tty": [],
+      "actions": {
+        "unknown": {
+          "unlocks": "never",
+          "tty": []
+        }
+      }
+    },
+    {
+      "command": "token",
+      "subcommand": "history",
+      "handler": "tokenHistory",
+      "file": "commands/token-metadata.ts",
+      "flags": {
+        "value": [
+          "--chain",
+          "--cursor",
+          "--limit"
+        ],
+        "boolean": [],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "none",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
+    },
+    {
+      "command": "token",
+      "subcommand": "flag",
+      "handler": "tokenFlag",
+      "file": "commands/token-pages.ts",
+      "flags": {
+        "value": [
+          "--chain",
+          "--content",
+          "--detail",
+          "--idempotency-key",
+          "--reason"
+        ],
+        "boolean": [],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "agent",
+      "json": true,
+      "unlocks": "never",
+      "tty": [],
+      "actions": {
+        "unknown": {
+          "unlocks": "never",
+          "tty": []
+        }
+      }
+    },
+    {
+      "command": "token",
+      "subcommand": "edit",
+      "handler": "tokenEdit",
+      "file": "commands/token-metadata.ts",
+      "flags": {
+        "value": [
+          "--chain",
+          "--clear",
+          "--description",
+          "--discord",
+          "--idempotency-key",
+          "--telegram",
+          "--website",
+          "--x"
+        ],
+        "boolean": [],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "agent",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
+    },
+    {
+      "command": "token",
+      "subcommand": "update",
+      "handler": "tokenUpdate",
+      "file": "commands/token-pages.ts",
+      "flags": {
+        "value": [
+          "--chain",
+          "--file",
+          "--idempotency-key"
+        ],
+        "boolean": [],
+        "path": [
+          "--file"
+        ],
+        "pathPositionals": []
+      },
+      "identity": "agent",
+      "json": true,
+      "unlocks": "never",
+      "tty": [],
+      "actions": {
+        "unknown": {
+          "unlocks": "never",
+          "tty": []
+        }
+      }
+    },
+    {
+      "command": "token",
+      "subcommand": "comment",
+      "handler": "tokenComment",
+      "file": "commands/token-pages.ts",
+      "flags": {
+        "value": [
+          "--chain",
+          "--file",
+          "--idempotency-key"
+        ],
+        "boolean": [],
+        "path": [
+          "--file"
+        ],
+        "pathPositionals": []
+      },
+      "identity": "agent",
+      "json": true,
+      "unlocks": "never",
+      "tty": [],
+      "actions": {
+        "unknown": {
+          "unlocks": "never",
+          "tty": []
+        }
+      }
+    },
+    {
+      "command": "token",
+      "subcommand": "comments",
+      "handler": "tokenComments",
+      "file": "commands/token-pages.ts",
+      "flags": {
+        "value": [
+          "--chain",
+          "--cursor",
+          "--limit"
+        ],
+        "boolean": [],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "none",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
+    },
+    {
+      "command": "token",
+      "subcommand": "post",
+      "handler": "tokenPost",
+      "file": "commands/token-pages.ts",
+      "flags": {
+        "value": [
+          "--chain",
+          "--idempotency-key"
+        ],
+        "boolean": [],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "agent",
+      "json": true,
+      "unlocks": "never",
+      "tty": [],
+      "actions": {
+        "unknown": {
+          "unlocks": "never",
+          "tty": []
+        }
+      }
+    },
+    {
+      "command": "scan",
+      "subcommand": null,
+      "handler": "scan",
+      "file": "commands/scan.ts",
+      "flags": {
+        "value": [
+          "--chain"
+        ],
+        "boolean": [],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "none",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
+    },
+    {
+      "command": "spend",
+      "subcommand": null,
+      "handler": "spendShow",
+      "file": "commands/spend.ts",
+      "flags": {
+        "value": [
+          "--days"
+        ],
+        "boolean": [],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "agent",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
+    },
+    {
+      "command": "spend",
+      "subcommand": "limit",
+      "handler": "spendLimit",
+      "file": "commands/spend.ts",
+      "flags": {
+        "value": [],
+        "boolean": [],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "none",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
+    },
+    {
+      "command": "spend",
+      "subcommand": "max-per-call",
+      "handler": "spendMaxPerCall",
+      "file": "commands/spend.ts",
+      "flags": {
+        "value": [],
+        "boolean": [],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "none",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
+    },
+    {
+      "command": "spend",
+      "subcommand": "pause",
+      "handler": "spendPause",
+      "file": "commands/spend.ts",
+      "flags": {
+        "value": [],
+        "boolean": [],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "none",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
+    },
+    {
+      "command": "spend",
+      "subcommand": "resume",
+      "handler": "spendResume",
+      "file": "commands/spend.ts",
+      "flags": {
+        "value": [],
+        "boolean": [],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "none",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
+    },
+    {
+      "command": "quant",
+      "subcommand": "terms",
+      "handler": "quantTerms",
+      "file": "commands/quant-terms.ts",
+      "flags": {
+        "value": [
+          "--terms-version"
+        ],
+        "boolean": [
+          "--yes"
+        ],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "agent",
+      "json": true,
+      "unlocks": "never",
+      "tty": [
+        "stdin"
+      ]
+    },
+    {
+      "command": "lab",
+      "subcommand": "status",
+      "handler": "labStatus",
+      "file": "commands/lab.ts",
+      "flags": {
+        "value": [],
+        "boolean": [],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "agent",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
+    },
+    {
+      "command": "lab",
+      "subcommand": "replay",
+      "handler": "labReplay",
+      "file": "commands/lab.ts",
+      "flags": {
+        "value": [
+          "--asset-ids",
+          "--definition",
+          "--fee-bps",
+          "--from",
+          "--slippage-bps",
+          "--to"
+        ],
+        "boolean": [
+          "--no-wait"
+        ],
+        "path": [
+          "--definition"
+        ],
+        "pathPositionals": []
+      },
+      "identity": "agent",
+      "json": true,
+      "unlocks": "never",
+      "tty": [],
+      "actions": {
+        "get": {
+          "unlocks": "never",
+          "tty": []
+        }
+      }
+    },
+    {
+      "command": "lab",
+      "subcommand": "runners",
+      "handler": "labRunners",
+      "file": "commands/lab.ts",
+      "flags": {
+        "value": [
+          "--hours",
+          "--min-wallets"
+        ],
+        "boolean": [],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "agent",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
+    },
+    {
+      "command": "lab",
+      "subcommand": "edges",
+      "handler": "labEdges",
+      "file": "commands/lab.ts",
+      "flags": {
+        "value": [
+          "--days",
+          "--min-n"
+        ],
+        "boolean": [],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "agent",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
+    },
+    {
+      "command": "plan",
+      "subcommand": "buy",
+      "handler": "planBuy",
+      "file": "commands/plan.ts",
+      "flags": {
+        "value": [
+          "--signer-out",
+          "--wallet"
+        ],
+        "boolean": [
+          "--auto-renew",
+          "--yes"
+        ],
+        "path": [
+          "--signer-out"
+        ],
+        "pathPositionals": []
+      },
+      "identity": "agent",
+      "json": true,
+      "unlocks": "always",
+      "tty": [
+        "stdin",
+        "stdout"
+      ]
+    },
+    {
+      "command": "plan",
+      "subcommand": "status",
+      "handler": "planStatus",
+      "file": "commands/plan.ts",
+      "flags": {
+        "value": [],
+        "boolean": [],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "agent",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
+    },
+    {
+      "command": "plan",
+      "subcommand": "renew",
+      "handler": "planRenew",
+      "file": "commands/plan.ts",
+      "flags": {
+        "value": [
+          "--wallet"
+        ],
+        "boolean": [
+          "--yes"
+        ],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "agent",
+      "json": true,
+      "unlocks": "always",
+      "tty": [
+        "stdin",
+        "stdout"
+      ]
+    },
+    {
+      "command": "plan",
+      "subcommand": "auto-renew",
+      "handler": "planAutoRenew",
+      "file": "commands/plan.ts",
+      "flags": {
+        "value": [],
+        "boolean": [],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "none",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
+    },
+    {
+      "command": "lp",
+      "subcommand": "pools",
+      "handler": "lpPools",
+      "file": "commands/lp.ts",
+      "flags": {
+        "value": [
+          "--page"
+        ],
+        "boolean": [],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "agent",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
+    },
+    {
+      "command": "lp",
+      "subcommand": "add",
+      "handler": "lpAdd",
+      "file": "commands/lp.ts",
+      "flags": {
+        "value": [
+          "--amount",
+          "--client-trade-id",
+          "--position",
+          "--rpc-url",
+          "--slippage-bps",
+          "--wallet"
+        ],
+        "boolean": [
+          "--yes"
+        ],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "agent",
+      "json": true,
+      "unlocks": "never",
+      "tty": [
+        "stdin"
+      ]
+    },
+    {
+      "command": "lp",
+      "subcommand": "positions",
+      "handler": "lpPositions",
+      "file": "commands/lp.ts",
+      "flags": {
+        "value": [
+          "--wallet"
+        ],
+        "boolean": [],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "agent",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
+    },
+    {
+      "command": "lp",
+      "subcommand": "remove",
+      "handler": "lpRemove",
+      "file": "commands/lp.ts",
+      "flags": {
+        "value": [
+          "--client-trade-id",
+          "--percent",
+          "--rpc-url",
+          "--slippage-bps",
+          "--wallet"
+        ],
+        "boolean": [
+          "--yes"
+        ],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "agent",
+      "json": true,
+      "unlocks": "never",
+      "tty": [
+        "stdin"
+      ]
+    },
+    {
+      "command": "lp",
+      "subcommand": "claim",
+      "handler": "lpClaim",
+      "file": "commands/lp.ts",
+      "flags": {
+        "value": [
+          "--client-trade-id",
+          "--rpc-url",
+          "--wallet"
+        ],
+        "boolean": [
+          "--yes"
+        ],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "agent",
+      "json": true,
+      "unlocks": "never",
+      "tty": [
+        "stdin"
+      ]
+    },
+    {
+      "command": "perps",
+      "subcommand": "markets",
+      "handler": "perpsMarkets",
+      "file": "commands/perps-markets.ts",
+      "flags": {
+        "value": [
+          "--count",
+          "--depth",
+          "--end",
+          "--interval",
+          "--limit",
+          "--sig-figs",
+          "--sort"
+        ],
+        "boolean": [
+          "--all"
+        ],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "agent",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
+    },
+    {
+      "command": "perps",
+      "subcommand": "market",
+      "handler": "perpsMarket",
+      "file": "commands/perps-markets.ts",
+      "flags": {
+        "value": [
+          "--count",
+          "--depth",
+          "--end",
+          "--interval",
+          "--limit",
+          "--sig-figs",
+          "--sort"
+        ],
+        "boolean": [
+          "--all"
+        ],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "agent",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
+    },
+    {
+      "command": "perps",
+      "subcommand": "book",
+      "handler": "perpsBook",
+      "file": "commands/perps-markets.ts",
+      "flags": {
+        "value": [
+          "--count",
+          "--depth",
+          "--end",
+          "--interval",
+          "--limit",
+          "--sig-figs",
+          "--sort"
+        ],
+        "boolean": [
+          "--all"
+        ],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "agent",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
+    },
+    {
+      "command": "perps",
+      "subcommand": "candles",
+      "handler": "perpsCandles",
+      "file": "commands/perps-markets.ts",
+      "flags": {
+        "value": [
+          "--count",
+          "--depth",
+          "--end",
+          "--interval",
+          "--limit",
+          "--sig-figs",
+          "--sort"
+        ],
+        "boolean": [
+          "--all"
+        ],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "agent",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
+    },
+    {
+      "command": "perps",
+      "subcommand": "setup",
+      "handler": "perpsSetup",
+      "file": "commands/perps.ts",
+      "flags": {
+        "value": [
+          "--wallet"
+        ],
+        "boolean": [
+          "--no-submit",
+          "--sign-only",
+          "--yes"
+        ],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "agent",
+      "json": true,
+      "unlocks": "never",
+      "tty": [
+        "stdin"
+      ]
+    },
+    {
+      "command": "perps",
+      "subcommand": "deposit",
+      "handler": "perpsDeposit",
+      "file": "commands/perps.ts",
+      "flags": {
+        "value": [
+          "--id",
+          "--rpc-url",
+          "--slippage-bps",
+          "--to",
+          "--wallet"
+        ],
+        "boolean": [
+          "--no-submit",
+          "--yes"
+        ],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "agent",
+      "json": true,
+      "unlocks": "never",
+      "tty": [
+        "stdin"
+      ]
+    },
+    {
+      "command": "perps",
+      "subcommand": "open",
+      "handler": "perpsOpen",
+      "file": "commands/perps.ts",
+      "flags": {
+        "value": [
+          "--client-id",
+          "--price",
+          "--sl",
+          "--slippage-bps",
+          "--tif",
+          "--tp",
+          "--wallet"
+        ],
+        "boolean": [
+          "--no-submit",
+          "--sign-only",
+          "--yes"
+        ],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "agent",
+      "json": true,
+      "unlocks": "never",
+      "tty": [
+        "stdin"
+      ]
+    },
+    {
+      "command": "perps",
+      "subcommand": "close",
+      "handler": "perpsClose",
+      "file": "commands/perps.ts",
+      "flags": {
+        "value": [
+          "--client-id",
+          "--pct",
+          "--size",
+          "--slippage-bps",
+          "--wallet"
+        ],
+        "boolean": [
+          "--no-submit",
+          "--sign-only",
+          "--yes"
+        ],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "agent",
+      "json": true,
+      "unlocks": "never",
+      "tty": [
+        "stdin"
+      ]
+    },
+    {
+      "command": "perps",
+      "subcommand": "cancel",
+      "handler": "perpsCancel",
+      "file": "commands/perps.ts",
+      "flags": {
+        "value": [
+          "--wallet"
+        ],
+        "boolean": [
+          "--no-submit",
+          "--sign-only",
+          "--yes"
+        ],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "agent",
+      "json": true,
+      "unlocks": "never",
+      "tty": [
+        "stdin"
+      ]
+    },
+    {
+      "command": "perps",
+      "subcommand": "orders",
+      "handler": "perpsOrders",
+      "file": "commands/perps.ts",
+      "flags": {
+        "value": [
+          "--limit",
+          "--wallet"
+        ],
+        "boolean": [],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "agent",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
+    },
+    {
+      "command": "perps",
+      "subcommand": "fills",
+      "handler": "perpsFills",
+      "file": "commands/perps.ts",
+      "flags": {
+        "value": [
+          "--cursor",
+          "--end-time",
+          "--limit",
+          "--start-time",
+          "--wallet"
+        ],
+        "boolean": [],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "agent",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
+    },
+    {
+      "command": "perps",
+      "subcommand": "funding",
+      "handler": "perpsFunding",
+      "file": "commands/perps.ts",
+      "flags": {
+        "value": [
+          "--cursor",
+          "--end-time",
+          "--limit",
+          "--start-time",
+          "--wallet"
+        ],
+        "boolean": [],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "agent",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
+    },
+    {
+      "command": "perps",
+      "subcommand": "positions",
+      "handler": "perpsPositions",
+      "file": "commands/perps.ts",
+      "flags": {
+        "value": [
+          "--wallet"
+        ],
+        "boolean": [],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "agent",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
+    },
+    {
+      "command": "perps",
+      "subcommand": "leverage",
+      "handler": "perpsLeverage",
+      "file": "commands/perps.ts",
+      "flags": {
+        "value": [
+          "--wallet"
+        ],
+        "boolean": [
+          "--isolated",
+          "--no-submit",
+          "--sign-only",
+          "--yes"
+        ],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "agent",
+      "json": true,
+      "unlocks": "never",
+      "tty": [
+        "stdin"
+      ]
+    },
+    {
+      "command": "perps",
+      "subcommand": "modify",
+      "handler": "perpsModify",
+      "file": "commands/perps-manage.ts",
+      "flags": {
+        "value": [
+          "--cloid",
+          "--price",
+          "--size",
+          "--slippage-bps",
+          "--wallet"
+        ],
+        "boolean": [
+          "--no-submit",
+          "--sign-only",
+          "--yes"
+        ],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "none",
+      "json": true,
+      "unlocks": "never",
+      "tty": [
+        "stdin"
+      ]
+    },
+    {
+      "command": "perps",
+      "subcommand": "margin",
+      "handler": "perpsMargin",
+      "file": "commands/perps-manage.ts",
+      "flags": {
+        "value": [
+          "--amount",
+          "--leverage",
+          "--mode",
+          "--wallet"
+        ],
+        "boolean": [
+          "--no-submit",
+          "--sign-only",
+          "--yes"
+        ],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "none",
+      "json": true,
+      "unlocks": "never",
+      "tty": [
+        "stdin"
+      ]
+    },
+    {
+      "command": "perps",
+      "subcommand": "tpsl",
+      "handler": "perpsTpsl",
+      "file": "commands/perps-manage.ts",
+      "flags": {
+        "value": [
+          "--stop-loss",
+          "--take-profit",
+          "--target-sl",
+          "--target-tp",
+          "--wallet"
+        ],
+        "boolean": [
+          "--no-submit",
+          "--remove-sl",
+          "--remove-tp",
+          "--sign-only",
+          "--yes"
+        ],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "agent",
+      "json": true,
+      "unlocks": "never",
+      "tty": [
+        "stdin"
+      ]
+    },
+    {
+      "command": "perps",
+      "subcommand": "schedule-cancel",
+      "handler": "perpsScheduleCancel",
+      "file": "commands/perps-manage.ts",
+      "flags": {
+        "value": [
+          "--wallet"
+        ],
+        "boolean": [
+          "--clear",
+          "--no-submit",
+          "--sign-only",
+          "--yes"
+        ],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "none",
+      "json": true,
+      "unlocks": "never",
+      "tty": [
+        "stdin"
+      ]
+    },
+    {
+      "command": "perps",
+      "subcommand": "flatten",
+      "handler": "perpsFlatten",
+      "file": "commands/perps-manage.ts",
+      "flags": {
+        "value": [
+          "--wallet"
+        ],
+        "boolean": [
+          "--no-submit",
+          "--sign-only",
+          "--yes"
+        ],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "agent",
+      "json": true,
+      "unlocks": "never",
+      "tty": [
+        "stdin"
+      ]
+    },
+    {
+      "command": "perps",
+      "subcommand": "reduce-only",
+      "handler": "perpsReduceOnly",
+      "file": "commands/perps-manage.ts",
+      "flags": {
+        "value": [
+          "--key"
+        ],
+        "boolean": [],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "both",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
+    },
+    {
+      "command": "perps",
+      "subcommand": "account",
+      "handler": "perpsAccount",
+      "file": "commands/perps-risk.ts",
+      "flags": {
+        "value": [
+          "--since",
+          "--wallet"
+        ],
+        "boolean": [],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "agent",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
+    },
+    {
+      "command": "perps",
+      "subcommand": "risk",
+      "handler": "perpsRisk",
+      "file": "commands/perps-risk.ts",
+      "flags": {
+        "value": [
+          "--wallet"
+        ],
+        "boolean": [],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "agent",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
+    },
+    {
+      "command": "perps",
+      "subcommand": "watch",
+      "handler": "perpsWatch",
+      "file": "commands/perps-risk.ts",
+      "flags": {
+        "value": [
+          "--heartbeat",
+          "--interval",
+          "--on-critical",
+          "--on-warn",
+          "--wallet"
+        ],
+        "boolean": [
+          "--once-level-change"
+        ],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "agent",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
+    },
+    {
+      "command": "perps",
+      "subcommand": "thresholds",
+      "handler": "perpsThresholds",
+      "file": "commands/perps-risk.ts",
+      "flags": {
+        "value": [
+          "--clear-band",
+          "--critical-distance",
+          "--critical-margin-ratio",
+          "--key",
+          "--warn-distance",
+          "--warn-margin-ratio"
+        ],
+        "boolean": [],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "both",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
+    },
+    {
+      "command": "perps",
+      "subcommand": "withdraw",
+      "handler": "perpsWithdraw",
+      "file": "commands/perps-withdraw.ts",
+      "flags": {
+        "value": [
+          "--id",
+          "--keystore",
+          "--to",
+          "--wallet"
+        ],
+        "boolean": [],
+        "path": [
+          "--keystore"
+        ],
+        "pathPositionals": []
+      },
+      "identity": "both",
+      "json": true,
+      "unlocks": "always",
+      "tty": [
+        "stdin",
+        "stdout"
+      ]
+    },
+    {
+      "command": "auth",
+      "subcommand": "login",
+      "handler": "authLogin",
+      "file": "commands/auth.ts",
+      "flags": {
+        "value": [
+          "--embedded-wallet",
+          "--label",
+          "--scopes"
+        ],
+        "boolean": [
+          "--no-browser"
+        ],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "none",
+      "json": true,
+      "unlocks": "never",
+      "tty": [
+        "stdin",
+        "stdout"
+      ]
+    },
+    {
+      "command": "auth",
+      "subcommand": "status",
+      "handler": "authStatus",
+      "file": "commands/auth.ts",
+      "flags": {
+        "value": [],
+        "boolean": [],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "both",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
+    },
+    {
+      "command": "auth",
+      "subcommand": "logout",
+      "handler": "authLogout",
+      "file": "commands/auth.ts",
+      "flags": {
+        "value": [],
+        "boolean": [
+          "--keep-key"
+        ],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "owner",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
+    },
+    {
+      "command": "keys",
+      "subcommand": "list",
+      "handler": "keysList",
+      "file": "commands/keys.ts",
+      "flags": {
+        "value": [],
+        "boolean": [
+          "--all",
+          "--scopes"
+        ],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "owner",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
+    },
+    {
+      "command": "keys",
+      "subcommand": "create",
+      "handler": "keysCreate",
+      "file": "commands/keys.ts",
+      "flags": {
+        "value": [
+          "--access",
+          "--embedded-wallet",
+          "--environment",
+          "--expires-in",
+          "--label",
+          "--reset",
+          "--scopes",
+          "--tx-limit"
+        ],
+        "boolean": [],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "owner",
+      "json": true,
+      "unlocks": "never",
+      "tty": [
+        "stdin",
+        "stdout"
+      ]
+    },
+    {
+      "command": "keys",
+      "subcommand": "access",
+      "handler": "keysAccess",
+      "file": "commands/keys-access.ts",
+      "flags": {
+        "value": [
+          "--access"
+        ],
+        "boolean": [
+          "--history",
+          "--yes"
+        ],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "both",
+      "json": true,
+      "unlocks": "never",
+      "tty": [
+        "stdin",
+        "stdout"
+      ]
+    },
+    {
+      "command": "keys",
+      "subcommand": "update",
+      "handler": "keysUpdate",
+      "file": "commands/keys-embedded-wallet.ts",
+      "flags": {
+        "value": [
+          "--embedded-wallet"
+        ],
+        "boolean": [
+          "--yes"
+        ],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "owner",
+      "json": true,
+      "unlocks": "never",
+      "tty": [
+        "stdin",
+        "stdout"
+      ]
+    },
+    {
+      "command": "keys",
+      "subcommand": "limit",
+      "handler": "keysLimit",
+      "file": "commands/keys-limit.ts",
+      "flags": {
+        "value": [
+          "--reset",
+          "--tx-limit"
+        ],
+        "boolean": [
+          "--clear"
+        ],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "owner",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
+    },
+    {
+      "command": "keys",
+      "subcommand": "self",
+      "handler": "keysSelf",
+      "file": "commands/keys-embedded-wallet.ts",
+      "flags": {
+        "value": [],
+        "boolean": [],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "agent",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
+    },
+    {
+      "command": "keys",
+      "subcommand": "revoke",
+      "handler": "keysRevoke",
+      "file": "commands/keys.ts",
+      "flags": {
+        "value": [],
+        "boolean": [],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "owner",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
+    },
+    {
+      "command": "keys",
+      "subcommand": "wallets",
+      "handler": "keysWallets",
+      "file": "commands/keys-wallets.ts",
+      "flags": {
+        "value": [
+          "--scope",
+          "--wallets"
+        ],
+        "boolean": [],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "agent",
+      "json": true,
+      "unlocks": "never",
+      "tty": [],
+      "actions": {
+        "set": {
+          "unlocks": "never",
+          "tty": []
+        },
+        "scope": {
+          "unlocks": "never",
+          "tty": []
+        }
+      }
+    },
+    {
+      "command": "keys",
+      "subcommand": "signer",
+      "handler": "keysSigner",
+      "file": "commands/key-signer.ts",
+      "flags": {
+        "value": [
+          "--key",
+          "--to-key"
+        ],
+        "boolean": [
+          "--reject"
+        ],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "both",
+      "json": true,
+      "unlocks": "never",
+      "tty": [
+        "stdin",
+        "stdout"
+      ],
+      "actions": {
+        "approve": {
+          "unlocks": "never",
+          "tty": [
+            "stdin",
+            "stdout"
+          ]
+        },
+        "move": {
+          "unlocks": "never",
+          "tty": [
+            "stdin"
+          ]
+        }
+      }
+    },
+    {
+      "command": "wallets",
+      "subcommand": "import",
+      "handler": "walletsImport",
+      "file": "commands/wallets.ts",
+      "flags": {
+        "value": [
+          "--address",
+          "--chain",
+          "--key-file",
+          "--label",
+          "--signer-out"
+        ],
+        "boolean": [],
+        "path": [
+          "--key-file",
+          "--signer-out"
+        ],
+        "pathPositionals": []
+      },
+      "identity": "agent",
+      "json": true,
+      "unlocks": "never",
+      "tty": [
+        "stdin"
+      ]
+    },
+    {
+      "command": "wallets",
+      "subcommand": "revoke",
+      "handler": "walletsRevoke",
+      "file": "commands/wallets.ts",
+      "flags": {
+        "value": [],
+        "boolean": [],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "agent",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
+    },
+    {
+      "command": "wallets",
+      "subcommand": "trust",
+      "handler": "walletsTrust",
+      "file": "commands/wallets-trust.ts",
+      "flags": {
+        "value": [],
+        "boolean": [
+          "--yes"
+        ],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "owner",
+      "json": true,
+      "unlocks": "never",
+      "tty": [
+        "stdin",
+        "stdout"
+      ]
+    },
+    {
+      "command": "wallets",
+      "subcommand": "untrust",
+      "handler": "walletsUntrust",
+      "file": "commands/wallets-trust.ts",
+      "flags": {
+        "value": [],
+        "boolean": [
+          "--yes"
+        ],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "owner",
+      "json": true,
+      "unlocks": "never",
+      "tty": [
+        "stdin",
+        "stdout"
+      ]
+    },
+    {
+      "command": "wallets",
+      "subcommand": "allow-launch",
+      "handler": "walletsAllowLaunch",
+      "file": "commands/wallets-allow-launch.ts",
+      "flags": {
+        "value": [],
+        "boolean": [
+          "--yes"
+        ],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "owner",
+      "json": true,
+      "unlocks": "never",
+      "tty": [
+        "stdin",
+        "stdout"
+      ]
+    },
+    {
+      "command": "wallets",
+      "subcommand": "disallow-launch",
+      "handler": "walletsDisallowLaunch",
+      "file": "commands/wallets-allow-launch.ts",
+      "flags": {
+        "value": [],
+        "boolean": [
+          "--yes"
+        ],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "owner",
+      "json": true,
+      "unlocks": "never",
+      "tty": [
+        "stdin",
+        "stdout"
+      ]
+    },
+    {
+      "command": "wallets",
+      "subcommand": "close-empty",
+      "handler": "walletsCloseEmpty",
+      "file": "commands/wallets-close-empty.ts",
+      "flags": {
+        "value": [
+          "--client-trade-id",
+          "--keep",
+          "--wallet"
+        ],
+        "boolean": [
+          "--yes"
+        ],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "agent",
+      "json": true,
+      "unlocks": "never",
+      "tty": [
+        "stdin"
+      ]
+    },
+    {
+      "command": "wallets",
+      "subcommand": null,
+      "handler": "wallets",
+      "file": "commands/wallets.ts",
+      "flags": {
+        "value": [],
+        "boolean": [
+          "--all"
+        ],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "agent",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
+    },
+    {
+      "command": "vault",
+      "subcommand": "init",
+      "handler": "vaultInit",
+      "file": "commands/vault-init.ts",
+      "flags": {
+        "value": [
+          "--keystore",
+          "--label"
+        ],
+        "boolean": [
+          "--own-passphrase"
+        ],
+        "path": [
+          "--keystore"
+        ],
+        "pathPositionals": []
+      },
+      "identity": "none",
+      "json": true,
+      "unlocks": "always",
+      "tty": [
+        "stdin",
+        "stdout"
+      ]
+    },
+    {
+      "command": "vault",
+      "subcommand": "status",
+      "handler": "vaultStatus",
+      "file": "commands/vault-status.ts",
+      "flags": {
+        "value": [
+          "--keystore"
+        ],
+        "boolean": [
+          "--accept-older-copy",
+          "--unlock"
+        ],
+        "path": [
+          "--keystore"
+        ],
+        "pathPositionals": []
+      },
+      "identity": "owner",
+      "json": true,
+      "unlocks": "always",
+      "tty": [
+        "stdin",
+        "stderr"
+      ]
+    },
+    {
+      "command": "vault",
+      "subcommand": "list",
+      "handler": "vaultList",
+      "file": "commands/vault-list.ts",
+      "flags": {
+        "value": [
+          "--evm-rpc-url",
+          "--keystore",
+          "--rpc-url"
+        ],
+        "boolean": [
+          "--accept-older-copy",
+          "--all",
+          "--balances"
+        ],
+        "path": [
+          "--keystore"
+        ],
+        "pathPositionals": []
+      },
+      "identity": "owner",
+      "json": true,
+      "unlocks": "always",
+      "tty": [
+        "stdin",
+        "stderr"
+      ]
+    },
+    {
+      "command": "vault",
+      "subcommand": "new-key",
+      "handler": "vaultNewKey",
+      "file": "commands/vault-new-key.ts",
+      "flags": {
+        "value": [
+          "--chain",
+          "--count",
+          "--keystore",
+          "--label",
+          "--labels-from"
+        ],
+        "boolean": [
+          "--accept-older-copy"
+        ],
+        "path": [
+          "--keystore",
+          "--labels-from"
+        ],
+        "pathPositionals": []
+      },
+      "identity": "owner",
+      "json": true,
+      "unlocks": "always",
+      "tty": [
+        "stdin",
+        "stdout"
+      ]
+    },
+    {
+      "command": "vault",
+      "subcommand": "rename",
+      "handler": "vaultRename",
+      "file": "commands/vault-rename.ts",
+      "flags": {
+        "value": [
+          "--id",
+          "--keystore",
+          "--pairs-from"
+        ],
+        "boolean": [
+          "--accept-older-copy",
+          "--dry-run"
+        ],
+        "path": [
+          "--keystore",
+          "--pairs-from"
+        ],
+        "pathPositionals": []
+      },
+      "identity": "owner",
+      "json": true,
+      "unlocks": "always",
+      "tty": [
+        "stdin",
+        "stdout"
+      ]
+    },
+    {
+      "command": "vault",
+      "subcommand": "phrase",
+      "handler": "vaultPhrase",
+      "file": "commands/vault-phrase-dispatch.ts",
+      "flags": {
+        "value": [],
+        "boolean": [],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "none",
+      "json": false,
+      "unlocks": "always",
+      "tty": [
+        "stdin",
+        "stdout"
+      ],
+      "actions": {
+        "show": {
+          "unlocks": "always",
+          "tty": [
+            "stdin",
+            "stdout"
+          ]
+        }
+      }
+    },
+    {
+      "command": "vault",
+      "subcommand": "restore",
+      "handler": "vaultRestore",
+      "file": "commands/vault-restore.ts",
+      "flags": {
+        "value": [
+          "--count",
+          "--evm-count",
+          "--evm-tee-count",
+          "--external-count",
+          "--keystore",
+          "--rpc-url",
+          "--tee-count"
+        ],
+        "boolean": [
+          "--own-passphrase",
+          "--phrase"
+        ],
+        "path": [
+          "--keystore"
+        ],
+        "pathPositionals": []
+      },
+      "identity": "agent",
+      "json": true,
+      "unlocks": "never",
+      "tty": [
+        "stdin",
+        "stdout"
+      ]
+    },
+    {
+      "command": "vault",
+      "subcommand": "reconcile-exposure",
+      "handler": "vaultReconcileExposure",
+      "file": "commands/vault-restore.ts",
+      "flags": {
+        "value": [
+          "--keystore"
+        ],
+        "boolean": [
+          "--accept-older-copy"
+        ],
+        "path": [
+          "--keystore"
+        ],
+        "pathPositionals": []
+      },
+      "identity": "both",
+      "json": true,
+      "unlocks": "always",
+      "tty": [
+        "stdin",
+        "stdout"
+      ]
+    },
+    {
+      "command": "vault",
+      "subcommand": "factor",
+      "handler": "vaultFactor",
+      "file": "commands/vault-factor-dispatch.ts",
+      "flags": {
+        "value": [],
+        "boolean": [],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "none",
+      "json": false,
+      "unlocks": "always",
+      "tty": [
+        "stdin",
+        "stdout"
+      ],
+      "actions": {
+        "list": {
+          "unlocks": "never",
+          "tty": []
+        },
+        "add": {
+          "unlocks": "always",
+          "tty": [
+            "stdin",
+            "stdout"
+          ]
+        },
+        "remove": {
+          "unlocks": "always",
+          "tty": [
+            "stdin",
+            "stdout"
+          ]
+        }
+      }
+    },
+    {
+      "command": "vault",
+      "subcommand": "enroll",
+      "handler": "vaultFactorAdd",
+      "file": "commands/vault-factor.ts",
+      "flags": {
+        "value": [
+          "--keystore",
+          "--label"
+        ],
+        "boolean": [
+          "--accept-older-copy",
+          "--install-helper",
+          "--own-passphrase"
+        ],
+        "path": [
+          "--keystore"
+        ],
+        "pathPositionals": []
+      },
+      "identity": "owner",
+      "json": true,
+      "unlocks": "always",
+      "tty": [
+        "stdin",
+        "stdout"
+      ],
+      "actions": {
+        "security-key": {
+          "unlocks": "always",
+          "tty": [
+            "stdin"
+          ]
+        },
+        "touch-id": {
+          "unlocks": "always",
+          "tty": [
+            "stdin"
+          ]
+        },
+        "passkey": {
+          "unlocks": "always",
+          "tty": [
+            "stdin"
+          ]
+        }
+      }
+    },
+    {
+      "command": "vault",
+      "subcommand": "backup",
+      "handler": "vaultBackup",
+      "file": "commands/vault-backup.ts",
+      "flags": {
+        "value": [
+          "--keystore",
+          "--to"
+        ],
+        "boolean": [
+          "--accept-older-copy",
+          "--accept-shared-domain"
+        ],
+        "path": [
+          "--keystore",
+          "--to"
+        ],
+        "pathPositionals": []
+      },
+      "identity": "owner",
+      "json": true,
+      "unlocks": "always",
+      "tty": [
+        "stdin",
+        "stdout"
+      ]
+    },
+    {
+      "command": "vault",
+      "subcommand": "verify-backup",
+      "handler": "vaultVerifyBackup",
+      "file": "commands/vault-backup.ts",
+      "flags": {
+        "value": [
+          "--keystore"
+        ],
+        "boolean": [
+          "--accept-older-copy"
+        ],
+        "path": [
+          "--keystore"
+        ],
+        "pathPositionals": [
+          "<path>"
+        ]
+      },
+      "identity": "owner",
+      "json": true,
+      "unlocks": "always",
+      "tty": [
+        "stdin",
+        "stdout"
+      ]
+    },
+    {
+      "command": "vault",
+      "subcommand": "import-legacy",
+      "handler": "vaultImportLegacy",
+      "file": "commands/vault-import-legacy.ts",
+      "flags": {
+        "value": [
+          "--from",
+          "--keystore"
+        ],
+        "boolean": [
+          "--accept-older-copy",
+          "--tee"
+        ],
+        "path": [
+          "--from",
+          "--keystore"
+        ],
+        "pathPositionals": []
+      },
+      "identity": "owner",
+      "json": true,
+      "unlocks": "always",
+      "tty": [
+        "stdin",
+        "stdout"
+      ]
+    },
+    {
+      "command": "vault",
+      "subcommand": "retire-legacy",
+      "handler": "vaultRetireLegacy",
+      "file": "commands/vault-retire-legacy.ts",
+      "flags": {
+        "value": [
+          "--from",
+          "--keystore"
+        ],
+        "boolean": [
+          "--accept-older-copy"
+        ],
+        "path": [
+          "--from",
+          "--keystore"
+        ],
+        "pathPositionals": []
+      },
+      "identity": "owner",
+      "json": true,
+      "unlocks": "always",
+      "tty": [
+        "stdin",
+        "stdout"
+      ]
+    },
+    {
+      "command": "vault",
+      "subcommand": "transfer",
+      "handler": "vaultTransfer",
+      "file": "commands/vault-transfer.ts",
+      "flags": {
+        "value": [
+          "--amount",
+          "--asset",
+          "--from",
+          "--keystore",
+          "--rpc-url"
+        ],
+        "boolean": [
+          "--accept-older-copy"
+        ],
+        "path": [
+          "--keystore"
+        ],
+        "pathPositionals": []
+      },
+      "identity": "both",
+      "json": true,
+      "unlocks": "always",
+      "tty": [
+        "stdin",
+        "stdout"
+      ]
+    },
+    {
+      "command": "vault",
+      "subcommand": "promote",
+      "handler": "vaultPromote",
+      "file": "commands/vault-promote.ts",
+      "flags": {
+        "value": [
+          "--from",
+          "--in-place",
+          "--keystore",
+          "--label",
+          "--rpc-url",
+          "--sweep-to",
+          "--to-key"
+        ],
+        "boolean": [
+          "--accept-older-copy",
+          "--accept-unknown-exposure"
+        ],
+        "path": [
+          "--keystore"
+        ],
+        "pathPositionals": []
+      },
+      "identity": "both",
+      "json": true,
+      "unlocks": "always",
+      "tty": [
+        "stdin",
+        "stdout"
+      ]
+    },
+    {
+      "command": "vault",
+      "subcommand": "promote-batch",
+      "handler": "vaultPromoteBatch",
+      "file": "commands/vault-promote-batch.ts",
+      "flags": {
+        "value": [
+          "--keystore",
+          "--pairs-from",
+          "--rpc-url",
+          "--to-key"
+        ],
+        "boolean": [
+          "--accept-older-copy",
+          "--accept-unknown-exposure",
+          "--token-holdings"
+        ],
+        "path": [
+          "--keystore",
+          "--pairs-from"
+        ],
+        "pathPositionals": []
+      },
+      "identity": "both",
+      "json": true,
+      "unlocks": "always",
+      "tty": [
+        "stdin",
+        "stdout"
+      ]
+    },
+    {
+      "command": "vault",
+      "subcommand": "fund",
+      "handler": "vaultFund",
+      "file": "commands/vault-fund.ts",
+      "flags": {
+        "value": [
+          "--amount",
+          "--asset",
+          "--from",
+          "--keystore",
+          "--rpc-url"
+        ],
+        "boolean": [
+          "--accept-older-copy"
+        ],
+        "path": [
+          "--keystore"
+        ],
+        "pathPositionals": []
+      },
+      "identity": "owner",
+      "json": true,
+      "unlocks": "always",
+      "tty": [
+        "stdin",
+        "stdout"
+      ]
+    },
+    {
+      "command": "vault",
+      "subcommand": "demote",
+      "handler": "vaultDemote",
+      "file": "commands/vault-demote.ts",
+      "flags": {
+        "value": [
+          "--keystore",
+          "--rpc-url",
+          "--sweep-to"
+        ],
+        "boolean": [
+          "--accept-older-copy",
+          "--emergency"
+        ],
+        "path": [
+          "--keystore"
+        ],
+        "pathPositionals": []
+      },
+      "identity": "none",
+      "json": true,
+      "unlocks": "always",
+      "tty": [
+        "stdin",
+        "stdout"
+      ]
+    },
+    {
+      "command": "vault",
+      "subcommand": "export-key",
+      "handler": "vaultExportKey",
+      "file": "commands/vault-export-key.ts",
+      "flags": {
+        "value": [
+          "--keystore",
+          "--to"
+        ],
+        "boolean": [
+          "--accept-older-copy"
+        ],
+        "path": [
+          "--keystore",
+          "--to"
+        ],
+        "pathPositionals": []
+      },
+      "identity": "owner",
+      "json": true,
+      "unlocks": "always",
+      "tty": [
+        "stdin",
+        "stdout"
+      ]
+    },
+    {
+      "command": "tee",
+      "subcommand": "new",
+      "handler": "teeNew",
+      "file": "commands/tee.ts",
+      "flags": {
+        "value": [
+          "--keystore",
+          "--label"
+        ],
+        "boolean": [],
+        "path": [
+          "--keystore"
+        ],
+        "pathPositionals": []
+      },
+      "identity": "none",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
+    },
+    {
+      "command": "tee",
+      "subcommand": "enable",
+      "handler": "teeEnable",
+      "file": "commands/tee.ts",
+      "flags": {
+        "value": [
+          "--keystore",
+          "--label",
+          "--vault",
+          "--vault-key"
+        ],
+        "boolean": [
+          "--accept-unknown-exposure"
+        ],
+        "path": [
+          "--keystore"
+        ],
+        "pathPositionals": []
+      },
+      "identity": "both",
+      "json": true,
+      "unlocks": "if-vault",
+      "tty": [
+        "stdin"
+      ]
+    },
+    {
+      "command": "tee",
+      "subcommand": "fund",
+      "handler": "teeFund",
+      "file": "commands/tee.ts",
+      "flags": {
+        "value": [
+          "--amount",
+          "--asset",
+          "--keystore"
+        ],
+        "boolean": [],
+        "path": [
+          "--keystore"
+        ],
+        "pathPositionals": []
+      },
+      "identity": "none",
+      "json": true,
+      "unlocks": "if-vault",
+      "tty": [
+        "stdin"
+      ]
+    },
+    {
+      "command": "tee",
+      "subcommand": "status",
+      "handler": "teeStatus",
+      "file": "commands/tee.ts",
+      "flags": {
+        "value": [
+          "--keystore",
+          "--rpc-url"
+        ],
+        "boolean": [
+          "--verify"
+        ],
+        "path": [
+          "--keystore"
+        ],
+        "pathPositionals": []
+      },
+      "identity": "agent",
+      "json": true,
+      "unlocks": "if-vault",
+      "tty": [
+        "stdin"
+      ]
+    },
+    {
+      "command": "tee",
+      "subcommand": "disable",
+      "handler": "teeDisable",
+      "file": "commands/tee.ts",
+      "flags": {
+        "value": [
+          "--keystore"
+        ],
+        "boolean": [],
+        "path": [
+          "--keystore"
+        ],
+        "pathPositionals": []
+      },
+      "identity": "agent",
+      "json": true,
+      "unlocks": "always",
+      "tty": [
+        "stdin",
+        "stdout"
+      ]
+    },
+    {
+      "command": "tee",
+      "subcommand": "sweep",
+      "handler": "teeSweep",
+      "file": "commands/tee.ts",
+      "flags": {
+        "value": [
+          "--keystore",
+          "--rpc-url"
+        ],
+        "boolean": [
+          "--emergency"
+        ],
+        "path": [
+          "--keystore"
+        ],
+        "pathPositionals": []
+      },
+      "identity": "agent",
+      "json": true,
+      "unlocks": "always",
+      "tty": [
+        "stdin",
+        "stdout"
+      ]
+    },
+    {
+      "command": "tee",
+      "subcommand": "rebind",
+      "handler": "teeRebind",
+      "file": "commands/tee-rebind.ts",
+      "flags": {
+        "value": [
+          "--label-prefix",
+          "--to-key"
+        ],
+        "boolean": [],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "owner",
+      "json": true,
+      "unlocks": "never",
+      "tty": [
+        "stdin",
+        "stdout"
+      ]
+    },
+    {
+      "command": "tee",
+      "subcommand": "rebinds",
+      "handler": "teeRebinds",
+      "file": "commands/tee-rebind.ts",
+      "flags": {
+        "value": [],
+        "boolean": [],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "owner",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
+    },
+    {
+      "command": "tee",
+      "subcommand": "rename",
+      "handler": "teeRename",
+      "file": "commands/tee-rename.ts",
+      "flags": {
+        "value": [
+          "--pairs-from"
+        ],
+        "boolean": [
+          "--accept-older-copy",
+          "--dry-run"
+        ],
+        "path": [
+          "--pairs-from"
+        ],
+        "pathPositionals": []
+      },
+      "identity": "owner",
+      "json": true,
+      "unlocks": "if-tee-and-vault",
+      "tty": [
+        "stdin",
+        "stdout"
+      ]
+    },
+    {
+      "command": "tee",
+      "subcommand": "signer",
+      "handler": "teeSigner",
+      "file": "commands/key-signer.ts",
+      "flags": {
+        "value": [
+          "--key",
+          "--out"
+        ],
+        "boolean": [
+          "--force",
+          "--no-wait"
+        ],
+        "path": [
+          "--out"
+        ],
+        "pathPositionals": []
+      },
+      "identity": "both",
+      "json": true,
+      "unlocks": "never",
+      "tty": [],
+      "actions": {
+        "new": {
+          "unlocks": "never",
+          "tty": []
+        },
+        "remove": {
+          "unlocks": "never",
+          "tty": []
+        },
+        "status": {
+          "unlocks": "never",
+          "tty": []
+        }
+      }
+    },
+    {
+      "command": "profile",
+      "subcommand": "list",
+      "handler": "profileList",
+      "file": "commands/profile.ts",
+      "flags": {
+        "value": [],
+        "boolean": [],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "none",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
+    },
+    {
+      "command": "profile",
+      "subcommand": "add",
+      "handler": "profileAdd",
+      "file": "commands/profile.ts",
+      "flags": {
+        "value": [],
+        "boolean": [],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "none",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
+    },
+    {
+      "command": "profile",
+      "subcommand": "use",
+      "handler": "profileUse",
+      "file": "commands/profile.ts",
+      "flags": {
+        "value": [],
+        "boolean": [],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "none",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
+    },
+    {
+      "command": "profile",
+      "subcommand": "rename",
+      "handler": "profileRename",
+      "file": "commands/profile.ts",
+      "flags": {
+        "value": [],
+        "boolean": [],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "none",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
+    },
+    {
+      "command": "profile",
+      "subcommand": "remove",
+      "handler": "profileRemove",
+      "file": "commands/profile.ts",
+      "flags": {
+        "value": [],
+        "boolean": [
+          "--yes"
+        ],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "none",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
+    },
+    {
+      "command": "profile",
+      "subcommand": "set",
+      "handler": "profileSet",
+      "file": "commands/profile.ts",
+      "flags": {
+        "value": [
+          "--rpc-url"
+        ],
+        "boolean": [
+          "--clear-rpc-url"
+        ],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "none",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
+    },
+    {
+      "command": "external",
+      "subcommand": "new",
+      "handler": "externalNew",
+      "file": "commands/external.ts",
+      "flags": {
+        "value": [
+          "--keystore",
+          "--label"
+        ],
+        "boolean": [
+          "--accept-older-copy"
+        ],
+        "path": [
+          "--keystore"
+        ],
+        "pathPositionals": []
+      },
+      "identity": "owner",
+      "json": true,
+      "unlocks": "always",
+      "tty": [
+        "stdin",
+        "stdout"
+      ]
+    },
+    {
+      "command": "external",
+      "subcommand": "list",
+      "handler": "externalList",
+      "file": "commands/external.ts",
+      "flags": {
+        "value": [
+          "--keystore"
+        ],
+        "boolean": [
+          "--accept-older-copy"
+        ],
+        "path": [
+          "--keystore"
+        ],
+        "pathPositionals": []
+      },
+      "identity": "owner",
+      "json": true,
+      "unlocks": "always",
+      "tty": [
+        "stdin",
+        "stdout"
+      ]
+    },
+    {
+      "command": "external",
+      "subcommand": "sweep",
+      "handler": "externalSweep",
+      "file": "commands/external.ts",
+      "flags": {
+        "value": [
+          "--keystore",
+          "--rpc-url",
+          "--to"
+        ],
+        "boolean": [
+          "--accept-older-copy"
+        ],
+        "path": [
+          "--keystore"
+        ],
+        "pathPositionals": []
+      },
+      "identity": "owner",
+      "json": true,
+      "unlocks": "always",
+      "tty": [
+        "stdin",
+        "stdout"
+      ]
+    },
+    {
+      "command": "sign",
+      "subcommand": "message",
+      "handler": "signMessage",
+      "file": "commands/sign.ts",
+      "flags": {
+        "value": [
+          "--file",
+          "--keystore",
+          "--rpc-url",
+          "--wallet"
+        ],
+        "boolean": [
+          "--accept-older-copy",
+          "--broadcast",
+          "--yes"
+        ],
+        "path": [
+          "--file",
+          "--keystore"
+        ],
+        "pathPositionals": []
+      },
+      "identity": "owner",
+      "json": true,
+      "unlocks": "always",
+      "tty": [
+        "stdin",
+        "stdout"
+      ]
+    },
+    {
+      "command": "sign",
+      "subcommand": null,
+      "handler": "sign",
+      "file": "commands/sign.ts",
+      "flags": {
+        "value": [
+          "--file",
+          "--keystore",
+          "--rpc-url",
+          "--wallet"
+        ],
+        "boolean": [
+          "--accept-older-copy",
+          "--broadcast",
+          "--yes"
+        ],
+        "path": [
+          "--file",
+          "--keystore"
+        ],
+        "pathPositionals": []
+      },
+      "identity": "owner",
+      "json": true,
+      "unlocks": "always",
+      "tty": [
+        "stdin",
+        "stdout"
+      ]
+    },
+    {
+      "command": "secrets",
+      "subcommand": "set",
+      "handler": "secretsSet",
+      "file": "commands/secrets.ts",
+      "flags": {
+        "value": [],
+        "boolean": [],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "none",
+      "json": true,
+      "unlocks": "never",
+      "tty": [
+        "stdin",
+        "stdout"
+      ]
+    },
+    {
+      "command": "secrets",
+      "subcommand": "list",
+      "handler": "secretsList",
+      "file": "commands/secrets.ts",
+      "flags": {
+        "value": [],
+        "boolean": [],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "none",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
+    },
+    {
+      "command": "secrets",
+      "subcommand": "remove",
+      "handler": "secretsRemove",
+      "file": "commands/secrets.ts",
+      "flags": {
+        "value": [],
+        "boolean": [],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "none",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
+    },
+    {
+      "command": "plugins",
+      "subcommand": null,
+      "handler": "plugins",
+      "file": "commands/plugins.ts",
+      "flags": {
+        "value": [],
+        "boolean": [],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "none",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
+    },
+    {
+      "command": "doctor",
+      "subcommand": null,
+      "handler": "doctor",
+      "file": "commands/doctor.ts",
+      "flags": {
+        "value": [
+          "--role"
+        ],
+        "boolean": [],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "both",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
+    },
+    {
+      "command": "mcp",
+      "subcommand": null,
+      "handler": "mcp",
+      "file": "commands/mcp.ts",
+      "flags": {
+        "value": [
+          "--tools"
+        ],
+        "boolean": [
+          "--print-config",
+          "--read-only"
+        ],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "agent",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
+    },
+    {
+      "command": "core",
+      "subcommand": "serve",
+      "handler": "coreServe",
+      "file": "commands/core.ts",
+      "flags": {
+        "value": [
+          "--view-token-fd"
+        ],
+        "boolean": [],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "owner",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
+    },
+    {
+      "command": "core",
+      "subcommand": "mcp",
+      "handler": "coreMcp",
+      "file": "commands/core-mcp.ts",
+      "flags": {
+        "value": [
+          "--harness",
+          "--token"
+        ],
+        "boolean": [],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "none",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
+    },
+    {
+      "command": "tui",
+      "subcommand": null,
+      "handler": "tui",
+      "file": "commands/tui.ts",
+      "flags": {
+        "value": [],
+        "boolean": [],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "none",
+      "json": true,
+      "unlocks": "never",
+      "tty": [
+        "stdin",
+        "stdout"
+      ]
+    },
+    {
+      "command": "setup",
+      "subcommand": null,
+      "handler": "setup",
+      "file": "commands/setup.ts",
+      "flags": {
+        "value": [],
+        "boolean": [
+          "--no-browser"
+        ],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "both",
+      "json": true,
+      "unlocks": "never",
+      "tty": [
+        "stdin",
+        "stdout"
+      ]
+    },
+    {
+      "command": "verify",
+      "subcommand": null,
+      "handler": "verify",
+      "file": "commands/verify.ts",
+      "flags": {
+        "value": [
+          "--bundle",
+          "--identity",
+          "--issuer"
+        ],
+        "boolean": [],
+        "path": [
+          "--bundle"
+        ],
+        "pathPositionals": [
+          "<file>"
+        ]
+      },
+      "identity": "none",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
+    },
+    {
+      "command": "update",
+      "subcommand": null,
+      "handler": "update",
+      "file": "commands/update.ts",
+      "flags": {
+        "value": [
+          "--to"
+        ],
+        "boolean": [
+          "--check"
+        ],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "none",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
+    },
+    {
+      "command": "completion",
+      "subcommand": "zsh",
+      "handler": "completionZsh",
+      "file": "commands/completion.ts",
+      "flags": {
+        "value": [],
+        "boolean": [],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "none",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
+    },
+    {
+      "command": "completion",
+      "subcommand": "bash",
+      "handler": "completionBash",
+      "file": "commands/completion.ts",
+      "flags": {
+        "value": [],
+        "boolean": [],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "none",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
+    },
+    {
+      "command": "completion",
+      "subcommand": "fish",
+      "handler": "completionFish",
+      "file": "commands/completion.ts",
+      "flags": {
+        "value": [],
+        "boolean": [],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "none",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
+    },
+    {
+      "command": "completion",
+      "subcommand": null,
+      "handler": "completion",
+      "file": "commands/completion.ts",
+      "flags": {
+        "value": [],
+        "boolean": [],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "none",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
+    },
+    {
+      "command": "help",
+      "subcommand": null,
+      "handler": "help",
+      "file": "commands/help.ts",
+      "flags": {
+        "value": [],
+        "boolean": [],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "none",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
+    }
+  ],
+  "presets": {
+    "read": {
+      "label": "Read",
+      "scopes": [
+        "account:read"
+      ]
+    },
+    "readwrite": {
+      "label": "Write",
+      "scopes": [
+        "launch:write",
+        "launch:read",
+        "activity:write",
+        "swap:write",
+        "account:read"
+      ]
+    },
+    "readwritetransfer": {
+      "label": "Withdraw",
+      "scopes": [
+        "launch:write",
+        "launch:read",
+        "activity:write",
+        "swap:write",
+        "transfer:write",
+        "account:read",
+        "transfer:bound"
+      ]
+    },
+    "tradeperps": {
+      "label": "Trade perps",
+      "scopes": [
+        "account:read",
+        "perps:write"
+      ]
+    }
+  },
+  "unread": []
+}

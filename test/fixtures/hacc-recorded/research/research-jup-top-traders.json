@@ -1,0 +1,105 @@
+{
+  "name": "research-jup-top-traders",
+  "method": "GET",
+  "route": "/v1/market/token/HaccFake11111111111111111111111111111111118/top-traders",
+  "query": {},
+  "status": 200,
+  "ms": 612,
+  "bytes": 3206,
+  "contentType": "application/json; charset=utf-8",
+  "answer": {
+    "chain": "solana",
+    "time_frame": "24h",
+    "limit": 10,
+    "traders": [
+      {
+        "address": "HaccFake1111111111111111111111111111111111T",
+        "volume_usd": 1076173.495000863,
+        "trades": 4877,
+        "buys": 1939,
+        "sells": 2938,
+        "realized_pnl_usd": -5411.679628801656,
+        "unrealized_pnl_usd": 0,
+        "total_pnl_usd": -5411.679628801656,
+        "tracked": false,
+        "watch_level": "none",
+        "groups": [
+          "fake-groups-3"
+        ],
+        "entity": null,
+        "x_handle": null
+      },
+      {
+        "address": "HaccFake1111111111111111111111111111111111U",
+        "volume_usd": 815033.2677492005,
+        "trades": 1584,
+        "buys": 862,
+        "sells": 722,
+        "realized_pnl_usd": 1102.7670380375648,
+        "unrealized_pnl_usd": -894.8288901202384,
+        "total_pnl_usd": 207.93814791732643,
+        "tracked": false,
+        "watch_level": "none",
+        "groups": [
+          "fake-groups-4",
+          "fake-groups-3"
+        ],
+        "entity": null,
+        "x_handle": null
+      },
+      {
+        "address": "HaccFake1111111111111111111111111111111111V",
+        "volume_usd": 506742.0032662413,
+        "trades": 1623,
+        "buys": 811,
+        "sells": 812,
+        "realized_pnl_usd": 41.81540779082689,
+        "unrealized_pnl_usd": 0,
+        "total_pnl_usd": 41.81540779082689,
+        "tracked": false,
+        "watch_level": "none",
+        "groups": [
+          "fake-groups-3"
+        ],
+        "entity": null,
+        "x_handle": null
+      },
+      {
+        "address": "HaccFake1111111111111111111111111111111111W",
+        "volume_usd": 417173.3382652129,
+        "trades": 13566,
+        "buys": 6544,
+        "sells": 7022,
+        "realized_pnl_usd": -89.14025870665992,
+        "unrealized_pnl_usd": 0,
+        "total_pnl_usd": -89.14025870665992,
+        "tracked": false,
+        "watch_level": "none",
+        "groups": [
+          "fake-groups-4",
+          "fake-groups-2"
+        ],
+        "entity": null,
+        "x_handle": null
+      },
+      {
+        "address": "HaccFake1111111111111111111111111111111111X",
+        "volume_usd": 342270.9091540881,
+        "trades": 742,
+        "buys": 371,
+        "sells": 371,
+        "realized_pnl_usd": 39.27351578172242,
+        "unrealized_pnl_usd": 0,
+        "total_pnl_usd": 39.27351578172242,
+        "tracked": false,
+        "watch_level": "none",
+        "groups": [],
+        "entity": null,
+        "x_handle": null
+      }
+    ]
+  },
+  "truncated": {
+    "$.traders": 10
+  }
+}

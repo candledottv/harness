@@ -1,0 +1,14 @@
+{
+  "command": "candle keys update <agent-b> --embedded-wallet allow --json",
+  "exit": 0,
+  "stdout": {
+    "success": true,
+    "dryRun": true,
+    "keyPrefix": "FakeKey2",
+    "label": "key-label",
+    "direction": "unchanged",
+    "from": "allowed",
+    "to": "allowed",
+    "command": "keys update"
+  }
+}

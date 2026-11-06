@@ -1,0 +1,10 @@
+{
+  "command": "tee status <tee> --json (agent-b)",
+  "exit": 1,
+  "stdout": {
+    "ok": false,
+    "code": "TEE_WALLET_NOT_ON_KEY",
+    "message": "TeeFake111111111111111111111111111111111111 is not a TEE wallet bound to key FakeKey2.",
+    "suggestion": "Pass --verify to read it from this machine's vault, or select the profile holding its key."
+  }
+}

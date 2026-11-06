@@ -1,0 +1,77 @@
+{
+  "name": "market-metas",
+  "method": "GET",
+  "route": "/v1/market/metas",
+  "query": {},
+  "status": 200,
+  "ms": 146,
+  "bytes": 4960,
+  "contentType": "application/json; charset=utf-8",
+  "answer": {
+    "metas": [
+      {
+        "name": "fake-name-31",
+        "slug": "fake-slug-1",
+        "description": "fake-description-1",
+        "icon": "fake-icon-1",
+        "token_count": 71,
+        "market_cap": 959253627,
+        "liquidity": 66097967.96,
+        "volume": 15921305.14,
+        "market_cap_change_1h_pct": -2.4697521832116878,
+        "market_cap_change_24h_pct": -1.5441145731694816
+      },
+      {
+        "name": "fake-name-32",
+        "slug": "fake-slug-2",
+        "description": "fake-description-2",
+        "icon": "fake-icon-2",
+        "token_count": 104,
+        "market_cap": 549549811,
+        "liquidity": 48486770.22,
+        "volume": 18480612.5,
+        "market_cap_change_1h_pct": -2.2307937524326746,
+        "market_cap_change_24h_pct": -5.355206575054574
+      },
+      {
+        "name": "fake-name-33",
+        "slug": "fake-slug-3",
+        "description": "fake-description-3",
+        "icon": "fake-icon-3",
+        "token_count": 17,
+        "market_cap": 356147208,
+        "liquidity": 5745703.62,
+        "volume": 52500632.94,
+        "market_cap_change_1h_pct": -0.6276483595130853,
+        "market_cap_change_24h_pct": 15.037888788993431
+      },
+      {
+        "name": "fake-name-34",
+        "slug": "fake-slug-4",
+        "description": "fake-description-4",
+        "icon": "fake-icon-4",
+        "token_count": 30,
+        "market_cap": 363557361,
+        "liquidity": 22350032.97,
+        "volume": 5767083.81,
+        "market_cap_change_1h_pct": -4.4022075602434985,
+        "market_cap_change_24h_pct": -6.408828570865398
+      },
+      {
+        "name": "fake-name-35",
+        "slug": "fake-slug-5",
+        "description": "fake-description-5",
+        "icon": "fake-icon-5",
+        "token_count": 56,
+        "market_cap": 657368956,
+        "liquidity": 19988535.17,
+        "volume": 3185739.44,
+        "market_cap_change_1h_pct": -0.3610030502930905,
+        "market_cap_change_24h_pct": 0.12020423153558363
+      }
+    ]
+  },
+  "truncated": {
+    "$.metas": 18
+  }
+}

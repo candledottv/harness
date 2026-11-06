@@ -1,0 +1,71 @@
+{
+  "tool": "candle_get_portfolio",
+  "args": {},
+  "ms": 453,
+  "outcome": {
+    "kind": "ok",
+    "result": {
+      "success": true,
+      "embedded": [
+        {
+          "address": "WalletFake111111111111111111111111111111111",
+          "chain": "solana",
+          "lamports": "1000000000",
+          "tokens": []
+        }
+      ],
+      "tee": [
+        {
+          "id": "teefakeid1",
+          "address": "TeeFake111111111111111111111111111111111111",
+          "label": "tee-wallet-1",
+          "active": true,
+          "chain": "solana",
+          "lamports": "1000000000",
+          "tokens": []
+        }
+      ],
+      "hood": {
+        "embedded": [
+          {
+            "address": "0x00000000000000000000000000000000000Fa4e1",
+            "chain": "hood",
+            "wei": "0",
+            "tokens": []
+          }
+        ],
+        "tee": [],
+        "unavailable": [],
+        "unpriced": 0,
+        "unpricedByReason": {}
+      },
+      "prices": {
+        "So11111111111111111111111111111111111111112": {
+          "priceUsd": 150,
+          "source": "jupiter",
+          "symbol": "SOL",
+          "name": "Wrapped SOL"
+        },
+        "hood:native": {
+          "priceUsd": 3000,
+          "source": "reference"
+        }
+      },
+      "unavailable": [],
+      "complete": true,
+      "walletsComplete": true,
+      "hyperliquid": {
+        "read": true,
+        "network": "mainnet",
+        "accounts": [],
+        "subtotal": {
+          "accountValueUsd": "0",
+          "unrealizedPnlUsd": "0"
+        },
+        "empty": 0,
+        "unread": [],
+        "thresholds": "defaults"
+      }
+    }
+  }
+}

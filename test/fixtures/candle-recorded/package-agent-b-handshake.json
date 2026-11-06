@@ -1,0 +1,10 @@
+{
+  "route": "package",
+  "status": {
+    "state": "down",
+    "reason": "couldn't start Candle's MCP server: ENOENT: no such file or directory, posix_spawn '/nonexistent/candle-mcp'"
+  },
+  "startMs": 4,
+  "stderrTail": "",
+  "toolNames": []
+}

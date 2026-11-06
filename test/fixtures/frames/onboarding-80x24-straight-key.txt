@@ -1,0 +1,50 @@
+ ▲ candle   STRAIGHT IN   sign in, your model and its key, then the Candle Harn…
+ – 0  ✓ 1  ✓ 2  ▸ 3 Wallet and limits  – 4  – 5                                 
+╭──────────────────────────────────────────────────────────────── step 3 of 5 ─╮
+│                                                                              │
+│  Your agent's key                                                            │
+│                                                                              │
+│  Your agent trades with a key of its own, made by Candle's CLI and stored    │
+│  straight into the Candle Harness. It never shows on screen.                 │
+│                                                                              │
+│  ▸ name       agent-a▏                                                       │
+│    runs on   Claude Code · sonnet, from step 2                               │
+│                                                                              │
+│  Candle's cap on the key, optional                                           │
+│    cap        $50        a day · past it, Candle refuses buys and swaps · …  │
+│                                                                              │
+│  It runs, in the pane:                                                       │
+│    candle keys create --label agent-a --tx-limit 50 --reset daily            │
+│    no vault: approved by you in the pane                                     │
+│                                                                              │
+│    Make the key                                                              │
+│                                                                              │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+ ↑/↓ moves · ⏎ or a click picks · esc back                      ctrl-c ×2 quits 
+
+--- colours ---
+0: f6f8fb/0e1115×11 f6f8fb/2a2f3a×13 959dab/0e1115×56
+1: 959dab/0b0d10×5 3ddc84/0b0d10×10 f6f8fb/0b0d10×23 959dab/0b0d10×10 ffffff/0b0d10×32
+2: 32fe9f/111419×65 959dab/111419×13 32fe9f/111419×2
+3: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
+4: 32fe9f/111419×1 ffffff/111419×2 b392f0/111419×16 ffffff/111419×60 32fe9f/111419×1
+5: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
+6: 32fe9f/111419×1 ffffff/111419×2 dde2ea/111419×72 ffffff/111419×4 32fe9f/111419×1
+7: 32fe9f/111419×1 ffffff/111419×2 dde2ea/111419×59 ffffff/111419×17 32fe9f/111419×1
+8: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
+9: 32fe9f/111419×1 ffffff/111419×2 32fe9f/111419×2 959dab/111419×10 f6f8fb/1d2430×20 ffffff/111419×44 32fe9f/111419×1
+10: 32fe9f/111419×1 ffffff/111419×2 959dab/111419×12 dde2ea/111419×20 959dab/111419×13 ffffff/111419×31 32fe9f/111419×1
+11: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
+12: 32fe9f/111419×1 ffffff/111419×2 dde2ea/111419×33 ffffff/111419×43 32fe9f/111419×1
+13: 32fe9f/111419×1 ffffff/111419×2 32fe9f/111419×2 959dab/111419×10 f6f8fb/1d2430×10 959dab/111419×52 ffffff/111419×2 32fe9f/111419×1
+14: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
+15: 32fe9f/111419×1 ffffff/111419×2 dde2ea/111419×21 ffffff/111419×55 32fe9f/111419×1
+16: 32fe9f/111419×1 ffffff/111419×2 dde2ea/111419×64 ffffff/111419×12 32fe9f/111419×1
+17: 32fe9f/111419×1 ffffff/111419×2 dde2ea/111419×2 f5a524/111419×37 ffffff/111419×37 32fe9f/111419×1
+18: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
+19: 32fe9f/111419×1 ffffff/111419×2 32fe9f/111419×2 6cb6ff/111419×12 ffffff/111419×62 32fe9f/111419×1
+20: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
+21: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
+22: 32fe9f/111419×80
+23: 959dab/0e1115×42 ffffff/0e1115×22 959dab/0e1115×16

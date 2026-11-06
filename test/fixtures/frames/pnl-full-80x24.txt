@@ -1,0 +1,50 @@
+ agent-a ▾  LIVE  today $12.00 / $100.00  ● 1 card waiting       ctrl-x ×2 kill 
+ 1 Tra  2 Coc  3 Tre  4 Sig  5 P&L  6 Res  7 Jou  8 Per   settings ▾            
+╭─ P&L · Candle's books, read 40s ago ──────────────────────────────── 24h ▾ ──╮
+│ ◂  pnl  ▸   1/4 · ←/→                                                        │
+│last 24h  +$0.31                                                              │
+│The change in Candle's totals, from the Candle Harness's samples.             │
+│                                                                              │
+│agents                24h      total   realised unrealised                    │
+│together           +$0.31     -$9.86     -$1.72     -$8.14                    │
+│agent-a            -$0.12     -$1.35     -$1.35     +$0.00                    │
+│agent-b            +$0.43     -$8.51     -$0.37     -$8.14                    │
+│  incl. QUILL opened by agent-a, -$1.55                                       │
+│                                                                              │
+│fees $0.34, taken from realised · 1 swap not in Candle's fills, in Trades     │
+│                                                                              │
+╰─ ⇱ ─────────────────────────────────────────────────────────────── ↓ 4 more ─╯
+╭─ agent-a ─────────────────────────────────────────── Claude Code · sonnet ▾ ─╮
+│1 card waiting · ⏎ approves the highlighted one                               │
+│▌ BUY 0.1 SOL of JUPF                                                     50s │
+│▌ agent-a · pays from embedded · live                                         │
+│▌  ⏎ approve    ctrl-n reject    ctrl-o details                               │
+╰──────────────────────────────────────────────────────────────────────────────╯
+                                                                                
+› type a command or ask the agent        ⏎ approve   ctrl-k palette    ? help   
+
+--- colours ---
+0: 6cb6ff/16263a×11 0b0d10/3ddc84×6 ffffff/0e1115×1 959dab/0e1115×6 f6f8fb/0e1115×6 959dab/0e1115×10 ffffff/0e1115×2 f5a524/0e1115×16 ffffff/0e1115×6 ff5c5c/3a1619×16
+1: ffffff/0b0d10×1 6cb6ff/0b0d10×5 ffffff/0b0d10×2 6cb6ff/0b0d10×5 ffffff/0b0d10×2 6cb6ff/0b0d10×5 ffffff/0b0d10×2 6cb6ff/0b0d10×5 ffffff/0b0d10×2 f6f8fb/0b0d10+9×5 ffffff/0b0d10×2 6cb6ff/0b0d10×5 ffffff/0b0d10×2 6cb6ff/0b0d10×5 ffffff/0b0d10×2 6cb6ff/0b0d10×5 ffffff/0b0d10×2 6cb6ff/16263a×12 ffffff/0b0d10×11
+2: 252a33/111419×2 b392f0/111419×36 252a33/111419×32 6cb6ff/16263a×7 252a33/111419×3
+3: 252a33/111419×1 6cb6ff/16263a×3 dde2ea/111419×5 6cb6ff/16263a×3 959dab/111419×11 ffffff/111419×56 252a33/111419×1
+4: 252a33/111419×1 dde2ea/111419×10 3ddc84/111419+1×6 ffffff/111419×62 252a33/111419×1
+5: 252a33/111419×1 959dab/111419×65 ffffff/111419×13 252a33/111419×1
+6: 252a33/111419×1 ffffff/111419×78 252a33/111419×1
+7: 252a33/111419×1 959dab/111419×58 ffffff/111419×20 252a33/111419×1
+8: 252a33/111419×1 f6f8fb/111419×14 3ddc84/111419×11 ff5c5c/111419×33 ffffff/111419×20 252a33/111419×1
+9: 252a33/111419×1 dde2ea/111419×14 ff5c5c/111419×33 dde2ea/111419×11 ffffff/111419×20 252a33/111419×1
+10: 252a33/111419×1 dde2ea/111419×14 3ddc84/111419×11 ff5c5c/111419×33 ffffff/111419×20 252a33/111419×1
+11: 252a33/111419×1 959dab/111419×39 ffffff/111419×39 252a33/111419×1
+12: 252a33/111419×1 ffffff/111419×78 252a33/111419×1
+13: 252a33/111419×1 959dab/111419×73 ffffff/111419×5 252a33/111419×1
+14: 252a33/111419×1 ffffff/111419×78 252a33/111419×1
+15: 252a33/111419×2 6cb6ff/16263a×3 252a33/111419×63 959dab/111419×10 252a33/111419×2
+16: 32fe9f/111419×2 b392f0/111419×9 32fe9f/111419×43 6cb6ff/16263a×24 32fe9f/111419×2
+17: 32fe9f/111419×1 959dab/111419×47 ffffff/111419×31 32fe9f/111419×1
+18: 32fe9f/111419×1 f5a524/111419×2 f6f8fb/111419×19 dde2ea/111419×53 f5a524/111419×3 ffffff/111419×1 32fe9f/111419×1
+19: 32fe9f/111419×1 f5a524/111419×2 959dab/111419×35 ffffff/111419×41 32fe9f/111419×1
+20: 32fe9f/111419×1 f5a524/111419×2 0b0d10/6cb6ff×11 dde2ea/111419×2 6cb6ff/16263a×15 dde2ea/111419×2 6cb6ff/16263a×16 ffffff/111419×30 32fe9f/111419×1
+21: 32fe9f/111419×80
+22: 959dab/0b0d10×1 ffffff/0b0d10×79
+23: f6f8fb/0e1115×2 959dab/0e1115×31 ffffff/0e1115×8 dde2ea/0e1115×1 959dab/0e1115×10 6cb6ff/16263a×16 959dab/0e1115×2 6cb6ff/16263a×8 959dab/0e1115×2

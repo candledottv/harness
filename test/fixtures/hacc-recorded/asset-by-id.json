@@ -1,0 +1,42 @@
+{
+  "name": "asset-by-id",
+  "method": "GET",
+  "route": "/v1/assets/102107030",
+  "query": {},
+  "status": 200,
+  "ms": 147,
+  "bytes": 671,
+  "contentType": "application/json; charset=utf-8",
+  "answer": {
+    "asset": {
+      "id": 102107030,
+      "chain": "solana",
+      "address": "HaccFake11111111111111111111111111111111113",
+      "symbol": "fake-symbol-1",
+      "name": "fake-name-7",
+      "decimals": 6,
+      "liquidity_usd": null,
+      "liquidity_checked_at": null,
+      "created_at": "2026-10-17T16:38:29.307Z",
+      "launched_at": "2026-10-28T17:54:00.000Z",
+      "first_mcap_usd": null,
+      "supply": null,
+      "ath_mc_usd": null,
+      "ath_at": null,
+      "deployer_address": null,
+      "deployer_prior_launches": null,
+      "deployer_prior_10x": null,
+      "initial_quote": null,
+      "quote_symbol": null,
+      "mint_authority_null": null,
+      "freeze_authority_null": null,
+      "token_program": null,
+      "extension_risks": [],
+      "unique_traders_5m": 1,
+      "unique_traders_1h": 1,
+      "organic_traders_5m": 1,
+      "mint_facts": null,
+      "sell_probe": null
+    }
+  }
+}

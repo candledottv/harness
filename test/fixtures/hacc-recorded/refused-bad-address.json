@@ -1,0 +1,13 @@
+{
+  "name": "refused-bad-address",
+  "method": "GET",
+  "route": "/v1/market/token/not-an-address",
+  "query": {},
+  "status": 400,
+  "ms": 129,
+  "bytes": 65,
+  "contentType": "application/json; charset=utf-8",
+  "answer": {
+    "error": "address: String must contain at least 32 character(s)"
+  }
+}

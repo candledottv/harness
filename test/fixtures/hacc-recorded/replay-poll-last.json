@@ -1,0 +1,20 @@
+{
+  "name": "replay-poll-043",
+  "method": "GET",
+  "route": "/v1/strategy-lab/replay/185",
+  "query": {},
+  "status": 200,
+  "ms": 134,
+  "bytes": 263,
+  "contentType": "application/json; charset=utf-8",
+  "answer": {
+    "job_id": 185,
+    "status": "failed",
+    "error": "hard timeout after 600s",
+    "result": null,
+    "requested_by": "HaccFake11111111111111111111111111111111112",
+    "created_at": "2026-10-29T02:54:23.798Z",
+    "started_at": "2026-10-29T02:54:23.972Z",
+    "finished_at": "2026-10-29T03:04:24.916Z"
+  }
+}

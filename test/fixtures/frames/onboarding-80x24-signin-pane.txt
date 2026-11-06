@@ -1,0 +1,50 @@
+ ▲ candle   SETUP   nothing trades until your agent and its limits exist        
+ ✓ 0  ▸ 1 Sign in to Candle  · 2  · 3  · 4  · 5                                 
+╭──────────────────────────────────────────────────────────────── step 1 of 5 ─╮
+│                                                                              │
+│  Sign in to Candle                                                           │
+│  A new profile of its own, on Candle's production host.                      │
+│ ╭─ candle auth login --profile candle-harness --api-url https://api.alph… ─╮ │
+│ │Authorize this device                                                     │ │
+│ │                                                                          │ │
+│ │  API          https://api.alpha.candle.tv                                │ │
+│ │  Device code  WXYZ-4821                                                  │ │
+│ │  Approve at   https://alpha.candle.tv/dev/agent/device?code=WXYZ-4821    │ │
+│ │                                                                          │ │
+│ │                                                                          │ │
+│ │                                                                          │ │
+│ │                                                                          │ │
+│ │ctrl-] back to setup · Ctrl-C stops it                                    │ │
+│ ╰──────────────────────────────────────────────────────────────────────────╯ │
+│                                                                              │
+│  ⠋ waiting for you to approve in your browser    ⧉ code   ⧉ link             │
+│                                                                              │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+ ctrl-] back to setup · Ctrl-C stops it                         ctrl-c ×2 quits 
+
+--- colours ---
+0: f6f8fb/0e1115×11 f6f8fb/2a2f3a×7 959dab/0e1115×54 ffffff/0e1115×8
+1: 3ddc84/0b0d10×5 f6f8fb/0b0d10×23 959dab/0b0d10×20 ffffff/0b0d10×32
+2: 32fe9f/111419×65 959dab/111419×13 32fe9f/111419×2
+3: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
+4: 32fe9f/111419×1 ffffff/111419×2 b392f0/111419×17 ffffff/111419×59 32fe9f/111419×1
+5: 32fe9f/111419×1 ffffff/111419×2 959dab/111419×54 ffffff/111419×22 32fe9f/111419×1
+6: 32fe9f/111419×1 ffffff/111419×1 32fe9f/111419×2 b392f0/111419×72 32fe9f/111419×2 ffffff/111419×1 32fe9f/111419×1
+7: 32fe9f/111419×1 ffffff/111419×1 32fe9f/111419×1 ffffff/000000×74 32fe9f/111419×1 ffffff/111419×1 32fe9f/111419×1
+8: 32fe9f/111419×1 ffffff/111419×1 32fe9f/111419×1 ffffff/000000×74 32fe9f/111419×1 ffffff/111419×1 32fe9f/111419×1
+9: 32fe9f/111419×1 ffffff/111419×1 32fe9f/111419×1 ffffff/000000×74 32fe9f/111419×1 ffffff/111419×1 32fe9f/111419×1
+10: 32fe9f/111419×1 ffffff/111419×1 32fe9f/111419×1 ffffff/000000×74 32fe9f/111419×1 ffffff/111419×1 32fe9f/111419×1
+11: 32fe9f/111419×1 ffffff/111419×1 32fe9f/111419×1 ffffff/000000×74 32fe9f/111419×1 ffffff/111419×1 32fe9f/111419×1
+12: 32fe9f/111419×1 ffffff/111419×1 32fe9f/111419×1 ffffff/000000×74 32fe9f/111419×1 ffffff/111419×1 32fe9f/111419×1
+13: 32fe9f/111419×1 ffffff/111419×1 32fe9f/111419×1 ffffff/000000×74 32fe9f/111419×1 ffffff/111419×1 32fe9f/111419×1
+14: 32fe9f/111419×1 ffffff/111419×1 32fe9f/111419×1 ffffff/000000×74 32fe9f/111419×1 ffffff/111419×1 32fe9f/111419×1
+15: 32fe9f/111419×1 ffffff/111419×1 32fe9f/111419×1 ffffff/000000×74 32fe9f/111419×1 ffffff/111419×1 32fe9f/111419×1
+16: 32fe9f/111419×1 ffffff/111419×1 32fe9f/111419×1 959dab/111419×38 ffffff/111419×36 32fe9f/111419×1 ffffff/111419×1 32fe9f/111419×1
+17: 32fe9f/111419×1 ffffff/111419×1 32fe9f/111419×76 ffffff/111419×1 32fe9f/111419×1
+18: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
+19: 32fe9f/111419×1 ffffff/111419×2 f5a524/111419×2 dde2ea/111419×45 6cb6ff/16263a×8 ffffff/111419×1 6cb6ff/16263a×8 ffffff/111419×12 32fe9f/111419×1
+20: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
+21: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
+22: 32fe9f/111419×80
+23: 959dab/0e1115×39 ffffff/0e1115×25 959dab/0e1115×16

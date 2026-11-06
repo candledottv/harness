@@ -1,0 +1,186 @@
+{
+  "tool": "candle_execution_status",
+  "args": {},
+  "ms": 413,
+  "outcome": {
+    "kind": "ok",
+    "result": {
+      "success": true,
+      "ready": true,
+      "wallets": {
+        "success": true,
+        "account": "WalletFake111111111111111111111111111111111",
+        "username": "fake-agent",
+        "wallets": {
+          "solana": {
+            "address": "WalletFake111111111111111111111111111111111",
+            "delegated": true
+          },
+          "evm": {
+            "address": "0x00000000000000000000000000000000000Fa4e1",
+            "delegated": true
+          }
+        },
+        "embeddedWalletPermission": "allowed"
+      },
+      "tier": {
+        "success": true,
+        "tier": "max",
+        "liveTier": "max",
+        "stakedCndl": 0,
+        "heldCndl": 0,
+        "thresholds": {
+          "minStakedCndl": 500000,
+          "minHeldCndl": 1000000,
+          "graceMs": 0
+        },
+        "grace": {
+          "active": false,
+          "startedAt": null,
+          "endsAt": null
+        },
+        "maxTierExpiresAt": 1792000000000,
+        "maxExpired": false,
+        "feeBps": 25,
+        "feeTotals": [],
+        "tierCaps": {
+          "rateLimitPerMin": 600,
+          "dailyLaunchCap": 1000,
+          "uploadsPerMin": 60,
+          "linkedWallets": 1000
+        },
+        "checkedAt": 1790000000000,
+        "maxPricing": {
+          "pricePerMonthUsd": 200,
+          "currency": "USDC",
+          "approval": "self_serve"
+        },
+        "proPricing": {
+          "pricePerMonthUsd": 50,
+          "currency": "USDC",
+          "approval": "self_serve"
+        },
+        "planTable": {
+          "plans": [
+            {
+              "plan": "free",
+              "capabilities": {
+                "buyExternalTokens": false,
+                "sellExternalTokens": true,
+                "tradeBaseAssets": true,
+                "tradeCandleTokens": true,
+                "selfLaunch": false,
+                "atomicLaunch": false,
+                "createLinkedWallets": false,
+                "importLinkedWallets": false,
+                "hyperliquidPerps": true,
+                "limitOrders": false,
+                "quant": false,
+                "freeBaseTransfers": true
+              },
+              "limits": {
+                "rateLimitPerMin": 30,
+                "dailyLaunchCap": 5,
+                "uploadsPerMin": 10,
+                "linkedWallets": 0
+              },
+              "feeBps": 100,
+              "perpFeeBps": 10,
+              "price": null
+            },
+            {
+              "plan": "pro",
+              "capabilities": {
+                "buyExternalTokens": true,
+                "sellExternalTokens": true,
+                "tradeBaseAssets": true,
+                "tradeCandleTokens": true,
+                "selfLaunch": true,
+                "atomicLaunch": true,
+                "createLinkedWallets": true,
+                "importLinkedWallets": true,
+                "hyperliquidPerps": true,
+                "limitOrders": false,
+                "quant": false,
+                "freeBaseTransfers": true
+              },
+              "limits": {
+                "rateLimitPerMin": 300,
+                "dailyLaunchCap": 50,
+                "uploadsPerMin": 30,
+                "linkedWallets": 10
+              },
+              "feeBps": 50,
+              "perpFeeBps": 10,
+              "price": {
+                "pricePerMonthUsd": 50,
+                "currency": "USDC",
+                "approval": "self_serve"
+              }
+            },
+            {
+              "plan": "max",
+              "capabilities": {
+                "buyExternalTokens": true,
+                "sellExternalTokens": true,
+                "tradeBaseAssets": true,
+                "tradeCandleTokens": true,
+                "selfLaunch": true,
+                "atomicLaunch": true,
+                "createLinkedWallets": true,
+                "importLinkedWallets": true,
+                "hyperliquidPerps": true,
+                "limitOrders": true,
+                "quant": true,
+                "freeBaseTransfers": true
+              },
+              "limits": {
+                "rateLimitPerMin": 600,
+                "dailyLaunchCap": 1000,
+                "uploadsPerMin": 60,
+                "linkedWallets": 1000
+              },
+              "feeBps": 25,
+              "perpFeeBps": 0,
+              "price": {
+                "pricePerMonthUsd": 200,
+                "currency": "USDC",
+                "approval": "self_serve"
+              }
+            }
+          ],
+          "promoMaxDays": 30
+        }
+      },
+      "limits": {
+        "success": true,
+        "keyLimits": null,
+        "txLimit": {
+          "usdMicros": 100000000,
+          "reset": "daily"
+        },
+        "teeReadiness": {
+          "txLimit": true,
+          "rawCaps": {
+            "SOL": false,
+            "USDC": false,
+            "CNDL": false,
+            "ETH": false,
+            "USDG": false
+          }
+        },
+        "perpsLimits": null,
+        "perpsRisk": null,
+        "perpsRiskEffective": {
+          "warnDistanceBps": 1500,
+          "criticalDistanceBps": 700,
+          "warnMarginRatioBps": 6000,
+          "criticalMarginRatioBps": 8000,
+          "clearBandBps": 200
+        },
+        "perpsReduceOnly": false,
+        "perpsPolicyVersion": 0
+      }
+    }
+  }
+}

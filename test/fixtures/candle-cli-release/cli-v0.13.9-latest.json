@@ -1,0 +1,48 @@
+{
+  "version": "0.13.9",
+  "tag": "cli-v0.13.9",
+  "assets": {
+    "darwin-arm64": {
+      "name": "candle-darwin-arm64",
+      "sha256": "59bf1ec4865563c3f4e1e817a19ff0c7100f02c669dd888ad31ccb42740009d9",
+      "size": 65922914
+    },
+    "darwin-x64": {
+      "name": "candle-darwin-x64",
+      "sha256": "e1c7b16329367f179c338c7710bfac876ed87f889d3a5ddf7c6f74085d161b8d",
+      "size": 71630928
+    },
+    "linux-x64": {
+      "name": "candle-linux-x64",
+      "sha256": "680e5e406a46d6976f2d44929c30bbf4d574cc339705886ade54057ebb98690d",
+      "size": 97044608
+    },
+    "linux-arm64": {
+      "name": "candle-linux-arm64",
+      "sha256": "bcfe642c65944b559b2291885dbee2635fee1ffb7156a7527fd5a50c85558cd6",
+      "size": 96118928
+    }
+  },
+  "helpers": {
+    "darwin-arm64": {
+      "name": "candle-fido2-darwin-arm64",
+      "sha256": "867350a119c746ecf1b5ecf9c3bfa1c2b9ae7a4cf10e14f0e9498628df256bea",
+      "size": 63479138
+    },
+    "darwin-x64": {
+      "name": "candle-fido2-darwin-x64",
+      "sha256": "3090674e95b6be64bf566cc5a97fa6f6fd528941e3421675d61ecfe5f6a39707",
+      "size": 69206096
+    },
+    "linux-x64": {
+      "name": "candle-fido2-linux-x64",
+      "sha256": "a90bd580b95c4c2cadd215183c1a7456504645f0c82a697c1beffc29fbd236ab",
+      "size": 94615680
+    },
+    "linux-arm64": {
+      "name": "candle-fido2-linux-arm64",
+      "sha256": "8832de6832904bf589e9e48706cde8d24616d0cb03d6c450701bbc7097d8478c",
+      "size": 93694096
+    }
+  }
+}

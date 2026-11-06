@@ -1,0 +1,156 @@
+{
+  "engine": "pi",
+  "model": "openrouter/deepseek/deepseek-v4.1-flash",
+  "ran": {
+    "engine": "pi",
+    "engineVersion": "1.4.0",
+    "model": "openrouter/deepseek/deepseek-v4.1-flash",
+    "answeredModel": "openrouter/deepseek/deepseek-v4.1-flash"
+  },
+  "at": "2026-10-29T11:47:09.689Z",
+  "results": [
+    {
+      "id": "sell-half",
+      "pass": true,
+      "checks": [
+        {
+          "name": "the turn ended with a reply",
+          "pass": true
+        },
+        {
+          "name": "proposed one sell card",
+          "pass": true
+        },
+        {
+          "name": "of MOON, half",
+          "pass": true
+        }
+      ],
+      "notes": {
+        "skillRead": false,
+        "tools": [
+          "mcp__candle__candle_get_portfolio",
+          "mcp__candle__candle_execution_status",
+          "mcp__candle__candle_trade"
+        ],
+        "figures": 0,
+        "marked": 0,
+        "ms": 8258
+      },
+      "turns": [
+        {
+          "user": "Sell half of my MOON.",
+          "reply": "A 50% market sell of MOON is on the card for your approval — that's half your holding, sold from the embedded Solana wallet. Nothing has executed yet; approve it and I'll read the fill back with the trade id if you want.",
+          "outcome": "done"
+        }
+      ],
+      "record": {
+        "turns": [
+          {
+            "user": "Sell half of my MOON.",
+            "reply": "A 50% market sell of MOON is on the card for your approval — that's half your holding, sold from the embedded Solana wallet. Nothing has executed yet; approve it and I'll read the fill back with the trade id if you want.",
+            "outcome": "done",
+            "tools": [
+              "mcp__candle__candle_get_portfolio",
+              "mcp__candle__candle_execution_status",
+              "mcp__candle__candle_trade"
+            ],
+            "reasked": false,
+            "figures": 0,
+            "marked": []
+          }
+        ],
+        "cards": [
+          {
+            "state": "created",
+            "tool": "candle_trade",
+            "kind": "trade",
+            "side": "sell",
+            "mint": "MoonFake11111111111111111111111111111111111",
+            "params": {
+              "mint": "MoonFake11111111111111111111111111111111111",
+              "side": "sell",
+              "percent": 50,
+              "clientTradeId": "06b00dd4-9b95-4096-8e59-34a8b3bc5961"
+            }
+          }
+        ],
+        "memoryChanges": 0,
+        "hacc": [
+          "GET /v1/market/token/MoonFake11111111111111111111111111111111111/history",
+          "GET /v1/market/token/MoonFake11111111111111111111111111111111111/history"
+        ]
+      },
+      "ran": {
+        "engine": "pi",
+        "engineVersion": "1.4.0",
+        "model": "openrouter/deepseek/deepseek-v4.1-flash",
+        "answeredModel": "openrouter/deepseek/deepseek-v4.1-flash"
+      }
+    },
+    {
+      "id": "sell-twin",
+      "pass": true,
+      "checks": [
+        {
+          "name": "the turn ended with a reply",
+          "pass": true
+        },
+        {
+          "name": "proposed nothing",
+          "pass": true
+        },
+        {
+          "name": "asks which MOON",
+          "pass": true
+        }
+      ],
+      "notes": {
+        "skillRead": false,
+        "tools": [
+          "mcp__candle__candle_get_portfolio",
+          "mcp__candle__candle_resolve_token",
+          "mcp__candle__candle_resolve_token"
+        ],
+        "figures": 2,
+        "marked": 0,
+        "ms": 13226
+      },
+      "turns": [
+        {
+          "user": "Sell half of my MOON.",
+          "reply": "You hold two different tokens both called MOON (symbol MOON), so I need to know which one:\n\n- **MoonFake…1111** — Candle-launched, 12,345.678901 tokens, price $0.63 → about $7,778. That's the big one.\n- **MoonTwin…1111** — pump.fun/Jupiter, 5,000 tokens, price $0.0021 → about $10.50.\n\nBoth figures are from the portfolio read just now (my sums: amount × price). Which mint do you want half of?",
+          "outcome": "done"
+        }
+      ],
+      "record": {
+        "turns": [
+          {
+            "user": "Sell half of my MOON.",
+            "reply": "You hold two different tokens both called MOON (symbol MOON), so I need to know which one:\n\n- **MoonFake…1111** — Candle-launched, 12,345.678901 tokens, price $0.63 → about $7,778. That's the big one.\n- **MoonTwin…1111** — pump.fun/Jupiter, 5,000 tokens, price $0.0021 → about $10.50.\n\nBoth figures are from the portfolio read just now (my sums: amount × price). Which mint do you want half of?",
+            "outcome": "done",
+            "tools": [
+              "mcp__candle__candle_get_portfolio",
+              "mcp__candle__candle_resolve_token",
+              "mcp__candle__candle_resolve_token"
+            ],
+            "reasked": false,
+            "figures": 2,
+            "marked": []
+          }
+        ],
+        "cards": [],
+        "memoryChanges": 0,
+        "hacc": [
+          "GET /v1/market/token/MoonTwin11111111111111111111111111111111111/history"
+        ]
+      },
+      "ran": {
+        "engine": "pi",
+        "engineVersion": "1.4.0",
+        "model": "openrouter/deepseek/deepseek-v4.1-flash",
+        "answeredModel": "openrouter/deepseek/deepseek-v4.1-flash"
+      }
+    }
+  ]
+}

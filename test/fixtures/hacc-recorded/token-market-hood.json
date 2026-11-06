@@ -1,0 +1,54 @@
+{
+  "name": "token-market-hood",
+  "method": "GET",
+  "route": "/v1/market/token/0xfa4e000000000000000000000000000000000001",
+  "query": {
+    "chain": "hood"
+  },
+  "status": 200,
+  "ms": 255,
+  "bytes": 893,
+  "contentType": "application/json; charset=utf-8",
+  "answer": {
+    "chain": "hood",
+    "market": {
+      "address": "0xfa4e000000000000000000000000000000000001",
+      "symbol": "fake-symbol-41",
+      "name": "fake-name-36",
+      "price": 0.000012029362099112092,
+      "liquidity": 1.4319481777018306,
+      "market_cap": 12029.362099112092,
+      "fdv": null,
+      "volume_24h_usd": 89628.02997032765,
+      "volume_1h_usd": 1301,
+      "price_change_1h_pct": -30.861611009314476,
+      "price_change_24h_pct": 0,
+      "holders": 127,
+      "unique_wallets_24h": null,
+      "last_trade_at": null
+    },
+    "safety": {
+      "creator_address": "0xfa4e000000000000000000000000000000000015",
+      "creator_pct": 0,
+      "owner_pct": 0,
+      "honeypot": false,
+      "cannot_buy": false,
+      "cannot_sell_all": null,
+      "buy_tax_pct": 0,
+      "sell_tax_pct": 0,
+      "transfer_tax_pct": 0,
+      "mintable": false,
+      "transfer_pausable": false,
+      "hidden_owner": false,
+      "can_take_back_ownership": false,
+      "blacklisted": false,
+      "is_proxy": false,
+      "open_source": true,
+      "holder_count": 124,
+      "total_supply": 1000000000,
+      "lp_locked_pct": 0,
+      "lp_holder_count": 1,
+      "honeypot_with_same_creator": false
+    }
+  }
+}

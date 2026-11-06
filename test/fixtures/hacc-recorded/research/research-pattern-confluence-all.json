@@ -1,0 +1,241 @@
+{
+  "name": "research-pattern-confluence-all",
+  "method": "GET",
+  "route": "/v1/signals",
+  "query": {
+    "pattern": "confluence",
+    "limit": "50",
+    "quality": "all"
+  },
+  "status": 200,
+  "ms": 173,
+  "bytes": 45330,
+  "contentType": "application/json; charset=utf-8",
+  "answer": {
+    "signals": [
+      {
+        "id": 118499483,
+        "rule_id": 10,
+        "pattern": "confluence",
+        "wallet_id": null,
+        "asset_id": 129492174,
+        "event_id": 78531513,
+        "event_kind": "swap",
+        "summary": "fake-summary-15",
+        "payload": {
+          "wallets": [
+            {
+              "label": "fake-label-3",
+              "address": "HaccFake1111111111111111111111111111111111Y",
+              "wallet_id": 5314
+            },
+            {
+              "label": null,
+              "address": "HaccFake1111111111111111111111111111111111Z",
+              "wallet_id": 330163
+            }
+          ],
+          "asset_address": "HaccFake11111111111111111111111111111111117",
+          "window_minutes": 360
+        },
+        "created_at": "2026-10-30T13:40:09.540Z",
+        "wallet_address": null,
+        "wallet_label": null,
+        "wallet_chain": null,
+        "wallet_entity": null,
+        "wallet_groups": [],
+        "display_label": null,
+        "label_source": null,
+        "asset_symbol": "fake-asset_symbol-1",
+        "asset_address": "HaccFake11111111111111111111111111111111117",
+        "asset_chain": "solana",
+        "burst": false
+      },
+      {
+        "id": 118499444,
+        "rule_id": 1,
+        "pattern": "confluence",
+        "wallet_id": null,
+        "asset_id": 129492174,
+        "event_id": 78531509,
+        "event_kind": "swap",
+        "summary": "fake-summary-1",
+        "payload": {
+          "wallets": [
+            {
+              "label": "fake-label-1",
+              "address": "HaccFake11111111111111111111111111111111112",
+              "wallet_id": 4824
+            },
+            {
+              "label": "fake-label-2",
+              "address": "HaccFake11111111111111111111111111111111113",
+              "wallet_id": 4832
+            },
+            {
+              "label": null,
+              "address": "HaccFake11111111111111111111111111111111114",
+              "wallet_id": 33416
+            },
+            {
+              "label": null,
+              "address": "HaccFake11111111111111111111111111111111115",
+              "wallet_id": 33417
+            },
+            {
+              "label": null,
+              "address": "HaccFake11111111111111111111111111111111116",
+              "wallet_id": 39274
+            }
+          ],
+          "asset_address": "HaccFake11111111111111111111111111111111117",
+          "window_minutes": 60
+        },
+        "created_at": "2026-10-30T13:40:08.586Z",
+        "wallet_address": null,
+        "wallet_label": null,
+        "wallet_chain": null,
+        "wallet_entity": null,
+        "wallet_groups": [],
+        "display_label": null,
+        "label_source": null,
+        "asset_symbol": "fake-asset_symbol-1",
+        "asset_address": "HaccFake11111111111111111111111111111111117",
+        "asset_chain": "solana",
+        "burst": false
+      },
+      {
+        "id": 118499216,
+        "rule_id": 1,
+        "pattern": "confluence",
+        "wallet_id": null,
+        "asset_id": 129111703,
+        "event_id": 78531434,
+        "event_kind": "swap",
+        "summary": "fake-summary-16",
+        "payload": {
+          "wallets": [
+            {
+              "label": "fake-label-4",
+              "address": "HaccFake1111111111111111111111111111111111a",
+              "wallet_id": 3404
+            },
+            {
+              "label": null,
+              "address": "HaccFake1111111111111111111111111111111111b",
+              "wallet_id": 76071
+            },
+            {
+              "label": null,
+              "address": "HaccFake1111111111111111111111111111111111c",
+              "wallet_id": 634672
+            }
+          ],
+          "asset_address": "HaccFake1111111111111111111111111111111111d",
+          "window_minutes": 60
+        },
+        "created_at": "2026-10-30T13:39:56.862Z",
+        "wallet_address": null,
+        "wallet_label": null,
+        "wallet_chain": null,
+        "wallet_entity": null,
+        "wallet_groups": [],
+        "display_label": null,
+        "label_source": null,
+        "asset_symbol": "fake-asset_symbol-4",
+        "asset_address": "HaccFake1111111111111111111111111111111111d",
+        "asset_chain": "solana",
+        "burst": false
+      },
+      {
+        "id": 118497304,
+        "rule_id": 10,
+        "pattern": "confluence",
+        "wallet_id": null,
+        "asset_id": 129426611,
+        "event_id": 78530994,
+        "event_kind": "swap",
+        "summary": "fake-summary-17",
+        "payload": {
+          "wallets": [
+            {
+              "label": "fake-label-5",
+              "address": "HaccFake1111111111111111111111111111111111e",
+              "wallet_id": 8887
+            },
+            {
+              "label": null,
+              "address": "HaccFake1111111111111111111111111111111111f",
+              "wallet_id": 270242
+            },
+            {
+              "label": null,
+              "address": "HaccFake1111111111111111111111111111111111g",
+              "wallet_id": 354607
+            }
+          ],
+          "asset_address": "HaccFake1111111111111111111111111111111111h",
+          "window_minutes": 360
+        },
+        "created_at": "2026-10-30T13:38:44.987Z",
+        "wallet_address": null,
+        "wallet_label": null,
+        "wallet_chain": null,
+        "wallet_entity": null,
+        "wallet_groups": [],
+        "display_label": null,
+        "label_source": null,
+        "asset_symbol": "fake-asset_symbol-5",
+        "asset_address": "HaccFake1111111111111111111111111111111111h",
+        "asset_chain": "solana",
+        "burst": false
+      },
+      {
+        "id": 118496419,
+        "rule_id": 1,
+        "pattern": "confluence",
+        "wallet_id": null,
+        "asset_id": 129665910,
+        "event_id": 78530795,
+        "event_kind": "swap",
+        "summary": "fake-summary-18",
+        "payload": {
+          "wallets": [
+            {
+              "label": null,
+              "address": "HaccFake1111111111111111111111111111111111i",
+              "wallet_id": 301272
+            },
+            {
+              "label": null,
+              "address": "HaccFake1111111111111111111111111111111111j",
+              "wallet_id": 347225
+            },
+            {
+              "label": null,
+              "address": "HaccFake1111111111111111111111111111111111k",
+              "wallet_id": 577566
+            }
+          ],
+          "asset_address": "HaccFake1111111111111111111111111111111111m",
+          "window_minutes": 60
+        },
+        "created_at": "2026-10-30T13:38:09.360Z",
+        "wallet_address": null,
+        "wallet_label": null,
+        "wallet_chain": null,
+        "wallet_entity": null,
+        "wallet_groups": [],
+        "display_label": null,
+        "label_source": null,
+        "asset_symbol": "fake-asset_symbol-6",
+        "asset_address": "HaccFake1111111111111111111111111111111111m",
+        "asset_chain": "solana",
+        "burst": false
+      }
+    ]
+  },
+  "truncated": {
+    "$.signals": 50
+  }
+}

@@ -1,0 +1,50 @@
+ agent-a ▾  PAPER  today $0.00 / $50.00  ● 0 cards waiting       ctrl-x ×2 kill 
+ 1 Trade  2 Coc  3 Tre  4 Sig  5 P&L  6 Res  7 Jou  8 Per   settings ▾          
+╭─ agent-a ─────────── Cl╭─ 5 of 6 · settings ▾ ──────────────────────╮────────╮
+│✓ Set up, and ready     │                                            │/→      │
+│  agent-a  Claude Code ·│ What's set up once: which tabs show, each  │its On  │
+│           candle-harnes│ tab's layout, the theme, your agent's      │ead     │
+│  wallet   main, asking │ model and memory, aliases, the P&L window, │        │
+│  limits   Harness $10.0│ and approvals.                             │        │
+│           day · Candle │                                            │        │
+│  mode     paper; go liv│ Nothing is traded or proposed in the tour. │        │
+│                        │                                            │        │
+│Try:                    │  next →   end the tour                     │        │
+│  · what's the tape sayi│ → next · ← back · esc ends it              │        │
+│  · check this token bef│                                            │        │
+│  · buy $10 of it in pap╰────────────────────────────────────────────╯        │
+│                                              ││                              │
+│I act only when you message me, for now.      ││                              │
+│Nothing here is financial advice. Signals,    ││                              │
+│backtests and replays describe the past, and  ││                              │
+│the agent can be wrong: check what matters,   ││                              │
+│and size what you can lose.                   ││                              │
+╰──────────────────────────────────────────────╯│                              │
+                                                │                              │
+› type a command …   ctrl-k palette    ? help   ╰─ ⇱ ──────────────────────────╯
+
+--- colours ---
+0: ffffff/0e131a×1 213447/0e131a×7 ffffff/0e131a×1 213447/0e131a×1 ffffff/0e131a×1 ffffff/12151a×1 414346/12151a×5 ffffff/12151a×1 ffffff/0c0e11×1 2b2e34/0c0e11×5 ffffff/0c0e11×1 414346/0c0e11×5 ffffff/0c0e11×1 2b2e34/0c0e11×1 ffffff/0c0e11×1 2b2e34/0c0e11×6 ffffff/0c0e11×2 2b2e34/0c0e11×1 ffffff/0c0e11×1 2b2e34/0c0e11×1 ffffff/0c0e11×1 2b2e34/0c0e11×5 ffffff/0c0e11×1 2b2e34/0c0e11×7 ffffff/0c0e11×6 ffffff/160f12×1 431f22/160f12×6 ffffff/160f12×1 431f22/160f12×2 ffffff/160f12×1 431f22/160f12×4 ffffff/160f12×1
+1: ffffff/0b0d10×1 414346/0b0d10+9×1 ffffff/0b0d10×1 414346/0b0d10+9×5 ffffff/0b0d10×2 213447/0b0d10×1 ffffff/0b0d10×1 213447/0b0d10×3 ffffff/0b0d10×2 213447/0b0d10×1 ffffff/0b0d10×1 213447/0b0d10×3 ffffff/0b0d10×2 213447/0b0d10×1 ffffff/0b0d10×1 213447/0b0d10×3 ffffff/0b0d10×2 213447/0b0d10×1 ffffff/0b0d10×1 213447/0b0d10×3 ffffff/0b0d10×2 213447/0b0d10×1 ffffff/0b0d10×1 213447/0b0d10×3 ffffff/0b0d10×2 213447/0b0d10×1 ffffff/0b0d10×1 213447/0b0d10×3 ffffff/0b0d10×2 213447/0b0d10×1 ffffff/0b0d10×1 213447/0b0d10×3 ffffff/0b0d10×2 6cb6ff/16263a×12 ffffff/0b0d10×9
+2: 144531/0c0f12×2 ffffff/0c0f12×1 322c44/0c0f12×7 ffffff/0c0f12×1 144531/0c0f12×11 ffffff/0e131a×1 213447/0e131a×2 32fe9f/111419×2 b392f0/111419×21 32fe9f/111419×23 111418/0c0f12×9
+3: 144531/0c0f12×1 173d2b/0c0f12×1 ffffff/0c0f12×1 322c44/0c0f12×3 ffffff/0c0f12×1 322c44/0c0f12×3 ffffff/0c0f12×1 322c44/0c0f12×3 ffffff/0c0f12×1 322c44/0c0f12×5 ffffff/0c0f12×5 32fe9f/111419×1 ffffff/111419×44 32fe9f/111419×1 2b2e34/0c0f12×2 ffffff/0c0f12×6 111418/0c0f12×1
+4: 144531/0c0f12×1 ffffff/0c0f12×2 2b2e34/0c0f12×7 ffffff/0c0f12×2 3c3e42/0c0f12×6 ffffff/0c0f12×1 3c3e42/0c0f12×4 ffffff/0c0f12×1 3c3e42/0c0f12×1 32fe9f/111419×1 ffffff/111419×1 dde2ea/111419×41 ffffff/111419×2 32fe9f/111419×1 2b2e34/0c0f12×3 ffffff/0c0f12×1 2b2e34/0c0f12×2 ffffff/0c0f12×2 111418/0c0f12×1
+5: 144531/0c0f12×1 ffffff/0c0f12×11 3c3e42/0c0f12×13 32fe9f/111419×1 ffffff/111419×1 dde2ea/111419×37 ffffff/111419×6 32fe9f/111419×1 2b2e34/0c0f12×3 ffffff/0c0f12×5 111418/0c0f12×1
+6: 144531/0c0f12×1 ffffff/0c0f12×2 2b2e34/0c0f12×6 ffffff/0c0f12×3 3c3e42/0c0f12×5 ffffff/0c0f12×1 3c3e42/0c0f12×6 ffffff/0c0f12×1 32fe9f/111419×1 ffffff/111419×1 dde2ea/111419×42 ffffff/111419×1 32fe9f/111419×1 ffffff/0c0f12×8 111418/0c0f12×1
+7: 144531/0c0f12×1 ffffff/0c0f12×2 2b2e34/0c0f12×6 ffffff/0c0f12×3 3c3e42/0c0f12×7 ffffff/0c0f12×1 3c3e42/0c0f12×5 32fe9f/111419×1 ffffff/111419×1 dde2ea/111419×14 ffffff/111419×29 32fe9f/111419×1 ffffff/0c0f12×8 111418/0c0f12×1
+8: 144531/0c0f12×1 ffffff/0c0f12×11 3c3e42/0c0f12×3 ffffff/0c0f12×1 3c3e42/0c0f12×1 ffffff/0c0f12×1 3c3e42/0c0f12×6 ffffff/0c0f12×1 32fe9f/111419×1 ffffff/111419×44 32fe9f/111419×1 ffffff/0c0f12×8 111418/0c0f12×1
+9: 144531/0c0f12×1 ffffff/0c0f12×2 2b2e34/0c0f12×4 ffffff/0c0f12×5 3c3e42/0c0f12×6 ffffff/0c0f12×1 3c3e42/0c0f12×2 ffffff/0c0f12×1 3c3e42/0c0f12×3 32fe9f/111419×1 ffffff/111419×1 959dab/111419×42 ffffff/111419×1 32fe9f/111419×1 ffffff/0c0f12×8 111418/0c0f12×1
+10: 144531/0c0f12×1 ffffff/0c0f12×24 32fe9f/111419×1 ffffff/111419×44 32fe9f/111419×1 ffffff/0c0f12×8 111418/0c0f12×1
+11: 144531/0c0f12×1 2b2e34/0c0f12×4 ffffff/0c0f12×20 32fe9f/111419×1 ffffff/111419×1 6cb6ff/16263a×8 ffffff/111419×1 6cb6ff/16263a×14 ffffff/111419×20 32fe9f/111419×1 ffffff/0c0f12×8 111418/0c0f12×1
+12: 144531/0c0f12×1 ffffff/0c0f12×2 3c3e42/0c0f12×1 ffffff/0c0f12×1 3c3e42/0c0f12×6 ffffff/0c0f12×1 3c3e42/0c0f12×3 ffffff/0c0f12×1 3c3e42/0c0f12×4 ffffff/0c0f12×1 3c3e42/0c0f12×4 32fe9f/111419×1 ffffff/111419×1 959dab/111419×29 ffffff/111419×14 32fe9f/111419×1 ffffff/0c0f12×8 111418/0c0f12×1
+13: 144531/0c0f12×1 ffffff/0c0f12×2 3c3e42/0c0f12×1 ffffff/0c0f12×1 3c3e42/0c0f12×5 ffffff/0c0f12×1 3c3e42/0c0f12×4 ffffff/0c0f12×1 3c3e42/0c0f12×5 ffffff/0c0f12×1 3c3e42/0c0f12×3 32fe9f/111419×1 ffffff/111419×44 32fe9f/111419×1 ffffff/0c0f12×8 111418/0c0f12×1
+14: 144531/0c0f12×1 ffffff/0c0f12×2 3c3e42/0c0f12×1 ffffff/0c0f12×1 3c3e42/0c0f12×3 ffffff/0c0f12×1 3c3e42/0c0f12×3 ffffff/0c0f12×1 3c3e42/0c0f12×2 ffffff/0c0f12×1 3c3e42/0c0f12×2 ffffff/0c0f12×1 3c3e42/0c0f12×2 ffffff/0c0f12×1 3c3e42/0c0f12×3 32fe9f/111419×46 ffffff/0c0f12×8 111418/0c0f12×1
+15: 144531/0c0f12×1 ffffff/0c0f12×46 144531/0c0f12×1 111418/0c0f12×1 ffffff/0c0f12×30 111418/0c0f12×1
+16: 144531/0c0f12×1 2b2e34/0c0f12×1 ffffff/0c0f12×1 2b2e34/0c0f12×3 ffffff/0c0f12×1 2b2e34/0c0f12×4 ffffff/0c0f12×1 2b2e34/0c0f12×4 ffffff/0c0f12×1 2b2e34/0c0f12×3 ffffff/0c0f12×1 2b2e34/0c0f12×7 ffffff/0c0f12×1 2b2e34/0c0f12×3 ffffff/0c0f12×1 2b2e34/0c0f12×3 ffffff/0c0f12×1 2b2e34/0c0f12×4 ffffff/0c0f12×6 144531/0c0f12×1 111418/0c0f12×1 ffffff/0c0f12×30 111418/0c0f12×1
+17: 144531/0c0f12×1 2b2e34/0c0f12×7 ffffff/0c0f12×1 2b2e34/0c0f12×4 ffffff/0c0f12×1 2b2e34/0c0f12×2 ffffff/0c0f12×1 2b2e34/0c0f12×9 ffffff/0c0f12×1 2b2e34/0c0f12×7 ffffff/0c0f12×1 2b2e34/0c0f12×8 ffffff/0c0f12×4 144531/0c0f12×1 111418/0c0f12×1 ffffff/0c0f12×30 111418/0c0f12×1
+18: 144531/0c0f12×1 2b2e34/0c0f12×9 ffffff/0c0f12×1 2b2e34/0c0f12×3 ffffff/0c0f12×1 2b2e34/0c0f12×7 ffffff/0c0f12×1 2b2e34/0c0f12×8 ffffff/0c0f12×1 2b2e34/0c0f12×3 ffffff/0c0f12×1 2b2e34/0c0f12×5 ffffff/0c0f12×1 2b2e34/0c0f12×3 ffffff/0c0f12×2 144531/0c0f12×1 111418/0c0f12×1 ffffff/0c0f12×30 111418/0c0f12×1
+19: 144531/0c0f12×1 2b2e34/0c0f12×3 ffffff/0c0f12×1 2b2e34/0c0f12×5 ffffff/0c0f12×1 2b2e34/0c0f12×3 ffffff/0c0f12×1 2b2e34/0c0f12×2 ffffff/0c0f12×1 2b2e34/0c0f12×6 ffffff/0c0f12×1 2b2e34/0c0f12×5 ffffff/0c0f12×1 2b2e34/0c0f12×4 ffffff/0c0f12×1 2b2e34/0c0f12×8 ffffff/0c0f12×3 144531/0c0f12×1 111418/0c0f12×1 ffffff/0c0f12×30 111418/0c0f12×1
+20: 144531/0c0f12×1 2b2e34/0c0f12×3 ffffff/0c0f12×1 2b2e34/0c0f12×4 ffffff/0c0f12×1 2b2e34/0c0f12×4 ffffff/0c0f12×1 2b2e34/0c0f12×3 ffffff/0c0f12×1 2b2e34/0c0f12×3 ffffff/0c0f12×1 2b2e34/0c0f12×5 ffffff/0c0f12×19 144531/0c0f12×1 111418/0c0f12×1 ffffff/0c0f12×30 111418/0c0f12×1
+21: 144531/0c0f12×48 111418/0c0f12×1 ffffff/0c0f12×30 111418/0c0f12×1
+22: ffffff/0b0d10×48 111418/0c0f12×1 ffffff/0c0f12×30 111418/0c0f12×1
+23: 414346/0c0e11×1 ffffff/0c0e11×1 2b2e34/0c0e11×4 ffffff/0c0e11×1 2b2e34/0c0e11×1 ffffff/0c0e11×1 2b2e34/0c0e11×7 ffffff/0c0e11×1 2b2e34/0c0e11×1 ffffff/0c0e11×2 ffffff/0e131a×1 213447/0e131a×6 ffffff/0e131a×1 213447/0e131a×7 ffffff/0e131a×1 ffffff/0c0e11×2 ffffff/0e131a×1 213447/0e131a×1 ffffff/0e131a×1 213447/0e131a×4 ffffff/0e131a×1 ffffff/0c0e11×2 111418/0c0f12×2 ffffff/0e131a×1 213447/0e131a×1 ffffff/0e131a×1 111418/0c0f12×27

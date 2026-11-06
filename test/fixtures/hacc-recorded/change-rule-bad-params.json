@@ -1,0 +1,20 @@
+{
+  "name": "change-rule-bad-params",
+  "method": "POST",
+  "route": "/v1/me/rules",
+  "query": {},
+  "body": {
+    "name": "fake-name-16",
+    "pattern": "confluence",
+    "params": {
+      "wallets": 1
+    }
+  },
+  "status": 400,
+  "ms": 130,
+  "bytes": 94,
+  "contentType": "application/json; charset=utf-8",
+  "answer": {
+    "error": "invalid params for confluence (wallets: Number must be greater than or equal to 2)"
+  }
+}

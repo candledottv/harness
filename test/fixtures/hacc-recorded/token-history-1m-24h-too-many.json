@@ -1,0 +1,17 @@
+{
+  "name": "token-history-1m-24h-too-many",
+  "method": "GET",
+  "route": "/v1/market/token/HaccFake1111111111111111111111111111111112c/history",
+  "query": {
+    "resolution": "1m",
+    "from": "2026-10-23T02:49:42.390Z",
+    "include_candles": "true"
+  },
+  "status": 400,
+  "ms": 127,
+  "bytes": 160,
+  "contentType": "application/json; charset=utf-8",
+  "answer": {
+    "error": "window spans ~8640 candles at 1m; one call fetches at most 6000. Start at 1D for the overview, then zoom into narrower windows at finer resolutions."
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "name": "change-rule-delete-dormancy",
+  "method": "DELETE",
+  "route": "/v1/me/rules/6",
+  "query": {},
+  "status": 404,
+  "ms": 127,
+  "bytes": 88,
+  "contentType": "application/json; charset=utf-8",
+  "answer": {
+    "message": "Route DELETE:/v1/me/rules/6 not found",
+    "error": "Not Found",
+    "statusCode": 404
+  }
+}

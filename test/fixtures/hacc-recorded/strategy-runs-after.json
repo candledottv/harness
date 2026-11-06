@@ -1,0 +1,40 @@
+{
+  "name": "strategy-runs-after",
+  "method": "GET",
+  "route": "/v1/strategy-runs",
+  "query": {},
+  "status": 200,
+  "ms": 129,
+  "bytes": 496,
+  "contentType": "application/json; charset=utf-8",
+  "answer": {
+    "runs": [
+      {
+        "id": 391,
+        "strategy_id": 174,
+        "strategy_version": 2,
+        "mode": "backtest",
+        "status": "completed",
+        "trade_count": 0,
+        "pnl_usd": "0",
+        "max_drawdown_pct": "0",
+        "max_drawdown_usd": "0",
+        "started_at": "2026-10-29T02:55:22.197Z",
+        "ended_at": "2026-10-29T02:55:22.197Z"
+      },
+      {
+        "id": 390,
+        "strategy_id": 173,
+        "strategy_version": 1,
+        "mode": "backtest",
+        "status": "completed",
+        "trade_count": 0,
+        "pnl_usd": "0",
+        "max_drawdown_pct": "0",
+        "max_drawdown_usd": "0",
+        "started_at": "2026-10-29T02:54:55.472Z",
+        "ended_at": "2026-10-29T02:54:55.472Z"
+      }
+    ]
+  }
+}

@@ -1,0 +1,58 @@
+{
+  "command": "wallets --json (agent-a)",
+  "exit": 0,
+  "stdout": {
+    "embedded": {
+      "success": true,
+      "account": "WalletFake111111111111111111111111111111111",
+      "username": "fake-agent",
+      "wallets": {
+        "solana": {
+          "address": "WalletFake111111111111111111111111111111111",
+          "delegated": true
+        },
+        "evm": {
+          "address": "0x00000000000000000000000000000000000Fa4e1",
+          "delegated": true
+        }
+      },
+      "embeddedWalletPermission": "allowed"
+    },
+    "linked": {
+      "success": true,
+      "continueCursor": null,
+      "isDone": true,
+      "page": [
+        {
+          "_creationTime": 1790000000000,
+          "_id": "teefakeid1",
+          "addedVia": "agent",
+          "address": "TeeFake111111111111111111111111111111111111",
+          "addressLower": "TeeFake111111111111111111111111111111111111",
+          "allowLaunch": false,
+          "boundKeyPrefix": "FakeKey1",
+          "chain": "solana",
+          "everRemoteExposed": true,
+          "label": "wallet-label",
+          "lifecycleVersion": 1,
+          "privyPolicyId": "fake-privyPolicyId-1",
+          "privyWalletId": "fake-privyWalletId-1",
+          "profile": "ember-tee",
+          "remoteAuthority": "verified-active",
+          "remoteEvidenceAt": 1790000000000,
+          "remoteEvidenceDigest": "fake-remoteEvidenceDigest-1",
+          "signerQuorumId": "fake-signerQuorumId-1",
+          "userAddress": "WalletFake111111111111111111111111111111111",
+          "vaultDestination": "VaultFake11111111111111111111111111111111111",
+          "verifiedAt": 1790000000000,
+          "walletKind": "tee"
+        }
+      ]
+    },
+    "signers": {
+      "teefakeid1": "stored"
+    },
+    "walletCount": 1,
+    "truncated": false
+  }
+}

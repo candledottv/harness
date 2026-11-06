@@ -1,0 +1,185 @@
+{
+  "name": "research-jup-signals-asset",
+  "method": "GET",
+  "route": "/v1/signals",
+  "query": {
+    "asset": "HaccFake11111111111111111111111111111111118",
+    "limit": "20"
+  },
+  "status": 200,
+  "ms": 147,
+  "bytes": 17232,
+  "contentType": "application/json; charset=utf-8",
+  "answer": {
+    "signals": [
+      {
+        "id": 118487062,
+        "rule_id": 5,
+        "pattern": "intra_book",
+        "wallet_id": 128043,
+        "asset_id": 129,
+        "event_id": 78527722,
+        "event_kind": "transfer",
+        "summary": "fake-summary-5",
+        "payload": {
+          "amount": "2635.651156",
+          "tx_hash": "fake-tx_hash-1",
+          "direction": "in",
+          "counterparty_address": "HaccFake1111111111111111111111111111111111L",
+          "counterparty_wallet_id": 328369
+        },
+        "created_at": "2026-10-30T13:31:39.572Z",
+        "wallet_address": "HaccFake1111111111111111111111111111111111S",
+        "wallet_label": null,
+        "wallet_chain": "solana",
+        "wallet_entity": null,
+        "wallet_groups": [
+          "fake-wallet_groups-1",
+          "fake-wallet_groups-2",
+          "fake-wallet_groups-3"
+        ],
+        "display_label": "fake-display_label-1",
+        "label_source": "identity",
+        "asset_symbol": "fake-asset_symbol-2",
+        "asset_address": "HaccFake11111111111111111111111111111111118",
+        "asset_chain": "solana",
+        "burst": false
+      },
+      {
+        "id": 118483817,
+        "rule_id": 5,
+        "pattern": "intra_book",
+        "wallet_id": 128043,
+        "asset_id": 129,
+        "event_id": 78526781,
+        "event_kind": "transfer",
+        "summary": "fake-summary-6",
+        "payload": {
+          "amount": "5378.064667",
+          "tx_hash": "fake-tx_hash-2",
+          "direction": "in",
+          "counterparty_address": "HaccFake1111111111111111111111111111111111L",
+          "counterparty_wallet_id": 328369
+        },
+        "created_at": "2026-10-30T13:28:52.109Z",
+        "wallet_address": "HaccFake1111111111111111111111111111111111S",
+        "wallet_label": null,
+        "wallet_chain": "solana",
+        "wallet_entity": null,
+        "wallet_groups": [
+          "fake-wallet_groups-1",
+          "fake-wallet_groups-2",
+          "fake-wallet_groups-3"
+        ],
+        "display_label": "fake-display_label-1",
+        "label_source": "identity",
+        "asset_symbol": "fake-asset_symbol-2",
+        "asset_address": "HaccFake11111111111111111111111111111111118",
+        "asset_chain": "solana",
+        "burst": false
+      },
+      {
+        "id": 118479033,
+        "rule_id": 5,
+        "pattern": "intra_book",
+        "wallet_id": 128043,
+        "asset_id": 129,
+        "event_id": 78525581,
+        "event_kind": "transfer",
+        "summary": "fake-summary-7",
+        "payload": {
+          "amount": "2701.706176",
+          "tx_hash": "fake-tx_hash-3",
+          "direction": "in",
+          "counterparty_address": "HaccFake1111111111111111111111111111111111L",
+          "counterparty_wallet_id": 328369
+        },
+        "created_at": "2026-10-30T13:25:34.882Z",
+        "wallet_address": "HaccFake1111111111111111111111111111111111S",
+        "wallet_label": null,
+        "wallet_chain": "solana",
+        "wallet_entity": null,
+        "wallet_groups": [
+          "fake-wallet_groups-1",
+          "fake-wallet_groups-2",
+          "fake-wallet_groups-3"
+        ],
+        "display_label": "fake-display_label-1",
+        "label_source": "identity",
+        "asset_symbol": "fake-asset_symbol-2",
+        "asset_address": "HaccFake11111111111111111111111111111111118",
+        "asset_chain": "solana",
+        "burst": false
+      },
+      {
+        "id": 118476425,
+        "rule_id": 5,
+        "pattern": "intra_book",
+        "wallet_id": 128043,
+        "asset_id": 129,
+        "event_id": 78524521,
+        "event_kind": "transfer",
+        "summary": "fake-summary-8",
+        "payload": {
+          "amount": "2770.438341",
+          "tx_hash": "fake-tx_hash-4",
+          "direction": "in",
+          "counterparty_address": "HaccFake1111111111111111111111111111111111L",
+          "counterparty_wallet_id": 328369
+        },
+        "created_at": "2026-10-30T13:23:35.482Z",
+        "wallet_address": "HaccFake1111111111111111111111111111111111S",
+        "wallet_label": null,
+        "wallet_chain": "solana",
+        "wallet_entity": null,
+        "wallet_groups": [
+          "fake-wallet_groups-1",
+          "fake-wallet_groups-2",
+          "fake-wallet_groups-3"
+        ],
+        "display_label": "fake-display_label-1",
+        "label_source": "identity",
+        "asset_symbol": "fake-asset_symbol-2",
+        "asset_address": "HaccFake11111111111111111111111111111111118",
+        "asset_chain": "solana",
+        "burst": false
+      },
+      {
+        "id": 118470916,
+        "rule_id": 5,
+        "pattern": "intra_book",
+        "wallet_id": 128043,
+        "asset_id": 129,
+        "event_id": 78523073,
+        "event_kind": "transfer",
+        "summary": "fake-summary-9",
+        "payload": {
+          "amount": "2753.881814",
+          "tx_hash": "fake-tx_hash-5",
+          "direction": "in",
+          "counterparty_address": "HaccFake1111111111111111111111111111111111L",
+          "counterparty_wallet_id": 328369
+        },
+        "created_at": "2026-10-30T13:19:35.668Z",
+        "wallet_address": "HaccFake1111111111111111111111111111111111S",
+        "wallet_label": null,
+        "wallet_chain": "solana",
+        "wallet_entity": null,
+        "wallet_groups": [
+          "fake-wallet_groups-1",
+          "fake-wallet_groups-2",
+          "fake-wallet_groups-3"
+        ],
+        "display_label": "fake-display_label-1",
+        "label_source": "identity",
+        "asset_symbol": "fake-asset_symbol-2",
+        "asset_address": "HaccFake11111111111111111111111111111111118",
+        "asset_chain": "solana",
+        "burst": false
+      }
+    ]
+  },
+  "truncated": {
+    "$.signals": 20
+  }
+}

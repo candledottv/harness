@@ -1,0 +1,15 @@
+{
+  "name": "refused-no-key",
+  "method": "GET",
+  "route": "/v1/signals",
+  "query": {
+    "limit": "1"
+  },
+  "status": 401,
+  "ms": 124,
+  "bytes": 32,
+  "contentType": "application/json; charset=utf-8",
+  "answer": {
+    "error": "missing bearer [redacted]"
+  }
+}

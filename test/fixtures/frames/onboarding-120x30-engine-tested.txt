@@ -1,0 +1,62 @@
+ ▲ candle   SETUP   nothing trades until your agent and its limits exist                                                
+                                                                                                                        
+ ╭─ Setup ──────────────────╮ ╭───────────────────────────────────────────────────────────────────────── step 2 of 5 ─╮ 
+ │                          │ │                                                                                       │ 
+ │ ✓ Welcome                │ │  Connect your agent                                                                   │ 
+ │                          │ │                                                                                       │ 
+ │ ✓ Sign in to Candle      │ │  Your agent runs on a harness you already use, signed in as you. The Candle Harness   │ 
+ │  Wall…1111 · candle-     │ │  keeps your own setup out of it and never stores a model key.                         │ 
+ │                          │ │                                                                                       │ 
+ │ ▸ Connect your agent     │ │    Claude Code 2.1.316 · signed in                                                    │ 
+ │                          │ │       ● sonnet · Claude Sonnet 5.5 · default                                          │ 
+ │ · Wallet and limits      │ │         opus · Claude Opus 5.5                                                        │ 
+ │                          │ │         haiku · Claude Haiku 5.5                                                      │ 
+ │ · The tour               │ │    Codex 0.165.0 · not signed in                                            sign in   │ 
+ │                          │ │    Grok 1.0.70 · signed in                                                     pick   │ 
+ │ · Where to start         │ │    OpenCode 1.19.5 · no models yet                                          sign in   │ 
+ │                          │ │    Pi · not installed              ⧉ npm install -g @earendil-works/pi-coding-agent   │ 
+ │                          │ │                                                                                       │ 
+ │                          │ │  ── test it ────────────────────────────────────────────────────────────────────────  │ 
+ │                          │ │                                                                                       │ 
+ │                          │ │  ✓ Claude Code answered in 2.4 s:  ok                                                 │ 
+ │                          │ │                                                                                       │ 
+ │                          │ │  ▸ Continue      ⏎ continues to step 3: your agent's key, wallet and limits           │ 
+ │                          │ │                                                                                       │ 
+ │ about 3 minutes          │ │                                                                                       │ 
+ │ quit any time: it picks  │ │                                                                                       │ 
+ │ up where you stopped     │ │                                                                                       │ 
+ ╰──────────────────────────╯ ╰───────────────────────────────────────────────────────────────────────────────────────╯ 
+                                                                                                                        
+ ↑/↓ moves · ⏎ or a click picks · esc back                                                              ctrl-c ×2 quits 
+
+--- colours ---
+0: f6f8fb/0e1115×11 f6f8fb/2a2f3a×7 959dab/0e1115×54 ffffff/0e1115×48
+1: ffffff/0b0d10×120
+2: ffffff/0b0d10×1 252a33/111419×2 b392f0/111419×7 252a33/111419×19 ffffff/0b0d10×1 32fe9f/111419×74 959dab/111419×13 32fe9f/111419×2 ffffff/0b0d10×1
+3: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×26 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×87 32fe9f/111419×1 ffffff/0b0d10×1
+4: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 3ddc84/111419×1 dde2ea/111419×8 ffffff/111419×16 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 b392f0/111419×18 ffffff/111419×67 32fe9f/111419×1 ffffff/0b0d10×1
+5: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×26 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×87 32fe9f/111419×1 ffffff/0b0d10×1
+6: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 3ddc84/111419×1 dde2ea/111419×18 ffffff/111419×6 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 dde2ea/111419×82 ffffff/111419×3 32fe9f/111419×1 ffffff/0b0d10×1
+7: ffffff/0b0d10×1 252a33/111419×1 dde2ea/111419×2 959dab/111419×19 ffffff/111419×5 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 dde2ea/111419×60 ffffff/111419×25 32fe9f/111419×1 ffffff/0b0d10×1
+8: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×26 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×87 32fe9f/111419×1 ffffff/0b0d10×1
+9: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 32fe9f/111419×1 dde2ea/111419×1 f6f8fb/111419×18 ffffff/111419×5 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 32fe9f/111419×2 b392f0/111419×31 ffffff/111419×52 32fe9f/111419×1 ffffff/0b0d10×1
+10: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×26 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 32fe9f/111419×7 f6f8fb/111419×36 ffffff/111419×42 32fe9f/111419×1 ffffff/0b0d10×1
+11: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 959dab/111419×1 dde2ea/111419×1 959dab/111419×17 ffffff/111419×6 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 32fe9f/111419×7 6cb6ff/111419×22 ffffff/111419×56 32fe9f/111419×1 ffffff/0b0d10×1
+12: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×26 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 32fe9f/111419×7 6cb6ff/111419×24 ffffff/111419×54 32fe9f/111419×1 ffffff/0b0d10×1
+13: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 959dab/111419×1 dde2ea/111419×1 959dab/111419×8 ffffff/111419×15 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 32fe9f/111419×2 959dab/111419×29 ffffff/111419×44 6cb6ff/111419×8 ffffff/111419×2 32fe9f/111419×1 ffffff/0b0d10×1
+14: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×26 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 32fe9f/111419×2 6cb6ff/111419×23 ffffff/111419×53 959dab/111419×5 ffffff/111419×2 32fe9f/111419×1 ffffff/0b0d10×1
+15: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 959dab/111419×1 dde2ea/111419×1 959dab/111419×14 ffffff/111419×9 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 32fe9f/111419×2 959dab/111419×31 ffffff/111419×42 6cb6ff/111419×8 ffffff/111419×2 32fe9f/111419×1 ffffff/0b0d10×1
+16: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×26 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 32fe9f/111419×2 959dab/111419×18 ffffff/111419×14 6cb6ff/111419×49 ffffff/111419×2 32fe9f/111419×1 ffffff/0b0d10×1
+17: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×26 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×87 32fe9f/111419×1 ffffff/0b0d10×1
+18: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×26 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 252a33/111419×83 ffffff/111419×2 32fe9f/111419×1 ffffff/0b0d10×1
+19: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×26 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×87 32fe9f/111419×1 ffffff/0b0d10×1
+20: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×26 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 3ddc84/111419×2 dde2ea/111419×30 f6f8fb/111419×4 ffffff/111419×49 32fe9f/111419×1 ffffff/0b0d10×1
+21: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×26 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×87 32fe9f/111419×1 ffffff/0b0d10×1
+22: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×26 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 32fe9f/1d2430×2 f6f8fb/1d2430×8 dde2ea/1d2430×64 ffffff/1d2430×9 ffffff/111419×2 32fe9f/111419×1 ffffff/0b0d10×1
+23: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×26 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×87 32fe9f/111419×1 ffffff/0b0d10×1
+24: ffffff/0b0d10×1 252a33/111419×1 959dab/111419×16 ffffff/111419×10 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×87 32fe9f/111419×1 ffffff/0b0d10×1
+25: ffffff/0b0d10×1 252a33/111419×1 959dab/111419×24 ffffff/111419×2 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×87 32fe9f/111419×1 ffffff/0b0d10×1
+26: ffffff/0b0d10×1 252a33/111419×1 959dab/111419×21 ffffff/111419×5 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×87 32fe9f/111419×1 ffffff/0b0d10×1
+27: ffffff/0b0d10×1 252a33/111419×28 ffffff/0b0d10×1 32fe9f/111419×89 ffffff/0b0d10×1
+28: ffffff/0b0d10×120
+29: 959dab/0e1115×42 ffffff/0e1115×62 959dab/0e1115×16

@@ -1,0 +1,114 @@
+{
+  "tool": "candle_get_portfolio",
+  "args": {},
+  "ms": 343,
+  "outcome": {
+    "kind": "ok",
+    "result": {
+      "success": true,
+      "embedded": [
+        {
+          "address": "WalletFake111111111111111111111111111111111",
+          "chain": "solana",
+          "lamports": "1000000000",
+          "tokens": [
+            {
+              "chain": "solana",
+              "mint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+              "amountRaw": "1000000",
+              "decimals": 6,
+              "program": "token"
+            },
+            {
+              "chain": "solana",
+              "mint": "9dXSV8VWuYvGfTzqvkBeoFwH9ihVTybDuWo5VaJPCNDL",
+              "amountRaw": "1000000",
+              "decimals": 6,
+              "program": "token"
+            },
+            {
+              "chain": "solana",
+              "mint": "TokenFake1zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz",
+              "amountRaw": "1000000",
+              "decimals": 6,
+              "program": "token-2022"
+            }
+          ]
+        }
+      ],
+      "tee": [
+        {
+          "id": "teefakeid1",
+          "address": "TeeFake111111111111111111111111111111111111",
+          "label": "wallet-label",
+          "active": true,
+          "chain": "solana",
+          "lamports": "1000000000",
+          "tokens": []
+        }
+      ],
+      "hood": {
+        "embedded": [
+          {
+            "address": "0x00000000000000000000000000000000000Fa4e1",
+            "chain": "hood",
+            "wei": "0",
+            "tokens": []
+          }
+        ],
+        "tee": [],
+        "unavailable": [],
+        "unpriced": 0,
+        "unpricedByReason": {}
+      },
+      "prices": {
+        "So11111111111111111111111111111111111111112": {
+          "priceUsd": 150,
+          "source": "jupiter",
+          "symbol": "SOL",
+          "name": "Wrapped SOL"
+        },
+        "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v": {
+          "priceUsd": 150,
+          "source": "market",
+          "updatedAt": 1790000000000,
+          "symbol": "USDC",
+          "name": "USD Coin"
+        },
+        "9dXSV8VWuYvGfTzqvkBeoFwH9ihVTybDuWo5VaJPCNDL": {
+          "priceUsd": 150,
+          "source": "market",
+          "updatedAt": 1790000000000,
+          "symbol": "CNDL",
+          "name": "Candle Exclusive"
+        },
+        "TokenFake1zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz": {
+          "priceUsd": 150,
+          "source": "market",
+          "updatedAt": 1790000000000,
+          "symbol": "TOK1",
+          "name": "TOK1"
+        },
+        "TokenFake2zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz": {
+          "priceUsd": 150,
+          "source": "reference"
+        }
+      },
+      "unavailable": [],
+      "complete": true,
+      "walletsComplete": true,
+      "hyperliquid": {
+        "read": true,
+        "network": "mainnet",
+        "accounts": [],
+        "subtotal": {
+          "accountValueUsd": "0",
+          "unrealizedPnlUsd": "0"
+        },
+        "empty": 0,
+        "unread": [],
+        "thresholds": "defaults"
+      }
+    }
+  }
+}

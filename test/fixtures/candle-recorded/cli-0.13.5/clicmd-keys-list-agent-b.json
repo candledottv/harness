@@ -1,0 +1,89 @@
+{
+  "command": "candle keys list --json (agent-b's row)",
+  "exit": 0,
+  "stdout": {
+    "success": true,
+    "keys": [
+      {
+        "_creationTime": 1790000000000,
+        "_id": "fake-keyId-1",
+        "createdAt": 1790000000000,
+        "dailyLaunchCap": 1000,
+        "embeddedWallet": "allowed",
+        "environment": "production",
+        "keyPrefix": "FakeKey2",
+        "label": "key-label",
+        "lastUsedAt": 1790000000000,
+        "launchChains": [
+          "solana",
+          "hood"
+        ],
+        "mintedByDevicePrefix": "FakeDvc1",
+        "profileId": "fake-profileId-2",
+        "profileSelfEdit": "allowed",
+        "rateLimitPerMin": 600,
+        "scopes": [
+          "launch:write",
+          "launch:read",
+          "activity:write",
+          "swap:write",
+          "account:read"
+        ],
+        "txLimit": {
+          "reset": "daily",
+          "usdMicros": 100000000
+        },
+        "userAddress": "WalletFake111111111111111111111111111111111",
+        "walletScope": "selected",
+        "recordVisibility": "public",
+        "publicPath": "/agents/profile/fake-profileId-2",
+        "issuedCaps": {
+          "rateLimitPerMin": 30,
+          "dailyLaunchCap": 5
+        },
+        "effectiveCaps": {
+          "rateLimitPerMin": 600,
+          "dailyLaunchCap": 1000,
+          "uploadsPerMin": 60
+        },
+        "raisedBy": {
+          "rateLimitPerMin": "max",
+          "dailyLaunchCap": "max",
+          "uploadsPerMin": "max"
+        },
+        "usage": {
+          "todayUsdMicros": 4000000,
+          "weekUsdMicros": 20000000,
+          "monthUsdMicros": 4000000,
+          "lifetimeUsdMicros": 20000000,
+          "days30UsdMicros": 20000000,
+          "tradeCount30": 20,
+          "launchCount30": 0,
+          "lifetimeLaunches": 0
+        },
+        "emberWindow": {
+          "windowKey": "daily:1790000000000",
+          "capUsdMicros": 100000000,
+          "reservedUsdMicros": 4000000,
+          "remainingUsdMicros": 96000000,
+          "resetsAt": 1790000000000,
+          "nextWindowCapUsdMicros": 100000000
+        },
+        "teeReadiness": {
+          "txLimit": true,
+          "rawCaps": {
+            "SOL": false,
+            "USDC": false,
+            "CNDL": false,
+            "ETH": false,
+            "USDG": false
+          }
+        }
+      }
+    ],
+    "tier": "max",
+    "checkedAt": 1790000000000,
+    "usageSince": "2026-08-15",
+    "accountRecordRetired": false
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "name": "feed-new-unknown-field",
+  "tool": "candle_get_feed",
+  "args": {
+    "bucket": "new",
+    "chain": "solana",
+    "fields": "name,_creationTime",
+    "limit": 5
+  },
+  "route": "/api/v1/markets/feed",
+  "query": {
+    "bucket": "new",
+    "chain": "solana",
+    "fields": "name,_creationTime",
+    "limit": "5"
+  },
+  "status": 400,
+  "ms": 71,
+  "bytes": 130,
+  "answer": {
+    "success": false,
+    "error": {
+      "code": "VALIDATION_FAILED",
+      "message": "Unknown field: _creationTime",
+      "field": "fields",
+      "retryable": false
+    }
+  }
+}

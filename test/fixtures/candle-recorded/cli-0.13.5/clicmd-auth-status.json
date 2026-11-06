@@ -1,0 +1,26 @@
+{
+  "command": "candle auth status --json",
+  "exit": 0,
+  "stdout": {
+    "backend": "keychain",
+    "profile": "production",
+    "deviceTokenPrefix": "FakeDvc1",
+    "keyPrefix": "FakeKey3",
+    "account": "WalletFake111111111111111111111111111111111",
+    "cachedAccount": "WalletFake111111111111111111111111111111111",
+    "apiUrl": "https://api.candle.example",
+    "configPath": "~/.config/candle/config.json",
+    "rows": [
+      {
+        "check": "Device token",
+        "state": "PASS",
+        "detail": "valid"
+      },
+      {
+        "check": "API key",
+        "state": "PASS",
+        "detail": "valid"
+      }
+    ]
+  }
+}

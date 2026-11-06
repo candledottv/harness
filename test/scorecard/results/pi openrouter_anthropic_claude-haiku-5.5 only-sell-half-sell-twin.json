@@ -1,0 +1,160 @@
+{
+  "engine": "pi",
+  "model": "openrouter/anthropic/claude-haiku-5.5",
+  "ran": {
+    "engine": "pi",
+    "engineVersion": "1.4.0",
+    "model": "openrouter/anthropic/claude-haiku-5.5",
+    "answeredModel": "openrouter/anthropic/claude-haiku-5.5"
+  },
+  "at": "2026-10-29T11:47:19.455Z",
+  "results": [
+    {
+      "id": "sell-half",
+      "pass": true,
+      "checks": [
+        {
+          "name": "the turn ended with a reply",
+          "pass": true
+        },
+        {
+          "name": "proposed one sell card",
+          "pass": true
+        },
+        {
+          "name": "of MOON, half",
+          "pass": true
+        }
+      ],
+      "notes": {
+        "skillRead": false,
+        "tools": [
+          "mcp__candle__candle_get_portfolio",
+          "mcp__candle__candle_resolve_token",
+          "mcp__candle__candle_execution_status",
+          "mcp__candle__candle_trade"
+        ],
+        "figures": 0,
+        "marked": 0,
+        "ms": 18236
+      },
+      "turns": [
+        {
+          "user": "Sell half of my MOON.",
+          "reply": "I've proposed selling 50% of your MOON from the embedded wallet, which is about 6,172.84 MOON, roughly $3,890 at the last read of $0.63. It's waiting for your approval on the card. MOON is the only token in your wallets, and its market is trading with sells open. Nothing has sold yet.",
+          "outcome": "done"
+        }
+      ],
+      "record": {
+        "turns": [
+          {
+            "user": "Sell half of my MOON.",
+            "reply": "I've proposed selling 50% of your MOON from the embedded wallet, which is about 6,172.84 MOON, roughly $3,890 at the last read of $0.63. It's waiting for your approval on the card. MOON is the only token in your wallets, and its market is trading with sells open. Nothing has sold yet.",
+            "outcome": "done",
+            "tools": [
+              "mcp__candle__candle_get_portfolio",
+              "mcp__candle__candle_resolve_token",
+              "mcp__candle__candle_execution_status",
+              "mcp__candle__candle_trade"
+            ],
+            "reasked": false,
+            "figures": 0,
+            "marked": []
+          }
+        ],
+        "cards": [
+          {
+            "state": "created",
+            "tool": "candle_trade",
+            "kind": "trade",
+            "side": "sell",
+            "mint": "MoonFake11111111111111111111111111111111111",
+            "params": {
+              "mint": "MoonFake11111111111111111111111111111111111",
+              "side": "sell",
+              "percent": 50,
+              "clientTradeId": "1ea99717-dc6f-4026-8443-96ea5149397b"
+            }
+          }
+        ],
+        "memoryChanges": 0,
+        "hacc": [
+          "GET /v1/market/token/MoonFake11111111111111111111111111111111111/history"
+        ]
+      },
+      "ran": {
+        "engine": "pi",
+        "engineVersion": "1.4.0",
+        "model": "openrouter/anthropic/claude-haiku-5.5",
+        "answeredModel": "openrouter/anthropic/claude-haiku-5.5"
+      }
+    },
+    {
+      "id": "sell-twin",
+      "pass": true,
+      "checks": [
+        {
+          "name": "the turn ended with a reply",
+          "pass": true
+        },
+        {
+          "name": "proposed nothing",
+          "pass": true
+        },
+        {
+          "name": "asks which MOON",
+          "pass": true
+        }
+      ],
+      "notes": {
+        "skillRead": false,
+        "tools": [
+          "mcp__candle__candle_get_portfolio",
+          "mcp__candle__candle_resolve_token",
+          "mcp__candle__candle_resolve_token"
+        ],
+        "figures": 8,
+        "marked": 2,
+        "ms": 13007
+      },
+      "turns": [
+        {
+          "user": "Sell half of my MOON.",
+          "reply": "You hold two tokens named MOON, so I need you to say which one before I propose a sell:\n\n1. **MOON, Candle-launched** (mint `MoonFake11111111111111111111111111111111111`): you hold 12,345.678901. Half is 6,172.839450. Price $0.63 per token, so the holding is about $7,778 and half is about $3,889. Its market data shows $100,000 liquidity.\n2. **MOON, external on pump.fun** (mint `MoonTwin11111111111111111111111111111111111`): you hold 5,000. Half is 2,500. Price $0.0021 per token, so the holding is about $10.50 and half is about $5.25. Its market data shows $100,000 liquidity.\n\nThe half amounts are my arithmetic from the balances and prices above. Which one should I sell half of?",
+          "outcome": "done"
+        }
+      ],
+      "record": {
+        "turns": [
+          {
+            "user": "Sell half of my MOON.",
+            "reply": "You hold two tokens named MOON, so I need you to say which one before I propose a sell:\n\n1. **MOON, Candle-launched** (mint `MoonFake11111111111111111111111111111111111`): you hold 12,345.678901. Half is 6,172.839450. Price $0.63 per token, so the holding is about $7,778 and half is about $3,889. Its market data shows $100,000 liquidity.\n2. **MOON, external on pump.fun** (mint `MoonTwin11111111111111111111111111111111111`): you hold 5,000. Half is 2,500. Price $0.0021 per token, so the holding is about $10.50 and half is about $5.25. Its market data shows $100,000 liquidity.\n\nThe half amounts are my arithmetic from the balances and prices above. Which one should I sell half of?",
+            "outcome": "done",
+            "tools": [
+              "mcp__candle__candle_get_portfolio",
+              "mcp__candle__candle_resolve_token",
+              "mcp__candle__candle_resolve_token"
+            ],
+            "reasked": false,
+            "figures": 8,
+            "marked": [
+              "$7,778",
+              "$10.50"
+            ]
+          }
+        ],
+        "cards": [],
+        "memoryChanges": 0,
+        "hacc": [
+          "GET /v1/market/token/MoonTwin11111111111111111111111111111111111/history"
+        ]
+      },
+      "ran": {
+        "engine": "pi",
+        "engineVersion": "1.4.0",
+        "model": "openrouter/anthropic/claude-haiku-5.5",
+        "answeredModel": "openrouter/anthropic/claude-haiku-5.5"
+      }
+    }
+  ]
+}

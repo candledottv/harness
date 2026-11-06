@@ -1,0 +1,21 @@
+{
+  "name": "followup-group-after",
+  "method": "GET",
+  "route": "/v1/me/groups",
+  "query": {},
+  "status": 200,
+  "ms": 131,
+  "bytes": 116,
+  "contentType": "application/json; charset=utf-8",
+  "answer": {
+    "groups": [
+      {
+        "id": 352183,
+        "name": "fake-name-6",
+        "description": null,
+        "created_at": "2026-10-29T03:07:01.712Z",
+        "wallets": []
+      }
+    ]
+  }
+}

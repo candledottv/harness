@@ -1,0 +1,64 @@
+{
+  "name": "token-search-symbol",
+  "method": "GET",
+  "route": "/v1/market/token-search",
+  "query": {
+    "q": "fake-symbol-27"
+  },
+  "status": 200,
+  "ms": 785,
+  "bytes": 1498,
+  "contentType": "application/json; charset=utf-8",
+  "answer": {
+    "tokens": [
+      {
+        "address": "HaccFake11111111111111111111111111111111168",
+        "chain": "solana",
+        "name": "fake-name-43",
+        "symbol": "fake-symbol-27",
+        "created_at": "2026-10-23T20:28:07.000Z",
+        "liquidity_usd": 3199.73,
+        "market_cap": 1751
+      },
+      {
+        "address": "HaccFake11111111111111111111111111111111169",
+        "chain": "solana",
+        "name": "fake-name-44",
+        "symbol": "fake-symbol-45",
+        "created_at": "2026-10-15T14:13:01.000Z",
+        "liquidity_usd": 1972.21,
+        "market_cap": 1871
+      },
+      {
+        "address": "0xfa4e00000000000000000000000000000000001b",
+        "chain": "hood",
+        "name": "fake-name-45",
+        "symbol": "fake-symbol-46",
+        "created_at": null,
+        "liquidity_usd": 0.26249479295851225,
+        "market_cap": 450096.91933600744
+      },
+      {
+        "address": "HaccFake1111111111111111111111111111111112c",
+        "chain": "solana",
+        "name": "fake-name-37",
+        "symbol": "fake-symbol-27",
+        "created_at": "2026-10-29T02:48:17.000Z",
+        "liquidity_usd": null,
+        "market_cap": 3366.69
+      },
+      {
+        "address": "0xfa4e00000000000000000000000000000000001c",
+        "chain": "hood",
+        "name": "fake-name-46",
+        "symbol": "fake-symbol-46",
+        "created_at": null,
+        "liquidity_usd": 0,
+        "market_cap": 367484.5228593849
+      }
+    ]
+  },
+  "truncated": {
+    "$.tokens": 8
+  }
+}

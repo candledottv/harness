@@ -1,0 +1,13 @@
+{
+  "name": "wallet-book-legs",
+  "method": "GET",
+  "route": "/v1/market/wallet/HaccFake1111111111111111111111111111111116H/book-legs",
+  "query": {},
+  "status": 404,
+  "ms": 139,
+  "bytes": 23,
+  "contentType": "application/json; charset=utf-8",
+  "answer": {
+    "error": "not_in_book"
+  }
+}

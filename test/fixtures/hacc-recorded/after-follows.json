@@ -1,0 +1,13 @@
+{
+  "name": "after-follows",
+  "method": "GET",
+  "route": "/v1/me/follows",
+  "query": {},
+  "status": 200,
+  "ms": 134,
+  "bytes": 14,
+  "contentType": "application/json; charset=utf-8",
+  "answer": {
+    "follows": []
+  }
+}

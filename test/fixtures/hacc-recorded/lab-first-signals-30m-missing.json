@@ -1,0 +1,15 @@
+{
+  "name": "lab-first-signals-30m-missing",
+  "method": "GET",
+  "route": "/v1/strategy-lab/first-signals",
+  "query": {
+    "minutes": "30"
+  },
+  "status": 400,
+  "ms": 393,
+  "bytes": 118,
+  "contentType": "application/json; charset=utf-8",
+  "answer": {
+    "error": "asset_id, asset_ids, or a directory filter (launched_after, launched_before, min_ath_multiple) is required"
+  }
+}

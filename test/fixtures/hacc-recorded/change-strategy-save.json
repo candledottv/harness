@@ -1,0 +1,68 @@
+{
+  "name": "change-strategy-save",
+  "method": "POST",
+  "route": "/v1/strategies",
+  "query": {},
+  "body": {
+    "name": "fake-name-6",
+    "definition": {
+      "chain": "solana",
+      "entry": {
+        "source": "pattern",
+        "pattern": "confluence",
+        "filters": {
+          "max_mcap_usd": 500000,
+          "max_age_minutes": 60
+        }
+      },
+      "exit": {
+        "take_profit_pct": 100,
+        "stop_loss_pct": 40,
+        "max_hold_hours": 24
+      },
+      "sizing": {
+        "usd_per_trade": 25,
+        "max_concurrent": 4
+      }
+    }
+  },
+  "status": 201,
+  "ms": 134,
+  "bytes": 590,
+  "contentType": "application/json; charset=utf-8",
+  "answer": {
+    "strategy": {
+      "id": 173,
+      "name": "fake-name-6",
+      "version": 1,
+      "definition": {
+        "exit": {
+          "stop_loss_pct": 40,
+          "max_hold_hours": 24,
+          "take_profit_pct": 100
+        },
+        "chain": "solana",
+        "entry": {
+          "source": "pattern",
+          "filters": {
+            "max_mcap_usd": 500000,
+            "max_age_minutes": 60
+          },
+          "pattern": "confluence"
+        },
+        "sizing": {
+          "usd_per_trade": 25,
+          "max_concurrent": 4
+        }
+      },
+      "status": "draft",
+      "author": "HaccFake11111111111111111111111111111111112",
+      "parent_version": null,
+      "family": null,
+      "owner_key_id": null,
+      "owner_candle_user_id": "HaccFake11111111111111111111111111111111112",
+      "created_at": "2026-10-29T02:54:22.990Z",
+      "updated_at": "2026-10-29T02:54:22.990Z"
+    }
+  }
+}

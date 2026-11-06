@@ -1,0 +1,38 @@
+{
+  "name": "token-venues",
+  "method": "GET",
+  "route": "/v1/market/token/HaccFake1111111111111111111111111111111112c/venues",
+  "query": {},
+  "status": 200,
+  "ms": 164,
+  "bytes": 575,
+  "contentType": "application/json; charset=utf-8",
+  "answer": {
+    "address": "HaccFake1111111111111111111111111111111112c",
+    "symbol": "fake-symbol-27",
+    "name": "fake-name-37",
+    "price_usd": 0.000003632,
+    "market_cap": 3632.08,
+    "pair_count": 1,
+    "total_liquidity_usd": 0,
+    "volume_24h_usd": 2353.74,
+    "buys_24h": 19,
+    "sells_24h": 15,
+    "top_pool_share": null,
+    "oldest_pair_at": "2026-10-29T02:48:17.000Z",
+    "pairs": [
+      {
+        "dex": "pumpfun",
+        "pair_address": "HaccFake1111111111111111111111111111111116G",
+        "quote_symbol": "SOL",
+        "price_usd": 0.000003632,
+        "liquidity_usd": null,
+        "volume_24h_usd": 2353.74,
+        "buys_24h": 19,
+        "sells_24h": 15,
+        "price_change_24h_pct": 28.18,
+        "created_at": "2026-10-29T02:48:17.000Z"
+      }
+    ]
+  }
+}

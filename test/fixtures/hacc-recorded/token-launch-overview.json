@@ -1,0 +1,154 @@
+{
+  "name": "token-launch-overview",
+  "method": "GET",
+  "route": "/v1/market/token/HaccFake1111111111111111111111111111111112c/launch-overview",
+  "query": {},
+  "status": 200,
+  "ms": 359,
+  "bytes": 2492,
+  "contentType": "application/json; charset=utf-8",
+  "answer": {
+    "mint": "HaccFake1111111111111111111111111111111112c",
+    "chain": "solana",
+    "symbol": "fake-symbol-27",
+    "as_of": "2026-10-29T02:49:43.769Z",
+    "identity": {
+      "launched_at": "2026-10-29T02:48:17.389Z",
+      "deployer": "HaccFake11111111111111111111111111111111165",
+      "deployer_identity": null,
+      "pool": "pump",
+      "initial_buy": "10000000",
+      "initial_quote": "0.282220132",
+      "quote_mint": "So11111111111111111111111111111111111111112",
+      "quote_symbol": "SOL",
+      "token_program": "token-2022",
+      "token_extensions": [
+        "metadataPointer",
+        "tokenMetadata"
+      ],
+      "extension_risks": [],
+      "mint_authority_at_launch": null,
+      "freeze_authority_at_launch": null,
+      "deployer_launches": 1,
+      "deployer_hits": {
+        "with_ticks": 0,
+        "reached_10x": 0,
+        "never_doubled": 0,
+        "considered": 0,
+        "prior_launches": 0
+      }
+    },
+    "market": {
+      "mcap_now": null,
+      "mcap_ath": null,
+      "mcap_ath_at": null,
+      "price_now": null,
+      "ticks": 0,
+      "first_tick_at": null,
+      "last_tick_at": null,
+      "vendor_ok": true,
+      "vendor_missing": [],
+      "holders": 12,
+      "liquidity_usd": 472.16029557471785,
+      "volume_24h_usd": 3060.3698992547675,
+      "top10_share_pct": 99.8672,
+      "mint_authority": null,
+      "freeze_authority": null
+    },
+    "tracked": {
+      "buyers": 1,
+      "sellers": 0,
+      "buys_priced_pct": 100,
+      "swaps": 1,
+      "volume_usd": 157.07921971124998,
+      "first_tracked_buy_at": "2026-10-29T02:49:31.000Z",
+      "earliest": [
+        {
+          "address": "HaccFake1111111111111111111111111111111112n",
+          "label": null,
+          "display_label": "fake-display_label-2",
+          "minutes_after_launch": 1.2,
+          "usd": 157.07921971124998,
+          "groups": [
+            "fake-groups-8",
+            "fake-groups-9",
+            "fake-groups-10"
+          ]
+        }
+      ],
+      "realized": {
+        "round_trippers": 0,
+        "in_profit": 0,
+        "top": []
+      },
+      "holding": {
+        "still_hold_some": 1,
+        "fully_exited": 0,
+        "top": [
+          {
+            "address": "HaccFake1111111111111111111111111111111112n",
+            "label": null,
+            "display_label": "fake-display_label-2",
+            "remaining_qty": "38868430.802997",
+            "transferred_in_qty": "0",
+            "transferred_out_qty": "0",
+            "usd_value": null,
+            "usd_as_of_minutes": null
+          }
+        ]
+      },
+      "cohorts": {
+        "proven-follow": 0,
+        "bot": 0,
+        "kol": 0,
+        "noise": 0,
+        "leading-indicator": 0,
+        "top-pnl": 0
+      },
+      "sell_pressure_30m": {
+        "buys": 1,
+        "sells": 0
+      }
+    },
+    "signals": {
+      "total": 1,
+      "by_pattern": [
+        {
+          "pattern": "new_ticker",
+          "count": 1,
+          "first_at": "2026-10-29T02:49:32.244Z",
+          "first_mc": null,
+          "last_mc": null
+        }
+      ],
+      "first_three": [
+        {
+          "at": "2026-10-29T02:49:32.244Z",
+          "pattern": "new_ticker",
+          "mc": null,
+          "summary": "fake-summary-2"
+        }
+      ],
+      "minutes_signal_to_first_peak": null
+    },
+    "kol_tweets": {
+      "window": {
+        "from": "2026-10-29T02:48:17.389Z",
+        "to": "2026-10-29T02:49:43.769Z",
+        "basis": "launch"
+      },
+      "total": 0,
+      "handles": 0,
+      "first_at": null,
+      "minutes_after_launch": null,
+      "accounts": [],
+      "tweets": []
+    },
+    "phases": [],
+    "phase_params": {
+      "peak_rise": 1,
+      "phase_drawdown": 0.3,
+      "smooth_minutes": 5
+    }
+  }
+}

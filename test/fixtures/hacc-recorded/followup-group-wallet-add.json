@@ -1,0 +1,29 @@
+{
+  "name": "followup-group-wallet-add",
+  "method": "POST",
+  "route": "/v1/me/groups/352183/wallets",
+  "query": {},
+  "body": {
+    "chain": "solana",
+    "address": "HaccFake1111111111111111111111111111111111N"
+  },
+  "status": 200,
+  "ms": 134,
+  "bytes": 207,
+  "contentType": "application/json; charset=utf-8",
+  "answer": {
+    "group": {
+      "id": 352183,
+      "name": "fake-name-6",
+      "description": null,
+      "created_at": "2026-10-29T03:07:01.712Z",
+      "wallets": [
+        {
+          "wallet_id": 705271,
+          "chain": "solana",
+          "address": "HaccFake1111111111111111111111111111111111N"
+        }
+      ]
+    }
+  }
+}

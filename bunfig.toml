@@ -1,0 +1,7 @@
+[install]
+exact = true
+
+[test]
+# Live tests start real harnesses or need a terminal. A plain `bun test` skips them, and so does
+# `bun test <file>` (silently, exit 0). Run them with: bun run test:live <file>
+pathIgnorePatterns = ["**/*.live.test.ts"]

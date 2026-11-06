@@ -1,0 +1,62 @@
+ ▲ candle  agent-a ▾  LIVE  today $12.00 / $100.00  exposure $412.50  P&L 24h +$3.40  ● 0 cards waiting  ctrl-x ×2 kill 
+ 1 Trade  2 Cockpit  3 Trending  4 Signals  5 P&L  6 Research  7 Journal  8 Perps   settings ▾                          
+                                                                                                                        
+╭─ Perps · Hyperliquid ────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ Perps on Hyperliquid come to the Candle Harness in a later update.                                                   │
+│ Until then the agent reads them for you: markets, your positions and your account. Ask it, or pick one:              │
+│                                                                                                                      │
+│  show me Hyperliquid's biggest perps markets                                                                         │
+│  what are my perps positions?                                                                                        │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+╰─ ⇱ ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+                                                                                                                        
+╭─ agent-a ─────────────────────────────────────────────────────────────────────────────────── Claude Code · sonnet ▾ ─╮
+│ you › what's trending?                                                                                               │
+│                                                                                                                      │
+│   Orbit leads the on-fire list. Want me to check it?  ⧉                                                              │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+                                                                                                                        
+› type a command or ask the agent                                                            ctrl-k palette    ? help   
+
+--- colours ---
+0: ffffff/0e1115×1 f6f8fb/0e1115×8 ffffff/0e1115×1 6cb6ff/16263a×11 0b0d10/3ddc84×6 ffffff/0e1115×1 959dab/0e1115×6 f6f8fb/0e1115×6 959dab/0e1115×10 ffffff/0e1115×2 959dab/0e1115×9 f6f8fb/0e1115×7 ffffff/0e1115×2 959dab/0e1115×8 3ddc84/0e1115×6 ffffff/0e1115×2 959dab/0e1115×17 ffffff/0e1115×1 ff5c5c/3a1619×16
+1: ffffff/0b0d10×1 6cb6ff/0b0d10×7 ffffff/0b0d10×2 6cb6ff/0b0d10×9 ffffff/0b0d10×2 6cb6ff/0b0d10×10 ffffff/0b0d10×2 6cb6ff/0b0d10×9 ffffff/0b0d10×2 6cb6ff/0b0d10×5 ffffff/0b0d10×2 6cb6ff/0b0d10×10 ffffff/0b0d10×2 6cb6ff/0b0d10×9 ffffff/0b0d10×2 f6f8fb/0b0d10+9×7 ffffff/0b0d10×2 6cb6ff/16263a×12 ffffff/0b0d10×25
+2: ffffff/0b0d10×120
+3: 252a33/111419×2 b392f0/111419×21 252a33/111419×97
+4: 252a33/111419×1 ffffff/111419×1 dde2ea/111419×66 ffffff/111419×51 252a33/111419×1
+5: 252a33/111419×1 ffffff/111419×1 959dab/111419×103 ffffff/111419×14 252a33/111419×1
+6: 252a33/111419×1 ffffff/111419×118 252a33/111419×1
+7: 252a33/111419×1 ffffff/111419×1 6cb6ff/16263a×45 ffffff/111419×72 252a33/111419×1
+8: 252a33/111419×1 ffffff/111419×1 6cb6ff/16263a×30 ffffff/111419×87 252a33/111419×1
+9: 252a33/111419×1 ffffff/111419×118 252a33/111419×1
+10: 252a33/111419×1 ffffff/111419×118 252a33/111419×1
+11: 252a33/111419×1 ffffff/111419×118 252a33/111419×1
+12: 252a33/111419×1 ffffff/111419×118 252a33/111419×1
+13: 252a33/111419×1 ffffff/111419×118 252a33/111419×1
+14: 252a33/111419×1 ffffff/111419×118 252a33/111419×1
+15: 252a33/111419×1 ffffff/111419×118 252a33/111419×1
+16: 252a33/111419×1 ffffff/111419×118 252a33/111419×1
+17: 252a33/111419×1 ffffff/111419×118 252a33/111419×1
+18: 252a33/111419×2 6cb6ff/16263a×3 252a33/111419×115
+19: ffffff/0b0d10×120
+20: 32fe9f/111419×2 b392f0/111419×9 32fe9f/111419×83 6cb6ff/16263a×24 32fe9f/111419×2
+21: 32fe9f/111419×1 ffffff/111419×1 959dab/111419×6 f6f8fb/111419×16 ffffff/111419×95 32fe9f/111419×1
+22: 32fe9f/111419×1 ffffff/111419×118 32fe9f/111419×1
+23: 32fe9f/111419×1 ffffff/111419×1 dde2ea/111419×52 959dab/111419×1 6cb6ff/16263a×3 ffffff/111419×61 32fe9f/111419×1
+24: 32fe9f/111419×1 ffffff/111419×118 32fe9f/111419×1
+25: 32fe9f/111419×1 ffffff/111419×118 32fe9f/111419×1
+26: 32fe9f/111419×1 ffffff/111419×118 32fe9f/111419×1
+27: 32fe9f/111419×120
+28: 959dab/0b0d10×1 ffffff/0b0d10×119
+29: f6f8fb/0e1115×2 959dab/0e1115×31 ffffff/0e1115×59 6cb6ff/16263a×16 959dab/0e1115×2 6cb6ff/16263a×8 959dab/0e1115×2

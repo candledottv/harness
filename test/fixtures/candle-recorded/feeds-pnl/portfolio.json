@@ -1,0 +1,104 @@
+{
+  "name": "portfolio",
+  "tool": "candle_get_portfolio",
+  "args": {},
+  "route": "/api/v1/agent/portfolio",
+  "query": {},
+  "status": 200,
+  "ms": 482,
+  "bytes": 1637,
+  "answer": {
+    "success": true,
+    "embedded": [
+      {
+        "address": "WalletFake611111111111111111111111111111111",
+        "chain": "solana",
+        "lamports": "187062232",
+        "tokens": [
+          {
+            "chain": "solana",
+            "mint": "TokenFake30zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz",
+            "amountRaw": "88957683973",
+            "decimals": 6,
+            "program": "token-2022"
+          },
+          {
+            "chain": "solana",
+            "mint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+            "amountRaw": "382384",
+            "decimals": 6,
+            "program": "token"
+          },
+          {
+            "chain": "solana",
+            "mint": "9dXSV8VWuYvGfTzqvkBeoFwH9ihVTybDuWo5VaJPCNDL",
+            "amountRaw": "1216116914",
+            "decimals": 6,
+            "program": "token"
+          }
+        ]
+      }
+    ],
+    "tee": [
+      {
+        "id": "TokenFake27zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz",
+        "address": "WalletFake811111111111111111111111111111111",
+        "label": "fake-label-2",
+        "active": true,
+        "chain": "solana",
+        "lamports": "103388726",
+        "tokens": []
+      }
+    ],
+    "hood": {
+      "embedded": [
+        {
+          "address": "0xfa4e000000000000000000000000000000000001",
+          "chain": "hood",
+          "wei": "0",
+          "tokens": []
+        }
+      ],
+      "tee": [],
+      "unavailable": [],
+      "unpriced": 0,
+      "unpricedByReason": {}
+    },
+    "prices": {
+      "So11111111111111111111111111111111111111112": {
+        "priceUsd": 353.4267555390667,
+        "source": "jupiter",
+        "symbol": "fake-symbol-20",
+        "name": "fake-name-20"
+      },
+      "TokenFake30zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz": {
+        "priceUsd": 0.000022628063116365674,
+        "source": "market",
+        "updatedAt": 1791877253372,
+        "symbol": "fake-symbol-21",
+        "name": "fake-name-21"
+      },
+      "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v": {
+        "priceUsd": 3.698491314842333,
+        "source": "market",
+        "updatedAt": 1791875342083,
+        "symbol": "fake-symbol-22",
+        "name": "fake-name-22"
+      },
+      "9dXSV8VWuYvGfTzqvkBeoFwH9ihVTybDuWo5VaJPCNDL": {
+        "priceUsd": 0.005366020606055601,
+        "source": "market",
+        "updatedAt": 1791879997080,
+        "symbol": "fake-symbol-23",
+        "name": "fake-name-23"
+      },
+      "hood:native": {
+        "priceUsd": 8228.777504,
+        "source": "reference"
+      }
+    },
+    "unavailable": [],
+    "complete": true,
+    "walletsComplete": true
+  }
+}

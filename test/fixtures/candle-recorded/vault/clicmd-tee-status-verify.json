@@ -1,0 +1,103 @@
+{
+  "command": "tee status <tee address> --verify --json > file (at a terminal, the owner's profile; the right passphrase)",
+  "exit": 0,
+  "stdout": {
+    "address": "TeeFake111111111111111111111111111111111111",
+    "label": "wallet-label",
+    "source": "vault",
+    "verified": true,
+    "linkedWalletId": "teefakeid1",
+    "vaultDestination": "VaultFake11111111111111111111111111111111111",
+    "vaultLifecycle": "enabled",
+    "localState": "enabled",
+    "retainedSweepReceipts": 0,
+    "pendingSweepTransactions": 0,
+    "observedAt": "2026-09-01T00:00:00.000Z",
+    "server": {
+      "success": true,
+      "id": "teefakeid1",
+      "chain": "solana",
+      "address": "TeeFake111111111111111111111111111111111111",
+      "state": "enabled",
+      "remoteAuthority": "verified-active",
+      "evidenceObservedAt": 1790000000000,
+      "revokedAt": null,
+      "sweptAt": null,
+      "profile": "ember-tee",
+      "boundKeyPrefix": "FakeKey2",
+      "vaultDestination": "VaultFake11111111111111111111111111111111111",
+      "everRemoteExposed": true,
+      "lifecycleVersion": 1,
+      "bridges": []
+    },
+    "balances": {
+      "lamports": "1000000000",
+      "tokens": [
+        {
+          "mint": "9dXSV8VWuYvGfTzqvkBeoFwH9ihVTybDuWo5VaJPCNDL",
+          "amountRaw": "0",
+          "decimals": 6,
+          "state": "initialized",
+          "program": "token",
+          "usdValue": "unknown"
+        },
+        {
+          "mint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+          "amountRaw": "1000000",
+          "decimals": 6,
+          "state": "initialized",
+          "program": "token",
+          "usdValue": "unknown"
+        },
+        {
+          "mint": "TokenFake1zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz",
+          "amountRaw": "0",
+          "decimals": 9,
+          "state": "initialized",
+          "program": "token",
+          "usdValue": "unknown"
+        },
+        {
+          "mint": "TokenFake2zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz",
+          "amountRaw": "0",
+          "decimals": 11,
+          "state": "initialized",
+          "program": "token",
+          "usdValue": "unknown"
+        },
+        {
+          "mint": "LuPsFmtvdFMuCjd6GBMVUErTiBAkkP6ECUVjsPcCNDL",
+          "amountRaw": "1000000",
+          "decimals": 6,
+          "state": "initialized",
+          "program": "token",
+          "usdValue": "unknown"
+        },
+        {
+          "mint": "TokenFake3zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz",
+          "amountRaw": "0",
+          "decimals": 6,
+          "state": "initialized",
+          "program": "token",
+          "usdValue": "unknown"
+        },
+        {
+          "mint": "TokenFake4zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz",
+          "amountRaw": "0",
+          "decimals": 6,
+          "state": "initialized",
+          "program": "token",
+          "usdValue": "unknown"
+        },
+        {
+          "mint": "TokenFake5zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz",
+          "amountRaw": "0",
+          "decimals": 6,
+          "state": "initialized",
+          "program": "token-2022",
+          "usdValue": "unknown"
+        }
+      ]
+    }
+  }
+}

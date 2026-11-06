@@ -1,0 +1,38 @@
+{
+  "command": "tee status <tee> --json (agent-a, after the rebind)",
+  "exit": 0,
+  "stdout": {
+    "address": "TeeFake111111111111111111111111111111111111",
+    "label": "wallet-label",
+    "source": "server",
+    "verified": false,
+    "linkedWalletId": "teefakeid1",
+    "vaultDestination": null,
+    "vaultLifecycle": null,
+    "localState": null,
+    "retainedSweepReceipts": null,
+    "pendingSweepTransactions": null,
+    "observedAt": "2026-09-01T00:00:00.000Z",
+    "server": {
+      "success": true,
+      "id": "teefakeid1",
+      "chain": "solana",
+      "address": "TeeFake111111111111111111111111111111111111",
+      "state": "enabled",
+      "remoteAuthority": "verified-active",
+      "evidenceObservedAt": 1790000000000,
+      "revokedAt": null,
+      "sweptAt": null,
+      "profile": "ember-tee",
+      "boundKeyPrefix": "FakeKey1",
+      "vaultDestination": "VaultFake11111111111111111111111111111111111",
+      "everRemoteExposed": true,
+      "lifecycleVersion": 1,
+      "bridges": []
+    },
+    "balances": {
+      "lamports": "1000000000",
+      "tokens": []
+    }
+  }
+}

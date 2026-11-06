@@ -1,0 +1,153 @@
+{
+  "name": "signals-group-by-token",
+  "method": "GET",
+  "route": "/v1/signals",
+  "query": {
+    "group_by": "token",
+    "limit": "20"
+  },
+  "status": 200,
+  "ms": 635,
+  "bytes": 8574,
+  "contentType": "application/json; charset=utf-8",
+  "answer": {
+    "tokens": [
+      {
+        "asset_id": 126058823,
+        "chain": "solana",
+        "address": "HaccFake1111111111111111111111111111111112w",
+        "symbol": "fake-symbol-30",
+        "signals": 188,
+        "wallets": 164,
+        "wallets_effective": 73,
+        "patterns": {
+          "confluence": 13,
+          "intra_book": 12,
+          "large_move": 1,
+          "new_ticker": 162
+        },
+        "first_signal_at": "2026-10-28T21:53:37.995Z",
+        "last_signal_at": "2026-10-29T02:48:20.031Z",
+        "volume_1h": 373918.6223382324,
+        "exit": {
+          "ok": null,
+          "impact_bps": null,
+          "usd_size": null,
+          "probed_at": null
+        }
+      },
+      {
+        "asset_id": 1,
+        "chain": "solana",
+        "address": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+        "symbol": "USDC",
+        "signals": 188,
+        "wallets": 69,
+        "wallets_effective": 63,
+        "patterns": {
+          "deployer": 11,
+          "dormancy": 3,
+          "large_move": 174
+        },
+        "first_signal_at": "2026-10-28T02:49:49.616Z",
+        "last_signal_at": "2026-10-29T02:37:18.134Z",
+        "volume_1h": 13840839.360777183,
+        "exit": {
+          "ok": null,
+          "impact_bps": null,
+          "usd_size": null,
+          "probed_at": null
+        }
+      },
+      {
+        "asset_id": 125640649,
+        "chain": "solana",
+        "address": "HaccFake1111111111111111111111111111111112x",
+        "symbol": "fake-symbol-31",
+        "signals": 169,
+        "wallets": 141,
+        "wallets_effective": 47,
+        "patterns": {
+          "confluence": 17,
+          "intra_book": 14,
+          "new_ticker": 138
+        },
+        "first_signal_at": "2026-10-28T17:54:22.797Z",
+        "last_signal_at": "2026-10-29T02:01:15.311Z",
+        "volume_1h": 60442.3211815298,
+        "exit": {
+          "ok": null,
+          "impact_bps": null,
+          "usd_size": null,
+          "probed_at": null
+        }
+      },
+      {
+        "asset_id": 125489294,
+        "chain": "solana",
+        "address": "HaccFake1111111111111111111111111111111112y",
+        "symbol": "fake-symbol-32",
+        "signals": 157,
+        "wallets": 132,
+        "wallets_effective": 53,
+        "patterns": {
+          "confluence": 15,
+          "intra_book": 10,
+          "new_ticker": 132
+        },
+        "first_signal_at": "2026-10-28T15:45:25.523Z",
+        "last_signal_at": "2026-10-29T02:38:24.280Z",
+        "volume_1h": 10200.902978579821,
+        "exit": {
+          "ok": null,
+          "impact_bps": null,
+          "usd_size": null,
+          "probed_at": null
+        }
+      },
+      {
+        "asset_id": 621966,
+        "chain": "solana",
+        "address": "HaccFake1111111111111111111111111111111112z",
+        "symbol": "fake-symbol-33",
+        "signals": 148,
+        "wallets": 1,
+        "wallets_effective": 1,
+        "patterns": {
+          "intra_book": 148
+        },
+        "first_signal_at": "2026-10-28T03:00:26.452Z",
+        "last_signal_at": "2026-10-29T02:30:30.712Z",
+        "volume_1h": 716.9420005963012,
+        "exit": {
+          "ok": null,
+          "impact_bps": null,
+          "usd_size": null,
+          "probed_at": null
+        }
+      }
+    ],
+    "coverage": {
+      "since": "2026-10-28T02:49:35.897Z",
+      "until": null,
+      "signals": 26774,
+      "with_token": 26764,
+      "without_token": 10,
+      "distinct_tokens": 5043,
+      "tokens_returned": 20,
+      "patterns": {
+        "deployer": 831,
+        "dormancy": 12,
+        "confluence": 2973,
+        "intra_book": 2471,
+        "large_move": 527,
+        "new_ticker": 19955,
+        "kol_mention": 2,
+        "distribution": 3
+      }
+    }
+  },
+  "truncated": {
+    "$.tokens": 20
+  }
+}

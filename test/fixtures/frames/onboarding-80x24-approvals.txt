@@ -1,0 +1,50 @@
+ ▲ candle   SETUP   nothing trades until your agent and its limits exist        
+ ✓ 0  ✓ 1  ✓ 2  ▸ 3 Wallet and limits  · 4  · 5                                 
+╭──────────────────────────────────────────────────────────────── step 3 of 5 ─╮
+│                                                                              │
+│  How agent-a's trades are approved                                           │
+│                                                                              │
+│  main · agent-a pays from it                                                 │
+│                                                                              │
+│  ▸ Continue      ⏎ continues to funds                                        │
+│                                                                              │
+│    ● ask every time                      every trade is a card you approve   │
+│    ○ trade inside limits                                                     │
+│                                                                              │
+│  Every limit on the last step still holds, and the kill switch still stops   │
+│  it all. Change it any time in settings ▾ → approvals.                       │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+ ↑/↓ moves · ⏎ or a click picks · esc back                      ctrl-c ×2 quits 
+
+--- colours ---
+0: f6f8fb/0e1115×11 f6f8fb/2a2f3a×7 959dab/0e1115×54 ffffff/0e1115×8
+1: 3ddc84/0b0d10×15 f6f8fb/0b0d10×23 959dab/0b0d10×10 ffffff/0b0d10×32
+2: 32fe9f/111419×65 959dab/111419×13 32fe9f/111419×2
+3: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
+4: 32fe9f/111419×1 ffffff/111419×2 b392f0/111419×33 ffffff/111419×43 32fe9f/111419×1
+5: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
+6: 32fe9f/111419×1 ffffff/111419×2 f6f8fb/111419×4 959dab/111419×23 ffffff/111419×49 32fe9f/111419×1
+7: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
+8: 32fe9f/111419×1 ffffff/111419×2 32fe9f/1d2430×2 f6f8fb/1d2430×8 dde2ea/1d2430×26 ffffff/1d2430×38 ffffff/111419×2 32fe9f/111419×1
+9: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
+10: 32fe9f/111419×1 ffffff/111419×2 32fe9f/111419×4 6cb6ff/111419×14 ffffff/111419×22 959dab/111419×34 ffffff/111419×2 32fe9f/111419×1
+11: 32fe9f/111419×1 ffffff/111419×2 32fe9f/111419×4 6cb6ff/111419×19 ffffff/111419×53 32fe9f/111419×1
+12: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
+13: 32fe9f/111419×1 ffffff/111419×2 959dab/111419×73 ffffff/111419×3 32fe9f/111419×1
+14: 32fe9f/111419×1 ffffff/111419×2 959dab/111419×53 ffffff/111419×23 32fe9f/111419×1
+15: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
+16: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
+17: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
+18: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
+19: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
+20: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
+21: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
+22: 32fe9f/111419×80
+23: 959dab/0e1115×42 ffffff/0e1115×22 959dab/0e1115×16

@@ -1,0 +1,16 @@
+{
+  "name": "stream-gap-fill",
+  "method": "GET",
+  "route": "/v1/signals",
+  "query": {
+    "after": "116160861",
+    "limit": "200"
+  },
+  "status": 400,
+  "ms": 424,
+  "bytes": 31,
+  "contentType": "application/json; charset=utf-8",
+  "answer": {
+    "error": "after: Invalid date"
+  }
+}

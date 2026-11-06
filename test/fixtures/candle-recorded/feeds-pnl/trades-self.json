@@ -1,0 +1,17 @@
+{
+  "name": "trades-self",
+  "tool": "candle_get_profile_trades",
+  "args": {
+    "keyPrefix": "FakeKey3"
+  },
+  "route": "/api/v1/agent/keys/FakeKey3/trades",
+  "query": {},
+  "status": 200,
+  "ms": 277,
+  "bytes": 51,
+  "answer": {
+    "success": true,
+    "keyPrefix": "FakeKey3",
+    "trades": []
+  }
+}

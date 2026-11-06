@@ -1,0 +1,21 @@
+Candle's skills, copied unchanged for the Candle Harness's Quant preset.
+repo: https://github.com/candledottv/agentic
+commit: 26daf476a4613668ff103aefec7db02a8b9d53a9
+date: 2026-10-29
+licence: MIT, Candle's own (LICENSE, copied unchanged)
+
+files (sha256):
+635037ebc75af260f0dbe9be7d81a0174603f14e674b72c537ddeb3829b7137e  LICENSE
+aa3b449707f5b135c2f397014a31fa16702ce53c76b4c9d612ae79c769f1d012  candle-drained-pool-writeoff/SKILL.md
+0b4842161efc1ab0983b784912c488b44fed13c45ec923ba468c7dc5c23f06af  candle-llm-trade-judge/SKILL.md
+4a95206b2ef65eb3f0240c410bdae8ba5f01ec3122d718da3480c90654f2f9a6  candle-market/SKILL.md
+6bc72d0d4ec28ccf142d50c94d656d6a67ef3a4857c1ae248025dcd50b7e8ade  candle-risk-gate/SKILL.md
+059d0e88b0be70e876fef28e59aa0ffbc4bb7392e521408c0e5ce599ea951d10  candle-strategy-design/SKILL.md
+9e56f05f9d705548888ae6234fd3ff4e2753f95039a4d0107e880f6eb622cbe0  candle-strategy-hunt/SKILL.md
+453278e5a93e6b8ea52b3e6f599cfa0c359fe84b788b9874cd1f634b4d40bda0  candle-trading-discipline/SKILL.md
+f43e0e8655ea8acfad73220702e9a22d32e0925e9769d8009ac90d2eec9e25d0  candle-transfer-fee-tokens/SKILL.md
+1cff0d735d1b3cc9055770fbd2575a3fec61b1a250d81e893fb243fe7cb854cf  candle-wallet-entry-detection/SKILL.md
+600803a1ad69ac81be9a7e920517aeca9759ff68a8ff69ae0befc265d35c9f8c  onchain-strategy-research/SKILL.md
+1f675e778500a40eea67f6c51f7f0fabff85534026b1a9c3ae3b0ec7f84dffe0  onchain-strategy-research/references/claim-register.md
+6046646ff565aa7e39e6432c1f0354fdb08434af874ae4ac59b9af43c23804c5  onchain-strategy-research/references/research-protocol.md
+b3d472d060518e8eb0320860f815760896cf50ee7d234be31d6f5f4382e75dfc  onchain-strategy-research/references/the-game.md

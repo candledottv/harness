@@ -1,0 +1,31 @@
+{
+  "command": "vault status --json (no unlock; no prompt)",
+  "exit": 0,
+  "stdout": {
+    "ok": true,
+    "path": "~/.config/candle/vault.enc",
+    "version": 2,
+    "generation": 7,
+    "createdAt": "2026-09-01T00:00:00.000Z",
+    "updatedAt": "2026-09-01T00:00:00.000Z",
+    "envelopes": [
+      {
+        "id": "fake-envelopeId-1",
+        "factor": "passphrase",
+        "domain": "human-memory",
+        "label": "factor-label",
+        "createdAt": "2026-09-01T00:00:00.000Z",
+        "availability": "available",
+        "strength": "generated-103",
+        "strengthLabel": "generated, 8 words (about 103 bits)"
+      }
+    ],
+    "recoverableFactors": 1,
+    "sidecar": {
+      "lastGeneration": 7,
+      "removedEnvelopeIds": [],
+      "lastBackupEnvelopeIdsBound": false
+    },
+    "legacyWalletsEnc": null
+  }
+}

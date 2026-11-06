@@ -1,0 +1,209 @@
+// The positions and wallets panes' data, from the last portfolio read the core
+// holds: each wallet once (the embedded wallet is shared by every agent the owner allowed on it,
+// docs.candle.tv/developers/agent-wallets), its SOL and token holdings valued at the price book's prices, and for
+// each holding the agents whose buys of it filled. A value that can't be read or priced is null,
+// never zero. Sent on the `portfolio` topic after every read.
+import { terminalText } from "../shared/terminal-text"
+import type { ChainBalance } from "./chain-balance"
+import type { PaperPosition } from "./trade-log"
+import { entryFor, type WalletNameEntry, walletName } from "./wallet-names"
+
+const SOL_MINT = "So11111111111111111111111111111111111111112"
+
+export interface TokenRow {
+  mint: string
+  symbol?: string
+  amount: number
+  usd: number | null
+  buyers: string[]
+}
+
+export interface WalletView {
+  address: string
+  chain: string
+  kind: "embedded" | "tee"
+  /** Its kept name: Candle's label, or the Candle Harness's own from wallets.toml. */
+  label?: string
+  /** What it's called on screen: its name, else "embedded", else its short address. The core always sets it. */
+  name?: string
+  /** A name that breaks the Candle Harness's rules: why. It's shown, marked, and taken by address only. */
+  marked?: string
+  /** The agents allowed to spend from it: for a TEE wallet, the one whose key it's bound to. */
+  agents: string[]
+  /** A TEE wallet's active flag, as Candle reports it. */
+  active?: boolean
+  /**
+   * Stopped for good by this Candle Harness (Candle never turns one back on), and dropped from Candle's lists: its balance can't be read,
+   * and what's left is to sweep it home.
+   */
+  stopped?: true
+  /** Stopped, by what Candle's lists say: it stopped listing a wallet the Candle Harness didn't stop. */
+  stoppedOutside?: true
+  /** A stopped wallet's token accounts that still hold something, read on chain. */
+  heldTokens?: number
+  /** Why a stopped wallet's balance (or, with its SOL shown, its token accounts) couldn't be read on chain. */
+  balanceError?: string
+  sol: { amount: number; usd: number | null } | null
+  /** Null when Candle couldn't read the wallet's tokens. */
+  tokens: TokenRow[] | null
+}
+
+/** What a wallet in the view is called: the core's name for it. */
+export const viewName = (w: Pick<WalletView, "address" | "kind" | "label" | "name">): string => w.name ?? walletName(undefined, w)
+
+/**
+ * A wallet's line head in the Wallets and Positions panes: its name, then what kind it is where the name
+ * doesn't say ("hot · TEE", "main · embedded", or plain "embedded").
+ */
+export const viewTitle = (w: Pick<WalletView, "address" | "kind" | "label" | "name">): string => {
+  const name = viewName(w)
+  return w.kind === "tee" ? `${name} · TEE` : name === "embedded" ? name : `${name} · embedded`
+}
+
+export interface PortfolioView {
+  /** When the portfolio was read; null before the first read. */
+  readAt: number | null
+  wallets: WalletView[]
+  /** Agents whose key isn't allowed the embedded wallet: they read and paper-trade only. */
+  readOnly: { agent: string; command: string }[]
+  /** Each agent's paper book, from this Candle Harness's own paper trades. */
+  paper: Record<string, PaperPosition[]>
+  /** Where to deposit: the embedded Solana wallet, from the agents' status reads. */
+  deposit?: string
+  /** Set on Free, where a TEE wallet can't be traded from. */
+  teeNote?: string
+  /** Why the last read failed, in Candle's words, until one answers. */
+  failed?: string
+}
+
+export interface AgentWallet {
+  name: string
+  wallet?: string
+  embeddedWallet?: "allowed" | "denied"
+  prefix?: string
+}
+
+/**
+ * A token's symbol from the portfolio's own `prices` map (`{ [mint]: { priceUsd, symbol, name } }`,
+ * as recorded from Candle's real server), for a token row that carries none.
+ */
+export function portfolioSymbol(portfolio: unknown, mint: string): string | undefined {
+  const symbol = record(record(record(portfolio)?.prices)?.[mint])?.symbol
+  return typeof symbol === "string" && symbol.trim() !== "" ? terminalText(symbol, { maxLength: 16 }) : undefined
+}
+
+/** Every token mint the portfolio's wallets hold. */
+export function heldMints(portfolio: unknown): string[] {
+  const body = record(portfolio)
+  const mints = new Set<string>()
+  for (const list of [body?.embedded, body?.tee]) {
+    for (const w of asArray(list)) for (const t of asArray(record(w)?.tokens)) if (typeof record(t)?.mint === "string") mints.add(record(t)!.mint as string)
+  }
+  return [...mints]
+}
+
+const asArray = (value: unknown): unknown[] => (Array.isArray(value) ? value : [])
+const record = (value: unknown): Record<string, unknown> | undefined =>
+  typeof value === "object" && value !== null && !Array.isArray(value) ? (value as Record<string, unknown>) : undefined
+
+export function portfolioView(input: {
+  portfolio: unknown
+  readAt: number | null
+  prices: { usd(key: string | undefined): number | undefined }
+  agents: readonly AgentWallet[]
+  buyers: (mint: string) => string[]
+  paper: Record<string, PaperPosition[]>
+  /** A token's symbol when its row gives none: the market read, the portfolio's prices, a base asset. */
+  symbolOf?: (mint: string) => string | undefined
+  /** The agent a TEE wallet is bound to (AgentWallets.boundTo); the portfolio itself doesn't say. */
+  boundTo?: (address: string) => string | undefined
+  /** The account's plan, from the agents' status reads. */
+  tier?: string
+  /** TEE wallets this Candle Harness stopped and hasn't swept (stopped-wallets.ts). */
+  stopped?: readonly { address: string; label?: string; agent?: string; outside?: true }[]
+  /** Each stopped wallet's balance, read on chain (chain-balance.ts). */
+  stoppedBalance?: (address: string) => ChainBalance | undefined
+  /** Why the last read failed, if it did. */
+  failed?: string
+  /** Every wallet the Candle Harness knows and its name; without it, Candle's labels. */
+  names?: readonly WalletNameEntry[]
+}): PortfolioView {
+  /** A wallet's kept name, what it's called, and any mark, from the one book. */
+  const naming = (address: string, kind: "embedded" | "tee", kept?: string) => {
+    const e = input.names ? entryFor(input.names, address) : undefined
+    const label = e ? e.name : kept
+    return { ...(label ? { label } : {}), name: walletName(input.names, { address, kind, ...(kept ? { label: kept } : {}) }), ...(e?.marked ? { marked: e.marked } : {}) }
+  }
+  const allowed = input.agents.filter((a) => a.embeddedWallet !== "denied")
+  const body = record(input.portfolio)
+  const wallets: WalletView[] = []
+  for (const [kind, list] of [["embedded", body?.embedded], ["tee", body?.tee]] as const) {
+    for (const entry of asArray(list)) {
+      const w = record(entry)
+      if (typeof w?.address !== "string") continue
+      const sol = typeof w.lamports === "string" && /^\d+$/.test(w.lamports) ? Number(w.lamports) / 1e9 : undefined
+      const solPrice = input.prices.usd(SOL_MINT)
+      const bound = kind === "tee" ? input.boundTo?.(w.address) : undefined
+      wallets.push({
+        address: w.address,
+        chain: typeof w.chain === "string" ? w.chain : "solana",
+        kind,
+        ...naming(w.address, kind, typeof w.label === "string" ? terminalText(w.label, { maxLength: 64 }) : undefined),
+        agents: kind === "tee" ? (bound ? [bound] : []) : allowed.filter((a) => a.wallet === w.address).map((a) => a.name),
+        ...(kind === "tee" && typeof w.active === "boolean" ? { active: w.active } : {}),
+        sol: sol === undefined ? null : { amount: sol, usd: solPrice === undefined ? null : sol * solPrice },
+        tokens: Array.isArray(w.tokens) ? w.tokens.map((t) => tokenRow(t, input)).filter((t): t is TokenRow => t !== undefined) : null,
+      })
+    }
+  }
+  // Candle drops a stopped TEE wallet from its reads, so one still listed is shown as Candle says it is.
+  for (const w of input.stopped ?? []) {
+    if (wallets.some((v) => v.address === w.address)) continue
+    const read = input.stoppedBalance?.(w.address)
+    const solPrice = input.prices.usd(SOL_MINT)
+    const onChain = read && "lamports" in read ? { sol: { amount: Number(read.lamports) / 1e9, usd: solPrice === undefined ? null : (Number(read.lamports) / 1e9) * solPrice }, ...(read.tokens !== null ? { heldTokens: read.tokens } : { balanceError: terminalText(read.tokensError ?? "the token accounts weren't read", { maxLength: 240 }) }) } : { sol: null }
+    wallets.push({
+      address: w.address,
+      chain: "solana",
+      kind: "tee",
+      ...naming(w.address, "tee", w.label),
+      agents: w.agent ? [w.agent] : [],
+      active: false,
+      stopped: true,
+      ...(w.outside ? { stoppedOutside: true as const } : {}),
+      ...onChain,
+      ...(read && "error" in read ? { balanceError: terminalText(read.error, { maxLength: 240 }) } : {}),
+      tokens: null,
+    })
+  }
+  const deposit = input.agents.find((a) => a.wallet)?.wallet
+  return {
+    readAt: input.readAt,
+    wallets,
+    readOnly: input.agents
+      .filter((a) => a.embeddedWallet === "denied")
+      .map((a) => ({ agent: a.name, command: `candle keys update ${a.prefix ?? "<prefix>"} --embedded-wallet allow` })),
+    paper: input.paper,
+    ...(deposit ? { deposit } : {}),
+    ...(input.tier === "free" ? { teeNote: "TEE wallets are a Pro or Max feature" } : {}),
+    ...(input.failed ? { failed: input.failed } : {}),
+  }
+}
+
+function tokenRow(
+  entry: unknown,
+  input: { prices: { usd(key: string | undefined): number | undefined }; buyers: (mint: string) => string[]; symbolOf?: (mint: string) => string | undefined },
+): TokenRow | undefined {
+  const t = record(entry)
+  if (typeof t?.mint !== "string" || typeof t.amountRaw !== "string" || !/^\d+$/.test(t.amountRaw) || typeof t.decimals !== "number") return undefined
+  const amount = Number(t.amountRaw) / 10 ** t.decimals
+  const price = input.prices.usd(t.mint)
+  return {
+    mint: t.mint,
+    // Otherwise Positions shows oreo…ybcp where the card, the token pane and activity say ORE.
+    ...(typeof t.symbol === "string" ? { symbol: terminalText(t.symbol, { maxLength: 16 }) } : input.symbolOf?.(t.mint) ? { symbol: input.symbolOf(t.mint)! } : {}),
+    amount,
+    usd: price === undefined ? null : amount * price,
+    buyers: input.buyers(t.mint),
+  }
+}

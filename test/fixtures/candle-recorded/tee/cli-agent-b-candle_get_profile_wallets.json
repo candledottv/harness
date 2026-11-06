@@ -1,0 +1,20 @@
+{
+  "tool": "candle_get_profile_wallets",
+  "args": {
+    "keyPrefix": "FakeKey2"
+  },
+  "ms": 382,
+  "outcome": {
+    "kind": "ok",
+    "result": {
+      "keyPrefix": "FakeKey2",
+      "profileId": "fake-profileId-2",
+      "walletScope": "selected",
+      "wallets": [],
+      "scopeLimit": {
+        "max": 1000,
+        "rows": 0
+      }
+    }
+  }
+}

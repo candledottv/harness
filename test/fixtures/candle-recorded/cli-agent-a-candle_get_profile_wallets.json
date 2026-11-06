@@ -1,0 +1,11 @@
+{
+  "tool": "candle_get_profile_wallets",
+  "args": {},
+  "ms": 3,
+  "outcome": {
+    "kind": "error",
+    "code": "MCP_VALIDATION",
+    "retryable": false,
+    "body": "MCP error -32602: Input validation error: Invalid arguments for tool candle_get_profile_wallets: [\n  {\n    \"code\": \"invalid_type\",\n    \"expected\": \"string\",\n    \"received\": \"undefined\",\n    \"path\": [\n      \"keyPrefix\"\n    ],\n    \"message\": \"Required\"\n  }\n]"
+  }
+}

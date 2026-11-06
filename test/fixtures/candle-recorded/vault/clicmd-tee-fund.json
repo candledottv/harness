@@ -1,0 +1,14 @@
+{
+  "command": "tee fund <tee address> --amount 0.001 --json > file (at a terminal; the right passphrase; signs nothing)",
+  "exit": 0,
+  "stdout": {
+    "action": "fund-tee-wallet",
+    "network": "solana-mainnet",
+    "asset": "SOL",
+    "amount": "0.001",
+    "amountRaw": "1000000",
+    "destination": "TeeFake111111111111111111111111111111111111",
+    "from": "your vault wallet (sign it there; this CLI signs nothing)",
+    "note": "Every funded unit adds to the TEE wallet exposure. The initial float is not a maximum loss."
+  }
+}

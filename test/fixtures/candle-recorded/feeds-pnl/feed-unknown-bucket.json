@@ -1,0 +1,27 @@
+{
+  "name": "feed-unknown-bucket",
+  "tool": "candle_get_feed",
+  "args": {
+    "bucket": "nosuchbucket",
+    "chain": "solana",
+    "limit": 5
+  },
+  "route": "/api/v1/markets/feed",
+  "query": {
+    "bucket": "nosuchbucket",
+    "chain": "solana",
+    "limit": "5"
+  },
+  "status": 400,
+  "ms": 70,
+  "bytes": 190,
+  "answer": {
+    "success": false,
+    "error": {
+      "code": "VALIDATION_FAILED",
+      "message": "bucket must be one of \"new\", \"graduated\", \"onfire\", \"bluechip\", \"finalstretch\"",
+      "field": "bucket",
+      "retryable": false
+    }
+  }
+}

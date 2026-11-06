@@ -1,0 +1,50 @@
+ ▲ candle   SETUP   nothing trades until your agent and its limits exist        
+ ✓ 0  ✓ 1  ✓ 2  ▸ 3 Wallet and limits  · 4  · 5                                 
+╭──────────────────────────────────────────────────────────────── step 3 of 5 ─╮
+│                                                                              │
+│  A vault now, or the embedded wallet only for now?                           │
+│                                                                              │
+│  A vault keeps your recovery words and guards every owner step with a        │
+│  passphrase or a security key. You can add one any time.                     │
+│  Pick one of two:                                                            │
+│  ▸ 1  The embedded wallet only, for now                                      │
+│      · Owner steps, like making your agent's key, are approved by you in     │
+│        the pane.                                                             │
+│      · A wallet of its own, or a send from the Candle Harness, needs a       │
+│        vault: set one up later from settings ▾.                              │
+│      · Funds out go through Candle's site.                                   │
+│                                                                              │
+│    2  A vault now                           candle vault init, in the pane   │
+│      · Your 24 recovery words, shown once. Write them down.                  │
+│      · A passphrase on every owner step; a security key can be added next.   │
+│        Touch ID is coming.                                                   │
+│      · A wallet of its own for your agent needs Pro or Max; on Free a vault  │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+ ↑/↓ moves · ⏎ or a click picks · esc back                      ctrl-c ×2 quits 
+
+--- colours ---
+0: f6f8fb/0e1115×11 f6f8fb/2a2f3a×7 959dab/0e1115×54 ffffff/0e1115×8
+1: 3ddc84/0b0d10×15 f6f8fb/0b0d10×23 959dab/0b0d10×10 ffffff/0b0d10×32
+2: 32fe9f/111419×65 959dab/111419×13 32fe9f/111419×2
+3: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
+4: 32fe9f/111419×1 ffffff/111419×2 b392f0/111419×49 ffffff/111419×27 32fe9f/111419×1
+5: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
+6: 32fe9f/111419×1 ffffff/111419×2 dde2ea/111419×68 ffffff/111419×8 32fe9f/111419×1
+7: 32fe9f/111419×1 ffffff/111419×2 dde2ea/111419×55 ffffff/111419×21 32fe9f/111419×1
+8: 32fe9f/111419×1 ffffff/111419×2 959dab/111419×16 ffffff/111419×60 32fe9f/111419×1
+9: 32fe9f/111419×1 ffffff/111419×2 32fe9f/1d2430×2 f6f8fb/1d2430×36 ffffff/1d2430×36 ffffff/111419×2 32fe9f/111419×1
+10: 32fe9f/111419×1 ffffff/111419×2 959dab/111419×71 ffffff/111419×5 32fe9f/111419×1
+11: 32fe9f/111419×1 ffffff/111419×2 959dab/111419×15 ffffff/111419×61 32fe9f/111419×1
+12: 32fe9f/111419×1 ffffff/111419×2 959dab/111419×69 ffffff/111419×7 32fe9f/111419×1
+13: 32fe9f/111419×1 ffffff/111419×2 959dab/111419×46 ffffff/111419×30 32fe9f/111419×1
+14: 32fe9f/111419×1 ffffff/111419×2 959dab/111419×41 ffffff/111419×35 32fe9f/111419×1
+15: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
+16: 32fe9f/111419×1 ffffff/111419×2 32fe9f/111419×2 6cb6ff/111419×14 ffffff/111419×27 959dab/111419×31 ffffff/111419×2 32fe9f/111419×1
+17: 32fe9f/111419×1 ffffff/111419×2 959dab/111419×58 ffffff/111419×18 32fe9f/111419×1
+18: 32fe9f/111419×1 ffffff/111419×2 959dab/111419×73 ffffff/111419×3 32fe9f/111419×1
+19: 32fe9f/111419×1 ffffff/111419×2 959dab/111419×25 ffffff/111419×51 32fe9f/111419×1
+20: 32fe9f/111419×1 ffffff/111419×2 959dab/111419×74 ffffff/111419×2 32fe9f/111419×1
+21: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
+22: 32fe9f/111419×80
+23: 959dab/0e1115×42 ffffff/0e1115×22 959dab/0e1115×16

@@ -1,0 +1,16 @@
+{
+  "name": "wallets-bad-watch-level",
+  "method": "GET",
+  "route": "/v1/wallets",
+  "query": {
+    "watch_level": "high",
+    "limit": "1"
+  },
+  "status": 400,
+  "ms": 126,
+  "bytes": 117,
+  "contentType": "application/json; charset=utf-8",
+  "answer": {
+    "error": "watch_level: Invalid enum value. Expected 'none' | 'tracked' | 'new_ticker' | 'realtime', received 'high'"
+  }
+}

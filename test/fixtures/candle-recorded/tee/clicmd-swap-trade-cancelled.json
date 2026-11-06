@@ -1,0 +1,25 @@
+{
+  "command": "swap SOL <token> --amount 0.001 --wallet <tee> --client-trade-id <id> --json, answered N",
+  "exit": 0,
+  "stdout": {
+    "success": true,
+    "status": "cancelled",
+    "clientTradeId": "00000000-0000-4000-8000-000000000007",
+    "kind": "trade",
+    "quote": {
+      "intent": "Swap 0.001000000 SOL to TokenFake3zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz",
+      "wallet": "TeeFake111111111111111111111111111111111111",
+      "venue": "jupiter",
+      "priceImpactPct": "0.0014613058582864900587636616",
+      "fee": {
+        "bps": 25,
+        "feeRaw": "2500",
+        "treasury": "TreasuryFake1111111111111111111111111111111"
+      },
+      "minimumReceived": "0.00061858774 TokenFake3zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz",
+      "minOutRaw": "61858774",
+      "minimumReceivedRaw": "61858774",
+      "tokenRisks": []
+    }
+  }
+}

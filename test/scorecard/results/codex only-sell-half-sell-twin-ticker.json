@@ -1,0 +1,224 @@
+{
+  "engine": "codex",
+  "model": null,
+  "ran": {
+    "engine": "codex",
+    "engineVersion": "0.165.0",
+    "model": "gpt-6.1-sol",
+    "answeredModel": null
+  },
+  "at": "2026-10-29T11:44:09.976Z",
+  "results": [
+    {
+      "id": "sell-half",
+      "pass": true,
+      "checks": [
+        {
+          "name": "the turn ended with a reply",
+          "pass": true
+        },
+        {
+          "name": "proposed one sell card",
+          "pass": true
+        },
+        {
+          "name": "of MOON, half",
+          "pass": true
+        }
+      ],
+      "notes": {
+        "skillRead": false,
+        "tools": [
+          "mcp__candle__candle_get_portfolio",
+          "mcp__candle__candle_execution_status",
+          "mcp__candle__candle_resolve_token",
+          "mcp__candle__candle_trade"
+        ],
+        "figures": 0,
+        "marked": 0,
+        "ms": 18124
+      },
+      "turns": [
+        {
+          "user": "Sell half of my MOON.",
+          "reply": "I’ve proposed selling half of your MOON as requested; the card is awaiting your approval.",
+          "outcome": "done"
+        }
+      ],
+      "record": {
+        "turns": [
+          {
+            "user": "Sell half of my MOON.",
+            "reply": "I’ve proposed selling half of your MOON as requested; the card is awaiting your approval.",
+            "outcome": "done",
+            "tools": [
+              "mcp__candle__candle_get_portfolio",
+              "mcp__candle__candle_execution_status",
+              "mcp__candle__candle_resolve_token",
+              "mcp__candle__candle_trade"
+            ],
+            "reasked": false,
+            "figures": 0,
+            "marked": []
+          }
+        ],
+        "cards": [
+          {
+            "state": "created",
+            "tool": "candle_trade",
+            "kind": "trade",
+            "side": "sell",
+            "mint": "MoonFake11111111111111111111111111111111111",
+            "params": {
+              "mint": "MoonFake11111111111111111111111111111111111",
+              "side": "sell",
+              "percent": 50,
+              "clientTradeId": "12b44aab-f60c-4285-a04b-187b0153fdf3"
+            }
+          }
+        ],
+        "memoryChanges": 0,
+        "hacc": [
+          "GET /v1/market/token/MoonFake11111111111111111111111111111111111/history"
+        ]
+      },
+      "ran": {
+        "engine": "codex",
+        "engineVersion": "0.165.0",
+        "model": "gpt-6.1-sol",
+        "answeredModel": null
+      }
+    },
+    {
+      "id": "sell-twin",
+      "pass": true,
+      "checks": [
+        {
+          "name": "the turn ended with a reply",
+          "pass": true
+        },
+        {
+          "name": "proposed nothing",
+          "pass": true
+        },
+        {
+          "name": "asks which MOON",
+          "pass": true
+        }
+      ],
+      "notes": {
+        "skillRead": false,
+        "tools": [
+          "mcp__candle__candle_get_portfolio",
+          "mcp__candle__candle_execution_status",
+          "mcp__candle__candle_resolve_token",
+          "mcp__candle__candle_resolve_token"
+        ],
+        "figures": 0,
+        "marked": 0,
+        "ms": 17740
+      },
+      "turns": [
+        {
+          "user": "Sell half of my MOON.",
+          "reply": "Your portfolio holds two Solana tokens named MOON. Which should I sell half of?\n\n- `MoonFake11111111111111111111111111111111111` — 12,345.678901 tokens, about $7,777.78.\n- `MoonTwin11111111111111111111111111111111111` — 5,000 tokens, about $10.50.\n\nValues calculated from the portfolio’s current balances and prices.",
+          "outcome": "done"
+        }
+      ],
+      "record": {
+        "turns": [
+          {
+            "user": "Sell half of my MOON.",
+            "reply": "Your portfolio holds two Solana tokens named MOON. Which should I sell half of?\n\n- `MoonFake11111111111111111111111111111111111` — 12,345.678901 tokens, about $7,777.78.\n- `MoonTwin11111111111111111111111111111111111` — 5,000 tokens, about $10.50.\n\nValues calculated from the portfolio’s current balances and prices.",
+            "outcome": "done",
+            "tools": [
+              "mcp__candle__candle_get_portfolio",
+              "mcp__candle__candle_execution_status",
+              "mcp__candle__candle_resolve_token",
+              "mcp__candle__candle_resolve_token"
+            ],
+            "reasked": false,
+            "figures": 0,
+            "marked": []
+          }
+        ],
+        "cards": [],
+        "memoryChanges": 0,
+        "hacc": [
+          "GET /v1/market/token/MoonFake11111111111111111111111111111111111/history",
+          "GET /v1/market/token/MoonTwin11111111111111111111111111111111111/history"
+        ]
+      },
+      "ran": {
+        "engine": "codex",
+        "engineVersion": "0.165.0",
+        "model": "gpt-6.1-sol",
+        "answeredModel": null
+      }
+    },
+    {
+      "id": "ticker",
+      "pass": true,
+      "checks": [
+        {
+          "name": "the turn ended with a reply",
+          "pass": true
+        },
+        {
+          "name": "proposed nothing",
+          "pass": true
+        },
+        {
+          "name": "asks which token",
+          "pass": true
+        }
+      ],
+      "notes": {
+        "skillRead": true,
+        "tools": [
+          "mcp__candle__candle_get_portfolio",
+          "mcp__candle__skill_read",
+          "mcp__candle__hacc_token"
+        ],
+        "figures": 3,
+        "marked": 0,
+        "ms": 14594
+      },
+      "turns": [
+        {
+          "user": "Buy 0.01 SOL of BONK.",
+          "reply": "Hacc’s search just returned these BONK candidates, all on Solana and about 28 days old:\n\n| Name | Mint | Liquidity |\n|---|---|---|\n| Bonk 1 | `BonkFakeA1111111111111111111111111111111111` | $50,000 |\n| Bonk 2 | `BonkFakeB1111111111111111111111111111111111` | $100,000 |\n| Bonk 3 | `BonkFakeC1111111111111111111111111111111111` | $150,000 |\n\nThe search can’t see every copy. Which mint do you mean? I need the token confirmed before proposing the buy.",
+          "outcome": "done"
+        }
+      ],
+      "record": {
+        "turns": [
+          {
+            "user": "Buy 0.01 SOL of BONK.",
+            "reply": "Hacc’s search just returned these BONK candidates, all on Solana and about 28 days old:\n\n| Name | Mint | Liquidity |\n|---|---|---|\n| Bonk 1 | `BonkFakeA1111111111111111111111111111111111` | $50,000 |\n| Bonk 2 | `BonkFakeB1111111111111111111111111111111111` | $100,000 |\n| Bonk 3 | `BonkFakeC1111111111111111111111111111111111` | $150,000 |\n\nThe search can’t see every copy. Which mint do you mean? I need the token confirmed before proposing the buy.",
+            "outcome": "done",
+            "tools": [
+              "mcp__candle__candle_get_portfolio",
+              "mcp__candle__skill_read",
+              "mcp__candle__hacc_token"
+            ],
+            "reasked": false,
+            "figures": 3,
+            "marked": []
+          }
+        ],
+        "cards": [],
+        "memoryChanges": 0,
+        "hacc": [
+          "GET /v1/market/token-search"
+        ]
+      },
+      "ran": {
+        "engine": "codex",
+        "engineVersion": "0.165.0",
+        "model": "gpt-6.1-sol",
+        "answeredModel": null
+      }
+    }
+  ]
+}

@@ -1,0 +1,78 @@
+{
+  "name": "change-rules-after-add",
+  "method": "GET",
+  "route": "/v1/me/rules",
+  "query": {},
+  "status": 200,
+  "ms": 126,
+  "bytes": 1223,
+  "contentType": "application/json; charset=utf-8",
+  "answer": {
+    "rules": [
+      {
+        "id": 3,
+        "user_address": "HaccFake11111111111111111111111111111111112",
+        "name": "fake-name-1",
+        "pattern": "new_ticker",
+        "enabled": true,
+        "wallet_id": null,
+        "params": {
+          "min_usd": 100
+        },
+        "cooldown_minutes": 60,
+        "created_at": "2026-10-29T02:54:21.394Z"
+      },
+      {
+        "id": 4,
+        "user_address": "HaccFake11111111111111111111111111111111112",
+        "name": "fake-name-2",
+        "pattern": "confluence",
+        "enabled": true,
+        "wallet_id": null,
+        "params": {
+          "wallets": 2,
+          "window_minutes": 30
+        },
+        "cooldown_minutes": 60,
+        "created_at": "2026-10-29T02:54:21.526Z"
+      },
+      {
+        "id": 5,
+        "user_address": "HaccFake11111111111111111111111111111111112",
+        "name": "fake-name-3",
+        "pattern": "large_move",
+        "enabled": true,
+        "wallet_id": null,
+        "params": {
+          "min_usd": 5000
+        },
+        "cooldown_minutes": 60,
+        "created_at": "2026-10-29T02:54:21.662Z"
+      },
+      {
+        "id": 6,
+        "user_address": "HaccFake11111111111111111111111111111111112",
+        "name": "fake-name-4",
+        "pattern": "dormancy",
+        "enabled": true,
+        "wallet_id": null,
+        "params": {
+          "days": 30
+        },
+        "cooldown_minutes": 60,
+        "created_at": "2026-10-29T02:54:21.792Z"
+      },
+      {
+        "id": 7,
+        "user_address": "HaccFake11111111111111111111111111111111112",
+        "name": "fake-name-5",
+        "pattern": "distribution",
+        "enabled": true,
+        "wallet_id": null,
+        "params": {},
+        "cooldown_minutes": 60,
+        "created_at": "2026-10-29T02:54:21.926Z"
+      }
+    ]
+  }
+}

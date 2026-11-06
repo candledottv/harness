@@ -1,0 +1,220 @@
+{
+  "engine": "opencode",
+  "model": "openrouter/anthropic/claude-haiku-5.5",
+  "ran": {
+    "engine": "opencode",
+    "engineVersion": "1.19.5",
+    "model": "openrouter/anthropic/claude-haiku-5.5",
+    "answeredModel": "openrouter/anthropic/claude-haiku-5.5"
+  },
+  "at": "2026-10-29T11:43:51.862Z",
+  "results": [
+    {
+      "id": "sell-half",
+      "pass": true,
+      "checks": [
+        {
+          "name": "the turn ended with a reply",
+          "pass": true
+        },
+        {
+          "name": "proposed one sell card",
+          "pass": true
+        },
+        {
+          "name": "of MOON, half",
+          "pass": true
+        }
+      ],
+      "notes": {
+        "skillRead": false,
+        "tools": [
+          "mcp__candle__candle_get_portfolio",
+          "mcp__candle__candle_trade"
+        ],
+        "figures": 0,
+        "marked": 0,
+        "ms": 11070
+      },
+      "turns": [
+        {
+          "user": "Sell half of my MOON.",
+          "reply": "I've proposed selling 50% of your MOON position (about 6,172.84 tokens of the 12,345.68 you hold, at $0.63 per the portfolio read). It's waiting for your approval on the card in the Candle Harness. It expires in 60 seconds.",
+          "outcome": "done"
+        }
+      ],
+      "record": {
+        "turns": [
+          {
+            "user": "Sell half of my MOON.",
+            "reply": "I've proposed selling 50% of your MOON position (about 6,172.84 tokens of the 12,345.68 you hold, at $0.63 per the portfolio read). It's waiting for your approval on the card in the Candle Harness. It expires in 60 seconds.",
+            "outcome": "done",
+            "tools": [
+              "mcp__candle__candle_get_portfolio",
+              "mcp__candle__candle_trade"
+            ],
+            "reasked": false,
+            "figures": 0,
+            "marked": []
+          }
+        ],
+        "cards": [
+          {
+            "state": "created",
+            "tool": "candle_trade",
+            "kind": "trade",
+            "side": "sell",
+            "mint": "MoonFake11111111111111111111111111111111111",
+            "params": {
+              "mint": "MoonFake11111111111111111111111111111111111",
+              "side": "sell",
+              "percent": 50,
+              "clientTradeId": "1f525b2a-f023-4cad-a3c5-c960096e209f"
+            }
+          }
+        ],
+        "memoryChanges": 0,
+        "hacc": [
+          "GET /v1/market/token/MoonFake11111111111111111111111111111111111/history",
+          "GET /v1/market/token/MoonFake11111111111111111111111111111111111/history"
+        ]
+      },
+      "ran": {
+        "engine": "opencode",
+        "engineVersion": "1.19.5",
+        "model": "openrouter/anthropic/claude-haiku-5.5",
+        "answeredModel": "openrouter/anthropic/claude-haiku-5.5"
+      }
+    },
+    {
+      "id": "sell-twin",
+      "pass": true,
+      "checks": [
+        {
+          "name": "the turn ended with a reply",
+          "pass": true
+        },
+        {
+          "name": "proposed nothing",
+          "pass": true
+        },
+        {
+          "name": "asks which MOON",
+          "pass": true
+        }
+      ],
+      "notes": {
+        "skillRead": false,
+        "tools": [
+          "mcp__candle__candle_get_portfolio",
+          "mcp__candle__candle_resolve_token",
+          "mcp__candle__candle_resolve_token"
+        ],
+        "figures": 2,
+        "marked": 2,
+        "ms": 10591
+      },
+      "turns": [
+        {
+          "user": "Sell half of my MOON.",
+          "reply": "You hold two tokens named MOON, so I haven't proposed a sale. Which one should I sell half of?\n\n- **MOON, Candle-launched** (mint `MoonFake11111111111111111111111111111111111`): you hold 12,345.678901 tokens, about $7,777.78 at $0.63. Pays SOL.\n- **MOON, pump.fun, external** (mint `MoonTwin11111111111111111111111111111111111`): you hold 5,000 tokens, about $10.50 at $0.0021. Sells through Jupiter into SOL.\n\nBoth read from the portfolio and token lookup just now. Tell me which mint, or the full name if it's a different one, and I'll propose a 50% sell from your embedded wallet.",
+          "outcome": "done"
+        }
+      ],
+      "record": {
+        "turns": [
+          {
+            "user": "Sell half of my MOON.",
+            "reply": "You hold two tokens named MOON, so I haven't proposed a sale. Which one should I sell half of?\n\n- **MOON, Candle-launched** (mint `MoonFake11111111111111111111111111111111111`): you hold 12,345.678901 tokens, about $7,777.78 at $0.63. Pays SOL.\n- **MOON, pump.fun, external** (mint `MoonTwin11111111111111111111111111111111111`): you hold 5,000 tokens, about $10.50 at $0.0021. Sells through Jupiter into SOL.\n\nBoth read from the portfolio and token lookup just now. Tell me which mint, or the full name if it's a different one, and I'll propose a 50% sell from your embedded wallet.",
+            "outcome": "done",
+            "tools": [
+              "mcp__candle__candle_get_portfolio",
+              "mcp__candle__candle_resolve_token",
+              "mcp__candle__candle_resolve_token"
+            ],
+            "reasked": false,
+            "figures": 2,
+            "marked": [
+              "12,345.678901",
+              "5,000"
+            ]
+          }
+        ],
+        "cards": [],
+        "memoryChanges": 0,
+        "hacc": [
+          "GET /v1/market/token/MoonFake11111111111111111111111111111111111/history",
+          "GET /v1/market/token/MoonTwin11111111111111111111111111111111111/history"
+        ]
+      },
+      "ran": {
+        "engine": "opencode",
+        "engineVersion": "1.19.5",
+        "model": "openrouter/anthropic/claude-haiku-5.5",
+        "answeredModel": "openrouter/anthropic/claude-haiku-5.5"
+      }
+    },
+    {
+      "id": "ticker",
+      "pass": true,
+      "checks": [
+        {
+          "name": "the turn ended with a reply",
+          "pass": true
+        },
+        {
+          "name": "proposed nothing",
+          "pass": true
+        },
+        {
+          "name": "asks which token",
+          "pass": true
+        }
+      ],
+      "notes": {
+        "skillRead": false,
+        "tools": [
+          "mcp__candle__candle_execution_status",
+          "mcp__candle__hacc_token"
+        ],
+        "figures": 6,
+        "marked": 0,
+        "ms": 10582
+      },
+      "turns": [
+        {
+          "user": "Buy 0.01 SOL of BONK.",
+          "reply": "I haven't proposed a trade yet. \"BONK\" matches three Solana tokens, and I can't tell which one you mean. My search is fuzzy and may not show every copy:\n\n1. **Bonk 1** (BONK), Solana. Mint: `BonkFakeA1111111111111111111111111111111111`. Liquidity about $50,000, market cap about $400,000, created 2026-10-01.\n2. **Bonk 2** (BONK), Solana. Mint: `BonkFakeB1111111111111111111111111111111111`. Liquidity about $100,000, market cap about $800,000, created 2026-10-01.\n3. **Bonk 3** (BONK), Solana. Mint: `BonkFakeC1111111111111111111111111111111111`. Liquidity about $150,000, market cap about $1,200,000, created 2026-10-01.\n\nReply with the mint you want, and I'll run the safety check before proposing the 0.01 SOL buy. The account is ready to trade (Max tier, embedded wallet delegated).",
+          "outcome": "done"
+        }
+      ],
+      "record": {
+        "turns": [
+          {
+            "user": "Buy 0.01 SOL of BONK.",
+            "reply": "I haven't proposed a trade yet. \"BONK\" matches three Solana tokens, and I can't tell which one you mean. My search is fuzzy and may not show every copy:\n\n1. **Bonk 1** (BONK), Solana. Mint: `BonkFakeA1111111111111111111111111111111111`. Liquidity about $50,000, market cap about $400,000, created 2026-10-01.\n2. **Bonk 2** (BONK), Solana. Mint: `BonkFakeB1111111111111111111111111111111111`. Liquidity about $100,000, market cap about $800,000, created 2026-10-01.\n3. **Bonk 3** (BONK), Solana. Mint: `BonkFakeC1111111111111111111111111111111111`. Liquidity about $150,000, market cap about $1,200,000, created 2026-10-01.\n\nReply with the mint you want, and I'll run the safety check before proposing the 0.01 SOL buy. The account is ready to trade (Max tier, embedded wallet delegated).",
+            "outcome": "done",
+            "tools": [
+              "mcp__candle__candle_execution_status",
+              "mcp__candle__hacc_token"
+            ],
+            "reasked": false,
+            "figures": 6,
+            "marked": []
+          }
+        ],
+        "cards": [],
+        "memoryChanges": 0,
+        "hacc": [
+          "GET /v1/market/token-search"
+        ]
+      },
+      "ran": {
+        "engine": "opencode",
+        "engineVersion": "1.19.5",
+        "model": "openrouter/anthropic/claude-haiku-5.5",
+        "answeredModel": "openrouter/anthropic/claude-haiku-5.5"
+      }
+    }
+  ]
+}

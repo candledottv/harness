@@ -1,0 +1,16 @@
+{
+  "name": "research-jup-mentions",
+  "method": "GET",
+  "route": "/v1/social/mentions",
+  "query": {
+    "address": "HaccFake11111111111111111111111111111111118"
+  },
+  "status": 200,
+  "ms": 156,
+  "bytes": 27,
+  "contentType": "application/json; charset=utf-8",
+  "answer": {
+    "hours": 168,
+    "mentions": []
+  }
+}

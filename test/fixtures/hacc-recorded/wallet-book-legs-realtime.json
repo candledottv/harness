@@ -1,0 +1,142 @@
+{
+  "name": "wallet-book-legs-realtime",
+  "method": "GET",
+  "route": "/v1/market/wallet/HaccFake1111111111111111111111111111111116P/book-legs",
+  "query": {},
+  "status": 200,
+  "ms": 198,
+  "bytes": 111176,
+  "contentType": "application/json; charset=utf-8",
+  "answer": {
+    "chain": "solana",
+    "address": "HaccFake1111111111111111111111111111111116P",
+    "from": "2026-09-29T02:51:01.036Z",
+    "to": "2026-10-29T02:51:01.036Z",
+    "legs": [
+      {
+        "id": "77316735",
+        "kind": "transfer",
+        "block_time": "2026-10-28T23:20:26.000Z",
+        "direction": "out",
+        "mint": "native",
+        "symbol": "SOL",
+        "amount": "0.00151384",
+        "amount_scaled": true,
+        "quote_asset": null,
+        "quote_amount": null,
+        "usd": {
+          "value": null,
+          "source": "unknown",
+          "minute_age_s": null
+        },
+        "tx_hash": "fake-tx_hash-92"
+      },
+      {
+        "id": "77316736",
+        "kind": "transfer",
+        "block_time": "2026-10-28T23:20:26.000Z",
+        "direction": "out",
+        "mint": "native",
+        "symbol": "SOL",
+        "amount": "0.00151384",
+        "amount_scaled": true,
+        "quote_asset": null,
+        "quote_amount": null,
+        "usd": {
+          "value": null,
+          "source": "unknown",
+          "minute_age_s": null
+        },
+        "tx_hash": "fake-tx_hash-92"
+      },
+      {
+        "id": "77316737",
+        "kind": "transfer",
+        "block_time": "2026-10-28T23:20:26.000Z",
+        "direction": "out",
+        "mint": "native",
+        "symbol": "SOL",
+        "amount": "0.00151384",
+        "amount_scaled": true,
+        "quote_asset": null,
+        "quote_amount": null,
+        "usd": {
+          "value": null,
+          "source": "unknown",
+          "minute_age_s": null
+        },
+        "tx_hash": "fake-tx_hash-92"
+      },
+      {
+        "id": "77316738",
+        "kind": "transfer",
+        "block_time": "2026-10-28T23:20:26.000Z",
+        "direction": "out",
+        "mint": "native",
+        "symbol": "SOL",
+        "amount": "0.00151384",
+        "amount_scaled": true,
+        "quote_asset": null,
+        "quote_amount": null,
+        "usd": {
+          "value": null,
+          "source": "unknown",
+          "minute_age_s": null
+        },
+        "tx_hash": "fake-tx_hash-93"
+      },
+      {
+        "id": "77316739",
+        "kind": "transfer",
+        "block_time": "2026-10-28T23:20:26.000Z",
+        "direction": "out",
+        "mint": "native",
+        "symbol": "SOL",
+        "amount": "0.00151384",
+        "amount_scaled": true,
+        "quote_asset": null,
+        "quote_amount": null,
+        "usd": {
+          "value": null,
+          "source": "unknown",
+          "minute_age_s": null
+        },
+        "tx_hash": "fake-tx_hash-93"
+      }
+    ],
+    "next_cursor": null,
+    "as_of": "2026-10-29T02:51:01.042Z",
+    "coverage": {
+      "legs_total": 300,
+      "swaps": 0,
+      "transfers": 300,
+      "buy_legs": 0,
+      "buy_legs_priced": 0,
+      "swaps_priced_observed": 0,
+      "swaps_priced_derived_stable": 0,
+      "swaps_priced_derived_minute": 0,
+      "swaps_unpriced": 0,
+      "unknown_asset_legs": 0,
+      "unscaled_amount_legs": 0,
+      "transfers_stored_valuation": 0,
+      "first_leg_at": "2026-10-28T23:20:26.000Z",
+      "last_leg_at": "2026-10-28T23:20:35.000Z",
+      "minute_table": "sol_usd_minutes",
+      "minute_table_last_at": "2026-10-29T02:48:00.000Z"
+    },
+    "assets": [
+      {
+        "mint": "native",
+        "launched_at": "2021-05-03T20:21:07.000Z",
+        "launch_source": "first_event",
+        "supply": null,
+        "supply_source": null,
+        "ath_mc_usd": null
+      }
+    ],
+    "assets_truncated": 0
+  },
+  "truncated": {
+    "$.legs": 300
+  }
+}

@@ -1,0 +1,614 @@
+{
+  "name": "lab-runners-1h-3w",
+  "method": "GET",
+  "route": "/v1/strategy-lab/runners",
+  "query": {
+    "hours": "1",
+    "min_wallets": "3"
+  },
+  "status": 200,
+  "ms": 17769,
+  "bytes": 56566,
+  "contentType": "application/json; charset=utf-8",
+  "answer": {
+    "hours": 1,
+    "new": {
+      "asset_id": 126636918,
+      "peak_at": "2026-10-29T02:44:40.000Z",
+      "symbol": "fake-symbol-10",
+      "address": "HaccFake1111111111111111111111111111111111T",
+      "is_new": true,
+      "peak_gain_pct": 868.97242387198,
+      "now_gain_pct": 888.4515266697194,
+      "current_mc_usd": 86642.79155413607,
+      "peak_mc_usd": 84935.34936012948,
+      "book_volume_usd": 45624.67318582317,
+      "swaps": 739,
+      "wallets": 78,
+      "buys": 186,
+      "sells": 553,
+      "signals": [
+        {
+          "pattern": "new_ticker",
+          "at": "2026-10-29T02:23:29.300Z",
+          "wallet_address": "HaccFake1111111111111111111111111111111111U",
+          "wallet_label": null,
+          "mc_usd": 9120.380970560916,
+          "line": "fake-line-1"
+        },
+        {
+          "pattern": "new_ticker",
+          "at": "2026-10-29T02:23:34.032Z",
+          "wallet_address": "HaccFake1111111111111111111111111111111111V",
+          "wallet_label": null,
+          "mc_usd": 9120.380970560916,
+          "line": "fake-line-2"
+        },
+        {
+          "pattern": "new_ticker",
+          "at": "2026-10-29T02:23:34.032Z",
+          "wallet_address": "HaccFake1111111111111111111111111111111111W",
+          "wallet_label": null,
+          "mc_usd": 9120.380970560916,
+          "line": "fake-line-3"
+        },
+        {
+          "pattern": "confluence",
+          "at": "2026-10-29T02:23:40.163Z",
+          "wallet_address": null,
+          "wallet_label": null,
+          "mc_usd": 9120.380970560916,
+          "line": "fake-line-4"
+        },
+        {
+          "pattern": "new_ticker",
+          "at": "2026-10-29T02:23:40.163Z",
+          "wallet_address": "HaccFake1111111111111111111111111111111111X",
+          "wallet_label": null,
+          "mc_usd": 9120.380970560916,
+          "line": "fake-line-5"
+        }
+      ],
+      "earliest_entrants": [
+        {
+          "wallet_address": "HaccFake1111111111111111111111111111111111U",
+          "wallet_label": null,
+          "watch_level": "realtime",
+          "first_buy_at": "2026-10-29T02:23:28.000Z",
+          "mc_usd": 9120.380970560916
+        },
+        {
+          "wallet_address": "HaccFake1111111111111111111111111111111111V",
+          "wallet_label": null,
+          "watch_level": "new_ticker",
+          "first_buy_at": "2026-10-29T02:23:33.000Z",
+          "mc_usd": 9120.380970560916
+        },
+        {
+          "wallet_address": "HaccFake1111111111111111111111111111111111W",
+          "wallet_label": null,
+          "watch_level": "realtime",
+          "first_buy_at": "2026-10-29T02:23:33.000Z",
+          "mc_usd": 9120.380970560916
+        },
+        {
+          "wallet_address": "HaccFake1111111111111111111111111111111111X",
+          "wallet_label": null,
+          "watch_level": "realtime",
+          "first_buy_at": "2026-10-29T02:23:38.000Z",
+          "mc_usd": 9120.380970560916
+        },
+        {
+          "wallet_address": "HaccFake1111111111111111111111111111111111Y",
+          "wallet_label": null,
+          "watch_level": "new_ticker",
+          "first_buy_at": "2026-10-29T02:23:39.000Z",
+          "mc_usd": 9120.380970560916
+        }
+      ],
+      "exits": [
+        {
+          "at": "2026-10-29T02:53:08.000Z",
+          "wallet_address": "HaccFake1111111111111111111111111111111111Z",
+          "wallet_label": null,
+          "watch_level": "new_ticker",
+          "usd": 321.8228236856,
+          "mc_usd": 84837.72898276577,
+          "line": "fake-line-6"
+        },
+        {
+          "at": "2026-10-29T02:53:04.000Z",
+          "wallet_address": "HaccFake1111111111111111111111111111111111a",
+          "wallet_label": null,
+          "watch_level": "new_ticker",
+          "usd": 106.73698433358517,
+          "mc_usd": 89155.54779979096,
+          "line": "fake-line-7"
+        },
+        {
+          "at": "2026-10-29T02:52:57.000Z",
+          "wallet_address": "HaccFake1111111111111111111111111111111111b",
+          "wallet_label": null,
+          "watch_level": "realtime",
+          "usd": 157.99767410017967,
+          "mc_usd": 94277.61646231666,
+          "line": "fake-line-8"
+        },
+        {
+          "at": "2026-10-29T02:52:41.000Z",
+          "wallet_address": "HaccFake1111111111111111111111111111111111c",
+          "wallet_label": null,
+          "watch_level": "realtime",
+          "usd": 295.174292,
+          "mc_usd": 92131.24471090775,
+          "line": "fake-line-9"
+        },
+        {
+          "at": "2026-10-29T02:52:35.000Z",
+          "wallet_address": "HaccFake1111111111111111111111111111111111c",
+          "wallet_label": null,
+          "watch_level": "realtime",
+          "usd": 293.387786,
+          "mc_usd": 92131.24471090775,
+          "line": "fake-line-10"
+        }
+      ],
+      "realized": [
+        {
+          "wallet_address": "HaccFake1111111111111111111111111111111111d",
+          "wallet_label": "fake-wallet_label-1",
+          "watch_level": "realtime",
+          "bought_usd": 302.7769053734827,
+          "sold_usd": 1487.4377705131765,
+          "net_usd": 1184.6608651396937
+        },
+        {
+          "wallet_address": "HaccFake1111111111111111111111111111111111e",
+          "wallet_label": "fake-wallet_label-2",
+          "watch_level": "realtime",
+          "bought_usd": 506.44505866846606,
+          "sold_usd": 1444.2986582046994,
+          "net_usd": 937.8535995362333
+        },
+        {
+          "wallet_address": "HaccFake1111111111111111111111111111111111f",
+          "wallet_label": null,
+          "watch_level": "realtime",
+          "bought_usd": 497.73524920312974,
+          "sold_usd": 1227.4967267985196,
+          "net_usd": 729.7614775953898
+        },
+        {
+          "wallet_address": "HaccFake1111111111111111111111111111111111X",
+          "wallet_label": null,
+          "watch_level": "realtime",
+          "bought_usd": 101.03140278682605,
+          "sold_usd": 800.5629454669591,
+          "net_usd": 699.531542680133
+        },
+        {
+          "wallet_address": "HaccFake1111111111111111111111111111111111g",
+          "wallet_label": null,
+          "watch_level": "realtime",
+          "bought_usd": 350.147305112887,
+          "sold_usd": 951.1817088539725,
+          "net_usd": 601.0344037410855
+        }
+      ]
+    },
+    "existing": {
+      "asset_id": 126578197,
+      "peak_at": "2026-10-29T02:26:58.000Z",
+      "symbol": null,
+      "address": "HaccFake1111111111111111111111111111111111h",
+      "is_new": false,
+      "peak_gain_pct": 1313.392651042635,
+      "now_gain_pct": 1459.6234746327239,
+      "current_mc_usd": 191712.40393234987,
+      "peak_mc_usd": 173737.38420775568,
+      "book_volume_usd": 97941.58644886392,
+      "swaps": 1927,
+      "wallets": 37,
+      "buys": 966,
+      "sells": 961,
+      "signals": [
+        {
+          "pattern": "new_ticker",
+          "at": "2026-10-29T01:59:51.696Z",
+          "wallet_address": "HaccFake1111111111111111111111111111111111i",
+          "wallet_label": null,
+          "mc_usd": 12292.227867436892,
+          "line": "fake-line-11"
+        },
+        {
+          "pattern": "new_ticker",
+          "at": "2026-10-29T01:59:52.673Z",
+          "wallet_address": "HaccFake1111111111111111111111111111111111j",
+          "wallet_label": null,
+          "mc_usd": 12292.227867436892,
+          "line": "fake-line-12"
+        },
+        {
+          "pattern": "confluence",
+          "at": "2026-10-29T01:59:54.711Z",
+          "wallet_address": null,
+          "wallet_label": null,
+          "mc_usd": 12292.227867436892,
+          "line": "fake-line-13"
+        },
+        {
+          "pattern": "new_ticker",
+          "at": "2026-10-29T01:59:54.711Z",
+          "wallet_address": "HaccFake1111111111111111111111111111111111k",
+          "wallet_label": null,
+          "mc_usd": 12292.227867436892,
+          "line": "fake-line-14"
+        },
+        {
+          "pattern": "new_ticker",
+          "at": "2026-10-29T01:59:54.711Z",
+          "wallet_address": "HaccFake1111111111111111111111111111111111m",
+          "wallet_label": null,
+          "mc_usd": 12292.227867436892,
+          "line": "fake-line-15"
+        }
+      ],
+      "earliest_entrants": [
+        {
+          "wallet_address": "HaccFake1111111111111111111111111111111111i",
+          "wallet_label": null,
+          "watch_level": "realtime",
+          "first_buy_at": "2026-10-29T01:59:51.000Z",
+          "mc_usd": 12292.227867436892
+        },
+        {
+          "wallet_address": "HaccFake1111111111111111111111111111111111j",
+          "wallet_label": null,
+          "watch_level": "realtime",
+          "first_buy_at": "2026-10-29T01:59:52.000Z",
+          "mc_usd": 12292.227867436892
+        },
+        {
+          "wallet_address": "HaccFake1111111111111111111111111111111111k",
+          "wallet_label": null,
+          "watch_level": "realtime",
+          "first_buy_at": "2026-10-29T01:59:53.000Z",
+          "mc_usd": 12292.227867436892
+        },
+        {
+          "wallet_address": "HaccFake1111111111111111111111111111111111n",
+          "wallet_label": null,
+          "watch_level": "realtime",
+          "first_buy_at": "2026-10-29T01:59:54.000Z",
+          "mc_usd": 12292.227867436892
+        },
+        {
+          "wallet_address": "HaccFake1111111111111111111111111111111111m",
+          "wallet_label": null,
+          "watch_level": "realtime",
+          "first_buy_at": "2026-10-29T01:59:54.000Z",
+          "mc_usd": 12292.227867436892
+        }
+      ],
+      "exits": [
+        {
+          "at": "2026-10-29T02:28:21.000Z",
+          "wallet_address": "HaccFake1111111111111111111111111111111111n",
+          "wallet_label": null,
+          "watch_level": "realtime",
+          "usd": 46.169689055983554,
+          "mc_usd": 191712.40393234987,
+          "line": "fake-line-16"
+        },
+        {
+          "at": "2026-10-29T02:28:16.000Z",
+          "wallet_address": "HaccFake1111111111111111111111111111111111o",
+          "wallet_label": null,
+          "watch_level": "realtime",
+          "usd": 22.155202594261695,
+          "mc_usd": 193193.50452785348,
+          "line": "fake-line-17"
+        },
+        {
+          "at": "2026-10-29T02:28:15.000Z",
+          "wallet_address": "HaccFake1111111111111111111111111111111111p",
+          "wallet_label": null,
+          "watch_level": "realtime",
+          "usd": 50.03563710566105,
+          "mc_usd": 193193.9703490043,
+          "line": "fake-line-18"
+        },
+        {
+          "at": "2026-10-29T02:28:15.000Z",
+          "wallet_address": "HaccFake1111111111111111111111111111111111m",
+          "wallet_label": null,
+          "watch_level": "realtime",
+          "usd": 63.54627897121928,
+          "mc_usd": 193193.9703490043,
+          "line": "fake-line-19"
+        },
+        {
+          "at": "2026-10-29T02:28:14.000Z",
+          "wallet_address": "HaccFake1111111111111111111111111111111111q",
+          "wallet_label": null,
+          "watch_level": "realtime",
+          "usd": 24.8648094635614,
+          "mc_usd": 192970.5064347798,
+          "line": "fake-line-20"
+        }
+      ],
+      "realized": [
+        {
+          "wallet_address": "HaccFake1111111111111111111111111111111111r",
+          "wallet_label": null,
+          "watch_level": "realtime",
+          "bought_usd": 1098.6449761558513,
+          "sold_usd": 1205.1194617971603,
+          "net_usd": 106.474485641309
+        },
+        {
+          "wallet_address": "HaccFake1111111111111111111111111111111111s",
+          "wallet_label": null,
+          "watch_level": "realtime",
+          "bought_usd": 1332.7441181070344,
+          "sold_usd": 1389.4709369871607,
+          "net_usd": 56.7268188801263
+        },
+        {
+          "wallet_address": "HaccFake1111111111111111111111111111111111t",
+          "wallet_label": null,
+          "watch_level": "realtime",
+          "bought_usd": 1428.3195960606658,
+          "sold_usd": 1473.9852704321488,
+          "net_usd": 45.665674371482964
+        },
+        {
+          "wallet_address": "HaccFake1111111111111111111111111111111111u",
+          "wallet_label": null,
+          "watch_level": "realtime",
+          "bought_usd": 1180.0312081517973,
+          "sold_usd": 1162.039807485996,
+          "net_usd": -17.991400665801166
+        },
+        {
+          "wallet_address": "HaccFake1111111111111111111111111111111111p",
+          "wallet_label": null,
+          "watch_level": "realtime",
+          "bought_usd": 1083.6309810216599,
+          "sold_usd": 1037.623405705662,
+          "net_usd": -46.00757531599788
+        }
+      ]
+    },
+    "leaderboard": [
+      {
+        "asset_id": 126578197,
+        "peak_at": "2026-10-29T02:26:58.000Z",
+        "symbol": null,
+        "address": "HaccFake1111111111111111111111111111111111h",
+        "is_new": false,
+        "peak_gain_pct": 1313.392651042635,
+        "now_gain_pct": 1459.6234746327239,
+        "current_mc_usd": 191712.40393234987,
+        "peak_mc_usd": 173737.38420775568,
+        "book_volume_usd": 97941.58644886392,
+        "swaps": 1927,
+        "wallets": 37
+      },
+      {
+        "asset_id": 126488484,
+        "peak_at": "2026-10-29T02:53:02.000Z",
+        "symbol": null,
+        "address": "HaccFake1111111111111111111111111111111111v",
+        "is_new": false,
+        "peak_gain_pct": 933.5232932167974,
+        "now_gain_pct": 1001.114629904376,
+        "current_mc_usd": 36370.36804711326,
+        "peak_mc_usd": 34137.79232306074,
+        "book_volume_usd": 2028.3193958021213,
+        "swaps": 18,
+        "wallets": 5
+      },
+      {
+        "asset_id": 126636918,
+        "peak_at": "2026-10-29T02:44:40.000Z",
+        "symbol": "fake-symbol-10",
+        "address": "HaccFake1111111111111111111111111111111111T",
+        "is_new": true,
+        "peak_gain_pct": 868.97242387198,
+        "now_gain_pct": 888.4515266697194,
+        "current_mc_usd": 86642.79155413607,
+        "peak_mc_usd": 84935.34936012948,
+        "book_volume_usd": 45624.67318582317,
+        "swaps": 739,
+        "wallets": 78
+      },
+      {
+        "asset_id": 126653053,
+        "peak_at": "2026-10-29T02:45:14.000Z",
+        "symbol": null,
+        "address": "HaccFake1111111111111111111111111111111111w",
+        "is_new": false,
+        "peak_gain_pct": 550.5647761076067,
+        "now_gain_pct": 568.1969936216398,
+        "current_mc_usd": 83754.61710076113,
+        "peak_mc_usd": 81544.54960557616,
+        "book_volume_usd": 63440.673777165895,
+        "swaps": 1289,
+        "wallets": 36
+      },
+      {
+        "asset_id": 126659056,
+        "peak_at": "2026-10-29T02:50:04.000Z",
+        "symbol": "fake-symbol-11",
+        "address": "HaccFake1111111111111111111111111111111111x",
+        "is_new": true,
+        "peak_gain_pct": 458.975755483321,
+        "now_gain_pct": 388.8816846645491,
+        "current_mc_usd": 36387.90498602274,
+        "peak_mc_usd": 42926.622740647465,
+        "book_volume_usd": 14886.657909906742,
+        "swaps": 94,
+        "wallets": 35
+      }
+    ],
+    "measurement_quality": {
+      "mode": "both",
+      "without_exclusions": [
+        {
+          "asset_id": 126578197,
+          "peak_at": "2026-10-29T02:26:58.000Z",
+          "symbol": null,
+          "address": "HaccFake1111111111111111111111111111111111h",
+          "is_new": false,
+          "peak_gain_pct": 1313.392651042635,
+          "now_gain_pct": 1459.6234746327239,
+          "current_mc_usd": 191712.40393234987,
+          "peak_mc_usd": 173737.38420775568,
+          "book_volume_usd": 97941.58644886392,
+          "swaps": 1927,
+          "wallets": 37
+        },
+        {
+          "asset_id": 126488484,
+          "peak_at": "2026-10-29T02:53:02.000Z",
+          "symbol": null,
+          "address": "HaccFake1111111111111111111111111111111111v",
+          "is_new": false,
+          "peak_gain_pct": 933.5232932167974,
+          "now_gain_pct": 1001.114629904376,
+          "current_mc_usd": 36370.36804711326,
+          "peak_mc_usd": 34137.79232306074,
+          "book_volume_usd": 2028.3193958021213,
+          "swaps": 18,
+          "wallets": 5
+        },
+        {
+          "asset_id": 126636918,
+          "peak_at": "2026-10-29T02:44:40.000Z",
+          "symbol": "fake-symbol-10",
+          "address": "HaccFake1111111111111111111111111111111111T",
+          "is_new": true,
+          "peak_gain_pct": 868.97242387198,
+          "now_gain_pct": 888.4515266697194,
+          "current_mc_usd": 86642.79155413607,
+          "peak_mc_usd": 84935.34936012948,
+          "book_volume_usd": 45624.67318582317,
+          "swaps": 739,
+          "wallets": 78
+        },
+        {
+          "asset_id": 126653053,
+          "peak_at": "2026-10-29T02:45:14.000Z",
+          "symbol": null,
+          "address": "HaccFake1111111111111111111111111111111111w",
+          "is_new": false,
+          "peak_gain_pct": 550.5647761076067,
+          "now_gain_pct": 568.1969936216398,
+          "current_mc_usd": 83754.61710076113,
+          "peak_mc_usd": 81544.54960557616,
+          "book_volume_usd": 63440.673777165895,
+          "swaps": 1289,
+          "wallets": 36
+        },
+        {
+          "asset_id": 126659056,
+          "peak_at": "2026-10-29T02:50:04.000Z",
+          "symbol": "fake-symbol-11",
+          "address": "HaccFake1111111111111111111111111111111111x",
+          "is_new": true,
+          "peak_gain_pct": 458.975755483321,
+          "now_gain_pct": 388.8816846645491,
+          "current_mc_usd": 36387.90498602274,
+          "peak_mc_usd": 42926.622740647465,
+          "book_volume_usd": 14886.657909906742,
+          "swaps": 94,
+          "wallets": 35
+        }
+      ],
+      "with_exclusions": [
+        {
+          "asset_id": 126580492,
+          "peak_at": "2026-10-29T02:32:18.000Z",
+          "symbol": "fake-symbol-12",
+          "address": "HaccFake1111111111111111111111111111111111y",
+          "is_new": true,
+          "peak_gain_pct": 280.32007429476016,
+          "now_gain_pct": -11.858873131704296,
+          "current_mc_usd": 41040.396688057794,
+          "peak_mc_usd": 177086.17093957914,
+          "book_volume_usd": 106535.32468918308,
+          "swaps": 844,
+          "wallets": 145
+        },
+        {
+          "asset_id": 126632564,
+          "peak_at": "2026-10-29T02:21:33.000Z",
+          "symbol": "fake-symbol-13",
+          "address": "HaccFake1111111111111111111111111111111111z",
+          "is_new": true,
+          "peak_gain_pct": 128.26742582020108,
+          "now_gain_pct": -39.18365041945758,
+          "current_mc_usd": 2817.561900404502,
+          "peak_mc_usd": 10575.406227607275,
+          "book_volume_usd": 8475.681815688687,
+          "swaps": 79,
+          "wallets": 22
+        },
+        {
+          "asset_id": 125160058,
+          "peak_at": "2026-10-29T01:55:34.000Z",
+          "symbol": "fake-symbol-14",
+          "address": "HaccFake11111111111111111111111111111111121",
+          "is_new": false,
+          "peak_gain_pct": 4.799548882743104,
+          "now_gain_pct": 1.0342807643158167,
+          "current_mc_usd": 7170.268739010146,
+          "peak_mc_usd": 7437.484817348244,
+          "book_volume_usd": 679.3669780095191,
+          "swaps": 4,
+          "wallets": 4
+        },
+        {
+          "asset_id": 26078956,
+          "peak_at": "2026-10-29T01:57:14.000Z",
+          "symbol": "fake-symbol-15",
+          "address": "HaccFake11111111111111111111111111111111122",
+          "is_new": false,
+          "peak_gain_pct": 1.7539134339205822,
+          "now_gain_pct": -5.701214167172154,
+          "current_mc_usd": 5767191.871029794,
+          "peak_mc_usd": 6223137.848514753,
+          "book_volume_usd": 6780.325249,
+          "swaps": 11,
+          "wallets": 6
+        },
+        {
+          "asset_id": 126583305,
+          "peak_at": "2026-10-29T02:12:24.000Z",
+          "symbol": "fake-symbol-16",
+          "address": "HaccFake11111111111111111111111111111111123",
+          "is_new": true,
+          "peak_gain_pct": 0.6506239747529344,
+          "now_gain_pct": -91.87051111994091,
+          "current_mc_usd": 5939.246054465134,
+          "peak_mc_usd": 75975.43230662604,
+          "book_volume_usd": 7640.929223990603,
+          "swaps": 186,
+          "wallets": 45
+        }
+      ],
+      "ranked_assets": 227,
+      "ranked_asset_cap": 1000
+    }
+  },
+  "truncated": {
+    "$.new.signals": 82,
+    "$.new.exits": 30,
+    "$.existing.signals": 42,
+    "$.existing.exits": 30,
+    "$.leaderboard": 10,
+    "$.measurement_quality.without_exclusions": 10,
+    "$.measurement_quality.with_exclusions": 7
+  }
+}

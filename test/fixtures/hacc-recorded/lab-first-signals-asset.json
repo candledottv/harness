@@ -1,0 +1,38 @@
+{
+  "name": "lab-first-signals-asset",
+  "method": "GET",
+  "route": "/v1/strategy-lab/first-signals",
+  "query": {
+    "minutes": "30",
+    "asset_id": "126684306"
+  },
+  "status": 200,
+  "ms": 131,
+  "bytes": 391,
+  "contentType": "application/json; charset=utf-8",
+  "answer": {
+    "minutes": 30,
+    "assets_asked": 1,
+    "assets_omitted": 0,
+    "signals": [
+      {
+        "asset_id": 126684306,
+        "launched_at": "2026-10-29T02:48:17.389Z",
+        "signal_id": 116147579,
+        "created_at": "2026-10-29T02:49:32.244Z",
+        "pattern": "new_ticker",
+        "wallet_id": 451833,
+        "wallet_groups": [
+          "fake-wallet_groups-5",
+          "fake-wallet_groups-3",
+          "fake-wallet_groups-6"
+        ],
+        "mcap_usd": null,
+        "mcap_at_signal": null,
+        "born_at": "2026-10-29T02:48:17.389Z",
+        "age_minutes": 1.25,
+        "venue_at_signal": "pump"
+      }
+    ]
+  }
+}

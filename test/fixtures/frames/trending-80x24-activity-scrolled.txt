@@ -1,0 +1,50 @@
+ agent-a ▾  LIVE  today $12.00 / $100.00  ● 0 cards waiting      ctrl-x ×2 kill 
+ 1 Trade  2 Coc  3 Tre  4 Sig  5 P&L  6 Res  7 Jou  8 Per   settings ▾          
+╭─ agent-a ─────────── Claude Code · sonnet ▾ ─╮╭─ Activity ─── all agents ▾ ──╮
+│you › what's trending?                        ││ ◂  activity  ▸   4/4 · ←/→   │
+│                                              ││       LUMEN #17              │
+│  Orbit leads the on-fire list. Want me to    ││07:40  agent-a followed a     │
+│  check it?  ⧉                                ││       wallet on Hacc #18     │
+│                                              ││07:42  filled SELL 50% QUILL  │
+│                                              ││       · 0.21 SOL #19         │
+│                                              ││07:43  filled BUY 0.04 SOL →  │
+│                                              ││       LUMEN #20              │
+│                                              ││07:45  live mode #21          │
+│                                              ││07:46  agent-a proposed BUY   │
+│                                              ││       0.1 SOL → JUPF #22     │
+│                                              ││07:48  you approved BUY 0.1   │
+│                                              ││       SOL → JUPF (Enter) #23 │
+│                                              ││07:49  filled BUY 0.1 SOL →   │
+│                                              ││       JUPF · 35.2 JUPF #24   │
+│                                              ││07:51  agent-b proposed BUY   │
+│                                              ││       0.05 SOL → LUMEN #25   │
+│                                              ││07:52  you rejected BUY 0.05  │
+╰──────────────────────────────────────────────╯│       SOL → LUMEN #26        │
+                                                │07:54  over agent-b's $10 per │
+› type a command …   ctrl-k palette    ? help   ╰─ ⇱ ───────────── ↓ 10 newer ─╯
+
+--- colours ---
+0: 6cb6ff/16263a×11 0b0d10/3ddc84×6 ffffff/0e1115×1 959dab/0e1115×6 f6f8fb/0e1115×6 959dab/0e1115×10 ffffff/0e1115×2 959dab/0e1115×17 ffffff/0e1115×5 ff5c5c/3a1619×16
+1: ffffff/0b0d10×1 f6f8fb/0b0d10+9×7 ffffff/0b0d10×2 6cb6ff/0b0d10×5 ffffff/0b0d10×2 6cb6ff/0b0d10×5 ffffff/0b0d10×2 6cb6ff/0b0d10×5 ffffff/0b0d10×2 6cb6ff/0b0d10×5 ffffff/0b0d10×2 6cb6ff/0b0d10×5 ffffff/0b0d10×2 6cb6ff/0b0d10×5 ffffff/0b0d10×2 6cb6ff/0b0d10×5 ffffff/0b0d10×2 6cb6ff/16263a×12 ffffff/0b0d10×9
+2: 252a33/111419×2 b392f0/111419×9 252a33/111419×11 6cb6ff/16263a×24 252a33/111419×2 32fe9f/111419×2 b392f0/111419×10 32fe9f/111419×3 6cb6ff/16263a×14 32fe9f/111419×3
+3: 252a33/111419×1 959dab/111419×6 f6f8fb/111419×16 ffffff/111419×24 252a33/111419×1 32fe9f/111419×1 6cb6ff/16263a×3 dde2ea/111419×10 6cb6ff/16263a×3 959dab/111419×11 ffffff/111419×3 32fe9f/111419×1
+4: 252a33/111419×1 ffffff/111419×46 252a33/111419×1 32fe9f/111419×1 dde2ea/111419×16 ffffff/111419×14 32fe9f/111419×1
+5: 252a33/111419×1 dde2ea/111419×42 ffffff/111419×4 252a33/111419×1 32fe9f/111419×1 959dab/111419×7 dde2ea/111419×18 ffffff/111419×5 32fe9f/111419×1
+6: 252a33/111419×1 dde2ea/111419×11 959dab/111419×1 6cb6ff/16263a×3 ffffff/111419×31 252a33/111419×1 32fe9f/111419×1 dde2ea/111419×25 ffffff/111419×5 32fe9f/111419×1
+7: 252a33/111419×1 ffffff/111419×46 252a33/111419×1 32fe9f/111419×1 959dab/111419×7 3ddc84/111419×6 dde2ea/111419×15 ffffff/111419×2 32fe9f/111419×1
+8: 252a33/111419×1 ffffff/111419×46 252a33/111419×1 32fe9f/111419×1 dde2ea/111419×21 ffffff/111419×9 32fe9f/111419×1
+9: 252a33/111419×1 ffffff/111419×46 252a33/111419×1 32fe9f/111419×1 959dab/111419×7 3ddc84/111419×6 dde2ea/111419×15 ffffff/111419×2 32fe9f/111419×1
+10: 252a33/111419×1 ffffff/111419×46 252a33/111419×1 32fe9f/111419×1 dde2ea/111419×16 ffffff/111419×14 32fe9f/111419×1
+11: 252a33/111419×1 ffffff/111419×46 252a33/111419×1 32fe9f/111419×1 959dab/111419×7 dde2ea/111419×13 ffffff/111419×10 32fe9f/111419×1
+12: 252a33/111419×1 ffffff/111419×46 252a33/111419×1 32fe9f/111419×1 959dab/111419×7 dde2ea/111419×20 ffffff/111419×3 32fe9f/111419×1
+13: 252a33/111419×1 ffffff/111419×46 252a33/111419×1 32fe9f/111419×1 dde2ea/111419×25 ffffff/111419×5 32fe9f/111419×1
+14: 252a33/111419×1 ffffff/111419×46 252a33/111419×1 32fe9f/111419×1 959dab/111419×7 dde2ea/111419×20 ffffff/111419×3 32fe9f/111419×1
+15: 252a33/111419×1 ffffff/111419×46 252a33/111419×1 32fe9f/111419×1 dde2ea/111419×29 ffffff/111419×1 32fe9f/111419×1
+16: 252a33/111419×1 ffffff/111419×46 252a33/111419×1 32fe9f/111419×1 959dab/111419×7 3ddc84/111419×6 dde2ea/111419×14 ffffff/111419×3 32fe9f/111419×1
+17: 252a33/111419×1 ffffff/111419×46 252a33/111419×1 32fe9f/111419×1 dde2ea/111419×27 ffffff/111419×3 32fe9f/111419×1
+18: 252a33/111419×1 ffffff/111419×46 252a33/111419×1 32fe9f/111419×1 959dab/111419×7 dde2ea/111419×20 ffffff/111419×3 32fe9f/111419×1
+19: 252a33/111419×1 ffffff/111419×46 252a33/111419×1 32fe9f/111419×1 dde2ea/111419×27 ffffff/111419×3 32fe9f/111419×1
+20: 252a33/111419×1 ffffff/111419×46 252a33/111419×1 32fe9f/111419×1 959dab/111419×7 f5a524/111419×3 dde2ea/111419×18 ffffff/111419×2 32fe9f/111419×1
+21: 252a33/111419×48 32fe9f/111419×1 dde2ea/111419×22 ffffff/111419×8 32fe9f/111419×1
+22: 959dab/0b0d10×1 ffffff/0b0d10×47 32fe9f/111419×1 959dab/111419×7 ff5c5c/111419×4 dde2ea/111419×18 ffffff/111419×1 32fe9f/111419×1
+23: f6f8fb/0e1115×2 959dab/0e1115×16 ffffff/0e1115×2 6cb6ff/16263a×16 959dab/0e1115×2 6cb6ff/16263a×8 959dab/0e1115×2 32fe9f/111419×2 6cb6ff/16263a×3 32fe9f/111419×13 959dab/111419×12 32fe9f/111419×2

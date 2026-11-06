@@ -1,0 +1,50 @@
+ agent-a ▾  PAPER  today $0.00 / $100.00  ● 0 cards waiting      ctrl-x ×2 kill 
+ 1 Tra  2 Coc  3 Trending  4 Sig  5 P&L  6 Res  7 Jou  8 Per   settings ▾       
+╭─ New · 4s ago ───────────────────────────────────────────────────────────────╮
+│ ◂  new  ▸   1/4 · ←/→                                                        │
+│token    age      1h   mcap  where                                            │
+│SPRIG    12s ▲ 41.2%  $3.9K  pump    Sprig Token                              │
+│EMBER    59s  ▼ 4.5% $11.8K  pump    Ember Token                              │
+│COBALT    1m  ▲ 231% $19.7K  bonk    Cobalt Token                             │
+│THISTL    2m       — $27.7K  pump    Thistle Token                            │
+╰─ ⇱ ────────────────────────────────────────────────────────────── ↓ 16 more ─╯
+╭─ Token ──────────────────────────────────────────────────────────────────────╮
+│Pick a row in a list here to see its token: price, check, chart.              │
+│ctrl-t on a row asks the agent; what it discusses shows here too.             │
+│                                                                              │
+│                                                                              │
+╰─ ⇱ ──────────────────────────────────────────────────────────────────────────╯
+╭─ agent-a ─────────────────────────────────────────── Claude Code · sonnet ▾ ─╮
+│agent-a here. I read Candle and its market data for you, and propose trades   │
+│you approve with one key.                                                     │
+│Try ctrl-t on a row: it asks me about that token.                             │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+                                                                                
+› type a command or ask the agent                    ctrl-k palette    ? help   
+
+--- colours ---
+0: 6cb6ff/16263a×11 f6f8fb/2a2f3a×7 ffffff/0e1115×1 959dab/0e1115×6 f6f8fb/0e1115×5 959dab/0e1115×10 ffffff/0e1115×2 959dab/0e1115×17 ffffff/0e1115×5 ff5c5c/3a1619×16
+1: ffffff/0b0d10×1 6cb6ff/0b0d10×5 ffffff/0b0d10×2 6cb6ff/0b0d10×5 ffffff/0b0d10×2 f6f8fb/0b0d10+9×10 ffffff/0b0d10×2 6cb6ff/0b0d10×5 ffffff/0b0d10×2 6cb6ff/0b0d10×5 ffffff/0b0d10×2 6cb6ff/0b0d10×5 ffffff/0b0d10×2 6cb6ff/0b0d10×5 ffffff/0b0d10×2 6cb6ff/0b0d10×5 ffffff/0b0d10×2 6cb6ff/16263a×12 ffffff/0b0d10×6
+2: 252a33/111419×2 b392f0/111419×14 252a33/111419×64
+3: 252a33/111419×1 6cb6ff/16263a×3 dde2ea/111419×5 6cb6ff/16263a×3 959dab/111419×11 ffffff/111419×56 252a33/111419×1
+4: 252a33/111419×1 959dab/111419×34 ffffff/111419×44 252a33/111419×1
+5: 252a33/111419×1 f6f8fb/111419×8 959dab/111419×4 3ddc84/111419×8 dde2ea/111419×7 959dab/111419×21 ffffff/111419×30 252a33/111419×1
+6: 252a33/111419×1 f6f8fb/111419×8 959dab/111419×4 ff5c5c/111419×8 dde2ea/111419×7 959dab/111419×21 ffffff/111419×30 252a33/111419×1
+7: 252a33/111419×1 f6f8fb/111419×8 959dab/111419×4 3ddc84/111419×8 dde2ea/111419×7 959dab/111419×22 ffffff/111419×29 252a33/111419×1
+8: 252a33/111419×1 f6f8fb/111419×8 959dab/111419×12 dde2ea/111419×7 959dab/111419×23 ffffff/111419×28 252a33/111419×1
+9: 252a33/111419×2 6cb6ff/16263a×3 252a33/111419×62 959dab/111419×11 252a33/111419×2
+10: 252a33/111419×2 b392f0/111419×7 252a33/111419×71
+11: 252a33/111419×1 dde2ea/111419×64 ffffff/111419×14 252a33/111419×1
+12: 252a33/111419×1 959dab/111419×65 ffffff/111419×13 252a33/111419×1
+13: 252a33/111419×1 ffffff/111419×78 252a33/111419×1
+14: 252a33/111419×1 ffffff/111419×78 252a33/111419×1
+15: 252a33/111419×2 6cb6ff/16263a×3 252a33/111419×75
+16: 32fe9f/111419×2 b392f0/111419×9 32fe9f/111419×43 6cb6ff/16263a×24 32fe9f/111419×2
+17: 32fe9f/111419×1 dde2ea/111419×75 ffffff/111419×3 32fe9f/111419×1
+18: 32fe9f/111419×1 dde2ea/111419×25 ffffff/111419×53 32fe9f/111419×1
+19: 32fe9f/111419×1 dde2ea/111419×49 ffffff/111419×29 32fe9f/111419×1
+20: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
+21: 32fe9f/111419×80
+22: 959dab/0b0d10×1 ffffff/0b0d10×79
+23: f6f8fb/0e1115×2 959dab/0e1115×31 ffffff/0e1115×19 6cb6ff/16263a×16 959dab/0e1115×2 6cb6ff/16263a×8 959dab/0e1115×2

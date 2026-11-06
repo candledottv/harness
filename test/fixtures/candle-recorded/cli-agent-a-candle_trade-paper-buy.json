@@ -1,0 +1,40 @@
+{
+  "tool": "candle_trade",
+  "args": {
+    "mint": "MoonFake11111111111111111111111111111111111",
+    "side": "buy",
+    "amount": "0.01",
+    "paper": true,
+    "clientTradeId": "00000000-0000-4000-8000-000000000002"
+  },
+  "ms": 1181,
+  "outcome": {
+    "kind": "ok",
+    "result": {
+      "clientTradeId": "00000000-0000-4000-8000-000000000002",
+      "resolved": {
+        "amountDecimal": "0.01",
+        "decimals": 9,
+        "amountRaw": "10000000"
+      },
+      "api": {
+        "success": true,
+        "paper": true,
+        "clientTradeId": "00000000-0000-4000-8000-000000000002",
+        "chain": "solana",
+        "side": "buy",
+        "mint": "MoonFake11111111111111111111111111111111111",
+        "quoteAsset": "sol",
+        "amountRaw": "10000000",
+        "expectedOutRaw": "2380952",
+        "feeRaw": "25000",
+        "feeBps": 25,
+        "venue": "jupiter",
+        "tokenDecimals": 6,
+        "tokenAmount": 2.380952,
+        "replay": false,
+        "note": "Recorded from the quote. No order was placed, and no money moved."
+      }
+    }
+  }
+}

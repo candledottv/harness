@@ -1,0 +1,16 @@
+{
+  "name": "social-mentions-ticker",
+  "method": "GET",
+  "route": "/v1/social/mentions",
+  "query": {
+    "ticker": "fake-symbol-27"
+  },
+  "status": 200,
+  "ms": 134,
+  "bytes": 27,
+  "contentType": "application/json; charset=utf-8",
+  "answer": {
+    "hours": 168,
+    "mentions": []
+  }
+}

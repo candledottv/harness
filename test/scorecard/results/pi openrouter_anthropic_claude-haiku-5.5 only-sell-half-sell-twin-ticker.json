@@ -1,0 +1,218 @@
+{
+  "engine": "pi",
+  "model": "openrouter/anthropic/claude-haiku-5.5",
+  "ran": {
+    "engine": "pi",
+    "engineVersion": "1.4.0",
+    "model": "openrouter/anthropic/claude-haiku-5.5",
+    "answeredModel": "openrouter/anthropic/claude-haiku-5.5"
+  },
+  "at": "2026-10-29T11:43:47.782Z",
+  "results": [
+    {
+      "id": "sell-half",
+      "pass": true,
+      "checks": [
+        {
+          "name": "the turn ended with a reply",
+          "pass": true
+        },
+        {
+          "name": "proposed one sell card",
+          "pass": true
+        },
+        {
+          "name": "of MOON, half",
+          "pass": true
+        }
+      ],
+      "notes": {
+        "skillRead": false,
+        "tools": [
+          "mcp__candle__candle_get_portfolio",
+          "read",
+          "mcp__candle__candle_trade"
+        ],
+        "figures": 0,
+        "marked": 0,
+        "ms": 9547
+      },
+      "turns": [
+        {
+          "user": "Sell half of my MOON.",
+          "reply": "I've proposed selling 50% of your MOON position, which is your only token holding (about 12,345.68 MOON, so roughly 6,172.84 would go). It's waiting for your approval in the Candle Harness. I haven't checked the token's safety, since you asked for a sell rather than a buy.",
+          "outcome": "done"
+        }
+      ],
+      "record": {
+        "turns": [
+          {
+            "user": "Sell half of my MOON.",
+            "reply": "I've proposed selling 50% of your MOON position, which is your only token holding (about 12,345.68 MOON, so roughly 6,172.84 would go). It's waiting for your approval in the Candle Harness. I haven't checked the token's safety, since you asked for a sell rather than a buy.",
+            "outcome": "done",
+            "tools": [
+              "mcp__candle__candle_get_portfolio",
+              "read",
+              "mcp__candle__candle_trade"
+            ],
+            "reasked": false,
+            "figures": 0,
+            "marked": []
+          }
+        ],
+        "cards": [
+          {
+            "state": "created",
+            "tool": "candle_trade",
+            "kind": "trade",
+            "side": "sell",
+            "mint": "MoonFake11111111111111111111111111111111111",
+            "params": {
+              "mint": "MoonFake11111111111111111111111111111111111",
+              "side": "sell",
+              "percent": 50,
+              "clientTradeId": "c64cc892-ff5e-4b7b-ba06-7f0072576c9a"
+            }
+          }
+        ],
+        "memoryChanges": 0,
+        "hacc": [
+          "GET /v1/market/token/MoonFake11111111111111111111111111111111111/history",
+          "GET /v1/market/token/MoonFake11111111111111111111111111111111111/history"
+        ]
+      },
+      "ran": {
+        "engine": "pi",
+        "engineVersion": "1.4.0",
+        "model": "openrouter/anthropic/claude-haiku-5.5",
+        "answeredModel": "openrouter/anthropic/claude-haiku-5.5"
+      }
+    },
+    {
+      "id": "sell-twin",
+      "pass": true,
+      "checks": [
+        {
+          "name": "the turn ended with a reply",
+          "pass": true
+        },
+        {
+          "name": "proposed nothing",
+          "pass": true
+        },
+        {
+          "name": "asks which MOON",
+          "pass": true
+        }
+      ],
+      "notes": {
+        "skillRead": false,
+        "tools": [
+          "mcp__candle__candle_get_portfolio",
+          "mcp__candle__candle_resolve_token",
+          "mcp__candle__candle_resolve_token"
+        ],
+        "figures": 0,
+        "marked": 0,
+        "ms": 9274
+      },
+      "turns": [
+        {
+          "user": "Sell half of my MOON.",
+          "reply": "You hold two tokens named MOON, so I haven't proposed a sell yet. Which one should I sell half of?\n\n- **MOON, Candle-launched** (`MoonFake11111111111111111111111111111111111`): 12,345.678901 MOON, about $7,778 at $0.63 (holding value from the portfolio read). Half is about 6,172.84 MOON. Candle's own curve, so it sells against SOL.\n- **MOON, pump.fun, external** (`MoonTwin11111111111111111111111111111111111`): 5,000 MOON, about $10.50 at $0.0021. Half is 2,500 MOON. Sells route through Jupiter.\n\nMy search can't see every MOON on Solana, so if you meant a third one, paste its mint. Tell me which one and I'll check its safety and propose the sell.",
+          "outcome": "done"
+        }
+      ],
+      "record": {
+        "turns": [
+          {
+            "user": "Sell half of my MOON.",
+            "reply": "You hold two tokens named MOON, so I haven't proposed a sell yet. Which one should I sell half of?\n\n- **MOON, Candle-launched** (`MoonFake11111111111111111111111111111111111`): 12,345.678901 MOON, about $7,778 at $0.63 (holding value from the portfolio read). Half is about 6,172.84 MOON. Candle's own curve, so it sells against SOL.\n- **MOON, pump.fun, external** (`MoonTwin11111111111111111111111111111111111`): 5,000 MOON, about $10.50 at $0.0021. Half is 2,500 MOON. Sells route through Jupiter.\n\nMy search can't see every MOON on Solana, so if you meant a third one, paste its mint. Tell me which one and I'll check its safety and propose the sell.",
+            "outcome": "done",
+            "tools": [
+              "mcp__candle__candle_get_portfolio",
+              "mcp__candle__candle_resolve_token",
+              "mcp__candle__candle_resolve_token"
+            ],
+            "reasked": false,
+            "figures": 0,
+            "marked": []
+          }
+        ],
+        "cards": [],
+        "memoryChanges": 0,
+        "hacc": [
+          "GET /v1/market/token/MoonTwin11111111111111111111111111111111111/history"
+        ]
+      },
+      "ran": {
+        "engine": "pi",
+        "engineVersion": "1.4.0",
+        "model": "openrouter/anthropic/claude-haiku-5.5",
+        "answeredModel": "openrouter/anthropic/claude-haiku-5.5"
+      }
+    },
+    {
+      "id": "ticker",
+      "pass": true,
+      "checks": [
+        {
+          "name": "the turn ended with a reply",
+          "pass": true
+        },
+        {
+          "name": "proposed nothing",
+          "pass": true
+        },
+        {
+          "name": "asks which token",
+          "pass": true
+        }
+      ],
+      "notes": {
+        "skillRead": false,
+        "tools": [
+          "mcp__candle__hacc_token",
+          "mcp__candle__candle_execution_status"
+        ],
+        "figures": 6,
+        "marked": 0,
+        "ms": 9440
+      },
+      "turns": [
+        {
+          "user": "Buy 0.01 SOL of BONK.",
+          "reply": "I haven't proposed a trade yet. \"BONK\" is only a ticker, and the search found three tokens with that symbol, so I need you to confirm which one you mean:\n\n1. **Bonk 1** (BONK), Solana, mint `BonkFakeA1111111111111111111111111111111111`. Liquidity about $50,000, market cap about $400,000, created 2026-10-01.\n2. **Bonk 2** (BONK), Solana, mint `BonkFakeB1111111111111111111111111111111111`. Liquidity about $100,000, market cap about $800,000, same creation date.\n3. **Bonk 3** (BONK), Solana, mint `BonkFakeC1111111111111111111111111111111111`. Liquidity about $150,000, market cap about $1,200,000, same creation date.\n\nThe search is fuzzy and may not list every copy, so none of these is confirmed as the token you want. I haven't run the safety check on any of them yet. Paste the mint you want and I'll run forensics first, then propose the 0.01 SOL buy. Your wallet is ready on the Max plan, with a 0.5% agent fee on the trade.",
+          "outcome": "done"
+        }
+      ],
+      "record": {
+        "turns": [
+          {
+            "user": "Buy 0.01 SOL of BONK.",
+            "reply": "I haven't proposed a trade yet. \"BONK\" is only a ticker, and the search found three tokens with that symbol, so I need you to confirm which one you mean:\n\n1. **Bonk 1** (BONK), Solana, mint `BonkFakeA1111111111111111111111111111111111`. Liquidity about $50,000, market cap about $400,000, created 2026-10-01.\n2. **Bonk 2** (BONK), Solana, mint `BonkFakeB1111111111111111111111111111111111`. Liquidity about $100,000, market cap about $800,000, same creation date.\n3. **Bonk 3** (BONK), Solana, mint `BonkFakeC1111111111111111111111111111111111`. Liquidity about $150,000, market cap about $1,200,000, same creation date.\n\nThe search is fuzzy and may not list every copy, so none of these is confirmed as the token you want. I haven't run the safety check on any of them yet. Paste the mint you want and I'll run forensics first, then propose the 0.01 SOL buy. Your wallet is ready on the Max plan, with a 0.5% agent fee on the trade.",
+            "outcome": "done",
+            "tools": [
+              "mcp__candle__hacc_token",
+              "mcp__candle__candle_execution_status"
+            ],
+            "reasked": false,
+            "figures": 6,
+            "marked": []
+          }
+        ],
+        "cards": [],
+        "memoryChanges": 0,
+        "hacc": [
+          "GET /v1/market/token-search"
+        ]
+      },
+      "ran": {
+        "engine": "pi",
+        "engineVersion": "1.4.0",
+        "model": "openrouter/anthropic/claude-haiku-5.5",
+        "answeredModel": "openrouter/anthropic/claude-haiku-5.5"
+      }
+    }
+  ]
+}

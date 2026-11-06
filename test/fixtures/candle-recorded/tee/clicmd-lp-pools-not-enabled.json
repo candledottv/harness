@@ -1,0 +1,9 @@
+{
+  "command": "lp pools <token> --json (agent-a)",
+  "exit": 1,
+  "stdout": {
+    "ok": false,
+    "code": "LP_NOT_ENABLED",
+    "message": "This Candle deployment does not serve LP routes (LP_ENABLED is off there, or the API predates them)."
+  }
+}

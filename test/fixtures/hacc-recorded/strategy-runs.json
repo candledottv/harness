@@ -1,0 +1,13 @@
+{
+  "name": "strategy-runs",
+  "method": "GET",
+  "route": "/v1/strategy-runs",
+  "query": {},
+  "status": 200,
+  "ms": 133,
+  "bytes": 11,
+  "contentType": "application/json; charset=utf-8",
+  "answer": {
+    "runs": []
+  }
+}

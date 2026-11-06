@@ -1,0 +1,62 @@
+ ▲ candle  agent-a ▾  LIVE  today $12.00 / $100.00  exposure $412.50  P&L 24h +$3.40  ● 1 card waiting   ctrl-x ×2 kill 
+ 1 Trade  2 Cockpit  3 Trending  4 Signals  5 P&L  6 Research  7 Journal  8 Perps   settings ▾                          
+   ╭─ approvals ────────────────────────────────────────────────────────────────────────────────────────────────────╮   
+╭─ │ wallets                   1 of 2 inside │                                                                      │──╮
+│ y│ ⌕ type to find a wallet                 │  embedded · agent-a, agent-b                                         │  │
+│  │                                         │                                                                      │  │
+│  │ embedded                inside limits   │    ✓ trades inside limits    ask every time                          │  │
+│  │                                         │                                                                      │  │
+│  │ tee-one                 asks every time │    without a card  a trade   $1.50      Harness · this core          │  │
+│  │                                         │                    a day     $5.00      Harness · this core   $3.00… │  │
+│  │                                         │    Inside both figures, trades run with no card. Sells always fit.   │ ─╯
+│  │                                         │                                                                      │   
+│  │                                         │  limits on its agents, and who holds them                            │──╮
+│  │                                         │  agent    limit                           who      used today        │  │
+│  │                                         │  agent-a  $25.00 a trade                  Harness                    │  │
+│  │                                         │  agent-a  $100.00 a day                   Harness  $12.00            │  │
+│ 1│                                         │  agent-a  $50.00 a UTC day, all volume    Candle                     │ ─╯
+│ ▌│                                         │  agent-b  $10.00 a trade                  Harness                    │   
+│ ▌│                                         │  agent-b  $50.00 a day                    Harness  $0.00             │──╮
+│ ▌│                                         │  agent-b  no cap on this key              Candle                     │  │
+│ ▌│                                         │  Candle doesn't cap agent-b's key. Only the Candle Harness's limits  │  │
+│  │                                         │  hold for it.                                                        │  │
+│  │                                         │  Candle's $50.00 a UTC day on agent-a's key is lower than the Candle │  │
+│  │                                         │  Harness's $100.00, so Candle stops its buys first.                  │  │
+│  │                                         │                                                                      │──╯
+│  │                                         │  Candle also has loss limits and a circuit breaker on each key. A    │   
+│  │                                         │  breach stops the key, sells included, until you resume it in        │──╮
+╰──│ ↑/↓ a wallet · type to find · → or ⏎ its settings · esc closes                                                 │  │
+   ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯  │
+› type a command or ask the a…  ⏎ approve   ctrl-k palette    ? help    ╰─ ⇱ ──────────────────────────────────────────╯
+
+--- colours ---
+0: ffffff/0e1115×1 f6f8fb/0e1115×8 ffffff/0e1115×1 6cb6ff/16263a×11 0b0d10/3ddc84×6 ffffff/0e1115×1 959dab/0e1115×6 f6f8fb/0e1115×6 959dab/0e1115×10 ffffff/0e1115×2 959dab/0e1115×9 f6f8fb/0e1115×7 ffffff/0e1115×2 959dab/0e1115×8 3ddc84/0e1115×6 ffffff/0e1115×2 f5a524/0e1115×16 ffffff/0e1115×2 ff5c5c/3a1619×16
+1: ffffff/0b0d10×1 f6f8fb/0b0d10+9×7 ffffff/0b0d10×2 6cb6ff/0b0d10×9 ffffff/0b0d10×2 6cb6ff/0b0d10×10 ffffff/0b0d10×2 6cb6ff/0b0d10×9 ffffff/0b0d10×2 6cb6ff/0b0d10×5 ffffff/0b0d10×2 6cb6ff/0b0d10×10 ffffff/0b0d10×2 6cb6ff/0b0d10×9 ffffff/0b0d10×2 6cb6ff/0b0d10×7 ffffff/0b0d10×2 6cb6ff/16263a×12 ffffff/0b0d10×25
+2: ffffff/0b0d10×3 32fe9f/111419×2 b392f0/111419×11 32fe9f/111419×101 ffffff/0b0d10×3
+3: 32fe9f/111419×2 b392f0/111419×1 32fe9f/111419×1 ffffff/111419×1 b392f0/111419×7 dde2ea/111419×19 959dab/111419×13 ffffff/111419×1 252a33/111419×1 ffffff/111419×70 32fe9f/111419×1 252a33/111419×3
+4: 32fe9f/111419×1 ffffff/111419×1 959dab/111419×1 32fe9f/111419×1 ffffff/111419×1 959dab/111419×23 dde2ea/111419×16 ffffff/111419×1 252a33/111419×1 ffffff/111419×2 f6f8fb/111419+1×8 959dab/111419×19 ffffff/111419×41 32fe9f/111419×1 ffffff/111419×2 252a33/111419×1
+5: 32fe9f/111419×1 ffffff/111419×2 32fe9f/111419×1 ffffff/111419×1 dde2ea/111419×39 ffffff/111419×1 252a33/111419×1 ffffff/111419×70 32fe9f/111419×1 ffffff/111419×2 252a33/111419×1
+6: 32fe9f/111419×1 ffffff/111419×1 dde2ea/111419×1 32fe9f/111419×1 ffffff/111419×1 f6f8fb/1d2430×8 dde2ea/1d2430×16 3ddc84/1d2430×15 ffffff/1d2430×1 252a33/111419×1 ffffff/111419×2 6cb6ff/111419×2 3ddc84/111419+1×22 dde2ea/111419×3 6cb6ff/16263a×16 ffffff/111419×25 32fe9f/111419×1 ffffff/111419×2 252a33/111419×1
+7: 32fe9f/111419×1 ffffff/111419×1 dde2ea/111419×1 32fe9f/111419×1 ffffff/111419×1 dde2ea/111419×39 ffffff/111419×1 252a33/111419×1 ffffff/111419×70 32fe9f/111419×1 ffffff/111419×2 252a33/111419×1
+8: 32fe9f/111419×1 ffffff/111419×1 dde2ea/111419×1 32fe9f/111419×1 ffffff/111419×1 dde2ea/111419×24 959dab/111419×15 ffffff/111419×1 252a33/111419×1 ffffff/111419×2 6cb6ff/111419×2 959dab/111419×16 dde2ea/111419×9 6cb6ff/16263a×7 dde2ea/111419×12 959dab/111419×12 ffffff/111419×10 32fe9f/111419×1 ffffff/111419×2 252a33/111419×1
+9: 32fe9f/111419×1 ffffff/111419×1 dde2ea/111419×1 32fe9f/111419×1 ffffff/111419×41 252a33/111419×1 ffffff/111419×2 6cb6ff/111419×2 959dab/111419×16 dde2ea/111419×9 6cb6ff/16263a×7 dde2ea/111419×12 959dab/111419×21 ffffff/111419×1 32fe9f/111419×1 ffffff/111419×2 252a33/111419×1
+10: 32fe9f/111419×1 ffffff/111419×1 dde2ea/111419×1 32fe9f/111419×1 ffffff/111419×41 252a33/111419×1 ffffff/111419×2 959dab/111419×65 ffffff/111419×3 32fe9f/111419×1 959dab/111419×1 252a33/111419×2
+11: 32fe9f/111419×1 ffffff/111419×1 dde2ea/111419×1 32fe9f/111419×1 ffffff/111419×41 252a33/111419×1 ffffff/111419×70 32fe9f/111419×1 ffffff/0b0d10×3
+12: 32fe9f/111419×1 ffffff/111419×1 dde2ea/111419×1 32fe9f/111419×1 ffffff/111419×41 252a33/111419×1 ffffff/111419×2 b392f0/111419×40 ffffff/111419×28 32fe9f/111419×1 252a33/111419×3
+13: 32fe9f/111419×1 ffffff/111419×1 dde2ea/111419×1 32fe9f/111419×1 ffffff/111419×41 252a33/111419×1 ffffff/111419×2 959dab/111419×60 ffffff/111419×8 32fe9f/111419×1 ffffff/111419×2 252a33/111419×1
+14: 32fe9f/111419×1 ffffff/111419×1 dde2ea/111419×1 32fe9f/111419×1 ffffff/111419×41 252a33/111419×1 ffffff/111419×2 f6f8fb/111419×9 dde2ea/111419×41 ffffff/111419×18 32fe9f/111419×1 ffffff/111419×2 252a33/111419×1
+15: 32fe9f/111419×1 ffffff/111419×2 32fe9f/111419×1 ffffff/111419×41 252a33/111419×1 ffffff/111419×2 f6f8fb/111419×9 dde2ea/111419×41 959dab/111419×6 ffffff/111419×12 32fe9f/111419×1 ffffff/111419×2 252a33/111419×1
+16: 32fe9f/111419×1 ffffff/111419×1 959dab/111419×1 32fe9f/111419×1 ffffff/111419×41 252a33/111419×1 ffffff/111419×2 f6f8fb/111419×9 dde2ea/111419×41 ffffff/111419×18 32fe9f/111419×1 959dab/111419×1 252a33/111419×2
+17: 32fe9f/111419×1 ffffff/111419×1 f5a524/111419×1 32fe9f/111419×1 ffffff/111419×41 252a33/111419×1 ffffff/111419×2 f6f8fb/111419×9 dde2ea/111419×41 ffffff/111419×18 32fe9f/111419×1 ffffff/0b0d10×3
+18: 32fe9f/111419×1 ffffff/111419×1 f5a524/111419×1 32fe9f/111419×1 ffffff/111419×41 252a33/111419×1 ffffff/111419×2 f6f8fb/111419×9 dde2ea/111419×41 959dab/111419×5 ffffff/111419×13 32fe9f/111419×1 252a33/111419×3
+19: 32fe9f/111419×1 ffffff/111419×1 f5a524/111419×1 32fe9f/111419×1 ffffff/111419×41 252a33/111419×1 ffffff/111419×2 f6f8fb/111419×9 f5a524/111419×32 dde2ea/111419×9 ffffff/111419×18 32fe9f/111419×1 ffffff/111419×2 252a33/111419×1
+20: 32fe9f/111419×1 ffffff/111419×1 f5a524/111419×1 32fe9f/111419×1 ffffff/111419×41 252a33/111419×1 ffffff/111419×2 f5a524/111419×66 ffffff/111419×2 32fe9f/111419×1 ffffff/111419×2 252a33/111419×1
+21: 32fe9f/111419×1 ffffff/111419×2 32fe9f/111419×1 ffffff/111419×41 252a33/111419×1 ffffff/111419×2 f5a524/111419×12 ffffff/111419×56 32fe9f/111419×1 ffffff/111419×2 252a33/111419×1
+22: 32fe9f/111419×1 ffffff/111419×2 32fe9f/111419×1 ffffff/111419×41 252a33/111419×1 ffffff/111419×2 959dab/111419×67 ffffff/111419×1 32fe9f/111419×1 ffffff/111419×2 252a33/111419×1
+23: 32fe9f/111419×1 ffffff/111419×2 32fe9f/111419×1 ffffff/111419×41 252a33/111419×1 ffffff/111419×2 959dab/111419×50 ffffff/111419×18 32fe9f/111419×1 ffffff/111419×2 252a33/111419×1
+24: 32fe9f/111419×1 ffffff/111419×2 32fe9f/111419×1 ffffff/111419×41 252a33/111419×1 ffffff/111419×70 32fe9f/111419×1 252a33/111419×3
+25: 32fe9f/111419×1 ffffff/111419×2 32fe9f/111419×1 ffffff/111419×41 252a33/111419×1 ffffff/111419×2 959dab/111419×64 ffffff/111419×4 32fe9f/111419×1 ffffff/0b0d10×3
+26: 32fe9f/111419×1 ffffff/111419×2 32fe9f/111419×1 ffffff/111419×41 252a33/111419×1 ffffff/111419×2 959dab/111419×60 ffffff/111419×8 32fe9f/111419×1 252a33/111419×3
+27: 32fe9f/111419×4 959dab/111419×63 ffffff/111419×49 32fe9f/111419×1 ffffff/111419×2 252a33/111419×1
+28: 959dab/0b0d10×1 ffffff/0b0d10×2 32fe9f/111419×114 ffffff/111419×2 252a33/111419×1
+29: f6f8fb/0e1115×2 959dab/0e1115×28 ffffff/0e1115×2 dde2ea/0e1115×1 959dab/0e1115×10 6cb6ff/16263a×16 959dab/0e1115×2 6cb6ff/16263a×8 959dab/0e1115×2 ffffff/0b0d10×1 252a33/111419×2 6cb6ff/16263a×3 252a33/111419×43

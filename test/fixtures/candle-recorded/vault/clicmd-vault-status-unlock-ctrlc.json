@@ -1,0 +1,5 @@
+{
+  "command": "vault status --unlock --json > file (at a terminal; Ctrl-C at the prompt: the CLI sat at the prompt at 100% CPU and was stopped with SIGTERM from another terminal)",
+  "exit": 143,
+  "stdout": ""
+}

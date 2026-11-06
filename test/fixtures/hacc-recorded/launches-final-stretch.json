@@ -1,0 +1,134 @@
+{
+  "name": "launches-final-stretch",
+  "method": "GET",
+  "route": "/v1/launches/final-stretch",
+  "query": {},
+  "status": 200,
+  "ms": 260,
+  "bytes": 21808,
+  "contentType": "application/json; charset=utf-8",
+  "answer": {
+    "as_of": "2026-10-29T02:50:18.949Z",
+    "feed": {
+      "ok": true,
+      "last_curve_trade_at": "2026-10-29T02:50:16.550Z",
+      "age_s": 2
+    },
+    "exact": {
+      "ok": true,
+      "last_read_at": "2026-10-29T02:50:06.412Z"
+    },
+    "graduated": [
+      {
+        "mint": "HaccFake1111111111111111111111111111111111x",
+        "graduated_at": "2026-10-29T02:49:36.419Z",
+        "pool": null,
+        "source": "curve_account"
+      },
+      {
+        "mint": "HaccFake1111111111111111111111111111111112H",
+        "graduated_at": "2026-10-29T02:48:12.766Z",
+        "pool": "pump-amm",
+        "source": "migrate_frame"
+      },
+      {
+        "mint": "HaccFake1111111111111111111111111111111112J",
+        "graduated_at": "2026-10-29T02:47:19.287Z",
+        "pool": "pump-amm",
+        "source": "migrate_frame"
+      },
+      {
+        "mint": "HaccFake1111111111111111111111111111111112K",
+        "graduated_at": "2026-10-29T02:46:12.583Z",
+        "pool": "pump-amm",
+        "source": "migrate_frame"
+      },
+      {
+        "mint": "HaccFake1111111111111111111111111111111112L",
+        "graduated_at": "2026-10-29T02:44:55.908Z",
+        "pool": "pump-amm",
+        "source": "migrate_frame"
+      }
+    ],
+    "rows": [
+      {
+        "mint": "HaccFake1111111111111111111111111111111112M",
+        "chain": "solana",
+        "launchpad": "pump",
+        "progress": 0.9765633,
+        "approximate": false,
+        "exact_read_at": "2026-10-29T02:50:06.412Z",
+        "market_cap_sol": 361.2999138996446,
+        "market_cap_usd": 36051.023151683155,
+        "last_trade_at": "2026-10-29T02:49:48.617Z",
+        "launched_at": "2026-10-26T16:00:22.816Z",
+        "deployer": "HaccFake1111111111111111111111111111111112N",
+        "symbol": "fake-symbol-17",
+        "name": "fake-name-21"
+      },
+      {
+        "mint": "HaccFake1111111111111111111111111111111112P",
+        "chain": "solana",
+        "launchpad": "pump",
+        "progress": 0.957742,
+        "approximate": false,
+        "exact_read_at": "2026-10-29T02:49:51.420Z",
+        "market_cap_sol": 328.73043405727867,
+        "market_cap_usd": 32801.19378094727,
+        "last_trade_at": "2026-10-29T02:50:09.763Z",
+        "launched_at": "2026-10-29T01:20:37.136Z",
+        "deployer": "HaccFake1111111111111111111111111111111112Q",
+        "symbol": "fake-symbol-18",
+        "name": "fake-name-22"
+      },
+      {
+        "mint": "HaccFake1111111111111111111111111111111112R",
+        "chain": "solana",
+        "launchpad": "pump",
+        "progress": 0.933455,
+        "approximate": false,
+        "exact_read_at": "2026-10-29T02:49:21.441Z",
+        "market_cap_sol": null,
+        "market_cap_usd": null,
+        "last_trade_at": "2026-10-29T02:49:01.766Z",
+        "launched_at": "2026-10-27T23:37:26.562Z",
+        "deployer": "HaccFake1111111111111111111111111111111112S",
+        "symbol": "fake-symbol-19",
+        "name": "fake-name-23"
+      },
+      {
+        "mint": "HaccFake1111111111111111111111111111111112T",
+        "chain": "solana",
+        "launchpad": "pump",
+        "progress": 0.927306,
+        "approximate": false,
+        "exact_read_at": "2026-10-29T02:47:36.424Z",
+        "market_cap_sol": 282.5110856712435,
+        "market_cap_usd": 28130.400903082857,
+        "last_trade_at": "2026-10-29T02:47:30.526Z",
+        "launched_at": "2026-10-27T17:20:06.623Z",
+        "deployer": "HaccFake1111111111111111111111111111111112U",
+        "symbol": "fake-symbol-20",
+        "name": "fake-name-24"
+      },
+      {
+        "mint": "HaccFake1111111111111111111111111111111112V",
+        "chain": "solana",
+        "launchpad": "pump",
+        "progress": 0.9029855,
+        "approximate": false,
+        "exact_read_at": "2026-10-29T02:45:51.408Z",
+        "market_cap_sol": null,
+        "market_cap_usd": null,
+        "last_trade_at": "2026-10-29T02:45:38.132Z",
+        "launched_at": "2026-10-27T19:10:10.783Z",
+        "deployer": "HaccFake1111111111111111111111111111111112W",
+        "symbol": "fake-symbol-21",
+        "name": "fake-name-25"
+      }
+    ]
+  },
+  "truncated": {
+    "$.rows": 50
+  }
+}

@@ -1,0 +1,147 @@
+{
+  "name": "perps-markets-5",
+  "tool": "candle_perps_markets",
+  "args": {
+    "limit": 5
+  },
+  "route": "/api/v1/agent/perps/markets",
+  "query": {
+    "limit": "5"
+  },
+  "status": 200,
+  "ms": 396,
+  "bytes": 2566,
+  "answer": {
+    "success": true,
+    "network": "mainnet",
+    "readAt": 1793367475909,
+    "gate": {
+      "minOpenInterestUsd": 1000000,
+      "source": "server"
+    },
+    "warnings": [],
+    "markets": [
+      {
+        "coin": "BTC",
+        "asset": 0,
+        "markPx": "77180.0",
+        "oraclePx": "77204.0",
+        "midPx": "77175.5",
+        "fundingRate": "0.0000125",
+        "fundingAprPct": "10.95",
+        "predictedFundingRate": "0.0000125",
+        "nextFundingTime": 1793365200000,
+        "openInterest": "40173.07082",
+        "openInterestUsd": "3100557605.89",
+        "dayNotionalVolumeUsd": "6836844655.823884964",
+        "prevDayPx": "79945.0",
+        "change24hPct": "-3.5",
+        "maxLeverage": 40,
+        "onlyIsolated": false,
+        "isDelisted": false,
+        "atOpenInterestCap": false,
+        "candle": {
+          "tradeable": true,
+          "reason": null
+        }
+      },
+      {
+        "coin": "ETH",
+        "asset": 1,
+        "markPx": "2227.3",
+        "oraclePx": "2228.4",
+        "midPx": "2226.55",
+        "fundingRate": "0.0000060092",
+        "fundingAprPct": "5.26",
+        "predictedFundingRate": "0.0000059868",
+        "nextFundingTime": 1793365200000,
+        "openInterest": "1031957.8134000009",
+        "openInterestUsd": "2298479637.79",
+        "dayNotionalVolumeUsd": "3251948839.5947842598",
+        "prevDayPx": "2316.1",
+        "change24hPct": "-3.8",
+        "maxLeverage": 25,
+        "onlyIsolated": false,
+        "isDelisted": false,
+        "atOpenInterestCap": false,
+        "candle": {
+          "tradeable": true,
+          "reason": null
+        }
+      },
+      {
+        "coin": "HYPE",
+        "asset": 159,
+        "markPx": "91.54",
+        "oraclePx": "91.498",
+        "midPx": "91.5145",
+        "fundingRate": "0.0000125",
+        "fundingAprPct": "10.95",
+        "predictedFundingRate": "0.0000125",
+        "nextFundingTime": 1793365200000,
+        "openInterest": "22105553.8200000413",
+        "openInterestUsd": "2023542396.68",
+        "dayNotionalVolumeUsd": "2423143066.6504440308",
+        "prevDayPx": "91.172",
+        "change24hPct": "0.4",
+        "maxLeverage": 10,
+        "onlyIsolated": false,
+        "isDelisted": false,
+        "atOpenInterestCap": false,
+        "candle": {
+          "tradeable": true,
+          "reason": null
+        }
+      },
+      {
+        "coin": "ZEC",
+        "asset": 214,
+        "markPx": "1237.4919",
+        "oraclePx": "1237.0319",
+        "midPx": "1237.25",
+        "fundingRate": "0.0000125",
+        "fundingAprPct": "10.95",
+        "predictedFundingRate": "0.0000125",
+        "nextFundingTime": 1793365200000,
+        "openInterest": "516562.04",
+        "openInterestUsd": "639241340.35",
+        "dayNotionalVolumeUsd": "898712238.9229996204",
+        "prevDayPx": "1272.4",
+        "change24hPct": "-2.7",
+        "maxLeverage": 10,
+        "onlyIsolated": false,
+        "isDelisted": false,
+        "atOpenInterestCap": false,
+        "candle": {
+          "tradeable": true,
+          "reason": null
+        }
+      },
+      {
+        "coin": "SOL",
+        "asset": 5,
+        "markPx": "95.679",
+        "oraclePx": "95.715",
+        "midPx": "95.6615",
+        "fundingRate": "0.0000125",
+        "fundingAprPct": "10.95",
+        "predictedFundingRate": "0.0000125",
+        "nextFundingTime": 1793365200000,
+        "openInterest": "5361647.2199999951",
+        "openInterestUsd": "512997044.36",
+        "dayNotionalVolumeUsd": "486141195.0979402065",
+        "prevDayPx": "100.3",
+        "change24hPct": "-4.6",
+        "maxLeverage": 20,
+        "onlyIsolated": false,
+        "isDelisted": false,
+        "atOpenInterestCap": false,
+        "candle": {
+          "tradeable": true,
+          "reason": null
+        }
+      }
+    ],
+    "stale": false
+  }
+}

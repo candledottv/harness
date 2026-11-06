@@ -1,0 +1,21 @@
+{
+  "name": "wallet-token-breakdown",
+  "method": "GET",
+  "route": "/v1/market/wallet/HaccFake1111111111111111111111111111111116H/token-breakdown",
+  "query": {},
+  "status": 200,
+  "ms": 3977,
+  "bytes": 215,
+  "contentType": "application/json; charset=utf-8",
+  "answer": {
+    "chain": "solana",
+    "address": "HaccFake1111111111111111111111111111111116H",
+    "from": "2026-09-29T02:50:54.687Z",
+    "to": "2026-10-29T02:50:54.687Z",
+    "source": "tape",
+    "wins": [],
+    "losses": [],
+    "truncated": false,
+    "pages_fetched": 1
+  }
+}

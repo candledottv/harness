@@ -1,0 +1,15 @@
+{
+  "name": "change-rule-delete-distribution",
+  "method": "DELETE",
+  "route": "/v1/me/rules/7",
+  "query": {},
+  "status": 404,
+  "ms": 128,
+  "bytes": 88,
+  "contentType": "application/json; charset=utf-8",
+  "answer": {
+    "message": "Route DELETE:/v1/me/rules/7 not found",
+    "error": "Not Found",
+    "statusCode": 404
+  }
+}

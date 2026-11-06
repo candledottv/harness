@@ -1,0 +1,28 @@
+{
+  "command": "candle wallet close-empty --wallet <tee address> --json </dev/null (agent-a's key)",
+  "exit": 0,
+  "stdout": {
+    "success": true,
+    "status": "nothing_to_close",
+    "wallet": "TeeFake111111111111111111111111111111111111",
+    "preview": {
+      "success": true,
+      "wallet": "TeeFake111111111111111111111111111111111111",
+      "linkedWalletId": "teefakeid1",
+      "keep": [],
+      "accounts": [],
+      "accountCount": 0,
+      "totalLamports": "0",
+      "totalSol": "0",
+      "transactions": 0,
+      "estimatedFeeLamports": "0",
+      "netLamports": "0",
+      "netSol": "0",
+      "skipped": [],
+      "undecodable": [],
+      "closesPerTransaction": 20,
+      "maxAccountsPerCall": 200
+    }
+  },
+  "stderr": "No empty token accounts to close on the TEE wallet TeeFake111111111111111111111111111111111111.\n"
+}

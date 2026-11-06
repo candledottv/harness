@@ -1,0 +1,726 @@
+{
+  "pages": {
+    "index": "Candle Harness",
+    "getting-started": "Getting started",
+    "the-screen": "The screen",
+    "your-agent": "Your agent",
+    "trading": "Trading",
+    "wallets": "Wallets",
+    "limits": "Limits",
+    "safety": "Safety",
+    "tabs": "The tabs",
+    "your-candle-plan": "Your Candle plan",
+    "make-it-yours": "Make it yours",
+    "while-you-were-away": "While you were away",
+    "engines": "Engines",
+    "install": "Installing",
+    "troubleshooting": "Troubleshooting",
+    "glossary": "Glossary",
+    "reference/keys": "Keys",
+    "reference/typed-commands": "Typed commands",
+    "reference/config": "Configuration",
+    "reference/cli-parity": "Candle's commands in the Candle Harness",
+    "developers/architecture": "Architecture",
+    "developers/attach-protocol": "The attach protocol"
+  },
+  "features": [
+    {
+      "id": "what-it-is",
+      "name": "What the Candle Harness is",
+      "page": "index",
+      "what": "A trading terminal for Candle with an AI agent beside you, run on your own Claude Code, Codex, Grok, OpenCode or Pi. One local core holds the keys and state; every view and agent attaches to it, and every trade the agent proposes is a card you approve, unless you've let its wallet trade inside limits."
+    },
+    {
+      "id": "open",
+      "name": "Opening the Candle Harness",
+      "page": "getting-started",
+      "what": "candle tui or candle-harness opens the view, starting the core if none is running.",
+      "subcommands": ["view"]
+    },
+    {
+      "id": "setup",
+      "name": "Setup",
+      "page": "getting-started",
+      "what": "With no agent yet, the Candle Harness opens on setup: sign in to Candle, connect your agent's engine, a vault or the embedded wallet only, the agent's key with Candle's cap, its wallet, limits and approvals, then funds or paper. A run that stops picks up where it was. candle-harness setup runs it again to add an agent.",
+      "subcommands": ["setup"],
+      "doctor": ["setup"]
+    },
+    {
+      "id": "funding",
+      "name": "Funding a wallet",
+      "page": "getting-started",
+      "what": "Setup shows the wallet's address with a copy chip, and moves on once a deposit lands. Paper needs no funds."
+    },
+    {
+      "id": "tour",
+      "name": "The tour",
+      "page": "getting-started",
+      "what": "About a minute over the real screen: the agent, positions, a card, the kill switch, settings ▾ and the palette. Setup's last step opens it, and the palette's \"the tour\" runs it again.",
+      "palette": ["tour"]
+    },
+    {
+      "id": "opening-tab",
+      "name": "Where to start",
+      "page": "getting-started",
+      "what": "Trade or the Cockpit, picked at the end of setup and kept as the tab the Candle Harness opens on."
+    },
+    {
+      "id": "paper-live",
+      "name": "Paper and live",
+      "page": "trading",
+      "what": "Paper trades are recorded at the quoted price and never sent; live trades move real funds. Switching to live asks first, and the mode last picked survives a restart.",
+      "typed": ["paper","live"],
+      "palette": ["mode:paper","mode:live"],
+      "settings": ["config.toml mode"]
+    },
+    {
+      "id": "status-bar",
+      "name": "The status bar",
+      "page": "the-screen",
+      "what": "Along the top: the mode, the active agent, the P&L figure with its window, and the kill switch's chip."
+    },
+    {
+      "id": "tab-bar",
+      "name": "Tabs",
+      "page": "the-screen",
+      "what": "Each tab shows a saved layout. Click one, or press its digit from the tab bar. On a narrow terminal the names shrink before settings ▾ is cut.",
+      "keys": ["tabDigit"]
+    },
+    {
+      "id": "focus",
+      "name": "Panes and focus",
+      "page": "the-screen",
+      "what": "Tab and the arrows move focus between panes. ↑/↓ in a list moves a highlight, and the highlighted row's token is linked once it rests.",
+      "keys": ["panes"]
+    },
+    {
+      "id": "scrolling",
+      "name": "Scrolling",
+      "page": "the-screen",
+      "what": "Every pane scrolls with PgUp/PgDn or the wheel, and its bottom border says what's out of view.",
+      "keys": ["scroll"]
+    },
+    {
+      "id": "palette",
+      "name": "The palette",
+      "page": "the-screen",
+      "what": "ctrl-k lists every action, tab, layout, pane, agent, preset, memory, token, alias, theme and Candle command, and typing searches them all. A pick does what its key or click does; it never approves a card or quits.",
+      "keys": ["palette"]
+    },
+    {
+      "id": "input-line",
+      "name": "The input line",
+      "page": "the-screen",
+      "what": "Type a command or a message and press Enter. The hint line beside it says what Enter and Esc do here. Esc twice clears a typed line.",
+      "keys": ["send","edit","clearLine","lineEnds"]
+    },
+    {
+      "id": "help",
+      "name": "Help",
+      "page": "the-screen",
+      "what": "? with the line empty lists the commands you can type and every key; c from there opens the palette at Candle's commands.",
+      "keys": ["help","commands"],
+      "typed": ["help"]
+    },
+    {
+      "id": "quit",
+      "name": "Quitting",
+      "page": "the-screen",
+      "what": "ctrl-c twice quits. Once clears the line, closes what's open, or copies text selected with the mouse.",
+      "keys": ["quit"]
+    },
+    {
+      "id": "mouse",
+      "name": "The mouse and copying",
+      "page": "the-screen",
+      "what": "Chips, cards, rows and tabs take clicks. ⧉ copies an address in full, and text selected with the mouse copies with ctrl-c."
+    },
+    {
+      "id": "settings-menu",
+      "name": "settings ▾",
+      "page": "the-screen",
+      "what": "Beside the tabs: which tabs show, each tab's layout, the theme, your agent's model and memory, skill folders, aliases, the P&L window, approvals and the vault."
+    },
+    {
+      "id": "small-terminals",
+      "name": "Small terminals",
+      "page": "the-screen",
+      "what": "Below a layout's width it collapses into the agent and one switched pane."
+    },
+    {
+      "id": "empty-states",
+      "name": "Empty panes",
+      "page": "the-screen",
+      "what": "Every pane says what it will show before its first read, and why when a read fails."
+    },
+    {
+      "id": "engines",
+      "name": "Your agent's engine",
+      "page": "your-agent",
+      "what": "Claude Code, Codex, Grok, OpenCode or Pi: your own install and sign-in, run in a private home each turn with your own setup kept out. The Candle Harness ships no model login of its own.",
+      "doctor": ["engine","claude"],
+      "settings": ["config.toml engine.default","config.toml engine.model","config.toml engine.claude.path","config.toml engine.codex.path","config.toml engine.grok.path","config.toml engine.opencode.path","config.toml engine.pi.path"]
+    },
+    {
+      "id": "model-picker",
+      "name": "The model picker",
+      "page": "your-agent",
+      "what": "ctrl-g or the agent pane's chip lists each engine with its version, sign-in, gaps and models, searchable. A pick runs from the next turn, for that agent, and is kept across restarts.",
+      "keys": ["picker"],
+      "palette": ["model"]
+    },
+    {
+      "id": "presets",
+      "name": "Presets",
+      "page": "your-agent",
+      "what": "Quant, the default, works as an analyst on Hacc's data with Candle's skills. Trader is a plain trading agent, and Bare carries the essentials only. Each agent has its own.",
+      "settings": ["config.toml agents.<name>.preset"]
+    },
+    {
+      "id": "skills",
+      "name": "Skills",
+      "page": "your-agent",
+      "what": "Quant reads ten of Candle's own skills, built in. Any preset reads skills of yours in the skills folder beside config.toml.",
+      "tools": ["skill_read"]
+    },
+    {
+      "id": "skill-folders",
+      "name": "Your skill folders",
+      "page": "your-agent",
+      "what": "settings ▾ → skills turns on your Claude Code, Codex and other skill folders. The core reads them and serves them to the agent, which can't read them itself. They're off until you turn them on.",
+      "settings": ["config.toml skills.from"],
+      "doctor": ["skills"]
+    },
+    {
+      "id": "memory",
+      "name": "Memory",
+      "page": "your-agent",
+      "what": "Each agent keeps its own memory, an index and files in its research folder, read fresh into every turn on any engine. The memory overlay deletes any line or file, or clears it all.",
+      "doctor": ["memory"]
+    },
+    {
+      "id": "agent-history",
+      "name": "The agent's history",
+      "page": "your-agent",
+      "what": "The agent reads its own past turns, cards and paper trades, further back than its conversation, and what happened since your last session.",
+      "tools": ["harness_history"]
+    },
+    {
+      "id": "research-folder",
+      "name": "The research folder",
+      "page": "your-agent",
+      "what": "The agent's own files live in its research folder. Reads outside it are refused, through links too.",
+      "tools": ["research_read","research_list"]
+    },
+    {
+      "id": "tool-permissions",
+      "name": "Shell and tools",
+      "page": "your-agent",
+      "what": "The shell is off by default, a list of commands, or everything, for each agent. allow and deny list tools, and a denied tool is hidden from the agent.",
+      "doctor": ["tools"],
+      "settings": ["config.toml agents.<name>.tools.shell","config.toml agents.<name>.tools.allow","config.toml agents.<name>.tools.deny"]
+    },
+    {
+      "id": "step-cap",
+      "name": "The step cap",
+      "page": "your-agent",
+      "what": "A turn stops after 30 steps, or the number set.",
+      "settings": ["config.toml engine.stepCap"]
+    },
+    {
+      "id": "agents",
+      "name": "Several agents",
+      "page": "your-agent",
+      "what": "Up to 12 agents, each with its own key, limits, engine, preset and memory. agent <name> makes one active, as <agent> runs one line as another, and ctrl-f shows positions, wallets and activity for every agent or the active one.",
+      "typed": ["agent agent-b","buy $25 MOON as agent-b"],
+      "keys": ["oneAgent"],
+      "settings": ["config.toml activeAgent"]
+    },
+    {
+      "id": "asking",
+      "name": "Asking the agent",
+      "page": "your-agent",
+      "what": "Anything that isn't a command goes to the agent. It acts when you message it, not on its own. ctrl-t on a row puts a question about it on the line.",
+      "typed": ["what's moving on Solana right now?"],
+      "keys": ["ask"]
+    },
+    {
+      "id": "stop-turn",
+      "name": "Stopping a turn",
+      "page": "your-agent",
+      "what": "Esc with the line empty stops the agent's turn; a message waiting runs next.",
+      "keys": ["stop"]
+    },
+    {
+      "id": "replies",
+      "name": "Replies",
+      "page": "your-agent",
+      "what": "Replies render as Markdown, with addresses shortened and a ⧉ to copy each in full. An address the agent wrote from memory is caught and asked again."
+    },
+    {
+      "id": "figure-marks",
+      "name": "Marks on figures",
+      "page": "your-agent",
+      "what": "A price, market cap, liquidity, volume or balance the agent states that no tool showed this turn is dimmed with a ? after it."
+    },
+    {
+      "id": "agent-told",
+      "name": "What the agent is told",
+      "page": "your-agent",
+      "what": "Each turn opens with what went through the Candle Harness since the last: trades and how they ended, cards, the kill switch, the token you picked, and what runs without asking."
+    },
+    {
+      "id": "hacc-reads",
+      "name": "Market data from Hacc",
+      "page": "your-agent",
+      "what": "Signals, tokens, markets, wallets and social reads from Hacc, offered by your plan. Each answer is kept short and says what it left out.",
+      "tools": ["hacc_signals","hacc_token","hacc_market","hacc_wallets","hacc_social"],
+      "doctor": ["hacc"],
+      "settings": ["config.toml hacc.enabled"]
+    },
+    {
+      "id": "hacc-follows",
+      "name": "Follows and rules",
+      "page": "your-agent",
+      "what": "On Pro and Max: follows, groups and rules on Hacc. Adds happen at once with an undo; removals and a rule's add are one-press cards.",
+      "tools": ["hacc_follows"]
+    },
+    {
+      "id": "hacc-lab",
+      "name": "The strategy lab",
+      "page": "your-agent",
+      "what": "On Max: save, backtest and replay a strategy.",
+      "tools": ["hacc_lab"]
+    },
+    {
+      "id": "cli-tool",
+      "name": "Candle's commands through the agent",
+      "page": "your-agent",
+      "what": "The agent can ask for any Candle CLI command, under the same rule as when you type it.",
+      "tools": ["candle_cli"]
+    },
+    {
+      "id": "typed-trades",
+      "name": "Typed trades",
+      "page": "trading",
+      "what": "buy, sell and swap on the input line, in an amount, dollars or a percent. A token is a mint, or a name shown this session; a name nobody has shown is never guessed.",
+      "typed": ["buy 0.1 sol MOON","buy $25 MOON","sell 50% MOON","sell 1000 MOON","swap 0.1 SOL USDC"],
+      "settings": ["config.toml trade.spendAsset"]
+    },
+    {
+      "id": "cards",
+      "name": "Cards",
+      "page": "trading",
+      "what": "A trade the agent proposes is a card, priced fresh and checked against limits. Enter with the line empty approves it once it has shown for 300 ms, and a click does too. ctrl-n rejects, ctrl-o shows everything it's bound to, and ctrl-r re-quotes an expired one.",
+      "keys": ["approve","reject","details","requote"]
+    },
+    {
+      "id": "typed-instant",
+      "name": "Typed trades without a card",
+      "page": "trading",
+      "what": "A typed live trade is a card by default, or runs at once when typedTrades is instant.",
+      "settings": ["config.toml cards.typedTrades"]
+    },
+    {
+      "id": "pricing",
+      "name": "How a card is priced",
+      "page": "trading",
+      "what": "A card is valued fresh from Candle's market read when it's proposed, never on approve, or from Candle's quote for the exact trade once Candle offers one. Candle fills at its own price, within its slippage limit.",
+      "settings": ["config.toml pricing.source","config.toml pricing.quoteTool"]
+    },
+    {
+      "id": "lost-answers",
+      "name": "A trade Candle didn't answer",
+      "page": "trading",
+      "what": "Read back and never sent twice. resend or abandon it, or click it in the agent pane.",
+      "typed": ["resend","abandon"]
+    },
+    {
+      "id": "aliases",
+      "name": "Aliases",
+      "page": "trading",
+      "what": "config.toml's [aliases]: b5 = \"buy $5 of\" makes b5 MOON buy $5 of MOON.",
+      "typed": ["b5 MOON"],
+      "palette": ["alias:none","alias:reload"],
+      "doctor": ["aliases"],
+      "settings": ["config.toml aliases.<name>"]
+    },
+    {
+      "id": "chains",
+      "name": "Chains",
+      "page": "trading",
+      "what": "Up to 5 trades or candle commands split by ;. Each is checked before anything is sent, then they run one after another; one that fails stops the rest.",
+      "typed": ["buy $1 MOON; sell 100% MOON"]
+    },
+    {
+      "id": "candle-commands",
+      "name": "Candle's commands",
+      "page": "trading",
+      "what": "candle <command> runs any Candle CLI command under its rule: reads at once, the rest as cards or in the prompt pane.",
+      "typed": ["candle keys list"],
+      "cli": ["keys list"]
+    },
+    {
+      "id": "more-cards",
+      "name": "Launches, staking, claims, profile and posts",
+      "page": "trading",
+      "what": "One-press cards like a trade's. A launch or stake is dry-run first and the card shows the preview; a public action says so on the card.",
+      "cli": ["launch","stake add","fees claim","agent profile set","agent post create","image upload"]
+    },
+    {
+      "id": "not-yet",
+      "name": "On Candle, not in the Candle Harness yet",
+      "page": "trading",
+      "what": "Limit and stop orders, Telegram alerts and perps trading."
+    },
+    {
+      "id": "embedded-wallet",
+      "name": "The embedded wallet",
+      "page": "wallets",
+      "what": "Your account's own wallet, which each agent pays from once you've allowed it."
+    },
+    {
+      "id": "tee-wallets",
+      "name": "TEE wallets",
+      "page": "wallets",
+      "what": "A wallet of its own for an agent, on Pro or Max, made in the prompt pane from a vault key. Its trades run through your own candle CLI with the agent's key. Stopping one is final, and it stays on the Wallets pane until it's swept home.",
+      "cli": ["tee new","tee disable","tee sweep","tee rename"]
+    },
+    {
+      "id": "which-wallet-pays",
+      "name": "Which wallet pays",
+      "page": "wallets",
+      "what": "from <wallet> names the wallet that pays, by name or address; else the agent's default; else the embedded wallet. The card always names it.",
+      "typed": ["buy $25 MOON from embedded"],
+      "settings": ["config.toml agents.<name>.wallet"]
+    },
+    {
+      "id": "wallets-pane",
+      "name": "The Wallets pane",
+      "page": "wallets",
+      "what": "Each wallet, its agents and its balance. Which wallets show is a setting: the active ones, all, a group, or a list.",
+      "panes": ["wallets"],
+      "tools": ["harness_show_wallets"],
+      "doctor": ["wallet"],
+      "settings": ["config.toml wallets.show"]
+    },
+    {
+      "id": "wallet-names",
+      "name": "Wallet names",
+      "page": "wallets",
+      "what": "One name for each wallet, kept where it's owned: Candle's label, the vault's, or the Candle Harness's own in wallets.toml. Several can be renamed as one batch.",
+      "typed": ["name Fk3eQ9mW2vT8rYp5LxN7cZ1bH4jS6dGuAa8KqRwEs2Vn main"],
+      "tools": ["harness_name_wallets"],
+      "palette": ["wallets:name","wallets:several"],
+      "settings": ["wallets.toml names.\"<address>\""]
+    },
+    {
+      "id": "wallet-groups",
+      "name": "Wallet groups",
+      "page": "wallets",
+      "what": "Groups by a name prefix, a list, or both, to find and fold many wallets. A group organises; it never pays.",
+      "typed": ["group bots prefix bot-"],
+      "tools": ["harness_group_wallets"],
+      "palette": ["wallets:group","wallets:groups","wallets:find"],
+      "settings": ["wallets.toml groups.<group>.prefix","wallets.toml groups.<group>.wallets"]
+    },
+    {
+      "id": "empty-accounts",
+      "name": "Empty token accounts",
+      "page": "wallets",
+      "what": "The Wallets pane names a TEE wallet's empty token accounts and the SOL closing them returns; close takes it back.",
+      "cli": ["wallets close-empty"]
+    },
+    {
+      "id": "vault",
+      "name": "The vault",
+      "page": "wallets",
+      "what": "The vault on this machine signs owner steps and funds out. It's optional: the embedded wallet trades without one, and one can be made later from settings ▾.",
+      "typed": ["forget vault"],
+      "cli": ["vault init"],
+      "doctor": ["vault"]
+    },
+    {
+      "id": "harness-limits",
+      "name": "Each agent's limits",
+      "page": "limits",
+      "what": "A per-trade and a per-day limit for each agent, checked by the core before a card is made.",
+      "settings": ["config.toml agents.<name>.limits.perTradeUsd","config.toml agents.<name>.limits.perDayUsd"]
+    },
+    {
+      "id": "candle-caps",
+      "name": "Candle's caps",
+      "page": "limits",
+      "what": "Candle's own caps on each key, its loss limits and its circuit breaker. A key Candle refused for its cap is held until it resets, and sells still go.",
+      "cli": ["keys limit"],
+      "doctor": ["limits"]
+    },
+    {
+      "id": "inside-limits",
+      "name": "Trading inside limits",
+      "page": "limits",
+      "what": "settings ▾ → approvals: each wallet asks every time, or trades inside two figures with no card and a receipt in its place. Over a figure it's a card that says which. The agent can narrow it, never widen it.",
+      "palette": ["approvals"],
+      "tools": ["harness_limits"]
+    },
+    {
+      "id": "kill-switch",
+      "name": "The kill switch",
+      "page": "safety",
+      "what": "ctrl-x twice, kill, or the status bar's chip: buys pause, the agent stops, buy and swap cards are withdrawn, and each open sell gets a fresh card. A report says what it did. resume turns buys back on.",
+      "keys": ["kill"],
+      "typed": ["kill","resume"],
+      "palette": ["resume"]
+    },
+    {
+      "id": "keys",
+      "name": "Agent keys",
+      "page": "safety",
+      "what": "Each agent's key is stored privately for the Candle Harness, read from stdin and never an argument, and never reaches the agent or the screen. The doctor names any key with Withdraw access.",
+      "subcommands": ["key add"],
+      "doctor": ["key","access"]
+    },
+    {
+      "id": "prompt-pane",
+      "name": "The prompt pane",
+      "page": "safety",
+      "what": "Owner steps, and anything that asks for a passphrase or shows a secret, run in a pane of their own, as you. Nothing typed there reaches the core, the agent or the journal. ctrl-] leaves it behind a chip.",
+      "keys": ["promptPane"],
+      "subcommands": ["cli-pane"]
+    },
+    {
+      "id": "funds-out",
+      "name": "Funds out",
+      "page": "safety",
+      "what": "Run in the prompt pane from your vault. The agent can propose one only when your own message names where and how much. An address that looks like one of yours but isn't is refused, and a new one shows amber.",
+      "cli": ["vault transfer","external sweep"]
+    },
+    {
+      "id": "agent-never-sees",
+      "name": "What the agent never sees",
+      "page": "safety",
+      "what": "Keys, passphrases, the prompt pane, and files outside its research folder."
+    },
+    {
+      "id": "leaves-machine",
+      "name": "What leaves your machine",
+      "page": "safety",
+      "what": "Your conversation goes to your own model provider, trades and reads to Candle, and signal reads to Hacc."
+    },
+    {
+      "id": "trade-tab",
+      "name": "Trade",
+      "page": "tabs",
+      "what": "The agent with its cards, beside the token, positions, wallets and activity.",
+      "tabs": ["Trade"],
+      "panes": ["agent","positions","activity"]
+    },
+    {
+      "id": "token-pane",
+      "name": "The token pane",
+      "page": "tabs",
+      "what": "The linked token: its price, a chart in two-minute candles from Hacc's history, its check, and where it launched.",
+      "panes": ["token"]
+    },
+    {
+      "id": "cockpit",
+      "name": "Cockpit",
+      "page": "tabs",
+      "what": "Candle's On Fire list over Signals, the token beside them, positions and activity below, and the agent down the right.",
+      "tabs": ["Cockpit"],
+      "panes": ["feed"]
+    },
+    {
+      "id": "trending",
+      "name": "Trending",
+      "page": "tabs",
+      "what": "Candle's lists side by side: New, Graduated, On Fire and Final Stretch, read every 15 seconds while on screen.",
+      "tabs": ["Trending"],
+      "panes": ["new","graduated","final-stretch"]
+    },
+    {
+      "id": "signals",
+      "name": "Signals",
+      "page": "tabs",
+      "what": "Hacc's tape or your own rules' signals, in the Candle Harness's words, filtered by pattern and chain, with a pause that counts what arrives.",
+      "tabs": ["Signals"],
+      "panes": ["signals"],
+      "palette": ["signals:source","signals:pattern","signals:chain","signals:clear","signals:pause","signals:resume"]
+    },
+    {
+      "id": "pnl",
+      "name": "P&L",
+      "page": "tabs",
+      "what": "Candle's books for your agents, the chart over time, positions and trades. Every figure names its window: 24 hours by default, since midnight, since a time, or since last session.",
+      "tabs": ["P&L"],
+      "panes": ["pnl","pnl-chart","pnl-positions","trades"],
+      "typed": ["pnl since 18:00"],
+      "tools": ["harness_pnl"],
+      "palette": ["pnl:menu"],
+      "doctor": ["pnl"],
+      "settings": ["config.toml pnl.window"]
+    },
+    {
+      "id": "research",
+      "name": "Research",
+      "page": "tabs",
+      "what": "One token in depth: its whole check, top traders, its own signals and posts about it, beside a list to pick from.",
+      "tabs": ["Research"],
+      "panes": ["check","traders","token-signals","mentions","lists"]
+    },
+    {
+      "id": "journal",
+      "name": "Journal",
+      "page": "tabs",
+      "what": "Everything the core recorded, in words, newest first, searched over the whole file.",
+      "tabs": ["Journal"],
+      "panes": ["journal"],
+      "keys": ["searchJournal","search"],
+      "palette": ["journal:search"],
+      "doctor": ["journal"]
+    },
+    {
+      "id": "perps",
+      "name": "Perps",
+      "page": "tabs",
+      "what": "What works for perps today, with questions to ask the agent.",
+      "tabs": ["Perps"],
+      "panes": ["perps"]
+    },
+    {
+      "id": "short-agent-pane",
+      "name": "The short agent pane",
+      "page": "tabs",
+      "what": "Across the foot of the tabs without the agent: questions are answered there, and a waiting card keeps its place."
+    },
+    {
+      "id": "plans",
+      "name": "What your plan gives you",
+      "page": "your-candle-plan",
+      "what": "Free, Pro and Max: TEE wallets, Hacc's follows and the strategy lab, Research's reads, and 30, 300 or 600 requests a minute for each key."
+    },
+    {
+      "id": "request-budget",
+      "name": "Candle's request limit",
+      "page": "your-candle-plan",
+      "what": "Background reads use at most half of each key's limit and say when they slow down. A trade or a turn never waits for them."
+    },
+    {
+      "id": "layouts",
+      "name": "Layouts",
+      "page": "make-it-yours",
+      "what": "layouts.toml holds your tabs and layouts of your own. The layout menu opens, closes, moves and resizes panes, a dragged border resizes, and a change stays on its tab until you save it as a layout.",
+      "palette": ["layout:menu","layout:saveAs","layout:reload"],
+      "doctor": ["layouts"],
+      "settings": ["layouts.toml tabs[].name","layouts.toml tabs[].layout","layouts.toml layouts.<name>.root","layouts.toml layouts.<name>.collapse","layouts.toml layouts.<name>.from","layouts.toml layouts.<name>.from_panes"]
+    },
+    {
+      "id": "tabs-shown",
+      "name": "Which tabs show",
+      "page": "make-it-yours",
+      "what": "Each tab is ticked on or off in settings ▾, and a tab ticked off keeps its layout.",
+      "settings": ["layouts.toml tabs[].shown"]
+    },
+    {
+      "id": "linked-panes",
+      "name": "Linked panes and pins",
+      "page": "make-it-yours",
+      "what": "One linked token runs through every pane: the agent moves it by showing a token, and you by picking one. A pin holds a tab's token pane on its token; up to three.",
+      "palette": ["pin"]
+    },
+    {
+      "id": "pop-out",
+      "name": "Pop-out",
+      "page": "make-it-yours",
+      "what": "ctrl-p moves the focused pane into a tmux or cmux split of its own, attached to the same core; elsewhere it gives the command to copy. A popped view approves nothing, and the pane comes back when it closes.",
+      "keys": ["popOut"],
+      "subcommands": ["view --pane"]
+    },
+    {
+      "id": "themes",
+      "name": "Themes",
+      "page": "make-it-yours",
+      "what": "Candle dark, Candle light, Terminal (your terminal's own colours), and your own in the themes folder, naming only what they change. Each is checked for contrast when it loads.",
+      "palette": ["theme:none"],
+      "doctor": ["theme"],
+      "settings": ["config.toml theme.name","theme base","theme page","theme bar","theme pane","theme border","theme selected","theme focus","theme bright","theme text","theme dim","theme heading","theme attention","theme good","theme bad","theme control","theme control_bg","theme control_hover","theme bad_bg","theme paper_bg","theme reply.heading","theme reply.bright","theme reply.dim","theme reply.code","theme reply.quote"]
+    },
+    {
+      "id": "agent-view",
+      "name": "The agent changes the view",
+      "page": "make-it-yours",
+      "what": "Ask the agent to switch tabs, build a layout (a preview you keep with a click), add a tab, filter Signals, search the Journal or make a theme, each with an undo.",
+      "tools": ["harness_view"]
+    },
+    {
+      "id": "away",
+      "name": "While you were away",
+      "page": "while-you-were-away",
+      "what": "After ten minutes or more away, a note at the top of the agent pane says what happened: trades with and without a card, P&L since you left, fills outside the Candle Harness, and your signals. show all opens every section.",
+      "panes": ["away"],
+      "palette": ["away"],
+      "doctor": ["away"]
+    },
+    {
+      "id": "engine-differences",
+      "name": "What each engine can do",
+      "page": "engines",
+      "what": "Where the five engines differ: file reads, shell lists, web tools, sign-ins held back, and the model each names."
+    },
+    {
+      "id": "scorecard",
+      "name": "The scorecard",
+      "page": "engines",
+      "what": "A set of short agent conversations against stand-in Candle and Hacc servers, scored from what the core recorded, run on each engine."
+    },
+    {
+      "id": "install",
+      "name": "Installing",
+      "page": "install",
+      "what": "One line installs candle-harness beside Candle's CLI, checking the checksum and signature first. With no CLI, it offers to install Candle's too."
+    },
+    {
+      "id": "version",
+      "name": "The version",
+      "page": "install",
+      "what": "candle-harness version prints the version and the commit it was built from.",
+      "subcommands": ["version"]
+    },
+    {
+      "id": "candle-cli",
+      "name": "The Candle Harness and Candle's CLI",
+      "page": "install",
+      "what": "The Candle Harness runs your own candle CLI as the profile setup signed in, and Candle's MCP server for each agent key.",
+      "doctor": ["candle"],
+      "settings": ["config.toml candle.cliPath","config.toml candle.profile","config.toml candle.rpcUrl","config.toml candle.mcp.route","config.toml candle.mcp.path"]
+    },
+    {
+      "id": "doctor",
+      "name": "The doctor",
+      "page": "troubleshooting",
+      "what": "candle-harness doctor checks the setup and says exactly what to fix. --offline skips Candle and the engines' turns.",
+      "subcommands": ["doctor"],
+      "doctor": ["config","paths","state","core"]
+    },
+    {
+      "id": "debug",
+      "name": "The debug switch",
+      "page": "troubleshooting",
+      "what": "A debug switch that's on is named by the doctor, the status bar and the journal.",
+      "doctor": ["debug"]
+    },
+    {
+      "id": "core",
+      "name": "The core",
+      "page": "developers/architecture",
+      "what": "One core for each account on this machine holds the keys and state and signs. Every view and engine attaches to it over a private socket. candle-harness core runs it headless, and candle-harness mcp is the server an engine reaches it through.",
+      "subcommands": ["core","mcp"]
+    },
+    {
+      "id": "attach-protocol",
+      "name": "The attach protocol",
+      "page": "developers/attach-protocol",
+      "what": "The socket protocol views and engines use: requests, topics and events."
+    }
+  ]
+}

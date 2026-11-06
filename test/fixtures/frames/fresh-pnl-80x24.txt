@@ -1,0 +1,50 @@
+ agent-a ▾  PAPER  today $0.00 / $100.00  ● 0 cards waiting      ctrl-x ×2 kill 
+ 1 Tra  2 Coc  3 Tre  4 Sig  5 P&L  6 Res  7 Jou  8 Per   settings ▾            
+╭─ P&L · live, Candle's books ──────────────────────────────────────── 24h ▾ ──╮
+│ ◂  pnl  ▸   1/4 · ←/→                                                        │
+│Reading each agent's P&L from Candle: its figures show here within a minute.  │
+│Your P&L starts with your first fill.                                         │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+╰─ ⇱ ──────────────────────────────────────────────────────────────────────────╯
+╭─ agent-a ─────────────────────────────────────────── Claude Code · sonnet ▾ ─╮
+│agent-a here. I read Candle and its market data for you, and propose trades   │
+│you approve with one key.                                                     │
+│Try asking: "how am I doing today?"                                           │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+                                                                                
+› type a command or ask the agent                    ctrl-k palette    ? help   
+
+--- colours ---
+0: 6cb6ff/16263a×11 f6f8fb/2a2f3a×7 ffffff/0e1115×1 959dab/0e1115×6 f6f8fb/0e1115×5 959dab/0e1115×10 ffffff/0e1115×2 959dab/0e1115×17 ffffff/0e1115×5 ff5c5c/3a1619×16
+1: ffffff/0b0d10×1 6cb6ff/0b0d10×5 ffffff/0b0d10×2 6cb6ff/0b0d10×5 ffffff/0b0d10×2 6cb6ff/0b0d10×5 ffffff/0b0d10×2 6cb6ff/0b0d10×5 ffffff/0b0d10×2 f6f8fb/0b0d10+9×5 ffffff/0b0d10×2 6cb6ff/0b0d10×5 ffffff/0b0d10×2 6cb6ff/0b0d10×5 ffffff/0b0d10×2 6cb6ff/0b0d10×5 ffffff/0b0d10×2 6cb6ff/16263a×12 ffffff/0b0d10×11
+2: 252a33/111419×2 b392f0/111419×28 252a33/111419×40 6cb6ff/16263a×7 252a33/111419×3
+3: 252a33/111419×1 6cb6ff/16263a×3 dde2ea/111419×5 6cb6ff/16263a×3 959dab/111419×11 ffffff/111419×56 252a33/111419×1
+4: 252a33/111419×1 959dab/111419×76 ffffff/111419×2 252a33/111419×1
+5: 252a33/111419×1 959dab/111419×37 ffffff/111419×41 252a33/111419×1
+6: 252a33/111419×1 ffffff/111419×78 252a33/111419×1
+7: 252a33/111419×1 ffffff/111419×78 252a33/111419×1
+8: 252a33/111419×1 ffffff/111419×78 252a33/111419×1
+9: 252a33/111419×1 ffffff/111419×78 252a33/111419×1
+10: 252a33/111419×1 ffffff/111419×78 252a33/111419×1
+11: 252a33/111419×1 ffffff/111419×78 252a33/111419×1
+12: 252a33/111419×1 ffffff/111419×78 252a33/111419×1
+13: 252a33/111419×1 ffffff/111419×78 252a33/111419×1
+14: 252a33/111419×1 ffffff/111419×78 252a33/111419×1
+15: 252a33/111419×2 6cb6ff/16263a×3 252a33/111419×75
+16: 32fe9f/111419×2 b392f0/111419×9 32fe9f/111419×43 6cb6ff/16263a×24 32fe9f/111419×2
+17: 32fe9f/111419×1 dde2ea/111419×75 ffffff/111419×3 32fe9f/111419×1
+18: 32fe9f/111419×1 dde2ea/111419×25 ffffff/111419×53 32fe9f/111419×1
+19: 32fe9f/111419×1 dde2ea/111419×35 ffffff/111419×43 32fe9f/111419×1
+20: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
+21: 32fe9f/111419×80
+22: 959dab/0b0d10×1 ffffff/0b0d10×79
+23: f6f8fb/0e1115×2 959dab/0e1115×31 ffffff/0e1115×19 6cb6ff/16263a×16 959dab/0e1115×2 6cb6ff/16263a×8 959dab/0e1115×2

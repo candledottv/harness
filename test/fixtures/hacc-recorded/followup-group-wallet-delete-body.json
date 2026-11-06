@@ -1,0 +1,19 @@
+{
+  "name": "followup-group-wallet-delete-body",
+  "method": "DELETE",
+  "route": "/v1/me/groups/352183/wallets",
+  "query": {},
+  "body": {
+    "chain": "solana",
+    "address": "HaccFake1111111111111111111111111111111111N"
+  },
+  "status": 404,
+  "ms": 127,
+  "bytes": 102,
+  "contentType": "application/json; charset=utf-8",
+  "answer": {
+    "message": "Route DELETE:/v1/me/groups/352183/wallets not found",
+    "error": "Not Found",
+    "statusCode": 404
+  }
+}

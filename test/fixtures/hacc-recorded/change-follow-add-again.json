@@ -1,0 +1,27 @@
+{
+  "name": "change-follow-add-again",
+  "method": "POST",
+  "route": "/v1/me/follows",
+  "query": {},
+  "body": {
+    "chain": "solana",
+    "address": "HaccFake1111111111111111111111111111111111G"
+  },
+  "status": 201,
+  "ms": 132,
+  "bytes": 266,
+  "contentType": "application/json; charset=utf-8",
+  "answer": {
+    "follow": {
+      "id": 5,
+      "user_address": "HaccFake11111111111111111111111111111111112",
+      "wallet_id": 705237,
+      "chain": "solana",
+      "address": "HaccFake1111111111111111111111111111111111G",
+      "heat": "live",
+      "paused_reason": null,
+      "paused_at": null,
+      "created_at": "2026-10-29T02:54:20.625Z"
+    }
+  }
+}

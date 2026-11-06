@@ -1,0 +1,12 @@
+{
+  "name": "filter-event-kind",
+  "query": {
+    "event_kind": "confluence"
+  },
+  "closed": {
+    "code": 1006,
+    "reason": ""
+  },
+  "frames": [],
+  "frameCount": 0
+}

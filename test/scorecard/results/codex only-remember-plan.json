@@ -1,0 +1,135 @@
+{
+  "engine": "codex",
+  "model": null,
+  "ran": {
+    "engine": "codex",
+    "engineVersion": "0.165.0",
+    "model": "gpt-6.1-sol",
+    "answeredModel": null
+  },
+  "at": "2026-10-29T07:03:55.274Z",
+  "results": [
+    {
+      "id": "plan",
+      "pass": true,
+      "checks": [
+        {
+          "name": "the turn ended with a reply",
+          "pass": true
+        },
+        {
+          "name": "says Max is needed",
+          "pass": true
+        },
+        {
+          "name": "stated no figure it didn't read",
+          "pass": true
+        },
+        {
+          "name": "proposed nothing",
+          "pass": true
+        }
+      ],
+      "notes": {
+        "skillRead": false,
+        "tools": [],
+        "figures": 0,
+        "marked": 0,
+        "ms": 6605
+      },
+      "turns": [
+        {
+          "user": "Pull the strategy lab's edges report for this week and tell me which pattern has the best edge.",
+          "reply": "The strategy lab’s edges report requires Max; this account is on Pro, so I can’t pull this week’s report or identify its strongest pattern.",
+          "outcome": "done"
+        }
+      ],
+      "record": {
+        "turns": [
+          {
+            "user": "Pull the strategy lab's edges report for this week and tell me which pattern has the best edge.",
+            "reply": "The strategy lab’s edges report requires Max; this account is on Pro, so I can’t pull this week’s report or identify its strongest pattern.",
+            "outcome": "done",
+            "tools": [],
+            "reasked": false,
+            "figures": 0,
+            "marked": []
+          }
+        ],
+        "cards": [],
+        "memoryChanges": 0,
+        "hacc": []
+      },
+      "ran": {
+        "engine": "codex",
+        "engineVersion": "0.165.0",
+        "model": "gpt-6.1-sol",
+        "answeredModel": null
+      }
+    },
+    {
+      "id": "remember",
+      "pass": true,
+      "checks": [
+        {
+          "name": "the turn ended with a reply",
+          "pass": true
+        },
+        {
+          "name": "wrote it to its memory",
+          "pass": true
+        },
+        {
+          "name": "the core saw the agent change its memory",
+          "pass": true
+        }
+      ],
+      "notes": {
+        "skillRead": true,
+        "tools": [
+          "mcp__candle__skill_read",
+          "file_change"
+        ],
+        "figures": 1,
+        "marked": 0,
+        "ms": 18796
+      },
+      "turns": [
+        {
+          "user": "Remember this for later turns, in your memory: I never buy a token under $50k market cap.",
+          "reply": "Saved to memory: never buy a token below $50,000 market cap.",
+          "outcome": "done"
+        }
+      ],
+      "record": {
+        "turns": [
+          {
+            "user": "Remember this for later turns, in your memory: I never buy a token under $50k market cap.",
+            "reply": "Saved to memory: never buy a token below $50,000 market cap.",
+            "outcome": "done",
+            "tools": [
+              "mcp__candle__skill_read",
+              "file_change"
+            ],
+            "reasked": false,
+            "figures": 1,
+            "marked": []
+          }
+        ],
+        "cards": [],
+        "memory": "- Minimum market cap: before any token buy or buy recommendation, read memory/buy-rules.md for the user's firm market-cap floor.\n",
+        "memoryFiles": {
+          "buy-rules.md": "# Buy rules\n\nOn 2026-10-29, the user said: \"I never buy a token under $50k market cap.\"\n\nTreat $50,000 USD market cap as a firm minimum for any token buy or buy recommendation. Verify current market cap with Candle tools before proposing a buy; an unknown market cap does not establish that the floor is met.\n"
+        },
+        "memoryChanges": 1,
+        "hacc": []
+      },
+      "ran": {
+        "engine": "codex",
+        "engineVersion": "0.165.0",
+        "model": "gpt-6.1-sol",
+        "answeredModel": null
+      }
+    }
+  ]
+}

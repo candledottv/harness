@@ -1,0 +1,24 @@
+{
+  "tool": "candle_get_wallets",
+  "args": {},
+  "ms": 254,
+  "outcome": {
+    "kind": "ok",
+    "result": {
+      "success": true,
+      "account": "WalletFake111111111111111111111111111111111",
+      "username": "fake-agent",
+      "wallets": {
+        "solana": {
+          "address": "WalletFake111111111111111111111111111111111",
+          "delegated": true
+        },
+        "evm": {
+          "address": "0x00000000000000000000000000000000000Fa4e1",
+          "delegated": true
+        }
+      },
+      "embeddedWalletPermission": "denied"
+    }
+  }
+}

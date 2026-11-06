@@ -1,0 +1,20 @@
+{
+  "command": "swap status <buy id> --kind trade --json",
+  "exit": 0,
+  "stdout": {
+    "job": {
+      "status": "built",
+      "clientTradeId": "00000000-0000-4000-8000-000000000007",
+      "chain": "solana",
+      "side": "buy",
+      "mint": "TokenFake3zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz",
+      "quoteAsset": "sol",
+      "amountRaw": "1000000",
+      "createdAt": 1790000000000,
+      "updatedAt": 1790000000000
+    },
+    "success": true,
+    "kind": "trade",
+    "clientTradeId": "00000000-0000-4000-8000-000000000007"
+  }
+}

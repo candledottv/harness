@@ -1,0 +1,65 @@
+{
+  "command": "candle wallet close-empty --wallet <tee address> --client-trade-id <id> --yes --json (agent-a's key)",
+  "exit": 0,
+  "stdout": {
+    "success": true,
+    "status": "completed",
+    "clientTradeId": "s5-close-20261101132617",
+    "wallet": "TeeFake111111111111111111111111111111111111",
+    "linkedWalletId": "teefakeid1",
+    "keep": [],
+    "closed": [
+      {
+        "mint": "TokenFake3zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz",
+        "account": "TokenAcctFake111111111111111111111111111111",
+        "lamports": "1488440",
+        "tokenProgram": "spl-token"
+      },
+      {
+        "mint": "TokenFake4zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz",
+        "account": "TokenAcctFake211111111111111111111111111111",
+        "lamports": "1488440",
+        "tokenProgram": "spl-token"
+      },
+      {
+        "mint": "TokenFake5zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz",
+        "account": "TokenAcctFake311111111111111111111111111111",
+        "lamports": "1488440",
+        "tokenProgram": "spl-token"
+      },
+      {
+        "mint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+        "account": "TokenAcctFake411111111111111111111111111111",
+        "lamports": "1488440",
+        "tokenProgram": "spl-token"
+      }
+    ],
+    "transactions": [
+      {
+        "index": 0,
+        "signature": "SigFake111111111111111111111111111111111111111111111111111111111111111111111111111111111",
+        "accounts": [
+          "TokenAcctFake111111111111111111111111111111",
+          "TokenAcctFake211111111111111111111111111111",
+          "TokenAcctFake311111111111111111111111111111",
+          "TokenAcctFake411111111111111111111111111111"
+        ],
+        "lamports": "5953760"
+      }
+    ],
+    "signatures": [
+      "SigFake111111111111111111111111111111111111111111111111111111111111111111111111111111111"
+    ],
+    "lamportsRecovered": "5953760",
+    "solRecovered": "0.00595376",
+    "feeLamports": "5000",
+    "netLamports": "5948760",
+    "netSol": "0.00594876",
+    "failed": [],
+    "unattempted": [],
+    "notClosed": [],
+    "skipped": [],
+    "remaining": 0
+  },
+  "stderr": "Close 4 empty token accounts on the TEE wallet TeeFake111111111111111111111111111111111111\nRent returned to that same wallet: 0.00595376 SOL in 1 transaction, network fee about 0.000005 SOL, net 0.00594876 SOL\n  TokenFake3zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz  spl-token  0.00148844 SOL\n  TokenFake4zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz  spl-token  0.00148844 SOL\n  TokenFake5zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz  spl-token  0.00148844 SOL\n  EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v  spl-token  0.00148844 SOL\nOperation: s5-close-20261101132617\n"
+}

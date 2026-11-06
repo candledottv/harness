@@ -1,0 +1,14 @@
+{
+  "command": "candle update --to cli-v0.13.5 --json",
+  "exit": 0,
+  "stdout": {
+    "current": "0.12.0",
+    "latest": "0.13.5",
+    "updated": true,
+    "path": "~/.local/bin/candle",
+    "helper": {
+      "name": "candle-fido2",
+      "updated": true
+    }
+  }
+}

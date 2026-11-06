@@ -1,0 +1,62 @@
+ ▲ candle  agent-a ▾  LIVE  today $12.00 / $100.00  exposure $412.50  P&L 24h +$3.40  ● 1 card waiting   ctrl-x ×2 kill 
+ 1 Trade  2 Cockpit  3 Trending  4 Signals  5 P&L  6 Research  7 Journal  8 Perps   settings ▾                          
+   ╭─ wallets ──────────────────────────────────────────────────────────────────────────────────────────────────────╮   
+╭─ │                                                                                                                │──╮
+│ y│ ⌕ bot-2▏                                                                         4 picked    name 4…    clear  │  │
+│  │                                                                                                                │  │
+│  │   wallet              agents              balance                 tokens    approvals                          │  │
+│  │                                                                                                                │  │
+│  │ ◪ bots · names starting bot- · 24 wallets · 2.675 SOL ≈$401                                                    │  │
+│  │   ☐ bot-20            agent-a               0.725 SOL  ≈$108.75   0 tokens  asks every time    ⧉   name        │  │
+│  │   ☑ bot-21            agent-a                0.45 SOL   ≈$67.50   0 tokens  asks every time    ⧉   name        │ ─╯
+│  │   ☑ bot-22            agent-a               0.775 SOL  ≈$116.25   0 tokens  asks every time    ⧉   name        │   
+│  │   ☑ bot-23            agent-a                 0.5 SOL   ≈$75.00   0 tokens  asks every time    ⧉   name        │──╮
+│  │   ☑ bot-24            agent-a               0.225 SOL   ≈$33.75   0 tokens  asks every time    ⧉   name        │  │
+│  │                                                                                                                │  │
+│  │                                                                                                                │  │
+│ 1│                                                                                                                │ ─╯
+│ ▌│                                                                                                                │   
+│ ▌│                                                                                                                │──╮
+│ ▌│                                                                                                                │  │
+│ ▌│                                                                                                                │  │
+│  │                                                                                                                │  │
+│  │                                                                                                                │  │
+│  │                                                                                                                │  │
+│  │                                                                                                                │ ─╯
+│  │                                                                                                                │   
+│  │                                                                                                                │──╮
+╰──│ ↑/↓ a wallet · ⏎ picks or unpicks it · ⏎ on a group picks all of it · → names them · esc closes                │  │
+   ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯  │
+› type a command or ask the a…  ⏎ approve   ctrl-k palette    ? help    ╰─ ⇱ ──────────────────────────────────────────╯
+
+--- colours ---
+0: ffffff/0e1115×1 f6f8fb/0e1115×8 ffffff/0e1115×1 6cb6ff/16263a×11 0b0d10/3ddc84×6 ffffff/0e1115×1 959dab/0e1115×6 f6f8fb/0e1115×6 959dab/0e1115×10 ffffff/0e1115×2 959dab/0e1115×9 f6f8fb/0e1115×7 ffffff/0e1115×2 959dab/0e1115×8 3ddc84/0e1115×6 ffffff/0e1115×2 f5a524/0e1115×16 ffffff/0e1115×2 ff5c5c/3a1619×16
+1: ffffff/0b0d10×1 f6f8fb/0b0d10+9×7 ffffff/0b0d10×2 6cb6ff/0b0d10×9 ffffff/0b0d10×2 6cb6ff/0b0d10×10 ffffff/0b0d10×2 6cb6ff/0b0d10×9 ffffff/0b0d10×2 6cb6ff/0b0d10×5 ffffff/0b0d10×2 6cb6ff/0b0d10×10 ffffff/0b0d10×2 6cb6ff/0b0d10×9 ffffff/0b0d10×2 6cb6ff/0b0d10×7 ffffff/0b0d10×2 6cb6ff/16263a×12 ffffff/0b0d10×25
+2: ffffff/0b0d10×3 32fe9f/111419×2 b392f0/111419×9 32fe9f/111419×103 ffffff/0b0d10×3
+3: 32fe9f/111419×2 b392f0/111419×1 32fe9f/111419×1 ffffff/111419×112 32fe9f/111419×1 252a33/111419×3
+4: 32fe9f/111419×1 ffffff/111419×1 959dab/111419×1 32fe9f/111419×1 ffffff/111419×1 f6f8fb/111419×7 32fe9f/111419×1 dde2ea/111419×73 f6f8fb/111419×11 0b0d10/6cb6ff×9 dde2ea/111419×2 6cb6ff/16263a×7 ffffff/111419×1 32fe9f/111419×1 ffffff/111419×2 252a33/111419×1
+5: 32fe9f/111419×1 ffffff/111419×2 32fe9f/111419×1 ffffff/111419×112 32fe9f/111419×1 ffffff/111419×2 252a33/111419×1
+6: 32fe9f/111419×1 ffffff/111419×1 dde2ea/111419×1 32fe9f/111419×1 ffffff/111419×1 959dab/111419×94 ffffff/111419×17 32fe9f/111419×1 ffffff/111419×2 252a33/111419×1
+7: 32fe9f/111419×1 ffffff/111419×1 dde2ea/111419×1 32fe9f/111419×1 ffffff/111419×112 32fe9f/111419×1 ffffff/111419×2 252a33/111419×1
+8: 32fe9f/111419×1 ffffff/111419×1 dde2ea/111419×1 32fe9f/111419×1 ffffff/111419×1 f6f8fb/111419×2 b392f0/111419×4 959dab/111419×53 ffffff/111419×52 32fe9f/111419×1 ffffff/111419×2 252a33/111419×1
+9: 32fe9f/111419×1 ffffff/111419×1 dde2ea/111419×1 32fe9f/111419×1 ffffff/111419×1 f6f8fb/111419×22 959dab/111419×20 dde2ea/111419×24 959dab/111419×28 6cb6ff/16263a×3 dde2ea/111419×1 6cb6ff/16263a×6 ffffff/111419×7 32fe9f/111419×1 ffffff/111419×2 252a33/111419×1
+10: 32fe9f/111419×1 ffffff/111419×1 dde2ea/111419×1 32fe9f/111419×1 ffffff/111419×1 f6f8fb/111419×22 959dab/111419×20 dde2ea/111419×24 959dab/111419×28 6cb6ff/16263a×3 dde2ea/111419×1 6cb6ff/16263a×6 ffffff/111419×7 32fe9f/111419×1 959dab/111419×1 252a33/111419×2
+11: 32fe9f/111419×1 ffffff/111419×1 dde2ea/111419×1 32fe9f/111419×1 ffffff/111419×1 f6f8fb/111419×22 959dab/111419×20 dde2ea/111419×24 959dab/111419×28 6cb6ff/16263a×3 dde2ea/111419×1 6cb6ff/16263a×6 ffffff/111419×7 32fe9f/111419×1 ffffff/0b0d10×3
+12: 32fe9f/111419×1 ffffff/111419×1 dde2ea/111419×1 32fe9f/111419×1 ffffff/111419×1 f6f8fb/111419×22 959dab/111419×20 dde2ea/111419×24 959dab/111419×28 6cb6ff/16263a×3 dde2ea/111419×1 6cb6ff/16263a×6 ffffff/111419×7 32fe9f/111419×1 252a33/111419×3
+13: 32fe9f/111419×1 ffffff/111419×1 dde2ea/111419×1 32fe9f/111419×1 ffffff/111419×1 f6f8fb/1d2430×22 959dab/1d2430×20 dde2ea/1d2430×24 959dab/1d2430×28 6cb6ff/16263a×3 dde2ea/1d2430×1 6cb6ff/16263a×6 ffffff/1d2430×6 ffffff/111419×1 32fe9f/111419×1 ffffff/111419×2 252a33/111419×1
+14: 32fe9f/111419×1 ffffff/111419×1 dde2ea/111419×1 32fe9f/111419×1 ffffff/111419×112 32fe9f/111419×1 ffffff/111419×2 252a33/111419×1
+15: 32fe9f/111419×1 ffffff/111419×2 32fe9f/111419×1 ffffff/111419×112 32fe9f/111419×1 ffffff/111419×2 252a33/111419×1
+16: 32fe9f/111419×1 ffffff/111419×1 959dab/111419×1 32fe9f/111419×1 ffffff/111419×112 32fe9f/111419×1 959dab/111419×1 252a33/111419×2
+17: 32fe9f/111419×1 ffffff/111419×1 f5a524/111419×1 32fe9f/111419×1 ffffff/111419×112 32fe9f/111419×1 ffffff/0b0d10×3
+18: 32fe9f/111419×1 ffffff/111419×1 f5a524/111419×1 32fe9f/111419×1 ffffff/111419×112 32fe9f/111419×1 252a33/111419×3
+19: 32fe9f/111419×1 ffffff/111419×1 f5a524/111419×1 32fe9f/111419×1 ffffff/111419×112 32fe9f/111419×1 ffffff/111419×2 252a33/111419×1
+20: 32fe9f/111419×1 ffffff/111419×1 f5a524/111419×1 32fe9f/111419×1 ffffff/111419×112 32fe9f/111419×1 ffffff/111419×2 252a33/111419×1
+21: 32fe9f/111419×1 ffffff/111419×2 32fe9f/111419×1 ffffff/111419×112 32fe9f/111419×1 ffffff/111419×2 252a33/111419×1
+22: 32fe9f/111419×1 ffffff/111419×2 32fe9f/111419×1 ffffff/111419×112 32fe9f/111419×1 ffffff/111419×2 252a33/111419×1
+23: 32fe9f/111419×1 ffffff/111419×2 32fe9f/111419×1 ffffff/111419×112 32fe9f/111419×1 ffffff/111419×2 252a33/111419×1
+24: 32fe9f/111419×1 ffffff/111419×2 32fe9f/111419×1 ffffff/111419×112 32fe9f/111419×1 959dab/111419×1 252a33/111419×2
+25: 32fe9f/111419×1 ffffff/111419×2 32fe9f/111419×1 ffffff/111419×112 32fe9f/111419×1 ffffff/0b0d10×3
+26: 32fe9f/111419×1 ffffff/111419×2 32fe9f/111419×1 ffffff/111419×112 32fe9f/111419×1 252a33/111419×3
+27: 32fe9f/111419×4 ffffff/111419×1 959dab/111419×95 ffffff/111419×16 32fe9f/111419×1 ffffff/111419×2 252a33/111419×1
+28: 959dab/0b0d10×1 ffffff/0b0d10×2 32fe9f/111419×114 ffffff/111419×2 252a33/111419×1
+29: f6f8fb/0e1115×2 959dab/0e1115×28 ffffff/0e1115×2 dde2ea/0e1115×1 959dab/0e1115×10 6cb6ff/16263a×16 959dab/0e1115×2 6cb6ff/16263a×8 959dab/0e1115×2 ffffff/0b0d10×1 252a33/111419×2 6cb6ff/16263a×3 252a33/111419×43

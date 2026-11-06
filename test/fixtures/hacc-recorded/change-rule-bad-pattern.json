@@ -1,0 +1,17 @@
+{
+  "name": "change-rule-bad-pattern",
+  "method": "POST",
+  "route": "/v1/me/rules",
+  "query": {},
+  "body": {
+    "name": "fake-name-16",
+    "pattern": "nonsense"
+  },
+  "status": 400,
+  "ms": 128,
+  "bytes": 143,
+  "contentType": "application/json; charset=utf-8",
+  "answer": {
+    "error": "pattern: Invalid enum value. Expected 'new_ticker' | 'confluence' | 'large_move' | 'dormancy' | 'distribution', received 'nonsense'"
+  }
+}

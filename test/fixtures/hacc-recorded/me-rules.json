@@ -1,0 +1,13 @@
+{
+  "name": "me-rules",
+  "method": "GET",
+  "route": "/v1/me/rules",
+  "query": {},
+  "status": 200,
+  "ms": 131,
+  "bytes": 12,
+  "contentType": "application/json; charset=utf-8",
+  "answer": {
+    "rules": []
+  }
+}

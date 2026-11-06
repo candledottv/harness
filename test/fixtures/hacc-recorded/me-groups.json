@@ -1,0 +1,13 @@
+{
+  "name": "me-groups",
+  "method": "GET",
+  "route": "/v1/me/groups",
+  "query": {},
+  "status": 200,
+  "ms": 137,
+  "bytes": 13,
+  "contentType": "application/json; charset=utf-8",
+  "answer": {
+    "groups": []
+  }
+}

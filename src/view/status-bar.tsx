@@ -1,0 +1,166 @@
+// The status bar: always visible. The active agent and the mode are
+// clickable, and so is the kill switch, where one click kills; while paused, resume is.
+// Every clickable segment is a chip: the agent and resume blue, the mode a solid block in its
+// colour, kill the red one. Exposure and the P&L window's figure show "—" when the core has no figure,
+// never 0, and say when the figure is stale. The P&L names its window.
+import { Chip, type ChipKind } from "./chip"
+import type { PnlFigure, StatusView } from "./store"
+import { C, money, shortDuration, signedMoney } from "./theme"
+
+/** Prices older than this are marked stale in the status bar. */
+export const STALE_MS = 60_000
+
+export interface StatusBarProps {
+  width: number
+  connected: boolean
+  status: StatusView | undefined
+  cardsWaiting: number
+  killArmed: boolean
+  /** Positions, wallets and activity show only the active agent. */
+  oneAgent?: boolean
+  /** The view's clock: the P&L figure says "since 09:14" today, a date before. */
+  now?: number
+  onAgent: () => void
+  onMode: () => void
+  onKill: () => void
+  onResume: () => void
+}
+
+interface SegmentSpec {
+  key: string
+  text: string
+  fg: string
+  bg?: string
+  onClick?: () => void
+  /** A clickable segment's chip, when it isn't a plain control (a solid block in its own colour, or kill). */
+  chip?: ChipKind | { fg: string; bg: string }
+  /** 0 is always shown; higher numbers go first when the bar is too narrow. */
+  priority: number
+  /** Takes the leftover width, pushing what follows to the right. */
+  spacer?: boolean
+  /** A figure with its label: the figure in `fg`, the words dim. */
+  figure?: boolean
+}
+
+function Segment(props: { spec: SegmentSpec }) {
+  const { spec } = props
+  if (spec.spacer) return <box flexGrow={1} />
+  if (spec.onClick) {
+    const kind = typeof spec.chip === "string" ? spec.chip : "control"
+    return <Chip label={spec.text} kind={kind} onClick={spec.onClick} {...(typeof spec.chip === "object" ? { colours: spec.chip } : {})} />
+  }
+  return (
+    <box paddingLeft={1} paddingRight={1} flexShrink={0} flexDirection="row" backgroundColor={spec.bg ?? C.bar}>
+      {spec.figure ? (
+        figureParts(spec.text, spec.fg).map((p, i) => (
+          <text key={i} fg={p.fg}>
+            {p.text}
+          </text>
+        ))
+      ) : (
+        <text fg={spec.fg}>{spec.text}</text>
+      )}
+    </box>
+  )
+}
+
+/** "today $12.00 / $50.00": the first figure in its colour, the words around it dim. */
+export function figureParts(text: string, fg: string): { text: string; fg: string }[] {
+  const m = /\$[\d,.]+|[+-]\$[\d,.]+|—/.exec(text)
+  if (!m) return [{ text, fg: C.dim }]
+  return [
+    { text: text.slice(0, m.index), fg: C.dim },
+    { text: m[0], fg },
+    { text: text.slice(m.index + m[0].length), fg: C.dim },
+  ].filter((p) => p.text)
+}
+
+/** The segments that fit `width`, dropping the least important first; the kill switch always stays. */
+export function fitSegments<T extends { text: string; priority: number; spacer?: boolean }>(segments: T[], width: number): T[] {
+  // Plain segments and chips both take one cell of padding either side.
+  const cells = (s: T) => (s.spacer ? 0 : s.text.length + 2)
+  const kept = [...segments]
+  for (let p = Math.max(...segments.map((s) => s.priority)); p > 0 && kept.reduce((n, s) => n + cells(s), 0) > width; p--) {
+    for (let i = kept.length - 1; i >= 0 && kept.reduce((n, s) => n + cells(s), 0) > width; i--) if (kept[i]!.priority === p) kept.splice(i, 1)
+  }
+  return kept
+}
+
+/** The figures, as text, so tests and narrow layouts can read them without drawing. */
+export function statusFigures(status: StatusView | undefined, now = Date.now()): { spend: string; exposure: string; pnl: string } {
+  const agent = status?.agents.find((a) => a.name === status.activeAgent)
+  const spend = agent?.limits ? `today ${money(agent.spentTodayUsd ?? 0)} / ${money(agent.limits.perDayUsd)}` : "today —"
+  const stale = status?.pricesAgeMs != null && status.pricesAgeMs > STALE_MS ? ` (${shortDuration(status.pricesAgeMs)} old)` : ""
+  // In paper mode the figure is still the live wallets' (it was misread as paper's).
+  const label = status?.mode === "paper" ? "live exposure" : "exposure"
+  const exposure = status?.exposureUsd == null ? `${label} —` : `${label} ${money(status.exposureUsd)}${stale}`
+  return { spend, exposure, pnl: pnlWords(status?.pnl, status?.mode, now) }
+}
+
+/** A time the figure runs from: "09:14" today, "Oct 29 20:00" before. */
+function fromWords(from: number, now: number): string {
+  const d = new Date(from)
+  const clock = `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`
+  return new Date(now).toDateString() === d.toDateString() ? clock : `${d.toLocaleString("en-US", { month: "short" })} ${d.getDate()} ${clock}`
+}
+
+/**
+ * The P&L window's figure in words, as the status bar and the kill report say it: its window
+ * ("P&L 24h +$1.20"), or from when where the Candle Harness's samples start later ("P&L since 09:14"). It's always
+ * live, Candle's: in paper mode it says so, as exposure does.
+ */
+export function pnlWords(pnl: PnlFigure | null | undefined, mode?: "paper" | "live", now = Date.now()): string {
+  const name = mode === "paper" ? "live P&L" : "P&L"
+  if (!pnl) return `${name} —`
+  const window = pnl.short && pnl.from !== null ? `since ${fromWords(pnl.from, now)}` : pnl.label
+  // Candle priced a different number of positions at the window's two ends: the figure is ≈, and says why.
+  const partial = pnl.usd !== null && pnl.unpriced !== undefined
+  return `${name} ${window} ${pnl.usd === null ? "—" : `${partial ? "≈" : ""}${signedMoney(pnl.usd)}`}${partial ? ` (${pnl.unpriced} unpriced)` : ""}`
+}
+
+export function StatusBar(props: StatusBarProps) {
+  const { status } = props
+  const bar = (segments: SegmentSpec[]) => (
+    <box position="absolute" left={0} top={0} width={props.width} height={1} backgroundColor={C.bar} flexDirection="row">
+      {fitSegments(segments, props.width).map((spec) => (
+        <Segment key={spec.key} spec={spec} />
+      ))}
+    </box>
+  )
+  if (!props.connected || !status) {
+    return bar([
+      { key: "brand", text: "▲ candle", fg: C.hi, priority: 1 },
+      { key: "connecting", text: "connecting to the core…", fg: C.dim, priority: 0 },
+    ])
+  }
+  const figures = statusFigures(status, props.now)
+  const live = status.mode === "live"
+  const waiting = props.cardsWaiting
+  return bar([
+    { key: "brand", text: "▲ candle", fg: C.hi, priority: 5 },
+    { key: "agent", text: `${status.activeAgent}${props.oneAgent ? " · only" : ""} ▾`, fg: C.ctl, onClick: props.onAgent, priority: 0 },
+    { key: "mode", text: live ? "LIVE" : "PAPER", fg: live ? C.page : C.hi, chip: live ? { fg: C.page, bg: C.good } : { fg: C.hi, bg: C.paperBg }, onClick: props.onMode, priority: 0 },
+    { key: "spend", text: figures.spend, fg: C.hi, figure: true, priority: 2 },
+    { key: "exposure", text: figures.exposure, fg: C.hi, figure: true, priority: 4 },
+    { key: "pnl", text: figures.pnl, fg: status.pnl?.usd == null ? C.dim : status.pnl.usd >= 0 ? C.good : C.bad, figure: true, priority: 3 },
+    { key: "cards", text: `● ${waiting} card${waiting === 1 ? "" : "s"} waiting`, fg: waiting > 0 ? C.look : C.dim, priority: 1 },
+    ...(status.debugLoseNextReply ? [{ key: "debug", text: "DEBUG · next answer dropped", fg: C.page, bg: C.look, priority: 0 }] : []),
+    { key: "spacer", text: "", fg: C.bar, priority: 0, spacer: true },
+    ...(status.paused
+      ? [
+          // White on this red is 3:1, so PAUSED is dark on it (theme.test.ts).
+          { key: "paused", text: "PAUSED", fg: C.page, bg: C.bad, priority: 0 },
+          { key: "resume", text: "resume", fg: C.ctl, onClick: props.onResume, priority: 0 },
+        ]
+      : [
+          {
+            key: "kill",
+            text: props.killArmed ? "ctrl-x again to kill" : "ctrl-x ×2 kill",
+            fg: C.bad,
+            chip: props.killArmed ? { fg: C.page, bg: C.bad } : ("danger" as const),
+            onClick: props.onKill,
+            priority: 0,
+          },
+        ]),
+  ])
+}

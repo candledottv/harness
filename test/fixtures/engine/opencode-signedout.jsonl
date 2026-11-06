@@ -1,0 +1,67 @@
+{"id":"evt_1742ad21c001wsDe4zFeQKedVS","type":"server.connected","properties":{}}
+{"id":"evt_1742ad2ff002Z151Q4TEjIdi5s","type":"session.created","properties":{"sessionID":"ses_fixture","info":{"id":"ses_fixture","slug":"gentle-island","version":"1.19.4","projectID":"global","directory":"/tmp/candle-engine-fixture/research","path":"tmp/candle-engine-fixture/research","title":"candle engine","cost":0,"tokens":{"input":0,"output":0,"reasoning":0,"cache":{"read":0,"write":0}},"time":{"created":1792950326015,"updated":1792950326015}}}}
+{"id":"evt_1742ad308001B6KyMUXS0ZAltM","type":"session.updated","properties":{"sessionID":"ses_fixture","info":{"id":"ses_fixture","slug":"gentle-island","projectID":"global","directory":"/tmp/candle-engine-fixture/research","path":"tmp/candle-engine-fixture/research","title":"candle engine","agent":"build","model":{"id":"big-pickle","providerID":"opencode","variant":"default"},"version":"1.19.4","cost":0,"tokens":{"input":0,"output":0,"reasoning":0,"cache":{"read":0,"write":0}},"time":{"created":1792950326015,"updated":1792950326023}}}}
+{"id":"evt_1742ad30a001nasifZQRR37I6o","type":"message.updated","properties":{"sessionID":"ses_fixture","info":{"id":"msg_1742ad307001sXhfp958moJOa5","role":"user","sessionID":"ses_fixture","time":{"created":1792950326023},"agent":"build","model":{"providerID":"opencode","modelID":"big-pickle"}}}}
+{"id":"evt_1742ad30a0025piqfJTLGoDhhO","type":"message.part.updated","properties":{"sessionID":"ses_fixture","part":{"type":"text","text":"What's trending? Pick one and propose a 0.1 SOL buy, then save a note about it in your research folder. Quote the mint address of the token you picked in your final reply. (Your research folder is /tmp/candle-engine-fixture/research.)","messageID":"msg_1742ad307001sXhfp958moJOa5","sessionID":"ses_fixture","id":"prt_1742ad309001wNuVrA4QmIA2Br"},"time":1792950326026}}
+{"id":"evt_1742ad30b001O4kujZXCApovYo","type":"session.updated","properties":{"sessionID":"ses_fixture","info":{"id":"ses_fixture","slug":"gentle-island","projectID":"global","directory":"/tmp/candle-engine-fixture/research","path":"tmp/candle-engine-fixture/research","title":"candle engine","agent":"build","model":{"id":"big-pickle","providerID":"opencode","variant":"default"},"version":"1.19.4","cost":0,"tokens":{"input":0,"output":0,"reasoning":0,"cache":{"read":0,"write":0}},"time":{"created":1792950326015,"updated":1792950326027}}}}
+{"id":"evt_1742ad30d001b8CSu2yK0ulvmk","type":"session.status","properties":{"sessionID":"ses_fixture","status":{"type":"busy"}}}
+{"id":"evt_1742ad30e001rQgZhxhaw7S0rL","type":"message.updated","properties":{"sessionID":"ses_fixture","info":{"id":"msg_1742ad30e001G7t7o1tJoGV2cl","parentID":"msg_1742ad307001sXhfp958moJOa5","role":"assistant","mode":"build","agent":"build","path":{"cwd":"/tmp/candle-engine-fixture/research","root":"/"},"cost":0,"tokens":{"input":0,"output":0,"reasoning":0,"cache":{"read":0,"write":0}},"modelID":"big-pickle","providerID":"opencode","time":{"created":1792950326030},"sessionID":"ses_fixture"}}}
+{"id":"evt_1742ad34d001DqQREl06NWf5UI","type":"session.updated","properties":{"sessionID":"ses_fixture","info":{"id":"ses_fixture","slug":"gentle-island","projectID":"global","directory":"/tmp/candle-engine-fixture/research","path":"tmp/candle-engine-fixture/research","title":"candle engine","agent":"build","model":{"id":"big-pickle","providerID":"opencode","variant":"default"},"version":"1.19.4","summary":{"additions":0,"deletions":0,"files":0},"cost":0,"tokens":{"input":0,"output":0,"reasoning":0,"cache":{"read":0,"write":0}},"time":{"created":1792950326015,"updated":1792950326093}}}}
+{"id":"evt_1742ad34e001mAI4R1Ue6uHNx0","type":"session.diff","properties":{"sessionID":"ses_fixture","diff":[]}}
+{"id":"evt_1742ad34f00101JfshhEcqoLMM","type":"message.updated","properties":{"sessionID":"ses_fixture","info":{"role":"user","time":{"created":1792950326023},"agent":"build","model":{"providerID":"opencode","modelID":"big-pickle"},"id":"msg_1742ad307001sXhfp958moJOa5","sessionID":"ses_fixture","summary":{"diffs":[]}}}}
+{"id":"evt_1742ad354001nC2Gl38KSkoxvO","type":"plugin.added","properties":{"id":"core/config-reference"}}
+{"id":"evt_1742ad3550012cXCpGRLhS9h4O","type":"plugin.added","properties":{"id":"agent"}}
+{"id":"evt_1742ad355002bF2ewzpQnjzBao","type":"plugin.added","properties":{"id":"command"}}
+{"id":"evt_1742ad355003vu5783wtWs4UIk","type":"plugin.added","properties":{"id":"skill"}}
+{"id":"evt_1742ad3550040cxXhBM08Epgl3","type":"plugin.added","properties":{"id":"models-dev"}}
+{"id":"evt_1742ad355005v1TzlQfM6cvRu0","type":"plugin.added","properties":{"id":"config-agent"}}
+{"id":"evt_1742ad356001EXALjS5s6PyeaH","type":"plugin.added","properties":{"id":"config-command"}}
+{"id":"evt_1742ad35600201YHiqTeP2YapY","type":"plugin.added","properties":{"id":"config-skill"}}
+{"id":"evt_1742ad3560032upaGo6A9bGWlp","type":"plugin.added","properties":{"id":"alibaba"}}
+{"id":"evt_1742ad356004Yn8THLlmD1E64h","type":"plugin.added","properties":{"id":"amazon-bedrock"}}
+{"id":"evt_1742ad356005RiIT1A1Qfm10dG","type":"plugin.added","properties":{"id":"anthropic"}}
+{"id":"evt_1742ad356006eY6CM2ERteev6D","type":"plugin.added","properties":{"id":"azure-cognitive-services"}}
+{"id":"evt_1742ad358001poNlezAZrNQQ7I","type":"plugin.added","properties":{"id":"azure"}}
+{"id":"evt_1742ad3580024azzesGpzEwAxK","type":"plugin.added","properties":{"id":"cerebras"}}
+{"id":"evt_1742ad3580034wc91rIc3l02AC","type":"plugin.added","properties":{"id":"cloudflare-ai-gateway"}}
+{"id":"evt_1742ad358004t5yhdMYzY15J4A","type":"plugin.added","properties":{"id":"cloudflare-workers-ai"}}
+{"id":"evt_1742ad359001oHzCMw2xznpXvA","type":"plugin.added","properties":{"id":"cohere"}}
+{"id":"evt_1742ad359002fyuY90LRBvATpd","type":"plugin.added","properties":{"id":"deepinfra"}}
+{"id":"evt_1742ad35900348i8UellkNADTL","type":"plugin.added","properties":{"id":"gateway"}}
+{"id":"evt_1742ad359004HvAfRnNLnpuxtP","type":"plugin.added","properties":{"id":"github-copilot"}}
+{"id":"evt_1742ad359005bCNLDimHrWR19R","type":"plugin.added","properties":{"id":"gitlab"}}
+{"id":"evt_1742ad35900606K9zKANTW0soa","type":"plugin.added","properties":{"id":"google"}}
+{"id":"evt_1742ad359007uMacSPzrQTxui3","type":"plugin.added","properties":{"id":"google-vertex-anthropic"}}
+{"id":"evt_1742ad3590084G1MbL3MDmoTrg","type":"plugin.added","properties":{"id":"google-vertex"}}
+{"id":"evt_1742ad359009oxaClbaVyUR10Y","type":"plugin.added","properties":{"id":"groq"}}
+{"id":"evt_1742ad35d0011gAdblmrxXGyN2","type":"plugin.added","properties":{"id":"kilo"}}
+{"id":"evt_1742ad35d002wwU4gec1qg1X1a","type":"plugin.added","properties":{"id":"llmgateway"}}
+{"id":"evt_1742ad35e001S1c3tKVMzMtqkL","type":"plugin.added","properties":{"id":"mistral"}}
+{"id":"evt_1742ad35e002l0druxhmJ8fOrN","type":"plugin.added","properties":{"id":"nvidia"}}
+{"id":"evt_1742ad35e003EHjdFSApB9CPt0","type":"plugin.added","properties":{"id":"opencode"}}
+{"id":"evt_1742ad35e004gQo29WpxzAQHQu","type":"plugin.added","properties":{"id":"snowflake-cortex"}}
+{"id":"evt_1742ad35f001cCNdQh1d4uA37D","type":"plugin.added","properties":{"id":"openai-compatible"}}
+{"id":"evt_1742ad35f002wjFTbHfvOfe8yF","type":"plugin.added","properties":{"id":"openai"}}
+{"id":"evt_1742ad35f003KFjcUrTM8zyhSV","type":"plugin.added","properties":{"id":"openrouter"}}
+{"id":"evt_1742ad35f004X84H2VbhPgDAqG","type":"plugin.added","properties":{"id":"perplexity"}}
+{"id":"evt_1742ad35f00583o789H9qNMEYm","type":"plugin.added","properties":{"id":"sap-ai-core"}}
+{"id":"evt_1742ad35f006rasknXY29WTOWM","type":"plugin.added","properties":{"id":"togetherai"}}
+{"id":"evt_1742ad35f007AZCDfrVYmnckpE","type":"plugin.added","properties":{"id":"vercel"}}
+{"id":"evt_1742ad365001sYd8GexMsUxPMc","type":"session.status","properties":{"sessionID":"ses_fixture","status":{"type":"busy"}}}
+{"id":"evt_1742ad394001StFWzJufF1ogWV","type":"catalog.updated","properties":{}}
+{"id":"evt_1742ad394002ZPNPYw5J5K0oq0","type":"plugin.added","properties":{"id":"venice"}}
+{"id":"evt_1742ad39400354mEh2NPfXaCYZ","type":"plugin.added","properties":{"id":"xai"}}
+{"id":"evt_1742ad394004iU67J6fc4WIF63","type":"plugin.added","properties":{"id":"zenmux"}}
+{"id":"evt_1742ad394005rDEFwWamXDLPzR","type":"plugin.added","properties":{"id":"dynamic-provider"}}
+{"id":"evt_1742ad395001CM1LMLzKA8MLMR","type":"plugin.added","properties":{"id":"config-plugin"}}
+{"id":"evt_1742ad395002Fwt4VxnwCg8l4E","type":"plugin.added","properties":{"id":"config-provider"}}
+{"id":"evt_1742ad395003wv0I6AnPjEOTZr","type":"plugin.added","properties":{"id":"variant"}}
+{"id":"evt_1742ad3960017xFoaNaZwdPUUl","type":"reference.updated","properties":{}}
+{"id":"evt_1742ad3a00012V0DhP8mdSn1Kr","type":"session.error","properties":{"sessionID":"ses_fixture","error":{"name":"APIError","data":{"message":"Forbidden: Approval required for opencode.ai:443.\n\nReview and respond with:\n  sbx policy approval ls","statusCode":403,"isRetryable":false,"responseHeaders":{"content-length":"90","content-type":"text/plain"},"responseBody":"Approval required for opencode.ai:443.\n\nReview and respond with:\n  sbx policy approval ls\n","metadata":{"url":"https://opencode.ai/inference/openai/v1/chat/completions"}}}}}
+{"id":"evt_1742ad3a0002fkR3a8JonKNJeQ","type":"session.status","properties":{"sessionID":"ses_fixture","status":{"type":"idle"}}}
+{"id":"evt_1742ad3a0003yZg5ErLVi88gjD","type":"session.idle","properties":{"sessionID":"ses_fixture"}}
+{"id":"evt_1742ad3a1001FPPRRALBdLQbmN","type":"message.updated","properties":{"sessionID":"ses_fixture","info":{"id":"msg_1742ad30e001G7t7o1tJoGV2cl","parentID":"msg_1742ad307001sXhfp958moJOa5","role":"assistant","mode":"build","agent":"build","path":{"cwd":"/tmp/candle-engine-fixture/research","root":"/"},"cost":0,"tokens":{"input":0,"output":0,"reasoning":0,"cache":{"read":0,"write":0}},"modelID":"big-pickle","providerID":"opencode","time":{"created":1792950326030,"completed":1792950326177},"sessionID":"ses_fixture","error":{"name":"APIError","data":{"message":"Forbidden: Approval required for opencode.ai:443.\n\nReview and respond with:\n  sbx policy approval ls","statusCode":403,"isRetryable":false,"responseHeaders":{"content-length":"90","content-type":"text/plain"},"responseBody":"Approval required for opencode.ai:443.\n\nReview and respond with:\n  sbx policy approval ls\n","metadata":{"url":"https://opencode.ai/inference/openai/v1/chat/completions"}}}}}}
+{"id":"evt_1742ad3a2001fQJpPDKAGxV1bY","type":"session.status","properties":{"sessionID":"ses_fixture","status":{"type":"idle"}}}
+{"id":"evt_1742ad3a2002lRK7mEQ2jps6Qo","type":"session.idle","properties":{"sessionID":"ses_fixture"}}
+{"id":"evt_1742ad3a4001R5169k9J3NmOe2","type":"integration.updated","properties":{}}
+{"id":"evt_1742ad3cc001F3ViBCTG4Q15Lw","type":"catalog.updated","properties":{}}

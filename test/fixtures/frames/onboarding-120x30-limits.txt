@@ -1,0 +1,62 @@
+ ▲ candle   SETUP   nothing trades until your agent and its limits exist                                                
+                                                                                                                        
+ ╭─ Setup ──────────────────╮ ╭───────────────────────────────────────────────────────────────────────── step 3 of 5 ─╮ 
+ │                          │ │                                                                                       │ 
+ │ ✓ Welcome                │ │  Limits for agent-a, each with who holds it                                           │ 
+ │                          │ │                                                                                       │ 
+ │ ✓ Sign in to Candle      │ │  ▸ Use these limits      ⏎ uses them · ↓ to change a figure first                     │ 
+ │  Wall…1111 · candle-     │ │                                                                                       │ 
+ │                          │ │    who     limit                                                                      │ 
+ │ ✓ Connect your agent     │ │    Harness per trade     $10        a trade over it is refused                        │ 
+ │                          │ │    Harness per day       $50        agent-a's trades, from midnight                   │ 
+ │ ▸ Wallet and limits      │ │    Candle  key cap       $50.00 a day (UTC)   set on its key a step ago               │ 
+ │   – a vault, or not      │ │            The Candle Harness's day and Candle's on agent-a's key are both $50.00;    │ 
+ │   ✓ its key              │ │            the Candle Harness counts from local midnight, Candle from 00:00 UTC.      │ 
+ │   ✓ its wallet           │ │                                                                                       │ 
+ │   ▸ limits               │ │    Candle  per-asset caps, loss limits, circuit breaker                               │ 
+ │   · approvals            │ │            Candle holds these too, set in Candle's Agent Console. A loss limit or     │ 
+ │   · fund it, or paper    │ │            the breaker stops the key, sells included, until you resume it there.      │ 
+ │                          │ │                                                                                       │ 
+ │ · The tour               │ │  The Candle Harness's two go in config.toml under [agents.agent-a.limits]; settings   │ 
+ │                          │ │  ▾ → approvals shows every limit, with who holds it.                                  │ 
+ │ · Where to start         │ │                                                                                       │ 
+ │                          │ │                                                                                       │ 
+ │                          │ │                                                                                       │ 
+ │ about 3 minutes          │ │                                                                                       │ 
+ │ quit any time: it picks  │ │                                                                                       │ 
+ │ up where you stopped     │ │                                                                                       │ 
+ ╰──────────────────────────╯ ╰───────────────────────────────────────────────────────────────────────────────────────╯ 
+                                                                                                                        
+ ↑/↓ moves · ⏎ or a click picks · esc back                                                              ctrl-c ×2 quits 
+
+--- colours ---
+0: f6f8fb/0e1115×11 f6f8fb/2a2f3a×7 959dab/0e1115×54 ffffff/0e1115×48
+1: ffffff/0b0d10×120
+2: ffffff/0b0d10×1 252a33/111419×2 b392f0/111419×7 252a33/111419×19 ffffff/0b0d10×1 32fe9f/111419×74 959dab/111419×13 32fe9f/111419×2 ffffff/0b0d10×1
+3: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×26 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×87 32fe9f/111419×1 ffffff/0b0d10×1
+4: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 3ddc84/111419×1 dde2ea/111419×8 ffffff/111419×16 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 b392f0/111419×42 ffffff/111419×43 32fe9f/111419×1 ffffff/0b0d10×1
+5: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×26 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×87 32fe9f/111419×1 ffffff/0b0d10×1
+6: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 3ddc84/111419×1 dde2ea/111419×18 ffffff/111419×6 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 32fe9f/1d2430×2 f6f8fb/1d2430×16 dde2ea/1d2430×46 ffffff/1d2430×19 ffffff/111419×2 32fe9f/111419×1 ffffff/0b0d10×1
+7: ffffff/0b0d10×1 252a33/111419×1 dde2ea/111419×2 959dab/111419×19 ffffff/111419×5 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×87 32fe9f/111419×1 ffffff/0b0d10×1
+8: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×26 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 959dab/111419×15 ffffff/111419×70 32fe9f/111419×1 ffffff/0b0d10×1
+9: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 3ddc84/111419×1 dde2ea/111419×19 ffffff/111419×5 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 32fe9f/111419×2 dde2ea/111419×21 f6f8fb/1d2430×10 959dab/111419×28 ffffff/111419×24 32fe9f/111419×1 ffffff/0b0d10×1
+10: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×26 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 32fe9f/111419×2 dde2ea/111419×21 f6f8fb/1d2430×10 959dab/111419×33 ffffff/111419×19 32fe9f/111419×1 ffffff/0b0d10×1
+11: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 32fe9f/111419×1 dde2ea/111419×1 f6f8fb/111419×17 ffffff/111419×6 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 dde2ea/111419×42 959dab/111419×28 ffffff/111419×15 32fe9f/111419×1 ffffff/0b0d10×1
+12: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 dde2ea/111419×2 959dab/111419×1 dde2ea/111419×1 959dab/111419×15 ffffff/111419×6 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 959dab/111419×81 ffffff/111419×4 32fe9f/111419×1 ffffff/0b0d10×1
+13: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 dde2ea/111419×2 3ddc84/111419×1 dde2ea/111419×1 959dab/111419×7 ffffff/111419×14 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 959dab/111419×79 ffffff/111419×6 32fe9f/111419×1 ffffff/0b0d10×1
+14: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 dde2ea/111419×2 3ddc84/111419×1 dde2ea/111419×1 959dab/111419×10 ffffff/111419×11 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×87 32fe9f/111419×1 ffffff/0b0d10×1
+15: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 dde2ea/111419×2 32fe9f/111419×1 dde2ea/111419×1 f6f8fb/111419×6 ffffff/111419×15 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 dde2ea/111419×54 ffffff/111419×31 32fe9f/111419×1 ffffff/0b0d10×1
+16: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 dde2ea/111419×2 959dab/111419×1 dde2ea/111419×1 959dab/111419×9 ffffff/111419×12 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 959dab/111419×80 ffffff/111419×5 32fe9f/111419×1 ffffff/0b0d10×1
+17: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 dde2ea/111419×2 959dab/111419×1 dde2ea/111419×1 959dab/111419×17 ffffff/111419×4 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 959dab/111419×79 ffffff/111419×6 32fe9f/111419×1 ffffff/0b0d10×1
+18: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×26 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×87 32fe9f/111419×1 ffffff/0b0d10×1
+19: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 959dab/111419×1 dde2ea/111419×1 959dab/111419×8 ffffff/111419×15 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 959dab/111419×82 ffffff/111419×3 32fe9f/111419×1 ffffff/0b0d10×1
+20: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×26 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 959dab/111419×51 ffffff/111419×34 32fe9f/111419×1 ffffff/0b0d10×1
+21: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 959dab/111419×1 dde2ea/111419×1 959dab/111419×14 ffffff/111419×9 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×87 32fe9f/111419×1 ffffff/0b0d10×1
+22: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×26 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×87 32fe9f/111419×1 ffffff/0b0d10×1
+23: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×26 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×87 32fe9f/111419×1 ffffff/0b0d10×1
+24: ffffff/0b0d10×1 252a33/111419×1 959dab/111419×16 ffffff/111419×10 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×87 32fe9f/111419×1 ffffff/0b0d10×1
+25: ffffff/0b0d10×1 252a33/111419×1 959dab/111419×24 ffffff/111419×2 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×87 32fe9f/111419×1 ffffff/0b0d10×1
+26: ffffff/0b0d10×1 252a33/111419×1 959dab/111419×21 ffffff/111419×5 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×87 32fe9f/111419×1 ffffff/0b0d10×1
+27: ffffff/0b0d10×1 252a33/111419×28 ffffff/0b0d10×1 32fe9f/111419×89 ffffff/0b0d10×1
+28: ffffff/0b0d10×120
+29: 959dab/0e1115×42 ffffff/0e1115×62 959dab/0e1115×16

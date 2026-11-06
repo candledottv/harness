@@ -1,0 +1,24 @@
+{
+  "command": "swap SOL USDC --amount 0.001 --wallet <tee> --client-trade-id <id> --json, answered N",
+  "exit": 0,
+  "stdout": {
+    "success": true,
+    "status": "cancelled",
+    "clientTradeId": "00000000-0000-4000-8000-000000000006",
+    "kind": "swap",
+    "quote": {
+      "intent": "Swap 0.001000000 SOL to USDC",
+      "wallet": "TeeFake111111111111111111111111111111111111",
+      "venue": "jupiter",
+      "priceImpactPct": "0",
+      "fee": {
+        "bps": 0,
+        "feeRaw": "0"
+      },
+      "minimumReceived": "0.099467 USDC",
+      "minOutRaw": "99467",
+      "minimumReceivedRaw": "99467",
+      "tokenRisks": []
+    }
+  }
+}

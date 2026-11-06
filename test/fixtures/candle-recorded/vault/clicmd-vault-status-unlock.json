@@ -1,0 +1,74 @@
+{
+  "command": "vault status --unlock --json > file (at a terminal; the right passphrase)",
+  "exit": 0,
+  "stdout": {
+    "ok": true,
+    "path": "~/.config/candle/vault.enc",
+    "version": 2,
+    "generation": 7,
+    "createdAt": "2026-09-01T00:00:00.000Z",
+    "updatedAt": "2026-09-01T00:00:00.000Z",
+    "envelopes": [
+      {
+        "id": "fake-envelopeId-1",
+        "factor": "passphrase",
+        "domain": "human-memory",
+        "label": "factor-label",
+        "createdAt": "2026-09-01T00:00:00.000Z",
+        "availability": "available",
+        "strength": "generated-103",
+        "strengthLabel": "generated, 8 words (about 103 bits)"
+      }
+    ],
+    "recoverableFactors": 1,
+    "sidecar": {
+      "lastGeneration": 7,
+      "removedEnvelopeIds": [],
+      "lastBackupEnvelopeIdsBound": false
+    },
+    "legacyWalletsEnc": null,
+    "unlocked": {
+      "entries": [
+        {
+          "address": "VaultFake11111111111111111111111111111111111",
+          "label": "wallet-label",
+          "id": "fake-vaultEntryId-1",
+          "role": "vault",
+          "origin": "derived",
+          "derivation": "m/44'/501'/0'/0'",
+          "exposure": "cold in this vault's record",
+          "destinationExposureAccepted": false
+        },
+        {
+          "address": "TeeFake111111111111111111111111111111111111",
+          "label": "wallet-label",
+          "id": "fake-vaultEntryId-2",
+          "role": "tee-wallet",
+          "origin": "derived",
+          "derivation": "m/44'/501'/0'/1'",
+          "exposure": "remotely exposed",
+          "teeLifecycle": "enabled",
+          "teeRemoteState": "enabled",
+          "destinationExposureAccepted": false
+        }
+      ],
+      "duplicateLabels": [],
+      "nextIndex": {
+        "solanaVault": 1,
+        "solanaTee": 1,
+        "solanaExternal": 0,
+        "evm": 0
+      },
+      "exposedIndexes": {
+        "solanaVault": [],
+        "solanaTee": [
+          0
+        ],
+        "solanaExternal": [],
+        "evm": []
+      },
+      "rootExported": true,
+      "restored": false
+    }
+  }
+}

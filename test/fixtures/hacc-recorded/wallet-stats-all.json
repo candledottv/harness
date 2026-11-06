@@ -1,0 +1,25 @@
+{
+  "name": "wallet-stats-all",
+  "method": "GET",
+  "route": "/v1/market/wallet/HaccFake1111111111111111111111111111111116H/stats",
+  "query": {
+    "period": "all"
+  },
+  "status": 200,
+  "ms": 443,
+  "bytes": 232,
+  "contentType": "application/json; charset=utf-8",
+  "answer": {
+    "wallet": "HaccFake1111111111111111111111111111111116H",
+    "period": "all",
+    "pnl_usd": null,
+    "pnl_pct": null,
+    "realized_pnl_usd": 0,
+    "unrealized_pnl_usd": null,
+    "win_rate": null,
+    "buy_count": 0,
+    "sell_count": 0,
+    "token_count": null,
+    "balance_usd": null
+  }
+}

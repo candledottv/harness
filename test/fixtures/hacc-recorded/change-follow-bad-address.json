@@ -1,0 +1,17 @@
+{
+  "name": "change-follow-bad-address",
+  "method": "POST",
+  "route": "/v1/me/follows",
+  "query": {},
+  "body": {
+    "chain": "solana",
+    "address": "fake-address-16"
+  },
+  "status": 400,
+  "ms": 128,
+  "bytes": 57,
+  "contentType": "application/json; charset=utf-8",
+  "answer": {
+    "error": "invalid base58 solana address: not-an-address"
+  }
+}

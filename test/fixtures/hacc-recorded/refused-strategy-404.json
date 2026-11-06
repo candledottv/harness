@@ -1,0 +1,13 @@
+{
+  "name": "refused-strategy-404",
+  "method": "GET",
+  "route": "/v1/strategies/999999999",
+  "query": {},
+  "status": 404,
+  "ms": 129,
+  "bytes": 30,
+  "contentType": "application/json; charset=utf-8",
+  "answer": {
+    "error": "strategy not found"
+  }
+}

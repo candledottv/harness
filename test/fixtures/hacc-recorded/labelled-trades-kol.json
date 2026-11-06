@@ -1,0 +1,154 @@
+{
+  "name": "labelled-trades-kol",
+  "method": "GET",
+  "route": "/v1/market/labelled-trades",
+  "query": {
+    "kind": "kol"
+  },
+  "status": 200,
+  "ms": 467,
+  "bytes": 11728,
+  "contentType": "application/json; charset=utf-8",
+  "answer": {
+    "kind": "kol",
+    "trades": [
+      {
+        "wallet": "HaccFake11111111111111111111111111111111124",
+        "token_address": "HaccFake11111111111111111111111111111111125",
+        "token_symbol": "fake-token_symbol-1",
+        "side": "buy",
+        "amount_usd": 156.357432,
+        "price_usd": 0.0000042083913238294115,
+        "tx_hash": "fake-tx_hash-1",
+        "traded_at": "2026-10-29T02:50:26.000Z",
+        "wallet_tags": [
+          "photon",
+          "kol",
+          "wash_trader",
+          "arbitrager",
+          "padre"
+        ],
+        "wallet_twitter": "fake-wallet_twitter-1",
+        "launchpad": "meteora_virtual_curve",
+        "tracked": true,
+        "watch_level": "tracked",
+        "groups": [
+          "fake-groups-1",
+          "fake-groups-2",
+          "fake-groups-3"
+        ],
+        "entity": "fake-entity-1"
+      },
+      {
+        "wallet": "HaccFake11111111111111111111111111111111126",
+        "token_address": "HaccFake11111111111111111111111111111111127",
+        "token_symbol": "fake-token_symbol-2",
+        "side": "sell",
+        "amount_usd": 347.269260123,
+        "price_usd": 0.000004624058498201613,
+        "tx_hash": "fake-tx_hash-2",
+        "traded_at": "2026-10-29T02:49:06.000Z",
+        "wallet_tags": [
+          "bullx",
+          "photon",
+          "kol",
+          "app_smart_money",
+          "padre"
+        ],
+        "wallet_twitter": "fake-wallet_twitter-2",
+        "launchpad": "pump",
+        "tracked": false,
+        "watch_level": "none",
+        "groups": [
+          "fake-groups-1",
+          "fake-groups-3"
+        ],
+        "entity": "fake-entity-2"
+      },
+      {
+        "wallet": "HaccFake11111111111111111111111111111111128",
+        "token_address": "HaccFake11111111111111111111111111111111129",
+        "token_symbol": "fake-token_symbol-3",
+        "side": "sell",
+        "amount_usd": 275.86094606135,
+        "price_usd": 0.913534467972908,
+        "tx_hash": "fake-tx_hash-3",
+        "traded_at": "2026-10-29T02:48:59.000Z",
+        "wallet_tags": [
+          "bullx",
+          "kol",
+          "wash_trader",
+          "launchpad_smart",
+          "arbitrager"
+        ],
+        "wallet_twitter": "fake-wallet_twitter-3",
+        "launchpad": null,
+        "tracked": false,
+        "watch_level": "none",
+        "groups": [
+          "fake-groups-4"
+        ],
+        "entity": null
+      },
+      {
+        "wallet": "HaccFake11111111111111111111111111111111128",
+        "token_address": "HaccFake1111111111111111111111111111111112A",
+        "token_symbol": "fake-token_symbol-4",
+        "side": "sell",
+        "amount_usd": 275.86094606135,
+        "price_usd": 0.000040685294888957865,
+        "tx_hash": "fake-tx_hash-3",
+        "traded_at": "2026-10-29T02:48:59.000Z",
+        "wallet_tags": [
+          "bullx",
+          "kol",
+          "wash_trader",
+          "launchpad_smart",
+          "arbitrager"
+        ],
+        "wallet_twitter": "fake-wallet_twitter-3",
+        "launchpad": "ray_launchpad",
+        "tracked": false,
+        "watch_level": "none",
+        "groups": [
+          "fake-groups-4"
+        ],
+        "entity": null
+      },
+      {
+        "wallet": "HaccFake11111111111111111111111111111111126",
+        "token_address": "HaccFake11111111111111111111111111111111127",
+        "token_symbol": "fake-token_symbol-2",
+        "side": "buy",
+        "amount_usd": 195.2035555001,
+        "price_usd": 0.0000049574475301008516,
+        "tx_hash": "fake-tx_hash-4",
+        "traded_at": "2026-10-29T02:48:48.000Z",
+        "wallet_tags": [
+          "bullx",
+          "photon",
+          "kol",
+          "app_smart_money",
+          "padre"
+        ],
+        "wallet_twitter": "fake-wallet_twitter-2",
+        "launchpad": "pump",
+        "tracked": false,
+        "watch_level": "none",
+        "groups": [
+          "fake-groups-1",
+          "fake-groups-3"
+        ],
+        "entity": "fake-entity-2"
+      }
+    ]
+  },
+  "truncated": {
+    "$.trades": 20,
+    "$.trades[0].wallet_tags": 8,
+    "$.trades[1].wallet_tags": 8,
+    "$.trades[2].wallet_tags": 8,
+    "$.trades[3].wallet_tags": 8,
+    "$.trades[4].wallet_tags": 8
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "name": "trades-asset",
+  "method": "GET",
+  "route": "/v1/trades",
+  "query": {
+    "asset_id": "126684306"
+  },
+  "status": 200,
+  "ms": 138,
+  "bytes": 13,
+  "contentType": "application/json; charset=utf-8",
+  "answer": {
+    "trades": []
+  }
+}

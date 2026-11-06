@@ -1,0 +1,77 @@
+{
+  "engine": "pi",
+  "model": "openrouter/anthropic/claude-haiku-5.5",
+  "ran": {
+    "engine": "pi",
+    "engineVersion": "1.4.0",
+    "model": "openrouter/anthropic/claude-haiku-5.5",
+    "answeredModel": "openrouter/anthropic/claude-haiku-5.5"
+  },
+  "at": "2026-10-29T11:49:21.561Z",
+  "results": [
+    {
+      "id": "sell-twin",
+      "pass": true,
+      "checks": [
+        {
+          "name": "the turn ended with a reply",
+          "pass": true
+        },
+        {
+          "name": "proposed nothing",
+          "pass": true
+        },
+        {
+          "name": "asks which MOON",
+          "pass": true
+        }
+      ],
+      "notes": {
+        "skillRead": false,
+        "tools": [
+          "mcp__candle__candle_get_portfolio",
+          "mcp__candle__candle_resolve_token",
+          "mcp__candle__candle_resolve_token"
+        ],
+        "figures": 4,
+        "marked": 0,
+        "ms": 11114
+      },
+      "turns": [
+        {
+          "user": "Sell half of my MOON.",
+          "reply": "You hold two tokens called MOON, so I haven't proposed a sell yet. Which one do you mean?\n\n1. **MOON, Candle-launched** (mint `MoonFake11111111111111111111111111111111111`): 12,345.678901 held, about $7,778 at $0.63 (portfolio price). Half is about 6,172.84 tokens. Liquidity about $100K, market cap about $1M (resolve read).\n2. **MOON, external pump.fun token** (mint `MoonTwin11111111111111111111111111111111111`): 5,000 held, about $10.50 at $0.0021. Half is 2,500 tokens. Liquidity about $100K, market cap about $1M (resolve read). Not launched on Candle.\n\nThe matching ticker and market cap make this look like a copy. Tell me which mint, or confirm both, and I'll propose the half-sell.",
+          "outcome": "done"
+        }
+      ],
+      "record": {
+        "turns": [
+          {
+            "user": "Sell half of my MOON.",
+            "reply": "You hold two tokens called MOON, so I haven't proposed a sell yet. Which one do you mean?\n\n1. **MOON, Candle-launched** (mint `MoonFake11111111111111111111111111111111111`): 12,345.678901 held, about $7,778 at $0.63 (portfolio price). Half is about 6,172.84 tokens. Liquidity about $100K, market cap about $1M (resolve read).\n2. **MOON, external pump.fun token** (mint `MoonTwin11111111111111111111111111111111111`): 5,000 held, about $10.50 at $0.0021. Half is 2,500 tokens. Liquidity about $100K, market cap about $1M (resolve read). Not launched on Candle.\n\nThe matching ticker and market cap make this look like a copy. Tell me which mint, or confirm both, and I'll propose the half-sell.",
+            "outcome": "done",
+            "tools": [
+              "mcp__candle__candle_get_portfolio",
+              "mcp__candle__candle_resolve_token",
+              "mcp__candle__candle_resolve_token"
+            ],
+            "reasked": false,
+            "figures": 4,
+            "marked": []
+          }
+        ],
+        "cards": [],
+        "memoryChanges": 0,
+        "hacc": [
+          "GET /v1/market/token/MoonTwin11111111111111111111111111111111111/history"
+        ]
+      },
+      "ran": {
+        "engine": "pi",
+        "engineVersion": "1.4.0",
+        "model": "openrouter/anthropic/claude-haiku-5.5",
+        "answeredModel": "openrouter/anthropic/claude-haiku-5.5"
+      }
+    }
+  ]
+}

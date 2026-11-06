@@ -1,0 +1,43 @@
+{
+  "name": "token-search-name",
+  "method": "GET",
+  "route": "/v1/market/token-search",
+  "query": {
+    "q": "fake-symbol-43"
+  },
+  "status": 200,
+  "ms": 261,
+  "bytes": 554,
+  "contentType": "application/json; charset=utf-8",
+  "answer": {
+    "tokens": [
+      {
+        "address": "HaccFake11111111111111111111111111111111167",
+        "chain": "solana",
+        "name": "fake-name-39",
+        "symbol": "fake-symbol-34",
+        "created_at": "2024-01-31T14:59:53.000Z",
+        "liquidity_usd": 3047612.98,
+        "market_cap": 1651552148
+      },
+      {
+        "address": "0xfa4e000000000000000000000000000000000019",
+        "chain": "hood",
+        "name": "fake-name-41",
+        "symbol": "fake-symbol-44",
+        "created_at": null,
+        "liquidity_usd": 0,
+        "market_cap": 161713.3766901485
+      },
+      {
+        "address": "0xfa4e00000000000000000000000000000000001a",
+        "chain": "hood",
+        "name": "fake-name-42",
+        "symbol": "fake-symbol-34",
+        "created_at": null,
+        "liquidity_usd": null,
+        "market_cap": null
+      }
+    ]
+  }
+}

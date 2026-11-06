@@ -1,0 +1,72 @@
+{
+  "name": "token-history",
+  "method": "GET",
+  "route": "/v1/market/token/HaccFake1111111111111111111111111111111112c/history",
+  "query": {},
+  "status": 200,
+  "ms": 432,
+  "bytes": 1571,
+  "contentType": "application/json; charset=utf-8",
+  "answer": {
+    "chain": "solana",
+    "address": "HaccFake1111111111111111111111111111111112c",
+    "resolution": "1H",
+    "coverage": {
+      "requested_from": "2026-09-29T02:49:40.000Z",
+      "requested_to": "2026-10-29T02:49:40.000Z",
+      "earliest_available_at": "2026-10-29T02:00:00.000Z",
+      "latest_available_at": "2026-10-29T02:00:00.000Z",
+      "starts_after_requested": true,
+      "ends_before_requested": false,
+      "note": "History begins here, which may be the first trade OR the limit of this resolution. Coarser resolutions often reach further back. Confirm a launch date against token_venues.oldest_pair_at before stating one."
+    },
+    "summary": {
+      "candle_count": 1,
+      "first_at": "2026-10-29T02:00:00.000Z",
+      "last_at": "2026-10-29T02:00:00.000Z",
+      "open_price": 0.000002810462778641996,
+      "close_price": 0.000004184577610785346,
+      "peak_price": 0.000004219987923102117,
+      "peak_at": "2026-10-29T02:00:00.000Z",
+      "trough_price": 0.000002810462778641996,
+      "peak_market_cap": 4219.987923102117,
+      "total_volume_usd": 3060.37,
+      "drawdown_from_peak_x": 1.01,
+      "first_volume_at": "2026-10-29T02:00:00.000Z",
+      "top_volume_days": [
+        {
+          "date": "2026-10-29",
+          "volume_usd": 3060.37
+        }
+      ],
+      "excluded_candles": 0,
+      "excluded_note": null,
+      "suspect_wicks": 0,
+      "suspect_note": null,
+      "phases": [
+        {
+          "n": 1,
+          "kind": "launch",
+          "open": true,
+          "from": "2026-10-29T02:00:00.000Z",
+          "to": "2026-10-29T02:00:00.000Z",
+          "minutes": 0,
+          "mc_start": 4219.987923102117,
+          "mc_peak": 4219.987923102117,
+          "mc_peak_at": "2026-10-29T02:00:00.000Z",
+          "mc_end": 4219.987923102117,
+          "drawdown_pct": null,
+          "gate_trough": 4219.987923102117,
+          "ticks": 1
+        }
+      ],
+      "phase_basis": "market_cap",
+      "phase_params": {
+        "peak_rise": 1,
+        "phase_drawdown": 0.3,
+        "smooth_minutes": 5
+      },
+      "phase_resolution": "1H"
+    }
+  }
+}

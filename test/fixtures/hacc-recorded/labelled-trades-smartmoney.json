@@ -1,0 +1,126 @@
+{
+  "name": "labelled-trades-smartmoney",
+  "method": "GET",
+  "route": "/v1/market/labelled-trades",
+  "query": {
+    "kind": "smartmoney"
+  },
+  "status": 200,
+  "ms": 843,
+  "bytes": 10408,
+  "contentType": "application/json; charset=utf-8",
+  "answer": {
+    "kind": "smartmoney",
+    "trades": [
+      {
+        "wallet": "HaccFake1111111111111111111111111111111112B",
+        "token_address": "HaccFake11111111111111111111111111111111129",
+        "token_symbol": "fake-token_symbol-3",
+        "side": "sell",
+        "amount_usd": 91.61705987024,
+        "price_usd": 0.9086705230720159,
+        "tx_hash": "fake-tx_hash-5",
+        "traded_at": "2026-10-29T02:50:51.000Z",
+        "wallet_tags": [
+          "smart_degen",
+          "photon",
+          "launchpad_smart",
+          "arbitrager",
+          "axiom"
+        ],
+        "wallet_twitter": null,
+        "launchpad": null,
+        "tracked": false,
+        "watch_level": "none",
+        "groups": [],
+        "entity": null
+      },
+      {
+        "wallet": "HaccFake1111111111111111111111111111111112B",
+        "token_address": "HaccFake1111111111111111111111111111111112A",
+        "token_symbol": "fake-token_symbol-4",
+        "side": "sell",
+        "amount_usd": 91.61705987024,
+        "price_usd": 0.00003519087193505942,
+        "tx_hash": "fake-tx_hash-5",
+        "traded_at": "2026-10-29T02:50:51.000Z",
+        "wallet_tags": [
+          "smart_degen",
+          "photon",
+          "launchpad_smart",
+          "arbitrager",
+          "axiom"
+        ],
+        "wallet_twitter": null,
+        "launchpad": "ray_launchpad",
+        "tracked": false,
+        "watch_level": "none",
+        "groups": [],
+        "entity": null
+      },
+      {
+        "wallet": "HaccFake1111111111111111111111111111111112C",
+        "token_address": "HaccFake1111111111111111111111111111111112D",
+        "token_symbol": "fake-token_symbol-5",
+        "side": "sell",
+        "amount_usd": 87.09218756632,
+        "price_usd": 0.000003025423857378571,
+        "tx_hash": "fake-tx_hash-6",
+        "traded_at": "2026-10-29T02:50:49.000Z",
+        "wallet_tags": [
+          "smart_degen",
+          "arbitrager",
+          "axiom"
+        ],
+        "wallet_twitter": null,
+        "launchpad": "pump",
+        "tracked": false,
+        "watch_level": "none",
+        "groups": [],
+        "entity": null
+      },
+      {
+        "wallet": "HaccFake1111111111111111111111111111111112E",
+        "token_address": "HaccFake1111111111111111111111111111111112F",
+        "token_symbol": "fake-token_symbol-6",
+        "side": "buy",
+        "amount_usd": 0.00987148512,
+        "price_usd": 0.00004097089041552197,
+        "tx_hash": "fake-tx_hash-7",
+        "traded_at": "2026-10-29T02:50:47.000Z",
+        "wallet_tags": [
+          "trojan",
+          "smart_degen"
+        ],
+        "wallet_twitter": null,
+        "launchpad": "pump",
+        "tracked": false,
+        "watch_level": "none",
+        "groups": [],
+        "entity": null
+      },
+      {
+        "wallet": "HaccFake1111111111111111111111111111111112G",
+        "token_address": "HaccFake1111111111111111111111111111111111x",
+        "token_symbol": "fake-token_symbol-5",
+        "side": "sell",
+        "amount_usd": 68.47807607808,
+        "price_usd": 0.000045613357389444975,
+        "tx_hash": "fake-tx_hash-8",
+        "traded_at": "2026-10-29T02:50:45.000Z",
+        "wallet_tags": [
+          "smart_degen"
+        ],
+        "wallet_twitter": null,
+        "launchpad": "pump",
+        "tracked": false,
+        "watch_level": "none",
+        "groups": [],
+        "entity": null
+      }
+    ]
+  },
+  "truncated": {
+    "$.trades": 20
+  }
+}

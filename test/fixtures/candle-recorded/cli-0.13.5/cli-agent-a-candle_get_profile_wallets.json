@@ -1,0 +1,29 @@
+{
+  "tool": "candle_get_profile_wallets",
+  "args": {
+    "keyPrefix": "FakeKey1"
+  },
+  "ms": 241,
+  "outcome": {
+    "kind": "ok",
+    "result": {
+      "keyPrefix": "FakeKey1",
+      "profileId": "fake-profileId-1",
+      "walletScope": "selected",
+      "wallets": [
+        {
+          "address": "TeeFake111111111111111111111111111111111111",
+          "assignedAt": 1790000000000,
+          "chain": "solana",
+          "label": "wallet-label",
+          "linkedWalletId": "teefakeid1",
+          "spendCapable": true
+        }
+      ],
+      "scopeLimit": {
+        "max": 1000,
+        "rows": 2
+      }
+    }
+  }
+}

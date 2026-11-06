@@ -1,0 +1,13 @@
+{
+  "name": "wallet-activity",
+  "method": "GET",
+  "route": "/v1/market/wallet/HaccFake1111111111111111111111111111111116H/activity",
+  "query": {},
+  "status": 200,
+  "ms": 418,
+  "bytes": 76,
+  "contentType": "application/json; charset=utf-8",
+  "answer": {
+    "reason": "market data unavailable: gmgn rate limited: RATE_LIMIT_EXCEEDED"
+  }
+}

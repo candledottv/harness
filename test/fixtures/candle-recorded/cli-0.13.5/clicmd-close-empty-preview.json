@@ -1,0 +1,10 @@
+{
+  "command": "candle wallet close-empty --wallet <tee address> --json </dev/null (agent-a's key)",
+  "exit": 1,
+  "stdout": {
+    "ok": false,
+    "code": "CONFIRMATION_REQUIRED",
+    "message": "Run interactively to confirm, or use --yes to close without a prompt."
+  },
+  "stderr": "Close 4 empty token accounts on the TEE wallet TeeFake111111111111111111111111111111111111\nRent returned to that same wallet: 0.00595376 SOL in 1 transaction, network fee about 0.000005 SOL, net 0.00594876 SOL\n  TokenFake3zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz  spl-token  0.00148844 SOL\n  TokenFake4zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz  spl-token  0.00148844 SOL\n  TokenFake5zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz  spl-token  0.00148844 SOL\n  EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v  spl-token  0.00148844 SOL\n"
+}

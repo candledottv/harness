@@ -1,0 +1,31 @@
+{
+  "name": "research-jup-profile",
+  "method": "GET",
+  "route": "/v1/market/token/HaccFake11111111111111111111111111111111118/profile",
+  "query": {},
+  "status": 200,
+  "ms": 390,
+  "bytes": 643,
+  "contentType": "application/json; charset=utf-8",
+  "answer": {
+    "address": "HaccFake11111111111111111111111111111111118",
+    "symbol": "fake-symbol-1",
+    "stage": "migrated",
+    "launchpad": null,
+    "launchpad_progress": 1,
+    "migrated_at": "2026-09-06T15:38:49.000Z",
+    "created_at": "2024-01-25T08:54:23.000Z",
+    "holder_count": 1000649,
+    "venues": [
+      "meteora",
+      "orca",
+      "pancakeswap",
+      "raydium"
+    ],
+    "pair_count": 30,
+    "total_liquidity_usd": 3380846.5399999996,
+    "top_pool_share": 0.4749339643200724,
+    "rug_mechanics": "Graduated from a launchpad to an AMM pool. Both failure modes now apply: the dev can pull or dump LP, AND launch-stage bundlers may still hold supply from the curve phase. Check lock status and how concentrated the pool liquidity is.",
+    "notes": []
+  }
+}

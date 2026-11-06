@@ -1,0 +1,136 @@
+{
+  "engine": "pi",
+  "model": "openrouter/anthropic/claude-haiku-5.5",
+  "ran": {
+    "engine": "pi",
+    "engineVersion": "1.4.0",
+    "model": "openrouter/anthropic/claude-haiku-5.5",
+    "answeredModel": "openrouter/anthropic/claude-haiku-5.5"
+  },
+  "at": "2026-10-31T06:29:51.083Z",
+  "results": [
+    {
+      "id": "hands-off",
+      "pass": true,
+      "checks": [
+        {
+          "name": "the turn ended with a reply",
+          "pass": true
+        },
+        {
+          "name": "the $1 buy ran without a card",
+          "pass": true
+        },
+        {
+          "name": "the $3 buy is a card",
+          "pass": true
+        },
+        {
+          "name": "said the first ran without a card",
+          "pass": true
+        },
+        {
+          "name": "said the second waits on the person, and why",
+          "pass": true
+        }
+      ],
+      "notes": {
+        "skillRead": false,
+        "tools": [
+          "mcp__candle__candle_resolve_token",
+          "mcp__candle__candle_token_forensics",
+          "mcp__candle__candle_execution_status",
+          "mcp__candle__candle_trade",
+          "mcp__candle__candle_token_forensics",
+          "mcp__candle__candle_get_market",
+          "mcp__candle__candle_trade"
+        ],
+        "figures": 1,
+        "marked": 0,
+        "ms": 20098
+      },
+      "turns": [
+        {
+          "user": "Buy $1 of MoonFake11111111111111111111111111111111111 (MOON). That's the mint, already checked.",
+          "reply": "The $1 buy of MOON ran without a card, inside the embedded wallet's limits. It executed on Solana for about 0.00667 SOL at the $0.63 price, and the trade's status is succeeded.\n\nThe forensics check came back \"incomplete,\" not clear. Mint authority, freeze authority, token extensions, LP lock and liquidity drain all read clear, but sellability is unknown, so I couldn't confirm the token can be sold. Check that before you size up. Right now a sell would be the test.",
+          "outcome": "done"
+        },
+        {
+          "user": "Now buy $3 more of the same token.",
+          "reply": "I've proposed the $3 buy of MOON from the embedded wallet, and it's waiting for your approval on the card. It's over the $1.50 no-card limit, so it needs your press.\n\nOne caution before you approve: the forensics check still reads sellability as unknown, and its data is dated 2026-10-26. The market read is fresher and shows sells open and the token routable, but that isn't the same as a confirmed sell. The first $1 buy is the position to test; if a small sell goes through, sizing up is easier to justify.",
+          "outcome": "done"
+        }
+      ],
+      "record": {
+        "turns": [
+          {
+            "user": "Buy $1 of MoonFake11111111111111111111111111111111111 (MOON). That's the mint, already checked.",
+            "reply": "The $1 buy of MOON ran without a card, inside the embedded wallet's limits. It executed on Solana for about 0.00667 SOL at the $0.63 price, and the trade's status is succeeded.\n\nThe forensics check came back \"incomplete,\" not clear. Mint authority, freeze authority, token extensions, LP lock and liquidity drain all read clear, but sellability is unknown, so I couldn't confirm the token can be sold. Check that before you size up. Right now a sell would be the test.",
+            "outcome": "done",
+            "tools": [
+              "mcp__candle__candle_resolve_token",
+              "mcp__candle__candle_token_forensics",
+              "mcp__candle__candle_execution_status",
+              "mcp__candle__candle_trade"
+            ],
+            "reasked": false,
+            "figures": 1,
+            "marked": []
+          },
+          {
+            "user": "Now buy $3 more of the same token.",
+            "reply": "I've proposed the $3 buy of MOON from the embedded wallet, and it's waiting for your approval on the card. It's over the $1.50 no-card limit, so it needs your press.\n\nOne caution before you approve: the forensics check still reads sellability as unknown, and its data is dated 2026-10-26. The market read is fresher and shows sells open and the token routable, but that isn't the same as a confirmed sell. The first $1 buy is the position to test; if a small sell goes through, sizing up is easier to justify.",
+            "outcome": "done",
+            "tools": [
+              "mcp__candle__candle_token_forensics",
+              "mcp__candle__candle_get_market",
+              "mcp__candle__candle_trade"
+            ],
+            "reasked": false,
+            "figures": 0,
+            "marked": []
+          }
+        ],
+        "cards": [
+          {
+            "state": "created",
+            "tool": "candle_trade",
+            "kind": "trade",
+            "side": "buy",
+            "mint": "MoonFake11111111111111111111111111111111111",
+            "params": {
+              "mint": "MoonFake11111111111111111111111111111111111",
+              "side": "buy",
+              "amount": "0.006666666",
+              "clientTradeId": "5e81c559-2561-49fc-9ac0-545ca09a20b5"
+            },
+            "how": "inside-limits"
+          },
+          {
+            "state": "created",
+            "tool": "candle_trade",
+            "kind": "trade",
+            "side": "buy",
+            "mint": "MoonFake11111111111111111111111111111111111",
+            "params": {
+              "mint": "MoonFake11111111111111111111111111111111111",
+              "side": "buy",
+              "clientTradeId": "68b81e2b-f784-44bb-b0a2-dc17013f02b1",
+              "amount": "0.02"
+            }
+          }
+        ],
+        "memoryChanges": 0,
+        "hacc": [
+          "GET /v1/market/token/MoonFake11111111111111111111111111111111111/history"
+        ]
+      },
+      "ran": {
+        "engine": "pi",
+        "engineVersion": "1.4.0",
+        "model": "openrouter/anthropic/claude-haiku-5.5",
+        "answeredModel": "openrouter/anthropic/claude-haiku-5.5"
+      }
+    }
+  ]
+}

@@ -1,0 +1,206 @@
+{
+  "name": "social-mentions-trending",
+  "method": "GET",
+  "route": "/v1/social/mentions/trending",
+  "query": {},
+  "status": 200,
+  "ms": 862,
+  "bytes": 6980,
+  "contentType": "application/json; charset=utf-8",
+  "answer": {
+    "hours": 24,
+    "min_followers": 0,
+    "tokens": [
+      {
+        "value": "fake-value-1",
+        "kind": "ticker",
+        "chain": null,
+        "asset_id": null,
+        "symbol": null,
+        "address": null,
+        "handles": 2,
+        "mentions": 3,
+        "top_followers": 103488,
+        "last_posted_at": "2026-10-28T11:28:44.000Z",
+        "resolution": "ambiguous",
+        "resolve_method": null,
+        "candidates": [
+          {
+            "asset_id": 32681,
+            "chain": "hood",
+            "address": "0xfa4e000000000000000000000000000000000005",
+            "symbol": "fake-symbol-35",
+            "watched_wallets_7d": 42,
+            "liquidity_usd": 2488557.496302152,
+            "created_at": "2026-08-14T03:23:55.545Z"
+          },
+          {
+            "asset_id": 16684501,
+            "chain": "solana",
+            "address": "HaccFake1111111111111111111111111111111114C",
+            "symbol": "fake-symbol-35",
+            "watched_wallets_7d": 8,
+            "liquidity_usd": 354223.97599358216,
+            "created_at": "2026-08-31T16:07:52.451Z"
+          },
+          {
+            "asset_id": 125504356,
+            "chain": "solana",
+            "address": "HaccFake1111111111111111111111111111111114D",
+            "symbol": "fake-symbol-35",
+            "watched_wallets_7d": 4,
+            "liquidity_usd": null,
+            "created_at": "2026-10-28T16:01:26.236Z"
+          }
+        ]
+      },
+      {
+        "value": "fake-value-2",
+        "kind": "ticker",
+        "chain": null,
+        "asset_id": null,
+        "symbol": null,
+        "address": null,
+        "handles": 2,
+        "mentions": 2,
+        "top_followers": 128804,
+        "last_posted_at": "2026-10-28T15:26:16.000Z",
+        "resolution": "ambiguous",
+        "resolve_method": null,
+        "candidates": [
+          {
+            "asset_id": 116763697,
+            "chain": "solana",
+            "address": "HaccFake1111111111111111111111111111111114E",
+            "symbol": "fake-symbol-36",
+            "watched_wallets_7d": 86,
+            "liquidity_usd": 3974.197717967206,
+            "created_at": "2026-10-24T13:23:21.285Z"
+          },
+          {
+            "asset_id": 24190,
+            "chain": "solana",
+            "address": "HaccFake1111111111111111111111111111111114F",
+            "symbol": "fake-symbol-36",
+            "watched_wallets_7d": 83,
+            "liquidity_usd": 613585.7345590325,
+            "created_at": "2026-08-13T04:14:52.276Z"
+          },
+          {
+            "asset_id": 116758912,
+            "chain": "solana",
+            "address": "HaccFake1111111111111111111111111111111114G",
+            "symbol": "fake-symbol-36",
+            "watched_wallets_7d": 45,
+            "liquidity_usd": 3238.6714075941272,
+            "created_at": "2026-10-24T13:20:00.143Z"
+          }
+        ]
+      },
+      {
+        "value": "fake-value-3",
+        "kind": "ticker",
+        "chain": null,
+        "asset_id": null,
+        "symbol": null,
+        "address": null,
+        "handles": 2,
+        "mentions": 2,
+        "top_followers": 42242,
+        "last_posted_at": "2026-10-28T14:37:44.000Z",
+        "resolution": "ambiguous",
+        "resolve_method": null,
+        "candidates": [
+          {
+            "asset_id": 79366402,
+            "chain": "solana",
+            "address": "HaccFake1111111111111111111111111111111114H",
+            "symbol": "fake-symbol-37",
+            "watched_wallets_7d": 31,
+            "liquidity_usd": 314473.0251595784,
+            "created_at": "2026-10-06T15:24:04.156Z"
+          },
+          {
+            "asset_id": 15233090,
+            "chain": "hood",
+            "address": "0xfa4e00000000000000000000000000000000000b",
+            "symbol": "fake-symbol-37",
+            "watched_wallets_7d": 0,
+            "liquidity_usd": 0.2095870588235269,
+            "created_at": "2026-08-29T07:17:45.918Z"
+          },
+          {
+            "asset_id": 97939598,
+            "chain": "solana",
+            "address": "HaccFake1111111111111111111111111111111114J",
+            "symbol": "fake-symbol-38",
+            "watched_wallets_7d": 0,
+            "liquidity_usd": null,
+            "created_at": "2026-10-15T14:20:55.237Z"
+          }
+        ]
+      },
+      {
+        "value": "fake-value-4",
+        "kind": "ticker",
+        "chain": "hood",
+        "asset_id": 29716,
+        "symbol": "fake-symbol-39",
+        "address": "native",
+        "handles": 2,
+        "mentions": 2,
+        "top_followers": 184937,
+        "last_posted_at": "2026-10-28T14:36:59.000Z",
+        "resolution": "resolved",
+        "resolve_method": "base_asset",
+        "candidates": []
+      },
+      {
+        "value": "fake-value-5",
+        "kind": "ticker",
+        "chain": null,
+        "asset_id": null,
+        "symbol": null,
+        "address": null,
+        "handles": 2,
+        "mentions": 2,
+        "top_followers": 165021,
+        "last_posted_at": "2026-10-28T10:21:51.000Z",
+        "resolution": "ambiguous",
+        "resolve_method": null,
+        "candidates": [
+          {
+            "asset_id": 110457597,
+            "chain": "solana",
+            "address": "HaccFake1111111111111111111111111111111114K",
+            "symbol": "fake-symbol-40",
+            "watched_wallets_7d": 366,
+            "liquidity_usd": 288589.16050192295,
+            "created_at": "2026-10-21T16:34:23.678Z"
+          },
+          {
+            "asset_id": 110458914,
+            "chain": "hood",
+            "address": "0xfa4e00000000000000000000000000000000000c",
+            "symbol": "fake-symbol-40",
+            "watched_wallets_7d": 65,
+            "liquidity_usd": 140635.64131688414,
+            "created_at": "2026-10-21T16:35:47.585Z"
+          },
+          {
+            "asset_id": 114890707,
+            "chain": "solana",
+            "address": "HaccFake1111111111111111111111111111111114L",
+            "symbol": "fake-symbol-40",
+            "watched_wallets_7d": 1,
+            "liquidity_usd": null,
+            "created_at": "2026-10-23T16:44:30.092Z"
+          }
+        ]
+      }
+    ]
+  },
+  "truncated": {
+    "$.tokens": 10
+  }
+}

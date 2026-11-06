@@ -1,0 +1,110 @@
+{
+  "name": "market-activity",
+  "method": "GET",
+  "route": "/v1/market/activity",
+  "query": {},
+  "status": 200,
+  "ms": 27429,
+  "bytes": 3167,
+  "contentType": "application/json; charset=utf-8",
+  "answer": {
+    "hours": 24,
+    "window": {
+      "minutes": 1440,
+      "from": "2026-10-28T02:49:51.719Z",
+      "to": "2026-10-29T02:49:51.719Z"
+    },
+    "group": null,
+    "chain": null,
+    "coverage": {
+      "wallets_in_scope": 86478,
+      "active_wallets": 12905,
+      "swapping_wallets": 6130,
+      "priced_swaps": 197803,
+      "swaps": 306390
+    },
+    "quote_prices_usd": {
+      "sol": 99.23003391114497,
+      "eth": 2301.8541107331253
+    },
+    "unresolvable": {
+      "tokens": 0,
+      "swaps": 0
+    },
+    "tokens": [
+      {
+        "asset_id": 122407754,
+        "chain": "solana",
+        "address": "HaccFake1111111111111111111111111111111112X",
+        "symbol": "fake-symbol-22",
+        "name": "fake-name-26",
+        "wallets": 667,
+        "buys": 11482,
+        "sells": 0,
+        "bought_usd": 0,
+        "sold_usd": 0,
+        "first_trade_at": "2026-10-28T02:52:40.000Z",
+        "last_trade_at": "2026-10-29T02:49:50.000Z"
+      },
+      {
+        "asset_id": 123008931,
+        "chain": "solana",
+        "address": "HaccFake1111111111111111111111111111111112Y",
+        "symbol": "fake-symbol-23",
+        "name": "fake-name-27",
+        "wallets": 667,
+        "buys": 11432,
+        "sells": 0,
+        "bought_usd": 0,
+        "sold_usd": 0,
+        "first_trade_at": "2026-10-28T02:52:58.000Z",
+        "last_trade_at": "2026-10-29T02:49:42.000Z"
+      },
+      {
+        "asset_id": 124230108,
+        "chain": "solana",
+        "address": "HaccFake1111111111111111111111111111111112Z",
+        "symbol": "fake-symbol-24",
+        "name": "fake-name-28",
+        "wallets": 667,
+        "buys": 13200,
+        "sells": 0,
+        "bought_usd": 0,
+        "sold_usd": 0,
+        "first_trade_at": "2026-10-28T04:15:17.000Z",
+        "last_trade_at": "2026-10-29T02:49:48.000Z"
+      },
+      {
+        "asset_id": 125579985,
+        "chain": "solana",
+        "address": "HaccFake1111111111111111111111111111111112a",
+        "symbol": "fake-symbol-25",
+        "name": "fake-name-29",
+        "wallets": 647,
+        "buys": 5841,
+        "sells": 0,
+        "bought_usd": 0,
+        "sold_usd": 0,
+        "first_trade_at": "2026-10-28T17:00:17.000Z",
+        "last_trade_at": "2026-10-29T02:49:42.000Z"
+      },
+      {
+        "asset_id": 125601026,
+        "chain": "solana",
+        "address": "HaccFake1111111111111111111111111111111112b",
+        "symbol": "fake-symbol-26",
+        "name": "fake-name-30",
+        "wallets": 641,
+        "buys": 5674,
+        "sells": 0,
+        "bought_usd": 0,
+        "sold_usd": 0,
+        "first_trade_at": "2026-10-28T17:16:17.000Z",
+        "last_trade_at": "2026-10-29T02:49:45.000Z"
+      }
+    ]
+  },
+  "truncated": {
+    "$.tokens": 10
+  }
+}

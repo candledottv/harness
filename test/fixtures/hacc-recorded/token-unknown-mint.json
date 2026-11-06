@@ -1,0 +1,43 @@
+{
+  "name": "token-unknown-mint",
+  "method": "GET",
+  "route": "/v1/market/token/So11111111111111111111111111111111111111112",
+  "query": {},
+  "status": 200,
+  "ms": 307,
+  "bytes": 888,
+  "contentType": "application/json; charset=utf-8",
+  "answer": {
+    "chain": "solana",
+    "market": {
+      "address": "So11111111111111111111111111111111111111112",
+      "symbol": "SOL",
+      "name": "fake-name-47",
+      "price": 99.75629554054177,
+      "liquidity": 6078254552.701651,
+      "market_cap": 58849058481.29675,
+      "fdv": 63375692352.215324,
+      "volume_24h_usd": 2672943831.6582794,
+      "volume_1h_usd": null,
+      "price_change_1h_pct": -0.22022840369808583,
+      "price_change_24h_pct": -1.7994310125646247,
+      "holders": 8838163,
+      "unique_wallets_24h": 928824,
+      "last_trade_at": "2026-10-29T02:49:45.000Z"
+    },
+    "safety": {
+      "creator_address": null,
+      "creator_owner_address": null,
+      "update_authority": "HaccFake1111111111111111111111111111111116F",
+      "creation_tx": "fake-creation_tx-2",
+      "mint_authority": null,
+      "freeze_authority": null,
+      "freezeable": null,
+      "mutable_metadata": true,
+      "top10_holder_pct": 0.0039877705554706155,
+      "creator_pct": null,
+      "owner_pct": null,
+      "created_at": "2022-05-04T09:47:39.000Z"
+    }
+  }
+}

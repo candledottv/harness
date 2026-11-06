@@ -1,0 +1,23 @@
+{
+  "command": "keys wallets <agent-a prefix> --json (owner)",
+  "exit": 0,
+  "stdout": {
+    "keyPrefix": "FakeKey1",
+    "profileId": "fake-profileId-1",
+    "walletScope": "selected",
+    "wallets": [
+      {
+        "address": "TeeFake111111111111111111111111111111111111",
+        "assignedAt": 1790000000000,
+        "chain": "solana",
+        "label": "wallet-label",
+        "linkedWalletId": "teefakeid1",
+        "spendCapable": true
+      }
+    ],
+    "scopeLimit": {
+      "max": 1000,
+      "rows": 1
+    }
+  }
+}

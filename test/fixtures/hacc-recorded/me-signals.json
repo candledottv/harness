@@ -1,0 +1,16 @@
+{
+  "name": "me-signals",
+  "method": "GET",
+  "route": "/v1/me/signals",
+  "query": {
+    "limit": "20"
+  },
+  "status": 200,
+  "ms": 132,
+  "bytes": 32,
+  "contentType": "application/json; charset=utf-8",
+  "answer": {
+    "signals": [],
+    "next_after": null
+  }
+}

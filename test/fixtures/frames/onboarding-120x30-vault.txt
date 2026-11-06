@@ -1,0 +1,62 @@
+ ▲ candle   SETUP   nothing trades until your agent and its limits exist                                                
+                                                                                                                        
+ ╭─ Setup ──────────────────╮ ╭───────────────────────────────────────────────────────────────────────── step 3 of 5 ─╮ 
+ │                          │ │                                                                                       │ 
+ │ ✓ Welcome                │ │  A vault now, or the embedded wallet only for now?                                    │ 
+ │                          │ │                                                                                       │ 
+ │ ✓ Sign in to Candle      │ │  A vault keeps your recovery words and guards every owner step with a passphrase or   │ 
+ │  Wall…1111 · candle-     │ │  a security key. You can add one any time.                                            │ 
+ │                          │ │  Pick one of two:                                                                     │ 
+ │ ✓ Connect your agent     │ │  ▸ 1  The embedded wallet only, for now                                               │ 
+ │                          │ │      · Owner steps, like making your agent's key, are approved by you in the pane.    │ 
+ │ ▸ Wallet and limits      │ │      · A wallet of its own, or a send from the Candle Harness, needs a vault: set     │ 
+ │   ▸ a vault, or not      │ │        one up later from settings ▾.                                                  │ 
+ │   · its key              │ │      · Funds out go through Candle's site.                                            │ 
+ │   · its wallet           │ │                                                                                       │ 
+ │   · limits               │ │    2  A vault now                                    candle vault init, in the pane   │ 
+ │   · approvals            │ │      · Your 24 recovery words, shown once. Write them down.                           │ 
+ │   · fund it, or paper    │ │      · A passphrase on every owner step; a security key can be added next. Touch ID   │ 
+ │                          │ │        is coming.                                                                     │ 
+ │ · The tour               │ │      · A wallet of its own for your agent needs Pro or Max; on Free a vault still     │ 
+ │                          │ │        keeps your recovery words and guards owner steps.                              │ 
+ │ · Where to start         │ │                                                                                       │ 
+ │                          │ │                                                                                       │ 
+ │                          │ │                                                                                       │ 
+ │ about 3 minutes          │ │                                                                                       │ 
+ │ quit any time: it picks  │ │                                                                                       │ 
+ │ up where you stopped     │ │                                                                                       │ 
+ ╰──────────────────────────╯ ╰───────────────────────────────────────────────────────────────────────────────────────╯ 
+                                                                                                                        
+ ↑/↓ moves · ⏎ or a click picks · esc back                                                              ctrl-c ×2 quits 
+
+--- colours ---
+0: f6f8fb/0e1115×11 f6f8fb/2a2f3a×7 959dab/0e1115×54 ffffff/0e1115×48
+1: ffffff/0b0d10×120
+2: ffffff/0b0d10×1 252a33/111419×2 b392f0/111419×7 252a33/111419×19 ffffff/0b0d10×1 32fe9f/111419×74 959dab/111419×13 32fe9f/111419×2 ffffff/0b0d10×1
+3: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×26 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×87 32fe9f/111419×1 ffffff/0b0d10×1
+4: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 3ddc84/111419×1 dde2ea/111419×8 ffffff/111419×16 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 b392f0/111419×49 ffffff/111419×36 32fe9f/111419×1 ffffff/0b0d10×1
+5: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×26 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×87 32fe9f/111419×1 ffffff/0b0d10×1
+6: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 3ddc84/111419×1 dde2ea/111419×18 ffffff/111419×6 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 dde2ea/111419×82 ffffff/111419×3 32fe9f/111419×1 ffffff/0b0d10×1
+7: ffffff/0b0d10×1 252a33/111419×1 dde2ea/111419×2 959dab/111419×19 ffffff/111419×5 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 dde2ea/111419×41 ffffff/111419×44 32fe9f/111419×1 ffffff/0b0d10×1
+8: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×26 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 959dab/111419×16 ffffff/111419×69 32fe9f/111419×1 ffffff/0b0d10×1
+9: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 3ddc84/111419×1 dde2ea/111419×19 ffffff/111419×5 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 32fe9f/1d2430×2 f6f8fb/1d2430×36 ffffff/1d2430×45 ffffff/111419×2 32fe9f/111419×1 ffffff/0b0d10×1
+10: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×26 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 959dab/111419×81 ffffff/111419×4 32fe9f/111419×1 ffffff/0b0d10×1
+11: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 32fe9f/111419×1 dde2ea/111419×1 f6f8fb/111419×17 ffffff/111419×6 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 959dab/111419×80 ffffff/111419×5 32fe9f/111419×1 ffffff/0b0d10×1
+12: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 dde2ea/111419×2 32fe9f/111419×1 dde2ea/111419×1 f6f8fb/111419×15 ffffff/111419×6 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 959dab/111419×35 ffffff/111419×50 32fe9f/111419×1 ffffff/0b0d10×1
+13: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 dde2ea/111419×2 959dab/111419×1 dde2ea/111419×1 959dab/111419×7 ffffff/111419×14 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 959dab/111419×41 ffffff/111419×44 32fe9f/111419×1 ffffff/0b0d10×1
+14: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 dde2ea/111419×2 959dab/111419×1 dde2ea/111419×1 959dab/111419×10 ffffff/111419×11 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×87 32fe9f/111419×1 ffffff/0b0d10×1
+15: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 dde2ea/111419×2 959dab/111419×1 dde2ea/111419×1 959dab/111419×6 ffffff/111419×15 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 32fe9f/111419×2 6cb6ff/111419×14 ffffff/111419×36 959dab/111419×31 ffffff/111419×2 32fe9f/111419×1 ffffff/0b0d10×1
+16: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 dde2ea/111419×2 959dab/111419×1 dde2ea/111419×1 959dab/111419×9 ffffff/111419×12 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 959dab/111419×58 ffffff/111419×27 32fe9f/111419×1 ffffff/0b0d10×1
+17: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 dde2ea/111419×2 959dab/111419×1 dde2ea/111419×1 959dab/111419×17 ffffff/111419×4 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 959dab/111419×82 ffffff/111419×3 32fe9f/111419×1 ffffff/0b0d10×1
+18: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×26 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 959dab/111419×16 ffffff/111419×69 32fe9f/111419×1 ffffff/0b0d10×1
+19: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 959dab/111419×1 dde2ea/111419×1 959dab/111419×8 ffffff/111419×15 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 959dab/111419×80 ffffff/111419×5 32fe9f/111419×1 ffffff/0b0d10×1
+20: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×26 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 959dab/111419×55 ffffff/111419×30 32fe9f/111419×1 ffffff/0b0d10×1
+21: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 959dab/111419×1 dde2ea/111419×1 959dab/111419×14 ffffff/111419×9 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×87 32fe9f/111419×1 ffffff/0b0d10×1
+22: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×26 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×87 32fe9f/111419×1 ffffff/0b0d10×1
+23: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×26 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×87 32fe9f/111419×1 ffffff/0b0d10×1
+24: ffffff/0b0d10×1 252a33/111419×1 959dab/111419×16 ffffff/111419×10 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×87 32fe9f/111419×1 ffffff/0b0d10×1
+25: ffffff/0b0d10×1 252a33/111419×1 959dab/111419×24 ffffff/111419×2 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×87 32fe9f/111419×1 ffffff/0b0d10×1
+26: ffffff/0b0d10×1 252a33/111419×1 959dab/111419×21 ffffff/111419×5 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×87 32fe9f/111419×1 ffffff/0b0d10×1
+27: ffffff/0b0d10×1 252a33/111419×28 ffffff/0b0d10×1 32fe9f/111419×89 ffffff/0b0d10×1
+28: ffffff/0b0d10×120
+29: 959dab/0e1115×42 ffffff/0e1115×62 959dab/0e1115×16

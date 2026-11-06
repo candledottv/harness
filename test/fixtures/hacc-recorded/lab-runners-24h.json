@@ -1,0 +1,15 @@
+{
+  "name": "lab-runners-24h",
+  "method": "GET",
+  "route": "/v1/strategy-lab/runners",
+  "query": {
+    "hours": "24"
+  },
+  "status": 500,
+  "ms": 31007,
+  "bytes": 26,
+  "contentType": "application/json; charset=utf-8",
+  "answer": {
+    "error": "internal error"
+  }
+}

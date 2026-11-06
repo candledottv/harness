@@ -1,0 +1,92 @@
+ ▲ candle  agent-a ▾  LIVE  today $12.00 / $100.00  exposure $412.50  P&L 24h +$3.40  ● 0 cards waiting                                          ctrl-x ×2 kill 
+ 1 Trade  2 Cockpit  3 Trending  4 Signals  5 P&L  6 Research  7 Journal  8 Perps   settings ▾                                                                  
+                                                                                                                                                                
+╭─ Signals · Hacc's tape ───────────────────────────────────────────────────────────────────────────────────────────────────── pattern ▾ ── chain ▾ ── all ▾ ──╮
+│ WISP         wallet distributing              $30     Solana   47s     Wal2…1111                                                                             │
+│ TUNDR        wallet woke after 27d                    Solana    1m     Wal2…1111                                                                             │
+│ FENNE        big sell                      $11.6K     Solana    2m     desk seven                                                                            │
+│ KETTL        3 wallets bought in 60m                  Solana    3m     desk seven, Conf…1111, early bird                                                     │
+│ PYLON        first buy of a new ticker       $971     Solana    3m     fast hands                                                                            │
+│ MARRO        first buy of a new ticker       $293     Hood      4m     Wal2…1111                                                                             │
+│ BASAL        in from a tracked wallet                 Solana    5m     Wal2…1111                                                                             │
+│ ORBIT        posted, bought 47m later        $130     Solana    6m     @callsguy · 7.9K followers                                                            │
+│ SAFFR        wallet distributing              $30     Solana    7m     Wal2…1111                                                                             │
+│ QUILL        wallet woke after 27d                    Solana    7m     Wal2…1111                                                                             │
+│ LUMEN        big sell                      $11.6K     Solana    8m     desk seven                                                                            │
+│ WISP         3 wallets bought in 60m                  Solana    9m     desk seven, Conf…1111, early bird                                                     │
+│ ─ 07:46 to 07:49 not read back: Hacc's tape didn't answer                                                                                                    │
+│ TUNDR        first buy of a new ticker       $971     Hood     10m     fast hands                                                                            │
+│ FENNE        first buy of a new ticker       $293     Solana   10m     Wal1…1111                                                                             │
+│ KETTL        in from a tracked wallet                 Solana   11m     Wal1…1111                                                                             │
+│ PYLON        posted, bought 47m later        $130     Solana   12m     @callsguy · 7.9K followers                                                            │
+│ MARRO        wallet distributing              $30     Solana   13m     Wal1…1111                                                                             │
+│ BASAL        wallet woke after 27d                    Solana   14m     Wal1…1111                                                                             │
+│ ORBIT        big sell                      $11.6K     Solana   14m     desk seven                                                                            │
+│ SAFFR        3 wallets bought in 60m                  Hood     15m     desk seven, Conf…1111, early bird                                                     │
+╰─ ⇱ ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── pause ─╯
+                                                                                                                                                                
+╭─ Token ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ Pick a row in a list here to see its token: price, check, chart.                                                                                             │
+│ ctrl-t on a row asks the agent; what it discusses shows here too.                                                                                            │
+│                                                                                                                                                              │
+│ Seen this session:                                                                                                                                           │
+│ JUPF                                                                                                                                                         │
+╰─ ⇱ ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+                                                                                                                                                                
+╭─ agent-a ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── Claude Code · sonnet ▾ ─╮
+│ you › what's trending?                                                                                                                                       │
+│                                                                                                                                                              │
+│   Orbit leads the on-fire list. Want me to check it?  ⧉                                                                                                      │
+│                                                                                                                                                              │
+│                                                                                                                                                              │
+│                                                                                                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+                                                                                                                                                                
+› type a command or ask the agent                                                                                                    ctrl-k palette    ? help   
+
+--- colours ---
+0: ffffff/0e1115×1 f6f8fb/0e1115×8 ffffff/0e1115×1 6cb6ff/16263a×11 0b0d10/3ddc84×6 ffffff/0e1115×1 959dab/0e1115×6 f6f8fb/0e1115×6 959dab/0e1115×10 ffffff/0e1115×2 959dab/0e1115×9 f6f8fb/0e1115×7 ffffff/0e1115×2 959dab/0e1115×8 3ddc84/0e1115×6 ffffff/0e1115×2 959dab/0e1115×17 ffffff/0e1115×41 ff5c5c/3a1619×16
+1: ffffff/0b0d10×1 6cb6ff/0b0d10×7 ffffff/0b0d10×2 6cb6ff/0b0d10×9 ffffff/0b0d10×2 6cb6ff/0b0d10×10 ffffff/0b0d10×2 f6f8fb/0b0d10+9×9 ffffff/0b0d10×2 6cb6ff/0b0d10×5 ffffff/0b0d10×2 6cb6ff/0b0d10×10 ffffff/0b0d10×2 6cb6ff/0b0d10×9 ffffff/0b0d10×2 6cb6ff/0b0d10×7 ffffff/0b0d10×2 6cb6ff/16263a×12 ffffff/0b0d10×65
+2: ffffff/0b0d10×160
+3: 252a33/111419×2 b392f0/111419×23 252a33/111419×101 6cb6ff/16263a×11 252a33/111419×2 6cb6ff/16263a×9 252a33/111419×2 6cb6ff/16263a×7 252a33/111419×3
+4: 252a33/111419×1 ffffff/111419×1 f6f8fb/111419×13 dde2ea/111419×29 f6f8fb/111419×7 959dab/111419×31 ffffff/111419×77 252a33/111419×1
+5: 252a33/111419×1 ffffff/111419×1 f6f8fb/111419×13 dde2ea/111419×29 f6f8fb/111419×7 959dab/111419×31 ffffff/111419×77 252a33/111419×1
+6: 252a33/111419×1 ffffff/111419×1 f6f8fb/111419×13 dde2ea/111419×29 f6f8fb/111419×7 959dab/111419×32 ffffff/111419×76 252a33/111419×1
+7: 252a33/111419×1 ffffff/111419×1 f6f8fb/111419×13 dde2ea/111419×29 f6f8fb/111419×7 959dab/111419×55 ffffff/111419×53 252a33/111419×1
+8: 252a33/111419×1 ffffff/111419×1 f6f8fb/111419×13 dde2ea/111419×29 f6f8fb/111419×7 959dab/111419×32 ffffff/111419×76 252a33/111419×1
+9: 252a33/111419×1 ffffff/111419×1 f6f8fb/111419×13 dde2ea/111419×29 f6f8fb/111419×7 959dab/111419×31 ffffff/111419×77 252a33/111419×1
+10: 252a33/111419×1 ffffff/111419×1 f6f8fb/111419×13 dde2ea/111419×29 f6f8fb/111419×7 959dab/111419×31 ffffff/111419×77 252a33/111419×1
+11: 252a33/111419×1 ffffff/111419×1 f6f8fb/111419×13 dde2ea/111419×29 f6f8fb/111419×7 959dab/111419×48 ffffff/111419×60 252a33/111419×1
+12: 252a33/111419×1 ffffff/111419×1 f6f8fb/111419×13 dde2ea/111419×29 f6f8fb/111419×7 959dab/111419×31 ffffff/111419×77 252a33/111419×1
+13: 252a33/111419×1 ffffff/111419×1 f6f8fb/111419×13 dde2ea/111419×29 f6f8fb/111419×7 959dab/111419×31 ffffff/111419×77 252a33/111419×1
+14: 252a33/111419×1 ffffff/111419×1 f6f8fb/111419×13 dde2ea/111419×29 f6f8fb/111419×7 959dab/111419×32 ffffff/111419×76 252a33/111419×1
+15: 252a33/111419×1 ffffff/111419×1 f6f8fb/111419×13 dde2ea/111419×29 f6f8fb/111419×7 959dab/111419×55 ffffff/111419×53 252a33/111419×1
+16: 252a33/111419×1 ffffff/111419×1 959dab/111419×57 ffffff/111419×100 252a33/111419×1
+17: 252a33/111419×1 ffffff/111419×1 f6f8fb/111419×13 dde2ea/111419×29 f6f8fb/111419×7 959dab/111419×32 ffffff/111419×76 252a33/111419×1
+18: 252a33/111419×1 ffffff/111419×1 f6f8fb/111419×13 dde2ea/111419×29 f6f8fb/111419×7 959dab/111419×31 ffffff/111419×77 252a33/111419×1
+19: 252a33/111419×1 ffffff/111419×1 f6f8fb/111419×13 dde2ea/111419×29 f6f8fb/111419×7 959dab/111419×31 ffffff/111419×77 252a33/111419×1
+20: 252a33/111419×1 ffffff/111419×1 f6f8fb/111419×13 dde2ea/111419×29 f6f8fb/111419×7 959dab/111419×48 ffffff/111419×60 252a33/111419×1
+21: 252a33/111419×1 ffffff/111419×1 f6f8fb/111419×13 dde2ea/111419×29 f6f8fb/111419×7 959dab/111419×31 ffffff/111419×77 252a33/111419×1
+22: 252a33/111419×1 ffffff/111419×1 f6f8fb/111419×13 dde2ea/111419×29 f6f8fb/111419×7 959dab/111419×31 ffffff/111419×77 252a33/111419×1
+23: 252a33/111419×1 ffffff/111419×1 f6f8fb/111419×13 dde2ea/111419×29 f6f8fb/111419×7 959dab/111419×32 ffffff/111419×76 252a33/111419×1
+24: 252a33/111419×1 ffffff/111419×1 f6f8fb/111419×13 dde2ea/111419×29 f6f8fb/111419×7 959dab/111419×55 ffffff/111419×53 252a33/111419×1
+25: 252a33/111419×2 6cb6ff/16263a×3 252a33/111419×146 6cb6ff/16263a×7 252a33/111419×2
+26: ffffff/0b0d10×160
+27: 252a33/111419×2 b392f0/111419×7 252a33/111419×151
+28: 252a33/111419×1 ffffff/111419×1 dde2ea/111419×64 ffffff/111419×93 252a33/111419×1
+29: 252a33/111419×1 ffffff/111419×1 959dab/111419×65 ffffff/111419×92 252a33/111419×1
+30: 252a33/111419×1 ffffff/111419×158 252a33/111419×1
+31: 252a33/111419×1 ffffff/111419×1 959dab/111419×18 ffffff/111419×139 252a33/111419×1
+32: 252a33/111419×1 ffffff/111419×1 f6f8fb/111419×4 ffffff/111419×153 252a33/111419×1
+33: 252a33/111419×2 6cb6ff/16263a×3 252a33/111419×155
+34: ffffff/0b0d10×160
+35: 32fe9f/111419×2 b392f0/111419×9 32fe9f/111419×123 6cb6ff/16263a×24 32fe9f/111419×2
+36: 32fe9f/111419×1 ffffff/111419×1 959dab/111419×6 f6f8fb/111419×16 ffffff/111419×135 32fe9f/111419×1
+37: 32fe9f/111419×1 ffffff/111419×158 32fe9f/111419×1
+38: 32fe9f/111419×1 ffffff/111419×1 dde2ea/111419×52 959dab/111419×1 6cb6ff/16263a×3 ffffff/111419×101 32fe9f/111419×1
+39: 32fe9f/111419×1 ffffff/111419×158 32fe9f/111419×1
+40: 32fe9f/111419×1 ffffff/111419×158 32fe9f/111419×1
+41: 32fe9f/111419×1 ffffff/111419×158 32fe9f/111419×1
+42: 32fe9f/111419×160
+43: 959dab/0b0d10×1 ffffff/0b0d10×159
+44: f6f8fb/0e1115×2 959dab/0e1115×31 ffffff/0e1115×99 6cb6ff/16263a×16 959dab/0e1115×2 6cb6ff/16263a×8 959dab/0e1115×2

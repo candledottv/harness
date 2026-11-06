@@ -1,0 +1,118 @@
+{
+  "name": "feed-finalstretch-fields",
+  "tool": "candle_get_feed",
+  "args": {
+    "bucket": "finalstretch",
+    "chain": "solana",
+    "fields": "name,symbol,priceUsd,marketCap,change1h,change24h,volume1h,liquidityUsd,createdAt,graduatedAt,progress,lastTradeAt,launchedAt,holderCount",
+    "limit": 20
+  },
+  "route": "/api/v1/markets/feed",
+  "query": {
+    "bucket": "finalstretch",
+    "chain": "solana",
+    "fields": "name,symbol,priceUsd,marketCap,change1h,change24h,volume1h,liquidityUsd,createdAt,graduatedAt,progress,lastTradeAt,launchedAt,holderCount",
+    "limit": "20"
+  },
+  "status": 200,
+  "ms": 81,
+  "bytes": 6099,
+  "answer": {
+    "success": true,
+    "bucket": "finalstretch",
+    "tokens": [
+      {
+        "chain": "solana",
+        "address": "TokenFake1zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz",
+        "symbol": "fake-symbol-1",
+        "name": "fake-name-1",
+        "marketCap": 32148.07562717903,
+        "progress": 0.96278036,
+        "lastTradeAt": "2026-10-30T13:36:07.869Z",
+        "launchedAt": "2026-10-27T17:20:06.623Z"
+      },
+      {
+        "chain": "solana",
+        "address": "TokenFake2zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz",
+        "symbol": "fake-symbol-2",
+        "name": "fake-name-2",
+        "priceUsd": 0.000031004309368181595,
+        "marketCap": 31416.76,
+        "change1h": 84.05,
+        "change24h": 903,
+        "volume1h": 15134.59409525528,
+        "progress": 0.9579946,
+        "lastTradeAt": "2026-10-30T13:38:05.377Z",
+        "launchedAt": "2026-10-29T16:02:05.992Z"
+      },
+      {
+        "chain": "solana",
+        "address": "TokenFake3zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz",
+        "symbol": "fake-symbol-3",
+        "name": "fake-name-3",
+        "priceUsd": 0.00003150031519443913,
+        "marketCap": 34683.39,
+        "change1h": 355,
+        "change24h": 961,
+        "volume1h": 108032.0657952806,
+        "progress": 0.9574162,
+        "lastTradeAt": "2026-10-30T13:38:11.192Z",
+        "launchedAt": "2026-10-30T12:25:39.623Z"
+      },
+      {
+        "chain": "solana",
+        "address": "TokenFake4zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz",
+        "symbol": "fake-symbol-4",
+        "name": "fake-name-4",
+        "priceUsd": 0.00003204058007126335,
+        "marketCap": 32040.580071263354,
+        "change1h": 310.36788629376974,
+        "change24h": 310.36788629376974,
+        "volume1h": 19752.475649762644,
+        "liquidityUsd": 9959.213416599167,
+        "createdAt": 1793366876000,
+        "progress": 0.9507082,
+        "lastTradeAt": "2026-10-30T13:37:58.194Z",
+        "launchedAt": "2026-10-30T13:27:56.018Z",
+        "holderCount": 422
+      },
+      {
+        "chain": "solana",
+        "address": "TokenFake5zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz",
+        "symbol": "fake-symbol-5",
+        "name": "fake-name-5",
+        "priceUsd": 0.00002035760908884018,
+        "marketCap": 20357.60908884018,
+        "change1h": 26.59668963518737,
+        "change24h": 26.59668963518737,
+        "volume1h": 14456.594089052267,
+        "liquidityUsd": 7929.35309673916,
+        "createdAt": 1793367020000,
+        "progress": 0.9246258,
+        "lastTradeAt": "2026-10-30T13:38:08.852Z",
+        "launchedAt": "2026-10-30T13:30:20.004Z",
+        "holderCount": 73
+      }
+    ],
+    "matched": 93,
+    "scanned": 93,
+    "cursor": "finalstretch:0",
+    "warming": false,
+    "reset": true,
+    "asOf": "2026-10-30T13:38:16.079Z",
+    "stale": false,
+    "feed": {
+      "ok": true,
+      "lastCurveTradeAt": "2026-10-30T13:38:11.417Z",
+      "ageS": 5
+    },
+    "exact": {
+      "ok": true,
+      "lastReadAt": "2026-10-30T13:38:11.205Z"
+    },
+    "organicScoreGuidance": "On live screens, do not hard-skip organicScore=0 when organic0LiveOk is true (Jupiter-routable with visible m5 momentum). Hard-skip organicScore=0 only when organic0LiveOk is false — no momentum yet."
+  },
+  "truncated": {
+    "$.tokens": 20
+  }
+}

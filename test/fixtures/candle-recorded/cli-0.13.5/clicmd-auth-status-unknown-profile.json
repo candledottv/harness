@@ -1,0 +1,10 @@
+{
+  "command": "candle auth status --profile <unknown> --json",
+  "exit": 1,
+  "stdout": {
+    "ok": false,
+    "code": "PROFILE_UNRESOLVED",
+    "message": "No profile named \"s5-throwaway\".",
+    "suggestion": "Profiles on this machine:\n  production (active)  WalletFake111111111111111111111111111111111  https://api.candle.example"
+  }
+}

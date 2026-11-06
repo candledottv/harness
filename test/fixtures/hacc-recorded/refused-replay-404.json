@@ -1,0 +1,13 @@
+{
+  "name": "refused-replay-404",
+  "method": "GET",
+  "route": "/v1/strategy-lab/replay/00000000-0000-0000-0000-000000000000",
+  "query": {},
+  "status": 400,
+  "ms": 127,
+  "bytes": 22,
+  "contentType": "application/json; charset=utf-8",
+  "answer": {
+    "error": "invalid id"
+  }
+}

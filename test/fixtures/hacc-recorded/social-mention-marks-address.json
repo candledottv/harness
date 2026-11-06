@@ -1,0 +1,15 @@
+{
+  "name": "social-mention-marks-address",
+  "method": "GET",
+  "route": "/v1/social/mention-marks",
+  "query": {
+    "address": "HaccFake1111111111111111111111111111111112c"
+  },
+  "status": 200,
+  "ms": 597,
+  "bytes": 12,
+  "contentType": "application/json; charset=utf-8",
+  "answer": {
+    "marks": []
+  }
+}

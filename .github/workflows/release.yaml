@@ -1,0 +1,245 @@
+name: Release
+
+# Builds, signs and publishes a Candle Harness release. On a v<major>.<minor>.<patch> tag
+# pushed to candledottv/harness: the tests, the four binaries built with the tag's version, a smoke test,
+# SHA256SUMS and latest.json (scripts/build.ts --release), every file signed keyless with Sigstore as this
+# workflow on this tag, each signature checked again by cosign and by Candle's own `candle verify` (what
+# install.sh runs), install.sh run against the signed folder, then the tag's GitHub release.
+#
+# The identity a release is signed as is
+#   https://github.com/candledottv/harness/.github/workflows/release.yaml@refs/tags/v<version>
+# which install.sh pins (IDENTITY_PREFIX); a tag build fails here if the two differ.
+#
+# Who that signature trusts: whoever can push a v* tag. A tag's run uses the release.yaml in the tagged
+# commit, so a tag pushed at any commit signs whatever that commit builds, with the exact identity
+# install.sh accepts, and its workflow can leave out any check written here. What stops that is a tag
+# ruleset on this repository: creating, moving and deleting v* tags limited to the maintainers. The
+# `production` environment's reviewer gates only this workflow's own publish job; the signed folder is
+# also kept as a workflow artifact, which anyone with write access could publish by hand.
+#
+# Three jobs before the publish, so the release identity never sits beside the project's own code:
+#   build   runs the install, the typecheck, the tests and the build with read access only, and hands
+#           over the folder unsigned;
+#   sign    alone holds id-token: write. It runs no project code and installs no dependencies: it checks
+#           the folder against its SHA256SUMS and install.sh against the tagged commit's, signs with
+#           cosign, and verifies with cosign and the pinned candle;
+#   install runs install.sh and the binary against the signed folder, with read access only.
+# A dependency that tampers with the build's own output is still signed: only review or a reproducible
+# build would catch that. What the split stops is code run in the build minting the release identity and
+# signing bytes of its choosing.
+#
+# A manual run (workflow_dispatch) on a branch builds, signs and verifies, and publishes nothing: the
+# rehearsal. It signs as this workflow on its branch, which install.sh's pin doesn't accept, and the install
+# job is skipped. Started from a tag it would sign exactly as a release, so it's refused there.
+#
+# Every third-party action is pinned to a full commit SHA, with its tag in a trailing comment: the sign
+# job holds id-token: write and signs what users install. Bun itself, and the runtime each binary embeds,
+# are pinned by SHA-256 in scripts/release-files.ts.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "The version a rehearsal builds as, three numbers"
+        default: "0.0.0"
+
+permissions:
+  contents: read
+
+env:
+  ISSUER: https://token.actions.githubusercontent.com
+
+jobs:
+  build:
+    name: Build and test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+      version: ${{ steps.tag.outputs.version }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - name: Bun, checked against its pin
+        # Bun is the compiler, and the runtime the linux-x64 binary embeds: it's run only once its SHA-256
+        # matches scripts/release-files.ts. The other targets' runtimes are checked by scripts/build.ts.
+        run: |
+          set -euo pipefail
+          version="$(sed -n 's/^export const BUN_VERSION = "\([0-9.]*\)"$/\1/p' scripts/release-files.ts)"
+          pin="$(sed -n 's/^  "linux-x64": "\([0-9a-f]\{64\}\)",$/\1/p' scripts/release-files.ts)"
+          [ -n "$version" ] && [ -n "$pin" ] || { echo "scripts/release-files.ts names no Bun version or linux-x64 pin"; exit 1; }
+          dir="${RUNNER_TEMP}/bun"
+          mkdir -p "$dir/bin"
+          curl --proto '=https' -fsSL -o "$dir/bun.tgz" "https://registry.npmjs.org/@oven/bun-linux-x64/-/bun-linux-x64-${version}.tgz"
+          tar -xzf "$dir/bun.tgz" -C "$dir" package/bin/bun
+          [ "$(sha256sum "$dir/package/bin/bun" | awk '{print $1}')" = "$pin" ] || { echo "Bun ${version} for linux-x64 isn't the file scripts/release-files.ts pins"; exit 1; }
+          install -m 755 "$dir/package/bin/bun" "$dir/bin/bun"
+          ln -s bun "$dir/bin/bunx"
+          echo "$dir/bin" >> "$GITHUB_PATH"
+      - name: Resolve the tag
+        id: tag
+        env:
+          REHEARSAL_VERSION: ${{ inputs.version }}
+        run: |
+          if [ "${GITHUB_EVENT_NAME}" != "push" ]; then
+            case "${GITHUB_REF}" in refs/tags/*) echo "a rehearsal runs from a branch: from ${GITHUB_REF} it would sign exactly as a release"; exit 1 ;; esac
+          fi
+          if [ "${GITHUB_EVENT_NAME}" = "push" ]; then tag="${GITHUB_REF_NAME}"; else tag="v${REHEARSAL_VERSION}"; fi
+          printf '%s' "$tag" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$' || { echo "a release tag is v<major>.<minor>.<patch>, not ${tag}"; exit 1; }
+          { echo "tag=${tag}"; echo "version=${tag#v}"; } >> "$GITHUB_OUTPUT"
+      - name: Install (frozen)
+        # A signed binary is never built from a dependency graph resolved at build time.
+        run: bun install --frozen-lockfile
+      - name: Types and tests
+        run: |
+          bun run typecheck
+          bun test
+      - name: Build the release folder
+        env:
+          TAG: ${{ steps.tag.outputs.tag }}
+        run: bun scripts/build.ts --release "$TAG"
+      - name: Smoke the runner's own binary
+        env:
+          TAG: ${{ steps.tag.outputs.tag }}
+          VERSION: ${{ steps.tag.outputs.version }}
+        run: |
+          bin="dist/release/${TAG}/candle-harness-linux-x64"
+          "$bin" --version | tee /dev/stderr | grep -q "^candle-harness ${VERSION} ("
+          "$bin" help | grep -q "doctor"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: unsigned
+          path: dist/release/${{ steps.tag.outputs.tag }}
+          if-no-files-found: error
+          retention-days: 1
+
+  sign:
+    name: Sign and verify
+    needs: [build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    steps:
+      # The tagged commit, read and never run: install.sh's pins, and the install.sh the build should have copied.
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+          path: source
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: unsigned
+          path: release
+      - name: Check the folder is the build's, whole
+        working-directory: release
+        run: |
+          set -euo pipefail
+          expected="SHA256SUMS candle-harness-darwin-arm64 candle-harness-darwin-x64 candle-harness-linux-arm64 candle-harness-linux-x64 install.sh latest.json"
+          [ "$(ls -A | LC_ALL=C sort | tr '\n' ' ' | sed 's/ $//')" = "${expected}" ] || { echo "the folder holds $(ls -A), not ${expected}"; exit 1; }
+          # The artifact hop must not change a byte, and install.sh must be the tagged commit's.
+          sha256sum -c SHA256SUMS
+          cmp install.sh ../source/install.sh
+      - uses: sigstore/cosign-installer@398d4b0eeef1380460a10c8013a76f728fb906ac # v3
+        with:
+          # --new-bundle-format needs 2.2 or newer; the protobuf bundle is the only shape candle verify reads.
+          cosign-release: "v2.5.2"
+      - name: Sign every file (keyless)
+        working-directory: release
+        run: |
+          for f in candle-harness-darwin-arm64 candle-harness-darwin-x64 candle-harness-linux-arm64 candle-harness-linux-x64 install.sh SHA256SUMS latest.json; do
+            cosign sign-blob --yes --new-bundle-format --bundle "${f}.sigstore.json" "${f}"
+          done
+      - name: Verify with cosign and with Candle's candle verify
+        working-directory: release
+        run: |
+          # The exact identity this run signed as: a tag build's ends @refs/tags/v<version>, a rehearsal's
+          # @refs/heads/<branch>.
+          identity="https://github.com/${GITHUB_REPOSITORY}/.github/workflows/release.yaml@${GITHUB_REF}"
+          files="candle-harness-darwin-arm64 candle-harness-darwin-x64 candle-harness-linux-arm64 candle-harness-linux-x64 install.sh SHA256SUMS latest.json"
+          for f in $files; do
+            cosign verify-blob --new-bundle-format --bundle "${f}.sigstore.json" --certificate-identity "${identity}" --certificate-oidc-issuer "${ISSUER}" "${f}"
+          done
+          # Candle's CLI at the version install.sh pins, checked against install.sh's own SHA-256 for it and,
+          # by cosign, against Candle's signature as its release workflow on that tag, before it's trusted as
+          # a verifier. Then the same check install.sh makes, run by the same verifier users have.
+          cli_tag="$(sed -n "s/^CLI_TAG='\(.*\)'$/\1/p" ../source/install.sh)"
+          cli_identity="$(sed -n "s/^CLI_IDENTITY='\(.*\)'$/\1/p" ../source/install.sh)"
+          [ "${cli_identity}" = "https://github.com/candledottv/cli/.github/workflows/release.yaml@refs/tags/${cli_tag}" ] || { echo "install.sh's CLI_IDENTITY isn't Candle's release workflow on ${cli_tag}: ${cli_identity}"; exit 1; }
+          pin="$(sed -n "s/^    candle-linux-x64) echo '\([0-9a-f]*\)' ;;$/\1/p" ../source/install.sh)"
+          mkdir -p "${RUNNER_TEMP}/candle"
+          curl --proto '=https' -fsSL -o "${RUNNER_TEMP}/candle/candle" "https://github.com/candledottv/cli/releases/download/${cli_tag}/candle-linux-x64"
+          curl --proto '=https' -fsSL -o "${RUNNER_TEMP}/candle/candle.sigstore.json" "https://github.com/candledottv/cli/releases/download/${cli_tag}/candle-linux-x64.sigstore.json"
+          [ "$(sha256sum "${RUNNER_TEMP}/candle/candle" | awk '{print $1}')" = "$pin" ] || { echo "candle-linux-x64 at ${cli_tag} isn't the file install.sh pins"; exit 1; }
+          cosign verify-blob --new-bundle-format --bundle "${RUNNER_TEMP}/candle/candle.sigstore.json" --certificate-identity "${cli_identity}" --certificate-oidc-issuer "${ISSUER}" "${RUNNER_TEMP}/candle/candle"
+          chmod 755 "${RUNNER_TEMP}/candle/candle"
+          for f in $files; do
+            CANDLE_NO_UPDATE_NOTIFIER=1 "${RUNNER_TEMP}/candle/candle" verify "${f}" --bundle "${f}.sigstore.json" --identity "${identity}" --issuer "${ISSUER}"
+          done
+      - uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be # v2
+        # For install.sh's last route, gh attestation verify, where there's neither candle nor cosign.
+        with:
+          subject-path: |
+            release/candle-harness-*
+            release/install.sh
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: release
+          path: release
+          if-no-files-found: error
+          retention-days: 7
+
+  install:
+    name: Check install.sh's pin, and install from the signed folder
+    needs: [build, sign]
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: release
+          path: release
+      - name: Check install.sh's pin, and install from the signed folder
+        env:
+          VERSION: ${{ needs.build.outputs.version }}
+        run: |
+          identity="https://github.com/${GITHUB_REPOSITORY}/.github/workflows/release.yaml@${GITHUB_REF}"
+          expected="$(sed -n "s/^IDENTITY_PREFIX='\(.*\)'$/\1/p" release/install.sh)${VERSION}"
+          [ "${expected}" = "${identity}" ] || { echo "install.sh pins ${expected}, but this release is signed as ${identity}"; exit 1; }
+          # install.sh, end to end: the CLI from Candle on its pins, then this release verified by it.
+          home="${RUNNER_TEMP}/install-home"
+          mkdir -p "$home"
+          HOME="$home" PATH="/usr/bin:/bin" CANDLE_NO_UPDATE_NOTIFIER=1 bash release/install.sh --from release --yes
+          "$home/.local/bin/candle-harness" --version | grep -q "^candle-harness ${VERSION} ("
+
+  publish:
+    name: Publish the release
+    needs: [build, sign, install]
+    if: github.event_name == 'push' && github.repository == 'candledottv/harness'
+    # The production environment waits for a reviewer before this job publishes. It gates this job only:
+    # the tag ruleset is what decides who can make a release users will install.
+    environment: production
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: release
+          path: release
+      - name: Create the release
+        working-directory: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ needs.build.outputs.tag }}
+          VERSION: ${{ needs.build.outputs.version }}
+        run: |
+          set -euo pipefail
+          # What the sign job signed is what's published: the artifact hop must not change a byte.
+          sha256sum -c SHA256SUMS
+          gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --verify-tag --title "Candle Harness ${VERSION}" --generate-notes
+          gh release upload "$TAG" --clobber ./*

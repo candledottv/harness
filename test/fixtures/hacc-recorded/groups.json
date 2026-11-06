@@ -1,0 +1,87 @@
+{
+  "name": "groups",
+  "method": "GET",
+  "route": "/v1/groups",
+  "query": {},
+  "status": 200,
+  "ms": 713,
+  "bytes": 211445,
+  "contentType": "application/json; charset=utf-8",
+  "answer": {
+    "groups": [
+      {
+        "id": 57107,
+        "name": "fake-name-17",
+        "description": null,
+        "created_at": "2026-09-07T13:32:25.445Z",
+        "visibility": "public",
+        "kind": "ticker",
+        "asset_id": 21589684,
+        "owner_candle_user_id": null,
+        "visibility_set_by": null,
+        "visibility_set_at": null,
+        "wallet_count": 6,
+        "last_added_at": "2026-09-07T13:32:25.947Z"
+      },
+      {
+        "id": 75918,
+        "name": "fake-name-18",
+        "description": null,
+        "created_at": "2026-09-11T03:57:52.299Z",
+        "visibility": "public",
+        "kind": "ticker",
+        "asset_id": 3360089,
+        "owner_candle_user_id": null,
+        "visibility_set_by": null,
+        "visibility_set_at": null,
+        "wallet_count": 4,
+        "last_added_at": "2026-09-11T03:57:52.449Z"
+      },
+      {
+        "id": 179275,
+        "name": "fake-name-19",
+        "description": null,
+        "created_at": "2026-09-21T03:55:16.852Z",
+        "visibility": "public",
+        "kind": "ticker",
+        "asset_id": 46374066,
+        "owner_candle_user_id": null,
+        "visibility_set_by": null,
+        "visibility_set_at": null,
+        "wallet_count": 23,
+        "last_added_at": "2026-09-21T04:55:17.866Z"
+      },
+      {
+        "id": 217666,
+        "name": "fake-name-20",
+        "description": null,
+        "created_at": "2026-09-30T22:30:05.365Z",
+        "visibility": "public",
+        "kind": "ticker",
+        "asset_id": 66204976,
+        "owner_candle_user_id": null,
+        "visibility_set_by": null,
+        "visibility_set_at": null,
+        "wallet_count": 0,
+        "last_added_at": null
+      },
+      {
+        "id": 307313,
+        "name": "1",
+        "description": null,
+        "created_at": "2026-10-15T21:08:17.595Z",
+        "visibility": "public",
+        "kind": "ticker",
+        "asset_id": 98442277,
+        "owner_candle_user_id": null,
+        "visibility_set_by": null,
+        "visibility_set_at": null,
+        "wallet_count": 21,
+        "last_added_at": "2026-10-16T13:18:05.513Z"
+      }
+    ]
+  },
+  "truncated": {
+    "$.groups": 741
+  }
+}

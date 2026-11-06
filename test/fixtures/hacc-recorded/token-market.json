@@ -1,0 +1,43 @@
+{
+  "name": "token-market",
+  "method": "GET",
+  "route": "/v1/market/token/HaccFake1111111111111111111111111111111112c",
+  "query": {},
+  "status": 200,
+  "ms": 300,
+  "bytes": 894,
+  "contentType": "application/json; charset=utf-8",
+  "answer": {
+    "chain": "solana",
+    "market": {
+      "address": "HaccFake1111111111111111111111111111111112c",
+      "symbol": "fake-symbol-27",
+      "name": "fake-name-37",
+      "price": 0.000004184577610785346,
+      "liquidity": 472.16029557471785,
+      "market_cap": 4184.577610785345,
+      "fdv": 4184.577610785345,
+      "volume_24h_usd": 3031.0553406267854,
+      "volume_1h_usd": null,
+      "price_change_1h_pct": 13.985373697975763,
+      "price_change_24h_pct": 13.985373697975763,
+      "holders": 12,
+      "unique_wallets_24h": 22,
+      "last_trade_at": "2026-10-29T02:49:37.000Z"
+    },
+    "safety": {
+      "creator_address": "HaccFake11111111111111111111111111111111165",
+      "creator_owner_address": null,
+      "update_authority": null,
+      "creation_tx": "fake-creation_tx-1",
+      "mint_authority": null,
+      "freeze_authority": null,
+      "freezeable": null,
+      "mutable_metadata": null,
+      "top10_holder_pct": 0.9986720990778901,
+      "creator_pct": 0.01,
+      "owner_pct": null,
+      "created_at": "2026-10-29T02:48:17.000Z"
+    }
+  }
+}

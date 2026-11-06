@@ -1,0 +1,50 @@
+ ▲ candle   SETUP   nothing trades until your agent and its limits exist        
+ ▸ 0 Welcome  · 1  · 2  · 3  · 4  · 5                                           
+╭──────────────────────────────────────────────────────────────────────────────╮
+│                                                                              │
+│  Welcome to Candle                                                           │
+│                                                                              │
+│  A trading terminal where your own agent works beside you: Candle's feed,    │
+│  signals, positions and P&L, and an agent that proposes the trades you       │
+│  approve.                                                                    │
+│                                                                              │
+│  Setup takes about 3 minutes:                                                │
+│                                                                              │
+│    1  Sign in to Candle                                                      │
+│    2  Connect your agent, and test it                                        │
+│    3  A vault or not, its key, wallet, limits and approvals                  │
+│    4  A 60-second tour                                                       │
+│    5  Where to start                                                         │
+│                                                                              │
+│  ▸ Guided setup                                every step, about 3 minutes   │
+│    Straight in sign in, your model and its key, then the Candle Harness o…   │
+│                                                                              │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+ ↑/↓ moves · ⏎ or a click picks · esc back                      ctrl-c ×2 quits 
+
+--- colours ---
+0: f6f8fb/0e1115×11 f6f8fb/2a2f3a×7 959dab/0e1115×54 ffffff/0e1115×8
+1: f6f8fb/0b0d10×13 959dab/0b0d10×25 ffffff/0b0d10×42
+2: 32fe9f/111419×80
+3: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
+4: 32fe9f/111419×1 ffffff/111419×2 b392f0/111419×17 ffffff/111419×59 32fe9f/111419×1
+5: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
+6: 32fe9f/111419×1 ffffff/111419×2 dde2ea/111419×72 ffffff/111419×4 32fe9f/111419×1
+7: 32fe9f/111419×1 ffffff/111419×2 dde2ea/111419×69 ffffff/111419×7 32fe9f/111419×1
+8: 32fe9f/111419×1 ffffff/111419×2 dde2ea/111419×8 ffffff/111419×68 32fe9f/111419×1
+9: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
+10: 32fe9f/111419×1 ffffff/111419×2 dde2ea/111419×28 ffffff/111419×48 32fe9f/111419×1
+11: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
+12: 32fe9f/111419×1 ffffff/111419×2 959dab/111419×5 dde2ea/111419×17 ffffff/111419×54 32fe9f/111419×1
+13: 32fe9f/111419×1 ffffff/111419×2 959dab/111419×5 dde2ea/111419×31 ffffff/111419×40 32fe9f/111419×1
+14: 32fe9f/111419×1 ffffff/111419×2 959dab/111419×5 dde2ea/111419×53 ffffff/111419×18 32fe9f/111419×1
+15: 32fe9f/111419×1 ffffff/111419×2 959dab/111419×5 dde2ea/111419×16 ffffff/111419×55 32fe9f/111419×1
+16: 32fe9f/111419×1 ffffff/111419×2 959dab/111419×5 dde2ea/111419×14 ffffff/111419×57 32fe9f/111419×1
+17: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
+18: 32fe9f/111419×1 ffffff/111419×2 32fe9f/1d2430×2 f6f8fb/1d2430×12 ffffff/1d2430×32 959dab/1d2430×28 ffffff/111419×2 32fe9f/111419×1
+19: 32fe9f/111419×1 ffffff/111419×2 32fe9f/111419×2 6cb6ff/111419×11 ffffff/111419×1 959dab/111419×60 ffffff/111419×2 32fe9f/111419×1
+20: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
+21: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
+22: 32fe9f/111419×80
+23: 959dab/0e1115×42 ffffff/0e1115×22 959dab/0e1115×16

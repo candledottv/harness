@@ -1,0 +1,101 @@
+{
+  "name": "feed-onfire-fields",
+  "tool": "candle_get_feed",
+  "args": {
+    "bucket": "onfire",
+    "chain": "solana",
+    "fields": "name,symbol,priceUsd,marketCap,change1h,change24h,volume1h,liquidityUsd,createdAt,graduatedAt,progress,lastTradeAt,launchedAt,holderCount",
+    "limit": 20
+  },
+  "route": "/api/v1/markets/feed",
+  "query": {
+    "bucket": "onfire",
+    "chain": "solana",
+    "fields": "name,symbol,priceUsd,marketCap,change1h,change24h,volume1h,liquidityUsd,createdAt,graduatedAt,progress,lastTradeAt,launchedAt,holderCount",
+    "limit": "20"
+  },
+  "status": 200,
+  "ms": 89,
+  "bytes": 6142,
+  "answer": {
+    "success": true,
+    "bucket": "onfire",
+    "tokens": [
+      {
+        "chain": "solana",
+        "address": "TokenFake24zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz",
+        "symbol": "fake-symbol-19",
+        "name": "fake-name-19",
+        "priceUsd": 1.7825749613028286,
+        "marketCap": 1784472618,
+        "change1h": 4445280,
+        "change24h": 4445280,
+        "volume1h": 333596.3578693815
+      },
+      {
+        "chain": "solana",
+        "address": "TokenFake25zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz",
+        "symbol": "fake-symbol-7",
+        "name": "fake-name-7",
+        "priceUsd": 0.000002714636499176497,
+        "marketCap": 2701.68,
+        "change1h": -17.13,
+        "change24h": -17.13,
+        "volume1h": 95.97724700600487,
+        "createdAt": 1793364494000,
+        "holderCount": 3
+      },
+      {
+        "chain": "solana",
+        "address": "TokenFake8zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz",
+        "symbol": "fake-symbol-8",
+        "name": "fake-name-8",
+        "priceUsd": 0.00012450176079686163,
+        "marketCap": 121931,
+        "change1h": 74.12,
+        "change24h": 196,
+        "volume1h": 56.84259373913935,
+        "liquidityUsd": 28287.604075071427,
+        "createdAt": 1793362490000,
+        "graduatedAt": 1793362620000,
+        "holderCount": 1283
+      },
+      {
+        "chain": "solana",
+        "address": "TokenFake7zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz",
+        "symbol": "fake-symbol-7",
+        "name": "fake-name-7",
+        "priceUsd": 0.00001924529126420227,
+        "marketCap": 18372.64987484807,
+        "change1h": 271.7724044574762,
+        "change24h": 174.37781460474915,
+        "volume1h": 231209.17267495848,
+        "liquidityUsd": 4516.239907925096,
+        "createdAt": 1793363856000,
+        "graduatedAt": 1793364396000,
+        "holderCount": 372
+      },
+      {
+        "chain": "solana",
+        "address": "TokenFake26zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz",
+        "symbol": "fake-symbol-7",
+        "name": "fake-name-7",
+        "priceUsd": 0.0000027000484403096527,
+        "marketCap": 2699.16,
+        "change1h": -17.21,
+        "change24h": -17.21,
+        "volume1h": 99.18697858633927,
+        "createdAt": 1793364561000,
+        "holderCount": 3
+      }
+    ],
+    "matched": 51,
+    "scanned": 51,
+    "cursor": "fake:27190",
+    "warming": false,
+    "organicScoreGuidance": "On live screens, do not hard-skip organicScore=0 when organic0LiveOk is true (Jupiter-routable with visible m5 momentum). Hard-skip organicScore=0 only when organic0LiveOk is false — no momentum yet."
+  },
+  "truncated": {
+    "$.tokens": 20
+  }
+}

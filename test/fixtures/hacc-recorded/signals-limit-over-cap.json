@@ -1,0 +1,15 @@
+{
+  "name": "signals-limit-over-cap",
+  "method": "GET",
+  "route": "/v1/signals",
+  "query": {
+    "limit": "500"
+  },
+  "status": 400,
+  "ms": 126,
+  "bytes": 59,
+  "contentType": "application/json; charset=utf-8",
+  "answer": {
+    "error": "limit: Number must be less than or equal to 200"
+  }
+}

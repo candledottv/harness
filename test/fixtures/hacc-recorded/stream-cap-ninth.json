@@ -1,0 +1,13 @@
+{
+  "name": "stream-cap-ninth",
+  "ms": 394,
+  "status": 429,
+  "headers": {
+    "alt-svc": "h3=\":443\"; ma=2592000",
+    "content-length": "45",
+    "content-type": "application/json; charset=utf-8",
+    "date": "Thu, 29 Oct 2026 03:06:51 GMT",
+    "via": "1.1 Caddy"
+  },
+  "body": "fake-body-1"
+}

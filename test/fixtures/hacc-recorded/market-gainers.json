@@ -1,0 +1,97 @@
+{
+  "name": "market-gainers",
+  "method": "GET",
+  "route": "/v1/market/gainers",
+  "query": {},
+  "status": 200,
+  "ms": 276,
+  "bytes": 6238,
+  "contentType": "application/json; charset=utf-8",
+  "answer": {
+    "window": "1W",
+    "traders": [
+      {
+        "address": "HaccFake1111111111111111111111111111111112e",
+        "volume_usd": 584614.5023669864,
+        "trades": 10,
+        "buys": null,
+        "sells": null,
+        "realized_pnl_usd": 0,
+        "unrealized_pnl_usd": 69089826.66397402,
+        "total_pnl_usd": 69089826.66397402,
+        "tracked": false,
+        "watch_level": "none",
+        "groups": [],
+        "entity": null,
+        "x_handle": null
+      },
+      {
+        "address": "HaccFake1111111111111111111111111111111112f",
+        "volume_usd": 8629.615965995155,
+        "trades": 1,
+        "buys": null,
+        "sells": null,
+        "realized_pnl_usd": 0,
+        "unrealized_pnl_usd": 62375334.095927104,
+        "total_pnl_usd": 62375334.095927104,
+        "tracked": false,
+        "watch_level": "none",
+        "groups": [],
+        "entity": null,
+        "x_handle": null
+      },
+      {
+        "address": "HaccFake1111111111111111111111111111111112g",
+        "volume_usd": 1002135.5051056352,
+        "trades": 6,
+        "buys": null,
+        "sells": null,
+        "realized_pnl_usd": 0,
+        "unrealized_pnl_usd": 58821863.57001339,
+        "total_pnl_usd": 58821863.57001339,
+        "tracked": false,
+        "watch_level": "none",
+        "groups": [
+          "fake-groups-5",
+          "fake-groups-6",
+          "fake-groups-7"
+        ],
+        "entity": null,
+        "x_handle": null
+      },
+      {
+        "address": "HaccFake1111111111111111111111111111111112h",
+        "volume_usd": 657981.0185031416,
+        "trades": 3,
+        "buys": null,
+        "sells": null,
+        "realized_pnl_usd": 0,
+        "unrealized_pnl_usd": 55173993.08530473,
+        "total_pnl_usd": 55173993.08530473,
+        "tracked": false,
+        "watch_level": "none",
+        "groups": [],
+        "entity": null,
+        "x_handle": null
+      },
+      {
+        "address": "HaccFake1111111111111111111111111111111112i",
+        "volume_usd": 539992.2094824706,
+        "trades": 19,
+        "buys": null,
+        "sells": null,
+        "realized_pnl_usd": -39797.896442958656,
+        "unrealized_pnl_usd": 54788807.9126602,
+        "total_pnl_usd": 54749010.01621724,
+        "tracked": false,
+        "watch_level": "none",
+        "groups": [],
+        "entity": null,
+        "x_handle": null
+      }
+    ]
+  },
+  "truncated": {
+    "$.traders": 20
+  }
+}

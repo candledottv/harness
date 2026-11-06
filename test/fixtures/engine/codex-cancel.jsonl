@@ -1,0 +1,5 @@
+{"type":"thread.started","thread_id":"00000000-0000-4000-8000-000000000000"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"I’ll check current Solana token trends, pick one for a proposed 0.1 SOL buy, and save a research note with the mint address and key risks."}}
+{"type":"item.started","item":{"id":"item_1","type":"mcp_tool_call","server":"candle","tool":"get_trending","arguments":{},"result":null,"error":null,"status":"in_progress"}}
+{"type":"item.completed","item":{"id":"item_1","type":"mcp_tool_call","server":"candle","tool":"get_trending","arguments":{},"result":{"content":[{"type":"text","text":"{\"tokens\":[{\"symbol\":\"MOON\",\"mint\":\"MoonFake11111111111111111111111111111111111\",\"priceSol\":0.0042,\"change24h\":38.5,\"volumeSol\":1520},{\"symbol\":\"PEPE\",\"mint\":\"PepeFake11111111111111111111111111111111111\",\"priceSol\":0.0011,\"change24h\":-4.2,\"volumeSol\":860}]}"}],"structured_content":null},"error":null,"status":"completed"}}

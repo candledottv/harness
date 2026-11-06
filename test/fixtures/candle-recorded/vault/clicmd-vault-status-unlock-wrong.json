@@ -1,0 +1,9 @@
+{
+  "command": "vault status --unlock --json > file (at a terminal; a wrong passphrase, asked once)",
+  "exit": 1,
+  "stdout": {
+    "ok": false,
+    "code": "VAULT_UNLOCK_FAILED",
+    "message": "Could not open the vault: wrong passphrase, or the file is corrupt."
+  }
+}

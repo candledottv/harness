@@ -1,0 +1,10 @@
+{
+  "name": "followup-group-delete",
+  "method": "DELETE",
+  "route": "/v1/me/groups/352183",
+  "query": {},
+  "status": 204,
+  "ms": 134,
+  "bytes": 0,
+  "answer": "fake-<root>-1"
+}

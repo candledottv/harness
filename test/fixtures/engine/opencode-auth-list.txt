@@ -1,0 +1,7 @@
+
+┌  Credentials ~/.local/share/opencode/auth.json
+│
+●  OpenAI oauth
+│
+└  1 credentials
+

@@ -1,0 +1,13 @@
+{
+  "name": "change-group-wallet-delete",
+  "method": "DELETE",
+  "route": "/v1/me/groups/352180/wallets/352180",
+  "query": {},
+  "status": 404,
+  "ms": 127,
+  "bytes": 39,
+  "contentType": "application/json; charset=utf-8",
+  "answer": {
+    "error": "wallet is not in that group"
+  }
+}

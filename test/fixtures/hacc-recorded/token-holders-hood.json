@@ -1,0 +1,73 @@
+{
+  "name": "token-holders-hood",
+  "method": "GET",
+  "route": "/v1/market/token/0xfa4e000000000000000000000000000000000001/holders",
+  "query": {
+    "chain": "hood"
+  },
+  "status": 200,
+  "ms": 251,
+  "bytes": 10002,
+  "contentType": "application/json; charset=utf-8",
+  "answer": {
+    "chain": "hood",
+    "holder_count": 50,
+    "holders": [
+      {
+        "address": "0xfa4e000000000000000000000000000000000010",
+        "balance": "463656651619369495167771812",
+        "pct": 46.365665161936946,
+        "tracked": false,
+        "watch_level": "none",
+        "groups": [],
+        "entity": null,
+        "x_handle": null
+      },
+      {
+        "address": "0xfa4e000000000000000000000000000000000011",
+        "balance": "28059010702921608330922765",
+        "pct": 2.805901070292161,
+        "tracked": false,
+        "watch_level": "none",
+        "groups": [
+          "fake-groups-7"
+        ],
+        "entity": null,
+        "x_handle": null
+      },
+      {
+        "address": "0xfa4e000000000000000000000000000000000012",
+        "balance": "27435568857849132791681978",
+        "pct": 2.743556885784913,
+        "tracked": false,
+        "watch_level": "none",
+        "groups": [],
+        "entity": null,
+        "x_handle": null
+      },
+      {
+        "address": "0xfa4e000000000000000000000000000000000013",
+        "balance": "21925134736894253491639253",
+        "pct": 2.192513473689426,
+        "tracked": false,
+        "watch_level": "none",
+        "groups": [],
+        "entity": null,
+        "x_handle": null
+      },
+      {
+        "address": "0xfa4e000000000000000000000000000000000014",
+        "balance": "19132497417747519110533151",
+        "pct": 1.9132497417747518,
+        "tracked": false,
+        "watch_level": "none",
+        "groups": [],
+        "entity": null,
+        "x_handle": null
+      }
+    ]
+  },
+  "truncated": {
+    "$.holders": 50
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "command": "tee fund <tee address> --amount 0.001 --json > file (at a terminal; a wrong passphrase)",
+  "exit": 1,
+  "stdout": {
+    "ok": false,
+    "code": "VAULT_UNLOCK_FAILED",
+    "message": "Could not open the vault: wrong passphrase, or the file is corrupt."
+  }
+}

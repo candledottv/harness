@@ -1,0 +1,82 @@
+ ▲ candle  agent-a ▾  LIVE  today $12.00 / $100.00  exposure $412.50  P&L 24h +$3.40  ● 0 cards waiting                      ctrl-x ×2 kill 
+ 1 Trade  2 Cockpit  3 Trending  4 Signals  5 P&L  6 Research  7 Journal  8 Perps   settings ▾                                              
+                                                                                                                                            
+╭─ Journal ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│  search  ↑ or a click to search everything recorded: words, a token, an agent                                                            │
+│  ✓ trades   ✓ cards   ✓ kill switch   ✓ Hacc   ✓ memory   ✓ agents   ✓ view   core                                                       │
+│ Nothing recorded yet. Cards, trades, the agent's turns and the kill switch show here as they happen.                                     │
+│                                                                                                                                          │
+│                                                                                                                                          │
+│                                                                                                                                          │
+│                                                                                                                                          │
+╰─ ⇱ ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+                                                                                                                                            
+╭─ Token · trending ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ Trending on Candle (on fire) · 5s ago                                                                                                    │
+│ ORBIT     $4.2M  Orbit Coin                                                                                                              │
+│ KETTL     $2.1M  Kettle Coin                                                                                                             │
+│ LUMEN     $1.4M  Lumen Coin                                                                                                              │
+│ BASAL     $1.1M  Basalt Coin                                                                                                             │
+│ FENNE     $840K  Fennel Coin                                                                                                             │
+│ QUILL         —  Quill Coin                                                                                                              │
+│ MARRO     $600K  Marrow Coin                                                                                                             │
+│ TUNDR     $525K  Tundra Coin                                                                                                             │
+│ SAFFR     $467K  Saffron Coin                                                                                                            │
+│ PYLON     $420K  Pylon Coin                                                                                                              │
+│ WISP      $382K  Wisp Coin                                                                                                               │
+│                                                                                                                                          │
+│ The token the agent discusses, or the one you pick, shows here.                                                                          │
+╰─ ⇱ ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+                                                                                                                                            
+╭─ agent-a ─────────────────────────────────────────────────────────────────────────────────────────────────────── Claude Code · sonnet ▾ ─╮
+│ you › what's trending?                                                                                                                   │
+│                                                                                                                                          │
+│   Orbit leads the on-fire list. Want me to check it?  ⧉                                                                                  │
+│                                                                                                                                          │
+│                                                                                                                                          │
+│                                                                                                                                          │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+                                                                                                                                            
+› type a command or ask the agent                                                                                ctrl-k palette    ? help   
+
+--- colours ---
+0: ffffff/0e1115×1 f6f8fb/0e1115×8 ffffff/0e1115×1 6cb6ff/16263a×11 0b0d10/3ddc84×6 ffffff/0e1115×1 959dab/0e1115×6 f6f8fb/0e1115×6 959dab/0e1115×10 ffffff/0e1115×2 959dab/0e1115×9 f6f8fb/0e1115×7 ffffff/0e1115×2 959dab/0e1115×8 3ddc84/0e1115×6 ffffff/0e1115×2 959dab/0e1115×17 ffffff/0e1115×21 ff5c5c/3a1619×16
+1: ffffff/0b0d10×1 6cb6ff/0b0d10×7 ffffff/0b0d10×2 6cb6ff/0b0d10×9 ffffff/0b0d10×2 6cb6ff/0b0d10×10 ffffff/0b0d10×2 6cb6ff/0b0d10×9 ffffff/0b0d10×2 6cb6ff/0b0d10×5 ffffff/0b0d10×2 6cb6ff/0b0d10×10 ffffff/0b0d10×2 f6f8fb/0b0d10+9×9 ffffff/0b0d10×2 6cb6ff/0b0d10×7 ffffff/0b0d10×2 6cb6ff/16263a×12 ffffff/0b0d10×45
+2: ffffff/0b0d10×140
+3: 252a33/111419×2 b392f0/111419×9 252a33/111419×129
+4: 252a33/111419×1 ffffff/111419×1 6cb6ff/16263a×8 dde2ea/111419×1 959dab/111419×68 ffffff/111419×60 252a33/111419×1
+5: 252a33/111419×1 ffffff/111419×1 6cb6ff/16263a×10 dde2ea/111419×1 6cb6ff/16263a×9 dde2ea/111419×1 6cb6ff/16263a×15 dde2ea/111419×1 6cb6ff/16263a×8 dde2ea/111419×1 6cb6ff/16263a×10 dde2ea/111419×1 6cb6ff/16263a×10 dde2ea/111419×1 6cb6ff/16263a×8 dde2ea/111419×1 6cb6ff/16263a×6 dde2ea/111419×1 ffffff/111419×53 252a33/111419×1
+6: 252a33/111419×1 ffffff/111419×1 959dab/111419×100 ffffff/111419×37 252a33/111419×1
+7: 252a33/111419×1 ffffff/111419×138 252a33/111419×1
+8: 252a33/111419×1 ffffff/111419×138 252a33/111419×1
+9: 252a33/111419×1 ffffff/111419×138 252a33/111419×1
+10: 252a33/111419×1 ffffff/111419×138 252a33/111419×1
+11: 252a33/111419×2 6cb6ff/16263a×3 252a33/111419×135
+12: ffffff/0b0d10×140
+13: 252a33/111419×2 b392f0/111419×18 252a33/111419×120
+14: 252a33/111419×1 ffffff/111419×1 959dab/111419×37 ffffff/111419×100 252a33/111419×1
+15: 252a33/111419×1 ffffff/111419×1 f6f8fb/111419×9 dde2ea/111419×6 959dab/111419×12 ffffff/111419×110 252a33/111419×1
+16: 252a33/111419×1 ffffff/111419×1 f6f8fb/111419×9 dde2ea/111419×6 959dab/111419×13 ffffff/111419×109 252a33/111419×1
+17: 252a33/111419×1 ffffff/111419×1 f6f8fb/111419×9 dde2ea/111419×6 959dab/111419×12 ffffff/111419×110 252a33/111419×1
+18: 252a33/111419×1 ffffff/111419×1 f6f8fb/111419×9 dde2ea/111419×6 959dab/111419×13 ffffff/111419×109 252a33/111419×1
+19: 252a33/111419×1 ffffff/111419×1 f6f8fb/111419×9 dde2ea/111419×6 959dab/111419×13 ffffff/111419×109 252a33/111419×1
+20: 252a33/111419×1 ffffff/111419×1 f6f8fb/111419×9 dde2ea/111419×6 959dab/111419×12 ffffff/111419×110 252a33/111419×1
+21: 252a33/111419×1 ffffff/111419×1 f6f8fb/111419×9 dde2ea/111419×6 959dab/111419×13 ffffff/111419×109 252a33/111419×1
+22: 252a33/111419×1 ffffff/111419×1 f6f8fb/111419×9 dde2ea/111419×6 959dab/111419×13 ffffff/111419×109 252a33/111419×1
+23: 252a33/111419×1 ffffff/111419×1 f6f8fb/111419×9 dde2ea/111419×6 959dab/111419×14 ffffff/111419×108 252a33/111419×1
+24: 252a33/111419×1 ffffff/111419×1 f6f8fb/111419×9 dde2ea/111419×6 959dab/111419×12 ffffff/111419×110 252a33/111419×1
+25: 252a33/111419×1 ffffff/111419×1 f6f8fb/111419×9 dde2ea/111419×6 959dab/111419×11 ffffff/111419×111 252a33/111419×1
+26: 252a33/111419×1 ffffff/111419×138 252a33/111419×1
+27: 252a33/111419×1 ffffff/111419×1 959dab/111419×63 ffffff/111419×74 252a33/111419×1
+28: 252a33/111419×2 6cb6ff/16263a×3 252a33/111419×135
+29: ffffff/0b0d10×140
+30: 32fe9f/111419×2 b392f0/111419×9 32fe9f/111419×103 6cb6ff/16263a×24 32fe9f/111419×2
+31: 32fe9f/111419×1 ffffff/111419×1 959dab/111419×6 f6f8fb/111419×16 ffffff/111419×115 32fe9f/111419×1
+32: 32fe9f/111419×1 ffffff/111419×138 32fe9f/111419×1
+33: 32fe9f/111419×1 ffffff/111419×1 dde2ea/111419×52 959dab/111419×1 6cb6ff/16263a×3 ffffff/111419×81 32fe9f/111419×1
+34: 32fe9f/111419×1 ffffff/111419×138 32fe9f/111419×1
+35: 32fe9f/111419×1 ffffff/111419×138 32fe9f/111419×1
+36: 32fe9f/111419×1 ffffff/111419×138 32fe9f/111419×1
+37: 32fe9f/111419×140
+38: 959dab/0b0d10×1 ffffff/0b0d10×139
+39: f6f8fb/0e1115×2 959dab/0e1115×31 ffffff/0e1115×79 6cb6ff/16263a×16 959dab/0e1115×2 6cb6ff/16263a×8 959dab/0e1115×2

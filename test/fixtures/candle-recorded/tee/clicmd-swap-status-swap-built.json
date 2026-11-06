@@ -1,0 +1,15 @@
+{
+  "command": "swap status <swap id> --kind swap --json",
+  "exit": 0,
+  "stdout": {
+    "job": {
+      "status": "built",
+      "clientTradeId": "00000000-0000-4000-8000-000000000006",
+      "kind": "swap",
+      "signature": null
+    },
+    "success": true,
+    "kind": "swap",
+    "clientTradeId": "00000000-0000-4000-8000-000000000006"
+  }
+}

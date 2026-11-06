@@ -1,0 +1,13 @@
+{
+  "name": "refused-strategy-not-a-number",
+  "method": "GET",
+  "route": "/v1/strategies/00000000-0000-0000-0000-000000000000",
+  "query": {},
+  "status": 400,
+  "ms": 127,
+  "bytes": 45,
+  "contentType": "application/json; charset=utf-8",
+  "answer": {
+    "error": "id: Expected number, received nan"
+  }
+}

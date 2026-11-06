@@ -1,0 +1,3 @@
+#!/bin/sh
+# Refuse personal details in the commit message and author line. See scripts/scrub-check.ts.
+exec bun scripts/scrub-check.ts --message "$1"

@@ -1,0 +1,10 @@
+{
+  "name": "change-group-delete",
+  "method": "DELETE",
+  "route": "/v1/me/groups/352180",
+  "query": {},
+  "status": 204,
+  "ms": 132,
+  "bytes": 0,
+  "answer": "fake-<root>-1"
+}

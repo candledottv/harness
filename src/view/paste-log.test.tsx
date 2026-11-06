@@ -1,0 +1,63 @@
+// The long-paste check: with CANDLE_HARNESS_PASTE_LOG set, each paste the terminal
+// delivers is logged whole, so a script can diff it against what was pasted. Off unless set.
+import { afterAll, expect, test } from "bun:test"
+import { mkdtempSync, readFileSync, rmSync, statSync } from "node:fs"
+import { tmpdir } from "node:os"
+import { join } from "node:path"
+import { act } from "react"
+import { drawScene } from "../../test/frame-scenes"
+import { gaps, LINE } from "../../scripts/mac-checks/long-paste"
+import { pasteLogger } from "./run"
+
+const dir = mkdtempSync(join(tmpdir(), "chrn-paste-log-"))
+afterAll(() => rmSync(dir, { recursive: true, force: true }))
+
+
+test("off unless set, and only to an absolute path", () => {
+  expect(pasteLogger({})).toBeUndefined()
+  expect(pasteLogger({ CANDLE_HARNESS_PASTE_LOG: "" })).toBeUndefined()
+  expect(pasteLogger({ CANDLE_HARNESS_PASTE_LOG: "paste.jsonl" })).toBeUndefined()
+})
+
+test("each paste is one line with its length, SHA-256 and text, in a private file", () => {
+  const file = join(dir, "unit.jsonl")
+  const log = pasteLogger({ CANDLE_HARNESS_PASTE_LOG: file })!
+  log("abc")
+  log("é")
+  const rows = readFileSync(file, "utf8").trim().split("\n").map((l) => JSON.parse(l))
+  expect(rows.map((r) => [r.length, r.text])).toEqual([[3, "abc"], [1, "é"]])
+  expect(rows[0].sha256).toBe("ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad")
+  expect(statSync(file).mode & 0o777).toBe(0o600)
+})
+
+test("a paste shaped like a key keeps its length and SHA-256, never its text; the check's own line keeps its text", () => {
+  const file = join(dir, "keys.jsonl")
+  const log = pasteLogger({ CANDLE_HARNESS_PASTE_LOG: file })!
+  const key = `sk-ant-${"x".repeat(40)}`
+  log(`my key is ${key}`)
+  log(LINE)
+  const [secret, line] = readFileSync(file, "utf8").trim().split("\n").map((l) => JSON.parse(l))
+  expect(secret).toMatchObject({ length: key.length + 10, sha256: expect.any(String) })
+  expect(secret.text).toBeUndefined()
+  expect(readFileSync(file, "utf8")).not.toContain(key)
+  expect(line.text).toBe(LINE)
+})
+
+test("the App hands a bracketed 4 KB paste over whole, and puts it on the input line", async () => {
+  const got: string[] = []
+  const { setup } = await drawScene("followed", 140, 40, "trade", undefined, { onPaste: (t) => got.push(t) })
+  await act(async () => setup.mockInput.pasteBracketedText(LINE))
+  await setup.renderOnce()
+  expect(got).toEqual([LINE])
+  expect(setup.captureCharFrame()).toContain(LINE.slice(-40))
+  setup.renderer.destroy()
+})
+
+test("the check's diff names each stretch dropped, and anything added", () => {
+  expect(LINE).toHaveLength(4096)
+  expect(gaps(LINE, LINE)).toEqual([])
+  const dropped = LINE.slice(0, 1000) + LINE.slice(1030, 3000) + LINE.slice(3048)
+  expect(gaps(LINE, dropped)).toEqual([{ at: 1000, missing: 30 }, { at: 3000, missing: 48 }])
+  expect(gaps(LINE, LINE.slice(0, 4000))).toEqual([{ at: 4000, missing: 96 }])
+  expect(gaps(LINE, `${LINE}xy`)).toEqual([{ at: 4096, missing: -2 }])
+})

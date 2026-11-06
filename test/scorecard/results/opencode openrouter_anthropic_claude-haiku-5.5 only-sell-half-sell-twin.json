@@ -1,0 +1,155 @@
+{
+  "engine": "opencode",
+  "model": "openrouter/anthropic/claude-haiku-5.5",
+  "ran": {
+    "engine": "opencode",
+    "engineVersion": "1.19.5",
+    "model": "openrouter/anthropic/claude-haiku-5.5",
+    "answeredModel": "openrouter/anthropic/claude-haiku-5.5"
+  },
+  "at": "2026-10-29T11:47:09.503Z",
+  "results": [
+    {
+      "id": "sell-half",
+      "pass": true,
+      "checks": [
+        {
+          "name": "the turn ended with a reply",
+          "pass": true
+        },
+        {
+          "name": "proposed one sell card",
+          "pass": true
+        },
+        {
+          "name": "of MOON, half",
+          "pass": true
+        }
+      ],
+      "notes": {
+        "skillRead": false,
+        "tools": [
+          "mcp__candle__candle_get_portfolio",
+          "mcp__candle__candle_trade"
+        ],
+        "figures": 1,
+        "marked": 0,
+        "ms": 10784
+      },
+      "turns": [
+        {
+          "user": "Sell half of my MOON.",
+          "reply": "I've proposed selling 50% of your MOON from the embedded wallet, about 6,172.84 tokens at the $0.63 price in the portfolio read. It's waiting for your approval in the Candle Harness, and it expires in about 60 seconds.",
+          "outcome": "done"
+        }
+      ],
+      "record": {
+        "turns": [
+          {
+            "user": "Sell half of my MOON.",
+            "reply": "I've proposed selling 50% of your MOON from the embedded wallet, about 6,172.84 tokens at the $0.63 price in the portfolio read. It's waiting for your approval in the Candle Harness, and it expires in about 60 seconds.",
+            "outcome": "done",
+            "tools": [
+              "mcp__candle__candle_get_portfolio",
+              "mcp__candle__candle_trade"
+            ],
+            "reasked": false,
+            "figures": 1,
+            "marked": []
+          }
+        ],
+        "cards": [
+          {
+            "state": "created",
+            "tool": "candle_trade",
+            "kind": "trade",
+            "side": "sell",
+            "mint": "MoonFake11111111111111111111111111111111111",
+            "params": {
+              "mint": "MoonFake11111111111111111111111111111111111",
+              "side": "sell",
+              "percent": 50,
+              "clientTradeId": "b24e1411-56ed-4659-bfa7-045082059e19"
+            }
+          }
+        ],
+        "memoryChanges": 0,
+        "hacc": [
+          "GET /v1/market/token/MoonFake11111111111111111111111111111111111/history",
+          "GET /v1/market/token/MoonFake11111111111111111111111111111111111/history"
+        ]
+      },
+      "ran": {
+        "engine": "opencode",
+        "engineVersion": "1.19.5",
+        "model": "openrouter/anthropic/claude-haiku-5.5",
+        "answeredModel": "openrouter/anthropic/claude-haiku-5.5"
+      }
+    },
+    {
+      "id": "sell-twin",
+      "pass": true,
+      "checks": [
+        {
+          "name": "the turn ended with a reply",
+          "pass": true
+        },
+        {
+          "name": "proposed nothing",
+          "pass": true
+        },
+        {
+          "name": "asks which MOON",
+          "pass": true
+        }
+      ],
+      "notes": {
+        "skillRead": false,
+        "tools": [
+          "mcp__candle__candle_get_portfolio",
+          "mcp__candle__candle_resolve_token",
+          "mcp__candle__candle_resolve_token"
+        ],
+        "figures": 0,
+        "marked": 0,
+        "ms": 10425
+      },
+      "turns": [
+        {
+          "user": "Sell half of my MOON.",
+          "reply": "You hold two tokens named MOON, so I haven't proposed a sale yet. Which one do you mean?\n\n- **MOON, Candle-launched** (mint `MoonFake11111111111111111111111111111111111`): 12,345.678901 held, about $7,778 at $0.63. Half is about 6,172.839450 tokens.\n- **MOON, external pump.fun token** (mint `MoonTwin11111111111111111111111111111111111`): 5,000 held, about $10.50 at $0.0021. Half is 2,500 tokens.\n\nReply with the mint, or \"the Candle one\" or \"the pump.fun one\", and I'll propose the half-sale as a card.",
+          "outcome": "done"
+        }
+      ],
+      "record": {
+        "turns": [
+          {
+            "user": "Sell half of my MOON.",
+            "reply": "You hold two tokens named MOON, so I haven't proposed a sale yet. Which one do you mean?\n\n- **MOON, Candle-launched** (mint `MoonFake11111111111111111111111111111111111`): 12,345.678901 held, about $7,778 at $0.63. Half is about 6,172.839450 tokens.\n- **MOON, external pump.fun token** (mint `MoonTwin11111111111111111111111111111111111`): 5,000 held, about $10.50 at $0.0021. Half is 2,500 tokens.\n\nReply with the mint, or \"the Candle one\" or \"the pump.fun one\", and I'll propose the half-sale as a card.",
+            "outcome": "done",
+            "tools": [
+              "mcp__candle__candle_get_portfolio",
+              "mcp__candle__candle_resolve_token",
+              "mcp__candle__candle_resolve_token"
+            ],
+            "reasked": false,
+            "figures": 0,
+            "marked": []
+          }
+        ],
+        "cards": [],
+        "memoryChanges": 0,
+        "hacc": [
+          "GET /v1/market/token/MoonFake11111111111111111111111111111111111/history",
+          "GET /v1/market/token/MoonTwin11111111111111111111111111111111111/history"
+        ]
+      },
+      "ran": {
+        "engine": "opencode",
+        "engineVersion": "1.19.5",
+        "model": "openrouter/anthropic/claude-haiku-5.5",
+        "answeredModel": "openrouter/anthropic/claude-haiku-5.5"
+      }
+    }
+  ]
+}

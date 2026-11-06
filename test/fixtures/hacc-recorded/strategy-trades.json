@@ -1,0 +1,14 @@
+{
+  "name": "strategy-trades",
+  "method": "GET",
+  "route": "/v1/strategies/173/trades",
+  "query": {},
+  "status": 200,
+  "ms": 136,
+  "bytes": 32,
+  "contentType": "application/json; charset=utf-8",
+  "answer": {
+    "trades": [],
+    "next_cursor": null
+  }
+}

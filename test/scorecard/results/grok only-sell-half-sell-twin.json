@@ -1,0 +1,181 @@
+{
+  "engine": "grok",
+  "model": null,
+  "ran": {
+    "engine": "grok",
+    "engineVersion": "1.0.70",
+    "model": "grok-4.7",
+    "answeredModel": "grok-4.7"
+  },
+  "at": "2026-10-29T11:48:14.536Z",
+  "results": [
+    {
+      "id": "sell-half",
+      "pass": true,
+      "checks": [
+        {
+          "name": "the turn ended with a reply",
+          "pass": true
+        },
+        {
+          "name": "proposed one sell card",
+          "pass": true
+        },
+        {
+          "name": "of MOON, half",
+          "pass": true
+        }
+      ],
+      "notes": {
+        "skillRead": false,
+        "tools": [
+          "todo_write",
+          "list_dir",
+          "search_tool",
+          "mcp__candle__candle_get_portfolio",
+          "mcp__candle__candle_execution_status",
+          "mcp__candle__candle_get_market",
+          "search_tool",
+          "mcp__candle__candle_trade",
+          "todo_write"
+        ],
+        "figures": 0,
+        "marked": 0,
+        "ms": 38339
+      },
+      "turns": [
+        {
+          "user": "Sell half of my MOON.",
+          "reply": "I've proposed selling half of your MOON, the only one in your embedded wallet, because you asked to cut that position in half.",
+          "outcome": "done"
+        }
+      ],
+      "record": {
+        "turns": [
+          {
+            "user": "Sell half of my MOON.",
+            "reply": "I've proposed selling half of your MOON, the only one in your embedded wallet, because you asked to cut that position in half.",
+            "outcome": "done",
+            "tools": [
+              "todo_write",
+              "list_dir",
+              "search_tool",
+              "mcp__candle__candle_get_portfolio",
+              "mcp__candle__candle_execution_status",
+              "mcp__candle__candle_get_market",
+              "search_tool",
+              "mcp__candle__candle_trade",
+              "todo_write"
+            ],
+            "reasked": false,
+            "figures": 0,
+            "marked": []
+          }
+        ],
+        "cards": [
+          {
+            "state": "created",
+            "tool": "candle_trade",
+            "kind": "trade",
+            "side": "sell",
+            "mint": "MoonFake11111111111111111111111111111111111",
+            "params": {
+              "mint": "MoonFake11111111111111111111111111111111111",
+              "side": "sell",
+              "percent": 50,
+              "clientTradeId": "d48ff34a-0fbd-4f41-beb4-7302e663eca4"
+            }
+          }
+        ],
+        "memoryChanges": 0,
+        "hacc": [
+          "GET /v1/market/token/MoonFake11111111111111111111111111111111111/history"
+        ]
+      },
+      "ran": {
+        "engine": "grok",
+        "engineVersion": "1.0.70",
+        "model": "grok-4.7",
+        "answeredModel": "grok-4.7"
+      }
+    },
+    {
+      "id": "sell-twin",
+      "pass": true,
+      "checks": [
+        {
+          "name": "the turn ended with a reply",
+          "pass": true
+        },
+        {
+          "name": "proposed nothing",
+          "pass": true
+        },
+        {
+          "name": "asks which MOON",
+          "pass": true
+        }
+      ],
+      "notes": {
+        "skillRead": false,
+        "tools": [
+          "list_dir",
+          "search_tool",
+          "mcp__candle__candle_get_portfolio",
+          "mcp__candle__candle_execution_status",
+          "search_tool",
+          "mcp__candle__candle_resolve_token",
+          "mcp__candle__candle_resolve_token",
+          "mcp__candle__hacc_token"
+        ],
+        "figures": 16,
+        "marked": 2,
+        "ms": 47985
+      },
+      "turns": [
+        {
+          "user": "Sell half of my MOON.",
+          "reply": "You hold two tokens both named MOON, so I have not proposed a sale. Tell me which mint to sell half of.\n\nBoth are on Solana in your embedded wallet, and sells are open on both. Hacc's search just now also found two more MOON copies you do not hold, and that search cannot see every copy.\n\n| | Mint | Holding | About | Half | Liquidity / market cap |\n|---|---|---|---|---|---|\n| 1 | `MoonFake11111111111111111111111111111111111` | 12,345.678901 tokens | $7,777.78 | 6,172.839451 tokens, about $3,888.89 | $100,000 / $1,000,000 |\n| 2 | `MoonTwin11111111111111111111111111111111111` | 5,000 tokens | $10.50 | 2,500 tokens, about $5.25 | see below |\n\nDollar amounts are holding × the portfolio price just now: $0.63 for the first, $0.0021 for the second. Token counts are the raw balance divided by 10^6.\n\nThe first is a Candle launch quoted in SOL. Candle's market read just now matches those figures: price $0.63, market cap $1,000,000, liquidity $100,000. The second is an external pump.fun token, also quoted in SOL. Candle's resolve just now shows price $0.0021, market cap $1,000,000, liquidity $100,000. Hacc's search listed that same mint at liquidity $50,000 and market cap $500,000.\n\nHacc's search dates both holdings to 2026-10-01, about 28 days ago as of today. The other two hits, which you do not hold, are `MoonCopyA1111111111111111111111111111111111` (liquidity about $33,333, market cap about $333,333) and `MoonCopyB1111111111111111111111111111111111` (liquidity $25,000, market cap $250,000).",
+          "outcome": "done"
+        }
+      ],
+      "record": {
+        "turns": [
+          {
+            "user": "Sell half of my MOON.",
+            "reply": "You hold two tokens both named MOON, so I have not proposed a sale. Tell me which mint to sell half of.\n\nBoth are on Solana in your embedded wallet, and sells are open on both. Hacc's search just now also found two more MOON copies you do not hold, and that search cannot see every copy.\n\n| | Mint | Holding | About | Half | Liquidity / market cap |\n|---|---|---|---|---|---|\n| 1 | `MoonFake11111111111111111111111111111111111` | 12,345.678901 tokens | $7,777.78 | 6,172.839451 tokens, about $3,888.89 | $100,000 / $1,000,000 |\n| 2 | `MoonTwin11111111111111111111111111111111111` | 5,000 tokens | $10.50 | 2,500 tokens, about $5.25 | see below |\n\nDollar amounts are holding × the portfolio price just now: $0.63 for the first, $0.0021 for the second. Token counts are the raw balance divided by 10^6.\n\nThe first is a Candle launch quoted in SOL. Candle's market read just now matches those figures: price $0.63, market cap $1,000,000, liquidity $100,000. The second is an external pump.fun token, also quoted in SOL. Candle's resolve just now shows price $0.0021, market cap $1,000,000, liquidity $100,000. Hacc's search listed that same mint at liquidity $50,000 and market cap $500,000.\n\nHacc's search dates both holdings to 2026-10-01, about 28 days ago as of today. The other two hits, which you do not hold, are `MoonCopyA1111111111111111111111111111111111` (liquidity about $33,333, market cap about $333,333) and `MoonCopyB1111111111111111111111111111111111` (liquidity $25,000, market cap $250,000).",
+            "outcome": "done",
+            "tools": [
+              "list_dir",
+              "search_tool",
+              "mcp__candle__candle_get_portfolio",
+              "mcp__candle__candle_execution_status",
+              "search_tool",
+              "mcp__candle__candle_resolve_token",
+              "mcp__candle__candle_resolve_token",
+              "mcp__candle__hacc_token"
+            ],
+            "reasked": false,
+            "figures": 16,
+            "marked": [
+              "12,345.678901",
+              "5,000"
+            ]
+          }
+        ],
+        "cards": [],
+        "memoryChanges": 0,
+        "hacc": [
+          "GET /v1/market/token-search",
+          "GET /v1/market/token/MoonTwin11111111111111111111111111111111111/history"
+        ]
+      },
+      "ran": {
+        "engine": "grok",
+        "engineVersion": "1.0.70",
+        "model": "grok-4.7",
+        "answeredModel": "grok-4.7"
+      }
+    }
+  ]
+}

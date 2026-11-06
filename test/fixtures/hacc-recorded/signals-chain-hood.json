@@ -1,0 +1,176 @@
+{
+  "name": "signals-chain-hood",
+  "method": "GET",
+  "route": "/v1/signals",
+  "query": {
+    "chain": "hood",
+    "limit": "20"
+  },
+  "status": 200,
+  "ms": 158,
+  "bytes": 16254,
+  "contentType": "application/json; charset=utf-8",
+  "answer": {
+    "signals": [
+      {
+        "id": 116145800,
+        "rule_id": 6,
+        "pattern": "new_ticker",
+        "wallet_id": 532755,
+        "asset_id": 124638225,
+        "event_id": 77316756,
+        "event_kind": "swap",
+        "summary": "fake-summary-9",
+        "payload": {
+          "amount": "9324941.63035271",
+          "tx_hash": "0xfa4e000000000000000000000000000000000000000000000000000000000001",
+          "usd_value": "200.17220999999998",
+          "asset_symbol": "fake-asset_symbol-7",
+          "asset_address": "0xfa4e000000000000000000000000000000000001"
+        },
+        "created_at": "2026-10-29T02:48:26.728Z",
+        "wallet_address": "0xfa4e000000000000000000000000000000000002",
+        "wallet_label": null,
+        "wallet_chain": "hood",
+        "wallet_entity": null,
+        "wallet_groups": [
+          "fake-wallet_groups-3"
+        ],
+        "display_label": null,
+        "label_source": null,
+        "asset_symbol": "fake-asset_symbol-7",
+        "asset_address": "0xfa4e000000000000000000000000000000000001",
+        "asset_chain": "hood",
+        "burst": false
+      },
+      {
+        "id": 116113779,
+        "rule_id": 5,
+        "pattern": "intra_book",
+        "wallet_id": 369679,
+        "asset_id": 32681,
+        "event_id": 77305433,
+        "event_kind": "transfer",
+        "summary": "fake-summary-10",
+        "payload": {
+          "amount": "1456.360358080819353248",
+          "tx_hash": "0xfa4e000000000000000000000000000000000000000000000000000000000002",
+          "direction": "in",
+          "counterparty_address": "0xfa4e000000000000000000000000000000000003",
+          "counterparty_wallet_id": 584253
+        },
+        "created_at": "2026-10-29T02:33:01.166Z",
+        "wallet_address": "0xfa4e000000000000000000000000000000000004",
+        "wallet_label": "fake-wallet_label-4",
+        "wallet_chain": "hood",
+        "wallet_entity": "fake-wallet_entity-2",
+        "wallet_groups": [
+          "fake-wallet_groups-15",
+          "fake-wallet_groups-16"
+        ],
+        "display_label": "fake-display_label-4",
+        "label_source": "entity",
+        "asset_symbol": "fake-asset_symbol-8",
+        "asset_address": "0xfa4e000000000000000000000000000000000005",
+        "asset_chain": "hood",
+        "burst": false
+      },
+      {
+        "id": 116103149,
+        "rule_id": 6,
+        "pattern": "new_ticker",
+        "wallet_id": 10724,
+        "asset_id": 126259166,
+        "event_id": 77300294,
+        "event_kind": "swap",
+        "summary": "fake-summary-11",
+        "payload": {
+          "amount": "10162628.1752949",
+          "tx_hash": "0xfa4e000000000000000000000000000000000000000000000000000000000003",
+          "usd_value": "693.945",
+          "asset_symbol": "fake-asset_symbol-9",
+          "asset_address": "0xfa4e000000000000000000000000000000000006"
+        },
+        "created_at": "2026-10-29T02:25:33.054Z",
+        "wallet_address": "0xfa4e000000000000000000000000000000000007",
+        "wallet_label": null,
+        "wallet_chain": "hood",
+        "wallet_entity": null,
+        "wallet_groups": [
+          "fake-wallet_groups-3"
+        ],
+        "display_label": null,
+        "label_source": null,
+        "asset_symbol": "fake-asset_symbol-9",
+        "asset_address": "0xfa4e000000000000000000000000000000000006",
+        "asset_chain": "hood",
+        "burst": false
+      },
+      {
+        "id": 116100968,
+        "rule_id": 6,
+        "pattern": "new_ticker",
+        "wallet_id": 532755,
+        "asset_id": 126307812,
+        "event_id": 77299557,
+        "event_kind": "swap",
+        "summary": "fake-summary-12",
+        "payload": {
+          "amount": "9138049.98558339",
+          "tx_hash": "0xfa4e000000000000000000000000000000000000000000000000000000000004",
+          "usd_value": "346.5285",
+          "asset_symbol": "fake-asset_symbol-10",
+          "asset_address": "0xfa4e000000000000000000000000000000000008"
+        },
+        "created_at": "2026-10-29T02:24:19.791Z",
+        "wallet_address": "0xfa4e000000000000000000000000000000000002",
+        "wallet_label": null,
+        "wallet_chain": "hood",
+        "wallet_entity": null,
+        "wallet_groups": [
+          "fake-wallet_groups-3"
+        ],
+        "display_label": null,
+        "label_source": null,
+        "asset_symbol": "fake-asset_symbol-10",
+        "asset_address": "0xfa4e000000000000000000000000000000000008",
+        "asset_chain": "hood",
+        "burst": false
+      },
+      {
+        "id": 116075241,
+        "rule_id": 3,
+        "pattern": "large_move",
+        "wallet_id": 227350,
+        "asset_id": 125813139,
+        "event_id": null,
+        "event_kind": null,
+        "summary": "fake-summary-13",
+        "payload": {
+          "amount": "7012137.928992573890715618",
+          "tx_hash": "0xfa4e000000000000000000000000000000000000000000000000000000000005",
+          "direction": "out",
+          "usd_value": "14310.60788285023877347454821562934416618514"
+        },
+        "created_at": "2026-10-29T02:12:16.697Z",
+        "wallet_address": "0xfa4e000000000000000000000000000000000009",
+        "wallet_label": "444",
+        "wallet_chain": "hood",
+        "wallet_entity": "fake-wallet_entity-3",
+        "wallet_groups": [
+          "fake-wallet_groups-15",
+          "fake-wallet_groups-16"
+        ],
+        "display_label": "fake-display_label-5",
+        "label_source": "entity",
+        "asset_symbol": "fake-asset_symbol-11",
+        "asset_address": "0xfa4e00000000000000000000000000000000000a",
+        "asset_chain": "hood",
+        "burst": false
+      }
+    ]
+  },
+  "truncated": {
+    "$.signals": 20
+  }
+}

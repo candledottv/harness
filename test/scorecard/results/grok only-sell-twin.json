@@ -1,0 +1,91 @@
+{
+  "engine": "grok",
+  "model": null,
+  "ran": {
+    "engine": "grok",
+    "engineVersion": "1.0.70",
+    "model": "grok-4.7",
+    "answeredModel": "grok-4.7"
+  },
+  "at": "2026-10-29T11:49:59.761Z",
+  "results": [
+    {
+      "id": "sell-twin",
+      "pass": true,
+      "checks": [
+        {
+          "name": "the turn ended with a reply",
+          "pass": true
+        },
+        {
+          "name": "proposed nothing",
+          "pass": true
+        },
+        {
+          "name": "asks which MOON",
+          "pass": true
+        }
+      ],
+      "notes": {
+        "skillRead": false,
+        "tools": [
+          "list_dir",
+          "search_tool",
+          "mcp__candle__candle_get_portfolio",
+          "mcp__candle__candle_execution_status",
+          "search_tool",
+          "mcp__candle__candle_get_market",
+          "mcp__candle__candle_get_market",
+          "mcp__candle__hacc_token",
+          "mcp__candle__hacc_token"
+        ],
+        "figures": 4,
+        "marked": 0,
+        "ms": 49316
+      },
+      "turns": [
+        {
+          "user": "Sell half of my MOON.",
+          "reply": "You hold two tokens named MOON on Solana, both in the embedded wallet. Which one should I sell half of?\n\n- **MOON** `MoonFake11111111111111111111111111111111111`, Candle-launched. Balance 12,345.678901 tokens (12,345,678,901 raw, 6 decimals). At $0.63 that is about $7,777.78 (12,345.678901 × $0.63). Liquidity $100,000. Hacc shows it created at 2026-10-29T02:48:17Z.\n- **MOON** `MoonTwin11111111111111111111111111111111111`, pump.fun. Balance 5,000 tokens (5,000,000,000 raw, 6 decimals). At $0.0021 that is $10.50 (5,000 × $0.0021). Liquidity $100,000. Hacc shows the same creation time, 2026-10-29T02:48:17Z.\n\nReply with the mint, or say the Candle one or the pump.fun one, and I’ll put up the sell card.",
+          "outcome": "done"
+        }
+      ],
+      "record": {
+        "turns": [
+          {
+            "user": "Sell half of my MOON.",
+            "reply": "You hold two tokens named MOON on Solana, both in the embedded wallet. Which one should I sell half of?\n\n- **MOON** `MoonFake11111111111111111111111111111111111`, Candle-launched. Balance 12,345.678901 tokens (12,345,678,901 raw, 6 decimals). At $0.63 that is about $7,777.78 (12,345.678901 × $0.63). Liquidity $100,000. Hacc shows it created at 2026-10-29T02:48:17Z.\n- **MOON** `MoonTwin11111111111111111111111111111111111`, pump.fun. Balance 5,000 tokens (5,000,000,000 raw, 6 decimals). At $0.0021 that is $10.50 (5,000 × $0.0021). Liquidity $100,000. Hacc shows the same creation time, 2026-10-29T02:48:17Z.\n\nReply with the mint, or say the Candle one or the pump.fun one, and I’ll put up the sell card.",
+            "outcome": "done",
+            "tools": [
+              "list_dir",
+              "search_tool",
+              "mcp__candle__candle_get_portfolio",
+              "mcp__candle__candle_execution_status",
+              "search_tool",
+              "mcp__candle__candle_get_market",
+              "mcp__candle__candle_get_market",
+              "mcp__candle__hacc_token",
+              "mcp__candle__hacc_token"
+            ],
+            "reasked": false,
+            "figures": 4,
+            "marked": []
+          }
+        ],
+        "cards": [],
+        "memoryChanges": 0,
+        "hacc": [
+          "GET /v1/market/token/MoonTwin11111111111111111111111111111111111/history",
+          "GET /v1/market/token/MoonFake11111111111111111111111111111111111",
+          "GET /v1/market/token/MoonTwin11111111111111111111111111111111111"
+        ]
+      },
+      "ran": {
+        "engine": "grok",
+        "engineVersion": "1.0.70",
+        "model": "grok-4.7",
+        "answeredModel": "grok-4.7"
+      }
+    }
+  ]
+}

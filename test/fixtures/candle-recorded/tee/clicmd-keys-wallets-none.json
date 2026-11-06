@@ -1,0 +1,14 @@
+{
+  "command": "keys wallets <agent-b prefix> --json (owner)",
+  "exit": 0,
+  "stdout": {
+    "keyPrefix": "FakeKey2",
+    "profileId": "fake-profileId-2",
+    "walletScope": "selected",
+    "wallets": [],
+    "scopeLimit": {
+      "max": 1000,
+      "rows": 0
+    }
+  }
+}

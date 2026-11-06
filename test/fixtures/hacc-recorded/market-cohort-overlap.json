@@ -1,0 +1,37 @@
+{
+  "name": "market-cohort-overlap",
+  "method": "GET",
+  "route": "/v1/market/cohort-overlap",
+  "query": {
+    "mints": "fake-mints-1",
+    "k": "2"
+  },
+  "status": 200,
+  "ms": 370,
+  "bytes": 534,
+  "contentType": "application/json; charset=utf-8",
+  "answer": {
+    "scope": "tracked",
+    "chain": "solana",
+    "mints": [
+      "HaccFake1111111111111111111111111111111112c",
+      "HaccFake1111111111111111111111111111111112d"
+    ],
+    "k": 2,
+    "window": {
+      "from": null,
+      "to": null
+    },
+    "N": 90,
+    "n_basis": "tracked wallets that bought any of these mints",
+    "mint_counts": {
+      "HaccFake1111111111111111111111111111111112c": 1,
+      "HaccFake1111111111111111111111111111111112d": 89
+    },
+    "observed": 0,
+    "intersection": [],
+    "expected": 0.9888888888888889,
+    "lift": 0,
+    "lift_sentence": "observed 0 vs expected 0.99 (0.00x). N = tracked wallets that bought any of these mints"
+  }
+}

@@ -1,0 +1,334 @@
+{
+  "name": "feed-limit-over",
+  "tool": "candle_get_feed",
+  "args": {
+    "bucket": "new",
+    "chain": "solana",
+    "limit": 201
+  },
+  "route": "/api/v1/markets/feed",
+  "query": {
+    "bucket": "new",
+    "chain": "solana",
+    "limit": "201"
+  },
+  "status": 200,
+  "ms": 88,
+  "bytes": 118243,
+  "answer": {
+    "success": true,
+    "bucket": "new",
+    "tokens": [
+      {
+        "address": "TokenFake16zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz",
+        "buckets": [
+          "new",
+          "list"
+        ],
+        "chain": "solana",
+        "change1h": -4.52753976006137,
+        "change24h": -4.52753976006137,
+        "createdAt": 1793367492000,
+        "devBalancePercentage": 10.8014803780787,
+        "freezeAuthorityDisabled": true,
+        "heat": 0.35488754325259514,
+        "holderCount": 18,
+        "image": "https://candle.example/image-11",
+        "isAgent": false,
+        "isCandle": false,
+        "isExclusive": false,
+        "launchpad": "pump.fun",
+        "liquidityUsd": 3441.452352289411,
+        "marketCap": 3905.0174165797107,
+        "mintAuthorityDisabled": true,
+        "name": "fake-name-11",
+        "organicScore": 0,
+        "priceUsd": 0.0000039050174165797106,
+        "sourceUrl": "https://candle.example/sourceUrl-11",
+        "stats": {
+          "m5": {
+            "numBuys": 21,
+            "numSells": 13
+          },
+          "h1": {
+            "numBuys": 21,
+            "numSells": 13
+          },
+          "h24": {
+            "numBuys": 21,
+            "numSells": 13
+          }
+        },
+        "symbol": "fake-symbol-11",
+        "tradeable": true,
+        "volume1h": 2463.6691097922076,
+        "volume24h": 2463.6691097922076,
+        "isNew": true,
+        "isOnFire": false,
+        "isGraduated": false,
+        "isList": true,
+        "isBlueChip": false,
+        "newSortAt": 1793367492000,
+        "marketOwner": "refresh",
+        "marketOwnerRevision": 1,
+        "liquidityHighWaterUsd": 3441.452352289411,
+        "liquidityDrawdownBps": 0,
+        "priceChange5m": -4.52753976006137,
+        "buyCount5m": 21,
+        "sellCount5m": 13,
+        "volume5m": 2463.6691097922076,
+        "jupiterOk": true,
+        "externalTradeable": true,
+        "paperDiscoveryOk": true,
+        "organic0LiveOk": true,
+        "updatedAt": 1793367500621,
+        "_creationTime": 1793367497385,
+        "icon": "https://candle.example/icon-10",
+        "iconState": "ready"
+      },
+      {
+        "address": "TokenFake17zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz",
+        "buckets": [
+          "new"
+        ],
+        "chain": "solana",
+        "createdAt": 1793367492000,
+        "devBalancePercentage": 0.8047260984276999,
+        "freezeAuthorityDisabled": true,
+        "heat": 0,
+        "holderCount": 2,
+        "isAgent": false,
+        "isCandle": false,
+        "isExclusive": false,
+        "launchpad": "pump.fun",
+        "marketCap": 2690.2410109637244,
+        "mintAuthorityDisabled": true,
+        "name": "fake-name-12",
+        "organicScore": 0,
+        "priceUsd": 0.0000026902410109637244,
+        "sourceUrl": "https://candle.example/sourceUrl-12",
+        "stats": {
+          "m5": {
+            "numBuys": 1
+          },
+          "h1": {
+            "numBuys": 1
+          },
+          "h24": {
+            "numBuys": 1
+          }
+        },
+        "symbol": "fake-symbol-12",
+        "tradeable": true,
+        "volume1h": 21.64907152583029,
+        "volume24h": 21.64907152583029,
+        "isNew": true,
+        "isOnFire": false,
+        "isGraduated": false,
+        "isList": false,
+        "isBlueChip": false,
+        "newSortAt": 1793367492000,
+        "marketOwner": "refresh",
+        "marketOwnerRevision": 1,
+        "buyCount5m": 1,
+        "volume5m": 21.64907152583029,
+        "jupiterOk": true,
+        "externalTradeable": true,
+        "paperDiscoveryOk": true,
+        "organic0LiveOk": false,
+        "updatedAt": 1793367499312,
+        "_creationTime": 1793367497385,
+        "iconState": "none"
+      },
+      {
+        "address": "TokenFake18zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz",
+        "buckets": [
+          "new"
+        ],
+        "chain": "solana",
+        "createdAt": 1793367487000,
+        "devBalancePercentage": 0.16087634378835,
+        "freezeAuthorityDisabled": true,
+        "heat": 0,
+        "holderCount": 3,
+        "image": "https://candle.example/image-12",
+        "isAgent": false,
+        "isCandle": false,
+        "isExclusive": false,
+        "launchpad": "pump.fun",
+        "marketCap": 3192.835608615449,
+        "mintAuthorityDisabled": true,
+        "name": "fake-name-13",
+        "organicScore": 0,
+        "priceUsd": 0.0000031928356086154492,
+        "sourceUrl": "https://candle.example/sourceUrl-13",
+        "stats": {
+          "m5": {
+            "numBuys": 1
+          },
+          "h1": {
+            "numBuys": 1
+          },
+          "h24": {
+            "numBuys": 1
+          }
+        },
+        "symbol": "fake-symbol-13",
+        "tradeable": true,
+        "volume1h": 8.61684403739934,
+        "volume24h": 18.71202983253331,
+        "isNew": true,
+        "isOnFire": false,
+        "isGraduated": false,
+        "isList": false,
+        "isBlueChip": false,
+        "newSortAt": 1793367487000,
+        "marketOwner": "refresh",
+        "marketOwnerRevision": 1,
+        "buyCount5m": 1,
+        "volume5m": 8.61684403739934,
+        "jupiterOk": true,
+        "externalTradeable": true,
+        "paperDiscoveryOk": true,
+        "organic0LiveOk": false,
+        "updatedAt": 1793367497337,
+        "_creationTime": 1793367492366,
+        "icon": "https://candle.example/icon-11",
+        "iconState": "ready",
+        "change1h": 19.220382033589782,
+        "change24h": 19.220382033589782
+      },
+      {
+        "address": "TokenFake19zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz",
+        "buckets": [
+          "new"
+        ],
+        "chain": "solana",
+        "change1h": 53.01085950762404,
+        "change24h": 53.01085950762404,
+        "createdAt": 1793367476000,
+        "devBalancePercentage": 0.6249006372839,
+        "freezeAuthorityDisabled": true,
+        "heat": 0.15449281493343064,
+        "holderCount": 56,
+        "image": "https://candle.example/image-13",
+        "isAgent": false,
+        "isCandle": false,
+        "isExclusive": false,
+        "launchpad": "pump.fun",
+        "liquidityUsd": 6074.387119533446,
+        "marketCap": 12859.597311442009,
+        "mintAuthorityDisabled": true,
+        "name": "fake-name-14",
+        "organicScore": 0,
+        "priceUsd": 0.000012859597311442009,
+        "sourceUrl": "https://candle.example/sourceUrl-14",
+        "stats": {
+          "m5": {
+            "numBuys": 68,
+            "numSells": 32
+          },
+          "h1": {
+            "numBuys": 68,
+            "numSells": 32
+          },
+          "h24": {
+            "numBuys": 68,
+            "numSells": 32
+          }
+        },
+        "symbol": "fake-symbol-14",
+        "tradeable": true,
+        "volume1h": 5465.069022508585,
+        "volume24h": 6168.055508804241,
+        "isNew": true,
+        "isOnFire": false,
+        "isGraduated": false,
+        "isList": false,
+        "isBlueChip": false,
+        "newSortAt": 1793367476000,
+        "marketOwner": "refresh",
+        "marketOwnerRevision": 1,
+        "liquidityHighWaterUsd": 6074.387119533446,
+        "liquidityDrawdownBps": 0,
+        "priceChange5m": 42.87559009313908,
+        "buyCount5m": 68,
+        "sellCount5m": 32,
+        "volume5m": 5465.069022508585,
+        "jupiterOk": true,
+        "externalTradeable": true,
+        "paperDiscoveryOk": true,
+        "organic0LiveOk": true,
+        "updatedAt": 1793367497337,
+        "_creationTime": 1793367482374,
+        "icon": "https://candle.example/icon-12",
+        "iconState": "ready"
+      },
+      {
+        "address": "TokenFake20zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz",
+        "buckets": [
+          "new"
+        ],
+        "chain": "solana",
+        "createdAt": 1793367475000,
+        "devBalancePercentage": 0.3520918746848,
+        "freezeAuthorityDisabled": true,
+        "heat": 0.1253267608178472,
+        "isAgent": false,
+        "isCandle": false,
+        "isExclusive": false,
+        "launchpad": "pump.fun",
+        "marketCap": 2681.9230283336055,
+        "mintAuthorityDisabled": true,
+        "name": "fake-name-15",
+        "organicScore": 0,
+        "priceUsd": 0.0000026819230283336054,
+        "sourceUrl": "https://candle.example/sourceUrl-15",
+        "stats": {
+          "m5": {
+            "numBuys": 1
+          },
+          "h1": {
+            "numBuys": 1
+          },
+          "h24": {
+            "numBuys": 1
+          }
+        },
+        "symbol": "fake-symbol-15",
+        "tradeable": true,
+        "volume1h": 9.442833068063152,
+        "volume24h": 9.442833068063152,
+        "isNew": true,
+        "isOnFire": false,
+        "isGraduated": false,
+        "isList": false,
+        "isBlueChip": false,
+        "newSortAt": 1793367475000,
+        "marketOwner": "refresh",
+        "marketOwnerRevision": 1,
+        "buyCount5m": 1,
+        "volume5m": 9.442833068063152,
+        "jupiterOk": true,
+        "externalTradeable": true,
+        "paperDiscoveryOk": true,
+        "organic0LiveOk": false,
+        "updatedAt": 1793367496292,
+        "_creationTime": 1793367477372,
+        "iconState": "none",
+        "holderCount": 2,
+        "liquidityUsd": 2877.7034094016444,
+        "liquidityHighWaterUsd": 2877.7034094016444,
+        "liquidityDrawdownBps": 0
+      }
+    ],
+    "matched": 79,
+    "scanned": 79,
+    "cursor": "fake:27190",
+    "warming": false,
+    "organicScoreGuidance": "On live screens, do not hard-skip organicScore=0 when organic0LiveOk is true (Jupiter-routable with visible m5 momentum). Hard-skip organicScore=0 only when organic0LiveOk is false — no momentum yet."
+  },
+  "truncated": {
+    "$.tokens": 79
+  }
+}

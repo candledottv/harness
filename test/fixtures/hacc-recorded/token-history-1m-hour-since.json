@@ -1,0 +1,16 @@
+{
+  "name": "token-history-1m-hour-since",
+  "method": "GET",
+  "route": "/v1/market/token/HaccFake1111111111111111111111111111111112c/history",
+  "query": {
+    "resolution": "1m",
+    "since": "2026-10-29T01:49:40.977Z"
+  },
+  "status": 400,
+  "ms": 127,
+  "bytes": 52,
+  "contentType": "application/json; charset=utf-8",
+  "answer": {
+    "error": ": Unrecognized key(s) in object: 'since'"
+  }
+}

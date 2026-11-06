@@ -1,0 +1,57 @@
+{
+  "tool": "candle_get_market",
+  "args": {
+    "chain": "solana",
+    "mint": "So11111111111111111111111111111111111111112"
+  },
+  "ms": 78,
+  "outcome": {
+    "kind": "ok",
+    "result": {
+      "success": true,
+      "market": {
+        "chain": "solana",
+        "mint": "So11111111111111111111111111111111111111112",
+        "lifecycle": "trading",
+        "buysOpen": true,
+        "sellsOpen": true,
+        "curveAddress": null,
+        "poolAddress": null,
+        "quoteMint": "So11111111111111111111111111111111111111112",
+        "feeBps": 0,
+        "graduationVenue": "jupiter",
+        "tier": null,
+        "crossingModel": "full-fill-surplus",
+        "metadata": {
+          "name": "Wrapped SOL",
+          "symbol": "SOL",
+          "description": "",
+          "image": "https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png",
+          "socials": {},
+          "onChain": false,
+          "version": null
+        },
+        "quoteDecimals": 9,
+        "migration": {
+          "status": "not_started"
+        },
+        "external": true,
+        "jupiterOk": true,
+        "externalTradeable": true,
+        "paperDiscoveryOk": true,
+        "organic0LiveOk": true,
+        "venue": "jupiter",
+        "candleLaunched": false,
+        "launchpad": null,
+        "trade": {
+          "endpoint": "POST /api/v1/trade/agent/quote",
+          "routable": true
+        },
+        "organicScore": 99,
+        "priceUsd": 150,
+        "marketCap": 1000000000,
+        "liquidityUsd": 10000000
+      }
+    }
+  }
+}

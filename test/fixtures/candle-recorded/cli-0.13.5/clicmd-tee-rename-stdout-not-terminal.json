@@ -1,0 +1,10 @@
+{
+  "command": "candle tee rename <tee address> <label> --json > file",
+  "exit": 1,
+  "stdout": {
+    "ok": false,
+    "code": "VAULT_UNLOCK_FAILED",
+    "message": "tee rename needs a terminal: this CLI reads a vault passphrase or a security key PIN from a hidden prompt and from nowhere else.",
+    "suggestion": "There is no environment variable and no flag that supplies one."
+  }
+}

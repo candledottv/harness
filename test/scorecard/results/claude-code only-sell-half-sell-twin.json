@@ -1,0 +1,156 @@
+{
+  "engine": "claude-code",
+  "model": null,
+  "ran": {
+    "engine": "claude-code",
+    "engineVersion": "2.1.312",
+    "model": null,
+    "answeredModel": "claude-opus-5-5"
+  },
+  "at": "2026-10-29T11:47:08.990Z",
+  "results": [
+    {
+      "id": "sell-half",
+      "pass": true,
+      "checks": [
+        {
+          "name": "the turn ended with a reply",
+          "pass": true
+        },
+        {
+          "name": "proposed one sell card",
+          "pass": true
+        },
+        {
+          "name": "of MOON, half",
+          "pass": true
+        }
+      ],
+      "notes": {
+        "skillRead": false,
+        "tools": [
+          "mcp__candle__candle_get_portfolio",
+          "mcp__candle__candle_resolve_token",
+          "mcp__candle__candle_trade"
+        ],
+        "figures": 0,
+        "marked": 0,
+        "ms": 10174
+      },
+      "turns": [
+        {
+          "user": "Sell half of my MOON.",
+          "reply": "I've put up a card to sell 50% of your MOON from the embedded wallet. MOON is the only token that wallet holds, so I knew which one you meant. It hasn't sold yet: approve the card within 60 seconds and I'll confirm once it settles.",
+          "outcome": "done"
+        }
+      ],
+      "record": {
+        "turns": [
+          {
+            "user": "Sell half of my MOON.",
+            "reply": "I've put up a card to sell 50% of your MOON from the embedded wallet. MOON is the only token that wallet holds, so I knew which one you meant. It hasn't sold yet: approve the card within 60 seconds and I'll confirm once it settles.",
+            "outcome": "done",
+            "tools": [
+              "mcp__candle__candle_get_portfolio",
+              "mcp__candle__candle_resolve_token",
+              "mcp__candle__candle_trade"
+            ],
+            "reasked": false,
+            "figures": 0,
+            "marked": []
+          }
+        ],
+        "cards": [
+          {
+            "state": "created",
+            "tool": "candle_trade",
+            "kind": "trade",
+            "side": "sell",
+            "mint": "MoonFake11111111111111111111111111111111111",
+            "params": {
+              "mint": "MoonFake11111111111111111111111111111111111",
+              "side": "sell",
+              "percent": 50,
+              "clientTradeId": "fec5096e-980c-4558-8a30-0914ec7a8ab6"
+            }
+          }
+        ],
+        "memoryChanges": 0,
+        "hacc": [
+          "GET /v1/market/token/MoonFake11111111111111111111111111111111111/history"
+        ]
+      },
+      "ran": {
+        "engine": "claude-code",
+        "engineVersion": "2.1.312",
+        "model": null,
+        "answeredModel": "claude-opus-5-5"
+      }
+    },
+    {
+      "id": "sell-twin",
+      "pass": true,
+      "checks": [
+        {
+          "name": "the turn ended with a reply",
+          "pass": true
+        },
+        {
+          "name": "proposed nothing",
+          "pass": true
+        },
+        {
+          "name": "asks which MOON",
+          "pass": true
+        }
+      ],
+      "notes": {
+        "skillRead": false,
+        "tools": [
+          "mcp__candle__candle_get_portfolio",
+          "mcp__candle__candle_resolve_token",
+          "mcp__candle__candle_resolve_token"
+        ],
+        "figures": 2,
+        "marked": 0,
+        "ms": 10604
+      },
+      "turns": [
+        {
+          "user": "Sell half of my MOON.",
+          "reply": "Your embedded wallet holds two different tokens with the symbol MOON, so I haven't proposed a sale yet. Which one do you want to sell half of?\n\n1. **MOON (Candle-launched)**, `MoonFake11111111111111111111111111111111111`, on Candle's curve. You hold about 12,345.68 tokens at $0.63 each, so roughly $7,778.\n2. **MOON (pump.fun, routed via Jupiter)**, `MoonTwin11111111111111111111111111111111111`. You hold 5,000 tokens at $0.0021 each, so about $10.50.\n\nI worked out the dollar values from the portfolio balances and prices I just read. Tell me 1, 2 or both, and I'll propose selling 50% on a card.",
+          "outcome": "done"
+        }
+      ],
+      "record": {
+        "turns": [
+          {
+            "user": "Sell half of my MOON.",
+            "reply": "Your embedded wallet holds two different tokens with the symbol MOON, so I haven't proposed a sale yet. Which one do you want to sell half of?\n\n1. **MOON (Candle-launched)**, `MoonFake11111111111111111111111111111111111`, on Candle's curve. You hold about 12,345.68 tokens at $0.63 each, so roughly $7,778.\n2. **MOON (pump.fun, routed via Jupiter)**, `MoonTwin11111111111111111111111111111111111`. You hold 5,000 tokens at $0.0021 each, so about $10.50.\n\nI worked out the dollar values from the portfolio balances and prices I just read. Tell me 1, 2 or both, and I'll propose selling 50% on a card.",
+            "outcome": "done",
+            "tools": [
+              "mcp__candle__candle_get_portfolio",
+              "mcp__candle__candle_resolve_token",
+              "mcp__candle__candle_resolve_token"
+            ],
+            "reasked": false,
+            "figures": 2,
+            "marked": []
+          }
+        ],
+        "cards": [],
+        "memoryChanges": 0,
+        "hacc": [
+          "GET /v1/market/token/MoonFake11111111111111111111111111111111111/history",
+          "GET /v1/market/token/MoonTwin11111111111111111111111111111111111/history"
+        ]
+      },
+      "ran": {
+        "engine": "claude-code",
+        "engineVersion": "2.1.312",
+        "model": null,
+        "answeredModel": "claude-opus-5-5"
+      }
+    }
+  ]
+}

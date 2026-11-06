@@ -1,0 +1,184 @@
+{
+  "name": "research-pattern-chain-hood",
+  "method": "GET",
+  "route": "/v1/signals",
+  "query": {
+    "pattern": "new_ticker",
+    "chain": "hood",
+    "limit": "50"
+  },
+  "status": 200,
+  "ms": 258,
+  "bytes": 40101,
+  "contentType": "application/json; charset=utf-8",
+  "answer": {
+    "signals": [
+      {
+        "id": 118480504,
+        "rule_id": 6,
+        "pattern": "new_ticker",
+        "wallet_id": 13797,
+        "asset_id": 129607234,
+        "event_id": 78525908,
+        "event_kind": "swap",
+        "summary": "fake-summary-10",
+        "payload": {
+          "amount": "5465468.88019262",
+          "tx_hash": "0xfa4e000000000000000000000000000000000000000000000000000000000001",
+          "usd_value": "445.98800000000006",
+          "asset_symbol": "fake-asset_symbol-3",
+          "asset_address": "0xfa4e000000000000000000000000000000000001"
+        },
+        "created_at": "2026-10-30T13:26:29.992Z",
+        "wallet_address": "0xfa4e000000000000000000000000000000000002",
+        "wallet_label": "fake-wallet_label-1",
+        "wallet_chain": "hood",
+        "wallet_entity": null,
+        "wallet_groups": [
+          "fake-wallet_groups-1",
+          "fake-wallet_groups-4"
+        ],
+        "display_label": "fake-display_label-2",
+        "label_source": "label",
+        "asset_symbol": "fake-asset_symbol-3",
+        "asset_address": "0xfa4e000000000000000000000000000000000001",
+        "asset_chain": "hood",
+        "burst": false
+      },
+      {
+        "id": 118480502,
+        "rule_id": 6,
+        "pattern": "new_ticker",
+        "wallet_id": 116466,
+        "asset_id": 129607234,
+        "event_id": 78525907,
+        "event_kind": "swap",
+        "summary": "fake-summary-11",
+        "payload": {
+          "amount": "11116004.7615637",
+          "tx_hash": "0xfa4e000000000000000000000000000000000000000000000000000000000002",
+          "usd_value": "1000",
+          "asset_symbol": "fake-asset_symbol-3",
+          "asset_address": "0xfa4e000000000000000000000000000000000001"
+        },
+        "created_at": "2026-10-30T13:26:29.992Z",
+        "wallet_address": "0xfa4e000000000000000000000000000000000003",
+        "wallet_label": null,
+        "wallet_chain": "hood",
+        "wallet_entity": null,
+        "wallet_groups": [
+          "fake-wallet_groups-5",
+          "fake-wallet_groups-1",
+          "fake-wallet_groups-6"
+        ],
+        "display_label": null,
+        "label_source": null,
+        "asset_symbol": "fake-asset_symbol-3",
+        "asset_address": "0xfa4e000000000000000000000000000000000001",
+        "asset_chain": "hood",
+        "burst": false
+      },
+      {
+        "id": 118479792,
+        "rule_id": 6,
+        "pattern": "new_ticker",
+        "wallet_id": 21503,
+        "asset_id": 129607234,
+        "event_id": 78525776,
+        "event_kind": "swap",
+        "summary": "fake-summary-12",
+        "payload": {
+          "amount": "11155177.6536393",
+          "tx_hash": "0xfa4e000000000000000000000000000000000000000000000000000000000003",
+          "usd_value": "891.9760000000001",
+          "asset_symbol": "fake-asset_symbol-3",
+          "asset_address": "0xfa4e000000000000000000000000000000000001"
+        },
+        "created_at": "2026-10-30T13:26:05.210Z",
+        "wallet_address": "0xfa4e000000000000000000000000000000000004",
+        "wallet_label": null,
+        "wallet_chain": "hood",
+        "wallet_entity": null,
+        "wallet_groups": [
+          "fake-wallet_groups-7",
+          "fake-wallet_groups-8"
+        ],
+        "display_label": null,
+        "label_source": null,
+        "asset_symbol": "fake-asset_symbol-3",
+        "asset_address": "0xfa4e000000000000000000000000000000000001",
+        "asset_chain": "hood",
+        "burst": false
+      },
+      {
+        "id": 118479053,
+        "rule_id": 6,
+        "pattern": "new_ticker",
+        "wallet_id": 11447,
+        "asset_id": 129607234,
+        "event_id": 78525601,
+        "event_kind": "swap",
+        "summary": "fake-summary-13",
+        "payload": {
+          "amount": "6189261.50556517",
+          "tx_hash": "0xfa4e000000000000000000000000000000000000000000000000000000000004",
+          "usd_value": "445.98800000000006",
+          "asset_symbol": "fake-asset_symbol-3",
+          "asset_address": "0xfa4e000000000000000000000000000000000001"
+        },
+        "created_at": "2026-10-30T13:25:39.676Z",
+        "wallet_address": "0xfa4e000000000000000000000000000000000005",
+        "wallet_label": null,
+        "wallet_chain": "hood",
+        "wallet_entity": null,
+        "wallet_groups": [
+          "fake-wallet_groups-9",
+          "fake-wallet_groups-10",
+          "fake-wallet_groups-8"
+        ],
+        "display_label": null,
+        "label_source": null,
+        "asset_symbol": "fake-asset_symbol-3",
+        "asset_address": "0xfa4e000000000000000000000000000000000001",
+        "asset_chain": "hood",
+        "burst": false
+      },
+      {
+        "id": 118471125,
+        "rule_id": 6,
+        "pattern": "new_ticker",
+        "wallet_id": 11438,
+        "asset_id": 129607234,
+        "event_id": 78523191,
+        "event_kind": "swap",
+        "summary": "fake-summary-14",
+        "payload": {
+          "amount": "23009283.0796099",
+          "tx_hash": "0xfa4e000000000000000000000000000000000000000000000000000000000005",
+          "usd_value": "736.0550999999999",
+          "asset_symbol": "fake-asset_symbol-3",
+          "asset_address": "0xfa4e000000000000000000000000000000000001"
+        },
+        "created_at": "2026-10-30T13:19:53.847Z",
+        "wallet_address": "0xfa4e000000000000000000000000000000000006",
+        "wallet_label": null,
+        "wallet_chain": "hood",
+        "wallet_entity": null,
+        "wallet_groups": [
+          "fake-wallet_groups-9",
+          "fake-wallet_groups-10",
+          "fake-wallet_groups-8"
+        ],
+        "display_label": null,
+        "label_source": null,
+        "asset_symbol": "fake-asset_symbol-3",
+        "asset_address": "0xfa4e000000000000000000000000000000000001",
+        "asset_chain": "hood",
+        "burst": false
+      }
+    ]
+  },
+  "truncated": {
+    "$.signals": 50
+  }
+}

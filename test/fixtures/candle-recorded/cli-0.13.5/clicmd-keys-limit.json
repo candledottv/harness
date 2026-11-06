@@ -1,0 +1,12 @@
+{
+  "command": "candle keys limit <agent-b> --tx-limit 10 --reset daily --json",
+  "exit": 0,
+  "stdout": {
+    "ok": true,
+    "keyPrefix": "FakeKey2",
+    "txLimit": {
+      "usdMicros": 100000000,
+      "reset": "daily"
+    }
+  }
+}

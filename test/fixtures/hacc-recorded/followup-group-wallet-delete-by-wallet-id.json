@@ -1,0 +1,19 @@
+{
+  "name": "followup-group-wallet-delete-by-wallet-id",
+  "method": "DELETE",
+  "route": "/v1/me/groups/352183/wallets/705271",
+  "query": {},
+  "status": 200,
+  "ms": 131,
+  "bytes": 113,
+  "contentType": "application/json; charset=utf-8",
+  "answer": {
+    "group": {
+      "id": 352183,
+      "name": "fake-name-6",
+      "description": null,
+      "created_at": "2026-10-29T03:07:01.712Z",
+      "wallets": []
+    }
+  }
+}

@@ -1,0 +1,50 @@
+ ▲ candle   SETUP   nothing trades until your agent and its limits exist        
+ ✓ 0  ✓ 1  ✓ 2  ▸ 3 Wallet and limits  · 4  · 5                                 
+╭──────────────────────────────────────────────────────────────── step 3 of 5 ─╮
+│                                                                              │
+│  Limits for agent-a, each with who holds it                                  │
+│                                                                              │
+│  ▸ Use these limits      ⏎ uses them · ↓ to change a figure first            │
+│                                                                              │
+│    who     limit                                                             │
+│    Harness per trade     $10        a trade over it is refused               │
+│    Harness per day       $50        agent-a's trades, from midnight          │
+│    Candle  key cap       $50.00 a day (UTC)   set on its key a step ago      │
+│            The Candle Harness's day and Candle's on agent-a's key are both   │
+│            $50.00; the Candle Harness counts from local midnight, Candle     │
+│            from 00:00 UTC.                                                   │
+│                                                                              │
+│    Candle  per-asset caps, loss limits, circuit breaker                      │
+│            Candle holds these too, set in Candle's Agent Console. A loss     │
+│            limit or the breaker stops the key, sells included, until you     │
+│            resume it there.                                                  │
+│                                                                              │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+ ↑/↓ moves · ⏎ or a click picks · esc back                      ctrl-c ×2 quits 
+
+--- colours ---
+0: f6f8fb/0e1115×11 f6f8fb/2a2f3a×7 959dab/0e1115×54 ffffff/0e1115×8
+1: 3ddc84/0b0d10×15 f6f8fb/0b0d10×23 959dab/0b0d10×10 ffffff/0b0d10×32
+2: 32fe9f/111419×65 959dab/111419×13 32fe9f/111419×2
+3: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
+4: 32fe9f/111419×1 ffffff/111419×2 b392f0/111419×42 ffffff/111419×34 32fe9f/111419×1
+5: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
+6: 32fe9f/111419×1 ffffff/111419×2 32fe9f/1d2430×2 f6f8fb/1d2430×16 dde2ea/1d2430×46 ffffff/1d2430×10 ffffff/111419×2 32fe9f/111419×1
+7: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
+8: 32fe9f/111419×1 ffffff/111419×2 959dab/111419×15 ffffff/111419×61 32fe9f/111419×1
+9: 32fe9f/111419×1 ffffff/111419×2 32fe9f/111419×2 dde2ea/111419×21 f6f8fb/1d2430×10 959dab/111419×28 ffffff/111419×15 32fe9f/111419×1
+10: 32fe9f/111419×1 ffffff/111419×2 32fe9f/111419×2 dde2ea/111419×21 f6f8fb/1d2430×10 959dab/111419×33 ffffff/111419×10 32fe9f/111419×1
+11: 32fe9f/111419×1 ffffff/111419×2 dde2ea/111419×42 959dab/111419×28 ffffff/111419×6 32fe9f/111419×1
+12: 32fe9f/111419×1 ffffff/111419×2 959dab/111419×73 ffffff/111419×3 32fe9f/111419×1
+13: 32fe9f/111419×1 ffffff/111419×2 959dab/111419×71 ffffff/111419×5 32fe9f/111419×1
+14: 32fe9f/111419×1 ffffff/111419×2 959dab/111419×25 ffffff/111419×51 32fe9f/111419×1
+15: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
+16: 32fe9f/111419×1 ffffff/111419×2 dde2ea/111419×54 ffffff/111419×22 32fe9f/111419×1
+17: 32fe9f/111419×1 ffffff/111419×2 959dab/111419×71 ffffff/111419×5 32fe9f/111419×1
+18: 32fe9f/111419×1 ffffff/111419×2 959dab/111419×71 ffffff/111419×5 32fe9f/111419×1
+19: 32fe9f/111419×1 ffffff/111419×2 959dab/111419×26 ffffff/111419×50 32fe9f/111419×1
+20: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
+21: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
+22: 32fe9f/111419×80
+23: 959dab/0e1115×42 ffffff/0e1115×22 959dab/0e1115×16

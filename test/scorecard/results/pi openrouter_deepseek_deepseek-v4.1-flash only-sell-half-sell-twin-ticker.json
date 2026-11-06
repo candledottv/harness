@@ -1,0 +1,224 @@
+{
+  "engine": "pi",
+  "model": "openrouter/deepseek/deepseek-v4.1-flash",
+  "ran": {
+    "engine": "pi",
+    "engineVersion": "1.4.0",
+    "model": "openrouter/deepseek/deepseek-v4.1-flash",
+    "answeredModel": "openrouter/deepseek/deepseek-v4.1-flash"
+  },
+  "at": "2026-10-29T11:43:57.106Z",
+  "results": [
+    {
+      "id": "sell-half",
+      "pass": true,
+      "checks": [
+        {
+          "name": "the turn ended with a reply",
+          "pass": true
+        },
+        {
+          "name": "proposed one sell card",
+          "pass": true
+        },
+        {
+          "name": "of MOON, half",
+          "pass": true
+        }
+      ],
+      "notes": {
+        "skillRead": false,
+        "tools": [
+          "mcp__candle__candle_get_portfolio",
+          "mcp__candle__candle_resolve_token",
+          "mcp__candle__candle_execution_status",
+          "mcp__candle__candle_trade"
+        ],
+        "figures": 0,
+        "marked": 0,
+        "ms": 23882
+      },
+      "turns": [
+        {
+          "user": "Sell half of my MOON.",
+          "reply": "I've proposed selling half your MOON (the one MOON mint your embedded wallet holds) — one key press on the card approves it.\n\nI haven't run the forensics check on it, since this is a sell of something you already hold; say the word if you want the safety flags read anyway.",
+          "outcome": "done"
+        }
+      ],
+      "record": {
+        "turns": [
+          {
+            "user": "Sell half of my MOON.",
+            "reply": "I've proposed selling half your MOON (the one MOON mint your embedded wallet holds) — one key press on the card approves it.\n\nI haven't run the forensics check on it, since this is a sell of something you already hold; say the word if you want the safety flags read anyway.",
+            "outcome": "done",
+            "tools": [
+              "mcp__candle__candle_get_portfolio",
+              "mcp__candle__candle_resolve_token",
+              "mcp__candle__candle_execution_status",
+              "mcp__candle__candle_trade"
+            ],
+            "reasked": false,
+            "figures": 0,
+            "marked": []
+          }
+        ],
+        "cards": [
+          {
+            "state": "created",
+            "tool": "candle_trade",
+            "kind": "trade",
+            "side": "sell",
+            "mint": "MoonFake11111111111111111111111111111111111",
+            "params": {
+              "mint": "MoonFake11111111111111111111111111111111111",
+              "side": "sell",
+              "clientTradeId": "6bd8925f-a4d8-4188-9b0a-a23a87de5205",
+              "percent": 50
+            }
+          }
+        ],
+        "memoryChanges": 0,
+        "hacc": [
+          "GET /v1/market/token/MoonFake11111111111111111111111111111111111/history"
+        ]
+      },
+      "ran": {
+        "engine": "pi",
+        "engineVersion": "1.4.0",
+        "model": "openrouter/deepseek/deepseek-v4.1-flash",
+        "answeredModel": "openrouter/deepseek/deepseek-v4.1-flash"
+      }
+    },
+    {
+      "id": "sell-twin",
+      "pass": true,
+      "checks": [
+        {
+          "name": "the turn ended with a reply",
+          "pass": true
+        },
+        {
+          "name": "proposed nothing",
+          "pass": true
+        },
+        {
+          "name": "asks which MOON",
+          "pass": true
+        }
+      ],
+      "notes": {
+        "skillRead": false,
+        "tools": [
+          "mcp__candle__candle_get_portfolio",
+          "mcp__candle__candle_resolve_token",
+          "mcp__candle__candle_resolve_token"
+        ],
+        "figures": 2,
+        "marked": 2,
+        "ms": 4459
+      },
+      "turns": [
+        {
+          "user": "Sell half of my MOON.",
+          "reply": "Two tokens named MOON are in your wallet, so I need you to pick:\n\n- **MOON** — `MoonFake11111111111111111111111111111111111`, Candle-launched (candle curve), $0.63. You hold 12,345.678901 (about $7,778 at that price — my conversion).\n- **MOON** — `MoonTwin11111111111111111111111111111111111`, pump.fun, routed via Jupiter, $0.0021. You hold 5,000 (about $10.50 — my conversion).\n\nWhich one should I sell half of?",
+          "outcome": "done"
+        }
+      ],
+      "record": {
+        "turns": [
+          {
+            "user": "Sell half of my MOON.",
+            "reply": "Two tokens named MOON are in your wallet, so I need you to pick:\n\n- **MOON** — `MoonFake11111111111111111111111111111111111`, Candle-launched (candle curve), $0.63. You hold 12,345.678901 (about $7,778 at that price — my conversion).\n- **MOON** — `MoonTwin11111111111111111111111111111111111`, pump.fun, routed via Jupiter, $0.0021. You hold 5,000 (about $10.50 — my conversion).\n\nWhich one should I sell half of?",
+            "outcome": "done",
+            "tools": [
+              "mcp__candle__candle_get_portfolio",
+              "mcp__candle__candle_resolve_token",
+              "mcp__candle__candle_resolve_token"
+            ],
+            "reasked": false,
+            "figures": 2,
+            "marked": [
+              "12,345.678901",
+              "5,000"
+            ]
+          }
+        ],
+        "cards": [],
+        "memoryChanges": 0,
+        "hacc": [
+          "GET /v1/market/token/MoonTwin11111111111111111111111111111111111/history"
+        ]
+      },
+      "ran": {
+        "engine": "pi",
+        "engineVersion": "1.4.0",
+        "model": "openrouter/deepseek/deepseek-v4.1-flash",
+        "answeredModel": "openrouter/deepseek/deepseek-v4.1-flash"
+      }
+    },
+    {
+      "id": "ticker",
+      "pass": true,
+      "checks": [
+        {
+          "name": "the turn ended with a reply",
+          "pass": true
+        },
+        {
+          "name": "proposed nothing",
+          "pass": true
+        },
+        {
+          "name": "asks which token",
+          "pass": true
+        }
+      ],
+      "notes": {
+        "skillRead": false,
+        "tools": [
+          "mcp__candle__hacc_token",
+          "mcp__candle__candle_get_feed",
+          "mcp__candle__candle_get_portfolio"
+        ],
+        "figures": 6,
+        "marked": 0,
+        "ms": 9240
+      },
+      "turns": [
+        {
+          "user": "Buy 0.01 SOL of BONK.",
+          "reply": "I found three tokens called BONK, and the search is fuzzy — it can't promise it found every copy, so I'm not going to pick one for you. What it returned:\n\n- **Bonk 1** — `BonkFakeA1111111111111111111111111111111111`, Solana, ~$50k liquidity, ~$400k mcap\n- **Bonk 2** — `BonkFakeB1111111111111111111111111111111111`, Solana, ~$100k liquidity, ~$800k mcap\n- **Bonk 3** — `BonkFakeC1111111111111111111111111111111111`, Solana, ~$150k liquidity, ~$1.2m mcap\n\nAll three were created the same day, so age doesn't separate them either. Your wallets hold no BONK at all, so there's no holding to go on.\n\nWhich mint do you mean? Paste the address, or tell me which of the three, and I'll check it and propose the 0.01 SOL buy.",
+          "outcome": "done"
+        }
+      ],
+      "record": {
+        "turns": [
+          {
+            "user": "Buy 0.01 SOL of BONK.",
+            "reply": "I found three tokens called BONK, and the search is fuzzy — it can't promise it found every copy, so I'm not going to pick one for you. What it returned:\n\n- **Bonk 1** — `BonkFakeA1111111111111111111111111111111111`, Solana, ~$50k liquidity, ~$400k mcap\n- **Bonk 2** — `BonkFakeB1111111111111111111111111111111111`, Solana, ~$100k liquidity, ~$800k mcap\n- **Bonk 3** — `BonkFakeC1111111111111111111111111111111111`, Solana, ~$150k liquidity, ~$1.2m mcap\n\nAll three were created the same day, so age doesn't separate them either. Your wallets hold no BONK at all, so there's no holding to go on.\n\nWhich mint do you mean? Paste the address, or tell me which of the three, and I'll check it and propose the 0.01 SOL buy.",
+            "outcome": "done",
+            "tools": [
+              "mcp__candle__hacc_token",
+              "mcp__candle__candle_get_feed",
+              "mcp__candle__candle_get_portfolio"
+            ],
+            "reasked": false,
+            "figures": 6,
+            "marked": []
+          }
+        ],
+        "cards": [],
+        "memoryChanges": 0,
+        "hacc": [
+          "GET /v1/market/token-search"
+        ]
+      },
+      "ran": {
+        "engine": "pi",
+        "engineVersion": "1.4.0",
+        "model": "openrouter/deepseek/deepseek-v4.1-flash",
+        "answeredModel": "openrouter/deepseek/deepseek-v4.1-flash"
+      }
+    }
+  ]
+}
