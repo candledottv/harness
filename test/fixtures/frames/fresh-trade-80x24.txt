@@ -6,19 +6,19 @@
 │wallets worth watching, markets, token        ││· 5s ago                      │
 │checks, your positions), propose trades as    ││ORBIT     $4.2M  Orbit Coin   │
 │cards you approve with one key, and run any   ││KETTL     $2.1M  Kettle Coin  │
-│candle command you ask for. Paper trades need ││LUMEN     $1.4M  Lumen Coin   │
-│no card.                                      ││BASAL     $1.1M  Basalt Coin  │
-│                                              ││FENNE     $840K  Fennel Coin  │
-│Try:                                          ││QUILL         —  Quill Coin   │
-│  · what's the tape saying in the last hour?  ││MARRO     $600K  Marrow Coin  │
-│  · check this token before I buy: <paste a … ││TUNDR     $525K  Tundra Coin  │
-│  · buy $10 of it in paper mode               ││SAFFR     $467K  Saffron Coin │
-│                                              ││PYLON     $420K  Pylon Coin   │
-│I act on your messages and your triggers.     ││WISP      $382K  Wisp Coin    │
-│Nothing here is financial advice. Signals,    ││                              │
-│backtests and replays describe the past, and  ││The token the agent           │
-│the agent can be wrong: check what matters,   ││discusses, or the one you     │
-│and size what you can lose.                   ││pick, shows here.             │
+│candle command you ask for.                   ││LUMEN     $1.4M  Lumen Coin   │
+│                                              ││BASAL     $1.1M  Basalt Coin  │
+│Try:                                          ││FENNE     $840K  Fennel Coin  │
+│  · what's the tape saying in the last hour?  ││QUILL         —  Quill Coin   │
+│  · check this token before I buy: <paste a … ││MARRO     $600K  Marrow Coin  │
+│  · buy $10 of it                             ││TUNDR     $525K  Tundra Coin  │
+│                                              ││SAFFR     $467K  Saffron Coin │
+│I act on your messages and your triggers.     ││PYLON     $420K  Pylon Coin   │
+│Nothing here is financial advice. Signals,    ││WISP      $382K  Wisp Coin    │
+│backtests and replays describe the past, and  ││                              │
+│the agent can be wrong: check what matters,   ││The token the agent           │
+│and size what you can lose.                   ││discusses, or the one you     │
+│                                              ││pick, shows here.             │
 ╰──────────────────────────────────────────────╯│                              │
                                                 │                              │
 › type a command …   ctrl-k palette    ? help   ╰─ ⇱ ──────────────────────────╯
@@ -32,19 +32,19 @@
 5: 32fe9f/111419×1 dde2ea/111419×38 ffffff/111419×8 32fe9f/111419×1 252a33/111419×1 959dab/111419×8 ffffff/111419×22 252a33/111419×1
 6: 32fe9f/111419×1 dde2ea/111419×42 ffffff/111419×4 32fe9f/111419×1 252a33/111419×1 f6f8fb/111419×9 dde2ea/111419×6 959dab/111419×12 ffffff/111419×3 252a33/111419×1
 7: 32fe9f/111419×1 dde2ea/111419×43 ffffff/111419×3 32fe9f/111419×1 252a33/111419×1 f6f8fb/111419×9 dde2ea/111419×6 959dab/111419×13 ffffff/111419×2 252a33/111419×1
-8: 32fe9f/111419×1 dde2ea/111419×45 ffffff/111419×1 32fe9f/111419×1 252a33/111419×1 f6f8fb/111419×9 dde2ea/111419×6 959dab/111419×12 ffffff/111419×3 252a33/111419×1
-9: 32fe9f/111419×1 dde2ea/111419×8 ffffff/111419×38 32fe9f/111419×1 252a33/111419×1 f6f8fb/111419×9 dde2ea/111419×6 959dab/111419×13 ffffff/111419×2 252a33/111419×1
-10: 32fe9f/111419×1 ffffff/111419×46 32fe9f/111419×1 252a33/111419×1 f6f8fb/111419×9 dde2ea/111419×6 959dab/111419×13 ffffff/111419×2 252a33/111419×1
-11: 32fe9f/111419×1 959dab/111419×4 ffffff/111419×42 32fe9f/111419×1 252a33/111419×1 f6f8fb/111419×9 dde2ea/111419×6 959dab/111419×12 ffffff/111419×3 252a33/111419×1
-12: 32fe9f/111419×1 dde2ea/111419×44 ffffff/111419×2 32fe9f/111419×1 252a33/111419×1 f6f8fb/111419×9 dde2ea/111419×6 959dab/111419×13 ffffff/111419×2 252a33/111419×1
-13: 32fe9f/111419×1 dde2ea/111419×45 ffffff/111419×1 32fe9f/111419×1 252a33/111419×1 f6f8fb/111419×9 dde2ea/111419×6 959dab/111419×13 ffffff/111419×2 252a33/111419×1
-14: 32fe9f/111419×1 dde2ea/111419×31 ffffff/111419×15 32fe9f/111419×1 252a33/111419×1 f6f8fb/111419×9 dde2ea/111419×6 959dab/111419×14 ffffff/111419×1 252a33/111419×1
-15: 32fe9f/111419×1 ffffff/111419×46 32fe9f/111419×1 252a33/111419×1 f6f8fb/111419×9 dde2ea/111419×6 959dab/111419×12 ffffff/111419×3 252a33/111419×1
-16: 32fe9f/111419×1 959dab/111419×41 ffffff/111419×5 32fe9f/111419×1 252a33/111419×1 f6f8fb/111419×9 dde2ea/111419×6 959dab/111419×11 ffffff/111419×4 252a33/111419×1
-17: 32fe9f/111419×1 959dab/111419×42 ffffff/111419×4 32fe9f/111419×1 252a33/111419×1 ffffff/111419×30 252a33/111419×1
-18: 32fe9f/111419×1 959dab/111419×44 ffffff/111419×2 32fe9f/111419×1 252a33/111419×1 959dab/111419×19 ffffff/111419×11 252a33/111419×1
-19: 32fe9f/111419×1 959dab/111419×43 ffffff/111419×3 32fe9f/111419×1 252a33/111419×1 959dab/111419×25 ffffff/111419×5 252a33/111419×1
-20: 32fe9f/111419×1 959dab/111419×27 ffffff/111419×19 32fe9f/111419×1 252a33/111419×1 959dab/111419×17 ffffff/111419×13 252a33/111419×1
+8: 32fe9f/111419×1 dde2ea/111419×27 ffffff/111419×19 32fe9f/111419×1 252a33/111419×1 f6f8fb/111419×9 dde2ea/111419×6 959dab/111419×12 ffffff/111419×3 252a33/111419×1
+9: 32fe9f/111419×1 ffffff/111419×46 32fe9f/111419×1 252a33/111419×1 f6f8fb/111419×9 dde2ea/111419×6 959dab/111419×13 ffffff/111419×2 252a33/111419×1
+10: 32fe9f/111419×1 959dab/111419×4 ffffff/111419×42 32fe9f/111419×1 252a33/111419×1 f6f8fb/111419×9 dde2ea/111419×6 959dab/111419×13 ffffff/111419×2 252a33/111419×1
+11: 32fe9f/111419×1 dde2ea/111419×44 ffffff/111419×2 32fe9f/111419×1 252a33/111419×1 f6f8fb/111419×9 dde2ea/111419×6 959dab/111419×12 ffffff/111419×3 252a33/111419×1
+12: 32fe9f/111419×1 dde2ea/111419×45 ffffff/111419×1 32fe9f/111419×1 252a33/111419×1 f6f8fb/111419×9 dde2ea/111419×6 959dab/111419×13 ffffff/111419×2 252a33/111419×1
+13: 32fe9f/111419×1 dde2ea/111419×17 ffffff/111419×29 32fe9f/111419×1 252a33/111419×1 f6f8fb/111419×9 dde2ea/111419×6 959dab/111419×13 ffffff/111419×2 252a33/111419×1
+14: 32fe9f/111419×1 ffffff/111419×46 32fe9f/111419×1 252a33/111419×1 f6f8fb/111419×9 dde2ea/111419×6 959dab/111419×14 ffffff/111419×1 252a33/111419×1
+15: 32fe9f/111419×1 959dab/111419×41 ffffff/111419×5 32fe9f/111419×1 252a33/111419×1 f6f8fb/111419×9 dde2ea/111419×6 959dab/111419×12 ffffff/111419×3 252a33/111419×1
+16: 32fe9f/111419×1 959dab/111419×42 ffffff/111419×4 32fe9f/111419×1 252a33/111419×1 f6f8fb/111419×9 dde2ea/111419×6 959dab/111419×11 ffffff/111419×4 252a33/111419×1
+17: 32fe9f/111419×1 959dab/111419×44 ffffff/111419×2 32fe9f/111419×1 252a33/111419×1 ffffff/111419×30 252a33/111419×1
+18: 32fe9f/111419×1 959dab/111419×43 ffffff/111419×3 32fe9f/111419×1 252a33/111419×1 959dab/111419×19 ffffff/111419×11 252a33/111419×1
+19: 32fe9f/111419×1 959dab/111419×27 ffffff/111419×19 32fe9f/111419×1 252a33/111419×1 959dab/111419×25 ffffff/111419×5 252a33/111419×1
+20: 32fe9f/111419×1 ffffff/111419×46 32fe9f/111419×1 252a33/111419×1 959dab/111419×17 ffffff/111419×13 252a33/111419×1
 21: 32fe9f/111419×48 252a33/111419×1 ffffff/111419×30 252a33/111419×1
 22: 959dab/0b0d10×1 ffffff/0b0d10×47 252a33/111419×1 ffffff/111419×30 252a33/111419×1
 23: f6f8fb/0e1115×2 959dab/0e1115×16 ffffff/0e1115×2 6cb6ff/16263a×16 959dab/0e1115×2 6cb6ff/16263a×8 959dab/0e1115×2 252a33/111419×2 6cb6ff/16263a×3 252a33/111419×27

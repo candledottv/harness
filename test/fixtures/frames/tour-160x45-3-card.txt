@@ -1,4 +1,4 @@
- ▲ candle  agent-a ▾  PAPER  today $0.00 / $50.00  live exposure —  live P&L —  ● 0 cards waiting                                                ctrl-x ×2 kill 
+ ▲ candle  agent-a ▾  LIVE  today $0.00 / $50.00  exposure —  P&L —  ● 0 cards waiting                                                           ctrl-x ×2 kill 
  1 Trade  2 Cockpit  3 Research  4 Bots  5 Build   settings ▾                                                                                                   
                                                                                                                                                                 
 ╭─ agent-a ────────────────────────────────────────────────────────── Claude Code · sonnet ▾ ─╮ ╭─ Token · trending ───────────────────────────────────────────╮
@@ -6,22 +6,22 @@
 │   agent-a  Claude Code · sonnet, as candle-harness                                          │ │ takes a few seconds.                                         │
 │   wallet   main, asking every time                                                          │ │                                                              │
 │   limits   Harness $10.00 a trade, $50.00 a day · Candle $50.00 a day (UTC)                 │ ╭─ 3 of 6 · A card ──────────────────────────╮                 │
-│   mode     paper; go live from the status bar                                               │ │                                            │                 │
+│   mode     live: real funds, a card per trade                                               │ │                                            │                 │
 │                                                                                             │ │ A trade your agent proposes waits here, in │                 │
 │ Try:                                                                                        │ │ its pane, as a card like this one. ⏎       │                 │
 │   · what's the tape saying in the last hour?                                                │ │ approves it with the input line empty;     │                 │
 │   · check this token before I buy: <paste a mint>                                           │ │ ctrl-n rejects it; ctrl-o shows everything │                 │
-│   · buy $10 of it in paper mode                                                             │ │ it's bound to.                             │                 │
+│   · buy $10 of it                                                                           │ │ it's bound to.                             │                 │
 │                                                                                             │ │                                            │                 │
 │ I act on your messages and your triggers.                                                   │ │ ▌ BUY $5.00 of JUP                      1m │                 │
 │ Nothing here is financial advice. Signals, backtests and replays describe the past, and     │ │ ▌ agent-a                                  │                 │
 │ the agent can be wrong: check what matters, and size what you can lose.                     │ │ ▌ why  drawn for the tour, not a real one  │─────────────────╯
 │                                                                                             │ │ ▌  ⏎ approve    ctrl-n reject              │                  
 │                                                                                             │ │ ▌  ctrl-o details                          │─ all agents ▾ ──╮
-│                                                                                             │ │                                            │es made here     │
-│                                                                                             │ │ Nothing is traded or proposed in the tour. │                 │
 │                                                                                             │ │                                            │                 │
-│                                                                                             │ │  next →   end the tour                     │"                │
+│                                                                                             │ │ Nothing is traded or proposed in the tour. │                 │
+│                                                                                             │ │                                            │"                │
+│                                                                                             │ │  next →   end the tour                     │                 │
 │                                                                                             │ │ → next · ← back · esc ends it              │                 │
 │                                                                                             │ │                                            │                 │
 │                                                                                             │ ╰────────────────────────────────────────────╯                 │
@@ -45,7 +45,7 @@
 › type a command or ask the agent                                   ctrl-k palette    ? help    ╰─ ⇱ ──────────────────────────────────────────────────────────╯
 
 --- colours ---
-0: ffffff/0c0e11×1 414346/0c0e11×1 ffffff/0c0e11×1 414346/0c0e11×6 ffffff/0c0e11×1 ffffff/0e131a×1 213447/0e131a×7 ffffff/0e131a×1 213447/0e131a×1 ffffff/0e131a×1 ffffff/12151a×1 414346/12151a×5 ffffff/12151a×1 ffffff/0c0e11×1 2b2e34/0c0e11×5 ffffff/0c0e11×1 414346/0c0e11×5 ffffff/0c0e11×1 2b2e34/0c0e11×1 ffffff/0c0e11×1 2b2e34/0c0e11×6 ffffff/0c0e11×2 2b2e34/0c0e11×4 ffffff/0c0e11×1 2b2e34/0c0e11×8 ffffff/0c0e11×1 414346/0c0e11×1 ffffff/0c0e11×2 2b2e34/0c0e11×4 ffffff/0c0e11×1 2b2e34/0c0e11×3 ffffff/0c0e11×1 2b2e34/0c0e11×1 ffffff/0c0e11×2 2b2e34/0c0e11×1 ffffff/0c0e11×1 2b2e34/0c0e11×1 ffffff/0c0e11×1 2b2e34/0c0e11×5 ffffff/0c0e11×1 2b2e34/0c0e11×7 ffffff/0c0e11×47 ffffff/160f12×1 431f22/160f12×6 ffffff/160f12×1 431f22/160f12×2 ffffff/160f12×1 431f22/160f12×4 ffffff/160f12×1
+0: ffffff/0c0e11×1 414346/0c0e11×1 ffffff/0c0e11×1 414346/0c0e11×6 ffffff/0c0e11×1 ffffff/0e131a×1 213447/0e131a×7 ffffff/0e131a×1 213447/0e131a×1 ffffff/0e131a×1 ffffff/173d2b×1 0b0d10/173d2b×4 ffffff/173d2b×1 ffffff/0c0e11×1 2b2e34/0c0e11×5 ffffff/0c0e11×1 414346/0c0e11×5 ffffff/0c0e11×1 2b2e34/0c0e11×1 ffffff/0c0e11×1 2b2e34/0c0e11×6 ffffff/0c0e11×2 2b2e34/0c0e11×8 ffffff/0c0e11×1 414346/0c0e11×1 ffffff/0c0e11×2 2b2e34/0c0e11×3 ffffff/0c0e11×1 2b2e34/0c0e11×1 ffffff/0c0e11×2 2b2e34/0c0e11×1 ffffff/0c0e11×1 2b2e34/0c0e11×1 ffffff/0c0e11×1 2b2e34/0c0e11×5 ffffff/0c0e11×1 2b2e34/0c0e11×7 ffffff/0c0e11×58 ffffff/160f12×1 431f22/160f12×6 ffffff/160f12×1 431f22/160f12×2 ffffff/160f12×1 431f22/160f12×4 ffffff/160f12×1
 1: ffffff/0b0d10×1 414346/0b0d10+9×1 ffffff/0b0d10×1 414346/0b0d10+9×5 ffffff/0b0d10×2 213447/0b0d10×1 ffffff/0b0d10×1 213447/0b0d10×7 ffffff/0b0d10×2 213447/0b0d10×1 ffffff/0b0d10×1 213447/0b0d10×8 ffffff/0b0d10×2 213447/0b0d10×1 ffffff/0b0d10×1 213447/0b0d10×4 ffffff/0b0d10×2 213447/0b0d10×1 ffffff/0b0d10×1 213447/0b0d10×5 ffffff/0b0d10×2 ffffff/0e131a×1 213447/0e131a×8 ffffff/0e131a×1 213447/0e131a×1 ffffff/0e131a×1 ffffff/0b0d10×98
 2: ffffff/0b0d10×160
 3: 32fe9f/111419×2 b392f0/111419×9 32fe9f/111419×58 6cb6ff/16263a×24 32fe9f/111419×2 ffffff/0b0d10×1 111418/0c0f12×2 ffffff/0c0f12×1 322c44/0c0f12×5 ffffff/0c0f12×1 322c44/0c0f12×1 ffffff/0c0f12×1 322c44/0c0f12×8 ffffff/0c0f12×1 111418/0c0f12×44
@@ -58,17 +58,17 @@
 10: 32fe9f/111419×1 ffffff/111419×1 959dab/111419×4 ffffff/111419×88 32fe9f/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×1 dde2ea/111419×36 ffffff/111419×7 32fe9f/111419×1 ffffff/0c0f12×17 111418/0c0f12×1
 11: 32fe9f/111419×1 ffffff/111419×1 dde2ea/111419×44 ffffff/111419×48 32fe9f/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×1 dde2ea/111419×38 ffffff/111419×5 32fe9f/111419×1 ffffff/0c0f12×17 111418/0c0f12×1
 12: 32fe9f/111419×1 ffffff/111419×1 dde2ea/111419×49 ffffff/111419×43 32fe9f/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×1 dde2ea/111419×42 ffffff/111419×1 32fe9f/111419×1 ffffff/0c0f12×17 111418/0c0f12×1
-13: 32fe9f/111419×1 ffffff/111419×1 dde2ea/111419×31 ffffff/111419×61 32fe9f/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×1 dde2ea/111419×14 ffffff/111419×29 32fe9f/111419×1 ffffff/0c0f12×17 111418/0c0f12×1
+13: 32fe9f/111419×1 ffffff/111419×1 dde2ea/111419×17 ffffff/111419×75 32fe9f/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×1 dde2ea/111419×14 ffffff/111419×29 32fe9f/111419×1 ffffff/0c0f12×17 111418/0c0f12×1
 14: 32fe9f/111419×1 ffffff/111419×93 32fe9f/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×44 32fe9f/111419×1 ffffff/0c0f12×17 111418/0c0f12×1
 15: 32fe9f/111419×1 ffffff/111419×1 959dab/111419×41 ffffff/111419×51 32fe9f/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×1 f5a524/1d2430×2 f6f8fb/1d2430×16 dde2ea/1d2430×22 f5a524/1d2430×2 ffffff/111419×1 32fe9f/111419×1 ffffff/0c0f12×17 111418/0c0f12×1
 16: 32fe9f/111419×1 ffffff/111419×1 959dab/111419×87 ffffff/111419×5 32fe9f/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×1 f5a524/1d2430×2 959dab/1d2430×7 ffffff/1d2430×33 ffffff/111419×1 32fe9f/111419×1 ffffff/0c0f12×17 111418/0c0f12×1
 17: 32fe9f/111419×1 ffffff/111419×1 959dab/111419×71 ffffff/111419×21 32fe9f/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×1 f5a524/1d2430×2 959dab/1d2430×5 dde2ea/1d2430×34 ffffff/1d2430×1 ffffff/111419×1 32fe9f/111419×1 111418/0c0f12×18
 18: 32fe9f/111419×1 ffffff/111419×93 32fe9f/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×1 f5a524/1d2430×2 6cb6ff/1d2430×11 dde2ea/1d2430×2 6cb6ff/1d2430×15 ffffff/1d2430×12 ffffff/111419×1 32fe9f/111419×1 ffffff/0b0d10×18
 19: 32fe9f/111419×1 ffffff/111419×93 32fe9f/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×1 f5a524/1d2430×2 6cb6ff/1d2430×16 ffffff/1d2430×24 ffffff/111419×1 32fe9f/111419×1 111418/0c0f12×1 ffffff/0e131a×1 213447/0e131a×3 ffffff/0e131a×1 213447/0e131a×6 ffffff/0e131a×1 213447/0e131a×1 ffffff/0e131a×1 111418/0c0f12×3
-20: 32fe9f/111419×1 ffffff/111419×93 32fe9f/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×44 32fe9f/111419×1 2b2e34/0c0f12×2 ffffff/0c0f12×1 2b2e34/0c0f12×4 ffffff/0c0f12×1 2b2e34/0c0f12×4 ffffff/0c0f12×5 111418/0c0f12×1
+20: 32fe9f/111419×1 ffffff/111419×93 32fe9f/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×44 32fe9f/111419×1 ffffff/0c0f12×17 111418/0c0f12×1
 21: 32fe9f/111419×1 ffffff/111419×93 32fe9f/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×1 959dab/111419×42 ffffff/111419×1 32fe9f/111419×1 ffffff/0c0f12×17 111418/0c0f12×1
-22: 32fe9f/111419×1 ffffff/111419×93 32fe9f/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×44 32fe9f/111419×1 ffffff/0c0f12×17 111418/0c0f12×1
-23: 32fe9f/111419×1 ffffff/111419×93 32fe9f/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×1 6cb6ff/16263a×8 ffffff/111419×1 6cb6ff/16263a×14 ffffff/111419×20 32fe9f/111419×1 2b2e34/0c0f12×1 ffffff/0c0f12×16 111418/0c0f12×1
+22: 32fe9f/111419×1 ffffff/111419×93 32fe9f/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×44 32fe9f/111419×1 2b2e34/0c0f12×1 ffffff/0c0f12×16 111418/0c0f12×1
+23: 32fe9f/111419×1 ffffff/111419×93 32fe9f/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×1 6cb6ff/16263a×8 ffffff/111419×1 6cb6ff/16263a×14 ffffff/111419×20 32fe9f/111419×1 ffffff/0c0f12×17 111418/0c0f12×1
 24: 32fe9f/111419×1 ffffff/111419×93 32fe9f/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×1 959dab/111419×29 ffffff/111419×14 32fe9f/111419×1 ffffff/0c0f12×17 111418/0c0f12×1
 25: 32fe9f/111419×1 ffffff/111419×93 32fe9f/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×44 32fe9f/111419×1 ffffff/0c0f12×17 111418/0c0f12×1
 26: 32fe9f/111419×1 ffffff/111419×93 32fe9f/111419×1 ffffff/0b0d10×1 32fe9f/111419×46 ffffff/0c0f12×17 111418/0c0f12×1

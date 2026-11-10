@@ -93,7 +93,7 @@ async function draw(width: number, height: number, view: OnboardingView | undefi
     await s.renderOnce()
   }
   await s.renderOnce()
-  await push("status", { agents: [AGENT], activeAgent: "agent-a", mode: "paper", paused: false })
+  await push("status", { agents: [AGENT], activeAgent: "agent-a", mode: "live", paused: false })
   await push("engine", ENGINES)
   await push("autonomy", AUTONOMY)
   await push("portfolio", PORTFOLIO)

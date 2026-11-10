@@ -1,4 +1,4 @@
- agent-a ▾  PAPER  today $0.00 / $50.00  ● 0 cards waiting       ctrl-x ×2 kill 
+ agent-a ▾  LIVE  today $0.00 / $50.00  ● 0 cards waiting        ctrl-x ×2 kill 
  1 Trade  2 Cockpit  3 Research  4 Bots  5 Build   settings ▾                   
 ╭─ agent-a ─────────── Claude Code · sonnet ▾ ─╮╭─ Token · trending ───────────╮
 │✓ Set up, and ready                           ││ ◂  token  ▸   1/4 · ←/→      │
@@ -24,7 +24,7 @@
 › type a command …   ctrl-k palette    ? help   ╰─ ⇱ ──────────────────────────╯
 
 --- colours ---
-0: ffffff/0e131a×1 213447/0e131a×7 ffffff/0e131a×1 213447/0e131a×1 ffffff/0e131a×1 ffffff/12151a×1 414346/12151a×5 ffffff/12151a×1 ffffff/0c0e11×1 2b2e34/0c0e11×5 ffffff/0c0e11×1 414346/0c0e11×5 ffffff/0c0e11×1 2b2e34/0c0e11×1 ffffff/0c0e11×1 2b2e34/0c0e11×6 ffffff/0c0e11×2 2b2e34/0c0e11×1 ffffff/0c0e11×1 2b2e34/0c0e11×1 ffffff/0c0e11×1 2b2e34/0c0e11×5 ffffff/0c0e11×1 2b2e34/0c0e11×7 ffffff/0c0e11×6 ffffff/160f12×1 431f22/160f12×6 ffffff/160f12×1 431f22/160f12×2 ffffff/160f12×1 431f22/160f12×4 ffffff/160f12×1
+0: ffffff/0e131a×1 213447/0e131a×7 ffffff/0e131a×1 213447/0e131a×1 ffffff/0e131a×1 ffffff/173d2b×1 0b0d10/173d2b×4 ffffff/173d2b×1 ffffff/0c0e11×1 2b2e34/0c0e11×5 ffffff/0c0e11×1 414346/0c0e11×5 ffffff/0c0e11×1 2b2e34/0c0e11×1 ffffff/0c0e11×1 2b2e34/0c0e11×6 ffffff/0c0e11×2 2b2e34/0c0e11×1 ffffff/0c0e11×1 2b2e34/0c0e11×1 ffffff/0c0e11×1 2b2e34/0c0e11×5 ffffff/0c0e11×1 2b2e34/0c0e11×7 ffffff/0c0e11×7 ffffff/160f12×1 431f22/160f12×6 ffffff/160f12×1 431f22/160f12×2 ffffff/160f12×1 431f22/160f12×4 ffffff/160f12×1
 1: ffffff/0b0d10×1 414346/0b0d10+9×1 ffffff/0b0d10×1 414346/0b0d10+9×5 ffffff/0b0d10×2 213447/0b0d10×1 ffffff/0b0d10×1 213447/0b0d10×7 ffffff/0b0d10×2 213447/0b0d10×1 ffffff/0b0d10×1 213447/0b0d10×8 ffffff/0b0d10×2 213447/0b0d10×1 ffffff/0b0d10×1 213447/0b0d10×4 ffffff/0b0d10×2 213447/0b0d10×1 ffffff/0b0d10×1 213447/0b0d10×5 ffffff/0b0d10×2 ffffff/0e131a×1 213447/0e131a×8 ffffff/0e131a×1 213447/0e131a×1 ffffff/0e131a×1 ffffff/0b0d10×18
 2: 144531/0c0f12×2 ffffff/0c0f12×1 322c44/0c0f12×7 ffffff/0c0f12×1 144531/0c0f12×11 ffffff/0e131a×1 213447/0e131a×6 ffffff/0e131a×1 213447/0e131a×4 ffffff/0e131a×1 213447/0e131a×1 ffffff/0e131a×1 213447/0e131a×6 ffffff/0e131a×1 213447/0e131a×1 ffffff/0e131a×1 144531/0c0f12×2 252a33/111419×2 b392f0/111419×18 252a33/111419×12
 3: 144531/0c0f12×1 173d2b/0c0f12×1 ffffff/0c0f12×1 322c44/0c0f12×3 ffffff/0c0f12×1 322c44/0c0f12×3 ffffff/0c0f12×1 322c44/0c0f12×3 ffffff/0c0f12×1 322c44/0c0f12×5 ffffff/0c0f12×27 144531/0c0f12×1 252a33/111419×1 6cb6ff/16263a×3 dde2ea/111419×7 6cb6ff/16263a×3 959dab/111419×11 ffffff/111419×6 252a33/111419×1

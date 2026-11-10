@@ -304,7 +304,7 @@ export function setUpLines(s: SetUpSummary, width: number): Line[] {
     [s.agent, s.engine ? `${s.engine}${s.profile ? `, as ${s.profile}` : ""}` : undefined],
     ["wallet", s.wallet],
     ["limits", s.limits],
-    ["mode", s.mode === "paper" ? "paper; go live from the status bar" : s.mode === "live" ? "live: real funds, each trade on a card" : undefined],
+    ["mode", s.mode === "paper" ? "paper; go live from the status bar" : s.mode === "live" ? "live: real funds, a card per trade" : undefined],
   ]
   const label = Math.max(...rows.map(([l]) => l.length)) + 2
   const out: Line[] = [{ segs: [{ text: "✓ ", fg: C.good }, { text: "Set up, and ready", fg: C.head }] }]
@@ -317,13 +317,13 @@ export function setUpLines(s: SetUpSummary, width: number): Line[] {
 
 /** The agent speaking first; after setup in this view, what was set up takes the intro's place. */
 export function greetingLines(agent: string, width: number, setUp?: SetUpSummary): Line[] {
-  const intro = `${agent} here. I read Candle and its market data for you (the feed, the signal tape, wallets worth watching, markets, token checks, your positions), propose trades as cards you approve with one key, and run any candle command you ask for. Paper trades need no card.`
+  const intro = `${agent} here. I read Candle and its market data for you (the feed, the signal tape, wallets worth watching, markets, token checks, your positions), propose trades as cards you approve with one key, and run any candle command you ask for.`
   return [
     ...(setUp ? setUpLines(setUp, width) : [...wrap(intro, width).map((t) => line(t, C.ink)), blank()]),
     line("Try:", C.dim),
     line("  · what's the tape saying in the last hour?", C.ink),
     line("  · check this token before I buy: <paste a mint>", C.ink),
-    line("  · buy $10 of it in paper mode", C.ink),
+    line("  · buy $10 of it", C.ink),
     blank(),
     // Said plainly, since a person may ask what the Candle Harness is for if the agent can't watch while they're away.
     ...wrap(WHEN_I_ACT, width).map((t) => line(t, C.dim)),
