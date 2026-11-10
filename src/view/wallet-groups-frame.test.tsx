@@ -121,6 +121,8 @@ for (const [width, height] of SIZES) {
   test(`⌕ find: "bot-1" finds ten across the groups, and esc ends the search, at ${width}×${height}`, async () => {
     const d = await fifty(width, height)
     await click(d.setup, "⌕ find")
+    // The pointer off the chip it clicked, so a hover colour isn't in the frame however the timing falls.
+    await act(async () => d.setup.mockMouse.moveTo(0, height - 1))
     await press(d.setup, ..."bot-1".split(""))
     const frame = d.setup.captureCharFrame()
     expect(frame).toContain("bot-1▏")
