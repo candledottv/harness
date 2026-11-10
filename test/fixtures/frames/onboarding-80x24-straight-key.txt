@@ -16,9 +16,9 @@
 │  It runs, in the pane:                                                       │
 │    candle keys create --label agent-a --tx-limit 50 --reset daily            │
 │    no vault: approved by you in the pane                                     │
+│    then your approval in the browser, if Candle asks                         │
 │                                                                              │
 │    Make the key                                                              │
-│                                                                              │
 │                                                                              │
 ╰──────────────────────────────────────────────────────────────────────────────╯
  ↑/↓ moves · ⏎ or a click picks · esc back                      ctrl-c ×2 quits 
@@ -42,9 +42,9 @@
 15: 32fe9f/111419×1 ffffff/111419×2 dde2ea/111419×21 ffffff/111419×55 32fe9f/111419×1
 16: 32fe9f/111419×1 ffffff/111419×2 dde2ea/111419×64 ffffff/111419×12 32fe9f/111419×1
 17: 32fe9f/111419×1 ffffff/111419×2 dde2ea/111419×2 f5a524/111419×37 ffffff/111419×37 32fe9f/111419×1
-18: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
-19: 32fe9f/111419×1 ffffff/111419×2 32fe9f/111419×2 6cb6ff/111419×12 ffffff/111419×62 32fe9f/111419×1
-20: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
+18: 32fe9f/111419×1 ffffff/111419×2 959dab/111419×51 ffffff/111419×25 32fe9f/111419×1
+19: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
+20: 32fe9f/111419×1 ffffff/111419×2 32fe9f/111419×2 6cb6ff/111419×12 ffffff/111419×62 32fe9f/111419×1
 21: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
 22: 32fe9f/111419×80
 23: 959dab/0e1115×42 ffffff/0e1115×22 959dab/0e1115×16

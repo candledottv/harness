@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test"
 import { rowFor } from "./cli-table"
-import { paneCommand, paneHeadline, paneOutcome, planPane, paneSteps, paneTitle, paneTitleLine, typedPath, wrapForPane } from "./pane-plan"
+import { asksBrowserConfirm, paneCommand, paneHeadline, paneOutcome, planPane, paneSteps, paneTitle, paneTitleLine, typedPath, wrapForPane } from "./pane-plan"
 
 const finalArgs = (args: string[], o: { json: boolean; rpcUrl: boolean }) => [...args, ...(o.json ? ["--json"] : []), ...(o.rpcUrl ? ["--rpc-url", "https://rpc.example"] : [])]
 const TEE = "TeeFake111111111111111111111111111111111111"
@@ -31,6 +31,24 @@ test("an owner row that never unlocks takes the factor first; a capture row keep
   const remove = planPane({ row: rowFor("profile remove")!, rule: "owner", identity: "owner", words: ["profile", "remove", "old"], rpcUrl: false, finalArgs })
   expect(remove.pane.steps.at(-1)!.argv).toEqual(["profile", "remove", "old", "--yes"])
   expect(remove.pane.addsYes).toBe(true)
+})
+
+test("a step that widens a key's reach says Candle may ask for the owner's approval in the browser; a narrowing one doesn't", () => {
+  const plan = (path: string, words: string[]) => paneSteps(rowFor(path)!, planPane({ row: rowFor(path)!, rule: "owner", identity: "owner", words, rpcUrl: false, finalArgs }))
+  const browser = (steps: string[]) => steps.filter((s) => s.includes("browser"))
+  expect(browser(plan("keys create", ["keys", "create", "--label", "scout"]))).toEqual([
+    "if Candle asks, you'll approve it in your browser signed in as the account's owner: the pane shows the link and code, and waits up to 5 minutes",
+  ])
+  expect(browser(plan("tee rebind", ["tee", "rebind", TEE, "--to-key", "Scoutkey"]))).toHaveLength(1)
+  expect(browser(plan("vault promote-batch", ["vault", "promote-batch", "--to-key", "Scoutkey"]))[0]).toContain("once for each wallet")
+  expect(browser(plan("vault promote", ["vault", "promote", "--from", "a"]))).toEqual([])
+  expect(asksBrowserConfirm("vault promote", ["vault", "promote", "--from", "a", "--to-key", "Scoutkey"])).toBe(true)
+  expect(asksBrowserConfirm("keys update", ["keys", "update", "Scoutkey", "--embedded-wallet", "allow"])).toBe(true)
+  expect(asksBrowserConfirm("keys update", ["keys", "update", "Scoutkey", "--embedded-wallet", "deny"])).toBe(false)
+  expect(asksBrowserConfirm("keys signer approve", ["keys", "signer", "approve", "fp", "--reject"])).toBe(false)
+  expect(asksBrowserConfirm("auth login", ["auth", "login"])).toBe(false)
+  expect(asksBrowserConfirm("keys revoke", ["keys", "revoke", "Scoutkey"])).toBe(false)
+  expect(asksBrowserConfirm("vault backup", ["vault", "backup"])).toBe(false)
 })
 
 test("paths the user names are listed, never valued", () => {

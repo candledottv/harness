@@ -200,6 +200,43 @@ export function typedPath(value: string, home: string | undefined): string {
   return `${home.replace(/\/+$/, "")}${path.slice(1)}`
 }
 
+/**
+ * Whether Candle may ask the owner to approve this step in the browser too, where its API has the owner
+ * confirm on: the owner steps that widen what the account's keys can do, as CLI 0.13.20's README lists
+ * them. The CLI shows the link and code in the pane and waits. Narrowing steps never ask.
+ */
+export function asksBrowserConfirm(path: string, argv: readonly string[]): boolean {
+  const flag = (name: string) => {
+    const at = argv.indexOf(name)
+    return at >= 0 ? argv[at + 1] : undefined
+  }
+  switch (path) {
+    case "keys create":
+    case "keys access":
+    case "keys limit":
+    case "tee rebind":
+    case "wallets allow-launch":
+      return true
+    case "keys update":
+      return flag("--embedded-wallet") === "allow"
+    case "keys signer approve":
+      return !argv.includes("--reject")
+    case "vault promote":
+    case "vault promote-batch":
+      return argv.includes("--to-key")
+    case "auth login":
+      return flag("--embedded-wallet") === "allow"
+    default:
+      return false
+  }
+}
+
+/** The card's words for the browser confirm: once a wallet where the step promotes several. */
+export function browserConfirmStep(path: string): string {
+  const each = path === "vault promote-batch" ? ", once for each wallet," : ""
+  return `if Candle asks, you'll approve it in your browser${each} signed in as the account's owner: the pane shows the link and code, and waits up to 5 minutes`
+}
+
 /** What the user will be asked, in order, in words for the card. */
 export function paneSteps(row: CliRow, params: PaneParams): string[] {
   const spec = row.pane!
@@ -210,6 +247,8 @@ export function paneSteps(row: CliRow, params: PaneParams): string[] {
   if (params.pane.steps.some((s) => s.stage === "preview")) out.push("the CLI's preview of every rename first (nothing changes), then you type yes to make them")
   for (const path of params.pane.askPaths ?? []) out.push(`you'll name ${isPositionalPath(path.flag) ? "the file" : path.flag} in the pane`)
   out.push(...spec.confirms)
+  const argv = params.pane.steps.at(-1)?.argv ?? []
+  if (asksBrowserConfirm(row.path, argv)) out.push(browserConfirmStep(row.path))
   return out
 }
 

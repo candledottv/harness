@@ -24,6 +24,7 @@ import { restoreLoginEnv } from "../main"
 import { paths } from "../paths"
 import { storeNewAgentKey } from "../setup/key-add"
 import { terminalText } from "../shared/terminal-text"
+import { StderrRelay } from "./owner-confirm"
 
 import { PANE_SOCKET_ENV, PANE_TICKET_ENV } from "../view/pane-process"
 
@@ -218,6 +219,15 @@ export function readLine(prompt: string): string | undefined {
   }
 }
 
+/** A command's stderr onto the pane as it comes, with Candle's browser confirm said in words. */
+async function relayStderr(stream: ReadableStream<Uint8Array>): Promise<void> {
+  const relay = new StderrRelay((text) => writeSync(2, text))
+  const decoder = new TextDecoder()
+  for await (const chunk of stream) relay.push(decoder.decode(chunk, { stream: true }))
+  relay.push(decoder.decode())
+  relay.end()
+}
+
 interface Running {
   proc: Bun.Subprocess
   stopped: boolean
@@ -284,15 +294,18 @@ export async function runLauncher(env: Record<string, string | undefined> = proc
   process.on("SIGHUP", onHangup)
   process.on("SIGTERM", onHangup)
 
-  const run = async (argv: string[], piped: boolean): Promise<{ exit?: number; signal?: string; stopped: boolean; stdout: string }> => {
+  const run = async (argv: string[], piped: boolean, relay = false): Promise<{ exit?: number; signal?: string; stopped: boolean; stdout: string }> => {
     // The RPC from config goes in the CLI's own variable, not on a command line other users can read.
     const moved = rpcToEnv(argv)
     const env = moved.rpcUrl !== undefined ? { ...childEnv, [RPC_URL_ENV]: moved.rpcUrl } : childEnv
-    const proc = Bun.spawn([redeemed.bin, ...moved.argv], { env, stdin: "inherit", stdout: piped ? "pipe" : "inherit", stderr: "inherit" })
+    // A captured command runs with --json, where Candle's browser confirm is a JSON line on stderr: relayed, it's said in words.
+    const proc = Bun.spawn([redeemed.bin, ...moved.argv], { env, stdin: "inherit", stdout: piped ? "pipe" : "inherit", stderr: relay ? "pipe" : "inherit" })
     running = { proc, stopped: false }
     const out = piped ? new Response(proc.stdout as ReadableStream).text() : Promise.resolve("")
+    const relayed = relay ? relayStderr(proc.stderr as ReadableStream<Uint8Array>) : Promise.resolve()
     const exit = await proc.exited
     const stdout = await out
+    await relayed
     const stopped = running.stopped
     running = undefined
     if (saved) sttySet(saved)
@@ -353,7 +366,7 @@ export async function runLauncher(env: Record<string, string | undefined> = proc
         body = { stage: "paths", stopped: true }
         break
       }
-      const r = await run(argv, redeemed.capture !== undefined)
+      const r = await run(argv, redeemed.capture !== undefined, redeemed.capture !== undefined)
       const captured = redeemed.capture !== undefined ? await captureOf(redeemed, r.stdout) : undefined
       body = { stage: "command", ...(r.exit !== undefined ? { exit: r.exit } : {}), ...(r.signal ? { signal: r.signal } : {}), ...(r.stopped ? { stopped: true } : {}), ...(captured ? { captured } : {}) }
     }

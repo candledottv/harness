@@ -6,6 +6,9 @@
 //   badjson  prints something that isn't JSON
 //   --version  the version: fake-cli.json's `version`, else 0.13.18 (the CLI the Candle Harness was checked against)
 //   keys list  fake-cli.json's `keysList` as JSON, or its `keysListFail` (stderr and an exit code)
+//   keys create  fake-cli.json's `keysCreate`; with its `ownerConfirm`, Candle's browser confirm first, as
+//            0.13.20 shows it (cli/src/owner-confirm.ts): with --json one pending line on stderr, written in
+//            two parts, else the summary, link and code in words; then approved (the key), denied or expired
 //   with fake-cli.json's `tee` set, the TEE reads in the shapes recorded from Candle
 //   (fixtures/candle-recorded/tee/clicmd-*): `tee status`, `keys wallets`, `swap status`, and
 //   `wallets` (the key's TEE wallets, each signer "stored" unless `tee.signers` says otherwise);
@@ -114,7 +117,7 @@ interface FakeCliScript {
    * prefix, built at run time. `storeError` answers as the CLI does when its own store failed (exit 1,
    * the key printed anyway).
    */
-  keysCreate?: { prefix: string; storeError?: string; refuse?: { code: string; status: number; message: string } }
+  keysCreate?: { prefix: string; storeError?: string; refuse?: { code: string; status: number; message: string }; ownerConfirm?: "approved" | "denied" | "expired" }
   /** `candle wallets --json` with the owner's profile (no CANDLE_API_KEY), as recorded. */
   ownerWallets?: unknown
   /** `vault list --json`'s body once unlocked (the recorded shape). */
@@ -154,6 +157,22 @@ if (argv[0] === "keys" && argv[1] === "list" && (script.keysList !== undefined |
 function answer(body: unknown, code: number): never {
   process.stdout.write(`${JSON.stringify(body)}\n`)
   process.exit(code)
+}
+/** Candle's browser confirm as CLI 0.13.20 shows and ends it (cli/src/owner-confirm.ts, client.ts apiRequest). */
+async function ownerConfirm(outcome: "approved" | "denied" | "expired", summary: string): Promise<void> {
+  const challenge = { userCode: "WDJB-MJHT", verificationUriComplete: "https://candle.tv/dev/agent/confirm?code=WDJB-MJHT", expiresIn: 300, step: "keys.create", summary }
+  if (argv.includes("--json")) {
+    const line = `${JSON.stringify({ ok: false, pending: true, code: "OWNER_CONFIRM_REQUIRED", ownerConfirm: challenge })}\n`
+    process.stderr.write(line.slice(0, 40))
+    await Bun.sleep(20)
+    process.stderr.write(line.slice(40))
+  } else {
+    process.stderr.write(`This needs your approval in the browser: ${summary}\nOpen ${challenge.verificationUriComplete}\nCode: ${challenge.userCode}\nOnly approve if you just ran this command.\nWaiting for approval (expires in 5 minutes)...\n`)
+  }
+  await Bun.sleep(50)
+  if (outcome === "denied") answer({ ok: false, code: "OWNER_CONFIRM_DENIED", message: "Denied in the browser; nothing changed." }, 1)
+  if (outcome === "expired") answer({ ok: false, code: "OWNER_CONFIRM_EXPIRED", message: "The confirmation expired; nothing changed. Run the command again." }, 1)
+  if (!argv.includes("--json")) process.stderr.write("Approved. Sending the request again.\n")
 }
 /**
  * A hidden prompt as the CLI's: the prompt on stderr, the terminal in raw mode, Enter ends it. Ctrl-C is
@@ -282,6 +301,7 @@ if (argv[0] === "keys" && argv[1] === "create" && script.keysCreate) {
   const flag = (name: string) => (argv.includes(name) ? argv[argv.indexOf(name) + 1] : undefined)
   const scopes = flag("--scopes")?.split(",") ?? (flag("--access") === "read" ? ["account:read"] : ["launch:write", "launch:read", "activity:write", "swap:write", "account:read"])
   const body = { key, keyPrefix: prefix, scopes, environment: "live", embeddedWallet: "denied" }
+  if (script.keysCreate.ownerConfirm) await ownerConfirm(script.keysCreate.ownerConfirm, `Create an API key labelled ${flag("--label") ?? "(none)"}`)
   // Candle refusing the key, in the CLI's --json error envelope (render.ts errorEnvelope), as a new account's is.
   if (script.keysCreate.refuse) answer({ ok: false, ...script.keysCreate.refuse }, 1)
   if (script.keysCreate.storeError) answer({ ...body, stored: false, storeError: script.keysCreate.storeError }, 1)

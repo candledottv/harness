@@ -574,6 +574,56 @@ describe("keys create through the real launcher", () => {
     expect(((await view.request("onboarding.get", {})).result as { facts: { keyRefused?: string } }).facts.keyRefused).toBeUndefined()
   }, 30_000)
 
+  test("Candle's browser confirm: the pane shows the summary, link and code in words, then the approved key is stored", async () => {
+    const dir = cliDir({ vault: { passphrase: PASS }, keysCreate: { prefix: "Scoutkey", ownerConfirm: "approved" }, authKeyPrefix: "Ownerkey" })
+    const c = await startTestCore({ env: { ...process.env, CANDLE_CONFIG_DIR: dir } })
+    cores.push(c)
+    const view = await c.view()
+    const opened = await typed(view, ["keys", "create", "--label", "scout"])
+    const paneHome = mkdtempSync(join(tmpdir(), "chrn-panehome-"))
+    dirs.push(paneHome)
+    const pane = await openPane(c, view, opened, { CANDLE_CONFIG_DIR: dir, HOME: paneHome })
+    await until(() => pane.screen().includes("Vault passphrase"))
+    pane.type(`${PASS}\r`)
+    expect(await pane.proc.exited).toBe(0)
+    const screen = pane.screen()
+    expect(screen).toContain("This needs your approval in the browser: Create an API key labelled scout")
+    expect(screen).toContain("Open https://candle.tv/dev/agent/confirm?code=WDJB-MJHT")
+    expect(screen).toContain("Code: WDJB-MJHT")
+    expect(screen).toContain("Waiting for approval (expires in 5 minutes)...")
+    expect(screen).not.toContain('"pending"')
+    expect(screen).toContain("Made scout (key Scoutkey…): it's in the Agents list now.")
+    expect(readFileSync(c.p.keyFile("scout"), "utf8")).toBe(`${prefixedKey("Scoutkey").replace(/x/g, "k")}\n`)
+    await until(() => c.core.pool.agents().includes("scout"))
+  }, 30_000)
+
+  for (const [outcome, said] of [
+    ["denied", "denied in your browser: nothing changed, and no key was made."],
+    ["expired", "not approved in your browser before the code expired: nothing changed, and no key was made."],
+  ] as const) {
+    test(`Candle's browser confirm ${outcome}: the pane says so plainly, no key is made, and nothing is left to revoke`, async () => {
+      const dir = cliDir({ vault: { passphrase: PASS }, keysCreate: { prefix: "Scoutkey", ownerConfirm: outcome }, authKeyPrefix: "Ownerkey", keysList: { keys: [] } })
+      const c = await startTestCore({ env: { ...process.env, CANDLE_CONFIG_DIR: dir } })
+      cores.push(c)
+      const view = await c.view()
+      const opened = await typed(view, ["keys", "create", "--label", "scout"])
+      const paneHome = mkdtempSync(join(tmpdir(), "chrn-panehome-"))
+      dirs.push(paneHome)
+      const pane = await openPane(c, view, opened, { CANDLE_CONFIG_DIR: dir, HOME: paneHome })
+      await until(() => pane.screen().includes("Vault passphrase"))
+      pane.type(`${PASS}\r`)
+      expect(await pane.proc.exited).toBe(0)
+      expect(pane.screen()).toContain("Code: WDJB-MJHT")
+      expect(pane.screen().replace(/\s+/g, " ").toLowerCase()).toContain(said.toLowerCase())
+      const ended = paneWords(c, opened.card.opId)!
+      expect(ended.outcome).toBe("didnt_finish")
+      expect(ended.words.startsWith(said)).toBe(true)
+      expect(existsSync(c.p.keyFile("scout"))).toBe(false)
+      expect(c.core.journal.rows().some((r) => r.type === "agent.key_not_stored")).toBe(false)
+      expect(((await view.request("onboarding.get", {})).result as { facts: { keyRefused?: string } }).facts.keyRefused).toBe(outcome === "denied" ? "OWNER_CONFIRM_DENIED" : "OWNER_CONFIRM_EXPIRED")
+    }, 30_000)
+  }
+
   test("a prefix with - and _ is stored and loaded, and a second keys create waits for the first", async () => {
     const dir = cliDir({ vault: { passphrase: PASS }, keysCreate: { prefix: "Sc-ut_ky" }, authKeyPrefix: "Ownerkey" })
     const c = await startTestCore({ env: { ...process.env, CANDLE_CONFIG_DIR: dir } })

@@ -320,6 +320,13 @@ export function loadKeys(paths: Paths, config: Config): Map<string, string> {
 /** Candle's code for a key asked of an account whose embedded wallet isn't authorized for agents yet (Candle's docs, "Agent access & API keys"). */
 export const AGENT_WALLET_NOT_DELEGATED = "AGENT_WALLET_NOT_DELEGATED"
 const NOT_DELEGATED_WORDS = "Candle won't make a key yet: this account hasn't authorized its embedded wallet for agents. Setup says how."
+/** How a `keys create` ends when Candle's browser confirm didn't approve it: no key was made either way. */
+export const OWNER_CONFIRM_WORDS: Readonly<Record<string, string>> = {
+  OWNER_CONFIRM_DENIED: "denied in your browser: nothing changed, and no key was made.",
+  OWNER_CONFIRM_EXPIRED: "not approved in your browser before the code expired: nothing changed, and no key was made. Ask again, and approve it while the pane waits.",
+  OWNER_CONFIRM_CANCELLED: "cancelled before it was approved: nothing changed, and no key was made.",
+  OWNER_CONFIRM_REQUIRED: "Candle asks for this to be approved in your browser, and the CLI didn't wait for it: nothing changed, and no key was made. Run candle update, then ask again.",
+}
 
 export async function startCore(opts: CoreOptions): Promise<RunningCore> {
   const { paths, config } = opts
@@ -1049,6 +1056,8 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
         keyRefused = captured.code
         void publishOnboarding().catch(() => {})
         if (captured.code === AGENT_WALLET_NOT_DELEGATED) return { ...result, outcome: "didnt_finish", words: NOT_DELEGATED_WORDS }
+        const confirm = OWNER_CONFIRM_WORDS[captured.code]
+        if (confirm) return { ...result, outcome: "didnt_finish", words: confirm }
         return result
       }
       // The launcher's word, or, if its report was lost, the key file and config entry it wrote: only this pane writes them.
