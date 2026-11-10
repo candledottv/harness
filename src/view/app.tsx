@@ -223,7 +223,7 @@ const OB_WAIT_WORDS: Partial<Record<ObAction["kind"], string>> = {
   ownWallet: "Opening the pane…",
   keepLimits: "Keeping the limits…",
   approvals: "Keeping the approvals…",
-  paper: "Starting on paper…",
+  later: "Going on…",
   start: "Opening the Candle Harness…",
 }
 
@@ -2045,8 +2045,8 @@ export function App({ session, onQuit, restartCore, now = Date.now, tickMs = 250
           }
           return void (await set({ passed: "approvals" }))
         }
-        case "paper":
-          return setOnboarding(await session.request<OnboardingView>("onboarding.paper", {}))
+        case "later":
+          return setOnboarding(await session.request<OnboardingView>("onboarding.fundLater", {}))
         case "start": {
           // Step 5: the tab kept as the one the Candle Harness opens on, shown now, then setup's end.
           const at = heldRef.current.file.tabs.findIndex((t) => t.name === action.tab)

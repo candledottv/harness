@@ -31,8 +31,9 @@ export type OnboardingStep = (typeof ONBOARDING_STEPS)[number]
 /** The steps that leave nothing to read back: done when the person went past them. */
 const PASSED_ONLY: ReadonlySet<OnboardingStep> = new Set(["welcome", "engine", "limits", "approvals", "fund", "tour", "start"])
 /**
- * Straight in: sign in, the model and its test message, the key, then the Candle Harness on paper.
- * The other steps are skipped, not done: there's no vault, and the wallet waits for live.
+ * Straight in: sign in, the model and its test message, the key, then the Candle Harness, live.
+ * The other steps are skipped, not done: there's no vault, and a trade is refused until the key is allowed a
+ * wallet and it holds funds, each refusal saying how.
  */
 const STRAIGHT_IN: ReadonlySet<OnboardingStep> = new Set(["signIn", "engine", "key"])
 

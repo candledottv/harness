@@ -134,9 +134,9 @@ export const METHOD_ROLES: Readonly<Record<string, { view: Access; harness: Acce
   "onboarding.signIn": { view: "yes", harness: "no" },
   "onboarding.harness": { view: "yes", harness: "no" },
   "onboarding.test": { view: "yes", harness: "no" },
-  // Onboarding step 3's limits and "start on paper": the person's, from the main view only.
+  // Onboarding step 3's limits and "fund it later": the person's, from the main view only.
   "onboarding.limits": { view: "yes", harness: "no" },
-  "onboarding.paper": { view: "yes", harness: "no" },
+  "onboarding.fundLater": { view: "yes", harness: "no" },
   // Autonomy per wallet is the person's: no agent widens its own leash. It narrows on a card.
   "autonomy.set": { view: "yes", harness: "no" },
   // Triggers: saved only by approving a trigger's card. Off and removal from any view; back on from the main view.

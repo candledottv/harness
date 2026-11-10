@@ -34,7 +34,7 @@ export const METHODS: Record<string, string> = {
   "onboarding.harness": "opens a harness's own sign-in in the pane",
   "onboarding.test": "one test message on an engine",
   "onboarding.limits": "writes an agent's limits into config.toml",
-  "onboarding.paper": "starts on paper",
+  "onboarding.fundLater": "goes past the deposit unfunded; setup ends live",
   "autonomy.set": "a wallet's setting: ask every time, or trade inside two figures with no card",
   "triggers.list": "every trigger, its state, and the plan gate",
   "triggers.set": "switches a trigger off, or back on as it was approved (the main view)",

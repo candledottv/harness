@@ -56,7 +56,7 @@ export const SETTINGS: readonly SettingDef[] = [
     key: "mode",
     type: `"paper" or "live"`,
     default: `"paper"`,
-    words: "The mode a fresh install starts in. Once you switch, the mode you last picked is kept across restarts.",
+    words: "The mode a core starts in before you've switched. Setup writes `mode = \"live\"`; the default is for a config.toml with no mode line. Once you switch, the mode you last picked is kept across restarts.",
     example: `mode = "live"`,
   },
   {

@@ -94,7 +94,7 @@ test("a key of the wrong shape is refused, never repeated, and nothing is writte
   }
 })
 
-test("the first agent: its key at 0600 in a 0700 folder, a new config in paper mode with the default limits", async () => {
+test("the first agent: its key at 0600 in a 0700 folder, a new config in live mode with the default limits", async () => {
   const { env, p } = home()
   const t = io(`  ${KEY}\n`)
   expect(await keyAdd(["--agent", "momentum"], t.io, env)).toBe(0)
@@ -106,14 +106,14 @@ test("the first agent: its key at 0600 in a 0700 folder, a new config in paper m
   expect(mode(p.configFile)).toBe(0o600)
   const { config, warnings } = loadConfig(p)
   expect(warnings).toEqual([])
-  expect(config.mode).toBe("paper")
+  expect(config.mode).toBe("live")
   expect(config.activeAgent).toBe("momentum")
   expect(config.agents.momentum!.limits).toEqual(DEFAULT_LIMITS)
   // Said once what it did, with the public prefix only, and the advice on the master copy.
   expect(t.prompts).toEqual(["Paste momentum's Candle agent key (it won't show): "])
   expect(t.all()).not.toContain(KEY)
   expect(t.all()).not.toContain(KEY.slice(18))
-  expect(t.out.join("")).toContain(`Added momentum (key ${LIVE}Abcdefgh…), in paper mode.`)
+  expect(t.out.join("")).toContain(`Added momentum (key ${LIVE}Abcdefgh…), in live mode.`)
   expect(t.out.join("")).toContain("password manager")
   expect(t.out.join("")).toContain("$10 per trade, $50 per day")
 })

@@ -2,20 +2,20 @@
                                                                                                                         
  ╭─ Setup ──────────────────╮ ╭───────────────────────────────────────────────────────────────────────── step 3 of 5 ─╮ 
  │                          │ │                                                                                       │ 
- │ ✓ Welcome                │ │  Fund main, or start on paper                                                         │ 
+ │ ✓ Welcome                │ │  Fund main                                                                            │ 
  │                          │ │                                                                                       │ 
  │ ✓ Sign in to Candle      │ │  ▸ main  EmbedFake1111111111111111111111111111111111                      ⧉ address   │ 
  │  Wall…1111 · candle-     │ │    0 SOL  ⠋ waiting for a deposit                                                     │ 
  │                          │ │                                                                                       │ 
  │ ✓ Connect your agent     │ │  Send SOL from any wallet of yours. This moves on by itself when it lands.            │ 
  │                          │ │                                                                                       │ 
- │ ▸ Wallet and limits      │ │    Start on paper           paper trades need no funds; go live from the status bar   │ 
+ │ ▸ Wallet and limits      │ │    Fund it later     a trade needs SOL in it; its address stays in the Wallets pane   │ 
  │   – a vault, or not      │ │                                                                                       │ 
  │   ✓ its key              │ │                                                                                       │ 
  │   ✓ its wallet           │ │                                                                                       │ 
  │   ✓ limits               │ │                                                                                       │ 
  │   ✓ approvals            │ │                                                                                       │ 
- │   ▸ fund it, or paper    │ │                                                                                       │ 
+ │   ▸ fund it              │ │                                                                                       │ 
  │                          │ │                                                                                       │ 
  │ · The tour               │ │                                                                                       │ 
  │                          │ │                                                                                       │ 
@@ -34,20 +34,20 @@
 1: ffffff/0b0d10×120
 2: ffffff/0b0d10×1 252a33/111419×2 b392f0/111419×7 252a33/111419×19 ffffff/0b0d10×1 32fe9f/111419×74 959dab/111419×13 32fe9f/111419×2 ffffff/0b0d10×1
 3: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×26 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×87 32fe9f/111419×1 ffffff/0b0d10×1
-4: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 3ddc84/111419×1 dde2ea/111419×8 ffffff/111419×16 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 b392f0/111419×28 ffffff/111419×57 32fe9f/111419×1 ffffff/0b0d10×1
+4: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 3ddc84/111419×1 dde2ea/111419×8 ffffff/111419×16 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 b392f0/111419×9 ffffff/111419×76 32fe9f/111419×1 ffffff/0b0d10×1
 5: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×26 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×87 32fe9f/111419×1 ffffff/0b0d10×1
 6: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 3ddc84/111419×1 dde2ea/111419×18 ffffff/111419×6 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 32fe9f/1d2430×2 f6f8fb/1d2430×6 dde2ea/1d2430×43 ffffff/1d2430×22 6cb6ff/1d2430×10 ffffff/111419×2 32fe9f/111419×1 ffffff/0b0d10×1
 7: ffffff/0b0d10×1 252a33/111419×1 dde2ea/111419×2 959dab/111419×19 ffffff/111419×5 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 dde2ea/111419×9 f5a524/111419×2 959dab/111419×21 ffffff/111419×53 32fe9f/111419×1 ffffff/0b0d10×1
 8: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×26 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×87 32fe9f/111419×1 ffffff/0b0d10×1
 9: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 3ddc84/111419×1 dde2ea/111419×19 ffffff/111419×5 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 dde2ea/111419×73 ffffff/111419×12 32fe9f/111419×1 ffffff/0b0d10×1
 10: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×26 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×87 32fe9f/111419×1 ffffff/0b0d10×1
-11: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 32fe9f/111419×1 dde2ea/111419×1 f6f8fb/111419×17 ffffff/111419×6 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 32fe9f/111419×2 6cb6ff/111419×14 ffffff/111419×11 959dab/111419×56 ffffff/111419×2 32fe9f/111419×1 ffffff/0b0d10×1
+11: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 32fe9f/111419×1 dde2ea/111419×1 f6f8fb/111419×17 ffffff/111419×6 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 32fe9f/111419×2 6cb6ff/111419×13 ffffff/111419×5 959dab/111419×63 ffffff/111419×2 32fe9f/111419×1 ffffff/0b0d10×1
 12: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 dde2ea/111419×2 959dab/111419×1 dde2ea/111419×1 959dab/111419×15 ffffff/111419×6 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×87 32fe9f/111419×1 ffffff/0b0d10×1
 13: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 dde2ea/111419×2 3ddc84/111419×1 dde2ea/111419×1 959dab/111419×7 ffffff/111419×14 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×87 32fe9f/111419×1 ffffff/0b0d10×1
 14: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 dde2ea/111419×2 3ddc84/111419×1 dde2ea/111419×1 959dab/111419×10 ffffff/111419×11 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×87 32fe9f/111419×1 ffffff/0b0d10×1
 15: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 dde2ea/111419×2 3ddc84/111419×1 dde2ea/111419×1 959dab/111419×6 ffffff/111419×15 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×87 32fe9f/111419×1 ffffff/0b0d10×1
 16: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 dde2ea/111419×2 3ddc84/111419×1 dde2ea/111419×1 959dab/111419×9 ffffff/111419×12 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×87 32fe9f/111419×1 ffffff/0b0d10×1
-17: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 dde2ea/111419×2 32fe9f/111419×1 dde2ea/111419×1 f6f8fb/111419×17 ffffff/111419×4 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×87 32fe9f/111419×1 ffffff/0b0d10×1
+17: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 dde2ea/111419×2 32fe9f/111419×1 dde2ea/111419×1 f6f8fb/111419×7 ffffff/111419×14 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×87 32fe9f/111419×1 ffffff/0b0d10×1
 18: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×26 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×87 32fe9f/111419×1 ffffff/0b0d10×1
 19: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 959dab/111419×1 dde2ea/111419×1 959dab/111419×8 ffffff/111419×15 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×87 32fe9f/111419×1 ffffff/0b0d10×1
 20: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×26 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×87 32fe9f/111419×1 ffffff/0b0d10×1

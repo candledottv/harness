@@ -296,15 +296,17 @@ test("approvals, as the approvals menu: on ask every time; trade inside limits t
   expect(d.session.requests.filter((r) => r.method === "onboarding.set").map((r) => r.params)).toEqual([{ passed: "approvals" }])
 })
 
-test("fund it, or start on paper: the address with ⧉, a deposit moving it on by itself, or paper", async () => {
+test("fund it, now or later: the address with ⧉, a deposit moving it on by itself, or fund it later; setup ends live either way", async () => {
   const view = () => onboardingProgress(state(["limits", "approvals"], { vaultChoice: "later", agent: { name: "agent-a", askedAt: new Date(CLOCK).toISOString() } }), facts(PAYABLE))
   await each("fund", view, { agents: [AGENT] }, (f) => {
-    expect(f).toContain("Fund main, or start on paper")
+    expect(f).toContain("Fund main")
+    expect(f).not.toContain("paper")
     expect(f).toContain("waiting for a deposit")
+    expect(f).toContain("Fund it later")
   })
   let d = await draw(120, 30, view(), { agents: [AGENT] })
   await press(d.s, "down", "enter")
-  expect(d.session.requests.filter((r) => r.method === "onboarding.paper")).toHaveLength(1)
+  expect(d.session.requests.filter((r) => r.method === "onboarding.fundLater")).toHaveLength(1)
   await act(async () => d.s.dispose())
   setup = undefined
   // A deposit lands on the fake: the step goes on with nothing pressed.
@@ -321,6 +323,9 @@ test("fund it, or start on paper: the address with ⧉, a deposit moving it on b
   await settle(d.s)
   expect(d.session.requests.some((r) => r.method === "onboarding.set")).toBe(false)
   expect(d.s.captureCharFrame()).toContain("✓ 1.75 SOL  funded")
+  // Funded, there's nothing to put off: Continue alone, and the words say live.
+  expect(d.s.captureCharFrame()).not.toContain("Fund it later")
+  expect(d.s.captureCharFrame().replace(/[│\s]+/g, " ")).toContain("The Candle Harness starts live")
   await compare("onboarding-120x30-fund-funded", d.s)
   await press(d.s, "enter")
   expect(d.session.requests.filter((r) => r.method === "onboarding.set").map((r) => r.params)).toEqual([{ passed: "fund" }])

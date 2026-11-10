@@ -17,7 +17,7 @@ export const SCREENS = {
   wallet: ["The embedded wallet", "pays from"],
   limits: ["Limits for", "Use these limits"],
   approvals: ["How ", "trades are approved"],
-  fund: ["or start on paper", "Start on paper"],
+  fund: ["Fund it later", "waiting for a deposit"],
   funded: ["funded"],
   tour: ["→ next · ← back · esc ends it"],
   tourLast: ["⏎ ends the tour · ← back"],
@@ -43,6 +43,6 @@ export const PICKS = {
   tryAgain: "Try again",
   embedded: "The embedded wallet",
   keepLimits: "Use these limits",
-  paper: "Start on paper",
+  fundLater: "Fund it later",
   trade: "Trade",
 } as const

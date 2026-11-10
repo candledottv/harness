@@ -200,14 +200,15 @@ describe("step 3, through a core", () => {
     const status = (await s.view.request("core.status", {})).result as { agents: { name: string; limits: unknown }[] }
     expect(status.agents.find((a) => a.name === "agent-a")!.limits).toEqual({ perTradeUsd: 5, perDayUsd: 25 })
 
-    // Approvals on "ask every time", then paper: paper mode, and the fund part gone past.
+    // Approvals on "ask every time", then fund it later: the fund part gone past unfunded, and setup ends live.
     await s.set({ passed: "approvals" })
-    v = (await s.view.request("onboarding.paper", {})).result as OnboardingView
+    expect(((await s.view.request("core.status", {})).result as { mode: string }).mode).toBe("paper")
+    v = (await s.view.request("onboarding.fundLater", {})).result as OnboardingView
     expect(v.at).toBe("tour")
     expect(v.state.finishedAt).toBeUndefined()
-    expect(((await s.view.request("core.status", {})).result as { mode: string }).mode).toBe("paper")
-    const words = s.t.core.journal.rows().filter((r) => r.type === "onboarding.limits" || (r.type === "onboarding.changed" && r.paper === true))
-    expect(words.map((r) => r.type)).toEqual(["onboarding.limits", "onboarding.changed"])
+    expect(((await s.view.request("core.status", {})).result as { mode: string }).mode).toBe("live")
+    const words = s.t.core.journal.rows().filter((r) => r.type === "onboarding.limits" || (r.type === "onboarding.changed" && r.later === true) || r.type === "mode.changed")
+    expect(words.map((r) => r.type)).toEqual(["onboarding.limits", "onboarding.changed", "mode.changed"])
 
     // Quit here: config.toml has its agent, and the unfinished run still opens onboarding (where it picks up at the tour).
     expect(viewOpening(s.t.p).onboarding).toEqual({ straightIn: false, asked: false })
@@ -219,25 +220,34 @@ describe("step 3, through a core", () => {
     expect(s.t.core.journal.rows().filter((r) => r.type === "onboarding.changed" && r.change === "finished")).toHaveLength(1)
   }, 30_000)
 
-  test("Straight in: the key, then the Candle Harness on paper with no vault; the run is finished once the key is stored", async () => {
-    const s = await setupCore({ straightIn: true, mode: "live" })
+  test("Straight in: the key, then the Candle Harness live with no vault; the run is finished once the key is stored", async () => {
+    const s = await setupCore({ straightIn: true, mode: "paper" })
     let v = await s.get()
     expect(v.at).toBe("key")
-    expect(((await s.view.request("core.status", {})).result as { mode: string }).mode).toBe("live")
+    expect(((await s.view.request("core.status", {})).result as { mode: string }).mode).toBe("paper")
     await s.set({ agent: "agent-a" })
     await s.pane(["keys", "create", "--label", "agent-a"], { captured: { prefix: "Agentaaa", agent: "agent-a", stored: true } }, async () => {
       expect(await storeNewAgentKey(s.t.p, "agent-a", prefixedKey("Agentaaa"))).toEqual({ ok: true, prefix: "Agentaaa" })
     })
     await until(() => s.t.core.journal.rows().some((r) => r.type === "mode.changed" && r.by === "onboarding"))
-    expect(((await s.view.request("core.status", {})).result as { mode: string }).mode).toBe("paper")
+    expect(((await s.view.request("core.status", {})).result as { mode: string }).mode).toBe("live")
     v = await s.get()
     expect(v.at).toBe("done")
     expect(v.state.finishedAt).toBeDefined()
     expect(viewOpening(s.t.p).onboarding).toBeUndefined()
   }, 30_000)
 
-  test("limits and paper are the person's, from the main view, and only for the agent onboarding made", async () => {
-    for (const m of ["onboarding.limits", "onboarding.paper"]) expect(METHOD_ROLES[m]).toEqual({ view: "yes", harness: "no" })
+  test("funded, going on past the fund part ends setup live too; a core already live stays as it is", async () => {
+    const s = await setupCore({ mode: "paper" })
+    await s.set({ passed: "fund" })
+    expect(((await s.view.request("core.status", {})).result as { mode: string }).mode).toBe("live")
+    expect(s.t.core.journal.rows().filter((r) => r.type === "mode.changed").map((r) => r.mode)).toEqual(["live"])
+    await s.set({ passed: "fund" })
+    expect(s.t.core.journal.rows().filter((r) => r.type === "mode.changed")).toHaveLength(1)
+  }, 30_000)
+
+  test("limits and funding later are the person's, from the main view, and only for the agent onboarding made", async () => {
+    for (const m of ["onboarding.limits", "onboarding.fundLater"]) expect(METHOD_ROLES[m]).toEqual({ view: "yes", harness: "no" })
     const s = await setupCore()
     expect((await s.view.request("onboarding.limits", { perTradeUsd: 5, perDayUsd: 25 })).error?.data?.code).toBe("NO_AGENT_YET")
   }, 30_000)

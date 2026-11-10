@@ -4,7 +4,7 @@
 //
 // It draws steps 0 to 2: the welcome, the Candle sign-in and connecting your agent. Then step 3's six parts: a
 // vault or not, the agent's key with Candle's cap on the create, the wallet it pays from, its limits with who
-// holds each, the approvals menu on "ask every time", and a deposit or paper. And step 5, where to start: Trade
+// holds each, the approvals menu on "ask every time", and a deposit, now or later. And step 5, where to start: Trade
 // or Cockpit as the tab the Candle Harness opens on, with the files that hold the rest. Step 4, the tour, isn't drawn
 // here: it runs over the real screen (tour.tsx).
 //
@@ -64,7 +64,7 @@ export type ObAction =
   | { kind: "keepLimits" }
   | { kind: "inside"; on: boolean }
   | { kind: "approvals" }
-  | { kind: "paper" }
+  | { kind: "later" }
   /** Step 5: the tab the Candle Harness opens on, by its name, then the Candle Harness. */
   | { kind: "start"; tab: string }
 
@@ -157,7 +157,7 @@ const RAIL: { id: OnboardingStep; label: string; subs?: { id: OnboardingStep; la
       { id: "wallet", label: "its wallet" },
       { id: "limits", label: "limits" },
       { id: "approvals", label: "approvals" },
-      { id: "fund", label: "fund it, or paper" },
+      { id: "fund", label: "fund it" },
     ],
   },
   { id: "tour", label: "The tour" },
@@ -246,7 +246,7 @@ export function stepRows(input: { view: OnboardingView; engine?: EngineTopic; lo
         rows.push({ kind: "text", runs: [[`  ${n}  `, C.dim], [t, C.ink]] })
       rows.push(gap())
       rows.push(itemRow(items, { kind: "welcome", straightIn: false }, [["Guided setup", C.ctl]], ["every step, about 5 minutes", C.dim]))
-      rows.push(itemRow(items, { kind: "welcome", straightIn: true }, [["Straight in", C.ctl]], ["sign in, your agent and its key, then straight to paper", C.dim]))
+      rows.push(itemRow(items, { kind: "welcome", straightIn: true }, [["Straight in", C.ctl]], ["sign in, your agent and its key, then straight to trading", C.dim]))
       rows.push(gap(), ...para("Quit any time: setup picks up where you stopped, and never runs a step twice.", width, C.dim))
       break
     }
@@ -418,7 +418,7 @@ function stepThree(input: { view: OnboardingView; local: ObLocal; width: number;
     wallet: `Which wallet ${agent} pays from`,
     limits: `Limits for ${agent}, each with who holds it`,
     approvals: `How ${agent}'s trades are approved`,
-    fund: `Fund ${walletWords(fundWallet(view, ctx)?.name ?? "its wallet")}, or start on paper`,
+    fund: `Fund ${walletWords(fundWallet(view, ctx)?.name ?? "its wallet")}`,
   }
   rows.push(text(heading[view.at]!, C.head))
   if (input.paneOpen) {
@@ -565,9 +565,9 @@ function stepThree(input: { view: OnboardingView; local: ObLocal; width: number;
       } else {
         rows.push(itemRow(items, { kind: "copy", text: w.address, what: "the address" }, [[`${w.name}  `, C.hi], [w.address.length > width - w.name.length - 16 ? shortAddress(w.address) : w.address, C.ink]], ["⧉ address", C.ctl]))
         rows.push(w.sol ? { kind: "text", runs: [["  ✓ ", C.good], [`${w.sol} SOL`, C.ink], ["  funded", C.dim]] } : { kind: "text", runs: [["  0 SOL  ", C.ink], ["⠋ ", C.look], ["waiting for a deposit", C.dim]] })
-        rows.push(gap(), ...para(w.sol ? "Funded. The Candle Harness starts on paper either way: go live from the status bar when you're ready." : "Send SOL from any wallet of yours. This moves on by itself when it lands.", width), gap())
+        rows.push(gap(), ...para(w.sol ? "Funded. The Candle Harness starts live: a trade you approve moves real funds." : "Send SOL from any wallet of yours. This moves on by itself when it lands.", width), gap())
       }
-      rows.push(itemRow(items, { kind: "paper" }, [["Start on paper", C.ctl]], ["paper trades need no funds; go live from the status bar", C.dim]))
+      if (!w?.sol) rows.push(itemRow(items, { kind: "later" }, [["Fund it later", C.ctl]], ["a trade needs SOL in it; its address stays in the Wallets pane", C.dim]))
       return
     }
   }
@@ -670,7 +670,7 @@ export function OnboardingScreen(props: {
       <box position="absolute" left={0} top={0} width={width} height={1} backgroundColor={C.bar} flexDirection="row">
         <text fg={C.hi} bg={C.bar}>{" ▲ candle  "}</text>
         <text fg={C.hi} bg={C.paperBg}>{straight ? " STRAIGHT IN " : " SETUP "}</text>
-        <text fg={C.dim} bg={C.bar}>{fit(`  ${straight ? "sign in, your model and its key, then the Candle Harness on paper" : "nothing trades until your agent and its limits exist"}`, Math.max(0, width - (straight ? 24 : 18)))}</text>
+        <text fg={C.dim} bg={C.bar}>{fit(`  ${straight ? "sign in, your model and its key, then straight to trading" : "nothing trades until your agent and its limits exist"}`, Math.max(0, width - (straight ? 24 : 18)))}</text>
       </box>
       {wide ? (
         <box position="absolute" left={1} top={2} width={RAIL_W} height={height - 4} border borderStyle="rounded" borderColor={C.edge} title=" Setup " titleColor={C.head} backgroundColor={C.term} flexDirection="column">

@@ -1030,8 +1030,21 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
       return { ...result, outcome: "finished", words: `signed in to Candle${signed.account ? ` as ${short(signed.account)}` : ""}: the Candle Harness acts as the profile ${profile} from now on.` }
     }
     /**
+     * Setup ends in live: past the fund step, funded or not, and Straight in once its key is made. A live trade
+     * without funds, or from a key not yet allowed a wallet, is refused saying what to do. Paper is the
+     * person's own pick, from the status bar or `paper`.
+     */
+    const setupGoesLive = async (by: string): Promise<void> => {
+      if (mode === "live") return
+      mode = "live"
+      await saveMode(paths.modeState, mode, now())
+      await j.append({ type: "mode.changed", mode, by })
+      publishStatus?.()
+      void publish("triggers", triggers.view())
+    }
+    /**
      * The agent onboarding asked for: it runs on the engine and model step 2 tested, and Straight
-     * in then opens the Candle Harness on paper. An agent made any other way is left as `keys create` made it.
+     * in then opens the Candle Harness live. An agent made any other way is left as `keys create` made it.
      */
     const afterOnboardingKey = async (agent: string): Promise<void> => {
       const state = await onboarding.read()
@@ -1041,12 +1054,7 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
         await j.append({ type: "engine.chosen", mode, agent, engine: state.engine, model: state.model ?? null, by: "onboarding" })
         publish("engine", engineView())
       }
-      if (state.straightIn && mode !== "paper") {
-        mode = "paper"
-        await saveMode(paths.modeState, mode, now())
-        await j.append({ type: "mode.changed", mode, by: "onboarding" })
-        publishStatus?.()
-      }
+      if (state.straightIn) await setupGoesLive("onboarding")
       await publishOnboarding()
     }
     // Candle's code when setup's last `keys create` made no key, for setup's key step to say what to do; the next try clears it.
@@ -3172,6 +3180,7 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
       } else next = applyChange(await onboarding.open(), change, now())
       await onboarding.write(next)
       await j.append({ type: "onboarding.changed", mode, change: Object.keys(change)[0], ...("passed" in change ? { step: change.passed } : {}), by: call.client.clientId })
+      if ("passed" in change && change.passed === "fund") await setupGoesLive(call.client.clientId)
       // A step gone past changes only the person's own marks, so it's answered from what was read last, at once: each
       // read runs the CLI (sign-in, vault, keys), seconds on a slow machine, and the screen would sit still meanwhile.
       // The reads follow, and what they find is published. Setup's end waits for them, since it's marked from them.
@@ -3260,19 +3269,14 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
       publish("onboarding", view)
       return view
     })
-    // Setup's step 3, its last part: "start on paper". Paper needs no funds, so the step is gone past; live is the status
-    // bar's, later. The Candle Harness doesn't steer the first trade.
-    s.handle("onboarding.paper", async (_params, call) => {
-      mainViewOnly(call, "Starting on paper")
-      if (mode !== "paper") {
-        mode = "paper"
-        await saveMode(paths.modeState, mode, now())
-        await j.append({ type: "mode.changed", mode, by: call.client.clientId })
-        publishStatus?.()
-      }
+    // Setup's step 3, its last part: "fund it later". The step is gone past unfunded, and setup still ends live: the
+    // first trade without funds is refused saying so. The Candle Harness doesn't steer the first trade.
+    s.handle("onboarding.fundLater", async (_params, call) => {
+      mainViewOnly(call, "Funding it later")
       const next = applyChange(await onboarding.open(), { passed: "fund" }, now())
       await onboarding.write(next)
-      await j.append({ type: "onboarding.changed", mode, change: "passed", step: "fund", paper: true, by: call.client.clientId })
+      await j.append({ type: "onboarding.changed", mode, change: "passed", step: "fund", later: true, by: call.client.clientId })
+      await setupGoesLive(call.client.clientId)
       const view = await onboardingView(next)
       publish("onboarding", view)
       return view

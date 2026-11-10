@@ -12,6 +12,10 @@ Fixes from Candle's review of 0.5.5. None of them changes what can pay, beyond t
 - **Candle's trading-wallets read is read to its last page, and decides.** Where the agent's MCP server has it, every page is read (up to ten). A complete read is the whole list of what may trade, so a wallet it leaves out can't pay, whatever the key's own list says. A read cut short leaves the wallets it didn't reach as the key's list says.
 - **A Solana wallet is never taken for a Hood one** when the key's list and the portfolio are matched by address.
 
+### Setup
+
+- **Setup ends in live.** Funded at the deposit step, or going on with **Fund it later**, the Harness opens live; so does Straight in. A trade from an unfunded wallet, or from a key not yet allowed a wallet, is refused saying what to do. Paper is still there, from the status bar or by typing `paper`. A fresh `config.toml` says `mode = "live"`; an install that already picked a mode keeps it.
+
 ### The README
 
 - **It leads with what the Harness does**: your agent, the market reads, one key to trade, triggers, bots and the VPS, then why to trust it in three lines. "Which wallet pays" moved to the docs' Wallets page, error codes included, and the guide's contents to the docs site.

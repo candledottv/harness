@@ -1,7 +1,7 @@
 // What going live would find missing, for the question that asks first: an agent whose key isn't allowed
 // a wallet to pay from, an agent with no limits of its own here, a wallet with nothing in it. Read from what
-// the view already holds, and said without blocking: `y` still switches. A setup that went straight to paper
-// skipped the wallet step, and nothing else brings it back before the first live trade is refused.
+// the view already holds, and said without blocking: `y` still switches. Setup ends live, so this is asked only of
+// someone switching back from paper; a trade setup left short of a wallet or funds is refused saying how.
 import type { CoreView } from "./store"
 import { shortAddress } from "./format"
 

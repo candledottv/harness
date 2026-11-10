@@ -121,7 +121,7 @@ const NEW_CONFIG_HEAD = `# Candle Harness config: https://github.com/candledottv
 # \`candle-harness key add\` adds each agent here with its Candle Harness limits, which the core enforces on top of
 # the key's own caps on Candle. A fresh install starts in this mode; after that, the Candle Harness keeps the
 # mode you last picked.
-mode = "paper"
+mode = "live"
 `
 
 /**
@@ -243,7 +243,7 @@ export async function keyAdd(args: string[], io: KeyAddIo, env: Record<string, s
 
   const shown = `${key.slice(0, key.indexOf("_", 5) + 1)}${prefix}…`
   const what = replacing === undefined ? "Added" : replacing === key ? "Kept" : "Replaced the key for"
-  const mode = readSavedMode(p.modeState) ?? current?.config.mode ?? "paper"
+  const mode = readSavedMode(p.modeState) ?? current?.config.mode ?? "live"
   io.out(`${what} ${agent} (key ${shown})${replacing === undefined ? `, in ${mode} mode` : ""}.\n`)
   io.out(`  key file  ${keyFile} (0600)\n`)
   io.out(`  limits    ${usd(limits!.perTradeUsd)} per trade, ${usd(limits!.perDayUsd)} per day, enforced by the Candle Harness on top of the key's caps on Candle (${p.configFile})\n\n`)
