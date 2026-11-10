@@ -439,7 +439,7 @@ test("a restart's new core is the service's when it's loaded: kickstart on macOS
   const mac = deps("darwin", h, {}, { loaded: true, lag: 0, unloading: 0 })
   expect(startServiceCore(mac)).toBe("not loaded") // no file: not installed
   mkdirSync(dirname(serviceFile(mac)!), { recursive: true })
-  writeFileSync(serviceFile(mac)!, "x")
+  writeFileSync(serviceFile(mac)!, launchAgentText(SELF, paths(mac.env), mac.env))
   expect(startServiceCore(mac)).toBe("started")
   expect(mac.ran).toEqual(["launchctl print gui/501/tv.candle.harness.core", "launchctl kickstart gui/501/tv.candle.harness.core"])
   expect(mac.launchd.pid).toBe(4243)
@@ -454,7 +454,7 @@ test("a restart's new core is the service's when it's loaded: kickstart on macOS
   const l = home()
   const enabled = deps("linux", l, { "systemctl --user is-enabled candle-harness-core.service": { code: 0, stdout: "enabled\n", stderr: "" } })
   mkdirSync(dirname(serviceFile(enabled)!), { recursive: true })
-  writeFileSync(serviceFile(enabled)!, "x")
+  writeFileSync(serviceFile(enabled)!, systemdUnitText(SELF, paths(enabled.env), enabled.env))
   expect(startServiceCore(enabled)).toBe("started")
   expect(enabled.ran).toEqual(["systemctl --user is-enabled candle-harness-core.service", "systemctl --user start candle-harness-core.service"])
   const disabled = deps("linux", l, { "systemctl --user is-enabled candle-harness-core.service": { code: 1, stdout: "disabled\n", stderr: "" } })
@@ -462,4 +462,50 @@ test("a restart's new core is the service's when it's loaded: kickstart on macOS
   expect(disabled.ran).toEqual(["systemctl --user is-enabled candle-harness-core.service"])
 
   expect(startServiceCore(deps("win32", h))).toBe("not loaded")
+})
+
+test("a restart takes the login service's core only when the service runs the view's own home; another home's is never started", () => {
+  for (const platform of ["darwin", "linux"] as const) {
+    const h = home()
+    const installed = join(h, "installed home")
+    const other = join(h, "other home")
+    const loaded = (env: Record<string, string | undefined>) =>
+      platform === "darwin"
+        ? { ...deps("darwin", h, {}, { loaded: true, lag: 0, unloading: 0 }), env: { ...ENV, HOME: h, ...env } }
+        : { ...deps("linux", h, { "systemctl --user is-enabled candle-harness-core.service": { code: 0, stdout: "enabled\n", stderr: "" } }), env: { ...ENV, HOME: h, ...env } }
+    const write = (serviceEnv: Record<string, string | undefined>) => {
+      const d = loaded(serviceEnv)
+      const file = serviceFile(d)!
+      mkdirSync(dirname(file), { recursive: true })
+      const text = platform === "darwin" ? launchAgentText(["/opt/ch/candle-harness"], paths(d.env), d.env) : systemdUnitText(["/opt/ch/candle-harness"], paths(d.env), d.env)
+      writeFileSync(file, text)
+    }
+    const kicked = (d: ReturnType<typeof loaded>) => d.ran.some((r) => r.includes("kickstart") || r.startsWith("systemctl --user start"))
+
+    // Installed for one home, the view on another: not the service's, so the view starts its own home's core.
+    write({ CANDLE_HARNESS_HOME: installed })
+    const elsewhere = loaded({ CANDLE_HARNESS_HOME: other })
+    expect(startServiceCore(elsewhere)).toBe("not loaded")
+    expect(kicked(elsewhere)).toBe(false)
+    // The default home's view, and a service for another: not the service's either.
+    const plain = loaded({ CANDLE_HARNESS_HOME: undefined })
+    expect(startServiceCore(plain)).toBe("not loaded")
+    expect(kicked(plain)).toBe(false)
+    // The same home: the service's.
+    const same = loaded({ CANDLE_HARNESS_HOME: installed })
+    expect(startServiceCore(same)).toBe("started")
+    expect(kicked(same)).toBe(true)
+
+    // Installed for the default home: a view on another home isn't its; one on the default home, named or not, is.
+    write({ CANDLE_HARNESS_HOME: undefined })
+    expect(startServiceCore(loaded({ CANDLE_HARNESS_HOME: other }))).toBe("not loaded")
+    expect(startServiceCore(loaded({ CANDLE_HARNESS_HOME: undefined }))).toBe("started")
+    expect(startServiceCore(loaded({ CANDLE_HARNESS_HOME: join(h, ".config", "candle", "harness") }))).toBe("started")
+
+    // A home with characters the file escapes reads back as itself.
+    const odd = join(h, `odd "100%" $HOME & <x>`)
+    write({ CANDLE_HARNESS_HOME: odd })
+    expect(startServiceCore(loaded({ CANDLE_HARNESS_HOME: odd }))).toBe("started")
+    expect(startServiceCore(loaded({ CANDLE_HARNESS_HOME: installed }))).toBe("not loaded")
+  }
 })

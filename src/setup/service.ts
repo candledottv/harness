@@ -425,6 +425,35 @@ function coreWords(io: Io, core: Core, servicePid: number | undefined): void {
 
 const lastLine = (r: Ran) => (r.stderr || r.stdout).trim().split("\n").at(-1)?.slice(0, 200) ?? ""
 
+const unxml = (text: string) => text.replace(/&quot;/g, '"').replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&")
+
+/**
+ * The CANDLE_HARNESS_HOME a service file carries, as launchAgentText or systemdUnitText wrote it; undefined when it
+ * carries none (the default home), and null when the file can't be read as either.
+ */
+export function serviceHome(text: string, platform: NodeJS.Platform): string | undefined | null {
+  if (platform === "darwin") {
+    if (!text.includes("<key>EnvironmentVariables</key>")) return null
+    const m = /<key>CANDLE_HARNESS_HOME<\/key>\s*<string>([^<]*)<\/string>/.exec(text)
+    return m ? unxml(m[1]!) : undefined
+  }
+  if (!text.includes("[Service]")) return null
+  const m = /^Environment="CANDLE_HARNESS_HOME=((?:[^"\\]|\\.)*)"$/m.exec(text)
+  return m ? m[1]!.replace(/\\(.)/g, "$1").replace(/%%/g, "%") : undefined
+}
+
+/** Whether a service carrying `home` runs the same home as the view: both resolved as paths() resolves them. */
+function sameHome(home: string | undefined | null, d: ServiceDeps): boolean {
+  if (home === null) return false
+  try {
+    const user = d.env.HOME ?? d.home
+    const service = pathsOf({ HOME: user, ...(home !== undefined ? { CANDLE_HARNESS_HOME: home } : {}) })
+    return service.socket === pathsOf({ ...d.env, HOME: user }).socket
+  } catch {
+    return false
+  }
+}
+
 /**
  * Starts the login service's core, for a restart once the running core has stopped: a core that stops cleanly
  * isn't started again by launchd or systemd, so it's asked for. "not loaded" when the service isn't installed
@@ -433,6 +462,9 @@ const lastLine = (r: Ran) => (r.stderr || r.stdout).trim().split("\n").at(-1)?.s
 export function startServiceCore(d: ServiceDeps): "started" | "not loaded" | { failed: string } {
   const file = serviceFile(d)
   if (!file || !existsSync(file)) return "not loaded"
+  // The service runs one home's core. A view on another home doesn't take it: started, it would run that home's
+  // triggers and bots, and leave this home with no core.
+  if (!sameHome(serviceHome(readFileSync(file, "utf8"), d.platform), d)) return "not loaded"
   const r =
     d.platform === "darwin"
       ? launchd(d).loaded
