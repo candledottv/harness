@@ -83,9 +83,10 @@ export interface PaneSpec {
 
 /**
  * The oldest CLI the Candle Harness runs on: the one its command table was read from (cli-source.json), which
- * bundles MCP server 0.10.30. One CLI: the one it was checked against.
+ * bundles MCP server 0.10.31. One CLI: the one it was checked against. 0.13.20 is the first that waits for
+ * Candle's browser confirm on an owner step; an older one is refused it once Candle turns the confirm on.
  */
-export const MIN_CANDLE_CLI = "0.13.18"
+export const MIN_CANDLE_CLI = "0.13.20"
 
 /** The rules that run in the prompt pane. */
 export const PANE_RULES: ReadonlySet<CliRule> = new Set(["owner", "ceremony", "funds-out"])
@@ -494,6 +495,9 @@ const ROWS: readonly RowInput[] = [
     partly: "--verify (an owner step, in the prompt pane): now",
     pane: {},
   }),
+  // Whether each named TEE wallet can really trade, read without spending (0.13.19). --sign builds a tiny quote, has the
+  // relay sign it and simulates it, and never broadcasts.
+  r("tee check", "read", "cli", "agent", { note: "It spends nothing: --sign signs and simulates a tiny quote and never sends it." }),
   r("tee disable", "less-access", "cli", "agent", {
     note: "A stop for good: exit 3 while Candle hasn't confirmed it's enforced. Then sweep it home.",
     pane: { needsPrompt: VAULT_PROMPT, exit3: "the stop is asked for, but Candle hasn't confirmed it's enforced yet (exit 3). Check with candle tee status before trading from this wallet." },

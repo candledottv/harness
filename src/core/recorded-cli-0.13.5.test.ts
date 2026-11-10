@@ -70,9 +70,9 @@ describe("the TEE wallet reads at server 0.10.25", () => {
     expect(parseProfileWallets(recording(dir, "cli-agent-b-candle_get_profile_wallets").outcome.result)?.rows).toEqual([])
   })
 
-  test("the tool list is 0.10.30's 92, the four profile and post tools marked as 0.10.25 listed them, and the table agrees", () => {
-    expect(fixture.serverInfo.version).toBe("0.10.30")
-    expect(fixture.tools).toHaveLength(92)
+  test("the tool list is 0.10.31's 95, the four profile and post tools marked as 0.10.25 listed them, and the table agrees", () => {
+    expect(fixture.serverInfo.version).toBe("0.10.31")
+    expect(fixture.tools).toHaveLength(95)
     expect(fixture.tools.filter((t) => "listedAfterKeyCheck" in t).map((t) => t.name)).toEqual(["candle_update_profile", "candle_upload_profile_image", "candle_create_post", "candle_delete_post"])
     expect(classificationDrift(fixture.tools.map((t) => t.name))).toEqual([])
     // Both keys could edit their profiles, so both listed all 61 of 0.10.25's, each still in the list.

@@ -4,7 +4,7 @@
 //   sleep    never finishes (for the timeout)
 //   exit3    exits 3, as a trade command does when a trade may have landed
 //   badjson  prints something that isn't JSON
-//   --version  the version: fake-cli.json's `version`, else 0.13.18 (the CLI the Candle Harness was checked against)
+//   --version  the version: fake-cli.json's `version`, else 0.13.20 (the CLI the Candle Harness was checked against)
 //   keys list  fake-cli.json's `keysList` as JSON, or its `keysListFail` (stderr and an exit code)
 //   keys create  fake-cli.json's `keysCreate`; with its `ownerConfirm`, Candle's browser confirm first, as
 //            0.13.20 shows it (cli/src/owner-confirm.ts): with --json one pending line on stderr, written in
@@ -142,7 +142,7 @@ const script: FakeCliScript = scriptFile && existsSync(scriptFile) ? JSON.parse(
 
 const json = argv.includes("--json")
 if (argv[0] === "--version") {
-  process.stdout.write(`${script.version ?? "0.13.18"}\n`)
+  process.stdout.write(`${script.version ?? "0.13.20"}\n`)
   process.exit(0)
 }
 if (argv[0] === "keys" && argv[1] === "list" && (script.keysList !== undefined || script.keysListFail)) {

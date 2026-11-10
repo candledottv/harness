@@ -1,8 +1,8 @@
 {
-  "about": "Candle's MCP server tools/list at 0.10.30 (CLI 0.13.18), listed through the released `candle mcp` (linux-arm64, checked against Candle's latest.json) with a Read key on 2026-11-08, scrubbed by scripts/scrub-recordings.ts. A Read key may not edit its public profile, so the four marked listedAfterKeyCheck are as recorded at 0.10.25 through a key that may (their definitions are unchanged since): they are listed only to such a key, so the fake server leaves them out unless asked. All 92 together are what a key that may edit sees.",
+  "about": "Candle's MCP server tools/list at 0.10.31 (CLI 0.13.20), listed through the released `candle mcp` (linux-arm64, checked against Candle's latest.json) with a Read key on 2026-11-10, scrubbed by scripts/scrub-recordings.ts. A Read key may not edit its public profile, so the four marked listedAfterKeyCheck are as recorded at 0.10.25 through a key that may (their definitions are unchanged since): they are listed only to such a key, so the fake server leaves them out unless asked. All 95 together are what a key that may edit sees.",
   "serverInfo": {
     "name": "candle-mcp",
-    "version": "0.10.30"
+    "version": "0.10.31"
   },
   "tools": [
     {
@@ -17,7 +17,8 @@
             "enum": [
               "solana",
               "hood"
-            ]
+            ],
+            "description": "\"solana or hood\""
           },
           "address": {
             "type": "string",
@@ -53,7 +54,8 @@
             "enum": [
               "solana",
               "hood"
-            ]
+            ],
+            "description": "\"solana or hood\""
           },
           "address": {
             "type": "string",
@@ -89,7 +91,8 @@
             "enum": [
               "solana",
               "hood"
-            ]
+            ],
+            "description": "\"solana or hood\""
           },
           "address": {
             "type": "string",
@@ -133,7 +136,8 @@
             "enum": [
               "solana",
               "hood"
-            ]
+            ],
+            "description": "\"solana or hood\""
           },
           "address": {
             "type": "string",
@@ -186,7 +190,8 @@
             "enum": [
               "solana",
               "hood"
-            ]
+            ],
+            "description": "\"solana or hood\""
           },
           "address": {
             "type": "string",
@@ -222,7 +227,8 @@
             "enum": [
               "solana",
               "hood"
-            ]
+            ],
+            "description": "\"solana or hood\""
           },
           "address": {
             "type": "string",
@@ -281,7 +287,8 @@
             "enum": [
               "solana",
               "hood"
-            ]
+            ],
+            "description": "\"solana or hood\""
           },
           "address": {
             "type": "string",
@@ -342,7 +349,8 @@
             "enum": [
               "solana",
               "hood"
-            ]
+            ],
+            "description": "\"solana or hood\""
           },
           "address": {
             "type": "string",
@@ -404,7 +412,8 @@
             "enum": [
               "solana",
               "hood"
-            ]
+            ],
+            "description": "\"solana or hood\""
           },
           "address": {
             "type": "string",
@@ -448,7 +457,8 @@
             "enum": [
               "solana",
               "hood"
-            ]
+            ],
+            "description": "\"solana or hood\""
           },
           "address": {
             "type": "string",
@@ -495,7 +505,8 @@
             "enum": [
               "solana",
               "hood"
-            ]
+            ],
+            "description": "\"solana or hood\""
           },
           "address": {
             "type": "string",
@@ -543,7 +554,8 @@
             "enum": [
               "solana",
               "hood"
-            ]
+            ],
+            "description": "\"solana or hood\""
           },
           "address": {
             "type": "string",
@@ -587,7 +599,8 @@
             "enum": [
               "solana",
               "hood"
-            ]
+            ],
+            "description": "\"solana or hood\""
           },
           "address": {
             "type": "string",
@@ -634,7 +647,8 @@
             "enum": [
               "solana",
               "hood"
-            ]
+            ],
+            "description": "\"solana or hood\""
           },
           "address": {
             "type": "string",
@@ -670,7 +684,8 @@
             "enum": [
               "solana",
               "hood"
-            ]
+            ],
+            "description": "\"solana or hood\""
           },
           "address": {
             "type": "string",
@@ -718,7 +733,8 @@
             "enum": [
               "solana",
               "hood"
-            ]
+            ],
+            "description": "\"solana or hood\""
           },
           "address": {
             "type": "string",
@@ -1045,7 +1061,11 @@
         "properties": {
           "chain": {
             "type": "string",
-            "description": "\"solana\" or \"hood\""
+            "enum": [
+              "solana",
+              "hood"
+            ],
+            "description": "\"solana or hood\""
           },
           "mint": {
             "type": "string",
@@ -1064,6 +1084,67 @@
       }
     },
     {
+      "name": "candle_quote",
+      "title": "Quote a trade",
+      "description": "Price a buy or sell before making it. Moves nothing. Needs an API key with the swap:write scope: a read-only key (account:read) is refused, so use candle_get_market for state instead. Returns amountOut (base units), venue, quoteAsset, quoteDecimals and quotedAt; Hood answers also carry fee and price impact. route is present only on some answers, so do not assume it. A quote is a snapshot (Hood quotes are cached for 10 seconds), not a promise of the fill. Limited to 600 quotes a minute per key, and counted against the key's own limit. Pass amountRaw in base units; candle_trade and candle_swap take decimals.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "chain": {
+            "type": "string",
+            "enum": [
+              "solana",
+              "hood"
+            ],
+            "description": "\"solana or hood\""
+          },
+          "mint": {
+            "type": "string",
+            "description": "Token mint (solana) or contract address (hood)"
+          },
+          "side": {
+            "type": "string",
+            "enum": [
+              "buy",
+              "sell"
+            ]
+          },
+          "amountRaw": {
+            "type": "string",
+            "description": "Positive integer in base units: the quote asset's for a buy, the token's for a sell"
+          },
+          "quoteAsset": {
+            "type": "string",
+            "description": "Asset to price in, e.g. \"sol\" or \"usdc\" on Solana, \"eth\" or \"usdg\" on Hood"
+          },
+          "poolKey": {
+            "description": "Hood only: a pool hint for a pool nobody has indexed yet"
+          },
+          "includeRoundTrip": {
+            "type": "boolean",
+            "description": "Hood only: also return the buy-then-sell cost in basis points"
+          }
+        },
+        "required": [
+          "chain",
+          "mint",
+          "side",
+          "amountRaw"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
       "name": "candle_token_forensics",
       "title": "Token forensics",
       "description": "Gate a buy before making it: who launched it (resolved on-chain; pump.fun's shared updateAuthority is never the developer; when no developer is on chain, deployer.attribution names the launchpad or issuer instead, e.g. launched via stonk.fun or issued by xStocks), their went-to-zero rate and last coins, who bought in the deploy window (the creator's own wallets are marked disclosed; strangers in the same slot are the bundle signal), same-funder insider share, same-funder deployer cluster, and safety.summary with six sourced flags (mintAuthority, freezeAuthority, tokenExtensions, lpLock, sellability, liquidityDrain). Refuse an unprompted buy when flagged; incomplete or unknown is not clearance. deployer.priorLaunches is counted (pump.fun curves for a curve creator; record.count says the source); deployer.launcher is the wallet that sent the launch, often a launch tool's signer, never the developer; launch.deployerLaunches is that wallet's inclusive informational count, never a warning. Every measurement carries a coverage note -- 'unavailable' is not 'clean'. No key needed.\n\nMARKET_NOT_FOUND means Candle has no market for that token and this could not run. That is also not 'clean': report that you could not check it, rather than reporting the token as safe. That refusal now carries error.coverage -- covered:false, a reason ('external_launchpad' when the token launched somewhere else, 'unknown_mint' when nobody has indexed it), the launchpad when known, and every check that consequently did not run. Read it instead of guessing. Most of the feed, and any Solana mint Jupiter's index knows, now answers with a partial report instead. On Hood, a token Candle did not launch names its launch account (deployer.method cvc_launch_account) for pons.family and pools.trade launches, with no record of earlier coins; other Hood launchpads return no developer.",
@@ -1072,7 +1153,11 @@
         "properties": {
           "chain": {
             "type": "string",
-            "description": "\"solana\" or \"hood\""
+            "enum": [
+              "solana",
+              "hood"
+            ],
+            "description": "\"solana or hood\""
           },
           "mint": {
             "type": "string",
@@ -1136,7 +1221,11 @@
         "properties": {
           "chain": {
             "type": "string",
-            "description": "\"solana\" or \"hood\""
+            "enum": [
+              "solana",
+              "hood"
+            ],
+            "description": "\"solana or hood\""
           },
           "mint": {
             "type": "string",
@@ -1171,7 +1260,7 @@
               "solana",
               "hood"
             ],
-            "description": "\"solana\" or \"hood\""
+            "description": "\"solana or hood\""
           },
           "mint": {
             "type": "string",
@@ -1253,7 +1342,7 @@
               "solana",
               "hood"
             ],
-            "description": "\"solana\" or \"hood\""
+            "description": "\"solana or hood\""
           },
           "mint": {
             "type": "string",
@@ -1345,7 +1434,11 @@
         "properties": {
           "chain": {
             "type": "string",
-            "description": "\"solana\" or \"hood\""
+            "enum": [
+              "solana",
+              "hood"
+            ],
+            "description": "\"solana or hood\""
           },
           "mint": {
             "type": "string",
@@ -1402,7 +1495,7 @@
               "bluechip",
               "finalstretch"
             ],
-            "description": "finalstretch: pump.fun tokens at 50% or more of their bonding curve, most complete first; no delta, read the whole list. Where it is not switched on it is refused as an unknown bucket: use another bucket. bluechip is deprecated and will be removed."
+            "description": "finalstretch: pump.fun tokens at 50% or more of their bonding curve, most complete first, at most the 200 most complete (limit 200 reads all of them); no delta, read the whole list. Narrow it to tokens near graduation with where {\"progress\":{\"gte\":0.9}}. Where it is not switched on it is refused as an unknown bucket: use another bucket. bluechip is deprecated and will be removed."
           },
           "chain": {
             "type": "string",
@@ -1478,7 +1571,11 @@
         "properties": {
           "chain": {
             "type": "string",
-            "description": "\"solana\" or \"hood\""
+            "enum": [
+              "solana",
+              "hood"
+            ],
+            "description": "\"solana or hood\""
           },
           "signature": {
             "type": "string",
@@ -1897,6 +1994,52 @@
       }
     },
     {
+      "name": "candle_get_trading_wallets",
+      "title": "List the TEE wallets bound to this key",
+      "description": "The TEE wallets bound to THIS key, on Solana (`chain: solana`) and Hood (`chain: evm`): the wallets it may pay from beside the embedded ones in candle_get_wallets. Each row has its id, address, label, `active` (true when the wallet's signing authority is verified active; a false row cannot pay) and `allowLaunch`. The body also carries this key's `scopes` and `paused` (true while the owner has paused the key, which then spends from nothing; spending also needs one of the spend scopes \u2014 swap:write, transfer:write or launch:write \u2014 and `scopes` says which this key holds). A TEE wallet is signed on your own machine with the key signer: the perps tools here and the candle CLI (`candle swap --wallet <id|address|label>`) pay from it, while candle_trade and candle_swap spend the embedded wallet. Answers for any scope and on a paused key. Paged: pass `continueCursor` back as `cursor` until `isDone`. Reads only; moves nothing.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "cursor": {
+            "type": "string",
+            "description": "The continueCursor of the previous page. Omit for the first page"
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "candle_get_spendable_balances",
+      "title": "Read the balances of every wallet this key may spend from",
+      "description": "Every wallet THIS key may spend from, and no other, with its balances: the embedded wallets when the owner allows this key to spend them, the TEE wallets bound to it with an active signing authority, and the linked wallets its wallet scope admits. Each row has `kind` (embedded, tee or linked), `chain` (solana or evm), `address`, and `id` and `label` for a linked or TEE wallet. `balances` always holds the base assets (SOL, USDC and CNDL on Solana; ETH and USDG on Hood) plus the `mints` you name (at most 10), each in raw units with the slot or block it was read at. A read that failed is in `unavailable`, never reported as zero. A key with no spend scope (swap:write, transfer:write or launch:write) can spend from nothing and gets an empty page, not an error. `complete: false` means the account's wallet list was cut off. 50 wallets a page: pass `continueCursor` back as `cursor` until `isDone`. Needs no account:read; candle_get_portfolio is the whole-account read. Reads only; moves nothing.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "cursor": {
+            "type": "string",
+            "description": "The continueCursor of the previous page. Omit for the first page"
+          },
+          "mints": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 10,
+            "description": "Up to 10 extra tokens to read beside the base assets: Solana mints or Hood (0x) token addresses. Each is read on the wallets of its own chain"
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
       "name": "candle_get_profile_wallets",
       "title": "Read which wallets an agent profile can spend from",
       "description": "An agent profile (API key) either spends from EVERY wallet on its account or only from the ones assigned to it. Read walletScope before drawing any conclusion from the list: an empty list means 'every wallet' under scope 'all' and 'none at all' under 'selected'. Reads only; moves nothing.",
@@ -2104,7 +2247,7 @@
     {
       "name": "candle_execution_status",
       "title": "Can this key execute right now",
-      "description": "One call before trading: the embedded wallets to spend from, the tier that decides what may be traded, this key's own spend limits, and its loss limits and stop state (risk: lossLimits, state, stopped, tripped). A stopped key reports ready: false and a top-level stopped naming the bound that broke; every trade answers RISK_LIMIT_REACHED until an account owner resumes it, so stop trading and say why rather than retrying. Any scope can read its own. Reads only; moves nothing. Call it when a run starts, or after an authorization error, rather than inferring readiness from a failed trade. If a read could not be completed the tool says which one and does NOT claim the account is unready: an unreachable endpoint and a missing tier are different problems with different fixes.",
+      "description": "One call before trading: the embedded wallets to spend from, the TEE wallets bound to this key, the tier that decides what may be traded, this key's own spend limits, and its loss limits and stop state (risk: lossLimits, state, stopped, tripped). `wallets` is the embedded read. `tee` lists the first page of TEE wallets with `chain` (solana or evm), `active` and `spendable` (active, the key not paused \u2014 `teePaused` says whether it is \u2014 and the key holding a spend scope: swap:write, transfer:write or launch:write; `teeScopes` lists the key's scopes, so a read-only key shows its wallets with `spendable: false`); `teeComplete: false` means more, which candle_get_trading_wallets lists. candle_trade and candle_swap spend the embedded wallet; a TEE wallet is signed locally (the perps tools, the candle CLI's --wallet). A stopped key reports ready: false and a top-level stopped naming the bound that broke; every trade answers RISK_LIMIT_REACHED until an account owner resumes it, so stop trading and say why rather than retrying. Any scope can read its own. Reads only; moves nothing. Call it when a run starts, or after an authorization error, rather than inferring readiness from a failed trade. If a read could not be completed the tool says which one and does NOT claim the account is unready: an unreachable endpoint and a missing tier are different problems with different fixes.",
       "inputSchema": {
         "$schema": "http://json-schema.org/draft-07/schema#",
         "type": "object",

@@ -33,18 +33,18 @@ UNSIGNED_OK=0
 # SHA-256 of each of its release files this script may install. scripts/pin-cli.ts writes this block
 # from Candle's own latest.json, and scripts/install.test.ts holds it to the doctor's minimum.
 # BEGIN CLI PINS
-CLI_TAG='cli-v0.13.18'
-CLI_IDENTITY='https://github.com/candledottv/cli/.github/workflows/release.yaml@refs/tags/cli-v0.13.18'
+CLI_TAG='cli-v0.13.20'
+CLI_IDENTITY='https://github.com/candledottv/cli/.github/workflows/release.yaml@refs/tags/cli-v0.13.20'
 cli_pin() {
   case "$1" in
-    candle-darwin-arm64) echo '3a6be97b52976ec3b5bb47d6acfd25232f8bb1cbe0cc5bc9fab0f4da024a61a7' ;;
-    candle-darwin-x64) echo 'e84ff2037e4b9dbf18b5205c8c41a74bd7817cdedfee7e6fe3db5c7d53a1b659' ;;
-    candle-linux-arm64) echo '3d6d7078b88767e14e1032fe0496600d31c27d2028f90b15de86b6db9b6fc4d1' ;;
-    candle-linux-x64) echo 'db02c3db1b4a1f53d37e450553e03888ce3ebd65f70f6209f95b71401bcdb510' ;;
-    candle-fido2-darwin-arm64) echo 'ece9ec87a4503cf97bacd9bc45eb407debeb7cc3c9c7a6f8860b1955390422c7' ;;
-    candle-fido2-darwin-x64) echo '66b68740629eecdf498ca374a44ecfb167dd46fc69710efdd54b2c043cf3b900' ;;
-    candle-fido2-linux-arm64) echo '4ad38e3c78d064868763fe0a66306804859c4d0f91fe9f171139310fac44139a' ;;
-    candle-fido2-linux-x64) echo '484cb9e2cecc27504026d181cd1b5b5115a4431effd2898b5964a8e3f93d92a8' ;;
+    candle-darwin-arm64) echo 'db1ad6665c80bc076b48f21a70d1dc25411c265f2c12636a3c3a7cc8c868d70f' ;;
+    candle-darwin-x64) echo 'd8f61c0c9d811231a497ba783934b873c937e4abf35fbc0a81be02fc3c934e8d' ;;
+    candle-linux-arm64) echo '130aa317c3870e042338aae090654cad2b66fbb662132c123e6e64fc70b516b0' ;;
+    candle-linux-x64) echo '475fcc7212a56ca65651170cec157e794db95ebc6becf539135a222ef4cff49b' ;;
+    candle-fido2-darwin-arm64) echo 'a49f09bb6e5131282f0194fabf6585941c03485219da03e43c6818f1bed566b5' ;;
+    candle-fido2-darwin-x64) echo '8405279384ecf231a5739ef9154556e4eca2a26684f4ab684366a422508a7255' ;;
+    candle-fido2-linux-arm64) echo 'dfb8ccb4299938f88a9a178d097a8dd2e472ecb0ff1f56080887caad85f146e2' ;;
+    candle-fido2-linux-x64) echo '839c9288cf9cb95d5dc22e9bb128395322c748377a23d704361843cc9e25b5bd' ;;
     *) echo '' ;;
   esac
 }
