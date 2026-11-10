@@ -15,8 +15,9 @@
 // (as wallets.toml), so a hand edit is never lost. A hand edit that reads isn't trusted for that: the core
 // keeps the hash each trigger was approved as (triggers.ts), and one changed here is held until it's
 // approved again. Switching one off here (on = false) is always taken.
-import { readFileSync, renameSync, statSync, writeFileSync } from "node:fs"
+import { readFileSync, renameSync, writeFileSync } from "node:fs"
 import { keysIn } from "../config-settings"
+import { fileStamp } from "../shared/file-stamp"
 import { terminalText } from "../shared/terminal-text"
 import { classOf, durationText, MAX_COOLDOWN_MS, MIN_COOLDOWN_MS, parseTriggerShape, triggerNameProblem } from "../shared/trigger-grammar"
 
@@ -180,17 +181,14 @@ export class TriggersFileStore {
   constructor(private readonly path: string) {}
 
   read(): TriggersFile {
-    let stamp: string
-    try {
-      const s = statSync(this.path)
-      stamp = `${s.mtimeMs}:${s.size}:${s.ino}`
-    } catch {
+    const at = fileStamp(this.path)
+    if (!at) {
       this.seen = undefined
       this.held = EMPTY
       return this.held
     }
-    if (stamp !== this.seen) {
-      this.seen = stamp
+    if (at.stamp !== this.seen || at.recent) {
+      this.seen = at.stamp
       try {
         this.held = parseTriggersFile(readFileSync(this.path, "utf8"))
       } catch (error) {

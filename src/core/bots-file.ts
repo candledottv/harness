@@ -36,9 +36,10 @@
 // triggers.toml), so a hand edit is never lost. A hand edit that reads isn't trusted for that: the core keeps
 // the hash each bot was approved as (bots.ts), and one changed here holds its entries until it's approved
 // again. Pausing or stopping one here is always taken.
-import { readFileSync, realpathSync, renameSync, statSync, writeFileSync } from "node:fs"
+import { readFileSync, realpathSync, renameSync, writeFileSync } from "node:fs"
 import { basename, dirname, join, resolve } from "node:path"
 import { keysIn } from "../config-settings"
+import { fileStamp } from "../shared/file-stamp"
 import { canonicalJson } from "../shared/canonical-json"
 import { type Definition, readDefinition } from "../shared/definition"
 import { terminalText } from "../shared/terminal-text"
@@ -385,17 +386,14 @@ export class BotsFileStore {
   constructor(private readonly path: string) {}
 
   read(): BotsFile {
-    let stamp: string
-    try {
-      const s = statSync(this.path)
-      stamp = `${s.mtimeMs}:${s.size}:${s.ino}`
-    } catch {
+    const at = fileStamp(this.path)
+    if (!at) {
       this.seen = undefined
       this.held = EMPTY
       return this.held
     }
-    if (stamp !== this.seen) {
-      this.seen = stamp
+    if (at.stamp !== this.seen || at.recent) {
+      this.seen = at.stamp
       try {
         this.held = parseBotsFile(readFileSync(this.path, "utf8"))
       } catch (error) {

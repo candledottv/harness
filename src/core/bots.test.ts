@@ -4,7 +4,7 @@
 // resume the person's; the plan gate holding entries on Free; and all of it kept across a restart, from the
 // state file or the journal.
 import { afterAll, afterEach, describe, expect, test } from "bun:test"
-import { mkdtempSync, readFileSync, rmSync, statSync, unlinkSync, writeFileSync } from "node:fs"
+import { mkdtempSync, readFileSync, rmSync, statSync, unlinkSync, utimesSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { readDefinition } from "../shared/definition"
@@ -362,4 +362,23 @@ describe("the Journal", () => {
       'you removed the bot "confluence-small", leaving its positions in the wallet',
     ])
   })
+})
+
+test("bots.toml changed in the same instant as its last read, keeping its size, is read again", () => {
+  const dir = mkdtempSync(join(tmpdir(), "chrn-bots-"))
+  dirs.push(dir)
+  const path = join(dir, "bots.toml")
+  const store = new BotsFileStore(path)
+  const one = (perTradeUsd: number) =>
+    `[bots."quick"]\nkind = "code"\nagent = "a"\nwallet = "embedded"\nmode = "paper"\nstate = "on"\nfolder = "${dir}"\ncommand = ["bun", "run", "bot.ts"]\nperTradeUsd = ${perTradeUsd}\nperDayUsd = 10\nmaxOpen = 1\n`
+  writeFileSync(path, one(2))
+  const at = new Date()
+  utimesSync(path, at, at)
+  expect(store.read().code[0]).toMatchObject({ name: "quick" })
+  const before = JSON.stringify(store.read())
+  // The same size, the same inode and the same modified time: a timestamp too coarse to tell the two writes apart.
+  writeFileSync(path, one(3))
+  utimesSync(path, at, at)
+  expect(statSync(path).size).toBe(one(2).length)
+  expect(JSON.stringify(store.read())).not.toBe(before)
 })
