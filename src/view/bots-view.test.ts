@@ -79,6 +79,17 @@ test("a code bot's chips: its log only where the Candle Harness keeps one, start
   expect(botChips(waiting, book, 70)).toContain("retry")
 })
 
+test("a code bot that crashed and isn't started again: a red dot in the list, and counted as crashed, not on", () => {
+  const crashed = { ...momentum, process: { ...momentum.process!, state: "gave_up" as const, words: "crashed 5 times in 10 min, so it isn't started again" } }
+  const row = botListLines(crashed, BOTS_CODE.books!.momentum, 70)
+  expect(row[0]!.segs[0]).toEqual({ text: "● ", fg: C.bad })
+  expect(flat(row)).toContain("crashed, not started again")
+  const only = { ...BOTS_CODE, bots: [], code: [crashed, { ...relay, mode: "paper" as const }] }
+  expect(botsCountWords(only)).toBe("1 on · 1 crashed · 1 live")
+  expect(botsCountWords({ ...only, code: [crashed] })).toBe("1 crashed · 1 live")
+  expect(botsCountWords({ ...only, code: [crashed, { ...relay, state: "paused" as const }] })).toMatch(/^1 paused · 1 crashed/)
+})
+
 test("a code bot's process line gives memory and CPU together, once CPU has a sample: never memory alone", () => {
   const first = { ...momentum, process: { ...momentum.process!, cpuPct: undefined } }
   const before = flat(botDetailLines(first, BOTS_CODE.books!.momentum, { width: 74, now: CLOCK }))

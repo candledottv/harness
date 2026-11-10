@@ -59,6 +59,8 @@ harness.on("kill", () => console.log("the kill switch is on: buys are held"))
 
 \`harness-client.ts\` is one file with no dependencies, for Bun or Node 20 and later; its comments document every call. Run a bot with \`bun run <bot>/bot.ts\` or \`node\`, from its own folder.
 
+**Never write a mint from memory.** One a character off is another token, or none. Trade the mints the bot's signals carry, or one the person gave you. To find a token by its name or ticker, look it up through the client, in a \`candle-harness build test\` run: \`harness.hacc("hacc_token", { view: "search", q: "JUP" })\`. The answers are candidates, so ask the person which they mean. Then check it with \`harness.market(mint)\`, and copy the mint into the code exactly as the lookup gave it.
+
 ## The commands
 
 In the Build tab's terminal, \`candle-harness build\` reaches the core with this pane's own token:
