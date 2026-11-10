@@ -1,0 +1,112 @@
+{
+  "name": "strategies",
+  "host": "hacc",
+  "method": "GET",
+  "route": "/v1/strategies",
+  "query": {},
+  "status": 200,
+  "ms": 197,
+  "bytes": 1751,
+  "answer": {
+    "strategies": [
+      {
+        "id": 175,
+        "name": "fake-name-1",
+        "version": 1,
+        "definition": {
+          "exit": {
+            "stop_loss_pct": 6,
+            "max_hold_hours": 1,
+            "take_profit_pct": 6
+          },
+          "chain": "solana",
+          "entry": {
+            "source": "pattern",
+            "filters": {
+              "min_mcap_usd": 1000000
+            },
+            "pattern": "new_ticker"
+          },
+          "sizing": {
+            "usd_per_trade": 10,
+            "max_concurrent": 3
+          }
+        },
+        "status": "retired",
+        "author": "HaccFake11111111111111111111111111111111112",
+        "parent_version": null,
+        "family": null,
+        "owner_key_id": null,
+        "owner_candle_user_id": "HaccFake11111111111111111111111111111111112",
+        "created_at": "2026-10-29T15:27:34.195Z",
+        "updated_at": "2026-10-29T15:51:17.959Z"
+      },
+      {
+        "id": 173,
+        "name": "fake-name-2",
+        "version": 1,
+        "definition": {
+          "exit": {
+            "stop_loss_pct": 40,
+            "max_hold_hours": 24,
+            "take_profit_pct": 100
+          },
+          "chain": "solana",
+          "entry": {
+            "source": "pattern",
+            "filters": {
+              "max_mcap_usd": 500000,
+              "max_age_minutes": 60
+            },
+            "pattern": "confluence"
+          },
+          "sizing": {
+            "usd_per_trade": 25,
+            "max_concurrent": 4
+          }
+        },
+        "status": "retired",
+        "author": "HaccFake11111111111111111111111111111111112",
+        "parent_version": null,
+        "family": null,
+        "owner_key_id": null,
+        "owner_candle_user_id": "HaccFake11111111111111111111111111111111112",
+        "created_at": "2026-10-29T02:54:22.990Z",
+        "updated_at": "2026-10-29T03:04:33.396Z"
+      },
+      {
+        "id": 174,
+        "name": "fake-name-2",
+        "version": 2,
+        "definition": {
+          "exit": {
+            "stop_loss_pct": 30,
+            "max_hold_hours": 24,
+            "take_profit_pct": 100
+          },
+          "chain": "solana",
+          "entry": {
+            "source": "pattern",
+            "filters": {
+              "max_mcap_usd": 500000,
+              "max_age_minutes": 60
+            },
+            "pattern": "confluence"
+          },
+          "sizing": {
+            "usd_per_trade": 25,
+            "max_concurrent": 4
+          }
+        },
+        "status": "retired",
+        "author": "HaccFake11111111111111111111111111111111112",
+        "parent_version": 1,
+        "family": null,
+        "owner_key_id": null,
+        "owner_candle_user_id": "HaccFake11111111111111111111111111111111112",
+        "created_at": "2026-10-29T02:54:23.257Z",
+        "updated_at": "2026-10-29T03:07:18.990Z"
+      }
+    ]
+  }
+}

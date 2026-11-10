@@ -8,7 +8,7 @@ import { act } from "react"
 import { CATALOGUE } from "../core/cli-catalogue"
 import type { CoreEventParams } from "../core/client"
 import { App, type Session } from "./app"
-import { parseCommand } from "./commands"
+import { parseCommand } from "../shared/commands"
 import { type Effect, INITIAL_UI, type Key, paletteFound, SETTINGS, step, type UiAction, type UiContext, type UiState } from "./keys"
 import { AGENT_FIRST, COCKPIT } from "./layout"
 import type { LayoutInfo } from "./layout-menu"
@@ -78,11 +78,11 @@ describe("the palette's keys", () => {
   test("Enter on a Candle command puts the request on the input line, closes it and runs nothing", () => {
     const { state, effects } = run([...open, ...type("keys revoke"), key("return")])
     expect(state.overlay).toBeUndefined()
-    expect(state.input).toBe("revoke an API key ")
+    expect(state.input).toBe("revoke an API key permanently ")
     expect(state.cursor).toBe(state.input.length)
     expect(effects).toEqual([])
     // The next Enter sends it to the agent: it never approves a card.
-    expect(run([key("return")], state).effects).toEqual([{ type: "command", command: { kind: "agent", text: "revoke an API key" } }])
+    expect(run([key("return")], state).effects).toEqual([{ type: "command", command: { kind: "agent", text: "revoke an API key permanently" } }])
   })
 
   test("a pasted mint or 0x address is the one row, and Enter opens it in the token pane, trading nothing", () => {
@@ -108,6 +108,12 @@ describe("the palette's keys", () => {
     expect(run([ctrl("k"), key("escape")]).state).toMatchObject({ overlay: undefined, input: "" })
   })
 
+  test("the settings menu opens by keys: its row is the first found for settings, and Enter opens the menu the tab bar's chip does", () => {
+    const r = run([ctrl("k"), ...type("settings"), key("return")])
+    expect(r.state.overlay).toEqual({ kind: "settings", index: 0 })
+    expect(r.effects).toEqual([])
+  })
+
   test("the kill switch still works over it", () => {
     expect(run([ctrl("k"), ctrl("x"), ctrl("x")]).effects).toEqual([{ type: "kill" }])
   })
@@ -122,8 +128,8 @@ describe("the palette's keys", () => {
 describe("the palette's rows", () => {
   test("sections in order, then Candle's commands in the CLI's groups", () => {
     const sections = [...new Set(found("").map((r) => r.section))]
-    expect(sections.slice(0, 12)).toEqual(["Actions", "Tabs", "Layouts", "Panes", "Agents", "Presets", "Model", "Memory", "P&L", "Journal", "Tokens", "Aliases"])
-    expect(sections.slice(12).every((s) => s.startsWith("candle · "))).toBe(true)
+    expect(sections.slice(0, 14)).toEqual(["Actions", "Tabs", "Layouts", "Panes", "Agents", "Presets", "Model", "Memory", "Triggers", "Build", "P&L", "Journal", "Tokens", "Aliases"])
+    expect(sections.slice(14).every((s) => s.startsWith("candle · "))).toBe(true)
     expect(found("").filter((r) => r.cli).length).toBe(CATALOGUE.length)
   })
 
@@ -382,4 +388,14 @@ describe("the palette on screen", () => {
     expect(frame()).toContain("candle · Start here")
     expect(frame()).toContain("⏎ does it")
   })
+})
+
+test("keys typed straight after ctrl-k reach the search, even in the same read from the terminal", async () => {
+  await opened()
+  await input(() => setup!.mockInput.pressEscape())
+  await input(() => Bun.sleep(30))
+  await input(() => {
+    setup!.renderer.stdin.emit("data", Buffer.from("\x0bawake"))
+  })
+  expect(frame()).toContain("search › awake▏")
 })

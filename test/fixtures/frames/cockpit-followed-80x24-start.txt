@@ -1,5 +1,5 @@
  agent-a ▾  LIVE  today $12.00 / $100.00  ● 1 card waiting       ctrl-x ×2 kill 
- 1 Tra  2 Cockpit  3 Tre  4 Sig  5 P&L  6 Res  7 Jou  8 Per   settings ▾        
+ 1 Trade  2 Cockpit  3 Research  4 Bots  5 Build   settings ▾                   
 ╭─ agent-a ─────────── Claude Code · sonnet ▾ ─╮╭─ Token · JUPF ──────── pin ──╮
 │                                              ││ ◂  token  ▸   3/5 · ←/→      │
 │  JUPF on the hour                            ││JUPF  Jupiter Fake            │
@@ -15,7 +15,7 @@
 │                                              ││  ┃ ╽       │ ┃ │     $0.42   │
 │1 card waiting · ⏎ approves the highlighted … ││╽ ┃ ╿       ╵ ┃ │             │
 │▌ BUY 0.1 SOL of JUPF                     50s ││┃ ╵           ┃ ┃ ╻   ◂$0.418 │
-│▌ agent-a · pays from embedded · live         ││╿             ┃ ╹             │
+│▌ agent-a · embedded · live · JupF…1111       ││╿             ┃ ╹             │
 │▌ why  volume up 3× on the hour, holders ris… │││             │               │
 │▌  ⏎ approve    ctrl-n reject                 ││              │       $0.416  │
 │▌  ctrl-o details                             ││−20m    −10m      now         │
@@ -25,7 +25,7 @@
 
 --- colours ---
 0: 6cb6ff/16263a×11 0b0d10/3ddc84×6 ffffff/0e1115×1 959dab/0e1115×6 f6f8fb/0e1115×6 959dab/0e1115×10 ffffff/0e1115×2 f5a524/0e1115×16 ffffff/0e1115×6 ff5c5c/3a1619×16
-1: ffffff/0b0d10×1 6cb6ff/0b0d10×5 ffffff/0b0d10×2 f6f8fb/0b0d10+9×9 ffffff/0b0d10×2 6cb6ff/0b0d10×5 ffffff/0b0d10×2 6cb6ff/0b0d10×5 ffffff/0b0d10×2 6cb6ff/0b0d10×5 ffffff/0b0d10×2 6cb6ff/0b0d10×5 ffffff/0b0d10×2 6cb6ff/0b0d10×5 ffffff/0b0d10×2 6cb6ff/0b0d10×5 ffffff/0b0d10×2 6cb6ff/16263a×12 ffffff/0b0d10×7
+1: ffffff/0b0d10×1 6cb6ff/0b0d10×7 ffffff/0b0d10×2 f6f8fb/0b0d10+9×9 ffffff/0b0d10×2 6cb6ff/0b0d10×10 ffffff/0b0d10×2 6cb6ff/0b0d10×6 ffffff/0b0d10×2 6cb6ff/0b0d10×7 ffffff/0b0d10×2 6cb6ff/16263a×12 ffffff/0b0d10×18
 2: 32fe9f/111419×2 b392f0/111419×9 32fe9f/111419×11 6cb6ff/16263a×24 32fe9f/111419×2 252a33/111419×2 b392f0/111419×14 252a33/111419×8 6cb6ff/16263a×5 252a33/111419×3
 3: 32fe9f/111419×1 ffffff/111419×46 32fe9f/111419×1 252a33/111419×1 6cb6ff/16263a×3 dde2ea/111419×7 6cb6ff/16263a×3 959dab/111419×11 ffffff/111419×6 252a33/111419×1
 4: 32fe9f/111419×1 dde2ea/111419×2 b392f0/111419+1×16 ffffff/111419×28 32fe9f/111419×1 252a33/111419×1 f6f8fb/111419+1×4 959dab/111419×14 ffffff/111419×12 252a33/111419×1
@@ -41,7 +41,7 @@
 14: 32fe9f/111419×1 ffffff/111419×46 32fe9f/111419×1 252a33/111419×1 959dab/111419×2 3ddc84/111419×1 959dab/111419×1 ff5c5c/111419×1 959dab/111419×7 3ddc84/111419×1 959dab/111419×1 ff5c5c/111419×1 959dab/111419×1 3ddc84/111419×1 959dab/111419×10 ffffff/111419×3 252a33/111419×1
 15: 32fe9f/111419×1 959dab/111419×45 ffffff/111419×1 32fe9f/111419×1 252a33/111419×1 3ddc84/111419×1 959dab/111419×1 3ddc84/111419×1 959dab/111419×1 ff5c5c/111419×1 959dab/111419×7 3ddc84/111419×1 959dab/111419×1 ff5c5c/111419×1 959dab/111419×1 3ddc84/111419×1 959dab/111419×5 ffffff/111419×8 252a33/111419×1
 16: 32fe9f/111419×1 f5a524/111419×2 f6f8fb/111419×19 dde2ea/111419×21 f5a524/111419×3 ffffff/111419×1 32fe9f/111419×1 252a33/111419×1 3ddc84/111419×1 959dab/111419×1 3ddc84/111419×1 959dab/111419×11 ff5c5c/111419×1 959dab/111419×1 3ddc84/111419×1 959dab/111419×1 3ddc84/111419×1 959dab/111419×2 f6f8fb/111419×8 ffffff/111419×1 252a33/111419×1
-17: 32fe9f/111419×1 f5a524/111419×2 959dab/111419×35 ffffff/111419×9 32fe9f/111419×1 252a33/111419×1 3ddc84/111419×1 959dab/111419×13 ff5c5c/111419×1 959dab/111419×1 3ddc84/111419×1 959dab/111419×5 ffffff/111419×8 252a33/111419×1
+17: 32fe9f/111419×1 f5a524/111419×2 959dab/111419×37 ffffff/111419×7 32fe9f/111419×1 252a33/111419×1 3ddc84/111419×1 959dab/111419×13 ff5c5c/111419×1 959dab/111419×1 3ddc84/111419×1 959dab/111419×5 ffffff/111419×8 252a33/111419×1
 18: 32fe9f/111419×1 f5a524/111419×2 959dab/111419×5 dde2ea/111419×38 ffffff/111419×1 32fe9f/111419×1 252a33/111419×1 3ddc84/111419×1 959dab/111419×13 ff5c5c/111419×1 959dab/111419×7 ffffff/111419×8 252a33/111419×1
 19: 32fe9f/111419×1 f5a524/111419×2 0b0d10/6cb6ff×11 dde2ea/111419×2 6cb6ff/16263a×15 ffffff/111419×16 32fe9f/111419×1 252a33/111419×1 959dab/111419×14 ff5c5c/111419×1 959dab/111419×13 ffffff/111419×2 252a33/111419×1
 20: 32fe9f/111419×1 f5a524/111419×2 6cb6ff/16263a×16 ffffff/111419×28 32fe9f/111419×1 252a33/111419×1 959dab/111419×21 ffffff/111419×9 252a33/111419×1

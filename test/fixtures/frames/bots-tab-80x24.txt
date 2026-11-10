@@ -1,0 +1,50 @@
+ agent-a ▾  LIVE  ● 1 card waiting  ⚡ 4 triggers  3 bots        ctrl-x ×2 kill 
+ 1 Trade  2 Cockpit  3 Research  4 Bots  5 Build   settings ▾                   
+╭─ Bots · 2 on · 2 live ───────────────────────────────────────────────────────╮
+│ ◂  bots  ▸   1/2 · ←/→                                                       │
+│● conf  live      +$3.86  2 open                                              │
+│  agent-a · bot-conf                                                          │
+│                                                                              │
+│● fresh paper    ≈+$1.10  1 open                                              │
+│  agent-b · embedded                                                          │
+│                                                                              │
+│● woke  live      -$0.52  1 open                                              │
+│  paused by agent-a at 05:02 · exits sell                                     │
+│                                                                              │
+│○ test1 live      -$1.10                                                      │
+│  stopped by you, Jan 13                                                      │
+╰─ ⇱ ─────────────────────────────────────────────────────────────── ↓ 1 more ─╯
+╭─ agent-a ─────────────────────────────────────────── Claude Code · sonnet ▾ ─╮
+│1 card waiting · ⏎ approves the highlighted one                               │
+│▌ BUY 0.1 SOL of JUPF                                                     50s │
+│▌ agent-a · pays from embedded · live · JupF…1111                             │
+│▌  ⏎ approve    ctrl-n reject    ctrl-o details                               │
+╰──────────────────────────────────────────────────────────────────────────────╯
+                                                                                
+› type a command or ask the agent        ⏎ approve   ctrl-k palette    ? help   
+
+--- colours ---
+0: 6cb6ff/16263a×11 0b0d10/3ddc84×6 ffffff/0e1115×1 f5a524/0e1115×16 ffffff/0e1115×1 6cb6ff/16263a×23 ffffff/0e1115×6 ff5c5c/3a1619×16
+1: ffffff/0b0d10×1 6cb6ff/0b0d10×7 ffffff/0b0d10×2 6cb6ff/0b0d10×9 ffffff/0b0d10×2 6cb6ff/0b0d10×10 ffffff/0b0d10×2 f6f8fb/0b0d10+9×6 ffffff/0b0d10×2 6cb6ff/0b0d10×7 ffffff/0b0d10×2 6cb6ff/16263a×12 ffffff/0b0d10×18
+2: 252a33/111419×2 b392f0/111419×22 252a33/111419×56
+3: 252a33/111419×1 6cb6ff/16263a×3 dde2ea/111419×6 6cb6ff/16263a×3 959dab/111419×11 ffffff/111419×55 252a33/111419×1
+4: 252a33/111419×1 3ddc84/111419×2 f6f8fb/111419×6 3ddc84/111419×16 959dab/111419×8 ffffff/111419×46 252a33/111419×1
+5: 252a33/111419×1 959dab/111419×20 ffffff/111419×58 252a33/111419×1
+6: 252a33/111419×1 ffffff/111419×78 252a33/111419×1
+7: 252a33/111419×1 3ddc84/111419×2 f6f8fb/111419×6 959dab/111419×7 3ddc84/111419×9 959dab/111419×8 ffffff/111419×46 252a33/111419×1
+8: 252a33/111419×1 959dab/111419×20 ffffff/111419×58 252a33/111419×1
+9: 252a33/111419×1 ffffff/111419×78 252a33/111419×1
+10: 252a33/111419×1 f5a524/111419×2 f6f8fb/111419×6 3ddc84/111419×7 ff5c5c/111419×9 959dab/111419×8 ffffff/111419×46 252a33/111419×1
+11: 252a33/111419×1 f5a524/111419×41 ffffff/111419×37 252a33/111419×1
+12: 252a33/111419×1 ffffff/111419×78 252a33/111419×1
+13: 252a33/111419×1 959dab/111419×8 3ddc84/111419×7 ff5c5c/111419×9 959dab/111419×8 ffffff/111419×46 252a33/111419×1
+14: 252a33/111419×1 959dab/111419×24 ffffff/111419×54 252a33/111419×1
+15: 252a33/111419×2 6cb6ff/16263a×3 252a33/111419×63 959dab/111419×10 252a33/111419×2
+16: 32fe9f/111419×2 b392f0/111419×9 32fe9f/111419×43 6cb6ff/16263a×24 32fe9f/111419×2
+17: 32fe9f/111419×1 959dab/111419×47 ffffff/111419×31 32fe9f/111419×1
+18: 32fe9f/111419×1 f5a524/111419×2 f6f8fb/111419×19 dde2ea/111419×53 f5a524/111419×3 ffffff/111419×1 32fe9f/111419×1
+19: 32fe9f/111419×1 f5a524/111419×2 959dab/111419×47 ffffff/111419×29 32fe9f/111419×1
+20: 32fe9f/111419×1 f5a524/111419×2 0b0d10/6cb6ff×11 dde2ea/111419×2 6cb6ff/16263a×15 dde2ea/111419×2 6cb6ff/16263a×16 ffffff/111419×30 32fe9f/111419×1
+21: 32fe9f/111419×80
+22: 959dab/0b0d10×1 ffffff/0b0d10×79
+23: f6f8fb/0e1115×2 959dab/0e1115×31 ffffff/0e1115×8 dde2ea/0e1115×1 959dab/0e1115×10 6cb6ff/16263a×16 959dab/0e1115×2 6cb6ff/16263a×8 959dab/0e1115×2

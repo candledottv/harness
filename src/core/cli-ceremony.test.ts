@@ -48,7 +48,7 @@ const plan = (words: string[]) => {
 
 // The ceremony table, with the owner rows' ceremonies (`auth login`, `setup`, `update`, `vault init`)
 // and the two the table also holds: `verify` (a file the user names) and `vault status --unlock`.
-const CEREMONIES = ["auth login", "setup", "update", "verify", "vault init", "vault phrase", "vault restore", "vault factor", "vault factor add", "vault enroll", "vault export-key", "wallets import", "sign", "sign message", "secrets set", "quant terms"]
+const CEREMONIES = ["auth login", "setup", "update", "verify", "vault init", "vault phrase", "vault restore", "vault factor", "vault factor add", "vault enroll", "vault export-key", "wallets import", "sign", "sign message", "secrets set", "quant terms", "wallets authorize"]
 
 describe("the table", () => {
   test("every ceremony runs in the pane now, and none takes the factor step: each asks for what it needs itself", () => {
@@ -61,7 +61,7 @@ describe("the table", () => {
     // vault status --unlock is a ceremony by its flag: the factor step itself, run on its own.
     expect(resolve(["vault", "status", "--unlock"])).toMatchObject({ rule: "ceremony", route: "pane" })
     // The ones that never unlock are the ones the plan's "asks for what it needs" is about: the key, the secret, the browser.
-    expect(ceremonies.filter((r) => unlocksFor(r.path) === "never").map((r) => r.path).sort()).toEqual(["auth login", "quant terms", "secrets set", "setup", "update", "vault restore", "verify", "wallets import"])
+    expect(ceremonies.filter((r) => unlocksFor(r.path) === "never").map((r) => r.path).sort()).toEqual(["auth login", "quant terms", "secrets set", "setup", "update", "vault restore", "verify", "wallets authorize", "wallets import"])
   })
 
   test("each row's argv and identity: the words as given, no --json (nothing is piped), the agent's key only for wallets import", () => {
@@ -172,7 +172,7 @@ describe("the outcome words", () => {
   })
 
   test("a row that shows nothing keeps the usual words; vault restore's exit 3 says what to check", () => {
-    expect(paneOutcome({ stage: "command", exit: 1 }, { fundsOut: false }).words).toBe("didn't finish: refused, or answered no at the CLI's prompt.")
+    expect(paneOutcome({ stage: "command", exit: 1 }, { fundsOut: false }).words).toBe("didn't finish: the CLI's own line above says why (a wrong passphrase, a refusal, or no at its prompt).")
     const restore = resolve(["vault", "restore", "--phrase"]).row.pane!
     const r = paneOutcome({ stage: "command", exit: 3 }, { fundsOut: false, reveals: restore.reveals, exit3: restore.exit3 })
     expect(r).toMatchObject({ outcome: "pending", words: "restored, but not confirmed (exit 3): the CLI couldn't read every linked wallet. Check with candle vault status before anything else." })

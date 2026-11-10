@@ -28,6 +28,8 @@ export type ShellSetting = "off" | "everything" | readonly string[]
 
 export interface ToolSettings {
   shell: ShellSetting
+  /** research_run's programs (core/research-run.ts): off unless a list is set. */
+  run?: RunSetting
   /** When set, only these are offered. */
   allow?: readonly string[]
   deny: readonly string[]
@@ -140,3 +142,24 @@ export const shellWords = (s: ShellSetting): string => (s === "off" || s === "ev
 
 /** What the picker and the doctor say when the shell is on. */
 export const SHELL_ON_NOTE = "reads aren't held to the research folder, and cards and limits don't cover what the shell runs"
+
+// The code runner's setting (core/research-run.ts runs it).
+
+export type RunSetting = "off" | readonly string[]
+
+/** The documented example, and what turning the runner on from the picker or the palette writes. */
+export const RUN_EXAMPLE: readonly string[] = ["python3", "bun", "node"]
+
+/** A program on the list: a plain name found on the PATH, or an absolute path. */
+const PROGRAM = /^([A-Za-z0-9._+-]{1,64}|\/[^\0,]{1,1024})$/
+
+/** Why `entry` can't be on a run list, or undefined when it can. */
+export function runEntryFault(entry: unknown): string | undefined {
+  if (typeof entry !== "string" || !PROGRAM.test(entry)) return `${JSON.stringify(entry)} isn't a program: use its name, such as "python3", or its full path`
+  return undefined
+}
+
+export const runOn = (s: RunSetting | undefined): s is readonly string[] => Array.isArray(s) && s.length > 0
+
+/** The setting in words: "off", or "python3, bun, node". */
+export const runWords = (s: RunSetting | undefined): string => (runOn(s) ? s.join(", ") : "off")

@@ -1,0 +1,18 @@
+{
+  "name": "tape-distribution-all",
+  "host": "hacc",
+  "method": "GET",
+  "route": "/v1/signals",
+  "query": {
+    "pattern": "distribution",
+    "since": "2026-11-05T11:46:34.543Z",
+    "limit": "200",
+    "quality": "all"
+  },
+  "status": 200,
+  "ms": 135,
+  "bytes": 14,
+  "answer": {
+    "signals": []
+  }
+}

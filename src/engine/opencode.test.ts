@@ -154,7 +154,7 @@ test("the list holds back a ChatGPT sign-in's models with a line naming Codex, l
   expect(r.models.length).toBeGreaterThan(0)
   expect(r.models.every((m) => m.id.startsWith("opencode/"))).toBe(true)
   expect(r.models.some((m) => m.isDefault)).toBe(false)
-  expect(r.hidden).toEqual(["Your ChatGPT sign-in in OpenCode isn't offered here: subscriptions run through their own harness. Pick Codex for it."])
+  expect(r.hidden).toEqual(["Your ChatGPT sign-in in OpenCode isn't offered here: subscriptions run through their own engine. Pick Codex for it."])
   expect([...r.held.keys()]).toEqual(["openai"])
 })
 
@@ -371,7 +371,7 @@ test("a model the list held back is refused in a turn too, with the line naming 
   const fake = fakeOpenCode()
   const e = opencodeEngine(fake.bin, { folder: w.folder })
   await e.models({ PATH: "/usr/bin:/bin", HOME: w.home })
-  expect(e.modelNotes!()).toEqual(["Your ChatGPT sign-in in OpenCode isn't offered here: subscriptions run through their own harness. Pick Codex for it."])
+  expect(e.modelNotes!()).toEqual(["Your ChatGPT sign-in in OpenCode isn't offered here: subscriptions run through their own engine. Pick Codex for it."])
   expect(e.defaultModel!()).toBeUndefined() // only free models are left, and none is picked for you
   const events = await drain(e.start(w.turn()))
   expect(events).toEqual([{ type: "error", message: expect.stringContaining("Pick Codex for it") }])
@@ -490,7 +490,7 @@ describe("OpenCode through a core", () => {
     const fake = fakeOpenCode()
     const { view, ended } = await opencodeCore(fake)
     const listed = (await view.request("engine.models", { engine: "opencode" })).result as { models: { id: string }[]; notes?: string[] }
-    expect(listed.notes).toEqual(["Your ChatGPT sign-in in OpenCode isn't offered here: subscriptions run through their own harness. Pick Codex for it."])
+    expect(listed.notes).toEqual(["Your ChatGPT sign-in in OpenCode isn't offered here: subscriptions run through their own engine. Pick Codex for it."])
     expect(listed.models.some((m) => m.id.startsWith("openai/"))).toBe(false)
     expect((await view.request("engine.choose", { agent: "momentum", engine: "opencode", model: "openai/gpt-5.6-terra-fast" })).error).toBeUndefined()
     await view.request("agent.send", { text: "what's trending?" })

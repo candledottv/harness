@@ -2,6 +2,84 @@
 
 What changed in each version of Candle Harness (called the Candle TUI before 0.3.0). Versions follow [semantic versioning](https://semver.org), and each release is listed on [GitHub](https://github.com/candledottv/harness/releases).
 
+## 0.5.2 (2026-11-10)
+
+Triggers, rules bots, code bots with the Build tab, and the code runner, each through independent code and security reviews. **Update from any earlier version:** see the first line under "Safety and correctness".
+
+### Triggers
+
+- "When this happens, do that", run by the core with its window open or closed: a price or market-cap level (from your entry too), your P&L, Hacc's tape or your own signals, a schedule, a fill, or a call from a script. It trades, notifies you, or wakes an agent. Pro and Max.
+- The agent writes each one with you, asking what your words leave open, and proposes it as a card that says whether it runs on its own or asks you each time. Your press saves it.
+- A trigger's trades go through the wallet's figures, the agent's limits and the kill switch, which holds its buys and wakes and lets its sells go.
+- Triggers keep the core running after you quit; `candle-harness stop` ends it, `candle-harness service install` starts it at login, and keep-awake keeps a Mac from sleeping.
+- Notifications while its window isn't in front, and from the core with no window open on a Mac or a Linux desktop.
+- `candle-harness ask` sends an agent a message from a script, and `candle-harness trigger` fires an `on call` trigger.
+
+### Rules bots
+
+- A Hacc strategy definition the core runs for you: it buys on Hacc's full tape when its pattern and filters match, and sells each position by its take profit, stop, max hold or trailing exit, with its window open or closed. Pro and Max.
+- The agent writes each one with you, offers a wallet of its own first, and proposes it as a card with its worst case and the backtest of its exact definition. Your press starts it, on paper or live, whatever the app's own mode.
+- Its buys go through the wallet's figures; its exits sell without a card on any wallet. It keeps its own book from its own fills and sells only its own.
+- Pause, stop, flatten and remove, the kill switch holding its entries, and a pace that keeps bots and triggers clear of Candle's circuit breaker.
+- The Bots tab, a Bots section in the note when you come back, and notifications: one a bot every 5 minutes at most, folding what it bought and sold, and at once for a stop or a sell that failed or is held.
+- A bot buys only on a signal at most 2 minutes old, and takes a slot only once a signal passes its checks.
+- Its exits judge only a price read after its buy filled. A token Candle stops pricing says so, its stop and target wait, and its max hold still sells. A sell that fails or is refused, flatten's included, is tried again, and says why once.
+- A wallet of its own from the Bots tab, as from the bot's card. A fresh TEE wallet Candle can't sign for yet stays listed, marked, and is refused in those words.
+
+### Code bots and the Build tab
+
+- The Build tab runs your own coding harness (Claude Code, Codex, Grok, OpenCode, Pi or any command), unmodified and signed in as you, in a terminal pane in your bots folder, `~/candle-bots` unless you pick another. The folder holds `AGENTS.md` with the rules every bot runs under, the client, and nine of Candle's bot-building skills; a file you change is never written over.
+- A code bot is a program of yours that trades through the core with a token of its own, never a key. Your press on its card saves it; the card approves its run settings and three figures (a trade's, a day's, open at most), not its code, and the core holds every trade to them whatever the code does.
+- Its buys go through its figures and the wallet's; its sells of its own run without a card. A buy may carry exits the core holds, which keep selling while the bot is paused, crashed or held by the kill switch.
+- The core runs each code bot, restarts it after a crash, gives up after five in ten minutes, keeps its last 5 MB of log with keys taken out, and starts it again with the core. A bot can also run elsewhere on the machine with `candle-harness bots token`.
+- `candle-harness build` lets the Build tab's harness read every bot's book, test a bot on paper for up to 30 minutes, and propose one. `candle-harness bots` lists, starts, stops and restarts code bots, and prints their logs.
+- Code bots on the Bots tab: their process, figures and today's use, held exits, what the bot says beside the core's count, and their log. A bot's word can fire a trigger: `on bot "<name>" says "<word>"`.
+- The bot protocol, and `harness-client.ts`, one file with no dependencies, for Bun or Node 20 and later.
+
+### The code runner
+
+- Off until you turn it on for an agent: then it runs a short script with `python3`, `bun` or `node` in its research folder, held there by the operating system (macOS's sandbox, or Landlock on Linux 6.12 or later), with no network, for 60 seconds at most.
+
+### Safety and correctness
+
+- **Update from any earlier version.** A built binary read `bunfig.toml` and `.env` from the folder it was started in. It reads neither now, the release build checks that, and the code runner's hold starts outside the agent's folder.
+- What trades spend (SOL, USDC, ETH, USDG) can't be a trade's token, live or on paper, so a "sell" can't be an unlimited conversion.
+- A bot's change takes at once only when it truly narrows: an emptied filter list is wider, a slippage bound under the route's default is a card (and under 0.1% is refused), and an exit change that would sell an open position now is a card.
+- A code bot's sells asked for together can't sell more than its own; a request that lands on another's card ends rather than waits; a new bot with a removed bot's name starts with an empty book and day.
+- A buy read back by its id sells about what the bot's own spend bought, not the wallet's whole holding.
+- A trigger keeps the mode it was approved in: switching to paper leaves a live stop live and says so. A `pnl` trigger carries its own window. A trigger that can't be read shows as not watching, with why, and reads again when it can. A woken turn switches off only its own agent's triggers.
+- A stopped turn's calls make no card, and a turn that began on paper is refused once you've gone live under it.
+- Enter never approves a card you can't see: not while the screen is too small, and a card that arrives under another waits 1.5 s. A Build card proposed while you type opens without the keys. `ctrl-x` twice kills from the Build tab's terminal and a prompt pane.
+- A trade card and its receipt show the token's short address, in amber when that name has been another token here. A bot's card at 80×24 keeps what the press approves. A launch card says what it publishes.
+- The kill switch stops first and saves after, and says when its state couldn't be saved. Re-sending a trade is the main window's alone.
+- A core that has run for days still opens: closed cards are pruned, lists are bounded, and a window that stops reading is dropped rather than buffered.
+- After a restart, a re-sent trade through the CLI runs with your RPC address, which no longer enters cards, operations or the Journal.
+- Text from Candle, Hacc, code bots and fetched pages reaches an engine cleaned; a bot's log has control sequences and multi-line keys taken out; the paste log keeps no wallet key or recovery phrase. A pasted hex or base64 keypair, or a labelled recovery phrase, is refused.
+- Activity shows the full address of every page an agent fetches.
+- The code runner refuses 32-bit-table system calls and new sessions inside a held script, and never grants your home or the Harness's folder to a runtime.
+- After an update, the installer, the doctor and the status bar say when the running core is still the old version. `install.sh` can't run half-downloaded. Engines and `candle` are started by full path.
+- `candle-harness ask --json`, and a read-only `candle-harness cards` with `--wait`, for scripts and outside agents.
+- The agent's memory view shows every line that reaches its prompt, headings included.
+- A code bot that fails as it starts no longer takes the core down with it.
+- A held exit and a code bot's own sell can't both sell one position. A buy read back by its id is sized only from a price within a minute of it, never past its quote with the slippage bound; with no such price the position is left to you.
+- A code bot's folder and the bots folder can't be `/`, your home or the Harness's own folders. A sell trigger's smaller amount or harder-to-reach level is a card. SOL, USDC, ETH, USDG and CNDL only ever name their real mints.
+- The core sends one sell of a token at a time per key, counts sells in flight toward Candle's failed-sells stop, and warns you when your sell could be the one that stops the key. Its re-send of a lost exit waits behind the same holds.
+- More secret shapes are kept out of logs and the Journal, and the CLI's keyring passphrase is never written or shown.
+- In a Build pane, `ask`, `trigger` and attaching as a view are refused, and bot logs reach the harness marked as untrusted data.
+- Bun's own variables never reach what the Harness starts. The code runner caps a script's file size and processes and refuses namespaces and other kernel surfaces on Linux; on macOS it stops everything a script started. A held script gets only its three standard streams, and a runtime in a home folder is granted as that file alone. `ps` and `git` are started by full path.
+- Triggers' and memory's text reaches the agent fenced, and a trigger's line is part of what you approved. Smaller hardening: `notify-send`, the bots folder's record, the login service's unit and the config folder's permissions.
+- Every "sells run with no card" line names the exception, a looser slippage bound; a card behind a pane no longer shows `⏎`.
+
+### Also
+
+- A fresh install shows five tabs: Trade, Cockpit, Research, Bots and Build. Trending, Signals, P&L, Journal and Perps are one tick away in `settings ▾`.
+- The agent acts when you message it, and a trigger can wake it, within caps of its own, when something needs its judgment.
+- Memory lines you pin are kept word for word.
+- Up to three token panes side by side.
+- A token name mixing look-alike letters from other scripts carries its short address wherever it's shown, and a stray zero-width joiner no longer shows as a letter.
+- A new agent's key on Free is no longer rate-limited by setup's own reads: the core counts Candle's status read and its MCP server's own start as Candle does at CLI 0.13.18, and doesn't read a new key twice in a row. A paper trade Candle refuses says why in words.
+- `candle-harness service install` stops and removes the Candle TUI 0.2's login service first, if it's there, so a 0.2 core never runs on the old home; `service status` and the doctor name it. The agent's `tui_triggers` and `tui_bots` are still taken as `harness_triggers` and `harness_bots`, never listed, as the other `tui_*` names are.
+
 ## 0.3.0 (2026-11-06)
 
 The Candle TUI is now **Candle Harness**, and its repository is [candledottv/harness](https://github.com/candledottv/harness). The guide moved to [docs.candle.tv/harness](https://docs.candle.tv/harness).

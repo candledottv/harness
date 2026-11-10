@@ -5,6 +5,7 @@
 // never 0, and say when the figure is stale. The P&L names its window.
 import { Chip, type ChipKind } from "./chip"
 import type { PnlFigure, StatusView } from "./store"
+import { cellWidth } from "./format"
 import { C, money, shortDuration, signedMoney } from "./theme"
 
 /** Prices older than this are marked stale in the status bar. */
@@ -13,6 +14,8 @@ export const STALE_MS = 60_000
 export interface StatusBarProps {
   width: number
   connected: boolean
+  /** The core went away after this view attached: said in place of figures that no longer move. */
+  lost?: boolean
   status: StatusView | undefined
   cardsWaiting: number
   killArmed: boolean
@@ -24,6 +27,14 @@ export interface StatusBarProps {
   onMode: () => void
   onKill: () => void
   onResume: () => void
+  /** The triggers chip: the Triggers overlay. */
+  onTriggers?: () => void
+  /** The bots chip: the Bots tab, or its overlay. */
+  onBots?: () => void
+  /** The attached core's version, when it isn't this view's: it kept running through an update. */
+  staleCore?: string
+  /** The restart chip beside it: stops that core and starts this version's. */
+  onRestartCore?: () => void
 }
 
 interface SegmentSpec {
@@ -78,7 +89,7 @@ export function figureParts(text: string, fg: string): { text: string; fg: strin
 /** The segments that fit `width`, dropping the least important first; the kill switch always stays. */
 export function fitSegments<T extends { text: string; priority: number; spacer?: boolean }>(segments: T[], width: number): T[] {
   // Plain segments and chips both take one cell of padding either side.
-  const cells = (s: T) => (s.spacer ? 0 : s.text.length + 2)
+  const cells = (s: T) => (s.spacer ? 0 : cellWidth(s.text) + 2)
   const kept = [...segments]
   for (let p = Math.max(...segments.map((s) => s.priority)); p > 0 && kept.reduce((n, s) => n + cells(s), 0) > width; p--) {
     for (let i = kept.length - 1; i >= 0 && kept.reduce((n, s) => n + cells(s), 0) > width; i--) if (kept[i]!.priority === p) kept.splice(i, 1)
@@ -118,6 +129,35 @@ export function pnlWords(pnl: PnlFigure | null | undefined, mode?: "paper" | "li
   return `${name} ${window} ${pnl.usd === null ? "—" : `${partial ? "≈" : ""}${signedMoney(pnl.usd)}`}${partial ? ` (${pnl.unpriced} unpriced)` : ""}`
 }
 
+/** "3 triggers on", with "· Mac kept awake" while keep-awake holds it awake. */
+export const triggersOnWords = (count: number, awake = false) => `${count} trigger${count === 1 ? "" : "s"} on${awake ? " · Mac kept awake" : ""}`
+
+/** The status bar's chip: "⚡ 4 triggers", with "· Mac awake" while keep-awake holds it awake; narrow, without it (a bare "⚡ 4" beside "3 bots" read as cut off). */
+export const triggersChipWords = (count: number, awake = false, narrow = false) => `⚡ ${count} trigger${count === 1 ? "" : "s"}${awake && !narrow ? " · Mac awake" : ""}`
+
+/** The status bar's words for a core that kept running through an update. */
+export const staleCoreWords = (version: string) => `the core is still ${version}`
+
+/** The version to name when the attached core's isn't this view's own; undefined when they match or it isn't known. */
+export const staleCoreVersion = (running: string | undefined, ours: string): string | undefined => (running !== undefined && running !== ours ? running : undefined)
+
+/** The status bar's bots chip: "3 bots", the bots that keep the core running. */
+export const botsChipWords = (count: number) => `${count} bot${count === 1 ? "" : "s"}`
+
+/**
+ * What quitting the view says, on the shell's screen, when triggers keep the core running: how many, and how to
+ * stop them. Nothing when none is on.
+ */
+export function quitNote(status: Pick<StatusView, "triggersOn" | "botsOn"> | undefined): string | undefined {
+  const t = status?.triggersOn ?? 0
+  const b = status?.botsOn ?? 0
+  const count = (n: number, one: string) => `${n} ${one}${n === 1 ? "" : "s"}`
+  const what = [...(b > 0 ? [count(b, "bot")] : []), ...(t > 0 ? [count(t, "trigger")] : [])]
+  if (!what.length) return undefined
+  const one = t + b === 1
+  return `${what.join(" and ")} ${one ? "keeps" : "keep"} running in the background · \`candle-harness stop\` to end ${one ? "it" : "them"}`
+}
+
 export function StatusBar(props: StatusBarProps) {
   const { status } = props
   const bar = (segments: SegmentSpec[]) => (
@@ -127,6 +167,13 @@ export function StatusBar(props: StatusBarProps) {
       ))}
     </box>
   )
+  if (props.lost) {
+    return bar([
+      { key: "brand", text: "▲ candle", fg: C.hi, priority: 1 },
+      { key: "lost", text: "the core stopped · reconnecting…", fg: C.look, priority: 0 },
+      { key: "how", text: "quit and run candle-harness to start it again", fg: C.dim, priority: 2 },
+    ])
+  }
   if (!props.connected || !status) {
     return bar([
       { key: "brand", text: "▲ candle", fg: C.hi, priority: 1 },
@@ -144,6 +191,14 @@ export function StatusBar(props: StatusBarProps) {
     { key: "exposure", text: figures.exposure, fg: C.hi, figure: true, priority: 4 },
     { key: "pnl", text: figures.pnl, fg: status.pnl?.usd == null ? C.dim : status.pnl.usd >= 0 ? C.good : C.bad, figure: true, priority: 3 },
     { key: "cards", text: `● ${waiting} card${waiting === 1 ? "" : "s"} waiting`, fg: waiting > 0 ? C.look : C.dim, priority: 1 },
+    // The triggers that keep the core running after the view quits.
+    // The triggers on, which keep the core running after the view quits: a chip to the Triggers overlay. Narrow, its count alone.
+    ...(status.triggersOn ? [{ key: "triggers", text: triggersChipWords(status.triggersOn, status.keepAwake?.active === true, props.width < 100), fg: C.ctl, ...(props.onTriggers ? { onClick: props.onTriggers } : {}), priority: 1 }] : []),
+    // The bots that keep the core running: a chip to the Bots tab.
+    ...(status.botsOn ? [{ key: "bots", text: botsChipWords(status.botsOn), fg: C.ctl, ...(props.onBots ? { onClick: props.onBots } : {}), priority: 1 }] : []),
+    // A core from before an update, still running as the older version: said until it's restarted, the person's click.
+    ...(props.staleCore ? [{ key: "stale", text: staleCoreWords(props.staleCore), fg: C.look, priority: 0 }] : []),
+    ...(props.staleCore && props.onRestartCore ? [{ key: "restart", text: "restart it", fg: C.ctl, onClick: props.onRestartCore, priority: 0 }] : []),
     ...(status.debugLoseNextReply ? [{ key: "debug", text: "DEBUG · next answer dropped", fg: C.page, bg: C.look, priority: 0 }] : []),
     { key: "spacer", text: "", fg: C.bar, priority: 0, spacer: true },
     ...(status.paused

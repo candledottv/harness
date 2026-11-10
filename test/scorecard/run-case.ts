@@ -7,9 +7,9 @@ import { join } from "node:path"
 import type { Config } from "../../src/config"
 import type { CoreOptions } from "../../src/core/core-main"
 import type { Engine, EngineId } from "../../src/engine/engine"
-import { AGENT_KEY, startTestCore, type TestCore, testEngine, until } from "../core-fixture"
+import { AGENT_KEY, startTestCore, type TestCore, testConfig, testEngine, until } from "../core-fixture"
 import { type FakeHacc, startFakeHacc } from "../fake-hacc"
-import { type Case, type CaseRecord, type Check, MOON, MOON_TWIN, PEPE, type TurnRecord } from "./cases"
+import { type Case, type CaseRecord, type Check, MOON, MOON_TWIN, PEPE, type TurnRecord, type WakeTurn } from "./cases"
 
 export const OPENROUTER_KEY_FILE = join(homedir(), ".config/candle-harness-engines/openrouter-key")
 const TURN_MS = 300_000
@@ -101,6 +101,25 @@ function plantedRows(c: Case): string {
     .join("\n")
 }
 
+/**
+ * A trigger's wake, as the core's own watcher would fire it: the line saved as the person's press on its card
+ * would, then fired on a signal for `mint` that just reached Hacc's tape, so a model that reads the tape to
+ * check finds it there.
+ */
+async function wake(core: TestCore, hacc: FakeHacc | undefined, w: WakeTurn["wake"]): Promise<void> {
+  const book = core.core.triggers
+  const checked = book.check(w.line, "momentum")
+  const { name } = await book.save(w.line, "momentum", { expansion: checked.trigger.expansion })
+  const entry = book.entry(name)
+  if (!entry) throw new Error(`the trigger ${name} wasn't saved`)
+  const symbol = w.symbol
+  const row = hacc?.push({ pattern: w.pattern, summary: `${w.pattern} on ${symbol}`, asset_address: w.mint, asset_symbol: symbol, asset_chain: "solana", payload: { amount: "1000", usd_value: "250", asset_symbol: symbol, asset_address: w.mint } })
+  const at = new Date(String(row?.created_at ?? new Date().toISOString()))
+  const hhmm = `${String(at.getHours()).padStart(2, "0")}:${String(at.getMinutes()).padStart(2, "0")}`
+  const fired = await book.fired(entry, { by: "tape", mint: w.mint, chain: "solana", signalId: Number(row?.id ?? 1), pattern: w.pattern, signalAt: at.toISOString() }, `a ${w.pattern} signal on ${symbol} at ${hhmm}`)
+  if (!fired.fired) throw new Error(`the trigger didn't fire: ${fired.words}`)
+}
+
 export async function runCase(
   c: Case,
   spec: EngineSpec,
@@ -122,9 +141,18 @@ export async function runCase(
     core = await startTestCore(opts, {
       // Outside /tmp, which every Grok profile reads.
       prefix: join(homedir(), ".cache/chrn-h-"),
-      config: { mode: "live", engine: { ...(o.engines ? testEngine : liveEngines), default: spec.engine }, hacc: { enabled: !c.haccOff } },
+      config: {
+        mode: "live",
+        engine: { ...(o.engines ? testEngine : liveEngines), default: spec.engine },
+        hacc: { enabled: !c.haccOff },
+        ...(c.run ? { agents: (() => { const agents = testConfig("candle").agents; agents.momentum!.tools = { shell: "off", deny: [], run: c.run }; return agents })() } : {}),
+      },
       candle: { momentum: { tier: plan, ...c.candle } },
       before: (p) => {
+        for (const [path, text] of Object.entries(c.files ?? {})) {
+          mkdirSync(join(p.researchDir("momentum"), path, ".."), { recursive: true, mode: 0o700 })
+          writeFileSync(join(p.researchDir("momentum"), path), text)
+        }
         if (c.memory !== undefined) {
           mkdirSync(join(p.researchDir("momentum"), "memory"), { recursive: true, mode: 0o700 })
           writeFileSync(join(p.researchDir("momentum"), "memory", "index.md"), c.memory)
@@ -144,6 +172,24 @@ export async function runCase(
       const set = await view.request("autonomy.set", { wallet: "embedded", setting: "inside", ...c.autonomy })
       if (set.error) throw new Error(`autonomy.set refused: ${JSON.stringify(set.error)}`)
     }
+    if (c.triggers?.length) {
+      // As the person's press on each card would: once the plan is read, since triggers need Pro or Max.
+      await until(() => core!.core.plans.planFor("momentum").plan !== undefined, 30_000)
+      for (const line of c.triggers) {
+        const checked = core.core.triggers.check(line, "momentum")
+        await core.core.triggers.save(line, "momentum", { expansion: checked.trigger.expansion })
+      }
+    }
+    if (c.bots?.length) {
+      // As the person's press on each card would: once the plan and the embedded wallet are read.
+      await until(() => core!.core.plans.planFor("momentum").plan !== undefined, 30_000)
+      await until(() => view.events.some((e) => e.topic === "autonomy" && (e.data as { wallets: { kind?: string }[] }).wallets.some((w) => w.kind === "embedded")), 30_000)
+      for (const b of c.bots) {
+        const proposal = { name: b.name, definition: b.definition, run: { agent: "momentum", wallet: "embedded", mode: b.mode } }
+        const checked = core.core.bots.check(proposal, "momentum")
+        await core.core.bots.save(proposal, "momentum", { hash: checked.hash })
+      }
+    }
     await until(() => core!.core.engine.lastCheck(spec.engine) !== undefined, 60_000)
     const check = core.core.engine.lastCheck(spec.engine)
     if (!check?.ok) throw new Error(`${spec.engine} didn't pass its check: ${JSON.stringify(check)}`)
@@ -156,11 +202,13 @@ export async function runCase(
     const events = () => view.events.filter((e) => e.topic === "agent" && !e.snapshot).map((e) => e.data as Record<string, unknown>)
     const ended = () => events().filter((e) => e.type === "ended").length
     const turnTools: string[][] = []
-    for (const text of c.turns) {
+    for (const turn of c.turns) {
       const before = ended()
       const from = events().length
-      const sent = await view.request("agent.send", { text })
-      if (sent.error) throw new Error(`agent.send refused: ${JSON.stringify(sent.error)}`)
+      if (typeof turn === "string") {
+        const sent = await view.request("agent.send", { text: turn })
+        if (sent.error) throw new Error(`agent.send refused: ${JSON.stringify(sent.error)}`)
+      } else await wake(core, hacc, turn.wake)
       await until(() => ended() > before, o.turnMs ?? TURN_MS)
       turnTools.push(events().slice(from).filter((e) => e.type === "tool_call").map((e) => String(e.name)))
     }
@@ -200,7 +248,10 @@ export async function runCase(
         const memoryFiles = Object.fromEntries(files.map((f) => [join(f.parentPath, f.name).slice(dir.length + 1), readFileSync(join(f.parentPath, f.name), "utf8")]))
         return { memory: readFileSync(join(dir, "index.md"), "utf8"), memoryFiles }
       })(),
+      triggers: core.core.triggers.entries().map((t) => ({ name: t.name, on: core!.core.triggers.isOn(t) })),
+      bots: core.core.bots.entries().map((b) => ({ name: b.name, mode: b.mode, state: core!.core.bots.runState(b) })),
       memoryChanges: rows.filter((r) => r.type === "memory.change" && r.by === "agent").length,
+      runs: rows.filter((r) => r.type === "research.run").map((r) => ({ program: String(r.program), exitCode: typeof r.exitCode === "number" ? r.exitCode : null, ...(typeof r.refused === "string" ? { refused: r.refused } : {}) })),
       hacc: (hacc?.calls ?? []).map((k) => `${k.method} ${k.path}`),
     }
     const checks = c.score(record)

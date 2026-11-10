@@ -1,5 +1,5 @@
  ▲ candle  agent-a ▾  LIVE  today $12.00 / $100.00  exposure $412.50  P&L 24h +$3.40  ● 0 cards waiting                      ctrl-x ×2 kill 
- 1 Trade  2 Cockpit  3 Trending  4 Signals  5 P&L  6 Research  7 Journal  8 Perps   settings ▾                                              
+ 1 Trade  2 Cockpit  3 Research  4 Bots  5 Build   settings ▾                                                                               
                                                                                                                                             
 ╭─ agent-a ────────────────────────────────────────────── Claude Code · sonnet ▾ ─╮ ╭─ Token · trending ───────────────────────────────────╮
 │ you › what's trending?                                                          │ │ Trending on Candle (on fire) · 5s ago                │
@@ -41,7 +41,7 @@
 
 --- colours ---
 0: ffffff/0e1115×1 f6f8fb/0e1115×8 ffffff/0e1115×1 6cb6ff/16263a×11 0b0d10/3ddc84×6 ffffff/0e1115×1 959dab/0e1115×6 f6f8fb/0e1115×6 959dab/0e1115×10 ffffff/0e1115×2 959dab/0e1115×9 f6f8fb/0e1115×7 ffffff/0e1115×2 959dab/0e1115×8 3ddc84/0e1115×6 ffffff/0e1115×2 959dab/0e1115×17 ffffff/0e1115×21 ff5c5c/3a1619×16
-1: ffffff/0b0d10×1 f6f8fb/0b0d10+9×7 ffffff/0b0d10×2 6cb6ff/0b0d10×9 ffffff/0b0d10×2 6cb6ff/0b0d10×10 ffffff/0b0d10×2 6cb6ff/0b0d10×9 ffffff/0b0d10×2 6cb6ff/0b0d10×5 ffffff/0b0d10×2 6cb6ff/0b0d10×10 ffffff/0b0d10×2 6cb6ff/0b0d10×9 ffffff/0b0d10×2 6cb6ff/0b0d10×7 ffffff/0b0d10×2 6cb6ff/16263a×12 ffffff/0b0d10×45
+1: ffffff/0b0d10×1 f6f8fb/0b0d10+9×7 ffffff/0b0d10×2 6cb6ff/0b0d10×9 ffffff/0b0d10×2 6cb6ff/0b0d10×10 ffffff/0b0d10×2 6cb6ff/0b0d10×6 ffffff/0b0d10×2 6cb6ff/0b0d10×7 ffffff/0b0d10×2 6cb6ff/16263a×12 ffffff/0b0d10×78
 2: ffffff/0b0d10×140
 3: 32fe9f/111419×2 b392f0/111419×9 32fe9f/111419×46 6cb6ff/16263a×24 32fe9f/111419×2 ffffff/0b0d10×1 252a33/111419×2 b392f0/111419×18 252a33/111419×36
 4: 32fe9f/111419×1 ffffff/111419×1 959dab/111419×6 f6f8fb/111419×16 ffffff/111419×58 32fe9f/111419×1 ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 959dab/111419×37 ffffff/111419×16 252a33/111419×1

@@ -1,5 +1,5 @@
  ▲ candle  agent-a ▾  LIVE  today $12.00 / $100.00  exposure $412.50  P&L 24h +$3.40  ● 1 card waiting                                           ctrl-x ×2 kill 
- 1 Trade  2 Cockpit  3 Trending  4 Signals  5 P&L  6 Research  7 Journal  8 Perps   settings ▾                                                                  
+ 1 Trade  2 Cockpit  3 Signals  4 Research  5 Bots  6 Build   settings ▾                4 new tabs are ticked off: Trending, P&L, Journal and Perps  show them  
                                                                                                                                                                 
 ╭─ Signals · Hacc's tape ─────────────────────────────────────────────────────────────────────────────────────────────────── big move ▾ ── Solana ▾ ── all ▾ ──╮
 │ FENNE        big sell                      $11.6K     Solana    2m     desk seven                                                                            │
@@ -38,7 +38,7 @@
 │                                                                                                                                                              │
 │ 1 card waiting · ⏎ approves the highlighted one                                                                                                              │
 │ ▌ BUY 0.1 SOL of JUPF                                                                                                                                   50s  │
-│ ▌ agent-a · pays from embedded · live                                                                                                                        │
+│ ▌ agent-a · pays from embedded · live · JupF…1111                                                                                                            │
 │ ▌  ⏎ approve    ctrl-n reject    ctrl-o details                                                                                                              │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
                                                                                                                                                                 
@@ -46,7 +46,7 @@
 
 --- colours ---
 0: ffffff/0e1115×1 f6f8fb/0e1115×8 ffffff/0e1115×1 6cb6ff/16263a×11 0b0d10/3ddc84×6 ffffff/0e1115×1 959dab/0e1115×6 f6f8fb/0e1115×6 959dab/0e1115×10 ffffff/0e1115×2 959dab/0e1115×9 f6f8fb/0e1115×7 ffffff/0e1115×2 959dab/0e1115×8 3ddc84/0e1115×6 ffffff/0e1115×2 f5a524/0e1115×16 ffffff/0e1115×42 ff5c5c/3a1619×16
-1: ffffff/0b0d10×1 6cb6ff/0b0d10×7 ffffff/0b0d10×2 6cb6ff/0b0d10×9 ffffff/0b0d10×2 6cb6ff/0b0d10×10 ffffff/0b0d10×2 f6f8fb/0b0d10+9×9 ffffff/0b0d10×2 6cb6ff/0b0d10×5 ffffff/0b0d10×2 6cb6ff/0b0d10×10 ffffff/0b0d10×2 6cb6ff/0b0d10×9 ffffff/0b0d10×2 6cb6ff/0b0d10×7 ffffff/0b0d10×2 6cb6ff/16263a×12 ffffff/0b0d10×65
+1: ffffff/0b0d10×1 6cb6ff/0b0d10×7 ffffff/0b0d10×2 6cb6ff/0b0d10×9 ffffff/0b0d10×2 f6f8fb/0b0d10+9×9 ffffff/0b0d10×2 6cb6ff/0b0d10×10 ffffff/0b0d10×2 6cb6ff/0b0d10×6 ffffff/0b0d10×2 6cb6ff/0b0d10×7 ffffff/0b0d10×2 6cb6ff/16263a×12 ffffff/0b0d10×15 f5a524/0b0d10×60 6cb6ff/16263a×11 ffffff/0b0d10×1
 2: ffffff/0b0d10×160
 3: 252a33/111419×2 b392f0/111419×23 252a33/111419×99 6cb6ff/16263a×12 252a33/111419×2 6cb6ff/16263a×10 252a33/111419×2 6cb6ff/16263a×7 252a33/111419×3
 4: 252a33/111419×1 ffffff/111419×1 f6f8fb/111419×13 dde2ea/111419×29 f6f8fb/111419×7 959dab/111419×32 ffffff/111419×76 252a33/111419×1
@@ -85,7 +85,7 @@
 37: 32fe9f/111419×1 ffffff/111419×158 32fe9f/111419×1
 38: 32fe9f/111419×1 ffffff/111419×1 959dab/111419×47 ffffff/111419×110 32fe9f/111419×1
 39: 32fe9f/111419×1 ffffff/111419×1 f5a524/111419×2 f6f8fb/111419×19 dde2ea/111419×131 f5a524/111419×3 ffffff/111419×2 32fe9f/111419×1
-40: 32fe9f/111419×1 ffffff/111419×1 f5a524/111419×2 959dab/111419×35 ffffff/111419×120 32fe9f/111419×1
+40: 32fe9f/111419×1 ffffff/111419×1 f5a524/111419×2 959dab/111419×47 ffffff/111419×108 32fe9f/111419×1
 41: 32fe9f/111419×1 ffffff/111419×1 f5a524/111419×2 0b0d10/6cb6ff×11 dde2ea/111419×2 6cb6ff/16263a×15 dde2ea/111419×2 6cb6ff/16263a×16 ffffff/111419×109 32fe9f/111419×1
 42: 32fe9f/111419×160
 43: 959dab/0b0d10×1 ffffff/0b0d10×159

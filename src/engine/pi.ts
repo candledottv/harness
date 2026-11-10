@@ -43,6 +43,8 @@ import { DEFAULT_TOOLS, RESEARCH_NAMES, type ResearchName, shellFor, type ToolSe
 
 /** The version the gate and the read checks were checked on. */
 export const MIN_PI = "1.4.0"
+/** The newest version its holds were checked on; a newer major version is said, never blocked. */
+export const CHECKED_PI = "1.4.0"
 
 /** The research set: Pi's file tools and the gate's web_fetch. Candle's are `mcp__candle__*`. */
 export const PI_TOOLS = ["read", "write", "edit", "ls", "web_fetch"]
@@ -226,7 +228,7 @@ export function filterModels(ids: string[], kinds: Record<string, string | undef
   const held = new Map<string, string>()
   for (const [provider, kind] of Object.entries(kinds)) {
     const sub = SUBSCRIPTIONS[provider]
-    if (sub && (kind === "oauth" || provider === "openai-codex")) held.set(provider, `Your ${sub.plan} sign-in in Pi isn't offered here: subscriptions run through their own harness. Pick ${sub.harness} for it.`)
+    if (sub && (kind === "oauth" || provider === "openai-codex")) held.set(provider, `Your ${sub.plan} sign-in in Pi isn't offered here: subscriptions run through their own engine. Pick ${sub.harness} for it.`)
   }
   const models: EngineModel[] = ids.filter((id) => !held.has(splitModel(id)?.provider ?? "")).map((id) => ({ id, label: id }))
   const def = (userDefault && models.find((m) => m.id === userDefault)) || (models.length === 1 ? models[0] : undefined)
@@ -318,6 +320,7 @@ export function piEngine(bin: string, o: { homesDir: string; agentDir?: string; 
     id: "pi",
     label: "Pi",
     minVersion: MIN_PI,
+    checkedVersion: CHECKED_PI,
     capabilities: () => ({ webSearch: false, webFetch: true, files: "own", shellList: true, deltas: true }),
     signIn: "run pi, then /login, for an API key or OpenRouter; or start Ollama or LM Studio",
     needsModel: true,

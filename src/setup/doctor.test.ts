@@ -11,7 +11,7 @@ import { fakeCodex } from "../../test/fake-codex"
 import { fakeGrok } from "../../test/fake-grok"
 import { fakeOpenCode } from "../../test/fake-opencode"
 import { fakePi } from "../../test/fake-pi"
-import { aliasesChecks, budgetWords, type Check, layoutsChecks, nameChecks, onboardingChecks, themeChecks, doctorCommand, formatReport, outOfCredit, quickDoctor, runDoctor, signInTurnArgs, UNLOCK_KEYCHAIN } from "./doctor"
+import { aliasesChecks, budgetWords, type Check, layoutsChecks, nameChecks, onboardingChecks, themeChecks, doctorCommand, formatReport, outOfCredit, quickDoctor, runDoctor, signInTurnArgs, UNLOCK_KEYCHAIN, utcMidnightHere } from "./doctor"
 
 /** Made-up keys of the real shape (a kind, then 43 characters), built so no key-shaped text sits in the source. */
 const LIVE = ["cndl", "live", ""].join("_")
@@ -145,7 +145,7 @@ test("all set: every check passes, each agent checked with Candle under its own 
   expect(checks.filter((c) => c.state === "warn")).toEqual([])
   expect(find(checks, "config", /2 agents \(momentum, swing\); the core starts in paper mode \(config\.toml's mode/)).toBeDefined()
   expect(find(checks, "key", new RegExp(`^momentum: key ${LIVE}Momentum…, private \\(0600\\)`))).toBeDefined()
-  expect(find(checks, "candle", /the candle CLI is 0\.13\.11/)).toBeDefined()
+  expect(find(checks, "candle", /the candle CLI is 0\.13\.18/)).toBeDefined()
   expect(find(checks, "claude", /signed in/)).toBeDefined()
   expect(find(checks, "vault", /^a vault is on this machine/)).toMatchObject({ state: "ok" })
   expect(find(checks, "access", /^no agent key is Withdraw/)).toMatchObject({ state: "ok" })
@@ -204,20 +204,20 @@ test("the candle CLI missing, or too old", async () => {
   const checks = await runDoctor({ env: missing.env, online: false })
   expect(find(checks, "candle", /isn't installed/)).toMatchObject({ state: "fail", fix: expect.stringContaining("install.sh") })
   const old = await setup({ cliVersion: "0.11.30" })
-  expect(find(await runDoctor({ env: old.env, online: false }), "candle", /0\.11\.30; the Candle Harness needs 0\.13\.11/)).toMatchObject({ state: "fail", fix: "Run `candle update`." })
+  expect(find(await runDoctor({ env: old.env, online: false }), "candle", /0\.11\.30; the Candle Harness needs 0\.13\.18/)).toMatchObject({ state: "fail", fix: "Run `candle update`." })
 })
 
 test("the CLI's version against the one the Candle Harness was checked against", async () => {
-  const same = await setup({ cliVersion: "0.13.11" })
-  expect(find(await runDoctor({ env: same.env, online: false }), "candle", /^the candle CLI is 0\.13\.11, the version the Candle Harness was checked against$/)).toMatchObject({ state: "ok" })
+  const same = await setup({ cliVersion: "0.13.18" })
+  expect(find(await runDoctor({ env: same.env, online: false }), "candle", /^the candle CLI is 0\.13\.18, the version the Candle Harness was checked against$/)).toMatchObject({ state: "ok" })
   // Older than the one checked against: only that one is supported.
   const older = await setup({ cliVersion: "0.13.5" })
-  expect(find(await runDoctor({ env: older.env, online: false }), "candle", /0\.13\.5; the Candle Harness needs 0\.13\.11 or later/)).toMatchObject({ state: "fail", fix: "Run `candle update`." })
+  expect(find(await runDoctor({ env: older.env, online: false }), "candle", /0\.13\.5; the Candle Harness needs 0\.13\.18 or later/)).toMatchObject({ state: "fail", fix: "Run `candle update`." })
   // Newer: it runs, and what the table doesn't hold is refused.
   const newer = await setup({ cliVersion: "0.14.0" })
   const check = find(await runDoctor({ env: newer.env, online: false }), "candle", /0\.14\.0/)
   expect(check).toMatchObject({ state: "warn" })
-  expect(check!.text).toBe("the candle CLI is 0.14.0; the Candle Harness was checked against 0.13.11, so commands newer than that are refused")
+  expect(check!.text).toBe("the candle CLI is 0.14.0; the Candle Harness was checked against 0.13.18, so commands newer than that are refused")
 })
 
 test("no config: before setup, says where to start as a warning, with no key in it, and still checks the tools", async () => {
@@ -267,7 +267,7 @@ test("while config.toml isn't safe, the doctor runs none of the programs it name
   const dir = tempDir("chrn-dr-ran-")
   const ran = join(dir, "ran.log")
   const program = join(dir, "logs-its-calls")
-  writeFileSync(program, `#!/bin/sh\necho "$@" >> '${ran}'\necho 0.13.11\n`, { mode: 0o755 })
+  writeFileSync(program, `#!/bin/sh\necho "$@" >> '${ran}'\necho 0.13.18\n`, { mode: 0o755 })
   const open = await setup({ cliPath: program, engines: { codex: program, grok: program, opencode: program, pi: program } })
   chmodSync(open.p.configFile, 0o666)
   const checks = await runDoctor({ env: open.env, online: false })
@@ -800,7 +800,7 @@ describe("Hacc and memory", () => {
     symlinkSync(join(p.researchDir("swing"), "elsewhere.md"), join(memory("linked"), "index.md"))
     expect(memoryChecks(p, config)).toEqual([
       { area: "memory", state: "ok", text: "momentum has no memory index yet" },
-      { area: "memory", state: "ok", text: "swing's memory index is 2 lines, 66 characters, and 1 other file" },
+      { area: "memory", state: "ok", text: "swing's memory index is 3 lines, 66 characters, and 1 other file" },
       { area: "memory", state: "ok", text: "long's memory index is 400 lines, 8,800 characters; past 6,000, so the agent is asked to merge it" },
       { area: "memory", state: "warn", text: "linked's memory isn't read into its turns: memory/index.md is a link, and memory is read only from files in the research folder", fix: `Make ${join(p.researchDir("linked"), "memory", "index.md")} a plain file, or clear the memory with the memory chip.` },
     ])
@@ -933,11 +933,11 @@ describe("layouts and themes", () => {
   test("which layout each tab shows: the file's or the last picked, and Agent-first for a tab whose layout is gone", () => {
     const { dir, p } = home()
     try {
-      expect(texts(layoutsChecks(p))[0]).toBe(`ok no ${p.layoutsFile}: 8 tabs (Trade, Cockpit, Trending, Signals, P&L, Research, Journal, Perps), each on its preset`)
+      expect(texts(layoutsChecks(p))[0]).toBe(`ok no ${p.layoutsFile}: 5 tabs (Trade, Cockpit, Research, Bots, Build), each on its preset, 5 ticked off (Trending, Signals, P&L, Journal, Perps)`)
       writeFileSync(p.layoutsFile, `tabs = [{ name = "Trade", layout = "Agent-first" }, { name = "Tape", layout = "Cockpit" }]\n\n[layouts.Wide]\nroot = ["row", "agent", "token"]\n`)
       writeFileSync(p.layoutChoice, JSON.stringify({ tabs: { Trade: "Wide", Tape: "Gone" } }))
       const lines = texts(layoutsChecks(p))
-      expect(lines[0]).toBe(`ok ${p.layoutsFile}: 2 tabs shown (Trade, Tape), 6 ticked off (Trending, Signals, P&L, Research, Journal, Perps), 1 layout of yours`)
+      expect(lines[0]).toBe(`ok ${p.layoutsFile}: 2 tabs shown (Trade, Tape), 8 ticked off (Trending, Signals, P&L, Research, Journal, Perps, Bots, Build), 1 layout of yours`)
       expect(lines.at(-1)).toBe("ok Trade shows Wide, last picked; Tape shows Cockpit")
       // A tab's own changes, kept until saved, are said; one left from a layout it no longer shows isn't.
       writeFileSync(p.layoutChoice, JSON.stringify({ tabs: { Trade: "Wide", Tape: "Gone" }, adjusted: { Tape: { base: "Cockpit", tree: ["row", "feed", "agent"] }, Trade: { base: "Agent-first", tree: ["row", "agent"] } } }))
@@ -1119,8 +1119,8 @@ describe("hands off and the last session", () => {
     const { approvalsChecks } = await import("./doctor")
     const { p, config } = await home({ wallets: [inside(EMB, "embedded", 1.5, 5), inside(OLD, "old-tee", 1, 2), { wallet: TEE, name: "tee-one", value: { setting: "ask" }, at: "2026-10-31T09:00:00Z", by: "card" }] })
     expect(approvalsChecks({ p, config, rows: spendRows(), now }).map((c) => [c.state, c.text])).toEqual([
-      ["ok", "the embedded wallet (Wall…1111) trades inside limits: up to $1.50 a trade and $5.00 a day run without a card, $1.01 of it used today; every sell from it runs without one"],
-      ["ok", "TEE wallet old-tee (OldT…3333) trades inside limits: up to $1.00 a trade and $2.00 a day run without a card, $0.00 of it used today; every sell from it runs without one"],
+      ["ok", "the embedded wallet (Wall…1111) trades inside limits: up to $1.50 a trade and $5.00 a day run without a card, $1.01 of it used today; every sell from it runs without one, unless its slippage is looser than the default"],
+      ["ok", "TEE wallet old-tee (OldT…3333) trades inside limits: up to $1.00 a trade and $2.00 a day run without a card, $0.00 of it used today; every sell from it runs without one, unless its slippage is looser than the default"],
       ["ok", LOSS],
     ])
   })
@@ -1134,7 +1134,7 @@ describe("hands off and the last session", () => {
     ])
     const checks = approvalsChecks({ p, config, rows: spendRows(), now, reads })
     expect(checks.map((c) => [c.state, c.text])).toEqual([
-      ["ok", "the embedded wallet (Wall…1111) trades inside limits, paid from by a and b: up to $1.50 a trade and $5.00 a day run without a card, $1.01 of it used today; every sell from it runs without one"],
+      ["ok", "the embedded wallet (Wall…1111) trades inside limits, paid from by a and b: up to $1.50 a trade and $5.00 a day run without a card, $1.01 of it used today; every sell from it runs without one, unless its slippage is looser than the default"],
       ["warn", "a's own limit, $1.00 a trade, binds first on the embedded wallet (Wall…1111), whose figure is $1.50: a trade between the two is refused, not run without a card"],
       ["warn", "b's own limit, $4.00 a day, binds first on the embedded wallet (Wall…1111), whose figure is $5.00 a day without a card: b stops at its own"],
       ["warn", "Candle doesn't cap b's key, and b pays from the embedded wallet (Wall…1111), which trades inside limits: only the Candle Harness's limits hold for it, and nothing holds what the key does outside the Candle Harness"],
@@ -1202,7 +1202,7 @@ describe("hands off and the last session", () => {
     mkdirSync(p.stateDir, { recursive: true, mode: 0o700 })
     writeFileSync(p.autonomyState, JSON.stringify({ wallets: [inside(EMB, "embedded", 1.5, 5)] }), { mode: 0o600 })
     const offline = await runDoctor({ env, online: false })
-    expect(find(offline, "wallet", /trades inside limits/)?.text).toBe("the embedded wallet (Wall…1111) trades inside limits: up to $1.50 a trade and $5.00 a day run without a card, $0.00 of it used today; every sell from it runs without one")
+    expect(find(offline, "wallet", /trades inside limits/)?.text).toBe("the embedded wallet (Wall…1111) trades inside limits: up to $1.50 a trade and $5.00 a day run without a card, $0.00 of it used today; every sell from it runs without one, unless its slippage is looser than the default")
     expect(find(offline, "away", /^the main view/)).toBeDefined()
     expect(find(offline, "limits", /^Candle also has loss limits/)).toBeDefined()
     const online = await runDoctor({ env })
@@ -1318,5 +1318,23 @@ describe("onboarding and the CLI profile", () => {
     ;({ env } = await setup({ candle: { momentum: { teeWallets: [wallets[0]!], tier: "max" }, swing: { tier: "max" } }, tee: { wallets: [wallets[0]!] }, closeEmpty: { off: true } }))
     checks = await runDoctor({ env })
     expect(find(checks, "wallet", /empty token accounts/)).toMatchObject({ state: "ok", text: "Candle doesn't serve closing empty token accounts here (CLOSE_EMPTY_DISABLED), so TEE wallet bot-1 (TeeF…1111)'s aren't counted" })
+  })
+})
+
+describe("when Candle's day ends here", () => {
+  const at = (tz: string, iso: string) => {
+    const was = process.env.TZ
+    process.env.TZ = tz
+    try { return utcMidnightHere(new Date(iso)) } finally { process.env.TZ = was }
+  }
+  test("west of UTC, before its midnight, the end is this evening", () => {
+    expect(at("America/New_York", "2026-11-04T23:52:00Z")).toBe("19:00 here")
+  })
+  test("west of UTC, just after its midnight, the end is tomorrow's evening, and says so", () => {
+    expect(at("America/New_York", "2026-11-05T00:02:00Z")).toBe("19:00 here tomorrow")
+  })
+  test("east of UTC, the end is tomorrow morning until local midnight, then this morning", () => {
+    expect(at("Asia/Tokyo", "2026-11-05T12:00:00Z")).toBe("09:00 here tomorrow")
+    expect(at("Asia/Tokyo", "2026-11-05T16:00:00Z")).toBe("09:00 here")
   })
 })

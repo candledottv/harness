@@ -1,0 +1,34 @@
+{
+  "name": "exit-stop-start",
+  "host": "hacc",
+  "method": "POST",
+  "route": "/v1/strategy-lab/replay",
+  "query": {},
+  "body": {
+    "definition": {
+      "chain": "solana",
+      "entry": {
+        "source": "pattern",
+        "pattern": "new_ticker",
+        "filters": {
+          "min_mcap_usd": 100000
+        }
+      },
+      "exit": {
+        "stop_loss_pct": 20
+      },
+      "sizing": {
+        "usd_per_trade": 10,
+        "max_concurrent": 10
+      }
+    },
+    "from": "2026-11-05T11:28:00.000Z",
+    "to": "2026-11-05T14:28:00.000Z"
+  },
+  "status": 202,
+  "ms": 144,
+  "bytes": 14,
+  "answer": {
+    "job_id": 219
+  }
+}

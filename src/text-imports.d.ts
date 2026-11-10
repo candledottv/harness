@@ -4,8 +4,13 @@ declare module "*.md" {
   export default text
 }
 
-// A plain word list imported as text (engine/wallet-secret.ts's recovery-phrase words).
+// A plain word list imported as text (shared/wallet-secret.ts's recovery-phrase words).
 declare module "*.txt" {
+  const text: string
+  export default text
+}
+// Candle's licence for the bots folder's skills, which has no extension.
+declare module "*/LICENSE" {
   const text: string
   export default text
 }

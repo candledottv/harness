@@ -1,0 +1,62 @@
+ agent-a ▾  LIVE  today $12.00 / $100.00  P&L 24h +$3.40  ● 1 card waiting  ⚡ 4 triggers                ctrl-x ×2 kill 
+ 1 Trade  2 Cockpit  3 Research  4 Bots  5 Build   settings ▾                                                           
+   ╭─ triggers ─────────────────────────────────────────────────────────────────────────────────────────────────────╮   
+╭─ │ triggers                   4 on · 1 off │                                                                      │──╮
+│ y│ ⌕ type to find a trigger                │  jupf stop · agent-a's · pays from embedded                          │  │
+│  │                                         │                                                                      │  │
+│  │ ● jupf stop                    asks you │  when JUPF < $0.40 sell 50% of JUPF                                  │  │
+│  │                                         │  When JUPF's price falls below $0.40, sell 50% of JUPF. Fires once,  │  │
+│  │ ● morning buy                on its own │  then switches off.                                                  │  │
+│  │                                         │                                                                      │  │
+│  │ ● conf                            wakes │  runs      asks you each time                                        │ ─╯
+│  │                                         │            The embedded wallet asks every time, so each firing is a  │   
+│  │ ● dip buy                ◷ card expired │            card for you to approve or reject within 60 s.            │──╮
+│  │                                         │             new TEE wallet for agent-a                               │  │
+│  │ ○ bonk tp                           off │                                                                      │  │
+│  │                                         │  checks    about every 5 s · JUPF $0.4249                            │  │
+│ 1│                                         │  fired     never                                                     │  │
+│ ▌│                                         │  again     no: fires once, then switches off                         │ ─╯
+│ ▌│                                         │                                                                      │   
+│ ▌│                                         │   switch off    remove    ask the agent to change it                 │──╮
+│ ▌│                                         │                                                                      │  │
+│  │                                         │  A level checks Candle's price about every 5 s, so a fast move can   │  │
+│  │                                         │  pass through it before the trade is sent.                           │  │
+│  │                                         │                                                                      │  │
+│  │                                         │                                                                      │──╯
+│  │                                         │                                                                      │   
+│  │                                         │                                                                      │──╮
+╰──│ ↑/↓ a trigger · ⏎ on or off · ctrl-t ask the agent · esc closes                                                │  │
+   ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯  │
+› type a command or ask the a…  ⏎ approve   ctrl-k palette    ? help    ╰─ ⇱ ──────────────────────────────────────────╯
+
+--- colours ---
+0: 6cb6ff/16263a×11 0b0d10/3ddc84×6 ffffff/0e1115×1 959dab/0e1115×6 f6f8fb/0e1115×6 959dab/0e1115×10 ffffff/0e1115×2 959dab/0e1115×8 3ddc84/0e1115×6 ffffff/0e1115×2 f5a524/0e1115×16 ffffff/0e1115×1 6cb6ff/16263a×15 ffffff/0e1115×14 ff5c5c/3a1619×16
+1: ffffff/0b0d10×1 f6f8fb/0b0d10+9×7 ffffff/0b0d10×2 6cb6ff/0b0d10×9 ffffff/0b0d10×2 6cb6ff/0b0d10×10 ffffff/0b0d10×2 6cb6ff/0b0d10×6 ffffff/0b0d10×2 6cb6ff/0b0d10×7 ffffff/0b0d10×2 6cb6ff/16263a×12 ffffff/0b0d10×58
+2: ffffff/0b0d10×3 32fe9f/111419×2 b392f0/111419×10 32fe9f/111419×102 ffffff/0b0d10×3
+3: 32fe9f/111419×2 b392f0/111419×1 32fe9f/111419×1 ffffff/111419×1 b392f0/111419×8 dde2ea/111419×19 959dab/111419×12 ffffff/111419×1 252a33/111419×1 ffffff/111419×70 32fe9f/111419×1 252a33/111419×3
+4: 32fe9f/111419×1 ffffff/111419×1 959dab/111419×1 32fe9f/111419×1 ffffff/111419×1 959dab/111419×24 ffffff/111419×16 252a33/111419×1 ffffff/111419×2 f6f8fb/111419+1×9 959dab/111419×33 ffffff/111419×26 32fe9f/111419×1 ffffff/111419×2 252a33/111419×1
+5: 32fe9f/111419×1 ffffff/111419×2 32fe9f/111419×1 ffffff/111419×41 252a33/111419×1 ffffff/111419×70 32fe9f/111419×1 ffffff/111419×2 252a33/111419×1
+6: 32fe9f/111419×1 ffffff/111419×1 dde2ea/111419×1 32fe9f/111419×1 ffffff/111419×1 3ddc84/1d2430×2 f6f8fb/1d2430×9 dde2ea/1d2430×20 f5a524/1d2430×8 ffffff/1d2430×1 252a33/111419×1 ffffff/111419×2 f6f8fb/111419×34 ffffff/111419×34 32fe9f/111419×1 ffffff/111419×2 252a33/111419×1
+7: 32fe9f/111419×1 ffffff/111419×1 dde2ea/111419×1 32fe9f/111419×1 ffffff/111419×1 dde2ea/111419×1 ffffff/111419×39 252a33/111419×1 ffffff/111419×2 dde2ea/111419×66 ffffff/111419×2 32fe9f/111419×1 ffffff/111419×2 252a33/111419×1
+8: 32fe9f/111419×1 ffffff/111419×1 dde2ea/111419×1 32fe9f/111419×1 ffffff/111419×1 3ddc84/111419×2 f6f8fb/111419×11 dde2ea/111419×26 ffffff/111419×1 252a33/111419×1 ffffff/111419×2 dde2ea/111419×18 ffffff/111419×50 32fe9f/111419×1 ffffff/111419×2 252a33/111419×1
+9: 32fe9f/111419×1 ffffff/111419×1 dde2ea/111419×1 32fe9f/111419×1 ffffff/111419×1 dde2ea/111419×1 ffffff/111419×39 252a33/111419×1 ffffff/111419×70 32fe9f/111419×1 ffffff/111419×2 252a33/111419×1
+10: 32fe9f/111419×1 ffffff/111419×1 dde2ea/111419×1 32fe9f/111419×1 ffffff/111419×1 3ddc84/111419×2 f6f8fb/111419×4 dde2ea/111419×33 ffffff/111419×1 252a33/111419×1 ffffff/111419×2 959dab/111419×10 f5a524/111419×18 ffffff/111419×40 32fe9f/111419×1 959dab/111419×1 252a33/111419×2
+11: 32fe9f/111419×1 ffffff/111419×1 dde2ea/111419×1 32fe9f/111419×1 ffffff/111419×1 dde2ea/111419×1 ffffff/111419×39 252a33/111419×1 ffffff/111419×2 959dab/111419×10 dde2ea/111419×56 ffffff/111419×2 32fe9f/111419×1 ffffff/0b0d10×3
+12: 32fe9f/111419×1 ffffff/111419×1 dde2ea/111419×1 32fe9f/111419×1 ffffff/111419×1 3ddc84/111419×2 f6f8fb/111419×7 dde2ea/111419×16 f5a524/111419×14 ffffff/111419×1 252a33/111419×1 ffffff/111419×2 959dab/111419×10 dde2ea/111419×46 ffffff/111419×12 32fe9f/111419×1 252a33/111419×3
+13: 32fe9f/111419×1 ffffff/111419×1 dde2ea/111419×1 32fe9f/111419×1 ffffff/111419×1 dde2ea/111419×1 ffffff/111419×39 252a33/111419×1 ffffff/111419×2 959dab/111419×10 6cb6ff/16263a×28 ffffff/111419×30 32fe9f/111419×1 ffffff/111419×2 252a33/111419×1
+14: 32fe9f/111419×1 ffffff/111419×1 dde2ea/111419×1 32fe9f/111419×1 ffffff/111419×1 959dab/111419×9 dde2ea/111419×27 959dab/111419×3 ffffff/111419×1 252a33/111419×1 ffffff/111419×70 32fe9f/111419×1 ffffff/111419×2 252a33/111419×1
+15: 32fe9f/111419×1 ffffff/111419×2 32fe9f/111419×1 ffffff/111419×1 dde2ea/111419×1 ffffff/111419×39 252a33/111419×1 ffffff/111419×2 959dab/111419×10 dde2ea/111419×30 ffffff/111419×28 32fe9f/111419×1 ffffff/111419×2 252a33/111419×1
+16: 32fe9f/111419×1 ffffff/111419×1 959dab/111419×1 32fe9f/111419×1 ffffff/111419×41 252a33/111419×1 ffffff/111419×2 959dab/111419×10 dde2ea/111419×5 ffffff/111419×53 32fe9f/111419×1 ffffff/111419×2 252a33/111419×1
+17: 32fe9f/111419×1 ffffff/111419×1 f5a524/111419×1 32fe9f/111419×1 ffffff/111419×41 252a33/111419×1 ffffff/111419×2 959dab/111419×10 dde2ea/111419×33 ffffff/111419×25 32fe9f/111419×1 959dab/111419×1 252a33/111419×2
+18: 32fe9f/111419×1 ffffff/111419×1 f5a524/111419×1 32fe9f/111419×1 ffffff/111419×41 252a33/111419×1 ffffff/111419×70 32fe9f/111419×1 ffffff/0b0d10×3
+19: 32fe9f/111419×1 ffffff/111419×1 f5a524/111419×1 32fe9f/111419×1 ffffff/111419×41 252a33/111419×1 ffffff/111419×2 6cb6ff/16263a×12 dde2ea/111419×2 6cb6ff/16263a×8 dde2ea/111419×2 6cb6ff/16263a×28 ffffff/111419×16 32fe9f/111419×1 252a33/111419×3
+20: 32fe9f/111419×1 ffffff/111419×1 f5a524/111419×1 32fe9f/111419×1 ffffff/111419×41 252a33/111419×1 ffffff/111419×70 32fe9f/111419×1 ffffff/111419×2 252a33/111419×1
+21: 32fe9f/111419×1 ffffff/111419×2 32fe9f/111419×1 ffffff/111419×41 252a33/111419×1 ffffff/111419×2 959dab/111419×65 ffffff/111419×3 32fe9f/111419×1 ffffff/111419×2 252a33/111419×1
+22: 32fe9f/111419×1 ffffff/111419×2 32fe9f/111419×1 ffffff/111419×41 252a33/111419×1 ffffff/111419×2 959dab/111419×41 ffffff/111419×27 32fe9f/111419×1 ffffff/111419×2 252a33/111419×1
+23: 32fe9f/111419×1 ffffff/111419×2 32fe9f/111419×1 ffffff/111419×41 252a33/111419×1 ffffff/111419×70 32fe9f/111419×1 ffffff/111419×2 252a33/111419×1
+24: 32fe9f/111419×1 ffffff/111419×2 32fe9f/111419×1 ffffff/111419×41 252a33/111419×1 ffffff/111419×70 32fe9f/111419×1 252a33/111419×3
+25: 32fe9f/111419×1 ffffff/111419×2 32fe9f/111419×1 ffffff/111419×41 252a33/111419×1 ffffff/111419×70 32fe9f/111419×1 ffffff/0b0d10×3
+26: 32fe9f/111419×1 ffffff/111419×2 32fe9f/111419×1 ffffff/111419×41 252a33/111419×1 ffffff/111419×70 32fe9f/111419×1 252a33/111419×3
+27: 32fe9f/111419×4 959dab/111419×64 ffffff/111419×48 32fe9f/111419×1 ffffff/111419×2 252a33/111419×1
+28: 959dab/0b0d10×1 ffffff/0b0d10×2 32fe9f/111419×114 ffffff/111419×2 252a33/111419×1
+29: f6f8fb/0e1115×2 959dab/0e1115×28 ffffff/0e1115×2 dde2ea/0e1115×1 959dab/0e1115×10 6cb6ff/16263a×16 959dab/0e1115×2 6cb6ff/16263a×8 959dab/0e1115×2 ffffff/0b0d10×1 252a33/111419×2 6cb6ff/16263a×3 252a33/111419×43

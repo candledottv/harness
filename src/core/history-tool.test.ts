@@ -117,6 +117,33 @@ describe("harness_history since the last session", () => {
     expect(ran).toMatchObject({ title: "Buy $1.00 of MOON", state: "succeeded", ran: "without a card, inside its wallet's limits" })
   })
 
+  test("its rules bots' trades are marked with the bot, entry or exit and why, never as its own", () => {
+    const bot = [
+      row("2026-11-06T09:00:00.000Z", "card.created", { agent: "momentum", cardId: "b1", opId: "ob1", role: "core", bot: "conf", botAct: "exit", botPosition: "op_1", botReason: "stop_loss", tool: "candle_trade", title: "Sell 100 MOON", mint: MINT, side: "sell" }),
+      row("2026-11-06T09:00:00.100Z", "card.approved", { agent: "momentum", cardId: "b1", opId: "ob1", how: "bot-exit" }),
+      row("2026-11-06T09:00:04.000Z", "operation.succeeded", { agent: "momentum", opId: "ob1" }),
+      row("2026-11-06T09:10:00.000Z", "paper.call", { agent: "momentum", mode: "paper", role: "core", bot: "conf", botAct: "entry", botSignal: 4, tool: "candle_trade", args: { mint: MINT, side: "buy" }, isError: false }),
+    ]
+    const r = historyCall(bot, "momentum", {})
+    if (!r.ok) throw new Error(r.message)
+    const [paper, sell] = (r.body as { items: Record<string, unknown>[] }).items
+    expect(paper).toMatchObject({ kind: "paper", by: 'your rules bot "conf", buying on its own', bot: "conf", botTrade: "entry" })
+    expect(sell).toMatchObject({ kind: "card", by: 'your rules bot "conf", selling on its own', bot: "conf", botTrade: "exit: stop loss", state: "succeeded", ran: "without a card, as its bot's exit" })
+  })
+
+  test("a code bot's trades are marked as its code bot's, with its request id; a sell the core held for it says which exit", () => {
+    const code = [
+      row("2026-11-08T09:00:00.000Z", "card.created", { agent: "momentum", cardId: "c1", opId: "oc1", role: "core", bot: "grid", botAct: "exit", botKind: "code", botRequest: "sell-7", botPosition: "op_2", botReason: "bot", tool: "candle_trade", title: "Sell 100 MOON", mint: MINT, side: "sell" }),
+      row("2026-11-08T09:00:00.100Z", "card.approved", { agent: "momentum", cardId: "c1", opId: "oc1", how: "bot-exit" }),
+      row("2026-11-08T09:05:00.000Z", "card.created", { agent: "momentum", cardId: "c2", opId: "oc2", role: "core", bot: "grid", botAct: "exit", botKind: "code", botPosition: "op_3", botReason: "stop_loss", tool: "candle_trade", title: "Sell 50 MOON", mint: MINT, side: "sell" }),
+    ]
+    const r = historyCall(code, "momentum", {})
+    if (!r.ok) throw new Error(r.message)
+    const [held, own] = (r.body as { items: Record<string, unknown>[] }).items
+    expect(own).toMatchObject({ by: 'your code bot "grid", selling on its own', bot: "grid", botKind: "code", botRequest: "sell-7", botTrade: "its own sell" })
+    expect(held).toMatchObject({ by: 'your code bot "grid", selling on its own', bot: "grid", botKind: "code", botTrade: "exit: stop loss" })
+  })
+
   test("no close known: everything, said so; the pnl window's other forms work too; a wrong one is refused", () => {
     const all = read({ since: "last session" }, {})
     expect(all.items).toHaveLength(4)

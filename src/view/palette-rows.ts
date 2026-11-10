@@ -8,9 +8,11 @@
 // line, as the commands pane did, and approving a card is never a row's to do (keymap.ts).
 import { type CatalogueEntry, searchCatalogue } from "../core/cli-catalogue"
 import { type Preset, PRESET_DESCRIPTIONS, PRESET_LABELS, PRESETS } from "../engine/preset"
+import { RUN_EXAMPLE } from "../engine/tools"
 import { chordOf, KEYMAP, type KeyId } from "./keymap"
 import { PANES } from "./panes/registry"
-import { panesOf, PANE_IDS, type PaneId } from "./layout"
+import { panesOf, type PaneId } from "./layout"
+import { isTokenPane, openable } from "../shared/panes"
 import type { SkillFolder } from "../core/skill-folders"
 import type { LayoutOp } from "./layout-edit"
 import type { LayoutInfo } from "./layout-menu"
@@ -35,10 +37,14 @@ export type PaletteRun =
   | { kind: "pin"; on: boolean }
   | { kind: "agent"; agent: string }
   | { kind: "preset"; agent: string; preset: Preset }
+  /** The agent's code runner, turned on or off. */
+  | { kind: "runner"; agent: string; on: boolean }
   | { kind: "picker" }
   | { kind: "memory"; agent: string }
   /** A skill folder of the person's own, turned on or off. */
   | { kind: "skillsFolder"; folder: string; on: boolean }
+  /** Keep-awake (macOS), switched on or off. */
+  | { kind: "keepAwake"; on: boolean }
   | { kind: "link"; mint: string; chain?: "solana" | "hood" }
   | { kind: "cli"; path: string }
   /** An alias's name on the input line. */
@@ -61,6 +67,11 @@ export type PaletteRun =
   | { kind: "lists"; source: ListSource }
   /** The approvals menu: which wallets trade inside limits. */
   | { kind: "approvals" }
+  /** The settings menu, as the tab bar's settings ▾ opens it. */
+  | { kind: "settings" }
+  | { kind: "triggers" }
+  /** The Bots tab, or its overlay where no tab has the Bots pane. */
+  | { kind: "bots" }
   /** While you were away: over the frame, as the note's show all. */
   | { kind: "away" }
   /** Wallet groups: the overlay of every wallet to name several, the Wallets pane's search, and its group menu. */
@@ -69,6 +80,8 @@ export type PaletteRun =
   | { kind: "walletsMenu" }
   /** The tour: onboarding's step 4, again. */
   | { kind: "tour" }
+  /** The Build tab: its harness choice, or the bots folder or the test run over the frame. */
+  | { kind: "build"; what: "harness" | "build-folder" | "build-test" }
 
 export interface PaletteRow {
   /** Stable across redraws: what a click names. */
@@ -103,6 +116,8 @@ export interface PaletteInput {
   activeAgent?: string
   /** Each agent's preset, as the core says. */
   presets: Readonly<Record<string, Preset | undefined>>
+  /** The code runner: whether this machine holds it, and each agent's programs (undefined: off). */
+  runner?: { held: { ok: true } | { ok: false; why: string; fix: string }; on: Readonly<Record<string, readonly string[] | undefined>> }
   /** Token names seen this session, upper-cased, to their mints. */
   tokens: ReadonlyMap<string, string>
   /** The linked token's mint. */
@@ -138,6 +153,8 @@ export interface PaletteInput {
   walletsOnTab?: boolean
   /** The person's skill folders, as the core read them. */
   skillFolders?: readonly SkillFolder[]
+  /** Keep-awake, as the core says; its row shows only where this machine has it (macOS). */
+  keepAwake?: { on: boolean; available: boolean; active: boolean; failed?: string }
 }
 
 /** Base assets: a swap's, never a link (the core refuses them, BASE_ASSET). */
@@ -154,6 +171,8 @@ export const SECTIONS = [
   { name: "Model", words: ["model", "engines"] },
   { name: "Memory", words: ["memory"] },
   { name: "Skills", words: ["skills"] },
+  { name: "Triggers", words: ["triggers"] },
+  { name: "Build", words: ["build", "code"] },
   { name: "P&L", words: ["p&l", "pnl", "profit"] },
   { name: "Journal", words: ["journal", "history"] },
   { name: "Tokens", words: ["tokens", "link"] },
@@ -197,6 +216,8 @@ function harnessRows(p: PaletteInput): PaletteRow[] {
     rows.push(keyRow(def.id, why ? { why, run: undefined } : {}))
   }
   rows.push({ id: "tour", section: "Actions", label: "the tour", words: "a minute on this screen: your agent, positions, a card, the kill switch, settings ▾ and the palette", key: "setup's step 4", run: { kind: "tour" }, search: "tour help start new onboarding walkthrough guide learn" })
+  // The tab bar's settings ▾ is a click; this is the same menu by keys (over SSH with no mouse, the only way in).
+  rows.push({ id: "settings", section: "Actions", label: "settings", words: "what's set up once: tabs, layout, theme, model, memory, aliases, the P&L window, approvals, triggers and bots", key: "the tab bar's settings ▾", run: { kind: "settings" }, search: "settings menu preferences options configure setup" })
   rows.push({ id: "mode:paper", section: "Actions", label: "paper mode", words: "trades are recorded at the quoted price, never sent", key: "type paper", ...(p.mode === "paper" ? { current: true, why: "already in paper mode" } : { run: { kind: "mode", mode: "paper" } }) })
   rows.push({ id: "mode:live", section: "Actions", label: "live mode", words: "trades move real funds, through one-press cards; it asks first", key: "type live", ...(p.mode === "live" ? { current: true, why: "already in live mode" } : { run: { kind: "mode", mode: "live" } }) })
   rows.push({ id: "resume", section: "Actions", label: "resume buys", words: "after the kill switch", key: "type resume", ...(p.paused ? { run: { kind: "resume" } } : { why: "the kill switch is off" }) })
@@ -236,8 +257,9 @@ function harnessRows(p: PaletteInput): PaletteRow[] {
     }
     for (const pane of p.popped) rows.push({ id: `pop:${pane}`, section: "Panes", label: `${pane} is popped out`, words: "in a view of its own", why: "close that view (ctrl-c twice there) and it comes back here", search: "popout split window" })
     const near = p.focus && on.includes(p.focus) ? p.focus : undefined
-    for (const pane of PANE_IDS.filter((x) => !all.includes(x))) {
-      rows.push({ id: `open:${pane}`, section: "Panes", label: `open ${pane}`, words: near ? `beside ${near}, on ${info.tab}` : `on ${info.tab}`, run: { kind: "layout", op: { kind: "open", pane, ...(near ? { near } : {}) } } })
+    for (const pane of openable(all)) {
+      const another = isTokenPane(pane) && pane !== "token"
+      rows.push({ id: `open:${pane}`, section: "Panes", label: another ? `open another token pane (${pane})` : `open ${pane}`, words: `${another ? "pinned on the token shown, " : ""}${near ? `beside ${near}, on ${info.tab}` : `on ${info.tab}`}`, run: { kind: "layout", op: { kind: "open", pane, ...(near ? { near } : {}) } }, ...(another ? { search: "compare side by side second third" } : {}) })
     }
     // Signals: its chips' and its pause's rows, so a pane too narrow for its chips (the Cockpit's) reaches them too.
     if (on.includes("signals")) {
@@ -283,6 +305,19 @@ function harnessRows(p: PaletteInput): PaletteRow[] {
   rows.push({ id: "wallets:find", section: "Panes", label: "find a wallet", words: "a search line over the Wallets pane, across every group", key: "its ⌕ find chip", ...(p.walletsOnTab ? { run: { kind: "walletsFind" } } : { why: "this tab has no Wallets pane" }), search: "search wallet wallets find group" })
   if (p.walletGroups?.length) rows.push({ id: "wallets:groups", section: "Panes", label: "show one wallet group…", words: `the Wallets pane shows one of ${p.walletGroups.join(", ")}, or every group`, key: "its all groups ▾ chip", run: { kind: "walletsMenu" }, search: "group groups wallets show filter" })
   rows.push({ id: "approvals", section: "Agents", label: "approvals: trading inside limits", words: "which wallets trade inside limits without a card, and every limit with who holds it", key: "settings ▾ · approvals", run: { kind: "approvals" }, search: "autonomy hands off limits without a card wallet figure caps candle" })
+  if (agent && p.runner) {
+    const on = p.runner.on[agent]
+    const held = p.runner.held
+    rows.push({
+      id: "runner",
+      section: "Model",
+      label: on ? `turn off ${agent}'s code runner` : `turn on ${agent}'s code runner`,
+      words: on ? `it runs ${on.join(", ")} in its research folder, held there with no network` : `${agent} runs ${RUN_EXAMPLE.join(", ")} in its research folder, held there by the system, with no network, 60 s a run`,
+      key: `${chordOf("picker")} · code runner`,
+      ...(on ? { run: { kind: "runner", agent, on: false } } : held.ok ? { run: { kind: "runner", agent, on: true } } : { why: `it can't be held here: ${held.why}` }),
+      search: "code runner run script python node bun compute chart",
+    })
+  }
   rows.push({ id: "model", section: "Model", label: agent ? `${agent}'s engine and model` : "the agent's engine and model", words: "Claude Code, Codex, Grok, OpenCode or Pi, from its next turn", key: `${chordOf("picker")} · its chip`, ...(agent ? { run: { kind: "picker" } } : { why: "the core hasn't said which agent is active" }), search: "engine harness switch claude codex grok opencode pi openrouter ollama" })
   // The P&L window: each choice, the one on marked; a time of your own goes through the menu.
   for (const r of pnlWindowRows(p.pnlWindow)) {
@@ -302,6 +337,20 @@ function harnessRows(p: PaletteInput): PaletteRow[] {
     const n = `${f.count} skill${f.count === 1 ? "" : "s"}`
     const words = f.on ? `on: the agents read its ${n}; ⏎ turns it off` : f.exists ? `off: ${n} there; ⏎ turns it on, for every agent` : "not on this machine"
     rows.push({ id: `skills:${f.shown}`, section: "Skills", label: `${f.label} · ${f.shown}`, words, ...(f.on ? { current: true as const } : {}), ...(f.exists || f.on ? { run: { kind: "skillsFolder" as const, folder: f.shown, on: !f.on } } : { why: `there's no ${f.shown} here` }), search: "skills claude code codex agents opencode pi own" })
+  }
+  // The Triggers overlay: every trigger, switched off or on, removed, or its expired card run again.
+  rows.push({ id: "triggers", section: "Triggers", label: "triggers", words: "what fires on its own: switch one off, remove it, run it now, or ask the agent to change it", key: "settings ▾ · triggers", run: { kind: "triggers" }, search: "trigger when every on stop take profit schedule level tape automation bot" })
+  // Rules bots: the Bots tab, or its overlay where no tab has the Bots pane.
+  rows.push({ id: "bots", section: "Triggers", label: "bots", words: "rules bots and code bots: how each is doing, its open positions; pause, stop, flatten, its log, or ask the agent to change it", key: "settings ▾ · bots", run: { kind: "bots" }, search: "bots bot rules code strategy automation flatten pause positions backtest log" })
+  // The Build tab: your own coding harness in the bots folder, the folder, and the paper test running.
+  rows.push({ id: "build:harness", section: "Build", label: "the Build tab's harness", words: "which coding harness the Build tab opens in your bots folder: Claude Code, Codex, Grok, OpenCode, Pi or a command of yours", key: "the Build pane's harness ▾", run: { kind: "build", what: "harness" }, search: "build code bot harness claude codex grok opencode pi aider write" })
+  rows.push({ id: "build:folder", section: "Build", label: "the bots folder", words: "each bot folder and where it stands: a code bot, a paper test, or not proposed yet; and any daemon a harness left", key: "the Build tab's side column", run: { kind: "build", what: "build-folder" }, search: "build bots folder code daemons files" })
+  rows.push({ id: "build:test", section: "Build", label: "the paper test running", words: "the paper test your harness started: the core's count from its fills, what the bot says, and stop test", key: "the Build tab's side column", run: { kind: "build", what: "build-test" }, search: "build test paper run code bot" })
+  // Keep-awake: the Mac kept from sleeping while a trigger or bot is on. macOS only, so only there.
+  if (p.keepAwake?.available) {
+    const k = p.keepAwake
+    const words = k.failed ? `on, but ${k.failed}; ⏎ turns it off` : k.on ? `on: ${k.active ? "keeping the Mac awake now, for the triggers and bots that are on" : "the Mac is kept awake whenever a trigger is on"}; ⏎ turns it off` : "off: the Mac may sleep while triggers or bots are on, and they wait for it; ⏎ turns it on"
+    rows.push({ id: "keepAwake", section: "Triggers", label: "keep the Mac awake while triggers or bots are on", words, ...(k.on ? { current: true as const } : {}), run: { kind: "keepAwake", on: !k.on }, search: "keep awake sleep caffeinate mac triggers bots lid" })
   }
   for (const a of agents) rows.push({ id: `memory:${a}`, section: "Memory", label: `${a}'s memory`, words: "its index and the files beside it; delete any of it", key: a === agent ? "settings ▾ · memory" : undefined, run: { kind: "memory", agent: a }, search: "remember notes forget index lessons clear" })
 

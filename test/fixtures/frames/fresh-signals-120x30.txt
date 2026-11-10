@@ -1,5 +1,5 @@
  agent-a ▾  PAPER  today $0.00 / $100.00  live exposure $0.00  live P&L 24h —  ● 0 cards waiting         ctrl-x ×2 kill 
- 1 Trade  2 Cockpit  3 Trending  4 Signals  5 P&L  6 Research  7 Journal  8 Perps   settings ▾                          
+ 1 Trade  2 Cockpit  3 Signals  4 Research  5 Bots  6 Build   settings ▾  4 new tabs are ticked off: Trend…  show them  
                                                                                                                         
 ╭─ Signals · Hacc's tape ───────────────────────────────────────────────────────────── pattern ▾ ── chain ▾ ── all ▾ ──╮
 │ WISP         wallet distributing              $30     Solana   47s     Wal2…1111                                     │
@@ -31,7 +31,7 @@
 
 --- colours ---
 0: 6cb6ff/16263a×11 f6f8fb/2a2f3a×7 ffffff/0e1115×1 959dab/0e1115×6 f6f8fb/0e1115×5 959dab/0e1115×10 ffffff/0e1115×2 959dab/0e1115×14 f6f8fb/0e1115×5 ffffff/0e1115×2 959dab/0e1115×14 ffffff/0e1115×2 959dab/0e1115×17 ffffff/0e1115×8 ff5c5c/3a1619×16
-1: ffffff/0b0d10×1 6cb6ff/0b0d10×7 ffffff/0b0d10×2 6cb6ff/0b0d10×9 ffffff/0b0d10×2 6cb6ff/0b0d10×10 ffffff/0b0d10×2 f6f8fb/0b0d10+9×9 ffffff/0b0d10×2 6cb6ff/0b0d10×5 ffffff/0b0d10×2 6cb6ff/0b0d10×10 ffffff/0b0d10×2 6cb6ff/0b0d10×9 ffffff/0b0d10×2 6cb6ff/0b0d10×7 ffffff/0b0d10×2 6cb6ff/16263a×12 ffffff/0b0d10×25
+1: ffffff/0b0d10×1 6cb6ff/0b0d10×7 ffffff/0b0d10×2 6cb6ff/0b0d10×9 ffffff/0b0d10×2 f6f8fb/0b0d10+9×9 ffffff/0b0d10×2 6cb6ff/0b0d10×10 ffffff/0b0d10×2 6cb6ff/0b0d10×6 ffffff/0b0d10×2 6cb6ff/0b0d10×7 ffffff/0b0d10×2 6cb6ff/16263a×12 ffffff/0b0d10×1 f5a524/0b0d10×34 6cb6ff/16263a×11 ffffff/0b0d10×1
 2: ffffff/0b0d10×120
 3: 252a33/111419×2 b392f0/111419×23 252a33/111419×61 6cb6ff/16263a×11 252a33/111419×2 6cb6ff/16263a×9 252a33/111419×2 6cb6ff/16263a×7 252a33/111419×3
 4: 252a33/111419×1 ffffff/111419×1 f6f8fb/111419×13 dde2ea/111419×29 f6f8fb/111419×7 959dab/111419×31 ffffff/111419×37 252a33/111419×1

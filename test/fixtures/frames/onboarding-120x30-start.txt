@@ -7,8 +7,8 @@
  │ ✓ Sign in to Candle      │ │  ▸ Trade     your agent, with the token, positions, wallets and activity              │ 
  │  Wall…1111 · candle-     │ │    Cockpit   feed, signals and the token, with the agent on the right                 │ 
  │                          │ │                                                                                       │ 
- │ ✓ Connect your agent     │ │  All eight tabs are on. Tick them on or off in settings ▾, and change a tab's layout  │ 
- │                          │ │  from settings ▾ → layout.                                                            │ 
+ │ ✓ Connect your agent     │ │  5 of your 10 tabs are on. Tick them on or off in settings ▾, and change a tab's      │ 
+ │                          │ │  layout from settings ▾ → layout.                                                     │ 
  │ ✓ Wallet and limits      │ │                                                                                       │ 
  │                          │ │  Your files                                                                           │ 
  │ ✓ The tour               │ │    ~/.config/candle/harness/config.toml                                               │ 
@@ -22,7 +22,7 @@
  │                          │ │                                                                                       │ 
  │                          │ │                                                                                       │ 
  │                          │ │                                                                                       │ 
- │ about 3 minutes          │ │                                                                                       │ 
+ │ about 5 minutes          │ │                                                                                       │ 
  │ quit any time: it picks  │ │                                                                                       │ 
  │ up where you stopped     │ │                                                                                       │ 
  ╰──────────────────────────╯ ╰───────────────────────────────────────────────────────────────────────────────────────╯ 
@@ -39,8 +39,8 @@
 6: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 3ddc84/111419×1 dde2ea/111419×18 ffffff/111419×6 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 32fe9f/1d2430×2 f6f8fb/1d2430×10 959dab/1d2430×59 ffffff/1d2430×12 ffffff/111419×2 32fe9f/111419×1 ffffff/0b0d10×1
 7: ffffff/0b0d10×1 252a33/111419×1 dde2ea/111419×2 959dab/111419×19 ffffff/111419×5 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 32fe9f/111419×2 6cb6ff/111419×10 959dab/111419×56 ffffff/111419×17 32fe9f/111419×1 ffffff/0b0d10×1
 8: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×26 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×87 32fe9f/111419×1 ffffff/0b0d10×1
-9: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 3ddc84/111419×1 dde2ea/111419×19 ffffff/111419×5 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 dde2ea/111419×83 ffffff/111419×2 32fe9f/111419×1 ffffff/0b0d10×1
-10: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×26 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 dde2ea/111419×25 ffffff/111419×60 32fe9f/111419×1 ffffff/0b0d10×1
+9: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 3ddc84/111419×1 dde2ea/111419×19 ffffff/111419×5 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 dde2ea/111419×79 ffffff/111419×6 32fe9f/111419×1 ffffff/0b0d10×1
+10: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×26 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 dde2ea/111419×32 ffffff/111419×53 32fe9f/111419×1 ffffff/0b0d10×1
 11: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 3ddc84/111419×1 dde2ea/111419×18 ffffff/111419×6 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×87 32fe9f/111419×1 ffffff/0b0d10×1
 12: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×26 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 dde2ea/111419×10 ffffff/111419×75 32fe9f/111419×1 ffffff/0b0d10×1
 13: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 3ddc84/111419×1 dde2ea/111419×9 ffffff/111419×15 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 959dab/111419×38 ffffff/111419×47 32fe9f/111419×1 ffffff/0b0d10×1

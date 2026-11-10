@@ -42,8 +42,8 @@ interface Share {
 // What you hold beats what's trending: Wallets, then Positions, ask first. The trending list keeps its
 // heading and three tokens; Positions three holdings.
 const SHARE: Share = {
-  ask: ["wallets", "positions", "activity", "token", "check", "traders", "token-signals", "mentions", "pnl", "pnl-positions", "trades", "signals", "journal", "away", "feed", "new", "graduated", "final-stretch", "perps"],
-  keep: { token: 5, positions: 3 },
+  ask: ["wallets", "positions", "activity", "token", "token:2", "token:3", "check", "traders", "token-signals", "mentions", "pnl", "pnl-positions", "trades", "signals", "journal", "away", "feed", "new", "graduated", "final-stretch", "perps", "bot", "bots"],
+  keep: { token: 5, "token:2": 5, "token:3": 5, positions: 3 },
   borrow: [
     { pane: "wallets", from: ["token", "activity", "positions"] },
     { pane: "positions", from: ["token"] },
@@ -58,9 +58,11 @@ export interface Layout {
    * switched pane sits over `keep` at its fixed rows (the short agent pane). A stacked layout may keep one
    * more pane shown, `with`, under the switched one, the two sharing their rows by `weights` (Trending: one
    * list at a time over the token). `first` is the pane the switched one opens on before any is focused
-   * (Signals' own tab opens on Signals); unset, the token pane.
+   * (Signals' own tab opens on Signals); unset, the token pane. `fold`ed, `keep` takes every row but one, and that
+   * row is a strip with a chip for each other pane, which opens it over the frame (the Build tab: the harness keeps
+   * its width and height, and the bots folder and the test run are a click away).
    */
-  collapse: { below: number; keep: PaneId; weights: readonly [number, number]; stack?: true; with?: PaneId; first?: PaneId }
+  collapse: { below: number; keep: PaneId; weights: readonly [number, number]; stack?: true; with?: PaneId; first?: PaneId; fold?: true }
   /** A layout of yours saved from a preset: which, and the panes it had then, so a pane it gains later is offered. */
   from?: LayoutFrom
 }
@@ -77,6 +79,8 @@ export interface Placed {
   switched?: { rect: Rect; group: PaneId[]; first?: PaneId }
   /** Asked for a foot: where the message and input lines go, under the agent pane or across the width. */
   foot?: Rect
+  /** Folded: the strip under the kept pane, and the panes its chips open over the frame. */
+  folded?: { rect: Rect; group: PaneId[] }
 }
 
 /**
@@ -256,7 +260,8 @@ export const PNL: Layout = {
  * Research: one token in depth. The token pane over its whole check on the
  * left, its top traders, its signals and its mentions beside them, and the agent down the right as in the
  * Cockpit. Stacked in one column, Check had four rows; side by side it has the token's height. Below 130
- * it's the agent and one switched pane, the token first, as the Cockpit collapses. A list to pick from
+ * it's the agent and one switched pane, opening on Check: the tab's own pane, so collapsed it doesn't read as
+ * the Cockpit, which opens on the token. A list to pick from
  * heads the middle column, switched between Candle's lists and Hacc's tape, so there's always something
  * to research without going in and out.
  */
@@ -277,7 +282,7 @@ export const RESEARCH: Layout = {
       { pane: "agent", weight: 38 },
     ],
   },
-  collapse: { below: 130, keep: "agent", weights: [60, 40] },
+  collapse: { below: 130, keep: "agent", weights: [60, 40], first: "check" },
 }
 
 /** The Journal: everything the core recorded, full width over the token pane, about 70:30, and the short agent pane. */
@@ -294,6 +299,32 @@ export const PERPS: Layout = {
   root: { dir: "column", weight: 1, children: [{ pane: "perps", weight: 1 }, SHORT_AGENT] },
   collapse: STACKED(0),
 }
+
+/**
+ * Bots: the bots to pick from beside the picked one in full, as the Triggers overlay and the approvals menu sit,
+ * and the short agent pane, where a bot is asked for and changed. Collapsed, it opens on the list, and → goes to
+ * the picked bot.
+ */
+export const BOTS: Layout = {
+  name: "Bots",
+  root: { dir: "column", weight: 1, children: [{ dir: "row", weight: 1, children: [{ pane: "bots", weight: 35 }, { pane: "bot", weight: 65 }] }, SHORT_AGENT] },
+  collapse: { ...STACKED(100), first: "bots" },
+}
+
+/**
+ * Build: the person's own coding harness at most of the width, and beside it the bots folder over the paper test
+ * running. Below 100 columns the harness keeps the width and every row but one, and the side column folds into that
+ * row: a chip for each, opening it over the frame. No agent pane: a card the harness proposes opens over the frame,
+ * and waits in the strip above the input line.
+ */
+export const BUILD: Layout = {
+  name: "Build",
+  root: { dir: "row", weight: 1, children: [{ pane: "build", weight: 70 }, { dir: "column", weight: 30, children: [{ pane: "build-folder", weight: 45 }, { pane: "build-test", weight: 55 }] }] },
+  collapse: { below: 100, keep: "build", weights: [70, 30], fold: true },
+}
+
+/** The Build pane alone, across the tab: its first open, before the side column has anything to show. */
+export const BUILD_ALONE: Layout = { name: "Build", root: { pane: "build", weight: 1 }, collapse: { below: 0, keep: "build", weights: [100, 0] } }
 
 /** Every pane in a tree, in its order. */
 export function panesOf(node: LayoutNode): PaneId[] {
@@ -350,6 +381,12 @@ function placeIn(layout: Layout, area: Rect, need: Need, gap: Gap, bodyH: number
   if (isCollapsed(layout, area.w)) {
     const keep = layout.collapse.keep
     const first = layout.collapse.first ? { first: layout.collapse.first } : {}
+    if (layout.collapse.fold) {
+      const strip = area.h >= 4 ? 1 : 0
+      const h = Math.max(1, area.h - strip)
+      const group = panesOf(layout.root).filter((p) => p !== keep)
+      return { panes: [{ id: keep, rect: { x: area.x, y: area.y, w: area.w, h } }], ...(strip ? { folded: { rect: { x: area.x, y: area.y + h, w: area.w, h: strip }, group } } : {}) }
+    }
     if (layout.collapse.stack) {
       const rows = Math.max(3, Math.min(fixedRows(leafOf(layout.root, keep)?.rows ?? SHORT_AGENT_ROWS, bodyH), area.h - gap.y - FLEX_KEEP))
       const above = Math.max(1, area.h - gap.y - rows)

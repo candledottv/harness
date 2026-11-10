@@ -4,6 +4,7 @@ import type { ViewCard } from "../store"
 import type { WalletsTopic } from "../../core/agent-wallets"
 import { cardDetails, otherWallets } from "../overlays"
 import { cardLines } from "./card"
+import { requotable } from "../trade-tab"
 import { C } from "../theme"
 import { textOf } from "./lines"
 
@@ -53,10 +54,88 @@ test("an open card is its decision in three lines, then the actions as chips", (
   expect(lines[0]).toMatch(/^▌ BUY \$25\.00 of MOON   ≈39\.68 MOON · 0\.167 SOL +42s$/)
   expect(lines[0]!.length).toBe(80)
   expect(lines.slice(1)).toEqual([
-    "▌ momentum · pays from embedded · live",
+    // The token's short address ends the who line: the name alone could be a copy's.
+    "▌ momentum · pays from embedded · live · Moon…1111",
     "▌ why  6 smart wallets bought in 10 min",
     "▌  ⏎ approve    ctrl-n reject    ctrl-o details ",
   ])
+})
+
+test("a trade's short address is never cut from its who line, however narrow; the full address is in details; other cards carry none", () => {
+  const tee = card({}, { paysFrom: "pays from a-long-named-wallet (TEE · TeeF…1111)", sharedWith: ["swing", "scout"] })
+  for (const width of [80, 48, 36]) {
+    const who = texts({ ...tee, side: "sell" }, { width }).find((l) => l.startsWith("▌ momentum"))!
+    expect(who.length).toBeLessThanOrEqual(width)
+    expect(who.endsWith(" · Moon…1111")).toBe(true)
+  }
+  // With a trigger's or a bot's mark after it, both stay.
+  expect(texts(card({}, { trigger: "dip", fired: "MOON was $0.39" }), { width: 44 }).find((l) => l.startsWith("▌ momentum"))).toMatch(/Moon…1111 · ⚡ dip$/)
+  expect(cardDetails(card())).toContain(`mint      ${MOON}`)
+  const swap = card({ kind: "swap", tool: "candle_swap", side: "swap" }, { headline: "SWAP 1 SOL → USDC", mint: undefined })
+  expect(texts(swap)[1]).toBe("▌ momentum · pays from embedded · live")
+  expect(cardDetails(swap).some((l) => l.startsWith("mint"))).toBe(false)
+})
+
+test("a name read here for another token is said in amber on the card, and on the receipt of a trade that ran with no card", () => {
+  const words = "another MOON was read here (Moon…Copy): this one is Moon…1111"
+  const open = cardLines(card({}, { otherMint: words }), { now: NOW, focused: false, width: 80 })
+  const line = open.find((l) => textOf(l).includes(words))!
+  expect(line.segs.at(-1)!.fg).toBe(C.look)
+  // A card for a token read once says nothing of the kind.
+  expect(texts(card()).some((l) => l.includes("another"))).toBe(false)
+  const ran = cardLines(card({ state: "approved", approvedHow: "inside-limits", withoutCard: "without a card, inside the embedded wallet's limits ($1.00 of $1.50 a trade, $1.00 of $3.00 today)", operation: { state: "succeeded" } }, { otherMint: words }), { now: NOW, focused: false, width: 100 })
+  expect(textOf(ran[0]!)).toContain("Moon…1111 · without a card")
+  expect(ran.find((l) => textOf(l).includes(words))!.segs[0]!.fg).toBe(C.look)
+  // A card the person pressed showed the address already: its folded line stays as it was.
+  expect(textOf(cardLines(card({ state: "approved", approvedHow: "enter", operation: { state: "succeeded" } }), { now: NOW, focused: false, width: 100 })[0]!)).not.toContain("Moon…1111")
+})
+
+test("real funds under a paper screen are said in amber; a card in the Candle Harness's own mode says nothing more", () => {
+  const words = 'real funds: the bot "conf" is live, though the Candle Harness is on paper'
+  const lines = cardLines(card({}, { bot: "conf", modeDiffers: words }), { now: NOW, focused: false, width: 80 })
+  expect(lines.find((l) => textOf(l).includes(words))!.segs.at(-1)!.fg).toBe(C.look)
+  expect(texts(card({}, { bot: "conf" })).some((l) => l.includes("real funds"))).toBe(false)
+  expect(cardDetails(card({}, { modeDiffers: words }))).toContain(`mode      ${words}`)
+})
+
+test("a launch card says what it publishes on one line, and terms the agent set in amber, whole", () => {
+  const launch = (display: Partial<ViewCard["display"]>) => card({ kind: "launch", tool: "candle_launch_token", side: undefined, params: {} }, { headline: "LAUNCH FMOON", title: "LAUNCH FMOON (Fake Moon)", mint: undefined, gets: undefined, spend: undefined, valueUsd: undefined, why: undefined, publicNote: "public: a new token can't be taken back", ...display })
+  const publishes = "links: website fakemoon.example, twitter x.com · image from img.example.com · description: To the fake moon."
+  const terms = "set by the agent, not Candle's defaults: creator fee 5% · launch rules {\"maxWalletPct\":2}"
+  const lines = cardLines(launch({ publishes, launchTerms: terms }), { now: NOW, focused: false, width: 60 })
+  expect(lines.some((l) => textOf(l).includes("links: website fakemoon.example"))).toBe(true)
+  const amber = lines.filter((l) => l.segs.at(-1)!.fg === C.look).map(textOf).join(" ")
+  expect(amber).toContain("creator fee 5%")
+  expect(amber).toContain('{"maxWalletPct":2}')
+  expect(cardDetails(launch({ publishes, launchTerms: terms }))).toEqual(expect.arrayContaining([`publishes ${publishes}`, `terms     ${terms}`]))
+  // Candle's defaults add no amber line beyond the public note.
+  expect(cardLines(launch({ publishes }), { now: NOW, focused: false, width: 60 }).filter((l) => l.segs.at(-1)!.fg === C.look)).toHaveLength(2)
+})
+
+test("a CLI card's details show the command as the person would read it, without the flag the core adds for the configured RPC", () => {
+  const tee = card({ params: { argv: ["swap", "SOL", MOON, "--amount", "0.04", "--yes", "--json", "--rpc-url", "@config"], identity: "agent", agent: "momentum", json: true } })
+  const runs = cardDetails(tee).find((l) => l.startsWith("runs"))!
+  expect(runs).toBe(`runs      candle swap SOL ${MOON} --amount 0.04 --yes --json`)
+})
+
+test("an expired card made from its proposer's own words offers no re-quote: it's asked for again", () => {
+  const flatten = card({ kind: "bot", tool: "harness_bots", side: undefined, state: "expired" }, { headline: undefined, title: 'FLATTEN BOT "conf"', askAgain: true, mint: undefined })
+  const said = texts(flatten).join("\n")
+  expect(said).toContain("expired, never ran: ask for it again")
+  expect(said).not.toContain("re-quote")
+  expect(texts(card({ state: "expired" })).join("\n")).toContain("ctrl-r re-quote")
+  // ctrl-r goes to the newest expired card that can be re-quoted, never to one that's asked for again.
+  expect(requotable([card({ cardId: "trade", state: "expired" }), flatten])).toBe("trade")
+  expect(requotable([flatten])).toBeUndefined()
+})
+
+test("a swap whose first leg went and second failed reads as part done, with the first leg's hash, never as plainly failed", () => {
+  const swap = card({ kind: "swap", tool: "candle_swap", side: "swap", state: "approved", approvedHow: "enter", params: { from: "SOL", to: "USDC", amount: "0.02" }, operation: { state: "failed", partial: { leg1: "Leg1HashFake1111111111111111111111111111111" } } }, { headline: "SWAP 0.02 SOL → USDC", mint: undefined })
+  const lines = cardLines(swap, { now: NOW, focused: false, width: 80 })
+  const said = lines.map(textOf).join(" ")
+  expect(said).toContain("part done: the first leg went, the second failed")
+  expect(said).toContain("0.02 SOL left the wallet · first leg Leg1…1111")
+  expect(lines[0]!.segs.some((seg) => seg.fg === C.look)).toBe(true)
 })
 
 test("a Hacc card in paper mode says it's real on Hacc in place of the mode", () => {
@@ -94,7 +173,7 @@ test("a buy sized in an asset shows its dollar value; a sell shows what it sells
   expect(texts(card({}, { headline: "BUY 0.1 SOL of MOON", spend: undefined, valueUsd: 15.08 }))[0]).toContain("≈39.68 MOON · ≈$15.08")
   const sell = texts(card({ side: "sell" }, { headline: "SELL 50% of MOON", spend: undefined, sells: { amount: 0.00294429955, asset: "MOON" }, gets: { amount: 0.004991, asset: "SOL" }, valueUsd: 0.5, sharedWith: ["swing"] }))
   expect(sell[0]).toContain("SELL 50% of MOON   ≈0.00294 MOON → ≈0.00499 SOL · ≈$0.50")
-  expect(sell[1]).toBe("▌ momentum · pays from embedded · live · shared with swing")
+  expect(sell[1]).toBe("▌ momentum · pays from embedded · live · shared with swing · Moon…1111")
 })
 
 test("token risks show in red; a card the Candle Harness can't run offers only reject and details", () => {
@@ -219,9 +298,9 @@ describe("TEE wallets' and the CLI's cards", () => {
     )
 
   test("a TEE wallet's card says which wallet pays, by label and short address, on its second line", () => {
-    expect(texts(teeCard())[1]).toBe("▌ momentum · pays from tee-one (TEE · TeeF…1111) · live")
+    expect(texts(teeCard())[1]).toBe("▌ momentum · pays from tee-one (TEE · TeeF…1111) · live · Moon…1111")
     // The embedded wallet's card is as it was.
-    expect(texts(card())[1]).toBe("▌ momentum · pays from embedded · live")
+    expect(texts(card())[1]).toBe("▌ momentum · pays from embedded · live · Moon…1111")
     // Narrow, it's cut, never run off the pane.
     for (const l of texts(teeCard(), { width: 40 })) expect(l.length).toBeLessThanOrEqual(40)
   })
@@ -416,5 +495,168 @@ describe("a slippage bound the agent set", () => {
 
   test("is in the details", () => {
     expect(cardDetails(sell())).toContain("slippage  50%, the default is 1%")
+  })
+})
+
+describe("a trigger's card", () => {
+  test("its receipt is one line, the trigger's name after ⚡, what it saw, then what came of it; expired, it offers run it now in place of re-quote", () => {
+    const ran = card({ state: "approved", approvedHow: "inside-limits", operation: { state: "succeeded" } }, { trigger: "dip", fired: "MOON was $0.39, under $0.40" })
+    expect(texts(ran, { width: 120 })).toEqual(["⚡ dip  MOON was $0.39, under $0.40 → BUY $25.00 of MOON filled, without a card   sell "])
+    const line = cardLines(ran, { now: NOW, focused: false, width: 120 })[0]!
+    expect(line.segs[0]).toMatchObject({ text: "⚡ dip", fg: C.head })
+    // Narrow, it wraps under the name, the chip after the last words.
+    expect(texts(ran, { width: 40 })).toEqual(["⚡ dip  MOON was $0.39, under $0.40 →", "  BUY $25.00 of MOON filled, without a", "  card   sell "])
+    const expired = card({ state: "expired" }, { trigger: "dip" })
+    const lines = cardLines(expired, { now: NOW, focused: false, width: 80 })
+    expect(lines.map(textOf).join("\n")).toContain("expired, nobody pressed it")
+    expect(lines.flatMap((l) => l.segs).filter((s) => s.act).map((s) => [s.text.trim(), s.act])).toEqual([["run it now", "runNow"]])
+    // Run again since (the triggers topic no longer offers it): the chip goes, the words stay.
+    const ran2 = cardLines(expired, { now: NOW, focused: false, width: 80, runnable: new Set() })
+    expect(ran2.map(textOf).join("\n")).toContain("expired, nobody pressed it")
+    expect(ran2.flatMap((l) => l.segs).filter((s) => s.act === "runNow")).toEqual([])
+  })
+  test("a card from a turn a trigger woke: its receipt says which; expired, it's re-quoted as any agent's", () => {
+    const ran = card({ state: "approved", approvedHow: "inside-limits", operation: { state: "succeeded" } }, { woken: "conf" })
+    expect(texts(ran).join("\n")).toContain('without a card · woke on trigger "conf"')
+    const expired = cardLines(card({ state: "expired" }, { woken: "conf" }), { now: NOW, focused: false, width: 80 })
+    expect(expired.flatMap((l) => l.segs).filter((s) => s.act).map((s) => s.act)).toEqual(["requote"])
+  })
+})
+
+test("a trigger's card: the exact line it saves, whole, the trigger in words and how it runs, in amber where it will wait, and the chip toward a wallet of its own", () => {
+  const line = `when ${MOON} < $0.40 sell 50% of ${MOON}`
+  const trigger = card(
+    { kind: "trigger", tool: "harness_triggers", side: undefined, params: { line } },
+    {
+      title: 'NEW TRIGGER "stop"',
+      headline: 'NEW TRIGGER "stop"',
+      gets: undefined,
+      spend: undefined,
+      valueUsd: undefined,
+      walletLabel: undefined,
+      paysFrom: "pays from embedded",
+      why: "your stop",
+      triggerCard: { line, words: "When MOON's price falls below $0.40, sell 50% of MOON. Fires once, then switches off.", runs: "Asks you each time: the embedded wallet asks every time, so each firing is a card for you to approve or reject within 60 s." },
+      warning: "The embedded wallet asks every time, so this will wait for you.",
+      fills: [{ label: "new TEE wallet for momentum", line: "candle vault promote --to-key PREFIXxx --label momentum-tee --from " }],
+    },
+  )
+  const lines = texts(trigger)
+  expect(lines[0]).toMatch(/^▌ NEW TRIGGER "stop" +42s$/)
+  expect(lines.slice(1)).toEqual([
+    "▌ momentum · pays from embedded · live",
+    "▌ why  your stop",
+    `▌ when ${MOON} < $0.40 sell 50% of`,
+    `▌ ${MOON}`,
+    "▌ When MOON's price falls below $0.40, sell 50% of MOON. Fires once, then",
+    "▌ switches off.",
+    "▌ Asks you each time: the embedded wallet asks every time, so each firing is a",
+    "▌ card for you to approve or reject within 60 s.",
+    "▌ The embedded wallet asks every time, so this will wait for you.",
+    "▌  new TEE wallet for momentum ",
+    "▌  ⏎ approve    ctrl-n reject    ctrl-o details ",
+  ])
+  expect(cardDetails(trigger).slice(0, 4)).toEqual([`title     NEW TRIGGER "stop"`, `line      ${line}`, "trigger   When MOON's price falls below $0.40, sell 50% of MOON. Fires once, then switches off.", "runs      Asks you each time: the embedded wallet asks every time, so each firing is a card for you to approve or reject within 60 s."])
+  expect(cardDetails(trigger).find((l) => l.startsWith("saves"))).toBe(`saves     harness_triggers {"line":"${line}"}`)
+})
+
+test("a bot's buy names its bot on the who line, kept where a short pane drops why; expired, it's skipped, with no re-quote", () => {
+  const bot = card({}, { bot: "conf", why: 'the bot "conf" entered on a signal' })
+  const open = texts(bot, { maxRows: 1 })
+  expect(open[1]).toContain("momentum · pays from embedded · live · Moon…1111 · bot conf")
+  expect(open.join("\n")).not.toContain("why")
+  const expired = texts({ ...bot, state: "expired" })
+  expect(expired.join("\n")).toContain('expired, skipped by the bot "conf"')
+  expect(expired.join("\n")).not.toContain("re-quote")
+  expect(otherWallets(bot, { agents: { momentum: { payable: [{ address: "Tee1111111111111111111111111111111111111111", kind: "tee" }] } } } as unknown as WalletsTopic)).toEqual([])
+})
+
+test("folded at 80 columns, a card keeps its headline and who line, its wrapped figures folded with the middle", () => {
+  const bot = card({}, { bot: "conf", why: 'the bot "conf" entered on a signal', headline: "BUY $1.50 of A-LONGER-NAMED-TOKEN" })
+  const lines = texts(bot, { width: 46, fitRows: 5 })
+  expect(lines).toHaveLength(5)
+  expect(lines[0]).toContain("BUY $1.50 of A-LONGER-NAMED-TOKEN")
+  expect(lines[1]).toContain("bot conf")
+  expect(lines[2]).toContain("folded · ctrl-o details")
+  expect(lines.at(-1)).toContain("ctrl-o details")
+})
+
+describe("a rules bot's card", () => {
+  const botCard = (over: Partial<NonNullable<ViewCard["display"]["botCard"]>> = {}): NonNullable<ViewCard["display"]["botCard"]> => ({
+    name: "conf",
+    words: "Buys $2 when several tracked wallets buy the same token, between $50K and $2M market cap. Sells at +40%, at -25%, or after 2 hours. At most 3 at once.",
+    definition: "{}",
+    mode: "paper",
+    runs: { kind: "paper", entries: "On paper: buys paper trades with no card.", exits: "Sells paper trades, on their own." },
+    worst: "At worst 3 open at $2.00.",
+    parts: { buys: "paper trades with no card: nothing real is bought", sells: "paper trades, on their own", worst: "3 open at $2.00: $6.00 at risk, plus Candle's fee", tested: "fail · 61 trades · −$12.31" },
+    backtest: "Hacc's replay 238: fail.",
+    differs: "Hacc's backtest buys at its first price after the signal. A live run buys within seconds.",
+    ...over,
+  })
+  const bot = (b: NonNullable<ViewCard["display"]["botCard"]>, display: Partial<ViewCard["display"]> = {}) =>
+    card({ kind: "bot", tool: "harness_bots", side: undefined, params: { action: "save" } }, { headline: undefined, title: `NEW BOT "${b.name}"`, gets: undefined, spend: undefined, valueUsd: undefined, wallet: "none", paysFrom: "pays from embedded", mode: b.mode, why: "Paper test of confluence entries", botCard: b, ...display })
+
+  test("folded at 80×24, what it shows after the fold starts on a whole line, never mid-sentence", () => {
+    const b = bot(botCard())
+    for (const fitRows of [6, 7, 8, 9, 10, 11]) {
+      const lines = texts(b, { width: 48, fitRows })
+      const at = lines.findIndex((l) => l.includes("folded · ctrl-o details"))
+      expect(at).toBeGreaterThan(0)
+      const next = lines[at + 1]!.replace(/^▌ /, "").trim()
+      // Never a wrapped line's later part: not a box line with no label, nor words that start mid-sentence.
+      expect(next).not.toMatch(/^│ {8}/)
+      expect(next).not.toMatch(/^(hours|real|plus|market|token)/)
+    }
+  })
+
+  test("too tall for its pane, it keeps the lines the press approves: the box's title, buys, sells and worst, and the wallet chip; the steer's paragraph goes first", () => {
+    const live = botCard({ mode: "live", runs: { kind: "asks", entries: "Its buys ask you each time.", exits: "Sells on their own.", amber: "its buys ask you each time" }, parts: { buys: "each a card for you within 60 s; one you miss is skipped", sells: "on their own, on any wallet: you approve them now", worst: "4 open at $2.00: $8.00 at risk, plus Candle's fee", tested: "pass · 41 trades · +$9.12 · drawdown 18.4% · Jan 5 to Jan 12" }, from: "From your saved strategy conf-v2." })
+    const steer = "Its buys ask you each time. A wallet of its own is the better way: the bot can lose only what that wallet holds, and its figures are the bot's alone."
+    const b = bot(live, { warning: steer, fills: [{ label: "new TEE wallet for agent-a", line: "vault promote" }] })
+    const whole = texts(b, { width: 46 })
+    const lines = texts(b, { width: 46, fitRows: 15 })
+    expect(lines.length).toBeLessThanOrEqual(15)
+    expect(whole.length).toBeGreaterThan(15)
+    const said = lines.join("\n")
+    for (const kept of ["its buys ask you each time", "│ buys   each a card for you", "│ sells  on their own, on any wallet", "│ worst  4 open at $2.00", "new TEE wallet for agent-a", "backtest  pass · 41 trades", "⏎ approve"]) expect(said).toContain(kept)
+    // The steer's paragraph, and where the bot came from, are what it gave up: details has both.
+    expect(said).not.toContain("the bot can lose only")
+    expect(said).not.toContain("From your saved strategy")
+    expect(cardDetails(b).some((l) => l.includes("the bot can lose only"))).toBe(true)
+    // A pane with room draws it whole, as before.
+    expect(texts(b, { width: 46, fitRows: 40 })).toEqual(whole)
+  })
+
+  test("a code bot's card too tall for its pane keeps its command and its limits line", () => {
+    const code = botCard({ name: "momentum", mode: "live", words: "Runs bun run bot.ts in /srv/bots/momentum.", runs: { kind: "asks", entries: "Its buys ask you each time.", exits: "Sells on their own.", amber: "its buys ask you each time" }, parts: { buys: "each a card for you within 60 s; one you miss is refused to the bot", sells: "of what it bought, on their own, on any wallet: you approve them now", worst: "3 open at $2.00: $6.00 at risk, plus Candle's fee", tested: "" }, code: { folder: "/srv/bots/momentum", command: "bun run bot.ts", figures: "$2.00 a trade · $10.00 a day · 3 open at most", holds: "The core holds this bot to these figures. What it trades inside them is its code's." }, backtest: undefined, differs: undefined })
+    const b = bot(code, { title: 'NEW CODE BOT "momentum"', warning: "Its buys ask you each time. A wallet of its own is the better way: the bot can lose only what that wallet holds.", fills: [{ label: "new TEE wallet for agent-a", line: "vault promote" }] })
+    const lines = texts(b, { width: 46, fitRows: 15 })
+    expect(lines.length).toBeLessThanOrEqual(15)
+    const said = lines.join("\n")
+    for (const kept of ["Runs bun run bot.ts in /srv/bots/momentum.", "its buys ask you each time", "│ buys   each a card", "│ sells  of what it bought", "│ limits $2.00 a trade · $10.00 a day", "│ worst  3 open at $2.00", "new TEE wallet for agent-a", "The core holds this bot to these figures"]) expect(said).toContain(kept)
+  })
+
+  test("a change says what it changes on its face, kept when it folds", () => {
+    const b = bot(botCard({ changes: "a stake of $3, from $2", replaces: true }), { title: 'CHANGE BOT "conf"' })
+    expect(texts(b, { width: 100 }).some((l) => l.includes("changes  a stake of $3, from $2"))).toBe(true)
+    const folded = texts(b, { width: 48, fitRows: 6 })
+    expect(folded[2]).toContain("changes  a stake of $3, from $2")
+    expect(folded[3]).toContain("folded · ctrl-o details")
+    expect(cardDetails(b)).toContain("changes   a stake of $3, from $2")
+  })
+
+  test("its details name the wallet it pays from, never none", () => {
+    const details = cardDetails(bot(botCard()))
+    expect(details).toContain("wallet    embedded")
+    expect(details.some((l) => l.includes("none"))).toBe(false)
+  })
+
+  test("a live bot's card says how a live run differs from its backtest; a paper bot's keeps it in details", () => {
+    const differs = "Hacc's backtest buys at its first price after the signal."
+    const short = "a live run buys sooner and sells at the market, so it can differ"
+    expect(texts(bot(botCard({ mode: "live", runs: { kind: "own", entries: "Runs on its own.", exits: "Sells on its own." } })), { width: 120 }).some((l) => l.includes(short))).toBe(true)
+    expect(texts(bot(botCard()), { width: 120 }).some((l) => l.includes(short))).toBe(false)
+    expect(cardDetails(bot(botCard())).some((l) => l.includes(differs))).toBe(true)
   })
 })

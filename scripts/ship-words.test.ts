@@ -11,12 +11,12 @@ import { repoFiles } from "./repo-files"
 const ROOT = join(import.meta.dir, "..")
 
 /**
- * Every file in the repo (scripts/repo-files.ts), less Candle's skills (copied unchanged, with a changed copy for the skills check's own
+ * Every file in the repo (scripts/repo-files.ts), less Candle's skills in skills/ and build-skills/ (copied unchanged, with a changed copy for the skills check's own
  * test), the lockfile, which is npm's words, and BIP-39's word list, which is BIP-39's (checked unchanged by its
- * hash in engine/wallet-secret.test.ts).
+ * hash in shared/wallet-secret.test.ts).
  */
 export function shippedFiles(): string[] {
-  return repoFiles().filter((f) => !f.startsWith("skills/") && !f.startsWith("test/fixtures/skills-changed/") && f !== "bun.lock" && f !== "src/engine/bip39-english.txt")
+  return repoFiles().filter((f) => !f.startsWith("skills/") && !f.startsWith("build-skills/") && !f.startsWith("test/fixtures/skills-changed/") && f !== "bun.lock" && f !== "src/shared/bip39-english.txt")
 }
 
 function hits(files: readonly string[], read = (f: string) => readFileSync(join(ROOT, f), "utf8")): string[] {

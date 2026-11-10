@@ -112,6 +112,10 @@ describe("outcome rules", () => {
     expect(outcomeOf("trade", tradeError({ code: "VALIDATION_FAILED", retryable: false })).state).toBe("refused")
     expect(outcomeOf("trade", tradeError({ code: "RATE_LIMITED", retryable: true })).state).toBe("refused")
     expect(outcomeOf("swap", swapError({ code: "KEY_LIMIT_REACHED", retryable: true })).state).toBe("refused")
+    // Candle's route breaker refusing a pair with its own wait refuses before any swap is built; a bare one is read back.
+    expect(outcomeOf("trade", tradeError({ code: "SWAP_ROUTE_FAILING", retryable: true, retry_after_seconds: 120 })).state).toBe("refused")
+    expect(outcomeOf("swap", swapError({ code: "SWAP_ROUTE_FAILING", retryable: true, details: { retry_after_seconds: 60 } })).state).toBe("refused")
+    expect(outcomeOf("trade", tradeError({ code: "SWAP_ROUTE_FAILING", retryable: true })).state).toBe("unknown")
   })
 
   test("a trade or swap error with no stage is read back by its id unless Candle documents it as before anything was sent", () => {
@@ -157,7 +161,7 @@ describe("outcome rules", () => {
 })
 
 // A scripted pool and a hand-driven clock and timer queue.
-async function setup(opts: { script?: Record<string, ToolOutcome[]>; loseNextReply?: boolean; paused?: () => boolean; cli?: (op: Operation) => Promise<Mapped>; cliRead?: (op: Operation) => Promise<{ mapped: Mapped; detail: string } | undefined> } = {}) {
+async function setup(opts: { script?: Record<string, ToolOutcome[]>; loseNextReply?: boolean; paused?: () => boolean; resendHold?: (op: Operation) => string | undefined; cli?: (op: Operation) => Promise<Mapped>; cliRead?: (op: Operation) => Promise<{ mapped: Mapped; detail: string } | undefined> } = {}) {
   const dir = await mkdtemp(join(tmpdir(), "chrn-exec-"))
   dirs.push(dir)
   let now = T0
@@ -190,6 +194,7 @@ async function setup(opts: { script?: Record<string, ToolOutcome[]>; loseNextRep
       onChange: (op) => settled.push(structuredClone(op)),
       ...(opts.loseNextReply ? { loseNextReply: true } : {}),
       ...(opts.paused ? { paused: opts.paused } : {}),
+      ...(opts.resendHold ? { resendHold: opts.resendHold } : {}),
       ...(opts.cli ? { cli: opts.cli } : {}),
       ...(opts.cliRead ? { cliRead: opts.cliRead } : {}),
     })
@@ -224,7 +229,7 @@ function card(kind: "trade" | "swap", extra: Partial<Card> = {}): Card {
     expiresAt: new Date(T0 + 60_000).toISOString(),
     params,
     cardHash: "h",
-    origin: { clientId: "h1", role: "harness" },
+    origin: { clientId: "h1", role: "harness", source: "agent" },
     wallet: "W",
     account: "acct_fake",
     mode: "live",
@@ -352,6 +357,7 @@ describe("execute", () => {
     // A new core, on the same journal.
     const restarted = s.make(s.journal)
     const turned = await restarted.rebuild(s.journal.rows())
+    restarted.readBack()
     expect(turned).toEqual(["op-trade"])
     expect(s.journal.rows().at(-1)).toMatchObject({ type: "operation.unknown", opId: "op-trade", reason: "core_restarted" })
     await s.advance(0)
@@ -455,6 +461,7 @@ describe("a refused replay is an answer about the replay", () => {
     await s.journal.append({ type: "operation.submitting", mode: "live", agent: "momentum", opId: "op-swap", cardId: "card-op-swap", kind: "swap", tool: "candle_swap", params: card("swap").params, cardExpiresAt: T0 + 30_000 })
     const restarted = s.make(s.journal)
     await restarted.rebuild(s.journal.rows())
+    restarted.readBack()
     await s.advance(0)
     expect(restarted.get("op-swap")!.state).toBe("unknown")
     await s.advance(5_000)
@@ -468,6 +475,7 @@ describe("swaps after a restart", () => {
     await s.journal.append({ type: "operation.submitting", mode: "live", agent: "momentum", opId: "op-swap", cardId: "card-op-swap", kind: "swap", tool: "candle_swap", params: card("swap").params, cardExpiresAt: T0 - 1 })
     const restarted = s.make(s.journal)
     expect(await restarted.rebuild(s.journal.rows())).toEqual(["op-swap"])
+    restarted.readBack()
     await s.advance(60_000)
     expect(s.calls).toEqual([])
     expect(restarted.get("op-swap")!.state).toBe("unknown")
@@ -478,6 +486,7 @@ describe("swaps after a restart", () => {
     await s.journal.append({ type: "operation.submitting", mode: "live", agent: "momentum", opId: "op-swap", cardId: "card-op-swap", kind: "swap", tool: "candle_swap", params: card("swap").params, cardExpiresAt: T0 + 30_000 })
     const restarted = s.make(s.journal)
     await restarted.rebuild(s.journal.rows())
+    restarted.readBack()
     await s.advance(0)
     expect(restarted.get("op-swap")!.state).toBe("succeeded")
     expect(s.calls.map((c) => c.args)).toEqual([card("swap").params])
@@ -690,6 +699,7 @@ describe("the kill switch and an operation Candle didn't answer", () => {
     await s.journal.append({ type: "operation.submitting", mode: "live", agent: "momentum", opId: "op-tee", cardId: "card-op-tee", kind: "trade", tool: "candle_trade", params: { argv: ["swap"] }, cardExpiresAt: T0 + 60_000, route: "cli", wallet: "W", side: "buy" })
     const restarted = s.make(s.journal)
     await restarted.rebuild(s.journal.rows())
+    restarted.readBack()
     await expect(restarted.resolve("v1", "op-tee", "resend")).rejects.toThrow(/PAUSED|paused/)
   })
 
@@ -799,4 +809,122 @@ test("the core's log has a line per operation step, and none for anything else",
   expect(operationLogLine({ ...op, type: "operation.refused", error: { code: "MCP_VALIDATION" } })).toBe("22:08:43 agent-a 2c2a03da refused: MCP_VALIDATION")
   expect(operationLogLine({ ...op, type: "operation.succeeded" })).toBe("22:08:43 agent-a 2c2a03da succeeded")
   expect(operationLogLine({ ...op, type: "card.approved" })).toBeUndefined()
+})
+
+describe("a bot's exit a restart cut off", () => {
+  const exitCard = (extra: Partial<Card> = {}) =>
+    card("trade", {
+      side: "sell",
+      params: { mint: MOON, side: "sell", amount: "10", clientTradeId: "op-trade" },
+      origin: { clientId: "core", role: "core", source: "agent", bot: { name: "conf", act: "exit", position: "p1", reason: "stop" } } as Card["origin"],
+      ...extra,
+    })
+  const filled = trade({ success: true, status: "executed", signature: "S" })
+  const cutOff = async (s: Awaited<ReturnType<typeof setup>>, botExit = true) => {
+    await s.journal.append({ type: "operation.submitting", mode: "live", agent: "momentum", opId: "op-trade", cardId: "card-op-trade", kind: "trade", tool: "candle_trade", params: exitCard().params, cardExpiresAt: T0 + 60_000, side: "sell", ...(botExit ? { botExit: true } : {}) })
+    const restarted = s.make(s.journal)
+    await restarted.rebuild(s.journal.rows())
+    restarted.readBack()
+    return restarted
+  }
+
+  test("its write-ahead row says it's a bot's exit", async () => {
+    const s = await setup({ script: { candle_trade: [filled] } })
+    await s.ops.execute(exitCard())
+    expect(s.journal.rows()[0]).toMatchObject({ type: "operation.submitting", botExit: true })
+    await s.ops.execute(card("trade", { opId: "op-2" }))
+    expect(s.journal.rows().find((r) => r.opId === "op-2")!.botExit).toBeUndefined()
+  })
+
+  test("with no record on Candle, the core sends it once more under the same id, and it settles", async () => {
+    const s = await setup({ script: { candle_get_operation: [notFound], candle_trade: [filled] } })
+    const restarted = await cutOff(s)
+    await s.advance(0)
+    expect(s.calls.map((c) => c.name)).toEqual(["candle_get_operation", "candle_trade"])
+    expect(s.calls[1]!.args).toEqual(exitCard().params)
+    expect(restarted.get("op-trade")!.state).toBe("succeeded")
+    expect(s.journal.rows().find((r) => r.type === "operation.resend")).toMatchObject({ by: "core", opId: "op-trade" })
+  })
+
+  test("only once: a re-send that's lost too is read back, never sent a third time, across another restart too", async () => {
+    const s = await setup({ script: { candle_get_operation: [notFound], candle_trade: [lost] } })
+    const restarted = await cutOff(s)
+    await s.advance(11 * 60_000)
+    expect(s.calls.filter((c) => c.name === "candle_trade")).toHaveLength(1)
+    expect(restarted.get("op-trade")!.state).toBe("unknown")
+    // The person's re-send still works.
+    expect((await restarted.resolve("v1", "op-trade", "resend")).opId).toBe("op-trade")
+    expect(s.calls.filter((c) => c.name === "candle_trade")).toHaveLength(2)
+    const again = s.make(s.journal)
+    await again.rebuild(s.journal.rows())
+    again.readBack()
+    await s.advance(11 * 60_000)
+    expect(s.calls.filter((c) => c.name === "candle_trade")).toHaveLength(2)
+  })
+
+  test("a re-send Candle refuses (rate-limited) is read again, and never re-sent by the core a second time", async () => {
+    const s = await setup({ script: { candle_get_operation: [notFound], candle_trade: [tradeError({ code: "RATE_LIMITED", retryable: true })] } })
+    const restarted = await cutOff(s)
+    await s.advance(11 * 60_000)
+    expect(s.calls.filter((c) => c.name === "candle_trade")).toHaveLength(1)
+    expect(s.journal.rows().some((r) => r.type === "operation.resend_refused")).toBe(true)
+    expect(restarted.get("op-trade")!.state).toBe("unknown")
+  })
+
+  test("a read that isn't Candle's no-record (its child not up) spends nothing: the next read decides", async () => {
+    const s = await setup({ script: { candle_get_operation: [{ kind: "error", code: "CANDLE_MCP_DOWN", retryable: true, body: undefined }, notFound], candle_trade: [filled] } })
+    const restarted = await cutOff(s)
+    await s.advance(0)
+    expect(s.calls.map((c) => c.name)).toEqual(["candle_get_operation"])
+    await s.advance(5_000)
+    expect(s.calls.map((c) => c.name)).toEqual(["candle_get_operation", "candle_get_operation", "candle_trade"])
+    expect(restarted.get("op-trade")!.state).toBe("succeeded")
+  })
+
+  test("any other trade Candle has no record of after a restart waits for the person", async () => {
+    const s = await setup({ script: { candle_get_operation: [notFound], candle_trade: [filled] } })
+    const restarted = await cutOff(s, false)
+    await s.advance(11 * 60_000)
+    expect(s.calls.filter((c) => c.name === "candle_trade")).toHaveLength(0)
+    expect(restarted.get("op-trade")!.state).toBe("unknown")
+  })
+
+  test("held as the core's other sells are (failed sells, one in flight, the pace): not re-sent while held, re-sent at the next read once it lifts", async () => {
+    let hold: string | undefined = "two sells of MOON in a row failed on momentum's key"
+    const asked: string[] = []
+    const s = await setup({
+      script: { candle_get_operation: [notFound], candle_trade: [filled] },
+      resendHold: (op) => {
+        asked.push(op.opId)
+        return hold
+      },
+    })
+    const restarted = await cutOff(s)
+    await s.advance(0)
+    expect(asked).toEqual(["op-trade"])
+    expect(s.calls.filter((c) => c.name === "candle_trade")).toHaveLength(0)
+    expect(restarted.get("op-trade")!.state).toBe("unknown")
+    hold = undefined
+    await s.advance(11 * 60_000)
+    expect(s.calls.filter((c) => c.name === "candle_trade")).toHaveLength(1)
+    expect(restarted.get("op-trade")!.state).toBe("succeeded")
+    expect(s.journal.rows().find((r) => r.type === "operation.resend")).toMatchObject({ by: "core", opId: "op-trade" })
+  })
+
+  test("the person's own re-send is never held by what holds the core's", async () => {
+    const s = await setup({ script: { candle_get_operation: [notFound], candle_trade: [filled] }, resendHold: () => "held" })
+    const restarted = await cutOff(s)
+    await s.advance(0)
+    expect(s.calls.filter((c) => c.name === "candle_trade")).toHaveLength(0)
+    await restarted.resolve("v1", "op-trade", "resend")
+    expect(restarted.get("op-trade")!.state).toBe("succeeded")
+  })
+
+  test("a bot's exit whose answer was lost with no restart waits for the person too", async () => {
+    const s = await setup({ script: { candle_trade: [lost], candle_get_operation: [notFound] } })
+    await s.ops.execute(exitCard())
+    await s.advance(11 * 60_000)
+    expect(s.calls.filter((c) => c.name === "candle_trade")).toHaveLength(1)
+    expect(s.ops.get("op-trade")!.state).toBe("unknown")
+  })
 })

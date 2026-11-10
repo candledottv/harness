@@ -1,0 +1,171 @@
+{
+  "engine": "pi",
+  "model": "openrouter/anthropic/claude-haiku-5.5",
+  "ran": {
+    "engine": "pi",
+    "engineVersion": "1.4.0",
+    "model": "openrouter/anthropic/claude-haiku-5.5",
+    "answeredModel": "openrouter/anthropic/claude-haiku-5.5"
+  },
+  "at": "2026-11-04T21:05:35.793Z",
+  "results": [
+    {
+      "id": "woken",
+      "pass": true,
+      "checks": [
+        {
+          "name": "the turn ended with a reply",
+          "pass": true
+        },
+        {
+          "name": "bought MOON without a card",
+          "pass": true
+        },
+        {
+          "name": "said what woke it",
+          "pass": true
+        },
+        {
+          "name": "named no address it didn't read",
+          "pass": true
+        }
+      ],
+      "notes": {
+        "skillRead": false,
+        "tools": [
+          "mcp__candle__candle_get_market",
+          "mcp__candle__candle_token_forensics",
+          "mcp__candle__candle_resolve_token",
+          "mcp__candle__candle_trade"
+        ],
+        "figures": 3,
+        "marked": 0,
+        "ms": 8321
+      },
+      "turns": [
+        {
+          "user": "woken by the trigger \"conf\": a confluence signal on MOON at 21:05",
+          "reply": "The confluence wake on MOON (21:05) fired, and I bought $1 of MOON because its market cap is about $1M, under your $2M rule. It ran without a card, inside the embedded wallet's limits, and succeeded at about 0.0067 SOL.\n\nI checked the safety read before buying: all six flags came back clear (mint and freeze authority, token extensions, LP lock, sellability, liquidity drain). The price was $0.63 with $100K liquidity. The token's address was not a name match, so this is the one Candle launched.",
+          "outcome": "done"
+        }
+      ],
+      "record": {
+        "turns": [
+          {
+            "user": "woken by the trigger \"conf\": a confluence signal on MOON at 21:05",
+            "reply": "The confluence wake on MOON (21:05) fired, and I bought $1 of MOON because its market cap is about $1M, under your $2M rule. It ran without a card, inside the embedded wallet's limits, and succeeded at about 0.0067 SOL.\n\nI checked the safety read before buying: all six flags came back clear (mint and freeze authority, token extensions, LP lock, sellability, liquidity drain). The price was $0.63 with $100K liquidity. The token's address was not a name match, so this is the one Candle launched.",
+            "outcome": "done",
+            "tools": [
+              "mcp__candle__candle_get_market",
+              "mcp__candle__candle_token_forensics",
+              "mcp__candle__candle_resolve_token",
+              "mcp__candle__candle_trade"
+            ],
+            "reasked": false,
+            "figures": 3,
+            "marked": []
+          }
+        ],
+        "cards": [
+          {
+            "state": "created",
+            "tool": "candle_trade",
+            "kind": "trade",
+            "side": "buy",
+            "mint": "MoonFake11111111111111111111111111111111111",
+            "params": {
+              "mint": "MoonFake11111111111111111111111111111111111",
+              "side": "buy",
+              "amount": "0.006666666",
+              "clientTradeId": "47e4a048-39c2-4d11-8021-a0466290ac64"
+            },
+            "how": "inside-limits"
+          }
+        ],
+        "memory": "# Memory\n\n- confluence wakes: when a confluence signal wakes me, buy $1 of the token if its market cap is under $2M; otherwise don't trade (the person, 2026-11-04)\n",
+        "memoryFiles": {},
+        "memoryChanges": 0,
+        "hacc": [
+          "GET /v1/signals/stream",
+          "GET /v1/market/token/MoonFake11111111111111111111111111111111111/history"
+        ]
+      },
+      "ran": {
+        "engine": "pi",
+        "engineVersion": "1.4.0",
+        "model": "openrouter/anthropic/claude-haiku-5.5",
+        "answeredModel": "openrouter/anthropic/claude-haiku-5.5"
+      }
+    },
+    {
+      "id": "woken-skip",
+      "pass": true,
+      "checks": [
+        {
+          "name": "the turn ended with a reply",
+          "pass": true
+        },
+        {
+          "name": "proposed nothing",
+          "pass": true
+        },
+        {
+          "name": "said what woke it",
+          "pass": true
+        },
+        {
+          "name": "named no address it didn't read",
+          "pass": true
+        }
+      ],
+      "notes": {
+        "skillRead": false,
+        "tools": [
+          "mcp__candle__candle_resolve_token",
+          "mcp__candle__hacc_signals"
+        ],
+        "figures": 2,
+        "marked": 0,
+        "ms": 7562
+      },
+      "turns": [
+        {
+          "user": "woken by the trigger \"conf\": a confluence signal on MOON at 21:05",
+          "reply": "The confluence signal on MOON woke me, and I didn't trade. My standing rule is to buy $1 only when market cap is under $500k. Candle's market read for MOON (the mint you gave, Solana, just now) shows a market cap of $1,000,000 at $0.63 a token, with $100,000 liquidity. That's above the limit, so I left it alone.\n\nThe tape shows the signal came from a single wallet's swap at 21:05 and an earlier one at 21:03 on a different token. I didn't run a token safety check, since I'm not buying.",
+          "outcome": "done"
+        }
+      ],
+      "record": {
+        "turns": [
+          {
+            "user": "woken by the trigger \"conf\": a confluence signal on MOON at 21:05",
+            "reply": "The confluence signal on MOON woke me, and I didn't trade. My standing rule is to buy $1 only when market cap is under $500k. Candle's market read for MOON (the mint you gave, Solana, just now) shows a market cap of $1,000,000 at $0.63 a token, with $100,000 liquidity. That's above the limit, so I left it alone.\n\nThe tape shows the signal came from a single wallet's swap at 21:05 and an earlier one at 21:03 on a different token. I didn't run a token safety check, since I'm not buying.",
+            "outcome": "done",
+            "tools": [
+              "mcp__candle__candle_resolve_token",
+              "mcp__candle__hacc_signals"
+            ],
+            "reasked": false,
+            "figures": 2,
+            "marked": []
+          }
+        ],
+        "cards": [],
+        "memory": "# Memory\n\n- confluence wakes: when a confluence signal wakes me, buy $1 of the token if its market cap is under $500k; otherwise don't trade (the person, 2026-11-04)\n",
+        "memoryFiles": {},
+        "memoryChanges": 0,
+        "hacc": [
+          "GET /v1/signals/stream",
+          "GET /v1/signals",
+          "GET /v1/market/token/MoonFake11111111111111111111111111111111111/history"
+        ]
+      },
+      "ran": {
+        "engine": "pi",
+        "engineVersion": "1.4.0",
+        "model": "openrouter/anthropic/claude-haiku-5.5",
+        "answeredModel": "openrouter/anthropic/claude-haiku-5.5"
+      }
+    }
+  ]
+}

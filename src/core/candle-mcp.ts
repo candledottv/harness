@@ -18,7 +18,7 @@ import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js"
 import { ErrorCode, type JSONRPCMessage, McpError, type Tool, ToolListChangedNotificationSchema } from "@modelcontextprotocol/sdk/types.js"
 import { allowEnv, type LaunchSpec, type LongChild, spawnChild } from "../shared/child"
 import { VERSION } from "../version"
-import { type KeyBudget, metered, requestsOf } from "./key-budget"
+import { type KeyBudget, MCP_LIST_REQUESTS, MCP_START_REQUESTS, metered, requestsOf } from "./key-budget"
 import { utf8Bytes } from "./usage"
 
 /** The oldest server the Candle Harness works with (the one bundled in `candle` 0.11.40). */
@@ -271,7 +271,10 @@ export class CandleMcpChild {
         await client.close()
         return
       }
+      // The server asked the key about its profile as it started, and does again on every tools/list: the key's limit counts both.
+      this.options.meter?.noteCall(this.agent, MCP_START_REQUESTS)
       client.setNotificationHandler(ToolListChangedNotificationSchema, async () => {
+        this.options.meter?.noteCall(this.agent, MCP_LIST_REQUESTS)
         this.toolList = await listAllTools(client).catch(() => this.toolList)
       })
       this.toolList = await listAllTools(client)
@@ -286,13 +289,14 @@ export class CandleMcpChild {
     }
   }
 
-  async call(name: string, args: Record<string, unknown>, opts: { timeoutMs?: number } = {}): Promise<ToolOutcome> {
+  /** `uncounted`: a read Candle doesn't count toward the key's limit (its market read, measured), so the budget counts none. */
+  async call(name: string, args: Record<string, unknown>, opts: { timeoutMs?: number; uncounted?: boolean } = {}): Promise<ToolOutcome> {
     const client = this.client
     if (!client || this.current.state !== "ready") {
       const why = "reason" in this.current ? this.current.reason : this.current.state
       return { kind: "error", code: "CANDLE_MCP_DOWN", retryable: true, body: { message: `Candle isn't connected for ${this.agent}: ${why}` } }
     }
-    return metered(this.options.meter, this.agent, () => this.send(client, name, args, opts), requestsOf(name))
+    return metered(this.options.meter, this.agent, () => this.send(client, name, args, opts), opts.uncounted ? 0 : requestsOf(name))
   }
 
   private async send(client: Client, name: string, args: Record<string, unknown>, opts: { timeoutMs?: number }): Promise<ToolOutcome> {

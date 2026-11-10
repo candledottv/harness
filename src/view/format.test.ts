@@ -1,7 +1,7 @@
 // Data honesty, in one formatter: missing is "—", never 0; stale is marked; converted
 // figures carry ≈; and text wraps to the pane without losing words.
-import { expect, test } from "bun:test"
-import { ago, amount, approxUsd, compactUsd, exact, pct, qty, shortAddress, usd, wrap } from "./format"
+import { describe, expect, test } from "bun:test"
+import { ago, amount, approxUsd, compactUsd, exact, paperRefusal, pct, qty, shortAddress, usd, wrap } from "./format"
 
 test("a missing figure is —, never $0.00", () => {
   expect(usd(null)).toBe("—")
@@ -73,4 +73,16 @@ test("the exact figure keeps every decimal, for details", () => {
   expect(exact(0.00294429955)).toBe("0.00294429955")
   expect(exact(1240.6)).toBe("1,240.6")
   expect(exact(undefined)).toBe("—")
+})
+
+describe("a refused paper trade, in words", () => {
+  test("a rate-limited key says so plainly, not as the answer's JSON", () => {
+    const answer = JSON.stringify({ clientTradeId: "d4af7418", resolved: { amountDecimal: "0.011226326", decimals: 9 }, api: { success: false, error: { code: "RATE_LIMITED", message: "Too many requests for this key", retryable: true } } })
+    expect(paperRefusal(answer)).toBe("Candle is rate-limiting this key. Nothing was sent; try again in a moment.")
+  })
+
+  test("a code with no plain message keeps Candle's own words and the code; text that isn't JSON is shown as it came", () => {
+    expect(paperRefusal(JSON.stringify({ error: { code: "SOMETHING_NEW", message: "The pool is paused" } }))).toBe("The pool is paused (SOMETHING_NEW)")
+    expect(paperRefusal("no route for this token")).toBe("no route for this token")
+  })
 })

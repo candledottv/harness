@@ -122,6 +122,90 @@ describe("rows in words", () => {
     expect(e!.tone).toBe("warn")
   })
 
+  test("a trigger's card life names the trigger, and its firing, its wait and its hold are rows in words", async () => {
+    const t = await journalAt()
+    const trig = { trigger: "dip", fireId: "fire_1", part: 0 }
+    await t.add({ type: "trigger.fired", mode: "live", agent: "momentum", name: "dip", fireId: "fire_1", class: "event", words: "someone called it from outside" })
+    await t.add({ type: "card.created", mode: "live", agent: "momentum", cardId: "card_t", opId: "op_t", role: "core", clientId: "core:triggers", ...trig, kind: "trade", tool: "candle_trade", params: { mint: JUP, side: "buy", amount: "0.006" }, mint: JUP, side: "buy", wallet: "Embed1111", headline: "Buy 0.006 SOL of JUP", title: "buy" })
+    await t.add({ type: "card.approved", mode: "live", agent: "momentum", cardId: "card_t", opId: "op_t", how: "inside-limits", side: "buy", ...trig })
+    await t.add({ type: "trigger.waiting", mode: "live", agent: "momentum", name: "dip", fireId: "fire_2", cardId: "card_u", words: "Buy 0.02 SOL of JUP waits for you: the embedded wallet asks every time" })
+    await t.add({ type: "trigger.held", mode: "live", agent: "momentum", name: "dip", fireId: "fire_3", reason: "paused", words: "the kill switch holds its buy, so it wasn't sent" })
+    const texts = (await queryJournal({ kinds: ["trades", "agents"] }, deps(t.j))).entries.map((e) => e.text)
+    expect(texts).toEqual([
+      `trigger "dip": the kill switch holds its buy, so it wasn't sent`,
+      `trigger "dip": Buy 0.02 SOL of JUP waits for you: the embedded wallet asks every time`,
+      `trigger "dip" proposed Buy 0.006 SOL of JUP from embedded · without a card, inside its wallet's limits · approved, not sent yet`,
+      `trigger "dip" fired: someone called it from outside`,
+    ])
+  })
+
+  test("a bot's rows are the bots kind, in words: its card life says the bot's, its fill without a card, and a paper bot's are paper", async () => {
+    const t = await journalAt()
+    const origin = { bot: "conf", botAct: "entry", botSignal: 7 }
+    // The Candle Harness is live; the bot trades on paper.
+    await t.add({ type: "bot.entering", mode: "live", agent: "momentum", name: "conf", signalId: 7, mint: JUP, usd: 2, botMode: "paper", words: "buys $2.00 of JUP on a confluence signal at 09:00, on paper" })
+    await t.add({ type: "paper.call", mode: "paper", agent: "momentum", role: "core", ...origin, tool: "candle_trade", args: { mint: JUP, side: "buy", amountUsd: 2 }, isError: false, answer: JSON.stringify({ api: { paper: true, side: "buy", mint: JUP, quoteAsset: "sol", amountRaw: "10000000", tokenAmount: 5 } }) })
+    // A live bot's exit, sold without a card.
+    const exit = { bot: "live-one", botAct: "exit", botPosition: "op_1", botReason: "take_profit" }
+    await t.add({ type: "bot.exiting", mode: "live", agent: "momentum", name: "live-one", position: "op_1", mint: JUP, reason: "take_profit", botMode: "live", words: "sells 100 JUP: a take profit at +50%" })
+    await t.add({ type: "card.created", mode: "live", agent: "momentum", cardId: "card_x", opId: "op_x", role: "core", ...exit, kind: "trade", tool: "candle_trade", params: { mint: JUP, side: "sell", amount: "100" }, mint: JUP, side: "sell", wallet: "Embed1111", headline: "Sell 100 JUP", title: "sell" })
+    await t.add({ type: "card.approved", mode: "live", agent: "momentum", cardId: "card_x", opId: "op_x", how: "bot-exit", side: "sell", ...exit })
+    await t.add({ type: "operation.submitting", mode: "live", agent: "momentum", opId: "op_x", cardId: "card_x", kind: "trade", tool: "candle_trade" })
+    t.tick(3_000)
+    await t.add({ type: "operation.succeeded", mode: "live", agent: "momentum", opId: "op_x", cardId: "card_x" })
+    await t.add({ type: "bot.skipped", mode: "live", agent: "momentum", name: "conf", reason: "slot_full", count: 4, words: "4 signals, the last because every slot is full" })
+    const all = (await queryJournal({}, deps(t.j))).entries
+    expect(all.map((e) => [e.kind, e.mode, e.text])).toEqual([
+      ["bots", "live", 'the bot "conf" skipped 4 signals, the last because every slot is full'],
+      ["bots", "live", 'the bot "live-one" proposed Sell 100 JUP from embedded · without a card, as its bot\'s exit · filled in 3.0 s'],
+      ["bots", "live", 'the bot "live-one" sells 100 JUP: a take profit at +50%'],
+      ["bots", "paper", 'paper buy JUP by the bot "conf" (as momentum): ≈5 JUP at the quoted price'],
+      ["bots", "paper", 'the bot "conf" buys $2.00 of JUP on a confluence signal at 09:00, on paper'],
+    ])
+    // The trades chip alone leaves them out: a busy bot would bury your own trades.
+    expect((await queryJournal({ kinds: ["trades"] }, deps(t.j))).entries).toEqual([])
+  })
+
+  test("a code bot's trade says it's a code bot's and gives its request id; what it says and its process are the bots kind", async () => {
+    const t = await journalAt()
+    const origin = { bot: "grid", botAct: "entry", botKind: "code", botRequest: "buy-0042" }
+    await t.add({ type: "bot.request", mode: "live", kind: "code", agent: "momentum", name: "grid", request: "buy-0042", side: "buy", mint: JUP, usd: 1, botMode: "live", wallet: "embedded", words: "buys $1.00 of JUP" })
+    await t.add({ type: "card.created", mode: "live", agent: "momentum", cardId: "card_c", opId: "op_c", role: "core", ...origin, kind: "trade", tool: "candle_trade", params: { mint: JUP, side: "buy", amountUsd: 1 }, mint: JUP, side: "buy", wallet: "Embed1111", headline: "Buy $1.00 of JUP", title: "buy" })
+    await t.add({ type: "card.approved", mode: "live", agent: "momentum", cardId: "card_c", opId: "op_c", how: "inside-limits", side: "buy", ...origin })
+    await t.add({ type: "operation.submitting", mode: "live", agent: "momentum", opId: "op_c", cardId: "card_c", kind: "trade", tool: "candle_trade" })
+    t.tick(2_000)
+    await t.add({ type: "operation.succeeded", mode: "live", agent: "momentum", opId: "op_c", cardId: "card_c" })
+    await t.add({ type: "bot.event", mode: "live", kind: "code", agent: "momentum", name: "grid", word: "needs-a-look", text: "spread above 8%" })
+    const all = (await queryJournal({}, deps(t.j))).entries
+    expect(all.map((e) => [e.kind, e.text])).toEqual([
+      ["bots", 'the code bot "grid" says "needs-a-look": spread above 8%'],
+      ["bots", 'the code bot "grid" proposed Buy $1.00 of JUP from embedded · its request buy-0042 · without a card, inside its wallet\'s limits · filled in 2.0 s'],
+      ["bots", 'the code bot "grid" buys $1.00 of JUP'],
+    ])
+  })
+
+  test("a bot's entry written before its token had a name says the name known now; paper amounts as the screen rounds them", async () => {
+    const t = await journalAt()
+    await t.add({ type: "bot.entering", mode: "live", agent: "momentum", name: "conf", signalId: 8, mint: JUP, usd: 2, botMode: "paper", words: "buys $2.00 of JUPy…DvCN on a confluence signal at 09:00, on paper" })
+    await t.add({ type: "paper.call", mode: "paper", agent: "momentum", role: "core", bot: "conf", botAct: "entry", botSignal: 8, tool: "candle_trade", args: { mint: JUP, side: "buy", amountUsd: 2 }, isError: false, answer: JSON.stringify({ api: { paper: true, side: "buy", mint: JUP, quoteAsset: "sol", amountRaw: "10000000", tokenAmount: 17479.380519 } }) })
+    const texts = (await queryJournal({}, deps(t.j))).entries.map((e) => e.text)
+    expect(texts).toEqual(['paper buy JUP by the bot "conf" (as momentum): ≈17,479 JUP at the quoted price', 'the bot "conf" buys $2.00 of JUP on a confluence signal at 09:00, on paper'])
+  })
+
+  test("a bot's exit the core re-sent after a restart says the Candle Harness re-sent it, never the person", async () => {
+    const t = await journalAt()
+    const exit = { bot: "live-one", botAct: "exit", botPosition: "op_1", botReason: "stop" }
+    await t.add({ type: "card.created", mode: "live", agent: "momentum", cardId: "card_x", opId: "op_x", role: "core", ...exit, kind: "trade", tool: "candle_trade", params: { mint: JUP, side: "sell", amount: "100" }, mint: JUP, side: "sell", wallet: "Embed1111", headline: "Sell 100 JUP", title: "sell" })
+    await t.add({ type: "card.approved", mode: "live", agent: "momentum", cardId: "card_x", opId: "op_x", how: "bot-exit", side: "sell", ...exit })
+    await t.add({ type: "operation.submitting", mode: "live", agent: "momentum", opId: "op_x", cardId: "card_x", kind: "trade", tool: "candle_trade", botExit: true })
+    await t.add({ type: "operation.unknown", mode: "live", agent: "momentum", opId: "op_x", cardId: "card_x", reason: "core_restarted" })
+    await t.add({ type: "operation.resend", mode: "live", agent: "momentum", opId: "op_x", by: "core" })
+    await t.add({ type: "operation.succeeded", mode: "live", agent: "momentum", opId: "op_x", cardId: "card_x" })
+    const [e] = (await queryJournal({}, deps(t.j))).entries
+    expect(e!.text).toContain("· re-sent by the Candle Harness once: the core restarted mid-sell and Candle had no record of it ·")
+    expect(e!.text).toContain("· filled in")
+  })
+
   test("a trade the core ran without a card says so, never that the person approved it", async () => {
     const t = await journalAt()
     await t.add({ type: "card.created", mode: "live", agent: "momentum", cardId: "card_9", opId: "op_9", role: "harness", kind: "trade", tool: "candle_trade", params: { mint: JUP, side: "buy", amount: "0.006" }, mint: JUP, side: "buy", wallet: "Embed1111", headline: "Buy 0.006 SOL of JUP", title: "buy" })
@@ -183,6 +267,21 @@ describe("rows in words", () => {
       ["kill", "kill switch on: buys paused"],
       ["agents", 'you asked momentum: "what about JUP?" · answered in 8.2 s · 2 tool calls'],
       ["core", "the core started in live mode, version 0.0.0, with momentum"],
+    ])
+  })
+
+  test("a woken turn names its trigger, never the person; a card from it says what woke it", async () => {
+    const t = await journalAt()
+    await t.add({ type: "trigger.woke", mode: "live", agent: "momentum", name: "conf", fireId: "fire_1", woke: "momentum", turnId: "t_3", words: "a confluence signal on BONK at 14:02" })
+    await t.add({ type: "agent.turn_started", mode: "live", agent: "momentum", turnId: "t_3", engine: "claude-code", woken: ["conf"], fireIds: ["fire_1"] })
+    t.tick(5_000)
+    await t.add({ type: "agent.turn", mode: "live", agent: "momentum", turnId: "t_3", user: 'woken by the trigger "conf": a confluence signal on BONK at 14:02', reply: "Bought.", tools: [], outcome: "done", woken: ["conf"], fireIds: ["fire_1"] })
+    await t.add({ type: "trigger.wake_skipped", mode: "live", agent: "momentum", name: "conf", fireId: "fire_2", woke: "momentum", words: "momentum was woken 4 times in the last hour, its most (wake.perHour = 4), so it wasn't woken" })
+    const entries = (await queryJournal({}, deps(t.j))).entries
+    expect(entries.map((e) => e.text)).toEqual([
+      'trigger "conf": momentum was woken 4 times in the last hour, its most (wake.perHour = 4), so it wasn\'t woken',
+      'trigger "conf" woke momentum · answered in 5.0 s',
+      'trigger "conf" woke momentum: a confluence signal on BONK at 14:02',
     ])
   })
 

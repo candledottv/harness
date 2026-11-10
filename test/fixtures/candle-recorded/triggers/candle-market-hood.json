@@ -1,0 +1,54 @@
+{
+  "name": "candle-market-hood",
+  "host": "candle",
+  "route": "/api/v1/markets/hood/0xfa4e000000000000000000000000000000000001",
+  "query": {},
+  "status": 200,
+  "ms": 175,
+  "bytes": 875,
+  "answer": {
+    "success": true,
+    "market": {
+      "chain": "hood",
+      "mint": "0xfa4e000000000000000000000000000000000001",
+      "lifecycle": "fake-lifecycle-1",
+      "buysOpen": true,
+      "sellsOpen": true,
+      "curveAddress": null,
+      "poolAddress": null,
+      "quoteMint": null,
+      "feeBps": 0,
+      "graduationVenue": "fake-graduationVenue-1",
+      "tier": null,
+      "crossingModel": "fake-crossingModel-1",
+      "metadata": {
+        "name": "fake-name-1",
+        "symbol": "fake-symbol-1",
+        "description": "fake-description-1",
+        "image": "https://candle.example/image-1",
+        "socials": {},
+        "onChain": false,
+        "version": null
+      },
+      "decimals": 18,
+      "migration": {
+        "status": "not_started"
+      },
+      "external": true,
+      "jupiterOk": false,
+      "externalTradeable": true,
+      "paperDiscoveryOk": true,
+      "organic0LiveOk": false,
+      "venue": "hood-dex",
+      "candleLaunched": false,
+      "launchpad": null,
+      "trade": {
+        "endpoint": "fake-endpoint-1",
+        "routable": true
+      },
+      "priceUsd": 0.000018583821555883343,
+      "marketCap": 18583.821555883344,
+      "liquidityUsd": 4887.66844981129
+    }
+  }
+}

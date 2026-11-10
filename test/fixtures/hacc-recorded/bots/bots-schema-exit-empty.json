@@ -1,0 +1,30 @@
+{
+  "name": "schema-exit-empty",
+  "host": "hacc",
+  "method": "POST",
+  "route": "/v1/strategy-lab/replay",
+  "query": {},
+  "body": {
+    "definition": {
+      "chain": "solana",
+      "entry": {
+        "source": "pattern",
+        "pattern": "confluence",
+        "filters": {}
+      },
+      "exit": {},
+      "sizing": {
+        "usd_per_trade": 5,
+        "max_concurrent": 2
+      }
+    },
+    "from": "2026-10-01T00:00:00Z",
+    "to": "2026-10-30T00:00:00Z"
+  },
+  "status": 400,
+  "ms": 134,
+  "bytes": 141,
+  "answer": {
+    "error": "exit: exit must include at least one of take_profit_pct, stop_loss_pct, max_hold_hours, exit_on_signal: true, ladder, or trailing"
+  }
+}

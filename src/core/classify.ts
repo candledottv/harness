@@ -18,7 +18,7 @@ export type Mode = "paper" | "live"
  * `owner`, `ceremony`, `funds-out` and `read`: cards that run in the prompt pane, by
  * their row's rule. A read only becomes a card there when it asks at the CLI's own prompt (`tee fund`).
  */
-export type CardKind = "trade" | "swap" | "lessaccess" | "launch" | "stake" | "claim" | "public" | "upload" | "lp" | "close" | "owner" | "ceremony" | "funds-out" | "hacc" | "autonomy" | "read" | "unknown"
+export type CardKind = "trade" | "swap" | "lessaccess" | "launch" | "stake" | "claim" | "public" | "upload" | "lp" | "close" | "owner" | "ceremony" | "funds-out" | "hacc" | "autonomy" | "trigger" | "bot" | "read" | "unknown"
 /** The id field a tool already has, or `coreOpId` for a tool with none (the core keeps the id). */
 export type IdKey = "clientTradeId" | "clientSwapId" | "clientLaunchId" | "clientStakeId" | "coreOpId"
 
@@ -96,6 +96,12 @@ export const TOOL_CLASSES: Readonly<Record<string, ToolClass>> = {
   candle_get_fees: READ,
   // New in server 0.10.29: a launch with first buys, checked and priced, building and reserving nothing.
   candle_atomic_launch_dry_run: READ,
+  // New in server 0.10.30: a token's OHLC bars (keyless), the key's paper book and paper P&L, and the
+  // account's P&L across its agent keys. Reads only.
+  candle_get_price_history: READ,
+  candle_get_paper_inventory: READ,
+  candle_get_profile_paper: READ,
+  candle_get_account_pnl: READ,
   candle_get_staking: READ,
   candle_perps_markets: READ,
   candle_perps_market: READ,
@@ -159,6 +165,14 @@ export const TOOL_CLASSES: Readonly<Record<string, ToolClass>> = {
     reason: "Every trade the Candle Harness runs is recorded by Candle already: the embedded wallet's by Candle itself, a TEE wallet's by candle swap, which submits it to Candle.",
     listed: false,
   },
+  // New in server 0.10.30: the spend half of a candle_trade built with deferExecution. The Candle Harness's card
+  // is already the quote and the spend on one press, so a built trade has nothing to wait for.
+  candle_trade_execute: {
+    class: "refused",
+    code: "NOT_NEEDED",
+    reason: "The Candle Harness's card is the quote: the person's press on it spends. Propose the trade with candle_trade, without deferExecution.",
+    listed: false,
+  },
   // Perps writes.
   candle_perps_setup: PERPS,
   candle_perps_open: PERPS,
@@ -176,6 +190,56 @@ export const TOOL_CLASSES: Readonly<Record<string, ToolClass>> = {
   // Funds out: never offered to the agent.
   candle_transfer: TRANSFER,
   candle_sweep: TRANSFER,
+}
+
+/**
+ * The arguments each of Candle's card tools takes, as recorded from its server, and the Candle Harness's own beside
+ * them. A card is made only from arguments named here: one the table doesn't know is refused by name before a
+ * card exists, so a new argument on a known tool can never ride a card unshown. classify.drift.test.ts keeps
+ * each list equal to the recorded schema's, so a new argument fails the build as a new tool does.
+ */
+export const CARD_TOOL_ARGS: Readonly<Record<string, readonly string[]>> = {
+  candle_trade: ["mint", "side", "amount", "percent", "quoteAsset", "maxSlippageBps", "clientTradeId", "paper", "deferExecution"],
+  candle_swap: ["from", "to", "amount", "amountRaw", "maxSlippageBps", "clientSwapId"],
+  candle_set_profile_wallets: ["keyPrefix", "walletIds"],
+  candle_launch_token: ["clientLaunchId", "name", "symbol", "imageUrl", "bannerUrl", "description", "chain", "quoteAsset", "mode", "creatorFeeBps", "stakerAllocationBps", "poolOpen", "expPoolShape", "dexVersion", "visibility", "dryRun", "socials", "curve", "poolFee", "launchRules", "buyAmount"],
+  candle_launch_and_seed: ["clientLaunchId", "name", "symbol", "imageUrl", "bannerUrl", "description", "chain", "quoteAsset", "mode", "creatorFeeBps", "stakerAllocationBps", "poolOpen", "expPoolShape", "dexVersion", "visibility", "dryRun", "socials", "curve", "poolFee", "launchRules", "devBuy"],
+  candle_stake: ["payer", "linkedWalletId", "clientStakeId", "dryRun", "amountRaw"],
+  candle_unstake: ["payer", "linkedWalletId", "clientStakeId", "dryRun", "amountRaw"],
+  candle_finish_unstake: ["payer", "linkedWalletId", "clientStakeId", "dryRun", "withdrawal"],
+  candle_claim_fees: ["mint", "dryRun"],
+  candle_claim_staking_reward: ["rewardId"],
+  candle_update_profile: ["publicAvatar", "publicBanner", "publicThesis", "publicStrategy", "publicStrategyNote", "publicModels", "publicLinks"],
+  candle_create_post: ["text", "token"],
+  candle_delete_post: ["postId"],
+  candle_upload_profile_image: ["kind", "imageUrl"],
+  candle_token_edit: ["chain", "mint", "description", "socials", "idempotencyKey"],
+}
+/** The Candle Harness's own arguments on Candle's card tools: taken off before Candle sees them. */
+export const HARNESS_TOOL_ARGS: Readonly<Record<string, readonly string[]>> = {
+  candle_trade: ["amountUsd", "wallet"],
+  candle_swap: ["wallet", "paper"],
+  candle_launch_token: ["paper", "imagePath", "bannerPath"],
+  candle_launch_and_seed: ["paper", "imagePath", "bannerPath"],
+}
+
+/** The first argument a card tool doesn't take, or undefined when every one is known (or the tool has no list). */
+export function unknownArgument(tool: string, args: Record<string, unknown>): string | undefined {
+  if (!Object.hasOwn(CARD_TOOL_ARGS, tool)) return undefined
+  const known = new Set([...CARD_TOOL_ARGS[tool]!, ...(HARNESS_TOOL_ARGS[tool] ?? [])])
+  return Object.keys(args).find((key) => !known.has(key))
+}
+
+/** Where a card tool's argument list and Candle's recorded schema differ: empty when they agree. */
+export function argumentDrift(tools: readonly { name: string; inputSchema?: { properties?: Record<string, unknown> } }[], table: Readonly<Record<string, readonly string[]>> = CARD_TOOL_ARGS): string[] {
+  const problems: string[] = []
+  for (const [name, listed] of Object.entries(table)) {
+    const recorded = Object.keys(tools.find((t) => t.name === name)?.inputSchema?.properties ?? {})
+    for (const arg of recorded) if (!listed.includes(arg)) problems.push(`unlisted argument: ${name}.${arg}`)
+    for (const arg of listed) if (!recorded.includes(arg)) problems.push(`not an argument of ${name}: ${arg}`)
+  }
+  for (const [name, known] of Object.entries(TOOL_CLASSES)) if (known.class === "card" && !Object.hasOwn(table, name)) problems.push(`no argument list: ${name}`)
+  return problems
 }
 
 /** The values Candle's server reads as `paper: true` (agentic tools.ts, tradeShape's preprocess). */
@@ -199,6 +263,11 @@ export function classify(tool: string, args: Record<string, unknown>, mode: Mode
     return { class: "refused", code: "NO_PAPER_FORM", reason: "This is paper mode, and this has no paper form: switch to live to do it.", listed: true }
   }
   if (tool === "candle_trade") {
+    // deferExecution builds and spends nothing until candle_trade_execute: a card pressed on it would
+    // read as a filled trade that never ran. The card already quotes, then spends on the press.
+    if (truthyPaper(args.deferExecution)) {
+      return { class: "refused", code: "DEFER_NOT_USED", reason: "The Candle Harness's card is the quote, and the person's press spends: propose the trade without deferExecution.", listed: true }
+    }
     if (mode === "paper") return { class: "paper" }
     if (truthyPaper(args.paper)) {
       return { class: "refused", code: "PAPER_IN_LIVE_MODE", reason: "This is live mode: switch to paper mode for paper trades.", listed: true }

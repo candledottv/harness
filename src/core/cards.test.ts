@@ -10,7 +10,7 @@ import type { AgentStatus } from "./agent-status"
 import { BASE_ASSETS } from "./assets"
 import type { ToolOutcome } from "./candle-mcp"
 import type { WalletSetting } from "./autonomy"
-import { type Card, CardBook, type CardBookDeps, hashCard } from "./cards"
+import { type Card, CardBook, type CardBookDeps, CARDS_LIST_BYTES, CLOSED_CARDS_KEPT, hashCard, launchPublishes, launchTerms } from "./cards"
 import { classify, type Mode } from "./classify"
 import { Journal } from "./journal"
 import { byWalletWithoutCard, DaySpend, KeyHolds, Limits } from "./limits"
@@ -69,6 +69,12 @@ async function setup(
     wallets?: CardBookDeps["wallets"]
     /** The core's operations, those a restart rebuilt included. */
     operations?: CardBookDeps["operations"]
+    /** The other mints the core has read a token's name for. */
+    otherMints?: CardBookDeps["otherMints"]
+    /** Whether a harness token's turn was stopped. */
+    turnEnded?: CardBookDeps["turnEnded"]
+    /** The turn a harness token was minted for. */
+    turnOf?: CardBookDeps["turnOf"]
   } = {},
 ) {
   const dir = await mkdtemp(join(tmpdir(), "chrn-cards-"))
@@ -145,6 +151,9 @@ async function setup(
     autonomy: { get: (wallet) => autonomy.get(wallet) ?? { setting: "ask" } },
     ...(opts.wallets ? { wallets: opts.wallets } : {}),
     ...(opts.operations ? { operations: opts.operations } : {}),
+    ...(opts.otherMints ? { otherMints: opts.otherMints } : {}),
+    ...(opts.turnEnded ? { turnEnded: opts.turnEnded } : {}),
+    ...(opts.turnOf ? { turnOf: opts.turnOf } : {}),
     paused: () => paused,
     candle: async (agent, tool, args) => {
       network.push(`${agent}:${tool}`)
@@ -292,6 +301,16 @@ describe("the compact card's parts", () => {
     expect(card.cardHash).toBe(hashOf(card))
   })
 
+  test("a look-alike name carries its short address on the card, as everywhere else; a plain one doesn't", async () => {
+    // "МOON" with a Cyrillic М reads as MOON: the card names it with its short address.
+    const s = await setup({ resolve: { [PEPE]: market(PEPE, { metadata: { symbol: "МOON" } }) } })
+    const card = await s.propose({ mint: PEPE, side: "buy", amountUsd: "5" })
+    expect(card.display.headline).toBe("BUY $5.00 of МOON (Pepe…1111)")
+    expect(card.display.title).toContain("МOON (Pepe…1111)")
+    const plain = await s.propose({ mint: MOON, side: "buy", amountUsd: "5" })
+    expect(plain.display.headline).toBe("BUY $5.00 of MOON")
+  })
+
   test("a buy in an asset leads with the asset, and carries no spend figure", async () => {
     const s = await setup()
     const card = await s.propose(buy("0.05"))
@@ -402,6 +421,12 @@ describe("proposing", () => {
     expect(card.display).toMatchObject({ receives: "≈7.937 MOON, Candle's quote before fees and slippage", pricedBy: "Candle quote", pricedAt: new Date(T0 - 300).toISOString(), risks: "transfer_fee" })
     // The quote prices the card; it never changes what runs.
     expect(card.params).toMatchObject({ mint: MOON, side: "buy", amount: "0.05" })
+  })
+
+  test("a quoted buy journals the quote's expected out, so a read-back buy's own can be capped by it", async () => {
+    const s = await setup({ quote: () => ({ amountOutRaw: "7936507", quoteAsset: "sol", quotedAt: T0 - 300 }) })
+    const card = await s.propose(buy("0.05"))
+    expect(s.journal.rows().find((r) => r.type === "card.created" && r.cardId === card.cardId)).toMatchObject({ side: "buy", quoteOutRaw: "7936507" })
   })
 
   test("a quote that says the key can't use the embedded wallet refuses the card", async () => {
@@ -632,7 +657,7 @@ describe("approving", () => {
 
   test("only a trade or a swap is paid from another wallet", async () => {
     const s = await setup()
-    const card = await s.propose({ keyPrefix: "cndl_live_mome", wallets: [] }, { tool: "candle_set_profile_wallets" })
+    const card = await s.propose({ keyPrefix: "momeAb3d", walletIds: [] }, { tool: "candle_set_profile_wallets" })
     expect((await refusal(s.book.requote(VIEW, card.cardId, { wallet: "embedded" }))).code).toBe("WALLET_FIXED")
   })
 
@@ -747,7 +772,7 @@ describe("approving", () => {
 
   test("narrowing a key's wallets is a card with no value and no limit", async () => {
     const s = await setup()
-    const card = await s.propose({ keyPrefix: "cndl_live_mome", wallets: [] }, { tool: "candle_set_profile_wallets" })
+    const card = await s.propose({ keyPrefix: "momeAb3d", walletIds: [] }, { tool: "candle_set_profile_wallets" })
     expect(card).toMatchObject({ kind: "lessaccess", wallet: "none", value: { unvalued: true } })
     await s.book.approve(VIEW, card.cardId, card.cardHash)
     expect(s.executed).toHaveLength(1)
@@ -760,6 +785,7 @@ describe("wallets", () => {
     const r = await refusal(s.propose(buy()))
     expect(r.code).toBe("EMBEDDED_WALLET_NOT_PERMITTED")
     expect(r.message).toContain("candle keys update momeAb3d --embedded-wallet allow")
+    expect(r.message).not.toContain("own terminal")
   })
 
   test("an agent whose wallet can't be read gets no card: the hash needs the paying wallet", async () => {
@@ -1550,5 +1576,217 @@ describe("an unpriced buy or swap", () => {
     await Bun.sleep(5)
     expect(s.spend.spent("momentum", s.now())).toBe(0)
     expect(s.journal.rows().some((r) => r.type === "card.valued")).toBe(false)
+  })
+})
+
+describe("a turn's second run, made to correct its reply", () => {
+  test("the same request again is the first run's card, filled or rejected, never a second trade; a different one is its own", async () => {
+    let correcting = false
+    const s = await setup({ turnOf: (tokenId) => ({ turnId: tokenId === "tok-1" ? "turn-1" : "turn-2", msSinceStart: 0, ...(correcting && tokenId === "tok-1" ? { correcting: true as const } : {}) }) })
+    s.setWallet(WALLET, { setting: "inside", perTradeUsd: 100, perDayUsd: 100 })
+    // Each run's harness connects afresh, under the turn's one token.
+    const first: FaceClient = { ...HARNESS, clientId: "h-run-1", tokenId: "tok-1" }
+    const second: FaceClient = { ...HARNESS, clientId: "h-run-2", tokenId: "tok-1" }
+    const bought = await s.propose(buy("0.01"), { client: first })
+    await s.book.runWithoutCard(bought, first)
+    s.book.noteOperation(bought.opId, { state: "succeeded" })
+    const turned = await s.propose(buy("0.02"), { client: first })
+    await s.book.reject(VIEW, turned.cardId)
+    expect(s.executed).toHaveLength(1)
+
+    correcting = true
+    const again = await s.propose(buy("0.01"), { client: second })
+    expect(again.cardId).toBe(bought.cardId)
+    expect((await s.book.runWithoutCard(again, second)).ran).toBeUndefined()
+    expect((await s.propose(buy("0.02"), { client: second })).cardId).toBe(turned.cardId)
+    expect(s.executed).toHaveLength(1)
+    expect(s.journal.rows().filter((r) => r.type === "card.created")).toHaveLength(2)
+    // What the first run never asked for is a card of its own.
+    expect((await s.propose(buy("0.03"), { client: second })).cardId).not.toBe(bought.cardId)
+    // In a later turn the same request is a new trade, as ever.
+    const later: FaceClient = { ...HARNESS, clientId: "h-next", tokenId: "tok-2" }
+    expect((await s.propose(buy("0.01"), { client: later })).cardId).not.toBe(bought.cardId)
+    expect(s.journal.rows().filter((r) => r.type === "card.created")).toHaveLength(4)
+  })
+})
+
+describe("a turn stopped while its card is being priced", () => {
+  test("no card is made and no card row is written, for a trade or any other card; other turns and clients still get theirs", async () => {
+    // The stop lands once the first read for the card is out.
+    let stopped = false
+    const s = await setup({ turnEnded: (tokenId) => tokenId === "tok-stopped" && stopped })
+    const reads = s.network.push.bind(s.network)
+    s.network.push = (...items: string[]) => ((stopped = true), reads(...items))
+    const inTurn: FaceClient = { ...HARNESS, tokenId: "tok-stopped" }
+    s.setWallet(WALLET, { setting: "inside", perTradeUsd: 100, perDayUsd: 100 })
+    const r = await refusal(s.propose(buy(), { client: inTurn }))
+    expect(r.code).toBe("TURN_ENDED")
+    expect(s.network.length).toBeGreaterThan(0)
+    // A card that needs no read is refused the same way once the turn is over.
+    expect((await refusal(s.propose({ label: "x" }, { tool: "made_up_tool", client: inTurn }))).code).toBe("TURN_ENDED")
+    expect(s.book.list()).toEqual([])
+    const types = s.journal.rows().map((row) => row.type)
+    expect(types.filter((t) => t.startsWith("card."))).toEqual(["card.refused", "card.refused"])
+    expect(s.journal.rows()[0]).toMatchObject({ code: "TURN_ENDED", tool: "candle_trade" })
+    // Another turn's token, a harness with none, and the person's own view are untouched.
+    expect((await s.propose(buy("0.01"), { client: { ...HARNESS, tokenId: "tok-running" } })).state).toBe("awaiting_approval")
+    expect((await s.propose(buy("0.02"))).state).toBe("awaiting_approval")
+    expect((await s.propose(buy("0.03"), { client: { clientId: "v9", role: "view", agent: "momentum", tokenId: "tok-stopped" } as FaceClient })).state).toBe("awaiting_approval")
+  })
+})
+
+describe("what a trade's token may be", () => {
+  const CNDL = BASE_ASSETS.CNDL.priceKey!
+
+  test("what trades spend is refused as a trade's token, buy or sell, before anything is read; CNDL still trades", async () => {
+    // Candle answers the SOL and USDC mints as routable markets, so nothing else would stop them.
+    const s = await setup({ resolve: { [SOL]: market(SOL, { candleLaunched: false }), [USDC]: market(USDC, { candleLaunched: false }), [CNDL]: market(CNDL, { candleLaunched: false, metadata: { symbol: "CNDL" } }) }, holdings: { [USDC]: 5_000_000_000n, [CNDL]: 1_000_000n }, prices: { [SOL]: 150, [USDC]: 1, [CNDL]: 0.2 } })
+    s.setWallet(WALLET, { setting: "inside", perTradeUsd: 1, perDayUsd: 2 })
+    s.setPaused(true)
+    for (const [mint, name] of [[SOL, "SOL"], [USDC, "USDC"], ["hood:native", "ETH"]] as const) {
+      // The kill switch is on, which a sell passes: the refusal is the token's, not the pause's.
+      const r = await refusal(s.propose({ mint, side: "sell", percent: 100, quoteAsset: "cndl" }))
+      expect(r.code).toBe("BASE_ASSET")
+      expect(r.message).toStartWith(`${name} is what trades spend`)
+    }
+    s.setPaused(false)
+    for (const mint of [SOL, USDC]) expect((await refusal(s.propose({ mint, side: "buy", amount: "1" }))).code).toBe("BASE_ASSET")
+    expect(s.network).toEqual([])
+    expect(s.book.list()).toEqual([])
+    // CNDL is a quote asset too, and people trade it like any token.
+    const card = await s.propose({ mint: CNDL, side: "sell", percent: 50 })
+    expect(card.display.headline).toBe("SELL 50% of CNDL")
+  })
+
+  test("the same refusal on a TEE wallet, where a sell would be the very swap the limits would have checked", async () => {
+    const TEE = "TeeWalletFake111111111111111111111111111111"
+    const s = await setup({ resolve: { [USDC]: market(USDC, { candleLaunched: false }) }, wallets: { payer: () => ({ ok: true, kind: "tee", address: TEE, label: "tee-one" }) as never } })
+    expect((await refusal(s.propose({ mint: USDC, side: "sell", amount: "5000", quoteAsset: "cndl", wallet: "tee-one" }))).code).toBe("BASE_ASSET")
+  })
+})
+
+describe("arguments a card tool doesn't list", () => {
+  test("a trade or a swap with an argument the list doesn't name is refused by name, and no card is made", async () => {
+    const s = await setup()
+    const trade = await refusal(s.propose({ ...buy(), payer: "linked" }))
+    expect(trade.code).toBe("UNKNOWN_ARGUMENT")
+    expect(trade.message).toBe("candle_trade doesn't take `payer` here. Nothing was sent.")
+    const swap = await refusal(s.propose({ from: "SOL", to: "USDC", amount: "0.01", recipient: "x" }, { tool: "candle_swap" }))
+    expect(swap.message).toContain("`recipient`")
+    expect(s.book.list()).toEqual([])
+    // The Candle Harness's own arguments still pass.
+    expect((await s.propose({ mint: MOON, side: "buy", amountUsd: "5", wallet: "embedded" })).state).toBe("awaiting_approval")
+  })
+})
+
+describe("an expired card that isn't a trade or one of Candle's tools", () => {
+  const flatten = (s: Awaited<ReturnType<typeof setup>>) =>
+    s.book.propose({ client: HARNESS, agent: "momentum", tool: "harness_bots", args: { action: "flatten", name: "conf" }, params: { action: "flatten", name: "conf", proposer: "momentum" }, kind: "bot", idKey: "coreOpId", title: 'FLATTEN BOT "conf"', warning: "sells every open position" })
+
+  test("is asked for again: a re-quote refuses, and no card is made from what was asked alone", async () => {
+    const s = await setup()
+    const card = await flatten(s)
+    expect(card.display.askAgain).toBe(true)
+    s.tick(10 * 60_000)
+    await s.book.expireDue()
+    const r = await refusal(s.book.requote(VIEW, card.cardId))
+    expect(r.code).toBe("ASK_AGAIN")
+    expect(r.message).toContain("ask for it again")
+    expect(s.book.list().map((c) => c.display.title)).toEqual(['FLATTEN BOT "conf"'])
+  })
+
+  test("pressed after it expired, it expires and nothing approvable takes its place", async () => {
+    const s = await setup()
+    const card = await flatten(s)
+    s.tick(10 * 60_000)
+    expect((await refusal(s.book.approve(VIEW, card.cardId, card.cardHash))).code).toBe("ASK_AGAIN")
+    expect(s.book.list().filter((c) => c.state === "awaiting_approval")).toEqual([])
+    expect(s.book.list().some((c) => c.display.title.includes("not supported yet"))).toBe(false)
+    expect(s.executed).toEqual([])
+  })
+
+  test("a trade and Candle's own tools are still re-quoted, and carry no such mark", async () => {
+    const s = await setup()
+    expect((await s.propose(buy())).display.askAgain).toBeUndefined()
+    const wallets = await s.propose({ keyPrefix: "momeAb3d", walletIds: ["w1"] }, { tool: "candle_set_profile_wallets" })
+    expect(wallets.display.askAgain).toBeUndefined()
+    s.tick(10 * 60_000)
+    await s.book.expireDue()
+    expect((await s.book.requote(VIEW, wallets.cardId)).display.title).toBe(wallets.display.title)
+  })
+})
+
+describe("what a card says in words", () => {
+  test("narrowing a key's wallets names the key and how many wallets it keeps", async () => {
+    const s = await setup()
+    expect((await s.propose({ keyPrefix: "momeAb3d", walletIds: ["w1", "w2"] }, { tool: "candle_set_profile_wallets" })).display.title).toBe("LESS ACCESS · key momeAb3d keeps 2 wallets")
+    expect((await s.propose({ keyPrefix: "momeAb3d", walletIds: [] }, { tool: "candle_set_profile_wallets" })).display.title).toBe("LESS ACCESS · key momeAb3d keeps no wallets")
+    expect((await refusal(s.propose({ keyPrefix: "momeAb3d" }, { tool: "candle_set_profile_wallets" }))).code).toBe("INVALID_WALLETS")
+  })
+
+  test("a launch names every link's host, the image's, and the description; terms left at Candle's defaults add no line", () => {
+    const given = { name: "Fake Moon", symbol: "FMOON", imageUrl: "https://img.example.com/a.png", bannerUrl: "https://cdn.example.org/b.png", description: "To the fake moon.\u001b[31m", socials: { website: "https://fakemoon.example/home", twitter: "https://x.com/fakemoon" } }
+    expect(launchPublishes(given)).toBe("links: website fakemoon.example, twitter x.com · image from img.example.com · banner from cdn.example.org · description: To the fake moon.[31m")
+    expect(launchTerms(given)).toBeUndefined()
+    expect(launchPublishes({ name: "x", symbol: "y" })).toBeUndefined()
+  })
+
+  test("a creator fee, a staker share, a mode or launch rules the agent set are said, for the card's amber line", () => {
+    expect(launchTerms({ creatorFeeBps: 500, stakerAllocationBps: 0, mode: "fair", visibility: "public", launchRules: { maxWalletPct: 2 } })).toBe(`set by the agent, not Candle's defaults: creator fee 5% · staker share 0% · mode fair · launch rules {"maxWalletPct":2}`)
+  })
+
+  test("a token whose name is held or was carded here under another mint says so, with both short addresses; any other card says nothing", async () => {
+    const COPY = "MoonCopy11111111111111111111111111111111111"
+    const s = await setup({ otherMints: (symbol, mint) => (symbol === "MOON" && mint === MOON ? [COPY] : []) })
+    const card = await s.propose(buy())
+    expect(card.display.otherMint).toBe("another MOON is in a wallet or on an earlier card here (Moon…1111): this one is Moon…1111")
+    expect(card.display.mint).toBe(MOON)
+    expect((await s.propose(buy("0.01", PEPE))).display.otherMint).toBeUndefined()
+  })
+
+  test("a live bot's trade while the Candle Harness is on paper says real funds; with both live, nothing", async () => {
+    const s = await setup()
+    const bot: FaceClient = { clientId: "core", role: "core", agent: "momentum", bot: { name: "conf", act: "entry", mode: "live" } as never }
+    expect((await s.propose(buy(), { client: bot })).display.modeDiffers).toBeUndefined()
+    s.setMode("paper")
+    const card = await s.propose(buy("0.02"), { client: bot })
+    expect(card.mode).toBe("live")
+    expect(card.display.modeDiffers).toBe('real funds: the bot "conf" is live, though the Candle Harness is on paper')
+  })
+})
+
+describe("how many cards the book keeps", () => {
+  test("closed cards past the newest are dropped, each told to whoever kept something by its id; an open card always stays", async () => {
+    const s = await setup()
+    const dropped: string[] = []
+    ;(s.book as unknown as { deps: CardBookDeps }).deps.onDropped = (card) => dropped.push(card.cardId)
+    const open = await s.propose(buy("0.001"))
+    const made: string[] = []
+    for (let i = 0; i < CLOSED_CARDS_KEPT + 20; i++) {
+      const card = await s.propose(buy(`0.01${String(i).padStart(4, "0")}`))
+      made.push(card.cardId)
+      await s.book.reject(VIEW, card.cardId)
+    }
+    const listed = s.book.list()
+    expect(listed.length).toBeLessThanOrEqual(CLOSED_CARDS_KEPT + 1)
+    expect(listed[0]!.cardId).toBe(open.cardId)
+    expect(s.book.get(made[0]!)).toBeUndefined()
+    expect(s.book.held(listed[0]!.opId)?.cardId).toBe(open.cardId)
+    expect(dropped.slice(0, 2)).toEqual(made.slice(0, 2))
+    expect((await refusal(s.book.reject(VIEW, made[0]!))).code).toBe("CARD_NOT_FOUND")
+  })
+
+  test("a list sent to a view fits one message: every open card, then the newest closed ones", async () => {
+    const s = await setup()
+    const first = await s.propose(buy("0.001"))
+    for (let i = 0; i < 40; i++) await s.book.reject(VIEW, (await s.propose(buy(`0.01${String(i).padStart(4, "0")}`))).cardId)
+    const all = s.book.list()
+    const one = Buffer.byteLength(JSON.stringify(all[1]), "utf8")
+    const within = s.book.listWithin(one * 10)
+    expect(within[0]!.cardId).toBe(first.cardId)
+    expect(within.length).toBeGreaterThan(3)
+    expect(within.length).toBeLessThan(12)
+    expect(within.at(-1)!.cardId).toBe(all.at(-1)!.cardId)
+    expect(Buffer.byteLength(JSON.stringify(s.book.listWithin()), "utf8")).toBeLessThan(CARDS_LIST_BYTES + 1024)
   })
 })

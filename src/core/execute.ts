@@ -9,6 +9,7 @@ import type { ToolOutcome } from "./candle-mcp"
 import type { Card } from "./cards"
 import { pausedMessage, pausedStops, resultWasPaper } from "./classify"
 import { rowFor } from "./cli-table"
+import { type Fill, readFill } from "./fill"
 import type { Journal, JournalRow } from "./journal"
 import type { Side } from "./limits"
 import { nextPollMs, readJob, type TradeRead } from "./reconcile"
@@ -35,6 +36,15 @@ export interface OperationError {
   reason?: string
   /** With `limit_unavailable`: when to ask again (epoch ms), about 30 s out. */
   retryAfter?: number
+  /** SWAP_ROUTE_FAILING: how long Candle refuses the pair from this key. */
+  retryAfterSeconds?: number
+}
+
+/** SWAP_ROUTE_FAILING's wait, wherever Candle or the CLI put it. */
+export function routeWaitFields(raw: Record<string, unknown>): Pick<OperationError, "retryAfterSeconds"> {
+  const details = typeof raw.details === "object" && raw.details !== null ? (raw.details as Record<string, unknown>) : {}
+  const seconds = "retry_after_seconds" in raw ? raw.retry_after_seconds : details.retry_after_seconds
+  return typeof seconds === "number" && Number.isFinite(seconds) && seconds > 0 ? { retryAfterSeconds: seconds } : {}
 }
 
 /** The fields a held key needs from Candle's error body, wherever Candle or the CLI put them. */
@@ -87,6 +97,12 @@ export interface Operation {
   resending?: boolean
   /** Its read-back is a replay or a rerun, which re-sends it under its id: held while the kill switch stops its kind. */
   held?: boolean
+  /** A rules bot's exit, sold without a card: one a restart cut off is re-sent once by the core (resendLostExit). */
+  botExit?: boolean
+  /** The core has re-sent it once by itself: it never does again; anything more is the person's. */
+  autoResent?: boolean
+  /** The asset its card worked out it settles in: its fill is read in it when Candle's answer names none. */
+  settles?: string
 }
 
 export interface Mapped {
@@ -129,6 +145,15 @@ const MAY_HAVE_RUN = new Set(["LAUNCH_FAILED", "SWAP_FAILED", "STAKING_REWARD_CL
  * server error too, and a code alone doesn't prove nothing went out.
  */
 const RETRYABLE_SENT_NOTHING: ReadonlySet<string> = new Set(["RATE_LIMITED", "KEY_LIMIT_REACHED"])
+
+/**
+ * Retryable with no stage, and still nothing sent: the codes above, and Candle's route breaker refusing a pair with
+ * its own wait (SWAP_ROUTE_FAILING carrying `retry_after_seconds`, docs.candle.tv's route breaker), which refuses
+ * before any swap is built. A bare SWAP_ROUTE_FAILING with no wait is read back like any other.
+ */
+function retryableSentNothing(code: string, raw: Record<string, unknown>): boolean {
+  return RETRYABLE_SENT_NOTHING.has(code) || (code === "SWAP_ROUTE_FAILING" && routeWaitFields(raw).retryAfterSeconds !== undefined)
+}
 
 const SENT_NOTHING: ReadonlySet<string> = new Set([
   "VALIDATION_FAILED",
@@ -199,6 +224,11 @@ export function refusalMessage(code: string, error: Record<string, unknown>): st
       return "Buying a token Candle didn't launch needs Pro or Max. Nothing was sent."
     case "RATE_LIMITED":
       return "Candle is rate-limiting this key. Nothing was sent; try again in a moment."
+    case "SWAP_ROUTE_FAILING": {
+      // Candle's route breaker: five failed swaps in a row of one token and side, from this key.
+      const s = routeWaitFields(error).retryAfterSeconds
+      return `Candle is refusing this token on this side from this key for now: its last five swaps of it failed. Nothing was sent.${s ? ` It can be tried again in ${s < 120 ? `${Math.ceil(s)} s` : `${Math.ceil(s / 60)} minutes`}.` : ""} Other tokens aren't affected.`
+    }
     case "TEST_ENVIRONMENT_FORBIDDEN":
       return "A test key can't trade. Nothing was sent; use a live key."
     case "IDEMPOTENCY_CONFLICT":
@@ -244,7 +274,7 @@ export function outcomeOf(kind: Card["kind"], outcome: ToolOutcome): Mapped {
   const stage = typeof raw.stage === "string" ? raw.stage : undefined
   if (stage === undefined && (kind === "trade" || kind === "swap")) {
     // A retryable conflict says the same id is still running; one that isn't says a different body, nothing new sent.
-    const sentNothing = code === "IDEMPOTENCY_CONFLICT" ? !outcome.retryable : SENT_NOTHING.has(code) && (!outcome.retryable || RETRYABLE_SENT_NOTHING.has(code))
+    const sentNothing = code === "IDEMPOTENCY_CONFLICT" ? !outcome.retryable : SENT_NOTHING.has(code) && (!outcome.retryable || retryableSentNothing(code, raw))
     if (!sentNothing) return { state: "unknown", result: outcome.body, error, reason: `${code} without a stage, so it may have been sent` }
   }
   if (stage === undefined || NOT_SENT_STAGES.has(stage)) return { state: "refused", result: outcome.body, error }
@@ -263,10 +293,13 @@ function errorOf(code: string, raw: Record<string, unknown>): OperationError {
     retryable: raw.retryable === true,
     ...(typeof raw.stage === "string" ? { stage: raw.stage } : {}),
     ...(code === "KEY_LIMIT_REACHED" ? keyLimitFields(raw) : {}),
+    ...(code === "SWAP_ROUTE_FAILING" ? routeWaitFields(raw) : {}),
   }
 }
 
 const SETTLED: ReadonlySet<OperationState> = new Set(["succeeded", "failed", "refused", "abandoned"])
+/** The operations one snapshot or list carries: under an attach message's megabyte, with room for its envelope. */
+export const OPERATIONS_LIST_BYTES = 768 * 1024
 const TEN_MINUTES = 10 * 60_000
 export const CALL_TIMEOUT_MS = 60_000
 
@@ -277,6 +310,12 @@ function readsBack(op: Operation): boolean {
   const readBack = readBackOf(op)
   return readBack !== undefined && readBack !== "none"
 }
+
+/** Candle's answer for an id it has no record of; any other miss (no answer, its child not up) says nothing about the trade. */
+const NO_RECORD = "JOB_NOT_FOUND"
+
+/** Who re-sent it, on the `operation.resend` row, when the core did by itself. */
+export const CORE_RESEND = "core"
 
 /** A CLI card row's read-back rule (cli-table.ts `card.readBack`), or undefined for anything else. */
 function readBackOf(op: Operation): string | undefined {
@@ -312,8 +351,19 @@ export class Operations {
       hacc?: { run(op: Operation): Promise<Mapped>; read(op: Operation): Promise<Mapped | undefined> }
       /** Runs an approved narrowing of a wallet's autonomy in the core, and reads one a restart cut off. */
       autonomy?: { run(op: Operation): Promise<Mapped>; read(op: Operation): Mapped | undefined }
+      /** Saves an approved trigger's card, checked whole again, and reads one a restart cut off from triggers.toml. */
+      triggers?: { run(op: Operation): Promise<Mapped>; read(op: Operation): Mapped | undefined }
+      /** A rules bot's card, approved: saved, or flattened, in the core. */
+      bots?: { run(op: Operation): Promise<Mapped>; read(op: Operation): Mapped | undefined }
       /** Whether the kill switch is on: what it stops is never sent again by a re-send or a replay while it is. */
       paused?: () => boolean
+      /**
+       * What holds the core's own re-send of a bot's exit now, in words, as any other sell of the core's is held: two
+       * failed sells of its token on the key, another sell of it in flight, or the key's pace. Undefined is room.
+       */
+      resendHold?: (op: Operation) => string | undefined
+      /** A pair asset's USD price from the prices the core already holds (no read), stamped on a trade's fill. */
+      assetUsd?: (asset: string) => number | undefined
     },
   ) {
     this.loseNext = deps.loseNextReply === true
@@ -330,6 +380,31 @@ export class Operations {
 
   list(): Operation[] {
     return [...this.ops.values()]
+  }
+
+  /**
+   * The operations a view or a harness is sent, in order: every one not yet at an end, then the newest ended
+   * ones while they fit `maxBytes`, so one message never outgrows what the attach interface carries.
+   */
+  listWithin(maxBytes = OPERATIONS_LIST_BYTES, keep: (op: Operation) => boolean = () => true): Operation[] {
+    const all = [...this.ops.values()].filter(keep)
+    const size = (op: Operation) => Buffer.byteLength(JSON.stringify(op), "utf8") + 1
+    const chosen = new Set<Operation>()
+    let used = 0
+    for (const op of all) {
+      if (SETTLED.has(op.state)) continue
+      chosen.add(op)
+      used += size(op)
+    }
+    for (let i = all.length - 1; i >= 0; i--) {
+      const op = all[i]!
+      if (chosen.has(op)) continue
+      const bytes = size(op)
+      if (used + bytes > maxBytes) break
+      chosen.add(op)
+      used += bytes
+    }
+    return all.filter((op) => chosen.has(op))
   }
 
   /** Whether anything is in flight or still being read back: the core stays up for it. */
@@ -359,6 +434,8 @@ export class Operations {
       cardExpiresAt: Date.parse(card.expiresAt),
       ...(card.route === "cli" ? { route: "cli" as const, wallet: card.wallet } : {}),
       ...(card.side ? { side: card.side } : {}),
+      ...(card.origin?.role === "core" && card.origin.bot?.act === "exit" ? { botExit: true } : {}),
+      ...(card.settles ? { settles: card.settles } : {}),
     }
     this.ops.set(op.opId, op)
     try {
@@ -374,6 +451,8 @@ export class Operations {
         cardExpiresAt: op.cardExpiresAt,
         ...(op.route ? { route: op.route, wallet: op.wallet } : {}),
         ...(op.side ? { side: op.side } : {}),
+        ...(op.botExit ? { botExit: true } : {}),
+        ...(op.settles ? { settles: op.settles } : {}),
       })
     } catch (error) {
       // Nothing was sent: the operation isn't left submitting for ever, and the approval sees the failure.
@@ -424,7 +503,7 @@ export class Operations {
   }
 
   /** The user's call on an unknown operation: the same request under the same id, or stop following it. */
-  async resolve(viewClientId: string, opId: unknown, action: "resend" | "abandon"): Promise<Operation> {
+  async resolve(viewClientId: string, opId: unknown, action: "resend" | "abandon", why?: string): Promise<Operation> {
     const op = typeof opId === "string" ? this.ops.get(opId) : undefined
     if (!op) throw refused("OPERATION_NOT_FOUND", "No operation with that id.")
     if (op.state !== "unknown" && op.state !== "pending") throw refused("OPERATION_SETTLED", `This operation is ${op.state}.`, { state: op.state })
@@ -446,7 +525,7 @@ export class Operations {
     op.resending = true
     this.deps.onChange?.(op)
     try {
-      await this.deps.journal.append({ type: "operation.resend", mode: op.mode, agent: op.agent, opId: op.opId, by: viewClientId, params: op.params })
+      await this.deps.journal.append({ type: "operation.resend", mode: op.mode, agent: op.agent, opId: op.opId, by: viewClientId, params: op.params, ...(why ? { why } : {}) })
       // The kill switch pressed while the re-send was being written down: checked again, so nothing goes out.
       if (this.stoppedByPause(op)) {
         await this.deps.journal.append({ type: "operation.resend_refused", mode: op.mode, agent: op.agent, opId: op.opId, code: "PAUSED" })
@@ -524,7 +603,7 @@ export class Operations {
 
   /**
    * After a restart, from the journal: what was submitting or pending is unknown now (it may have
-   * landed while the core was down), and every unknown one is read again.
+   * landed while the core was down). `readBack` reads every unknown one again, once Candle is up.
    */
   async rebuild(rows: readonly JournalRow[]): Promise<string[]> {
     for (const row of rows) {
@@ -545,10 +624,14 @@ export class Operations {
           ...(row.route === "cli" ? { route: "cli" as const, ...(typeof row.wallet === "string" ? { wallet: row.wallet } : {}) } : {}),
           ...(row.route === "pane" ? { route: "pane" as const } : {}),
           ...(row.side === "buy" || row.side === "sell" || row.side === "swap" ? { side: row.side } : {}),
+          ...(row.botExit === true ? { botExit: true } : {}),
+          ...(typeof row.settles === "string" ? { settles: row.settles } : {}),
         })
         continue
       }
       const op = this.ops.get(row.opId)
+      // Once is once across restarts too.
+      if (op && row.type === "operation.resend" && row.by === CORE_RESEND) op.autoResent = true
       const state = row.type.slice("operation.".length)
       if (op && ["pending", "succeeded", "failed", "refused", "unknown", "abandoned"].includes(state)) op.state = state as OperationState
     }
@@ -558,9 +641,13 @@ export class Operations {
         await this.settle(op, { state: "unknown", reason: "core_restarted" })
         turned.push(op.opId)
       }
-      if (op.state === "unknown" && op.route !== "pane") this.watch(op, 0)
     }
     return turned
+  }
+
+  /** Every unknown operation read back: after `rebuild`, once Candle's children have started (a read before then has none to ask). */
+  readBack(): void {
+    for (const op of this.ops.values()) if (op.state === "unknown" && op.route !== "pane") this.watch(op, 0)
   }
 
   private async sendMapped(op: Operation): Promise<Mapped> {
@@ -571,6 +658,14 @@ export class Operations {
     if (op.kind === "autonomy") {
       if (!this.deps.autonomy) return { state: "refused", error: { code: "METHOD_NOT_AVAILABLE", message: "Autonomy per wallet isn't in this build of the core.", retryable: false } }
       return this.deps.autonomy.run(op)
+    }
+    if (op.kind === "trigger") {
+      if (!this.deps.triggers) return { state: "refused", error: { code: "METHOD_NOT_AVAILABLE", message: "Triggers aren't in this build of the core.", retryable: false } }
+      return this.deps.triggers.run(op)
+    }
+    if (op.kind === "bot") {
+      if (!this.deps.bots) return { state: "refused", error: { code: "METHOD_NOT_AVAILABLE", message: "Rules bots aren't in this build of the core.", retryable: false } }
+      return this.deps.bots.run(op)
     }
     // candle_cli first: a CLI card row runs on the CLI route too, through its own rules.
     if (op.tool === "candle_cli") {
@@ -612,6 +707,7 @@ export class Operations {
     if (mapped.paper) op.paper = true
     if (mapped.partial) op.partial = mapped.partial
     if (mapped.reason) op.reason = mapped.reason
+    const fill = op.state === "succeeded" ? this.fillOf(op, mapped) : undefined
     await this.deps.journal.append({
       type: `operation.${op.state}`,
       mode: op.mode,
@@ -623,12 +719,28 @@ export class Operations {
       ...(mapped.paper ? { paper: true, note: "The live wallet had nothing to sell, so Candle closed the paper position instead." } : {}),
       ...(mapped.partial ? { partial: mapped.partial } : {}),
       ...(mapped.reason ? { reason: mapped.reason } : {}),
+      ...(fill ? { fill } : {}),
     })
     if (SETTLED.has(op.state)) {
       op.settledAt = this.deps.now()
       this.cancelWatch(op.opId)
     }
     this.deps.onChange?.(op)
+  }
+
+  /** A trade's fill from its answer: the card gives the side and the mint, which the TEE route's answer doesn't name. */
+  private fillOf(op: Operation, mapped: Mapped): Fill | undefined {
+    if (op.kind !== "trade" || mapped.result === undefined) return undefined
+    const sideOf = (v: unknown) => (v === "buy" || v === "sell" ? v : undefined)
+    const side = sideOf(op.side) ?? sideOf(op.params.side)
+    // `candle swap <from> <to>`: a buy's mint is what it swaps to, a sell's what it swaps from.
+    const argv = Array.isArray(op.params.argv) ? op.params.argv : undefined
+    const fromArgv = argv && side ? argv[side === "buy" ? 2 : 1] : undefined
+    const mint = typeof op.params.mint === "string" ? op.params.mint : typeof fromArgv === "string" ? fromArgv : undefined
+    const fill = readFill({ ...(side ? { side } : {}), ...(mint ? { mint } : {}), ...(op.settles ? { fallbackAsset: op.settles } : {}), wallet: op.route === "cli" && op.wallet ? op.wallet : "embedded", result: mapped.result, ...(mapped.paper ? { paper: true } : {}) })
+    if (!fill) return undefined
+    const usd = this.deps.assetUsd?.(fill.asset)
+    return usd !== undefined && Number.isFinite(usd) && usd > 0 ? { ...fill, assetUsd: usd } : fill
   }
 
   private watch(op: Operation, delayMs: number): void {
@@ -646,6 +758,8 @@ export class Operations {
       else if (op.route === "cli") await this.readCliOnce(op)
       else if (op.kind === "hacc") await this.readHaccOnce(op)
       else if (op.kind === "autonomy") await this.readAutonomyOnce(op)
+      else if (op.kind === "trigger") await this.readTriggerOnce(op)
+      else if (op.kind === "bot") await this.readBotOnce(op)
       else if (op.kind === "trade" || op.kind === "launch") await this.readJobOnce(op, op.kind)
       else if (REPLAYS.has(op.tool)) await this.replayOnce(op)
       // Fee claims, posts and profile edits have no read: they wait for the user.
@@ -674,6 +788,7 @@ export class Operations {
       await this.settle(op, { state: read.state, result: read.job })
       return
     }
+    if (!read.found && read.detail === NO_RECORD && (await this.resendLostExit(op))) return
     // A launch found submitted or confirming is in flight on Candle's side: pending, and read again.
     if (read.found && kind === "launch" && read.state === "pending" && op.state !== "pending") await this.settle(op, { state: "pending", result: read.job })
     this.scheduleNext(op, nextPollMs(op.startedAt, this.deps.now()))
@@ -694,6 +809,20 @@ export class Operations {
     if (read) await this.settle(op, read)
   }
 
+  /** A trigger's card a restart cut off, read from triggers.toml and the core's state: saved as the card said, or not. */
+  private async readTriggerOnce(op: Operation): Promise<void> {
+    const read = this.deps.triggers?.read(op)
+    await this.deps.journal.append({ type: "operation.check", mode: op.mode, agent: op.agent, opId: op.opId, outcome: read ? read.state : "unclear" })
+    if (read) await this.settle(op, read)
+  }
+
+  /** A bot's card a restart cut off, read from the core's state and the journal: saved or flattened as the card said, or not. */
+  private async readBotOnce(op: Operation): Promise<void> {
+    const read = this.deps.bots?.read(op)
+    await this.deps.journal.append({ type: "operation.check", mode: op.mode, agent: op.agent, opId: op.opId, outcome: read ? read.state : "unclear" })
+    if (read) await this.settle(op, read)
+  }
+
   private async readCliOnce(op: Operation): Promise<void> {
     if (!this.deps.cliTrades) return
     const read = await this.deps.cliTrades.read(op)
@@ -710,7 +839,29 @@ export class Operations {
       await this.settle(op, { state: read.state, result: read.job })
       return
     }
+    if (!read.found && read.detail === NO_RECORD && (await this.resendLostExit(op))) return
     this.scheduleNext(op, nextPollMs(op.startedAt, this.deps.now()))
+  }
+
+  /**
+   * A rules bot's live exit that a restart cut off, read back and found nowhere on Candle: the core sends it
+   * once more by itself, under the same id, which Candle never runs twice. A stop nobody presses is the riskier
+   * outcome. Only once, and only this: every other trade Candle has no record of waits for the person's re-send.
+   * It waits behind what holds the core's other sells, never past them; the person's own re-send doesn't.
+   */
+  private async resendLostExit(op: Operation): Promise<boolean> {
+    if (!op.botExit || op.autoResent || op.mode !== "live" || op.reason !== "core_restarted") return false
+    if (this.stopped || this.resolving.has(op.opId)) return false
+    // Held as the core's other sells are (failed sells in a row, one in flight, the pace): the next read tries again.
+    if (this.deps.resendHold?.(op) !== undefined) return false
+    op.autoResent = true
+    try {
+      await this.resolve(CORE_RESEND, op.opId, "resend", "a bot's exit the core's restart cut off, with no record on Candle")
+      return true
+    } catch {
+      // Refused before anything was sent (the kill switch, say): the person's re-send stays.
+      return false
+    }
   }
 
   /** A CLI card row's read-back (cli-cards.ts): a rerun within the card's lifetime, a launch's job read, or none. */

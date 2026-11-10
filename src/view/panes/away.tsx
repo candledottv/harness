@@ -9,7 +9,7 @@
 // - Every section: each row that names a token is a pick, and each address has its ⧉. The note's show all
 //   and the palette's row open it over the frame (AwayOverlay); the Away pane draws the same lines on a layout
 //   of your own. It keeps the last gap's summary until the next one.
-import { type AgentFills, type AwayCard, type AwayEntry, type AwaySummary, type AwayView, gapLength, type HoldingChange, type OutsideFill } from "../../core/away"
+import { type AgentFills, type AwayBot, type AwayCard, type AwayEntry, type AwaySummary, type AwayView, gapLength, type HoldingChange, type OutsideFill } from "../../core/away"
 import { askAbout } from "../ask"
 import { amount, shortAddress, wrap } from "../format"
 import { C, fit, money, OVERLAY_Z, signedMoney } from "../theme"
@@ -35,6 +35,11 @@ const clock = (ms: number): string => isoClock(new Date(ms).toISOString())
 const when = (ms: number, now: number): string => {
   const day = dayWords(new Date(ms).toISOString(), now)
   return day === "today" ? clock(ms) : `${day} ${clock(ms)}`
+}
+/** A stretch's end: "today" said where it began on another day, so "yesterday 22:18 to 23:47" isn't read as 90 minutes. */
+const whenTo = (from: number, to: number, now: number): string => {
+  const said = when(to, now)
+  return said === clock(to) && when(from, now) !== clock(from) ? `today ${said}` : said
 }
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`
 const andList = (items: readonly string[]) => (items.length <= 1 ? (items[0] ?? "") : `${items.slice(0, -1).join(", ")} and ${items.at(-1)}`)
@@ -77,7 +82,22 @@ function fillWords(f: OutsideFill): string {
 
 function holdingWords(c: HoldingChange): string {
   const what = c.asset === "SOL" ? "SOL" : (c.symbol ?? shortAddress(c.asset))
-  return `${c.name === "embedded" ? "embedded wallet" : c.name}: ${what} ${amount(c.then)} → ${amount(c.now)}`
+  return `${c.name === "embedded" ? "embedded wallet" : c.name}: ${what} ${amount(c.then)} → ${amount(c.now)}${c.outside ? ", not from this Candle Harness's trades (other keys pay from this wallet)" : ""}`
+}
+
+/** What a bot did in the gap, in words: "bought 3, sold 2 (1 at its stop), 4 skipped". */
+function botDid(b: AwayBot): string {
+  const exits = Object.entries(b.exits)
+  const why = b.sold && exits.length ? ` (${exits.map(([w, n]) => `${n} at its ${w}`).join(", ")})` : ""
+  const did = [b.bought ? `bought ${b.bought}` : "", b.sold ? `sold ${b.sold}${why}` : "", b.skipped ? `${b.skipped} skipped` : ""].filter(Boolean).join(", ")
+  return did || "nothing filled"
+}
+
+/** A bot's P&L over the gap and what it holds now: "+$1.20 · 2 open (BONK, WIF)". */
+function botBook(b: AwayBot): string {
+  const pnl = b.realizedUsd === undefined ? "" : b.realizedUsd === null ? "P&L not valued" : `P&L ${signedMoney(b.realizedUsd)}`
+  const open = b.open?.length ? `${b.open.length} open (${b.open.slice(0, 3).map((p) => p.symbol ?? shortAddress(p.mint)).join(", ")}${b.open.length > 3 ? ", …" : ""})` : b.open ? "nothing open" : ""
+  return [pnl, open].filter(Boolean).join(" · ")
 }
 
 /** The P&L over the gap, as harness_pnl's "since last session" reads it; undefined while it's read. */
@@ -86,7 +106,9 @@ function pnlWords(s: AwaySummary, now: number): { text: string; tone: Tone } | u
   if (p.state === "reading") return undefined
   if (p.usd === null) return p.words ? { text: `P&L: ${p.words}`, tone: p.state === "failed" ? "bad" : "info" } : undefined
   const window = p.short && p.from !== null ? `since ${when(p.from, now)}` : p.label
-  return { text: `P&L ${window} ${signedMoney(p.usd)}`, tone: p.usd > 0 ? "good" : p.usd < 0 ? "bad" : "info" }
+  // The figure is Candle's live books: beside a paper bot's or paper trade's own figure it says so, as the status bar does in paper.
+  const paper = (s.bots ?? []).some((b) => b.mode === "paper") || s.trades.some((t) => t.paper === true || t.mode === "paper")
+  return { text: `${paper ? "live P&L" : "P&L"} ${window} ${signedMoney(p.usd)}`, tone: p.usd > 0 ? "good" : p.usd < 0 ? "bad" : "info" }
 }
 
 /** When the core wasn't running in the gap, if it wasn't: nothing ran in the Candle Harness then. */
@@ -95,14 +117,15 @@ function downWords(s: AwaySummary, now: number, note = false): string | undefine
   if (!down.length) return undefined
   if (s.coreGoneThroughout && note) return "The core wasn't running: nothing ran in the Candle Harness."
   if (s.coreGoneThroughout) return "The core wasn't running the whole time: nothing ran in the Candle Harness, so what's here is Candle's and Hacc's side."
-  if (down.length === 1) return `The core wasn't running from ${when(down[0]!.from, now)} to ${when(down[0]!.to, now)}: nothing ran in the Candle Harness then.`
+  if (down.length === 1) return `The core wasn't running from ${when(down[0]!.from, now)} to ${whenTo(down[0]!.from, down[0]!.to, now)}: nothing ran in the Candle Harness then.`
   const total = down.reduce((n, d) => n + d.to - d.from, 0)
   return `The core wasn't running ${down.length} times, ${gapLength(total)} in all: nothing ran in the Candle Harness then.`
 }
 
 /**
  * The note's lines in order of weight, each one line's worth: the core not running, anything stopped or
- * refused, trades, trades outside the Candle Harness, P&L, your signals, then turns, other cards, the wallets and changes.
+ * refused, trades, trades outside the Candle Harness, triggers, bots, P&L, your signals, then turns, other cards, the
+ * wallets and changes.
  */
 export function awayNoteItems(s: AwaySummary, now: number): { text: string; tone: Tone }[] {
   const items: { text: string; tone: Tone }[] = []
@@ -122,6 +145,24 @@ export function awayNoteItems(s: AwaySummary, now: number): { text: string; tone
     const sure = c.outside === 1 && fills[0] ? `1 trade outside the Candle Harness: ${fillWords(fills[0])}` : c.outside ? `${plural(c.outside, "trade")} outside the Candle Harness on ${andList(agentsOf(fills).map((a) => `${a}'s key`))}` : ""
     const maybe = c.maybe ? `${plural(c.maybe, "fill")} that may be the Candle Harness's` : ""
     items.push({ text: [sure, maybe].filter(Boolean).join("; "), tone: "warn" })
+  }
+  if (c.triggers) {
+    const list = s.triggers ?? []
+    const waited = list.filter((e) => /waits for you/.test(e.text)).length
+    const fired = c.fired ?? 0
+    const one = c.triggers === 1 ? list[0] : undefined
+    items.push({ text: one ? one.text : `Triggers: ${[fired ? plural(fired, "firing") : "", waited ? `${waited} waited for you` : ""].filter(Boolean).join(", ") || plural(c.triggers, "thing", "things")}`, tone: waited || list.some((e) => e.tone === "bad" || e.tone === "warn") ? "warn" : "info" })
+  }
+  const bots = s.bots ?? []
+  if (c.botTrades || c.botHeld) {
+    const held = c.botHeld ?? 0
+    const active = bots.filter((b) => b.bought + b.sold + b.held.length > 0)
+    const one = active.length === 1 ? active[0]! : undefined
+    const book = one ? botBook(one) : ""
+    const text = one
+      ? `${one.name}${one.mode === "paper" ? " (paper)" : ""}: ${botDid(one)}${book ? ` · ${book}` : ""}${held ? ` · ${held} held or refused` : ""}`
+      : `${plural(active.length, "bot")}: bought ${active.reduce((n, b) => n + b.bought, 0)}, sold ${active.reduce((n, b) => n + b.sold, 0)}${held ? `, ${held} held or refused` : ""}`
+    items.push({ text, tone: held ? "warn" : "info" })
   }
   const pnl = pnlWords(s, now)
   if (pnl) items.push(pnl)
@@ -162,20 +203,37 @@ function boxed(l: Line, inner: number): Line {
 /**
  * The note at the top of the agent pane, in at most `maxRows` lines: a box round its head and chips and the
  * lines in order of weight (each cut to a row), then a blank row, so the conversation under it never reads as
- * part of it (a faint rule blended into it). Lines go first where it doesn't fit, then the blank row; with no
- * room for the box, the head and its chips stay unboxed while there's a row.
+ * part of it (a faint rule blended into it). Lines go first where it doesn't fit, then the blank row, but never
+ * the last line: a note that shows says what happened. With no room for the box and a line, the head goes unboxed
+ * on one row and the lines under it; with one row, the head and the weightiest line share it. A note with nothing
+ * to list doesn't show.
  */
 export function awayNoteLines(s: AwaySummary, width: number, maxRows: number, now: number): Line[] {
   if (maxRows < 1) return []
+  const items = awayNoteItems(s, now).slice(0, NOTE_ITEMS)
+  if (!items.length) return []
   const inner = Math.max(1, width - 4)
   const head = noteHead(s, inner)
-  if (head.length + 2 > maxRows) return noteHead(s, width).slice(0, maxRows)
-  const items = awayNoteItems(s, now).slice(0, NOTE_ITEMS)
+  if (head.length + 3 > maxRows) return compactNote(s, items, width, maxRows)
   const room = maxRows - head.length - 2
-  const shown = items.slice(0, Math.max(0, room)).map(({ text, tone }) => line(`  ${fit(text, Math.max(1, inner - 2))}`, toneFg(tone)))
+  const shown = items.slice(0, room).map(({ text, tone }) => line(`  ${fit(text, Math.max(1, inner - 2))}`, toneFg(tone)))
   const edge = (left: string, right: string): Line => line(`${left}${"─".repeat(Math.max(0, width - 2))}${right}`, C.head)
   const after = maxRows > head.length + shown.length + 2 ? [blank()] : []
   return [edge("╭", "╮"), ...[...head, ...shown].map((l) => boxed(l, inner)), edge("╰", "╯"), ...after]
+}
+
+/** The note where its box won't fit with a line in it: the head on one row (its chips where they fit), then lines. */
+function compactNote(s: AwaySummary, items: readonly { text: string; tone: Tone }[], width: number, maxRows: number): Line[] {
+  const name: Seg = { text: "While you were away", fg: C.head, bold: true }
+  const length: Seg = { text: ` · ${gapLength(s.to - s.from)}`, fg: C.dim }
+  const first = items[0]!
+  if (maxRows === 1) {
+    const used = name.text.length + length.text.length + 2
+    return [{ segs: [name, length, { text: `: ${fit(first.text, Math.max(1, width - used))}`, fg: toneFg(first.tone) }] }]
+  }
+  const head = noteHead(s, width)
+  const top: Line = head.length === 1 ? head[0]! : { segs: [name, length] }
+  return [top, ...items.slice(0, maxRows - 1).map(({ text, tone }) => line(`  ${fit(text, Math.max(1, width - 2))}`, toneFg(tone)))]
 }
 
 // --- The Away pane --------------------------------------------------------------------------------------
@@ -198,11 +256,45 @@ function entryLines(e: AwayEntry, width: number, now: number, extra = ""): Line[
 }
 
 /** A list section: its heading with its count, its entries, and how many more the summary counted than it lists. */
-function section(name: string, count: number, entries: readonly AwayEntry[], width: number, now: number, extra?: (e: AwayEntry) => string): Line[] {
+function section(name: string, count: number, entries: readonly AwayEntry[], width: number, now: number, extra?: (e: AwayEntry) => string, counted?: string): Line[] {
   if (!count) return []
-  const out = [heading(`${name} · ${count}`), ...entries.flatMap((e) => entryLines(e, width, now, extra?.(e) ?? ""))]
+  const out = [heading(`${name} · ${counted ?? count}`), ...entries.flatMap((e) => entryLines(e, width, now, extra?.(e) ?? ""))]
   if (count > entries.length) out.push(line(`  and ${count - entries.length} older: the Journal has every one`, C.dim))
   return [...out, blank()]
+}
+
+/** Each bot: what it did, its P&L over the gap and what it holds now, then what was held or refused, then its trades. */
+const BOT_TRADES_LISTED = 5
+function botsSection(s: AwaySummary, width: number, now: number): Line[] {
+  const bots = s.bots ?? []
+  if (!bots.length) return []
+  const say = (text: string, fg: string = C.dim) => wrap(text, Math.max(10, width - 2)).map((t) => line(`  ${t}`, fg))
+  const out = [heading(`Bots · ${plural(bots.length, "bot")}`), ...say("Each bot's P&L is the Candle Harness's count from its own fills, apart from Candle's books.")]
+  for (const b of bots) {
+    // Its name, then what it did, its P&L over the gap and what's still open, each a line of its own and wrapped: a
+    // narrow overlay never cuts its P&L off.
+    out.push({ segs: [{ text: fit(`  ${b.name}`, width), fg: C.hi }, ...(b.mode === "paper" ? [{ text: " · paper", fg: C.dim }] : [])] })
+    const more = (text: string, fg: string = C.ink) => wrap(text, Math.max(10, width - 4)).map((t) => line(`    ${t}`, fg))
+    out.push(...more(botDid(b)))
+    if (b.realizedUsd !== undefined) out.push(...more(b.realizedUsd === null ? "P&L over the gap not valued" : `P&L over the gap ${signedMoney(b.realizedUsd)}, from what its exits sold`, b.realizedUsd === null ? C.dim : b.realizedUsd > 0 ? C.good : b.realizedUsd < 0 ? C.bad : C.ink))
+    if (b.open) out.push(...more(b.open.length ? `still open: ${b.open.map((p) => p.symbol ?? shortAddress(p.mint)).join(", ")}` : "nothing open"))
+    for (const e of b.held) out.push(...entryLines(e, width, now))
+    for (const e of b.trades.slice(0, BOT_TRADES_LISTED)) out.push(...entryLines(e, width, now))
+    if (b.trades.length > BOT_TRADES_LISTED) out.push(line(`  and ${b.trades.length - BOT_TRADES_LISTED} more trades: the Journal has every one`, C.dim))
+  }
+  return [...out, blank()]
+}
+
+/** A trigger's trade card that expired with nobody there gets `run it now` after its last line. */
+function runNowChips(lines: Line[], trades: readonly AwayCard[]): Line[] {
+  const byId = new Map<string, string>(trades.flatMap((t): [string, string][] => (t.runNow ? [[`away:${t.seqs[0] ?? t.at}`, t.runNow]] : [])))
+  if (!byId.size) return lines
+  return lines.map((l, i) => {
+    const id = l.pick?.id
+    const ref = id ? byId.get(id) : undefined
+    if (!ref || lines[i + 1]?.pick?.id === id) return l
+    return { ...l, segs: [...l.segs, { text: " ", fg: C.ink }, { ...chip("run it now", "runNow"), ref }] }
+  })
 }
 
 /** An address, short, with its ⧉ chip; in full once copied. */
@@ -304,10 +396,13 @@ export function awayLines(v: AwayView | undefined, opts: { width: number; now: n
     ...(down ? say(down, C.look) : []),
     blank(),
     ...section("Stopped or refused", s.counts.stopped, s.stopped, width, now),
-    ...section("Trades", s.counts.trades, s.trades, width, now, (e) => {
+    ...runNowChips(section("Trades", s.counts.trades, s.trades, width, now, (e) => {
       const t = e as AwayCard
       return t.withoutCard && !/without a card/.test(t.text) ? " · without a card" : ""
-    }),
+    }), s.trades),
+    // Counted as the note counts them, by firing: a firing and what it did are two rows of one.
+    ...section("Triggers", s.counts.triggers ?? 0, s.triggers ?? [], width, now, undefined, s.counts.fired ? plural(s.counts.fired, "firing") : undefined),
+    ...botsSection(s, width, now),
     ...outsideLines(s, width, now, shownInFull),
     ...pnlSection(s, width, now),
     ...signalsSection(s, width, now),

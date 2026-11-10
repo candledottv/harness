@@ -20,6 +20,7 @@
 // fills, `candle_get_profile_trades`), and a few seconds after each fill. All inside the key's request
 // budget (key-budget.ts, kind "pnl"): what doesn't fit is read less often. A read that fails keeps the
 // last book, with its age and why.
+import { ranWithoutCard } from "../shared/approved-how"
 import { randomBytes } from "node:crypto"
 import { readFileSync } from "node:fs"
 import { appendFile, chmod, rename, writeFile } from "node:fs/promises"
@@ -603,7 +604,7 @@ export function journalSwaps(rows: readonly JournalRow[], from: number | null): 
   const out: JournalSwap[] = []
   for (const row of rows) {
     if (row.type === "card.created" && row.kind === "swap" && row.mode === "live" && typeof row.opId === "string") cards.set(row.opId, row)
-    else if (row.type === "card.approved" && row.how === "inside-limits" && typeof row.opId === "string") inside.add(row.opId)
+    else if (row.type === "card.approved" && ranWithoutCard(row.how) && typeof row.opId === "string") inside.add(row.opId)
     else if (row.type === "operation.succeeded" && typeof row.opId === "string" && cards.has(row.opId)) {
       const at = Date.parse(row.at)
       if (from !== null && at < from) continue
@@ -637,13 +638,32 @@ export function withoutCardSignatures(rows: readonly JournalRow[]): string[] {
   const inside = new Set<string>()
   const out: string[] = []
   for (const row of rows) {
-    if (row.type === "card.approved" && row.how === "inside-limits" && row.mode === "live" && typeof row.opId === "string") inside.add(row.opId)
+    if (row.type === "card.approved" && ranWithoutCard(row.how) && row.mode === "live" && typeof row.opId === "string") inside.add(row.opId)
     else if (row.type === "operation.succeeded" && typeof row.opId === "string" && inside.has(row.opId)) {
       const sig = signatureOf(row.result)
       if (sig) out.push(sig)
     }
   }
   return out.slice(-200)
+}
+
+/** Each live fill's bot, rules or code, by its signature: Trades says "by bot". */
+export function botSignatures(rows: readonly JournalRow[]): Record<string, string> {
+  const ops = new Map<string, string>()
+  const out: Record<string, string> = {}
+  for (const row of rows) {
+    if (row.type === "card.created" && typeof row.bot === "string" && row.mode === "live" && typeof row.opId === "string") ops.set(row.opId, row.bot)
+    else if (row.type === "operation.succeeded" && typeof row.opId === "string" && ops.has(row.opId)) {
+      const sig = signatureOf(row.result)
+      if (sig) out[sig] = ops.get(row.opId)!
+    }
+  }
+  return Object.fromEntries(Object.entries(out).slice(-200))
+}
+
+const botView = (rows: readonly JournalRow[], bots: BotPnl[]): Pick<PnlView, "byBot" | "bots"> => {
+  const byBot = botSignatures(rows)
+  return { ...(Object.keys(byBot).length ? { byBot } : {}), ...(bots.length ? { bots } : {}) }
 }
 
 export interface PaperPnlPosition {
@@ -764,10 +784,32 @@ export interface PnlView {
   swaps: JournalSwap[]
   /** Signatures of the live trades the core ran without a card, which Trades marks. */
   withoutCard?: string[]
+  /** Each live fill's bot, by its signature, which Trades marks. */
+  byBot?: Record<string, string>
+  /** Each bot's figures, rules and code: the Candle Harness's count from its own fills, apart from Candle's books. */
+  bots?: BotPnl[]
   /** Each agent's paper P&L, ≈, at quoted prices: never summed with live. */
   paper: Record<string, PaperPnl>
   /** The first sample the Candle Harness has, of any agent: where the chart can start. */
   samplesFrom: number | null
+}
+
+/** A bot's figures from its own fills (bot-book.ts), a rules bot's or a code bot's: what its sells realized, and what its open positions are worth now. */
+export interface BotPnl {
+  name: string
+  /** A code bot: the person's own program, counted from its fills as a rules bot is. */
+  kind?: "code"
+  agent: string
+  mode: "paper" | "live"
+  open: number
+  closed: number
+  realizedUsd: number
+  /** Its open positions at the latest price; null where none could be valued. */
+  unrealizedUsd: number | null
+  /** Some closed positions couldn't be valued, so realized leaves them out. */
+  unvalued?: true
+  /** Open positions with no price to value them at. */
+  unpriced?: number
 }
 
 export interface PnlDeps {
@@ -789,6 +831,8 @@ export interface PnlDeps {
   symbolOf?: (mint: string) => string | undefined
   /** How many times its own pace P&L now waits, from the key's budget; 1 when it fits. */
   stretch?: () => number
+  /** Each bot's figures from its own fills, rules and code. */
+  bots?: () => BotPnl[]
   /** After every read that changed something. */
   publish: () => void
 }
@@ -934,6 +978,7 @@ export class PnlBook {
       trades,
       swaps: journalSwaps(this.deps.rows(), figure.start),
       withoutCard: withoutCardSignatures(this.deps.rows()),
+      ...botView(this.deps.rows(), this.deps.bots?.() ?? []),
       paper,
       samplesFrom: Number.isFinite(samplesFrom) ? samplesFrom : null,
     }

@@ -64,7 +64,7 @@ describe("the lines", () => {
     expect(textOf(chips!)).toContain("✓ trades")
     expect(textOf(chips!)).toMatch(/ core /)
     expect(textOf(chips!)).not.toContain("✓ core")
-    expect(chips!.segs.filter((s) => s.act === "journalKind").map((s) => s.ref)).toEqual(["trades", "cards", "kill", "hacc", "memory", "agents", "view", "core"])
+    expect(chips!.segs.filter((s) => s.act === "journalKind").map((s) => s.ref)).toEqual(["trades", "cards", "kill", "hacc", "memory", "agents", "bots", "view", "core"])
     // Narrow, the chips still take one row.
     expect(journalHead(undefined, 77)).toHaveLength(2)
   })

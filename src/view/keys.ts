@@ -35,12 +35,13 @@
 //     next page; ctrl-o on a row shows its rows as recorded.
 import type { MemoryRow } from "./panes/memory"
 import type { EngineId } from "../engine/engine"
-import { type Command, type CommandContext, parseCommand } from "./commands"
-import { type KeyId, keyLines, pressed } from "./keymap"
+import { type Command, type CommandContext, parseCommand } from "../shared/commands"
+import { parseTriggerShape } from "../shared/trigger-grammar"
+import { HELP_LINES, type KeyId, keyLines, pressed } from "./keymap"
 import { AGENT_FIRST, beside, type Direction, type PaneId, type PaneNav, paneNav, panesOf, place, shownOf } from "./layout"
 import { type LayoutOp, nameProblem, tabNameProblem } from "./layout-edit"
 import { type LayoutInfo, layoutMenuRows } from "./layout-menu"
-import { DEFAULT_TABS } from "./layouts-file"
+import { FRESH_TABS } from "./layouts-file"
 import { type PickableRow, type PickerRow, pickable, startIndex } from "./panes/engines"
 import type { Preset } from "../engine/preset"
 import { type PaletteInput, type PaletteRow, paletteRows } from "./palette-rows"
@@ -63,9 +64,12 @@ import type { JournalKind } from "../core/journal-query"
 import type { SkillFolder } from "../core/skill-folders"
 import type { PnlWindow } from "../core/pnl"
 import { CATALOGUE } from "../core/cli-catalogue"
-import { HELP_LINES } from "./commands"
 import type { ViewCard } from "./store"
 import type { AutonomyTopic } from "../core/autonomy"
+import type { TriggersTopic } from "../core/triggers"
+import { askToChange, pickedTrigger, type TriggersAct, triggersFound, type TriggersState } from "./triggers-view"
+import { askToChangeBot, type BotConfirm, botNamed, botPart, type BotsState, everyBot, goLiveWords, parseBotRef, pickedBot, replayWords } from "./bots-view"
+import type { BotsTopic } from "../core/bots"
 import { type AgentLimits, type ApprovalsRow, type ApprovalsState, approvalsEntries, detailRows, parseFigure, pickedWallet, walletWords } from "./approvals"
 import { money } from "./theme"
 import { TOUR_STOPS } from "./tour-stops"
@@ -73,6 +77,10 @@ import { TOUR_STOPS } from "./tour-stops"
 export const KILL_WINDOW_MS = 1_000
 export const QUIT_WINDOW_MS = 1_000
 export const APPROVE_AFTER_MS = 300
+/** A card that arrived while another was open waits this long: an Enter meant for the card being read mustn't land on the one that slid in under it. */
+export const APPROVE_AFTER_BEHIND_MS = 1_500
+/** A key typed into the Build pane's terminal this recently means the person is mid-sentence there: a card proposed now opens without the keys. */
+export const BUILD_TYPING_MS = 2_000
 /** How long a row's highlight rests before its token is the link. */
 export const LINK_SETTLE_MS = 300
 export const MESSAGE_MS = 6_000
@@ -84,7 +92,9 @@ export type Focus = "tabs" | "cards" | PaneId
 export type Overlay =
   /** Help, scrolled `scroll` lines down: at 80×24 it doesn't fit. */
   | { kind: "help"; scroll?: number }
-  | { kind: "card"; cardId: string }
+  /** A card's details. `build`: proposed by the Build pane's harness and opened whole over the frame, where ⏎ approves it and Esc goes back to the harness. */
+  /** `waiting`: it opened while the person was typing in the harness, so the keys stay there until ctrl-] or a click moves to it. */
+  | { kind: "card"; cardId: string; build?: true; waiting?: true }
   | { kind: "confirmLive" }
   | { kind: "agents"; index: number }
   /** The palette: the search typed so far, and the highlighted row among what it found. */
@@ -93,8 +103,8 @@ export type Overlay =
   | { kind: "stopHelp" }
   /** The model picker for `agent`: the search typed so far, and the highlighted model among what it found. */
   | { kind: "engines"; agent: string; query: string; index: number; moved?: true }
-  /** An agent's memory: its lines and files, each deletable; `confirm` while "clear all" asks. */
-  | { kind: "memory"; agent: string; index: number; confirm?: true }
+  /** An agent's memory: its lines and files, each deletable, each line pinned or not; `confirm` while "clear all" asks, `confirmPinned` while a pinned line's delete does. */
+  | { kind: "memory"; agent: string; index: number; confirm?: true; confirmPinned?: string }
   /** The layout menu: the highlighted row, and the name typed while "save as" asks for one. */
   | { kind: "layouts"; index: number; naming?: string }
   /** The tab bar's settings menu: what's set up once and rarely changed, each opening its own; then each tab's tick. */
@@ -106,16 +116,24 @@ export type Overlay =
   | { kind: "pnlMenu"; index: number; x?: number; y?: number; typing?: string }
   /** A Journal row's rows as recorded (ctrl-o on it), scrolled `scroll` lines down. */
   | { kind: "journalRows"; id: string; scroll?: number }
+  /** A code bot's log, kept by the core: `scroll` lines down, the newest at the foot until scrolled; stderr alone on ask. */
+  | { kind: "botLog"; name: string; scroll?: number; only?: "err" }
   /** While you were away: the last gap's every section, over the frame, scrolled `scroll` lines down. */
   | { kind: "away"; scroll?: number }
   /** The approvals menu: which wallets trade inside limits, their figures, and every limit with who holds it. */
   | ApprovalsState
+  /** The Triggers overlay: each trigger, the picked one in full, and keep-awake on a Mac. */
+  | TriggersState
+  /** The Bots overlay: each rules bot, the picked one in full with its chips, for a layout without the Bots pane. */
+  | BotsState
   /** The Wallets pane's `all groups ▾` menu, under its chip at column `x` and row `y` (unset from the palette). */
   | { kind: "walletsMenu"; index: number; x?: number; y?: number }
   /** Every wallet, to pick several and name them at once. */
   | EveryWalletState
   /** The tour: the stop lit now, of tour.tsx's six. Onboarding's step 4, or the palette's row again. */
   | { kind: "tour"; step: number }
+  /** A pane folded into its tab's strip (the Build tab's bots folder or test run, below 100 columns), open over the frame. */
+  | { kind: "pane"; pane: PaneId; scroll?: number }
 
 /** The settings menu's rows: one button, with a submenu for each setting not commonly changed. */
 export const SETTINGS = [
@@ -128,6 +146,8 @@ export const SETTINGS = [
   { id: "aliases", label: "aliases", words: "short names for what you type" },
   { id: "pnl", label: "P&L window", words: "what P&L counts from: 24h, midnight, a time, your last session" },
   { id: "approvals", label: "approvals", words: "which wallets trade inside limits without a card, and every limit" },
+  { id: "triggers", label: "triggers", words: "what fires on its own: switch off, remove, run it now; keep the Mac awake" },
+  { id: "bots", label: "bots", words: "rules bots and code bots: how each is doing; pause, stop, flatten" },
   // Onboarding's "set one up later from settings ▾": the vault's commands, each in the pane.
   { id: "vault", label: "vault", words: "set one up: candle vault init goes on the line, and runs in the pane" },
 ] as const
@@ -149,6 +169,8 @@ export interface UiState {
   oneAgent: boolean
   killArmedAt?: number
   quitArmedAt?: number
+  /** When the frame last came back from a window too small to draw, or a card took the keys: Enter's wait on a card starts no earlier. */
+  shownSince?: number
   /** When Esc was pressed on a typed line: a second within QUIT_WINDOW_MS clears it, as in Claude Code. */
   escArmedAt?: number
   overlay?: Overlay
@@ -165,6 +187,8 @@ export interface UiState {
   journal?: JournalSearch
   /** The Wallets pane's open group, where its highlight last rested, and its search: this view's, not kept. */
   wallets?: { open?: string; find?: WalletsFind }
+  /** A bot's flatten or remove, asking once before it goes, in its pane or the Bots overlay. */
+  botConfirm?: BotConfirm
 }
 
 /** How long an address shows in full after its ⧉ chip. */
@@ -297,6 +321,9 @@ export type UiAction =
   | { type: "journalKind"; kind: JournalKind; now: number }
   | { type: "journalOlder"; now: number }
   | { type: "scrollJournalRows"; delta: number; now: number }
+  | { type: "scrollBotLog"; delta: number; now: number }
+  /** The log overlay's `stderr only` chip: its stderr lines alone, or all of them again. */
+  | { type: "botLogOnly"; now: number }
   /** The layout menu, from the tab bar's chip; a row picked in it by a click. */
   | { type: "clickLayoutMenu"; now: number }
   /** The tab bar's settings chip, and a row of its menu picked by a click. */
@@ -312,6 +339,26 @@ export type UiAction =
   | { type: "scrollHelp"; delta: number; now: number }
   /** While you were away: the note's show all opens it, the wheel scrolls it, a token's row picks. */
   | { type: "openAway"; now: number }
+  /** Out of the Build pane's harness with ctrl-], with no other pane to go back to: the tab bar. */
+  | { type: "focusTabs"; now: number }
+  /** A chip on a folded strip: its pane, open over the frame. */
+  | { type: "openPane"; pane: PaneId; now: number }
+  /** A code bot's card the Build pane's harness proposed: open whole over the frame, focus on it. */
+  /** `typing`: a key went to the harness's terminal a moment ago, so the card opens without taking the keys. */
+  | { type: "openBuildCard"; cardId: string; typing?: boolean; now: number }
+  /** ctrl-] or a click on a Build card that opened without the keys: it takes them, and Enter's wait starts now. */
+  | { type: "takeBuildCard"; now: number }
+  /** The frame is drawn again after a window too small to draw: Enter's wait on every card starts over. */
+  | { type: "shown"; now: number }
+  /** A key other than the kill chord went to a pane that has the keys: an armed kill is off. */
+  | { type: "disarmKill" }
+  /** The Triggers overlay: from the status bar's chip or the Triggers pane; a trigger clicked in its list, or a chip. */
+  | { type: "openTriggers"; now: number }
+  | { type: "pickTriggers"; index?: number; act?: TriggersAct; ref?: string; now: number }
+  /** The Bots overlay or tab: from the status bar's chip, settings ▾ or the palette; a bot clicked in the overlay's list; a bot's chip. */
+  | { type: "openBots"; now: number }
+  | { type: "pickBots"; index: number; side?: "list"; now: number }
+  | { type: "botAct"; ref: string; now: number }
   | { type: "scrollAway"; delta: number; now: number }
   | { type: "pickAway"; pick: RowPick; now: number }
   /** The agent pane's engine chip. */
@@ -319,10 +366,13 @@ export type UiAction =
   /** A model clicked in the picker; `model` undefined is the harness's own default. */
   | { type: "pickEngine"; engine: EngineId; model?: string; now: number }
   | { type: "pickPreset"; preset: Preset; now: number }
+  | { type: "pickRunner"; on: boolean; now: number }
   /** A memory row's ✕ chip. */
   | { type: "deleteMemory"; row: MemoryRow; now: number }
   /** The memory overlay's "clear all": the first asks, the second clears. */
   | { type: "clickMemoryClear"; now: number }
+  /** A memory line's pin or unpin chip. */
+  | { type: "pinMemory"; row: MemoryRow; now: number }
   | { type: "scrollEngines"; delta: number; now: number }
   /** A model list answered: an untouched picker moves to the agent's choice, now that it's listed. */
   | { type: "modelsRead"; now: number }
@@ -332,6 +382,8 @@ export type UiAction =
   | { type: "paneOpened" }
 
 export type Effect =
+  /** One of the Build pane's own chips, by its ref (the harness choice, from the palette). */
+  | { type: "build"; ref: string }
   /** `line`: what was typed, for a CLI command or a trade, which the core may refuse and the line then gets back. */
   | { type: "command"; command: Command; line?: string }
   | { type: "approve"; cardId: string; how: "enter" | "click" }
@@ -351,10 +403,14 @@ export type Effect =
   /** The agent's engine and model from its next turn; `model` undefined is the harness's own default. */
   | { type: "chooseEngine"; agent: string; engine: EngineId; model?: string }
   | { type: "choosePreset"; agent: string; preset: Preset }
+  /** The agent's code runner, turned on or off: written into its config.toml table by the core. */
+  | { type: "setRunner"; agent: string; on: boolean }
   /** The memory overlay opened: the core reads every agent's memory fresh. */
   | { type: "readMemory" }
   /** A delete from an agent's memory, the person's. */
   | { type: "memoryDelete"; agent: string; entry?: string; file?: string; all?: true }
+  /** A line of an agent's memory pinned or unpinned, the person's. */
+  | { type: "memoryPin"; agent: string; entry: string; pinned: boolean }
   /** Stop the agent's turn, and the messages waiting behind it (a turn must always be stoppable). */
   | { type: "stopTurn"; agent: string }
   /** A change to the tab's layout, or which it shows: the frame makes it and writes layouts.toml. */
@@ -377,6 +433,7 @@ export type Effect =
   | { type: "pnlWindow"; window: PnlWindow }
   /** A skill folder of the person's own turned on or off, and the folders read fresh as their rows open. */
   | { type: "skillsFolder"; folder: string; on: boolean }
+  | { type: "keepAwake"; on: boolean }
   | { type: "skillsRead" }
   /** The Journal's next page, and a row's rows as recorded for its details. */
   | { type: "journalOlder" }
@@ -387,11 +444,25 @@ export type Effect =
   | { type: "walletsShow"; show: WalletsShown }
   /** A wallet's setting, the person's from the approvals menu: the core keeps it. */
   | { type: "autonomy"; wallet: string; name: string; setting: "ask" | "inside"; perTradeUsd?: number; perDayUsd?: number }
+  /** A trigger switched off or back on (as approved), removed, or its expired card run again: the core keeps them. */
+  | { type: "triggerSet"; name: string; on: boolean }
+  | { type: "triggerRemove"; name: string }
+  | { type: "triggerRunNow"; cardId: string }
+  /** A bot paused, back on as approved, stopped, flattened, its held sells tried again, or removed: the core does it. */
+  | { type: "bot"; method: "pause" | "resume" | "stop" | "flatten" | "pauseFlatten" | "retry" | "remove" | "process.start"; name: string; positions?: "flatten" | "leave" }
+  /** A control a code bot's own report offers, clicked: the core says whether it's at once or a card. */
+  | { type: "botControl"; name: string; id: string }
+  /** The exits the core holds on a code bot's position, removed by the person. */
+  | { type: "botExitsRemove"; name: string; position: string }
+  /** A code bot's log, read for its overlay. */
+  | { type: "botLog"; name: string }
 
 export interface UiContext {
   /** Open cards, oldest first. */
   cards: readonly ViewCard[]
   seenAt: Readonly<Record<string, number>>
+  /** Cards that arrived while another was open: Enter waits longer on each. */
+  behind?: Readonly<Record<string, true>>
   mode: "paper" | "live" | undefined
   agents: readonly string[]
   activeAgent: string | undefined
@@ -420,9 +491,12 @@ export interface UiContext {
   picks?: Partial<Record<PaneId, readonly PickRow[]>>
   /** For the palette: each agent's preset, the linked token, the tab's token pane and its pin, and the kill switch's pause. */
   presets?: Readonly<Record<string, Preset | undefined>>
+  runner?: PaletteInput["runner"]
   linked?: string
   pin?: { pinned: boolean; symbol?: string }
   paused?: boolean
+  /** Set on Free, where triggers aren't open: the words a typed trigger line is refused with. */
+  triggersGated?: string
   /** How far help scrolls at the screen's size, its rows wrapped as drawn. Unset, a source line each. */
   helpMax?: number
   /** Aliases config.toml sets that were left out: the palette says so. */
@@ -441,16 +515,28 @@ export interface UiContext {
   walletGroups?: readonly WalletGroup[]
   /** The person's skill folders and whether each is used, from the core's skills topic. */
   skillFolders?: readonly SkillFolder[]
+  /** Keep-awake, as the core says: shown in the palette where this machine has it (macOS). */
+  keepAwake?: { on: boolean; available: boolean; active: boolean; failed?: string }
   walletsShown?: WalletsShown
   /** Every wallet on the account and what each is called, for the overlay of every wallet. */
   allWallets?: PortfolioView["wallets"]
   walletNames?: readonly WalletNameEntry[]
   /** Each wallet's setting and each agent's limits, for the approvals menu. */
   autonomy?: AutonomyTopic
+  /** The triggers, for the Triggers overlay. */
+  triggers?: TriggersTopic
+  /** The bots, rules and code, for the Bots overlay and the bots' chips. */
+  bots?: BotsTopic
+  /** The first tab with the Bots pane, where the status bar's chip goes; else it opens the overlay. */
+  botsTab?: number
+  /** The first tab with the Build pane, where the palette's harness row goes. */
+  buildTab?: number
   limits?: readonly AgentLimits[]
   /** While you were away: the last gap's summary, for the palette's row, and how far its overlay scrolls. */
   away?: AwayView
   awayMax?: number
+  /** How far the log overlay scrolls: its lines past what fits. */
+  botLogMax?: number
   /** The first tab with the agent pane: where the palette's tour runs, as onboarding's does. */
   tourTab?: number
 }
@@ -477,12 +563,24 @@ export function focusedCard(state: UiState, ctx: UiContext): ViewCard | undefine
   return ctx.cards.find((c) => c.cardId === state.focusedCardId) ?? ctx.cards.at(-1)
 }
 
+/**
+ * When Enter may approve a card: 300 ms after it showed, or longer when it arrived while another card was open,
+ * so a press meant for the card being read doesn't take the newcomer. Counted from when it could first be seen:
+ * no earlier than the frame's return from a window too small to draw.
+ */
+export function enterReadyAt(card: ViewCard, state: Pick<UiState, "shownSince">, ctx: Pick<UiContext, "seenAt" | "behind">, now: number): number {
+  const seen = ctx.seenAt[card.cardId] ?? now
+  const shown = Math.max(seen, state.shownSince ?? Number.NEGATIVE_INFINITY)
+  // The longer wait is the newcomer's own, from its arrival; a redraw only asks for the usual 300 ms again.
+  return Math.max(seen + (ctx.behind?.[card.cardId] ? APPROVE_AFTER_BEHIND_MS : APPROVE_AFTER_MS), shown + APPROVE_AFTER_MS)
+}
+
 function approve(state: UiState, card: ViewCard | undefined, ctx: UiContext, now: number, how: "enter" | "click"): Step {
   if (!card) return done(state)
   // Funds out to a new address: a click on "yes, a new address", never Enter.
   if (card.display.newAddress && how === "enter") return done(say(state, "This sends to a new address: check it in full on the card, then click yes, a new address.", now, "error"))
-  // A card that's only just appeared can't be approved by a key meant for something else.
-  if (now - (ctx.seenAt[card.cardId] ?? now) < APPROVE_AFTER_MS) return done(state)
+  // A card that's only just appeared can't be approved by a key meant for something else. A click was aimed at it.
+  if (now < (how === "enter" ? enterReadyAt(card, state, ctx, now) : (ctx.seenAt[card.cardId] ?? now) + APPROVE_AFTER_MS)) return done(state)
   return done(state, { type: "approve", cardId: card.cardId, how })
 }
 
@@ -492,10 +590,16 @@ function switchMode(state: UiState, mode: "paper" | "live", ctx: UiContext, now:
   return done(state, { type: "mode", mode })
 }
 
+/** A typed line as the input line reads it: a trigger's line on Free is refused with the plan's words, and never reaches the agent. */
+export function readLine(line: string, ctx: Pick<UiContext, "commands" | "triggersGated">): Command | undefined {
+  if (ctx.triggersGated && parseTriggerShape(line).ok) return { kind: "refused", message: ctx.triggersGated }
+  return parseCommand(line, ctx.commands)
+}
+
 function submit(state: UiState, ctx: UiContext, now: number): Step {
   const line = state.input
   const cleared: UiState = { ...state, input: "", cursor: 0 }
-  const command = parseCommand(line, ctx.commands)
+  const command = readLine(line, ctx)
   if (!command) return done(cleared)
   switch (command.kind) {
     case "help":
@@ -759,21 +863,30 @@ function openMemory(state: UiState, ctx: UiContext, now: number, agent = ctx.act
   return done({ ...state, overlay: { kind: "memory", agent, index: 0 } }, { type: "readMemory" })
 }
 
-/** A row's delete: a line of the index by its id, a file by its path, or "clear all" once it has asked. */
+/** A row's delete: a line of the index by its id (a pinned one once it has asked), a file by its path, or "clear all" once it has asked. */
 function deleteMemory(state: UiState, overlay: Extract<Overlay, { kind: "memory" }>, row: MemoryRow | undefined): Step {
   if (!row) return done(state)
+  const { confirm: _confirm, confirmPinned: _pinned, ...rest } = overlay
   if (row.kind === "clear") {
-    if (!overlay.confirm) return done({ ...state, overlay: { ...overlay, confirm: true } })
+    if (!overlay.confirm) return done({ ...state, overlay: { ...rest, confirm: true } })
   }
-  const { confirm: _confirm, ...rest } = overlay
+  if (row.kind === "entry" && row.pinned && overlay.confirmPinned !== row.id) return done({ ...state, overlay: { ...rest, confirmPinned: row.id } })
   if (row.kind === "clear") return done({ ...state, overlay: { ...rest, index: 0 } }, { type: "memoryDelete", agent: overlay.agent, all: true })
   return done({ ...state, overlay: rest }, row.kind === "entry" ? { type: "memoryDelete", agent: overlay.agent, entry: row.id } : { type: "memoryDelete", agent: overlay.agent, file: row.path })
+}
+
+/** A line pinned, or unpinned: it moves under the index's ## Pinned, or out from under it. */
+function pinMemory(state: UiState, overlay: Extract<Overlay, { kind: "memory" }>, row: MemoryRow | undefined): Step {
+  // A heading is shown and deleted as any line, never pinned: pins sit under their own heading.
+  if (row?.kind !== "entry" || row.heading) return done(state)
+  const { confirm: _confirm, confirmPinned: _pinned, ...calm } = overlay
+  return done({ ...state, overlay: calm }, { type: "memoryPin", agent: overlay.agent, entry: row.id, pinned: !row.pinned })
 }
 
 function onMemoryKey(state: UiState, overlay: Extract<Overlay, { kind: "memory" }>, key: Key, ctx: UiContext): Step {
   const rows = ctx.memory?.(overlay.agent) ?? []
   const index = Math.min(overlay.index, Math.max(0, rows.length - 1))
-  const { confirm: _confirm, ...calm } = overlay
+  const { confirm: _confirm, confirmPinned: _pinned, ...calm } = overlay
   const move = (delta: number) => done({ ...state, overlay: { ...calm, index: Math.max(0, Math.min(rows.length - 1, index + delta)) } })
   switch (key.name) {
     case "up":
@@ -785,10 +898,11 @@ function onMemoryKey(state: UiState, overlay: Extract<Overlay, { kind: "memory" 
     case "pagedown":
       return move(10)
     case "escape":
-      return done({ ...state, overlay: overlay.confirm ? calm : undefined })
+      return done({ ...state, overlay: overlay.confirm || overlay.confirmPinned ? calm : undefined })
     case "return":
     case "enter":
-      // Enter acts only on "clear all", which asks first; a line or file goes with ⌫ or its ✕.
+      // Enter pins or unpins a line, and acts on "clear all", which asks first; a line or file goes with ⌫ or its ✕.
+      if (rows[index]?.kind === "entry") return pinMemory(state, { ...overlay, index }, rows[index])
       return rows[index]?.kind === "clear" ? deleteMemory(state, { ...overlay, index }, rows[index]) : done(state)
     case "backspace":
     case "delete":
@@ -802,6 +916,7 @@ function pickEngine(state: UiState, agent: string, row: PickableRow | undefined)
   const closed: UiState = { ...state, overlay: undefined }
   if (!row) return done(closed)
   if (row.kind === "preset") return done(closed, { type: "choosePreset", agent, preset: row.preset })
+  if (row.kind === "runner") return done(closed, { type: "setRunner", agent, on: row.on })
   return done(closed, { type: "chooseEngine", agent, engine: row.engine, ...(row.model !== undefined ? { model: row.model } : {}) })
 }
 
@@ -837,7 +952,7 @@ function onEnginesKey(state: UiState, overlay: Extract<Overlay, { kind: "engines
 export function paletteInput(state: UiState, ctx: UiContext): PaletteInput {
   const focus = menuFocus(state)
   return {
-    tabs: ctx.tabs ?? DEFAULT_TABS.map((t) => t.name),
+    tabs: ctx.tabs ?? FRESH_TABS.map((t) => t.name),
     tab: state.tab,
     ...(ctx.tabTicks ? { tabTicks: ctx.tabTicks } : {}),
     ...(ctx.layout ? { layout: ctx.layout } : {}),
@@ -845,6 +960,7 @@ export function paletteInput(state: UiState, ctx: UiContext): PaletteInput {
     agents: ctx.agents,
     ...(ctx.activeAgent ? { activeAgent: ctx.activeAgent } : {}),
     presets: ctx.presets ?? {},
+    ...(ctx.runner ? { runner: ctx.runner } : {}),
     tokens: ctx.commands.knownTokens,
     ...(ctx.linked ? { linked: ctx.linked } : {}),
     ...(ctx.pin ? { pin: ctx.pin } : {}),
@@ -864,6 +980,7 @@ export function paletteInput(state: UiState, ctx: UiContext): PaletteInput {
     ...(ctx.away ? { away: ctx.away } : {}),
     ...(ctx.walletGroups?.length ? { walletGroups: ctx.walletGroups.map((g) => g.name) } : {}),
     ...(ctx.skillFolders ? { skillFolders: ctx.skillFolders } : {}),
+    ...(ctx.keepAwake ? { keepAwake: ctx.keepAwake } : {}),
     walletsOnTab: navOf(ctx).order.includes("wallets") || navOf(ctx).group.includes("wallets"),
   }
 }
@@ -912,6 +1029,8 @@ function runPalette(state: UiState, row: PaletteRow | undefined, ctx: UiContext,
       return done(closed, { type: "setAgent", agent: run.agent })
     case "preset":
       return done(closed, { type: "choosePreset", agent: run.agent, preset: run.preset })
+    case "runner":
+      return done(closed, { type: "setRunner", agent: run.agent, on: run.on })
     case "picker":
       return openPicker(closed, ctx, now)
     case "memory":
@@ -937,12 +1056,21 @@ function runPalette(state: UiState, row: PaletteRow | undefined, ctx: UiContext,
     case "skillsFolder":
       // The palette stays open on its row, which shows the folder's new state when the core answers.
       return done(state, { type: "skillsFolder", folder: run.folder, on: run.on })
+    case "keepAwake":
+      // As a skill folder's: the row shows the new setting when the core answers.
+      return done(state, { type: "keepAwake", on: run.on })
     case "lists":
       return done({ ...closed, lists: run.source })
     case "pnlMenu":
       return openPnlMenu(closed, ctx)
     case "approvals":
       return openApprovals(closed)
+    case "settings":
+      return done({ ...closed, overlay: { kind: "settings", index: 0 } })
+    case "triggers":
+      return openTriggers(closed)
+    case "bots":
+      return goBots(closed, ctx)
     case "everyWallet":
       return openEveryWallet(closed)
     case "walletsFind":
@@ -954,10 +1082,17 @@ function runPalette(state: UiState, row: PaletteRow | undefined, ctx: UiContext,
       return done({ ...closed, overlay: { kind: "away" } })
     case "tour":
       return openTour(closed, ctx)
+    case "build": {
+      // The harness choice is the Build pane's own screen, so it goes to the tab that has the pane; the folder and the
+      // test run open over the frame wherever you are.
+      if (run.what !== "harness") return done({ ...closed, overlay: { kind: "pane", pane: run.what } })
+      if (ctx.buildTab === undefined || ctx.buildTab < 0) return done(say(closed, "No tab shows the Build pane: tick Build on in settings ▾.", now))
+      return done(focusPane({ ...closed, tab: ctx.buildTab }, "build"), { type: "build", ref: "harness" })
+    }
     case "journalSearch": {
       // On the tab on screen if it shows the Journal, else on the Journal's own tab.
       if (navOf(ctx).order.includes("journal")) return done(searching(focusPane(closed, "journal"), true))
-      const tab = (ctx.tabs ?? DEFAULT_TABS.map((t) => t.name)).indexOf("Journal")
+      const tab = (ctx.tabs ?? FRESH_TABS.map((t) => t.name)).indexOf("Journal")
       if (tab < 0) return done(say(closed, "No tab shows the Journal: tick it in settings ▾, or open its pane with the layout menu.", now))
       return done(searching(focusPane({ ...closed, tab }, "journal"), true))
     }
@@ -1050,6 +1185,10 @@ function runSettings(state: UiState, index: number, ctx: UiContext, now: number)
       return openPnlMenu(closed, ctx)
     case "approvals":
       return openApprovals(closed)
+    case "triggers":
+      return openTriggers(closed)
+    case "bots":
+      return goBots(closed, ctx)
     case "vault": {
       // The person's own owner step, typed: Enter opens the pane at once. The rest of the vault's commands are in the palette.
       const line = "candle vault init"
@@ -1058,6 +1197,199 @@ function runSettings(state: UiState, index: number, ctx: UiContext, now: number)
     default:
       return done(closed)
   }
+}
+
+/** The tab with the Bots pane where there is one, on its list; else the Bots overlay. */
+const goBots = (state: UiState, ctx: UiContext): Step => (ctx.botsTab !== undefined && ctx.botsTab >= 0 ? done({ ...state, botConfirm: undefined, tab: ctx.botsTab, focus: "bots" }) : openBots(state))
+
+/** The log overlay's scroll after `by`: unset is its foot, the newest line; a scroll that reaches the foot is unset again. */
+export function botLogScrolled(scroll: number | undefined, by: number, max: number | undefined): number | undefined {
+  const m = Math.max(0, max ?? 0)
+  const next = Math.max(0, Math.min(m, (scroll ?? m) + by))
+  return next >= m ? undefined : next
+}
+
+/** The Bots overlay, on the first bot. */
+const openBots = (state: UiState): Step => done({ ...state, botConfirm: undefined, overlay: { kind: "bots", index: 0, side: "list" } })
+
+/**
+ * What a bot's chip does, in its pane or the overlay. Pause, back on as approved, stop and a retry of its held
+ * sells go to the core at once (it allows back on, stop and flatten from the main view only). Flatten and remove
+ * ask once first. The rest put words on the input line for the agent: a change, going live and a replay are
+ * cards it proposes, nothing sent before Enter.
+ */
+/** A flatten or remove asks once: an answer inside this of the ask is the press that opened it, reported twice. */
+export const BOT_CONFIRM_SETTLE_MS = 400
+const tooSoon = (state: UiState, now: number) => state.botConfirm?.at !== undefined && now - state.botConfirm.at < BOT_CONFIRM_SETTLE_MS
+
+function actBot(state: UiState, ref: string, ctx: UiContext, now: number): Step {
+  const r = parseBotRef(ref)
+  if (!r) return done(state)
+  const { action, name } = r
+  const b = botNamed(ctx.bots, name)
+  const clear: UiState = { ...state, botConfirm: undefined }
+  const fill = (text: string, said?: string): Step => {
+    const next: UiState = { ...clear, overlay: undefined, input: text, cursor: text.length }
+    return done(said ? say(next, said, now) : next)
+  }
+  // Only a bot's own agent changes it: the person switches to that agent first.
+  const whose = b && ctx.activeAgent && b.agent !== ctx.activeAgent ? ` "${name}" is ${b.agent}'s: switch to ${b.agent} first, with the agent chip.` : ""
+  switch (action) {
+    case "pause":
+    case "resume":
+    case "stop":
+    case "retry":
+      return done(clear, { type: "bot", method: action, name })
+    case "flatten":
+      return done({ ...state, botConfirm: { name, what: "flatten", at: now } })
+    case "flattenYes":
+      return tooSoon(state, now) ? done(state) : done(clear, { type: "bot", method: "flatten", name })
+    case "pauseFlatten":
+      // Two steps, each its own: the bot paused, then its positions sold.
+      return tooSoon(state, now) ? done(state) : done(clear, { type: "bot", method: "pauseFlatten", name })
+    case "remove":
+      return done({ ...state, botConfirm: { name, what: "remove", at: now } })
+    case "removeFlatten":
+      return tooSoon(state, now) ? done(state) : done(clear, { type: "bot", method: "remove", name, positions: "flatten" })
+    case "removeLeave":
+    case "removeYes":
+      return tooSoon(state, now) ? done(state) : done(clear, { type: "bot", method: "remove", name, positions: "leave" })
+    case "keep":
+      return done(clear)
+    case "ask":
+      return fill(askToChangeBot(name), `Say what to change: ${b?.agent ?? "the agent"} proposes it as a card for you to press.${whose}`)
+    case "goLive":
+      return fill(goLiveWords(name), `⏎ asks ${b?.agent ?? "the agent"}: taking a bot live is a card for you to press.${whose}`)
+    case "replay":
+      return fill(replayWords(name, b?.onSince), `⏎ asks ${b?.agent ?? "the agent"} to run Hacc's replay over the bot's live days; it shows beside the bot once it's done.${whose}`)
+    case "planBuy":
+      return fill(ctx.bots?.gate?.fix ?? "candle plan buy")
+    case "log":
+      return done({ ...clear, overlay: { kind: "botLog", name } }, { type: "botLog", name })
+    case "start":
+      return done(clear, { type: "bot", method: "process.start", name })
+    case "control": {
+      const part = botPart(name)
+      return part ? done(clear, { type: "botControl", name: part.bot, id: part.part }) : done(state)
+    }
+    case "dropExits": {
+      const part = botPart(name)
+      return part ? done({ ...state, botConfirm: { name: part.bot, what: "exits", position: part.part, at: now } }) : done(state)
+    }
+    case "dropExitsYes": {
+      const part = botPart(name)
+      return !part || tooSoon(state, now) ? done(state) : done(clear, { type: "botExitsRemove", name: part.bot, position: part.part })
+    }
+  }
+}
+
+/**
+ * Keys in the Bots overlay. ↑/↓ a bot, ⏎ pauses it or puts it back on as approved, ctrl-t asks its agent to change
+ * it; → and ← between the list and the bot when narrow. While flatten or remove asks, Esc keeps it, and ⏎ answers
+ * where there's one answer. Esc then closes.
+ */
+function onBotsKey(state: UiState, o: BotsState, key: Key, ctx: UiContext, now: number): Step {
+  const b = pickedBot(ctx.bots, o.index)
+  const to = (patch: Partial<BotsState>): UiState => ({ ...state, botConfirm: undefined, overlay: { ...o, ...patch } })
+  const c = state.botConfirm
+  if (c) {
+    const open = (ctx.bots?.books?.[c.name]?.open.length ?? 0) > 0
+    if (key.name === "return" || key.name === "enter") return c.what === "flatten" ? actBot(state, `flattenYes:${c.name}`, ctx, now) : c.what === "exits" ? actBot(state, `dropExitsYes:${c.name}/${c.position ?? ""}`, ctx, now) : open ? done(state) : actBot(state, `removeYes:${c.name}`, ctx, now)
+    if (key.name === "escape") return done({ ...state, botConfirm: undefined })
+  }
+  if (pressed(key, "ask")) return b ? actBot(state, `ask:${b.name}`, ctx, now) : done(state)
+  const count = everyBot(ctx.bots).length
+  switch (key.name) {
+    case "escape":
+      return done({ ...state, botConfirm: undefined, overlay: undefined })
+    case "up":
+    case "down":
+      return done(to({ index: Math.max(0, Math.min(count - 1, o.index + (key.name === "up" ? -1 : 1))) }))
+    case "left":
+      return done(to({ side: "list" }))
+    case "right":
+      return done(count ? to({ side: "detail" }) : state)
+    case "return":
+    case "enter":
+      return b && !ctx.bots?.gate ? actBot(state, `${b.state === "on" ? "pause" : "resume"}:${b.name}`, ctx, now) : done(state)
+  }
+  return done(state)
+}
+
+/** The Triggers overlay, on the first trigger. */
+const openTriggers = (state: UiState): Step => done({ ...state, overlay: { kind: "triggers", index: 0, side: "list" } })
+
+/**
+ * What a chip or key in the Triggers overlay does to the picked trigger: on or off (back on as it was approved,
+ * which the core allows from the main view only), remove (asking once), run its expired card again, or ask its
+ * agent to change it, which puts the words on the input line for the agent to propose a card.
+ */
+function actTriggers(state: UiState, o: TriggersState, act: TriggersAct, ref: string | undefined, ctx: UiContext, now: number): Step {
+  const t = pickedTrigger(ctx.triggers, o)
+  const here = (patch: Partial<TriggersState>): UiState => ({ ...state, overlay: { ...o, ...patch } })
+  switch (act) {
+    case "list":
+      return done(here({ side: "list", confirm: undefined }))
+    case "keepAwake":
+      return ctx.keepAwake?.available ? done(state, { type: "keepAwake", on: !ctx.keepAwake.on }) : done(state)
+    case "planBuy":
+    case "fill": {
+      const text = act === "planBuy" ? (ctx.triggers?.gate?.fix ?? "candle plan buy") : (ref ?? "")
+      return text ? done({ ...state, overlay: undefined, input: text, cursor: text.length }) : done(state)
+    }
+    case "ask": {
+      if (!t) return done(state)
+      const text = askToChange(t)
+      return done(say({ ...state, overlay: undefined, input: text, cursor: text.length }, `Say what to change: ${ctx.activeAgent ?? "the agent"} proposes it as a card for you to press.`, now))
+    }
+    case "runNow":
+      return t?.expired ? done(say(state, `Running "${t.name}"'s line again, at a fresh price…`, now), { type: "triggerRunNow", cardId: ref ?? t.expired.cardId }) : done(state)
+    case "remove":
+      return t ? done(here({ confirm: true, side: "detail" })) : done(state)
+    case "removeNo":
+      return done(here({ confirm: undefined }))
+    case "removeYes":
+      return t ? done(here({ confirm: undefined, index: Math.max(0, o.index - (o.index > 0 && o.index >= triggersFound(ctx.triggers, o.find).length - 1 ? 1 : 0)) }), { type: "triggerRemove", name: t.name }) : done(state)
+    case "toggle":
+      return t ? done(state, { type: "triggerSet", name: t.name, on: !t.on }) : done(state)
+  }
+}
+
+/**
+ * Keys in the Triggers overlay. ↑/↓ a trigger, typing finds one, ⏎ switches it on or off, ctrl-r runs its expired
+ * card again, ctrl-t asks its agent to change it; → and ← between the list and the trigger when narrow. Esc ends a
+ * remove's question, then a search, then closes.
+ */
+function onTriggersKey(state: UiState, o: TriggersState, key: Key, ctx: UiContext, now: number): Step {
+  const found = triggersFound(ctx.triggers, o.find)
+  const to = (patch: Partial<TriggersState>): UiState => ({ ...state, overlay: { ...o, ...patch } })
+  if (o.confirm) {
+    if (key.name === "return" || key.name === "enter") return actTriggers(state, o, "removeYes", undefined, ctx, now)
+    return done(to({ confirm: undefined }))
+  }
+  if (pressed(key, "requote")) return actTriggers(state, o, "runNow", undefined, ctx, now)
+  if (pressed(key, "ask")) return actTriggers(state, o, "ask", undefined, ctx, now)
+  switch (key.name) {
+    case "escape":
+      if (o.find !== undefined) return done(to({ find: undefined, index: 0 }))
+      return done({ ...state, overlay: undefined })
+    case "backspace":
+      return o.find !== undefined ? done(to({ find: o.find.slice(0, -1) || undefined, index: 0 })) : done(state)
+    case "up":
+    case "down":
+      return done(to({ index: Math.max(0, Math.min(found.length - 1, o.index + (key.name === "up" ? -1 : 1))) }))
+    case "left":
+      return done(to({ side: "list" }))
+    case "right":
+      return done(found.length ? to({ side: "detail" }) : state)
+    case "return":
+    case "enter":
+      return actTriggers(state, o, "toggle", undefined, ctx, now)
+  }
+  // Typing finds a trigger by its name, line or agent.
+  const ch = key.sequence ?? ""
+  if (!key.ctrl && !key.meta && ch.length === 1 && ch > " " && ch !== "\u007f" && (o.find ?? "").length < 64) return done(to({ find: (o.find ?? "") + ch, index: 0, side: "list" }))
+  return done(state)
 }
 
 /** The approvals menu, on the wallet list's first wallet. */
@@ -1137,7 +1469,13 @@ function onApprovalsKey(state: UiState, o: ApprovalsState, key: Key, ctx: UiCont
     if (key.name === "escape") return done(approvalsTo(state, o, { typing: undefined }))
     if (key.name === "backspace") return done(approvalsTo(state, o, { typing: o.typing.slice(0, -1) }))
     if (key.name === "return" || key.name === "enter") return commitFigure(state, o, ctx, now)
-    if (key.name === "up" || key.name === "down") return onApprovalsKey(approvalsTo(state, o, { typing: undefined }), { ...o, typing: undefined } as ApprovalsState, key, ctx, now)
+    if (key.name === "up" || key.name === "down") {
+      // A wallet being turned on keeps a figure that reads as the highlight leaves it; nothing is sent until turn on.
+      const field = rows[o.row]
+      const parsed = o.draft && (field === "perTrade" || field === "perDay") && o.typing !== "" ? parseFigure(o.typing) : undefined
+      const kept = { typing: undefined, ...(parsed?.ok && o.draft ? { draft: { ...o.draft, [field as "perTrade" | "perDay"]: parsed.usd } } : {}) }
+      return onApprovalsKey(approvalsTo(state, o, kept), { ...o, ...kept } as ApprovalsState, key, ctx, now)
+    }
     const ch = key.sequence ?? ""
     if (key.ctrl || key.meta || !/^[0-9.,$]$/.test(ch) || o.typing.length >= 12) return done(state)
     return done(approvalsTo(state, o, { typing: o.typing + ch }))
@@ -1413,7 +1751,7 @@ function onEveryWalletKey(state: UiState, o: EveryWalletState, key: Key, ctx: Ui
 /** Help's lines: the commands you can type, then every key from the table. */
 export const helpLines = (): string[] => [...HELP_LINES, "", ...keyLines()]
 
-const tabCount = (ctx: UiContext): number => ctx.tabs?.length ?? DEFAULT_TABS.length
+const tabCount = (ctx: UiContext): number => ctx.tabs?.length ?? FRESH_TABS.length
 
 /** The pane the layout menu acts on: the focused one, when a pane has focus. */
 export const menuFocus = (state: UiState): PaneId | undefined => (state.focus === "tabs" || state.focus === "cards" ? undefined : state.focus)
@@ -1482,6 +1820,8 @@ function onOverlayKey(state: UiState, key: Key, ctx: UiContext, now: number): St
   if (overlay.kind === "engines") return onEnginesKey(state, overlay, key, ctx)
   if (overlay.kind === "memory") return onMemoryKey(state, overlay, key, ctx)
   if (overlay.kind === "approvals") return onApprovalsKey(state, overlay, key, ctx, now)
+  if (overlay.kind === "triggers") return onTriggersKey(state, overlay, key, ctx, now)
+  if (overlay.kind === "bots") return onBotsKey(state, overlay, key, ctx, now)
   if (overlay.kind === "help") {
     if (pressed(key, "commands")) return openPalette(state, ctx, "cli")
     // Help scrolls where it doesn't fit; any other key closes it.
@@ -1495,10 +1835,22 @@ function onOverlayKey(state: UiState, key: Key, ctx: UiContext, now: number): St
     if (by !== 0) return done({ ...state, overlay: { ...overlay, scroll: Math.max(0, Math.min(ctx.journal?.rowsMax ?? 0, (overlay.scroll ?? 0) + by)) } })
     return done(closed)
   }
+  if (overlay.kind === "botLog") {
+    // A code bot's log scrolls; any other key closes it. Unscrolled, it sits at its newest line.
+    const by = key.name === "up" ? -1 : key.name === "down" ? 1 : key.name === "pageup" ? -10 : key.name === "pagedown" ? 10 : key.name === "home" ? -Infinity : key.name === "end" ? Infinity : 0
+    if (by !== 0) return done({ ...state, overlay: { ...overlay, scroll: botLogScrolled(overlay.scroll, by, ctx.botLogMax) } })
+    return done(closed)
+  }
   if (overlay.kind === "away") {
     // As a Journal row's details: its lines scroll where they don't fit; any other key closes them.
     const by = key.name === "up" ? -1 : key.name === "down" ? 1 : key.name === "pageup" ? -10 : key.name === "pagedown" ? 10 : 0
     if (by !== 0) return done({ ...state, overlay: { kind: "away", scroll: awayScrolled(overlay.scroll, by, ctx.awayMax) } })
+    return done(closed)
+  }
+  if (overlay.kind === "pane") {
+    // A folded pane's lines scroll where they don't fit; any other key closes it.
+    const by = key.name === "up" ? -1 : key.name === "down" ? 1 : key.name === "pageup" ? -10 : key.name === "pagedown" ? 10 : 0
+    if (by !== 0) return done({ ...state, overlay: { ...overlay, scroll: Math.max(0, (overlay.scroll ?? 0) + by) } })
     return done(closed)
   }
   if (overlay.kind === "confirmLive") {
@@ -1564,6 +1916,18 @@ function onOverlayKey(state: UiState, key: Key, ctx: UiContext, now: number): St
     }
     return done(closed)
   }
+  // A code bot's card from the Build pane: ⏎ approves it after the usual 300 ms, Esc goes back to the harness and
+  // the card waits in the strip; ctrl-n rejects it. Any other key leaves it open, so a stray letter never closes it.
+  if (overlay.kind === "card" && overlay.build) {
+    const card = ctx.cards.find((c) => c.cardId === overlay.cardId)
+    if (key.name === "return" || key.name === "enter" || key.name === "kpenter") {
+      const step = approve({ ...closed, focusedCardId: overlay.cardId }, card, ctx, now, "enter")
+      return step.effects.length ? step : done(state)
+    }
+    if (pressed(key, "reject")) return done(closed, { type: "reject", cardId: overlay.cardId })
+    if (key.name === "escape") return done(focusPane(closed, "build"))
+    return done(state)
+  }
   // Help (but for `c`) and card details: any key closes them.
   return done(closed)
 }
@@ -1604,7 +1968,8 @@ function onKey(state: UiState, key: Key, ctx: UiContext, now: number): Step {
   const t: UiState = s.quitArmedAt !== undefined ? { ...s, quitArmedAt: undefined, message: undefined } : s
 
   if (pressed(key, "oneAgent")) return runKey(t, "oneAgent", ctx, now)
-  if (pressed(key, "ask")) return runKey(t, "ask", ctx, now)
+  // In the Triggers overlay, ctrl-t asks the picked trigger's agent to change it.
+  if (pressed(key, "ask")) return t.overlay?.kind === "triggers" || t.overlay?.kind === "bots" ? onOverlayKey(t, key, ctx, now) : runKey(t, "ask", ctx, now)
   if (pressed(key, "picker")) return t.overlay?.kind === "engines" ? done({ ...t, overlay: undefined }) : openPicker(t, ctx, now)
   // The palette, from anywhere: over another overlay it takes its place; over itself it closes.
   if (pressed(key, "palette")) return t.overlay?.kind === "palette" ? done({ ...t, overlay: undefined }) : openPalette({ ...t, overlay: undefined }, ctx)
@@ -1775,8 +2140,12 @@ function stepOnce(state: UiState, action: UiAction, ctx: UiContext): Step {
       return done({ ...unscrolled(state, "journal"), highlight, journal })
     }
     case "clickCard": {
+      const card = ctx.cards.find((c) => c.cardId === action.cardId)
+      // A code bot the Build pane's harness proposed opens whole again, as it did when proposed: in the strip it shows
+      // only its first lines.
+      if (card?.origin?.role === "build" && card.state === "awaiting_approval" && !state.overlay) return done({ ...state, focusedCardId: card.cardId, overlay: { kind: "card", cardId: card.cardId, build: true } })
       // A click on a card picks its token too.
-      const mint = ctx.cards.find((c) => c.cardId === action.cardId)?.display.mint
+      const mint = card?.display.mint
       return done({ ...state, focus: "cards", focusedCardId: action.cardId }, ...(mint ? [{ type: "link" as const, mint, from: "a card" }] : []))
     }
     case "clickApprove":
@@ -1898,6 +2267,14 @@ function stepOnce(state: UiState, action: UiAction, ctx: UiContext): Step {
       return done({ ...unscrolled(state, "journal"), journal: toggleKind(state.journal, action.kind) })
     case "journalOlder":
       return done(state, { type: "journalOlder" })
+    case "scrollBotLog": {
+      const o = state.overlay
+      return o?.kind === "botLog" ? done({ ...state, overlay: { ...o, scroll: botLogScrolled(o.scroll, action.delta, ctx.botLogMax) } }) : done(state)
+    }
+    case "botLogOnly": {
+      const o = state.overlay
+      return o?.kind === "botLog" ? done({ ...state, overlay: o.only ? { kind: "botLog", name: o.name } : { kind: "botLog", name: o.name, only: "err" } }) : done(state)
+    }
     case "scrollJournalRows": {
       const o = state.overlay
       return o?.kind === "journalRows" ? done({ ...state, overlay: { ...o, scroll: Math.max(0, Math.min(ctx.journal?.rowsMax ?? 0, (o.scroll ?? 0) + action.delta)) } }) : done(state)
@@ -1920,8 +2297,40 @@ function stepOnce(state: UiState, action: UiAction, ctx: UiContext): Step {
     }
     case "openAway":
       return done({ ...state, overlay: { kind: "away" } })
+    case "openPane":
+      return done({ ...state, overlay: { kind: "pane", pane: action.pane } })
+    case "focusTabs":
+      return done({ ...state, focus: "tabs" })
+    case "openBuildCard":
+      // Not over another overlay the person is using: the card waits in the strip, as any card does.
+      // Mid-sentence in the harness's terminal, the card shows but the keys stay where the person is typing:
+      // their Enter is the harness's send key, not an approval.
+      return state.overlay ? done(state) : done({ ...state, focusedCardId: action.cardId, overlay: { kind: "card", cardId: action.cardId, build: true, ...(action.typing ? { waiting: true as const } : {}) } })
+    case "takeBuildCard":
+      return state.overlay?.kind === "card" && state.overlay.waiting ? done({ ...state, shownSince: action.now, overlay: { kind: "card", cardId: state.overlay.cardId, build: true } }) : done(state)
+    case "shown":
+      return done({ ...state, shownSince: action.now })
+    case "disarmKill":
+      return state.killArmedAt !== undefined ? done({ ...state, killArmedAt: undefined, message: undefined }) : done(state)
+    case "openTriggers":
+      return openTriggers({ ...state, overlay: undefined })
+    case "openBots":
+      return goBots({ ...state, overlay: undefined }, ctx)
+    case "pickBots": {
+      const o = state.overlay?.kind === "bots" ? state.overlay : undefined
+      return o ? done({ ...state, botConfirm: undefined, overlay: { ...o, index: action.index < 0 ? o.index : action.index, side: action.side ?? "detail" } }) : done(state)
+    }
+    case "botAct":
+      return actBot(state, action.ref, ctx, action.now)
+    case "pickTriggers": {
+      const o = state.overlay?.kind === "triggers" ? state.overlay : undefined
+      if (!o) return done(state)
+      if (action.index !== undefined) return done({ ...state, overlay: { ...o, index: action.index, side: "list", confirm: undefined } })
+      return action.act ? actTriggers(state, o, action.act, action.ref, ctx, action.now) : done(state)
+    }
     case "scrollAway": {
       const o = state.overlay
+      if (o?.kind === "pane") return done({ ...state, overlay: { ...o, scroll: Math.max(0, (o.scroll ?? 0) + action.delta) } })
       return o?.kind === "away" ? done({ ...state, overlay: { kind: "away", scroll: awayScrolled(o.scroll, action.delta, ctx.awayMax) } }) : done(state)
     }
     case "pickAway":
@@ -1939,6 +2348,11 @@ function stepOnce(state: UiState, action: UiAction, ctx: UiContext): Step {
       if (o?.kind !== "engines") return done(state)
       return pickEngine(state, o.agent, { kind: "preset", preset: action.preset, text: "", current: false })
     }
+    case "pickRunner": {
+      const o = state.overlay
+      if (o?.kind !== "engines") return done(state)
+      return pickEngine(state, o.agent, { kind: "runner", on: action.on, text: "", current: false })
+    }
     case "deleteMemory": {
       const o = state.overlay
       return o?.kind === "memory" ? deleteMemory(state, o, action.row) : done(state)
@@ -1946,6 +2360,10 @@ function stepOnce(state: UiState, action: UiAction, ctx: UiContext): Step {
     case "clickMemoryClear": {
       const o = state.overlay
       return o?.kind === "memory" ? deleteMemory(state, o, { kind: "clear" }) : done(state)
+    }
+    case "pinMemory": {
+      const o = state.overlay
+      return o?.kind === "memory" ? pinMemory(state, o, action.row) : done(state)
     }
     case "scrollEngines": {
       const o = state.overlay

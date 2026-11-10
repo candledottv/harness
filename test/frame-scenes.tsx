@@ -8,8 +8,10 @@ import type { PortfolioView } from "../src/core/portfolio-view"
 import type { TokenView } from "../src/core/token-watch"
 import type { WalletsTopic } from "../src/core/agent-wallets"
 import { App, type Session } from "../src/view/app"
-import type { LayoutStore } from "../src/view/layouts-store"
+import { type LayoutStore, memoryStore } from "../src/view/layouts-store"
+import { KNOWN_TABS, layoutsText, parseLayouts } from "../src/view/layouts-file"
 import type { ThemeStore } from "../src/view/themes"
+import type { BuildSpawner } from "../src/view/build-process"
 import type { KillReport } from "../src/core/kill"
 import type { EngineTopic } from "../src/view/panes/engines"
 import type { StatusView, ViewCard } from "../src/view/store"
@@ -18,6 +20,11 @@ import { type ResearchVariant, researchScene, YOUNG_MINT, YOUNG_SYMBOL, youngMar
 import { journalScenePage, journalSceneRows } from "./journal-scene"
 
 export const CLOCK = 1_800_000_000_000
+/** How far a scene's clock has moved past CLOCK: a test that needs time to pass moves it, and each scene starts at 0. */
+let moved = 0
+export const advanceClock = (ms: number): void => {
+  moved += ms
+}
 
 const pad = (s: string) => s.padEnd(43, "1")
 export const MINT = pad("JupFake")
@@ -54,9 +61,37 @@ export class SceneSession implements Session {
     // The Journal: the scene's rows, answered by the core's own query.
     if (method === "journal.query") return (await journalScenePage(CLOCK, params, this.journalEmpty)) as T
     if (method === "journal.rows") return { rows: journalSceneRows(CLOCK).filter((r) => (params.seqs as number[]).includes(r.seq)) } as T
+    // The Build pane's choices, kept as the core keeps them, and its token.
+    if (method === "build.prefs") {
+      const set = params.set as Partial<SceneSession["buildPrefs"]> | undefined
+      if (set) this.buildPrefs = { ...this.buildPrefs, ...set }
+      return { ...this.buildPrefs } as T
+    }
+    if (method === "build.open") {
+      // Each core's session is a new token: the first is the scene's own, a reopen after a restart the next.
+      const n = ++this.buildOpens
+      return { tokenId: n === 1 ? "tok-build" : `tok-build-${n}`, token: n === 1 ? "scene-build-token" : `scene-build-token-${n}`, socketPath: this.buildSocketPath, agent: params.agent, gate: this.buildGate } as T
+    }
+    // A code bot's log, as the supervisor keeps it: its own lines, its stderr, and the Candle Harness's own.
+    if (method === "bots.logs") return { lines: botLogScene(CLOCK), file: `/srv/state/bots/${String(params.name)}.log` } as T
     if (method === "pnl.series") return { points: this.pnlSamples === "none" ? [] : pnlSeriesScene(CLOCK, Math.max(Number(params.from), this.pnlSamplesFrom), Number(params.points) || 120, { change: this.pnlChange }) } as T
     return {} as T
   }
+  /** The Build pane's folder and harness, as the core keeps them: a fresh install's until the first open. */
+  buildPrefs: { folder: string; harness?: string; opened: boolean; bins: Record<string, string> } = { folder: "~/candle-bots", opened: false, bins: {} }
+  /** How many Build sessions were opened, and where the scene's core socket is (the pane's token file goes beside it). */
+  buildOpens = 0
+  buildSocketPath = "/run/scene/core.sock"
+  private lostListeners: (() => void)[] = []
+  onLost(listener: () => void): void {
+    this.lostListeners.push(listener)
+  }
+  /** The core goes away while the view is open, as a restart does: the view's next status is the new core's. */
+  lose(): void {
+    for (const l of this.lostListeners) l()
+  }
+  /** Free's words for code bots, where the scene is on Free. */
+  buildGate: { words: string; fix?: string } | null = null
   /** A fresh install's journal: nothing recorded. */
   journalEmpty = false
   /** The scene's P&L samples: a day's with a gap where the core wasn't running, or none (a fresh install). */
@@ -71,6 +106,22 @@ export class SceneSession implements Session {
   push(topic: string, data: unknown, snapshot = false): void {
     for (const l of this.listeners) l({ topic, seq: ++this.seq, data, ...(snapshot ? { snapshot } : {}) })
   }
+}
+
+/** A code bot's last two hours of log, as the supervisor writes it. */
+export function botLogScene(clock: number): string[] {
+  const t = (minsAgo: number) => new Date(clock - minsAgo * 60_000).toISOString()
+  return [
+    `${t(130)} ---  started: bun run bot.ts in ~/candle-bots/momentum · code 3f9a…c21e · lockfile 81d0…07b2 · pid 48211`,
+    `${t(130)} out  connected as momentum (live)`,
+    `${t(40)} out  signal: 4 wallets bought WIFY, mcap $212K`,
+    `${t(40)} out  buy $2.00 of WIFY asked`,
+    `${t(25)} out  signal: 4 wallets bought BONKY, mcap $188K`,
+    `${t(25)} out  buy $2.00 of BONKY asked, exits -30% / +80% / 24h`,
+    `${t(16)} out  skipped MOONX: spread 9.4%`,
+    `${t(9)} err  warn: Hacc read slow (2.3 s), retrying`,
+    `${t(1)} out  report: ok · watching 38 tokens`,
+  ]
 }
 
 export const status: StatusView = {
@@ -370,7 +421,22 @@ export async function settleJournal(setup: { renderOnce(): Promise<void> }, ms =
 }
 
 /** The tabs a scene can be drawn on, by their place on a fresh install's tab bar. */
-const TAB_AT = { trade: 0, cockpit: 1, trending: 2, signals: 3, pnl: 4, research: 5, journal: 6, perps: 7 } as const
+const TAB_AT = { trade: 0, cockpit: 1, trending: 2, signals: 3, pnl: 4, research: 5, journal: 6, perps: 7, bots: 8, build: 9 } as const
+
+/** Each scene's tab by its name on the tab bar. */
+const TAB_NAMES: Record<keyof typeof TAB_AT, string> = { trade: "Trade", cockpit: "Cockpit", trending: "Trending", signals: "Signals", pnl: "P&L", research: "Research", journal: "Journal", perps: "Perps", bots: "Bots", build: "Build" }
+
+/**
+ * The tabs as a person sees them: a fresh install's five, plus the scene's own tab ticked on where a fresh install
+ * has it off (Trending, Signals, P&L, the Journal and Perps are a tick away in settings ▾).
+ */
+export function tabsShowing(...names: string[]): LayoutStore {
+  const tabs = KNOWN_TABS.filter((k) => k.shown || names.includes(k.tab.name)).map((k) => k.tab)
+  return memoryStore(layoutsText({ tabs, own: [] }))
+}
+
+/** Every known tab shown, for a test that walks across them. */
+export const everyTab = (): LayoutStore => memoryStore(layoutsText({ tabs: KNOWN_TABS.map((k) => k.tab), own: [] }))
 
 /**
  * The Signals tab's choice and what the core sent for it: a filter whose rows the tape
@@ -394,12 +460,17 @@ function signalsExtra(which: "filtered" | "empty" | "empty-failed") {
  * Cockpit, Trending (Candle's four lists, Final Stretch on, off or behind), or Perps (its stub over the
  * short agent pane). `streaming`: a second turn, answering that much so far.
  */
-export async function drawScene(scene: SceneName, width: number, height: number, tab: keyof typeof TAB_AT = "trade", layouts?: LayoutStore, extra: { themes?: ThemeStore; kill?: boolean; streaming?: string; finalStretch?: "on" | "off" | "behind"; signals?: "filtered" | "empty" | "empty-failed"; pnl?: PnlVariant; journal?: "full" | "empty"; research?: ResearchVariant; onPaste?: (text: string) => void } = {}) {
+export async function drawScene(scene: SceneName, width: number, height: number, tab: keyof typeof TAB_AT = "trade", layouts?: LayoutStore, extra: { themes?: ThemeStore; kill?: boolean; streaming?: string; finalStretch?: "on" | "off" | "behind"; signals?: "filtered" | "empty" | "empty-failed"; pnl?: PnlVariant; journal?: "full" | "empty"; research?: ResearchVariant; onPaste?: (text: string) => void; spawnBuild?: BuildSpawner; buildPrefs?: SceneSession["buildPrefs"] } = {}) {
+  moved = 0
   const session = new SceneSession()
+  if (extra.buildPrefs) session.buildPrefs = extra.buildPrefs
   const fresh = scene === "fresh"
   if (extra.journal === "empty" || fresh) session.journalEmpty = true
   if (extra.pnl === "fresh" || fresh) session.pnlSamples = "none"
-  const setup = await testRender(<App session={session} onQuit={() => {}} now={() => CLOCK} tickMs={0} {...(layouts ? { layouts } : {})} {...(extra.themes ? { themes: extra.themes } : {})} {...(extra.onPaste ? { onPaste: extra.onPaste } : {})} />, { width, height, exitOnCtrlC: false })
+  const store = layouts ?? (KNOWN_TABS.some((k) => !k.shown && k.tab.name === TAB_NAMES[tab]) ? tabsShowing(TAB_NAMES[tab]) : undefined)
+  const shownAt = parseLayouts(store?.read() ?? "", "layouts.toml").tabs.findIndex((t) => t.name === TAB_NAMES[tab])
+  const tabIndex = shownAt >= 0 ? shownAt : TAB_AT[tab]
+  const setup = await testRender(<App session={session} onQuit={() => {}} now={() => CLOCK + moved} tickMs={0} {...(store ? { layouts: store } : {})} {...(extra.themes ? { themes: extra.themes } : {})} {...(extra.onPaste ? { onPaste: extra.onPaste } : {})} {...(extra.spawnBuild ? { spawnBuild: extra.spawnBuild } : {})} />, { width, height, exitOnCtrlC: false })
   const push = async (topic: string, data: unknown, snapshot = false) => {
     await act(async () => session.push(topic, data, snapshot))
     await setup.renderOnce()
@@ -459,7 +530,8 @@ export async function drawScene(scene: SceneName, width: number, height: number,
   }
   if (tab !== "trade") {
     // Up to the tab bar, along to the tab, and down to its agent pane: where a press of its digit would leave it.
-    for (const arrow of ["up", ...Array.from({ length: TAB_AT[tab] }, () => "right" as const), "down"] as const) {
+    // The Build tab's first open takes the keys itself as it shows.
+    for (const arrow of ["up", ...Array.from({ length: tabIndex }, () => "right" as const), ...(tab === "build" ? [] : ["down" as const])] as const) {
       await act(async () => setup.mockInput.pressArrow(arrow))
       await setup.renderOnce()
     }

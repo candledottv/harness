@@ -4,7 +4,7 @@
 //   sleep    never finishes (for the timeout)
 //   exit3    exits 3, as a trade command does when a trade may have landed
 //   badjson  prints something that isn't JSON
-//   --version  the version: fake-cli.json's `version`, else 0.13.11 (the CLI the Candle Harness was checked against)
+//   --version  the version: fake-cli.json's `version`, else 0.13.18 (the CLI the Candle Harness was checked against)
 //   keys list  fake-cli.json's `keysList` as JSON, or its `keysListFail` (stderr and an exit code)
 //   with fake-cli.json's `tee` set, the TEE reads in the shapes recorded from Candle
 //   (fixtures/candle-recorded/tee/clicmd-*): `tee status`, `keys wallets`, `swap status`, and
@@ -139,7 +139,7 @@ const script: FakeCliScript = scriptFile && existsSync(scriptFile) ? JSON.parse(
 
 const json = argv.includes("--json")
 if (argv[0] === "--version") {
-  process.stdout.write(`${script.version ?? "0.13.11"}\n`)
+  process.stdout.write(`${script.version ?? "0.13.18"}\n`)
   process.exit(0)
 }
 if (argv[0] === "keys" && argv[1] === "list" && (script.keysList !== undefined || script.keysListFail)) {

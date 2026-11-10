@@ -1,0 +1,15 @@
+{
+  "name": "mine-signals",
+  "host": "hacc",
+  "route": "/v1/me/signals",
+  "query": {
+    "limit": "200"
+  },
+  "status": 200,
+  "ms": 139,
+  "bytes": 32,
+  "answer": {
+    "signals": [],
+    "next_after": null
+  }
+}

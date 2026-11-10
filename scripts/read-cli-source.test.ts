@@ -467,7 +467,8 @@ describe("the committed read of the pinned CLI", () => {
 
   test("holds the flags the session-19 read missed", () => {
     const of = (command: string, subcommand: string) => SOURCE.commands.find((c) => c.command === command && c.subcommand === subcommand)!.flags!
-    expect(of("wallets", "close-empty")).toMatchObject({ value: ["--client-trade-id", "--keep", "--wallet"], boolean: ["--yes"] })
+    // 0.13.18 adds --preview.
+    expect(of("wallets", "close-empty")).toMatchObject({ value: ["--client-trade-id", "--keep", "--wallet"], boolean: ["--preview", "--yes"] })
     expect(of("agent", "profile").value).toContain("--bio")
     expect((of("agent", "post") as { byAction?: Record<string, string[]> }).byAction?.create).toEqual(["--text", "--chain", "--mint"])
   })

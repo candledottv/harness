@@ -1,0 +1,17 @@
+Candle's bot-building skills, copied unchanged for the bots folder the Candle Harness's Build tab writes.
+repo: https://github.com/candledottv/agentic
+commit: 67570f71723c76d722a280d888689aeadce64ff0
+date: 2026-11-08
+licence: MIT, Candle's own (LICENSE, copied unchanged)
+
+files (sha256):
+635037ebc75af260f0dbe9be7d81a0174603f14e674b72c537ddeb3829b7137e  LICENSE
+26dba6fb4a5257f32f7e3b4d903786737f310ad94dc660e85b83f8cc93d7ffa5  candle-agent-operations/SKILL.md
+1859dc878b38cbea52e62ccb7ae9b6c665c18f4cd4a514331d8f1e7f81887643  candle-book-limits/SKILL.md
+6d19bc9bf84dfea7a92b98e5d6a264588e2c1f0dcc019a905edacb966640e172  candle-first-live-trade/SKILL.md
+959942df1fe53a0b65e04e9c5b43d302556a4bf618587f36b18f57bc6d1cc9b4  candle-kill-switches/SKILL.md
+ee72f65a90966dbef19604964c05575668045c3b8eeb3337e4e5e681e318d99a  candle-market-data-ingestion/SKILL.md
+eec236dd454f5a12207eea8d3c67f5b37606e9897fae9543de47afd278032dea  candle-strategy-lab/SKILL.md
+e5a515ab1c9da88ee74f80411973752784f734eb5d45d1d029baebc6e9230e1d  candle-strategy-to-bot/SKILL.md
+27a5dac48b4649565d04f034bf00fb79afce5e11ffd13524cac4e2183cff27cf  candle-trade-execution/SKILL.md
+c841740cb3e0d098afd60e842ba90c18367e07dfd67b28029b41f8340d269e62  candle-wallet-layout/SKILL.md

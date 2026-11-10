@@ -10,7 +10,10 @@
 //   - the journal's rows in the gap, grouped as the Journal groups them and in its words: each agent's
 //     turns that ended, every trade with or without a card and how it ended, the other cards (one that
 //     waited and expired among them), what the agents changed on Hacc and in memory, and what was stopped or
-//     refused (the kill switch, refusals at proposal, a Candle connection or Hacc key that failed);
+//     refused (the kill switch, refusals at proposal, a Candle connection or Hacc key that failed), the
+//     triggers: what fired, what waited for the person, what the kill switch held, what was missed; and each
+//     bot, rules or code: what it bought and sold, its skips, and what waited, was refused or held, with its own book's
+//     P&L over the gap and what it holds now (its trades are its own section, never Trades);
 //   - P&L over the gap from the samples, as harness_pnl's "since last session" reads it, so the agent's answer
 //     to `ask` is the same figure: from the mark's own sample, so a gap with the core stopped is counted
 //     whole.
@@ -27,6 +30,7 @@
 //
 // Each read that fails says so in its place, never as nothing. The summary is kept in `state/away.json`
 // (0600) until the next gap, so a restart or a second view shows the same one.
+import { ranWithoutCard } from "../shared/approved-how"
 import { randomBytes } from "node:crypto"
 import { readFileSync } from "node:fs"
 import { chmod, rename, writeFile } from "node:fs/promises"
@@ -89,6 +93,42 @@ export interface AwayCard extends AwayEntry {
   /** Typed, run at once under `cards.typedTrades = "instant"`. */
   instant?: true
   paper?: true
+  /** A trigger's card: the trigger's name. */
+  trigger?: string
+  /** A trigger's card that expired with nobody there, not yet run again: its id, for `run it now`. */
+  runNow?: string
+}
+
+/** A bot in the gap, rules or code: what it bought and sold, its P&L, what it holds now, and anything held or refused. */
+export interface AwayBot {
+  name: string
+  agent?: string
+  mode: "paper" | "live"
+  /** Entries and exits that filled in the gap. */
+  bought: number
+  sold: number
+  /** Its exits that filled, by why: "take profit", "stop"… */
+  exits: Record<string, number>
+  skipped: number
+  /** Its trades in the gap, newest first, in the Journal's words. */
+  trades: AwayEntry[]
+  /** What waited for the person, was refused or failed, was held, or paused it. */
+  held: AwayEntry[]
+  /** What its exits realized in the gap: the Candle Harness's count from its own fills; null where one couldn't be valued. */
+  realizedUsd?: number | null
+  /** Its positions open now, by token. */
+  open?: { mint: string; symbol?: string }[]
+  /** Its own day figure refused its buys in the gap: from when, and the figure. Also a line in `held`. */
+  dayFigure?: { from: string; figure?: string; words: string }
+}
+
+/** A bot's own book at the summary's making (bot-book.ts): what its exits realized in the gap, and what it holds now. */
+export interface AwayBotBook {
+  name: string
+  agent: string
+  mode: "paper" | "live"
+  realizedUsd: number | null
+  open: { mint: string; symbol?: string }[]
 }
 
 export interface OutsideFill {
@@ -124,6 +164,8 @@ export interface HoldingChange {
   symbol?: string
   then: number
   now: number
+  /** No live trade this Candle Harness sent from the wallet in the gap explains it: other keys pay from it too. */
+  outside?: true
 }
 
 export interface HoldingsSnapshot {
@@ -153,6 +195,10 @@ export interface AwaySummary {
   /** What the agents changed on Hacc and in memory. */
   changes: AwayEntry[]
   stopped: AwayEntry[]
+  /** What the triggers did: fired, waited for the person, held by the kill switch, missed or stopped. Absent in a summary from before triggers. */
+  triggers?: AwayEntry[]
+  /** Each bot, rules or code, that traded, was held, or holds a position. Absent in a summary from before bots. */
+  bots?: AwayBot[]
   /** Cards still waiting for the person when it was made. */
   waitingNow: number
   /** The gap held more rows than a summary reads: it covers from here. */
@@ -161,7 +207,7 @@ export interface AwaySummary {
   outside: { state: ReadState; agents: AgentFills[] }
   signals: { state: ReadState | "off" | "needs-plan" | "no-key"; count: number; newest: SignalRow[]; more?: true; words?: string }
   holdings: { state: "reading" | "read" | "unknown" | "failed"; then?: number; changes: HoldingChange[]; words?: string }
-  counts: { turns: number; trades: number; withoutCard: number; cards: number; expired: number; changes: number; stopped: number; outside: number; maybe: number; signals: number; holdings: number }
+  counts: { turns: number; trades: number; withoutCard: number; cards: number; expired: number; changes: number; stopped: number; outside: number; maybe: number; signals: number; holdings: number; triggers?: number; fired?: number; botTrades?: number; botHeld?: number }
   happened: boolean
 }
 
@@ -175,6 +221,11 @@ const record = (value: unknown): Record<string, unknown> | undefined => (typeof 
 const str = (value: unknown): string | undefined => (typeof value === "string" && value.length > 0 ? value : undefined)
 const num = (value: unknown): number | undefined => (typeof value === "number" && Number.isFinite(value) ? value : undefined)
 const ms = (iso: string) => Date.parse(iso)
+/** A time of day on this machine's clock, as the person reads it. */
+const hm = (t: number) => {
+  const d = new Date(t)
+  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`
+}
 
 /** "45m", "3h 12m", "2d 3h": how long the gap ran. */
 export function gapLength(ms: number): string {
@@ -244,11 +295,51 @@ function stopRow(row: JournalRow): boolean {
   }
 }
 const CHANGE_TYPES = new Set(["hacc.change", "hacc.replay", "memory.change"])
+/** A trigger's rows: what fired, what waited for the person, what the kill switch held, what was missed or stopped, whom it woke or why not. */
+function triggerRow(row: JournalRow): boolean {
+  // Held by the pause or the plan, or not watching since its line stopped reading (the wallet it pays from).
+  if (row.type === "trigger.held") return row.reason === "paused" || row.reason === "plan" || row.reason === "unreadable"
+  // An agent switched one off or narrowed it with nobody there: a stop that no longer waits is worth knowing on return.
+  if (row.type === "trigger.changed") return row.how === "agent"
+  if (row.type === "trigger.ran") return row.outcome === "stopped"
+  return row.type === "trigger.fired" || row.type === "trigger.waiting" || row.type === "trigger.missed" || row.type === "trigger.notify" || row.type === "trigger.woke" || row.type === "trigger.wake_skipped"
+}
+
+/**
+ * A bot's rows the person should hear of: a card that waits, a refusal or failure, a held sell, a position given up,
+ * a pause by the agent or Candle; and a code bot's crash or giving up.
+ */
+function botHeldRow(row: JournalRow): boolean {
+  switch (row.type) {
+    case "bot.waiting":
+    case "bot.request_waiting":
+    case "bot.exit_waiting":
+    case "bot.exit_held":
+    case "bot.position_left":
+      return true
+    case "bot.process":
+      return row.what === "crashed" || row.what === "gave_up"
+    case "bot.entry_ended":
+    case "bot.request_ended":
+    case "bot.exit_ended":
+      return row.outcome === "refused" || row.outcome === "failed" || row.outcome === "lost" || row.outcome === "expired"
+    case "bot.paused":
+      return row.how === "candle" || row.how === "agent"
+    // An agent narrowed it at once (a smaller stake, a tighter filter or exit): the bot isn't what was approved.
+    case "bot.changed":
+      return row.how === "agent"
+    default:
+      return false
+  }
+}
+const BAD_OUTCOMES = new Set<TradeOutcome>(["failed", "refused", "unknown", "abandoned"])
 
 /** What a Candle Harness trade tells the fill matcher: its id, its signature, and, while its outcome is unknown, what it was. */
 interface HarnessTrade {
   opId: string
   agent?: string
+  /** The wallet that paid, by address. */
+  wallet?: string
   mint?: string
   side?: string
   signature?: string
@@ -264,6 +355,8 @@ export interface Records {
   cards: AwayCard[]
   changes: AwayEntry[]
   stopped: AwayEntry[]
+  triggers: AwayEntry[]
+  bots: AwayBot[]
   /** Every live trade the rows hold, for matching Candle's fills. */
   harness: HarnessTrade[]
 }
@@ -302,6 +395,23 @@ export function awayRecords(rows: readonly JournalRow[], from: number, to: numbe
   const cards: AwayCard[] = []
   const changes: AwayEntry[] = []
   const stopped: AwayEntry[] = []
+  const triggers: AwayEntry[] = []
+  const firings = new Map<string, AwayEntry>()
+  const bots = new Map<string, AwayBot>()
+  const botOf = (name: string, agent: string | undefined, mode: "paper" | "live"): AwayBot => {
+    let b = bots.get(name)
+    if (!b) bots.set(name, (b = { name, ...(agent ? { agent } : {}), mode, bought: 0, sold: 0, exits: {}, skipped: 0, trades: [], held: [] }))
+    return b
+  }
+  /** A bot's trade that filled: counted as bought or sold, an exit by its reason. */
+  const botFilled = (b: AwayBot, act: unknown, reason: unknown) => {
+    if (act === "exit") {
+      b.sold++
+      // A code bot's own sell has no exit's why: its code sold it.
+      const why = reason === "bot" ? "its own sell" : String(reason ?? "exit").replace(/_/g, " ").replace(/^stop loss$/, "stop")
+      b.exits[why] = (b.exits[why] ?? 0) + 1
+    } else b.bought++
+  }
   const harness: HarnessTrade[] = []
   const entry = (group: readonly JournalRow[]): AwayEntry => {
     const e = entryWords(group, symbolOf)
@@ -324,6 +434,7 @@ export function awayRecords(rows: readonly JournalRow[], from: number, to: numbe
       harness.push({
         opId: created.opId,
         ...(created.agent ? { agent: created.agent } : {}),
+        ...(str(created.wallet) ? { wallet: str(created.wallet) } : {}),
         ...(str(created.mint) ?? str(params?.mint) ? { mint: str(created.mint) ?? str(params?.mint) } : {}),
         ...(str(created.side) ? { side: str(created.side) } : {}),
         ...(sig ? { signature: sig } : {}),
@@ -340,14 +451,25 @@ export function awayRecords(rows: readonly JournalRow[], from: number, to: numbe
       const outcome: TradeOutcome = closedAsPaper ? "not-sold" : end ? CARD_END[end.type]! : approved ? "approved" : group.some((r) => r.type === "approval.refused") ? "refused" : "waiting"
       const value = record(created?.value)
       const usd = num(value?.usd)
+      // A bot's trade is the bot's, a rules bot's or a code bot's: its section, never Trades (a busy bot would bury the person's own).
+      if (typeof created?.bot === "string") {
+        const b = botOf(created.bot, created.agent, created.mode)
+        if (outcome === "filled") botFilled(b, created.botAct, created.botReason)
+        if (BAD_OUTCOMES.has(outcome) || outcome === "expired" || outcome === "waiting") b.held.push(e)
+        else b.trades.push(e)
+        continue
+      }
       const card: AwayCard = {
         ...e,
         outcome,
         ...(str(created?.kind) ? { kind: str(created?.kind) } : {}),
         ...(str(created?.side) ? { side: str(created?.side) } : {}),
         ...(usd !== undefined ? { usd } : {}),
-        ...(approved?.how === "inside-limits" ? { withoutCard: true as const } : {}),
+        ...(ranWithoutCard(approved?.how) ? { withoutCard: true as const } : {}),
         ...(approved?.how === "instant" ? { instant: true as const } : {}),
+        ...(typeof created?.trigger === "string" ? { trigger: created.trigger } : {}),
+        // A trigger's card nobody pressed, not run again since: `run it now`.
+        ...(typeof created?.trigger === "string" && outcome === "expired" && typeof created.cardId === "string" && !rows.some((r) => r.type === "trigger.run_now" && r.cardId === created.cardId) ? { runNow: created.cardId } : {}),
       }
       ;(trade ? trades : cards).push(card)
       continue
@@ -359,6 +481,31 @@ export function awayRecords(rows: readonly JournalRow[], from: number, to: numbe
 
   for (const row of singles) {
     if (!inGap(row)) continue
+    // A bot's paper trades, its decisions' troubles and its skips are the bot's section.
+    if (typeof row.bot === "string" && (row.type === "paper.call" || row.type === "card.refused")) {
+      const b = botOf(row.bot, row.agent, row.type === "paper.call" ? row.mode : row.botMode === "paper" ? "paper" : row.mode)
+      if (row.type === "card.refused" || row.isError === true) b.held.push(entry([row]))
+      else {
+        botFilled(b, row.botAct, row.botReason)
+        b.trades.push(entry([row]))
+      }
+      continue
+    }
+    if (row.type.startsWith("bot.") && typeof row.name === "string") {
+      const mode = row.botMode === "paper" || row.botMode === "live" ? row.botMode : row.mode
+      if (row.type === "bot.skipped") botOf(row.name, row.agent, mode).skipped += typeof row.count === "number" ? row.count : 1
+      else if (row.type === "bot.refused" && row.code === "FIGURE_DAY") {
+        // Its day figure reached: the one thing worth knowing on return, said once from when, not once a refusal.
+        const b = bots.get(row.name) ?? botOf(row.name, row.agent, mode)
+        if (!b.dayFigure) {
+          const figure = /over its (\$[\d,.]+) a day/.exec(String(row.words ?? ""))?.[1]
+          const words = `refused its buys from ${hm(ms(row.at))} on: over its ${figure ? `${figure} a day` : "day figure"}`
+          b.dayFigure = { from: row.at, ...(figure ? { figure } : {}), words }
+          b.held.push({ ...entry([row]), text: words, tone: "warn" })
+        }
+      } else if (botHeldRow(row)) botOf(row.name, row.agent, mode).held.push(entry([row]))
+      continue
+    }
     if (row.type === "paper.call") {
       const e = entry([row])
       const args = record(row.args)
@@ -366,12 +513,47 @@ export function awayRecords(rows: readonly JournalRow[], from: number, to: numbe
     } else if (row.type === "agent.turn_failed") turns.push(entry([row]))
     else if (CHANGE_TYPES.has(row.type)) changes.push(entry([row]))
     else if (stopRow(row)) stopped.push(entry([row]))
+    else if (triggerRow(row)) {
+      // One line a firing: its notice or the agent it woke joins the line that says what fired.
+      const fired = typeof row.fireId === "string" ? firings.get(row.fireId) : undefined
+      if (fired && (row.type === "trigger.notify" || row.type === "trigger.woke")) {
+        fired.text += row.type === "trigger.notify" ? " → notified you" : row.joined === true ? ` → joined ${String(row.woke ?? "the agent")}'s woken turn` : ` → woke ${String(row.woke ?? "the agent")}`
+        fired.seqs = [...fired.seqs, row.seq]
+        continue
+      }
+      const e = entry([row])
+      if (row.type === "trigger.fired" && typeof row.fireId === "string") firings.set(row.fireId, e)
+      triggers.push(e)
+    }
   }
   const down = coreDown(rows, from, to)
   // The core started by this attach, with no row of its own between the mark and its start.
   const gone = down.length === 1 && down[0]!.from === from && !rows.some((r) => ms(r.at) > from && ms(r.at) < down[0]!.to)
   const newestFirst = <T extends { at: string }>(list: T[]) => list.sort((a, b) => ms(b.at) - ms(a.at))
-  return { coreDown: down, coreGoneThroughout: gone, turns: newestFirst(turns), trades: newestFirst(trades), cards: newestFirst(cards), changes: newestFirst(changes), stopped: newestFirst(stopped), harness }
+  for (const b of bots.values()) {
+    newestFirst(b.trades)
+    newestFirst(b.held)
+  }
+  return { coreDown: down, coreGoneThroughout: gone, turns: newestFirst(turns), trades: newestFirst(trades), cards: newestFirst(cards), changes: newestFirst(changes), stopped: newestFirst(stopped), triggers: newestFirst(triggers), bots: [...bots.values()], harness }
+}
+
+/**
+ * The gap's bots with their own books: each one's P&L over the gap and what it holds now. A bot that did
+ * nothing in the gap is listed only while it holds a position, so the note says what's still open.
+ */
+export function withBooks(active: readonly AwayBot[], books: readonly AwayBotBook[]): AwayBot[] {
+  const out = active.map((b) => ({ ...b, trades: b.trades.slice(0, LISTED), held: b.held.slice(0, LISTED) }))
+  for (const book of books) {
+    let b = out.find((x) => x.name === book.name)
+    if (!b) {
+      if (book.open.length === 0) continue
+      out.push((b = { name: book.name, agent: book.agent, mode: book.mode, bought: 0, sold: 0, exits: {}, skipped: 0, trades: [], held: [] }))
+    }
+    b.mode = book.mode
+    if (b.sold > 0 || book.realizedUsd !== 0) b.realizedUsd = book.realizedUsd
+    b.open = book.open
+  }
+  return out
 }
 
 // --- Fills outside the Candle Harness -------------------------------------------------------------------------------
@@ -434,6 +616,19 @@ export function holdingChanges(then: HoldingsSnapshot, now: HoldingsSnapshot): H
   return out
 }
 
+/**
+ * Marks each change no live trade this Candle Harness sent in the gap explains: none from that wallet (for SOL),
+ * or none of that token from it. A sent trade whose wallet or token wasn't recorded explains anything, so a
+ * change is never called outside when it may be the Candle Harness's own. A card never sent explains nothing.
+ */
+export function markOutside(changes: readonly HoldingChange[], trades: readonly HarnessTrade[], from: number, to: number): HoldingChange[] {
+  const sent = trades.filter((t) => t.sentAt !== undefined && t.sentAt > from && t.sentAt <= to)
+  return changes.map((c) => {
+    const explained = sent.some((t) => (t.wallet === undefined || t.wallet === c.wallet) && (c.asset === "SOL" || t.mint === undefined || t.mint === c.asset || t.side === "swap"))
+    return explained ? c : { ...c, outside: true as const }
+  })
+}
+
 // --- The desk --------------------------------------------------------------------------------------------
 
 export interface AwayDeps {
@@ -466,6 +661,8 @@ export interface AwayDeps {
   mine?: (after: string | undefined) => Promise<HaccAnswer> | undefined
   /** What the wallets hold now, from the last portfolio read. */
   holdings: () => HoldingsSnapshot | undefined
+  /** Each bot's own book, rules and code: what its sells realized between two times, and what it holds now. */
+  bots?: (from: number, to: number) => AwayBotBook[]
   publish: (view: AwayView) => void
   /** Tests: waits for the portfolio read. */
   holdingsWaitMs?: number
@@ -502,6 +699,8 @@ export class AwayDesk {
   private holdingsTimer: ReturnType<typeof setTimeout> | undefined
   /** The summary the reads at start are filling, by id: an older one's late answers are dropped. */
   private filling: string | undefined
+  /** The Candle Harness's own live trades, for the summary being filled: what explains a wallet's change. */
+  private gapTrades: { id: string; trades: HarnessTrade[] } | undefined
 
   constructor(private readonly deps: AwayDeps) {
     this.state = readState(deps.statePath)
@@ -545,6 +744,8 @@ export class AwayDesk {
       cards: cap(r.cards),
       changes: cap(r.changes),
       stopped: cap(r.stopped),
+      triggers: cap(r.triggers),
+      bots: withBooks(r.bots, this.deps.bots?.(mark, to) ?? []),
       waitingNow: this.deps.waitingCards(),
       ...(read.cut && firstInGap ? { cut: { from: firstInGap.at } } : read.cut && rows[0] ? { cut: { from: rows[0].at } } : {}),
       pnl: { state: "reading", label: "since last session", usd: null, from: null, short: false, agents: {} },
@@ -559,6 +760,10 @@ export class AwayDesk {
         expired: [...r.trades, ...r.cards].filter((c) => c.outcome === "expired").length,
         changes: r.changes.length,
         stopped: r.stopped.length,
+        triggers: r.triggers.length,
+        fired: rows.filter((row) => row.type === "trigger.fired" && Date.parse(row.at) > mark && Date.parse(row.at) <= to).length,
+        botTrades: r.bots.reduce((n, b) => n + b.bought + b.sold, 0),
+        botHeld: r.bots.reduce((n, b) => n + b.held.length, 0),
         outside: 0,
         maybe: 0,
         signals: 0,
@@ -574,6 +779,7 @@ export class AwayDesk {
     const read_ = new Set(rows.map((row) => row.seq))
     const older = this.deps.memoryRows().filter((row) => !read_.has(row.seq))
     const harness = [...r.harness, ...awayRecords(older, Number.NEGATIVE_INFINITY, Number.NEGATIVE_INFINITY, this.deps.symbolOf).harness]
+    this.gapTrades = { id, trades: harness }
     this.waitHoldings(id)
     await this.deps.ready()
     await Promise.all([this.readPnl(id), this.readFills(id, harness), this.readMine(id)])
@@ -599,7 +805,9 @@ export class AwayDesk {
       return
     }
     // A token the snapshots didn't name is named as the views name it.
-    const changes = holdingChanges(then, now).map((c) => (c.symbol || c.asset === "SOL" ? c : { ...c, ...(this.deps.symbolOf(c.asset) ? { symbol: this.deps.symbolOf(c.asset)! } : {}) }))
+    const named = holdingChanges(then, now).map((c) => (c.symbol || c.asset === "SOL" ? c : { ...c, ...(this.deps.symbolOf(c.asset) ? { symbol: this.deps.symbolOf(c.asset)! } : {}) }))
+    // A change no trade this Candle Harness sent explains is said so: other keys pay from a shared wallet.
+    const changes = this.gapTrades?.id === s.id ? markOutside(named, this.gapTrades.trades, then.at, now.readAt) : named
     this.update(s.id, (x) => {
       x.holdings = { state: "read", then: then.readAt ?? then.at, changes: changes.slice(0, LISTED) }
       x.counts.holdings = changes.length
@@ -733,7 +941,7 @@ export class AwayDesk {
 
   private finish(s: AwaySummary): AwaySummary {
     const c = s.counts
-    s.happened = c.turns + c.trades + c.cards + c.changes + c.stopped + c.outside + c.maybe + c.signals + c.holdings > 0
+    s.happened = c.turns + c.trades + c.cards + c.changes + c.stopped + (c.triggers ?? 0) + (c.botTrades ?? 0) + (c.botHeld ?? 0) + c.outside + c.maybe + c.signals + c.holdings > 0
     return s
   }
 

@@ -6,57 +6,60 @@
 // is removed), the journal rebuilt before it listens (spend, operations, cards left open), then the
 // socket, then Candle's MCP children in the background (each can take 15 s to start).
 //
-// Staying up: `candle-harness core` (headless) runs until it's stopped. A core a view started for itself
-// stays up while a view is attached, an engine turn runs, an operation is in flight or being read
-// back, or a card is open, and exits 60 s after none of those hold.
+// Staying up: `candle-harness core` (headless) runs until it's stopped (`candle-harness stop`, or a signal). A core a
+// view started for itself stays up while a view is attached, an engine turn runs, an operation is in flight or
+// being read back, a card is open, or a trigger is on, and exits 60 s after none of those hold. Keep-awake
+// (macOS) keeps the Mac awake while a trigger or bot is on.
 import { randomBytes } from "node:crypto"
 import { existsSync, readFileSync, statSync } from "node:fs"
 import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises"
 import { homedir } from "node:os"
-import { basename, join } from "node:path"
+import { basename, join, resolve } from "node:path"
 import { type Config, MAX_AGENTS, parseConfig } from "../config"
 import type { Paths } from "../paths"
 import { ensureStateDir, isAgentName } from "../paths"
+import { isTestName } from "../shared/bot-name"
 import { apiKeyPrefix } from "../shared/api-key"
 import { acquireInstanceLock, type InstanceLock } from "../shared/lock"
+import { canNotifyNative, DEFAULT_NOTIFY } from "../shared/notify"
 import { Redactor } from "../shared/redact"
 import { invalidParams, refused } from "../shared/rpc"
 import { clearStaleSocket } from "../shared/socket-path"
-import { ENGINE_LABELS, type Engine, type EngineId, isEngineId } from "../engine/engine"
+import { ENGINE_IDS, ENGINE_LABELS, type Engine, type EngineId, isEngineId, newerMajor } from "../engine/engine"
 import { buildEngines, selfCommand } from "../engine/registry"
 import { recoverHomes } from "../engine/home"
 import { EngineRunner, type RunnerDeps } from "../engine/runner"
-import { canonicalToolName, DEFAULT_TOOLS, toolAllowed } from "../engine/tools"
+import { canonicalToolName, DEFAULT_TOOLS, RUN_EXAMPLE, runOn, runWords, toolAllowed } from "../engine/tools"
 import { harnessEnv } from "../engine/spawn"
 import { isPreset, PRESET_LABELS, PRESETS } from "../engine/preset"
 import { loadPersonSkills, skillsFor, skillTool } from "../engine/skills"
 import { SkillFolders } from "./skill-folders"
 import { SHIPPED, VERSION } from "../version"
-import { baseAssetForMint } from "./assets"
-import { AgentStatusBook } from "./agent-status"
+import { BASE_ASSETS, baseAssetForMint, isBaseAsset } from "./assets"
+import { AgentStatusBook, FALLBACK_FEE_BPS } from "./agent-status"
 import { AwayDesk, awayRecords, FILLS_LIMIT as AWAY_FILLS_LIMIT, MINE_PAGE as AWAY_MINE_PAGE, type HoldingsSnapshot } from "./away"
 import { HACC_HOST, type HaccAnswer, HaccClient } from "./hacc"
 import { HaccChanges, replayNote } from "./hacc-changes"
-import { haccDataLine, HaccTools, haccToolsFor } from "./hacc-tools"
+import { HACC_TOOLS, haccDataLine, HaccTools, haccToolsFor } from "./hacc-tools"
 import { PlanHeld } from "./plan-held"
 import { PlanState } from "./plan-state"
-import { SignalStream, type SignalFilter, signalsTopicFilter } from "./signal-stream"
+import { isGap, SignalStream, type SignalFilter, type SignalRow, signalsTopicFilter } from "./signal-stream"
 import { BUCKETS, type Bucket, Feeds, type FeedsFilter, feedsTopicFilter } from "./feeds"
 import { RESEARCH_PARTS, type ResearchFilter, type ResearchPart, ResearchReads, researchTopicFilter } from "./research-reads"
-import { AgentWallets, portfolioTee, WALLETS_REFRESH_MS, walletsNote } from "./agent-wallets"
-import { listsEveryTee, StoppedWallets, stoppedNote } from "./stopped-wallets"
+import { AgentWallets, payerContextFrom, portfolioTee, resolvePayer, WALLETS_REFRESH_MS, walletsNote } from "./agent-wallets"
+import { listsEveryTee, onHood, StoppedWallets, stoppedNote } from "./stopped-wallets"
 import { type ChainBalance, PUBLIC_SOLANA_RPC, readChainBalance } from "./chain-balance"
 import { CandleCli } from "./candle-cli"
 import { CandleMcpPool, type ToolOutcome } from "./candle-mcp"
-import { BUDGET_WAIT, KeyBudget, PLAN_LIMITS, requestsOf } from "./key-budget"
+import { BUDGET_WAIT, CORE_TRADE_REQUESTS, KeyBudget, PLAN_LIMITS, requestsOf } from "./key-budget"
 import { Usage } from "./usage"
-import { OBSERVER_CLIENTS } from "./client"
+import { ASK_CLIENT, OBSERVER_CLIENTS, READ_ONLY_CLIENTS } from "./client"
 import { CliCards, UploadStage } from "./cli-cards"
 import { CliTool } from "./cli-tool"
 import { Destinations, fromVaultList } from "./destinations"
 import { EMPTY_REFRESH_MS, EmptyAccountsBook, PREVIEW_CALLS } from "./empty-accounts"
 import { CliTrades } from "./cli-trade"
-import { type Card, CardBook, hashCard } from "./cards"
+import { type Card, CardBook, type Holding, hashCard } from "./cards"
 import { classify, type Mode, normaliseForMode, unclassifiedTools } from "./classify"
 import { losesNextReply, type Operation, Operations } from "./execute"
 import { Journal, type JournalRow } from "./journal"
@@ -69,15 +72,18 @@ import { Markets } from "./markets"
 import { EngineModels, MODELS_EVERY_MS } from "./engine-models"
 import { EngineState } from "./engine-state"
 import { saveAgent, saveMode, startingAgent, startingMode } from "./mode-state"
+import { holdSupport } from "./hold"
+import { researchRun, runTool } from "./research-run"
 import { RESEARCH_TOOLS, researchCall } from "./research-tools"
 import { HISTORY_TOOL, historyCall } from "./history-tool"
 import { type JournalQuery, journalRows, type QueryDeps, queryJournal, queryProblem, rowsSince } from "./journal-query"
-import { lastSessionEnd, parseWindow, PnlBook, type PnlWindow, readWindowState, SampleStore, saveWindowState } from "./pnl"
+import { lastSessionEnd, parseWindow, PnlBook, type PnlWindow, readWindowState, SampleStore, saveWindowState, sinceStart } from "./pnl"
 import { autonomyNote, LIMITS_TOOL, limitsRead } from "./limits-tool"
 import { PNL_TOOL, pnlCall } from "./pnl-tool"
 import { LONG_INDEX_CHARS, MemoryBook } from "./memory"
 import { parseShown, readSavedShown, saveShown, shownGroup, shownWallets, unknownNames, type WalletsShown } from "./wallets-shown"
 import { heldMints, portfolioSymbol, portfolioView, viewName } from "./portfolio-view"
+import { tokenLabel } from "../shared/token-label"
 import { buildNames, lookupWallet, pairsFile, planRenames, type RenameRow, short, walletName, type WalletKind, type WalletNameEntry } from "./wallet-names"
 import { type GroupDef as GroupDefKept, type GroupOp, planGroupChange, resolveGroups, type WalletGroup } from "./wallet-groups"
 import { WalletsFileStore } from "./wallets-file"
@@ -87,10 +93,11 @@ import { Pricing } from "./pricing"
 import { readTrade } from "./reconcile"
 import { VAULT_GONE, VaultMark } from "./vault-mark"
 import { applyChange, changeFrom, freshState, keyFrom, OnboardingStore, onboardingProgress, signInFrom, stepBack, testedOn, withFinished, withTested, type OnboardingFacts, type OnboardingState, type OnboardingView } from "../setup/onboarding"
-import { recordAgentLimits } from "../setup/key-add"
+import { recordAgentLimits, recordAgentRun } from "../setup/key-add"
 import { actingProfile, PRODUCTION_API, profilesFrom, recordProfile, setupProfile } from "../setup/candle-profile"
 import { renewBefore } from "./plan-renew"
 import { enginePathOf, HARNESS_SIGN_INS, harnessSignInArgv } from "../setup/harness-signin"
+import { folderProblem, harnessProblem, readBuildPrefs, saveBuildPrefs } from "./build-prefs"
 import { signInTurn } from "../setup/doctor"
 import { type Captured, FACTOR_ARGV, NO_REPORT, NOT_OPENED, type PaneParams, type PaneReport, paneMapped, paneOutcome, type PaneResult, paneTitle, asSentence, STOPPED_FOR_GOOD, SWEPT_AND_RETIRED, vaultListCount } from "./pane-plan"
 import { freshTeeStep, freshTeeStepOf, positionals, rebindLeft } from "./owner-rows"
@@ -98,13 +105,44 @@ import { rowFor, SOURCE, sourceFor } from "./cli-table"
 import { type CallContext, CoreServer, WithSecret } from "./server"
 import { type PaneGrant, PaneTickets } from "./tickets"
 import { historyRequest, SAMPLE_MS, TokenWatch } from "./token-watch"
-import { chainParam, mintParam, placeParam, signalsChoiceParam, ViewState, type ViewsTopic } from "./view-state"
+import { chainParam, mintParam, placeParam, signalsChoiceParam, tokenPaneParam, ViewState, type ViewsTopic } from "./view-state"
 import { terminalText } from "../shared/terminal-text"
-import { isPoppable, POPPABLE } from "../shared/panes"
+import { isPoppable, POPPABLE, TOKEN_PANES } from "../shared/panes"
 import { TokenBook } from "./tokens"
-import { cardAnswer, type CardView, type FaceClient, GROUP_WALLETS_TOOL, NAME_WALLETS_TOOL, offeredTools, SHOW_WALLETS_TOOL, ToolFace, VIEW_TOOL, withOwnPrefix, withReason, withScreenNotes } from "./tool-face"
+import { TokenNames } from "./token-names"
+import { AliasFile, LineReader } from "./line-reader"
+import { TriggerBook } from "./triggers"
+import { type Backtest, BOTS_TOOL, BOTS_TOOL_NAME, BotsTool, backtestFromJournal, botRecent, botSkips, readBotCard, runBotCard, strategyFrom } from "./bots-tool"
+import { botBook, type BotBookView } from "./bot-books"
+import { canonicalJson } from "../shared/canonical-json"
+import type { Definition } from "../shared/definition"
+import { exitWords } from "../shared/definition-words"
+import { readTriggerCard, runTriggerCard, type TriggerCardParams, TRIGGERS_TOOL, TRIGGERS_TOOL_NAME, TriggersTool } from "./triggers-tool"
+import { type BotEventSeen, type Clock, TriggerWatch } from "./trigger-watch"
+import { CORE_HOWS } from "../shared/approved-how"
+import { type FireEnd, fireEndSaid, TriggerFirer } from "./trigger-fire"
+import { WAKES_PER_DAY, WAKES_PER_HOUR, Waker } from "./trigger-wake"
+import { partsOfAction } from "../shared/trigger-grammar"
+import { TriggersFileStore } from "./triggers-file"
+import { BotBook, type BotsTopic, routeSlippageBps } from "./bots"
+import { BotPositions } from "./bot-book"
+import { type BotTold, CodeBotDesk } from "./bot-protocol"
+import { HeldExits } from "./held-exits"
+import { BotEvents } from "./bot-events"
+import { BotReports } from "./bot-report"
+import { BotEntries } from "./bot-entries"
+import { BotExits, EXIT_WORDS, positionPrice } from "./bot-exits"
+import type { FailedSells } from "./failed-sells"
+import { PACE_TRADES, type RouteWaits, type TradePace } from "./breaker"
+import { BotTrades } from "./bot-trades"
+import { BotsFileStore, folderPlaceProblem } from "./bots-file"
+import { CodeBotBook, type CodeBotProposal, type CodeHeldExitView, codeBotCard, controlEffect } from "./code-bots"
+import { readLogTail, Supervisor, type SupervisorTuning } from "./supervisor"
+import { type CaffeinateSpawn, KeepAwake } from "./keep-awake"
+import { cardAnswer, type CardView, type FaceClient, GROUP_WALLETS_TOOL, modeFor, NAME_WALLETS_TOOL, offeredTools, SHOW_WALLETS_TOOL, ToolFace, VIEW_TOOL, withOwnPrefix, withReason, withScreenNotes } from "./tool-face"
+import { CoreNotifier } from "./notifier"
 import { ViewAsks } from "./view-asks"
-import { sessionNote, TradeLog } from "./trade-log"
+import { clockNote, sessionNote, TradeLog } from "./trade-log"
 
 export const IDLE_EXIT_MS = 60_000
 /**
@@ -154,6 +192,10 @@ export interface CoreOptions {
   idleExitMs?: number
   /** How often the idle rule is checked. */
   idleTickMs?: number
+  /** Tests only: the triggers' watchers' clock (their heartbeat and every wait). */
+  triggerClock?: Clock
+  /** Tests only: how keep-awake starts caffeinate. */
+  caffeinate?: CaffeinateSpawn
   /** How often each engine's models are read again (10 minutes). */
   modelsEveryMs?: number
   /** How long onboarding's test message may take. */
@@ -170,8 +212,20 @@ export interface CoreOptions {
   engine?: Partial<Pick<RunnerDeps, "start" | "version" | "processes" | "leftoverDelayMs" | "onRaw">> & { engines?: Engine[]; without?: EngineId[] }
   /** Tests only: the fake Hacc's address. Hacc's host is fixed otherwise. */
   haccHost?: string
+  /**
+   * How the core sends a notification with no view open. Unset, it shows one where the machine can (a Mac, a Linux
+   * desktop), never under `bun test`, so a contributor's test run on a Mac doesn't put the test cores' notices on screen.
+   */
+  notify?: { native?: boolean; spawn?: (argv: string[]) => Promise<{ exitCode: number; stderr: string }>; quietMs?: number }
   /** Tests only: a stopped wallet's balance in place of the chain's (chain-balance.ts). */
   chainBalance?: (address: string) => Promise<ChainBalance>
+  /**
+   * The code bots' supervisor (supervisor.ts). Unset, it runs each approved code bot's command; `false` leaves it off,
+   * for tests that connect a bot themselves; figures given replace its own, for tests.
+   */
+  supervise?: false | Partial<SupervisorTuning>
+  /** How long a Build pane's paper test run lasts at most: 30 minutes, shorter in tests. */
+  buildTestMs?: number
 }
 
 export { selfCommand }
@@ -197,6 +251,30 @@ export interface RunningCore {
   autonomy: AutonomyDesk
   /** Each TEE wallet's empty token accounts, from Candle's preview. */
   emptyAccounts: EmptyAccountsBook
+  /** Reads a line as the input line would, with config.toml's aliases and the core's token names. */
+  lines: LineReader
+  /** Triggers: triggers.toml, their state, and the plan gate. */
+  triggers: TriggerBook
+  /** Rules bots: bots.toml, their state and approved versions, and the plan gate. */
+  bots: BotBook
+  /** Code bots: bots.toml's `kind = "code"` entries, their state and approved run settings, and their tokens. */
+  codeBots: CodeBotBook
+  /** The socket's tokens: a code bot's is issued through codeBots, a Build pane's minted here. */
+  tokens: TokenBook
+  /** Rules bots' entries, matched on Hacc's full tape. */
+  botEntries: BotEntries
+  /** Rules bots' exits, on Candle's market read after each heartbeat. */
+  botExits: BotExits
+  /** Failed sells of one token in a row, per key: the breaker's third. */
+  failedSells: FailedSells
+  /** Each key's trades in the last minute: the pace bots and triggers keep to, clear of Candle's breaker. */
+  tradePace: TradePace
+  /** The pairs Candle's route breaker refuses on a key now. */
+  routeWaits: RouteWaits
+  /** One heartbeat of the triggers' watcher and the bots' exits, now: for the tests. */
+  watchBeat: () => Promise<void>
+  /** The bots' own stream of Hacc's full tape. */
+  botSignals: SignalStream
   account: string
   coreId: string
   /** Resolves when the MCP children have started (or failed to). */
@@ -264,7 +342,18 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
     await clearStaleSocket(paths.socket)
     const redactor = new Redactor()
     const keys = loadKeys(paths, config)
+    // Whether this machine can hold the code runner (hold.ts): read once, since it's the kernel's or the system's.
+    const runHold = await holdSupport()
+    /** The programs the agent's code runner runs, when it's on and held here. */
+    const runPrograms = (agent: string): readonly string[] | undefined => {
+      const tools = config.agents[agent]?.tools
+      return runHold.ok && runOn(tools?.run) && toolAllowed(tools, "research_run") ? tools.run : undefined
+    }
     for (const key of keys.values()) redactor.add(key)
+    // The RPC address often holds a paid key, in its path as often as its query: whole, it's never sent or written.
+    redactor.add(config.candle.rpcUrl)
+    // The CLI's keyring passphrase, passed to every candle run where there's no keychain: never written or shown.
+    redactor.add(opts.env.CANDLE_KEYRING_PASSPHRASE)
     const account = await accountId(paths.stateDir)
     const coreId = randomBytes(9).toString("base64url")
     journal = await Journal.open({ path: paths.journal, redactor, account, now })
@@ -307,7 +396,10 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
       preferred: () => anyAgent(),
       now,
       onChange: () => publishStatus?.(),
+      coreReserve: (agent) => coreReserveOf?.(agent) ?? 0,
     })
+    /** Set once the bots and the pace exist: the calls a key keeps free for its bots' trades still to come. */
+    let coreReserveOf: ((agent: string) => number) | undefined
     const route = config.candle.mcp.route
     const pool = new CandleMcpPool({
       route,
@@ -330,7 +422,17 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
     // Hacc: each agent reads with its own key; agents on one account (its embedded wallet) share
     // the client's short cache. The account's plan decides which Hacc tools are offered.
     const hacc = new HaccClient({ keyFor: (agent) => keys.get(agent), accountOf: (agent) => status.get(agent)?.wallets.solana, now, onRead: (bytes) => usage.haccRead(bytes), ...(opts.haccHost ? { host: opts.haccHost } : {}) })
-    const plans = new PlanState({ status, agents: () => [...keys.keys()], now, onChange: () => publishHacc?.() })
+    // A plan change reaches Hacc's topic and the triggers, which need Pro or Max.
+    let onPlanChange: (() => void) | undefined
+    const plans = new PlanState({
+      status,
+      agents: () => [...keys.keys()],
+      now,
+      onChange: () => {
+        publishHacc?.()
+        onPlanChange?.()
+      },
+    })
     let publishHacc: (() => void) | undefined
     // Views Hacc refused for the plan though Candle's table says it reaches them: held until it changes.
     const planHeld = new PlanHeld(() => publishHacc?.())
@@ -354,6 +456,8 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
     const anyAgent = () => (keys.has(activeAgent) ? activeAgent : [...keys.keys()][0])
     // Set once the server exists; the status and portfolio topics are published through it.
     let publishStatus: (() => void) | undefined
+    // What holds the core up now, in words: set with the idle rule.
+    let holdWords: () => string[] = () => []
     let publishPortfolio: (() => void) | undefined
     // The Away summary waits for the portfolio read a view's attach makes; set once it exists.
     let awayPortfolioRead: (() => void) | undefined
@@ -399,8 +503,27 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
     }
     // What the panes value holdings at: the newest of the portfolio's price and any market read's.
     const latest = new LatestPrices(prices)
+    // Triggers' watchers, made once Hacc's stream exists below: every market read reaches their levels too.
+    let triggerWatch: TriggerWatch | undefined
+    // Triggers' firing path, made once the cards, the tools and the kill switch exist below.
+    let triggerFirer: TriggerFirer | undefined
+    // Rules bots' entries, made once the trade path and the bots' own stream exist below.
+    let botEntries: BotEntries | undefined
+    // Rules bots' exits, made with the entries; the watcher reads their positions' tokens and checks them each heartbeat.
+    let botExits: BotExits | undefined
+    let codeBotDesk: CodeBotDesk | undefined
+    /** The exits the core holds on code bots' positions: built once the journal's bot rows are read. */
+    let heldExitsRef: HeldExits | undefined
+    let codeBotDeskTell: (name: string, told: BotTold) => void = () => {}
+    // What each code bot last said about itself, beside the core's count (bot-report.ts). The Bots topic it shows on is
+    // sent at most once a second for reports, so a bot reporting in a loop can't flood the views.
+    const botReports = new BotReports(now)
+    let reportPublish: ReturnType<typeof setTimeout> | undefined
     const noted = (tool: string, outcome: ToolOutcome): ToolOutcome => {
-      if (tool === "candle_get_market") latest.noteMarket(outcome, now())
+      if (tool === "candle_get_market") {
+        latest.noteMarket(outcome, now())
+        triggerWatch?.noteMarket(outcome)
+      }
       return outcome
     }
     const spend = new DaySpend()
@@ -420,6 +543,7 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
     // Each TEE wallet's empty token accounts, made once the CLI runner exists below.
     let emptyBook: EmptyAccountsBook | undefined
     const defaultPins = new DefaultPins(paths.defaultPins)
+    let destinationsBook: Destinations | undefined
     const wallets = new AgentWallets({
       pool,
       status,
@@ -438,6 +562,12 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
       now,
       names: () => nameBook(),
       groups: () => groupBook(),
+      // Candle's own wallets read, once made: an imported wallet bound to a key isn't one the Candle Harness pays from.
+      imported: (address) => {
+        if (destinationsBook?.all().some((d) => d.address === address && d.kind === "tee")) return false
+        const row = destinationsBook?.names().linked.find((l) => l.address === address)
+        return row ? !row.tee : undefined
+      },
       onChange: () => {
         publishStatus?.()
         publishPortfolio?.()
@@ -465,6 +595,7 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
       portfolio: () => portfolioNow().wallets.map((w) => ({ address: w.address, ...(w.label ? { label: w.label } : {}), kind: w.kind })),
     })
     await destinations.load()
+    destinationsBook = destinations
     // TEE wallets stopped in the pane (a stop is final): Candle drops them from every list, so the core keeps them until they're swept.
     const stoppedWallets = new StoppedWallets({ file: paths.stoppedWallets })
     await stoppedWallets.load()
@@ -482,7 +613,8 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
       if (due.length === 0 || (which === balancesFor && now() - balancesReadAt < 5 * 60_000)) return
       balancesReadAt = now()
       balancesFor = which
-      for (const w of due) stoppedBalances.set(w.address, await (opts.chainBalance?.(w.address) ?? readChainBalance({ url: rpcForReads(), address: w.address, now: now() })))
+      // A Hood wallet is never sent to the Solana RPC: its balance is said as not read.
+      for (const w of due) stoppedBalances.set(w.address, onHood(w.address) ? { error: "Hood balances aren't read yet", readAt: now() } : await (opts.chainBalance?.(w.address) ?? readChainBalance({ url: rpcForReads(), address: w.address, now: now() })))
       publishPortfolio?.()
     }
     noteTeeListed = () => {
@@ -533,15 +665,242 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
     }
     groupBook = () => resolveGroups(walletsFile.read().groups, nameBook(), Object.keys(config.agents))
     const nameOf = (address: string, kind: WalletKind = "tee", label?: string): string => walletName(nameBook(), { address, kind, ...(label ? { label } : {}) })
-    const refreshWallets = () => {
-      void wallets.refreshAll().catch(() => {})
+    const refreshWallets = (opts: { readSince?: number } = {}) => {
+      void wallets.refreshAll(opts).catch(() => {})
       // Imported and linked wallets' names are Candle's labels: the owner's wallets read, at most every 5 minutes.
       void knownDestinations().catch(() => {})
     }
     let walletsTimer: ReturnType<typeof setInterval> | undefined
 
     let server: CoreServer | undefined
-    const publish = (topic: string, data: unknown, owner?: string) => server?.events.publish(topic, data, owner)
+    // A line the core reads (a trigger's) resolves its token names by what the core has shown its views.
+    const tokenNames = new TokenNames()
+    // The names the person has met as their own: on a card, or held in a wallet. A card for another token by one of
+    // these names says so. Candle's lists aren't counted: copies of a ticker pass through them all day.
+    const metNames = new TokenNames()
+    const lines = new LineReader({
+      aliases: new AliasFile(paths.configFile),
+      names: tokenNames,
+      agents: () => Object.keys(config.agents),
+      wallets: () => walletsTopic(),
+      mode: () => mode,
+    })
+    /** The wallet a trade pays from: the one it names, else the agent's default; undefined before it's read or when it can't pay. */
+    const payWalletOf = (agent: string, wallet: string | undefined, mint: string | undefined) => {
+      const ctx = payerContextFrom(walletsTopic(), agent, mint?.startsWith("0x") ? "hood" : undefined)
+      const r = ctx ? resolvePayer(ctx, wallet) : undefined
+      if (!r?.ok) return undefined
+      return { address: r.address, name: r.kind === "embedded" ? "embedded" : nameOf(r.address, "tee", r.label), setting: autonomy.get(r.address) }
+    }
+    // Keep-awake: caffeinate while a trigger or bot is on, on macOS, when the person has it on.
+    const keepAwake = new KeepAwake({
+      file: join(paths.stateDir, "keep-awake.json"),
+      initial: config.core?.keepAwake ?? false,
+      platform: process.platform,
+      pid: process.pid,
+      now,
+      ...(opts.caffeinate ? { spawn: opts.caffeinate } : {}),
+      onChange: () => publishStatus?.(),
+    })
+    // Triggers, read by the core's own line reader: their file, their state, and the plan gate.
+    // The code bots' names, once their book is made below: a trigger on a bot may name one.
+    let codeBotNames: () => string[] = () => []
+    const triggers = new TriggerBook({
+      file: new TriggersFileStore(paths.triggersFile),
+      statePath: paths.triggersState,
+      journal: j,
+      lines,
+      agents: () => Object.keys(config.agents).filter((a) => keys.has(a)),
+      plan: (agent) => plans.planFor(agent).plan,
+      mode: () => mode,
+      pnlWindow: () => pnlWindow,
+      now,
+      payWallet: (agent, wallet, mint) => payWalletOf(agent, wallet, mint),
+      feeBps: (agent) => status.get(agent)?.feeBps ?? FALLBACK_FEE_BPS,
+      botNames: () => bots.entries().map((b) => b.name),
+      codeBotNames: () => codeBotNames(),
+      onChange: () => {
+        triggerWatch?.refresh()
+        void publish("triggers", triggers.view())
+        // How many keep the core up: the status bar's "3 triggers on", and keep-awake.
+        keepAwake.update(keptUp())
+        publishStatus?.()
+      },
+    })
+    // The rules for a bot's trades, every kind, in one place (bot-trades.ts): Candle's breaker kept clear of by bots and
+    // triggers (failed sells of a token in a row per key, anyone's; each key's trades in the last minute; the pairs
+    // Candle's route breaker refuses, from the journal's window), Candle's stop pausing a key's bots, and the send.
+    const botTrades = new BotTrades({
+      rows: j.rows(),
+      now,
+      pauseKeyBots: async (agent) => [...(await bots.pauseByCandle(agent)), ...(await codeBots.pauseByCandle(agent))],
+      face: () => face,
+      cards: () => cards,
+    })
+    const { failedSells, pace: tradePace, routes: routeWaits } = botTrades
+    j.onAppend((row) => botTrades.note(row))
+    // Each rules bot's own positions, from its own fills in the journal.
+    const botPositions = new BotPositions({
+      rows: j.botRows(),
+      statePath: paths.botPeaks,
+      // The exits' clock: a read-back buy's mark counts only near when the buy was sent.
+      now: () => (opts.triggerClock ?? { now }).now(),
+      // A position opening or closing changes whether a paused bot keeps the core up.
+      onChange: () => {
+        keepAwake.update(keptUp())
+        publishStatus?.()
+      },
+    })
+    j.onAppend((row) => botPositions.note(row))
+    // Rules bots: their file, their state, and the same plan gate as triggers.
+    const bots = new BotBook({
+      file: new BotsFileStore(paths.botsFile),
+      statePath: paths.botsState,
+      journal: j,
+      agents: () => Object.keys(config.agents).filter((a) => keys.has(a)),
+      plan: (agent) => plans.planFor(agent).plan,
+      mode: () => mode,
+      now,
+      payWallet: (agent, wallet) => payWalletOf(agent, wallet, undefined),
+      payRefusal: (agent, wallet) => {
+        const ctx = payerContextFrom(walletsTopic(), agent, undefined)
+        const r = ctx ? resolvePayer(ctx, wallet) : undefined
+        return r && !r.ok ? r.message : undefined
+      },
+      openPositions: (name) => botPositions.open(name).length,
+      onChange: () => {
+        botEntries?.refresh()
+        void publish("bots", botsTopic())
+        keepAwake.update(keptUp())
+        publishStatus?.()
+      },
+    })
+    // Code bots: programs of the person's own, in the same bots.toml, held to the figures their card approved. They
+    // connect with a bot token, never a key; the token book keeps theirs across restarts.
+    /** Runs each approved code bot's command and keeps it running: started once the socket listens. */
+    let supervisor: Supervisor | undefined
+    // Where a code bot's folder or the bots folder may never be: /, the home or above it, and the
+    // Candle Harness's own folders (the research agents' folders are inside config), by real path.
+    const folderPlace = (folder: string) => folderPlaceProblem(folder, { home: opts.env.HOME ?? homedir(), own: [paths.configDir, paths.stateDir, paths.keysDir] })
+    /** The bots folder as typed (~/ is the home), as the Build pane opens it (build/folder.ts botsFolderPath). */
+    const typedFolder = (typed: string) => {
+      const t = typed.trim()
+      const home = opts.env.HOME ?? homedir()
+      return t === "~" ? home : t.startsWith("~/") ? join(home, t.slice(2)) : resolve(t)
+    }
+    const codeBots = new CodeBotBook({
+      folderPlace,
+      ...(opts.buildTestMs !== undefined ? { testMs: opts.buildTestMs } : {}),
+      file: bots.file,
+      statePath: paths.codeBotsState,
+      journal: j,
+      agents: () => Object.keys(config.agents).filter((a) => keys.has(a)),
+      plan: (agent) => plans.planFor(agent).plan,
+      mode: () => mode,
+      now,
+      payWallet: (agent, wallet) => payWalletOf(agent, wallet, undefined),
+      payRefusal: (agent, wallet) => {
+        const ctx = payerContextFrom(walletsTopic(), agent, undefined)
+        const r = ctx ? resolvePayer(ctx, wallet) : undefined
+        return r && !r.ok ? r.message : undefined
+      },
+      tokens,
+      disconnect: (tokenId) => server?.disconnectToken(tokenId),
+      connected: (name) => server?.clients().some((c) => c.role === "bot" && c.bot === name) ?? false,
+      runsOutside: (name) => supervisor?.view(name).runs === "outside",
+      openPositions: (name) => botPositions.open(name).length,
+      letGo: async (name) => (codeBotDesk ? codeBotDesk.letGo(name) : []),
+      onChange: () => {
+        // Each connected code bot is told its state when it changed.
+        for (const b of codeBots.entries()) codeBotDesk?.stateChanged(b.name)
+        // A bot removed takes what it said with it.
+        botReports.forgetExcept(new Set(codeBots.entries().map((b) => b.name)))
+        // Its process follows: started, kept, or ended as it may run now.
+        void supervisor?.reconcile().catch(() => {})
+        void publish("bots", botsTopic())
+        keepAwake.update(keptUp())
+        publishStatus?.()
+      },
+    })
+    codeBotNames = () => codeBots.entries().map((b) => b.name)
+    // A token whose bot is no longer saved (removed while the file couldn't be written, or by hand) goes at start.
+    await tokens.pruneBots(new Set(codeBots.known())).catch(() => [])
+    /** A code bot's or a paper test's book from its own fills, once the core can price them: set with the rules bots' books below. */
+    let codeBook: ((name: string, mode: "paper" | "live") => BotBookView) | undefined
+    /** The `bots` topic: each bot, and once the core can price them, each bot's book. */
+    const withCode = (v: BotsTopic): BotsTopic => {
+      const code = codeBots.views().map((c) => {
+        const says = botReports.view(c.name)
+        const held = heldExitsView(c.name)
+        const proc = supervisor?.view(c.name)
+        const run = codeBots.approvedVersion(c.name)?.run
+        const controls = says && run
+          ? says.controls.map((x) => {
+              const e = controlEffect(run, x, routeSlippageBps(run.wallet))
+              return { id: x.id, label: x.label, how: e.how, words: e.words }
+            })
+          : []
+        const used = codeBotDesk?.usedToday(c.name)
+        return { ...c, ...(used !== undefined ? { usedTodayUsd: used } : {}), ...(says ? { says } : {}), ...(controls.length ? { controls } : {}), ...(held.length ? { heldExits: held } : {}), ...(proc ? { process: proc } : {}) }
+      })
+      const gate = v.gate ?? codeBots.gateView()
+      const codeBooks = codeBook ? Object.fromEntries(code.map((c) => [c.name, codeBook!(c.name, c.mode)])) : {}
+      // A paper test: what it says, and the core's count from its paper fills, for the Build tab's test box.
+      const tests = codeBots.testViews().map((t) => {
+        const says = botReports.view(t.name)
+        return { ...t, ...(says ? { says } : {}) }
+      })
+      const testBooks = codeBook ? Object.fromEntries(tests.map((t) => [t.name, codeBook!(t.name, "paper")])) : {}
+      const books = Object.keys(testBooks).length || Object.keys(codeBooks).length ? { ...(v.books ?? {}), ...codeBooks, ...testBooks } : v.books
+      const testsEnded = codeBots.endedTests()
+      // A code bot's card waiting for the person, by its folder: the Build tab says its card waits, not "not proposed yet".
+      const codeCards = cards
+        .list()
+        .filter((c) => c.state === "awaiting_approval" && c.tool === BOTS_TOOL_NAME && c.params.action === "saveCode")
+        .flatMap((c) => {
+          const proposal = c.params.proposal as { name?: unknown; run?: { folder?: unknown } } | undefined
+          return typeof proposal?.name === "string" && typeof proposal.run?.folder === "string" ? [{ name: proposal.name, folder: proposal.run.folder, cardId: c.cardId, change: c.params.replace === true }] : []
+        })
+      return { ...v, ...(gate ? { gate } : {}), ...(code.length ? { code } : {}), ...(tests.length ? { tests } : {}), ...(testsEnded.length ? { testsEnded } : {}), ...(codeCards.length ? { codeCards } : {}), ...(books ? { books } : {}) }
+    }
+    /** A code bot's open positions the core holds exits on, in words, with why a sell of one waits. */
+    const heldExitsView = (name: string): CodeHeldExitView[] => {
+      const held = heldExitsRef
+      if (!held) return []
+      const waits = new Map((botExits?.heldSells(name) ?? []).map((h) => [h.mint, h.words]))
+      return botPositions.open(name).flatMap((p) => {
+        const h = held.of(p.id)
+        if (!h) return []
+        const symbol = symbolOf(p.mint)
+        return [{ position: p.id, mint: p.mint, ...(symbol ? { symbol } : {}), words: exitWords(h.exit), by: h.by, ...(botExits?.selling(p.id) ? { selling: true as const } : {}), ...(waits.has(p.mint) ? { waits: waits.get(p.mint)! } : {}) }]
+      })
+    }
+    let botsTopic: () => BotsTopic = () => withCode(bots.view())
+    /** Whether a trigger or a bot keeps the core up: it outlives its views, and keep-awake follows it. */
+    const botsUp = () => [...bots.keepingUp(), ...codeBots.keepingUp()]
+    const keptUp = () => triggers.keepingUp().length > 0 || botsUp().length > 0
+    onPlanChange = () => {
+      void triggers.planChanged().catch(() => {})
+      void bots.planChanged().catch(() => {})
+      void codeBots.planChanged().catch(() => {})
+    }
+    /** The live triggers the kill switch's pause holds: each that buys, swaps or wakes. One that only sells or notifies runs on. */
+    const triggersHeldByPause = () =>
+      triggers.live().flatMap((t) => {
+        const r = triggers.resolved(t)
+        if (!r) return []
+        if (r.action.kind === "wake") return [{ name: t.name, agent: t.agent, words: `wakes ${r.action.agent}: held, no wake until you resume` }]
+        if (r.action.kind !== "command") return []
+        const parts = partsOfAction(r.action.command)
+        const spends = parts.filter((p) => p.tool === "candle_swap" || p.args.side === "buy").length
+        if (!spends) return []
+        return [{ name: t.name, agent: t.agent, words: spends === parts.length ? "its buys and swaps are held until you resume" : "its buys and swaps are held until you resume; its sells still go" }]
+      })
+    const publish = (topic: string, data: unknown, owner?: string) => {
+      tokenNames.learnFrom(topic, data)
+      if (topic === "cards" || topic === "portfolio") metNames.learnFrom(topic, data)
+      return server?.events.publish(topic, data, owner)
+    }
     const cardOwner = new Map<string, string>()
 
     // The prompt pane. Approving a pane card mints a ticket for the
@@ -560,10 +919,11 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
         result = { ...result, words: `finished in the pane: the Candle Harness now knows ${count} as places funds may go.` }
       }
       // What the step touched is read before the outcome is told, so the outcome says what's true now.
+      const endedAt = now()
       const told = await afterOwner(open, result, captured).catch(() => result)
       await operations.settlePane(open.opId, paneMapped(told, { fundsOut: open.pane.rule === "funds-out" }))
       if (told.outcome === "usage") await j.append({ type: "pane.usage", mode, ...(open.pane.agent ? { agent: open.pane.agent } : {}), opId: open.opId, row: open.pane.row, note: "The CLI refused the Candle Harness's command line: the command table is wrong for this CLI." })
-      afterPane(open.pane, told)
+      afterPane(open.pane, told, endedAt)
     }
 
     // Owner rows. The core reads what a step changed and says what's next, as chips
@@ -576,6 +936,8 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
       return argv.filter((a, i) => a !== "--json" && a !== "--yes" && (at < 0 || (i !== at && i !== at + 1)))
     }
     /** The vault key a fresh TEE wallet is promoted from and funded by: filled in only when the Candle Harness knows just one. */
+    // Every wallet name the Candle Harness knows, so a fresh TEE wallet's label is one no wallet holds.
+    const takenNames = (): { taken: string[] } => ({ taken: nameBook().flatMap((e) => (e.name !== undefined ? [e.name] : [])) })
     const vaultKeyOf = (): { vaultKey?: string } => {
       const held = destinations.all().filter((d) => d.kind === "vault-key")
       return held.length === 1 ? { vaultKey: held[0]!.label ?? held[0]!.address } : {}
@@ -602,11 +964,16 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
       if (pane.row === "tee rebind") return afterRebind(open.holders ?? [], result)
       const step = freshTeeStepOf(words, agentPrefixes())
       if (step) {
+        const before = new Set(wallets.teeOnKey(prefixOf(step.agent)!).map((w) => w.address))
         await wallets.refresh(step.agent).catch(() => {})
         const onKey = wallets.teeOnKey(prefixOf(step.agent)!)
-        const tee = onKey.find((w) => step.label !== undefined && w.label === step.label) ?? onKey.at(-1)
+        // The promoted wallet by its label, else the one wallet new on the key: never a guess, which could fund the wrong one.
+        const fresh = onKey.filter((w) => !before.has(w.address))
+        const tee = onKey.find((w) => step.label !== undefined && w.label?.toLowerCase() === step.label.toLowerCase()) ?? (fresh.length === 1 ? fresh[0] : undefined)
         return { ...result, next: [freshTeeStep(2, step.agent, { prefix: prefixOf(step.agent)!, ...(tee ? { address: tee.address } : {}) })] }
       }
+      // A fund or a rebind changes what an agent can pay from: read again now, so the approvals menu and the next card see it.
+      if (pane.row === "vault fund" || pane.row === "tee fund") await wallets.refreshAll().catch(() => {})
       return result
     }
 
@@ -693,7 +1060,7 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
           ...result,
           outcome: "finished",
           words: `made ${agent} (key ${prefixOf(agent)}…): it's in the Agents list now.${lp ? " Next, its own TEE wallet." : ""}`,
-          ...(lp ? { next: [freshTeeStep(1, agent, { prefix: prefixOf(agent)!, ...vaultKeyOf() })] } : {}),
+          ...(lp ? { next: [freshTeeStep(1, agent, { prefix: prefixOf(agent)!, ...vaultKeyOf(), ...takenNames() })] } : {}),
         }
       }
       const run = await candleCli.runExact({ argv: candleCli.finalArgs({ args: ["keys", "list"], json: true, withRpcUrl: false }), json: true }).catch(() => undefined)
@@ -770,7 +1137,7 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
      */
     const afterRebind = async (holders: string[], result: PaneResult): Promise<PaneResult> => {
       await wallets.refreshAll().catch(() => {})
-      const left = rebindLeft(holders, { teeCount: (a) => wallets.teeOnKey(prefixOf(a) ?? "").length, embedded: (a) => status.get(a)?.embeddedWallet, prefix: (a) => (keys.has(a) ? prefixOf(a) : undefined), ...vaultKeyOf() })
+      const left = rebindLeft(holders, { teeCount: (a) => wallets.teeOnKey(prefixOf(a) ?? "").length, embedded: (a) => status.get(a)?.embeddedWallet, prefix: (a) => (keys.has(a) ? prefixOf(a) : undefined), ...vaultKeyOf(), ...takenNames() })
       if (left.next.length === 0) return result
       return { ...result, words: `${result.words} ${left.words.join(" ")}`, next: left.next }
     }
@@ -793,8 +1160,9 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
     })
     // What a pane step touched is read again; nothing is re-run. Funds out, or an end nobody saw, reads
     // the balances as after a fill (a finished one is read by the journal's operation.succeeded row).
-    const afterPane = (pane: PaneParams["pane"], result: PaneResult) => {
-      refreshWallets()
+    const afterPane = (pane: PaneParams["pane"], result: PaneResult, endedAt?: number) => {
+      // A key the step's own read-back read after it ended (setup's, after an allow) isn't read again: a Free key has 30 a minute.
+      refreshWallets(endedAt !== undefined ? { readSince: endedAt } : {})
       if (pane.rule === "funds-out" && result.outcome !== "finished") for (const ms of AFTER_FILL_READS_MS) setTimeout(() => void prices.refresh().catch(() => {}), ms).unref?.()
     }
 
@@ -807,13 +1175,20 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
       journal: j,
       pool,
       now,
+      // A fill's pair asset at its price now, from the prices already held: the book values a bot's entry by it.
+      assetUsd: (asset) => (isBaseAsset(asset) ? latest.usd(BASE_ASSETS[asset].priceKey) : undefined),
       onChange: (op: Operation) => {
         if (op.state === "succeeded" || op.state === "failed" || op.state === "refused" || op.state === "abandoned") releaseUpload(op.opId, op.params)
-        spend.settle(op.opId, op.state)
-        walletSpend.settle(op.opId, op.state)
+        // A swap whose first leg landed spent what it sent, though it ended failed: the day still counts it.
+        const spentAs = op.state === "failed" && op.partial ? "partial" : op.state
+        spend.settle(op.opId, spentAs)
+        walletSpend.settle(op.opId, spentAs)
         if (op.error?.code === "KEY_LIMIT_REACHED" || op.error?.code === "RISK_LIMIT_REACHED") keyHolds.note(op.agent, op.error, now())
-        cards.noteOperation(op.opId, { state: op.state, ...(op.result !== undefined ? { result: op.result } : {}), ...(op.error ? { error: op.error } : {}), ...(op.paper ? { paper: true } : {}) })
+        // Candle stopped the key: every bot of its agent is paused, so none enters when the owner resumes the key.
+        botTrades.noteOperation(op)
+        cards.noteOperation(op.opId, { state: op.state, ...(op.result !== undefined ? { result: op.result } : {}), ...(op.error ? { error: op.error } : {}), ...(op.paper ? { paper: true } : {}), ...(op.partial ? { partial: op.partial } : {}) })
         kill?.noteOperation(op)
+        triggerFirer?.poke()
         publish("operations", op, cardOwner.get(op.cardId))
         publishStatus?.() // the agent's spend today changed
       },
@@ -826,7 +1201,16 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
       hacc: { run: (op) => haccChanges.run(op), read: (op) => haccChanges.readBack(op) },
       // The agent's narrowing of a wallet's autonomy, approved: it runs in the core.
       autonomy: { run: (op) => autonomyDesk.run(op), read: (op) => autonomyDesk.read(op) },
+      // A trigger's card, approved: saved in the core, checked whole again.
+      triggers: { run: (op) => runTriggerCard(triggers, op), read: (op) => readTriggerCard(triggers, op) },
+      // A rules bot's card, approved: saved against the hash it bound, or flattened.
+      bots: { run: (op) => runBotCard(bots, op, codeBots), read: (op) => readBotCard(bots, j.botRows(), op, codeBots) },
       paused,
+      // A bot's exit a restart cut off, re-sent by the core: held as its other sells are.
+      resendHold: (op) => {
+        const mint = op.params.mint
+        return typeof mint === "string" ? botTrades.resendHold(op.agent, mint, op.opId, symbolOf(mint) ?? short(mint)) : undefined
+      },
     })
     const symbols = new SymbolBook(paths.symbols)
     const markets = new Markets({ pool: { for: (agent) => ({ call: async (name, args) => noted(name, await pool.for(agent).call(name, args)) }) }, now, learned: (mint, symbol) => symbols.learn(mint, symbol) })
@@ -838,6 +1222,12 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
       config: config.pricing,
       book: prices,
     })
+    /** A fresh read of what a wallet holds of a token, through the agent's own portfolio read. */
+    const holdingNow = async (agent: string, wallet: string, mint: string): Promise<Holding> => {
+      const outcome = await pool.for(agent).call("candle_get_portfolio", {})
+      if (outcome.kind !== "ok") return "unreadable"
+      return holdingFrom(outcome.result, wallet, mint)
+    }
     const cards: CardBook = new CardBook({
       journal: j,
       account,
@@ -848,17 +1238,17 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
       status,
       markets,
       spendAsset: () => config.trade.spendAsset,
-      holding: async (agent, wallet, mint) => {
-        const outcome = await pool.for(agent).call("candle_get_portfolio", {})
-        if (outcome.kind !== "ok") return "unreadable"
-        return holdingFrom(outcome.result, wallet, mint)
-      },
+      holding: holdingNow,
       pricing,
       limits: new Limits({ limitsFor: (agent) => config.agents[agent]?.limits, spend }),
       spend,
       walletSpend,
       holds: keyHolds,
+      sellWarning: (agent, mint) => botTrades.sellWarning(agent, mint, symbolOf(mint) ?? short(mint)),
       autonomy,
+      // A name held in a wallet or on an earlier card under another mint: the card and its receipt say so.
+      otherMints: (symbol, mint) => metNames.mintsOf(symbol).filter((m) => m !== mint),
+      onDropped: (card) => cardOwner.delete(card.cardId),
       paused,
       onValued: () => publishStatus?.(), // the agent's spend today changed
       // Which wallet pays (the agent's default, else the embedded wallet); a TEE wallet's card runs through `candle swap`.
@@ -894,9 +1284,11 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
       },
       // The engine is made below; a harness can't propose before it has started a turn.
       turnOf: (tokenId) => engine.turnOf(tokenId),
+      turnEnded: (tokenId) => engine.turnState(tokenId)?.ended === true,
       onChange: (card: Card) => {
         if (card.state === "rejected" || card.state === "expired" || card.state === "withdrawn") releaseUpload(card.opId, card.params)
         cardOwner.set(card.cardId, card.origin.clientId)
+        triggerFirer?.poke()
         publish("cards", card, card.origin.clientId)
         // The token pane follows a token a card was just proposed on: the person's, when they typed it.
         const mint = card.display.mint ?? card.params.mint
@@ -979,13 +1371,13 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
       for (const agent of keys.keys()) {
         const payable = wallets.payable(agent)
         if (!status.get(agent) || payable.readAt === undefined) read = false
-        const add = (address: string, name: string, kind: PayWallet["kind"]) => {
-          const w = byAddress.get(address) ?? { address, name, kind, agents: [] }
+        const add = (address: string, name: string, kind: PayWallet["kind"], cantSign?: true) => {
+          const w = byAddress.get(address) ?? { address, name, kind, agents: [], ...(cantSign ? { cantSign } : {}) }
           if (!w.agents.includes(agent)) w.agents.push(agent)
           byAddress.set(address, w)
         }
         if (payable.embedded) add(payable.embedded.address, "embedded", "embedded")
-        for (const t of payable.tee) if (t.chain === "solana") add(t.address, nameOf(t.address, "tee", t.label), "tee")
+        for (const t of payable.tee) if (t.chain === "solana") add(t.address, nameOf(t.address, "tee", t.label), "tee", t.cantSign)
       }
       return { list: [...byAddress.values()], read }
     }
@@ -1040,6 +1432,113 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
       const view = autonomyDesk.view()
       return { read: view.read, wallets: view.wallets.filter((w) => !w.gone && w.agents.includes(agent)) }
     }
+    // harness_triggers: the agent reads, proposes a trigger as a card, and narrows or switches one off at once.
+    const wakeCaps = (agent: string) => ({ perHour: config.agents[agent]?.wake?.perHour ?? WAKES_PER_HOUR, perDay: config.agents[agent]?.wake?.perDay ?? WAKES_PER_DAY })
+    // A wallet of its own: a fresh TEE wallet from a vault key, or a vault first where this machine has none.
+    const ownWalletSteps = (agent: string): { label: string; line: string }[] => {
+      const prefix = prefixOf(agent)
+      const vault = vaultMark.seen() || destinations.all().some((d) => d.kind === "vault-key")
+      if (!vault) return [{ label: "set up a vault", line: "candle vault init" }]
+      return prefix ? [freshTeeStep(1, agent, { prefix, ...vaultKeyOf(), ...takenNames() })] : []
+    }
+    const triggersTool = new TriggersTool({
+      book: triggers,
+      propose: async (client, c, reason) => {
+        const name = c.check.trigger.name
+        const title = `${c.spec.replaces ? "CHANGE" : "NEW"} TRIGGER "${name}"`
+        const params: TriggerCardParams = { line: c.check.line, proposer: client.agent, name, expansion: c.check.trigger.expansion, replace: c.spec.replaces === true, mode: c.check.mode }
+        const card = await cards.propose({
+          client,
+          agent: client.agent,
+          tool: TRIGGERS_TOOL_NAME,
+          args: { action: "propose", line: c.check.line, ...(c.spec.replaces ? { replace: true } : {}) },
+          params: params as unknown as Record<string, unknown>,
+          kind: "trigger",
+          idKey: "coreOpId",
+          title,
+          triggerCard: { spec: c.spec, ...(c.paysFrom ? { paysFrom: c.paysFrom } : {}) },
+          ...(c.warning ? { warning: c.warning } : {}),
+          ...(c.fills?.length ? { fills: c.fills } : {}),
+          ...(reason ? { reason } : {}),
+        })
+        return card.opId
+      },
+      wokenBy: (tokenId) => engine.turnOf(tokenId)?.woken?.trigger,
+      caps: wakeCaps,
+      ownWallet: (agent) => ownWalletSteps(agent),
+    })
+    triggers.setOwnWallet((agent) => ownWalletSteps(agent))
+    // harness_bots: the agent reads its bots, proposes one (or a wider change, or going live) as a card, narrows or
+    // pauses at once, and flattens on a card.
+    /** Who else trades from a bot's wallet: other agents, other bots. The embedded wallet is always shared. */
+    const botSharedWith = (agent: string, wallet: string, bot: string): string[] => {
+      const others = [...bots.entries(), ...codeBots.entries()]
+        .filter((b) => b.wallet === wallet && b.name !== bot)
+        .map((b) => `the bot "${b.name}"`)
+      if (wallet === "embedded") return ["you and every agent", ...others]
+      const agents = autonomyDesk.view().wallets.find((w) => w.wallet === wallet)?.agents.filter((a) => a !== agent) ?? []
+      return [...agents, ...others]
+    }
+    const botsTool = new BotsTool({
+      book: bots,
+      triggers,
+      bookOf: (name, mode) => {
+        const open = botPositions.open(name, mode).map((p) => {
+          const now = triggerWatch?.latest(p.mint)?.priceUsd ?? undefined
+          const entry = botPositions.entryPriceUsd(p)
+          const up = now !== undefined && now !== null ? botPositions.unrealizedUsd(p, now) : undefined
+          return {
+            token: wordName(p.mint) ?? p.mint,
+            mint: p.mint,
+            since: p.entryAt,
+            ...(entry !== undefined ? { entryUsd: Number(entry.toPrecision(6)) } : {}),
+            ...(now !== undefined && now !== null ? { nowUsd: Number(now.toPrecision(6)) } : {}),
+            ...(up !== undefined ? { unrealizedUsd: Number(up.toFixed(2)) } : {}),
+            ...(p.costUsd !== undefined ? { costUsd: Number(p.costUsd.toFixed(2)) } : {}),
+          }
+        })
+        const totals = botPositions.totals(name, mode)
+        return { open, closed: totals.closed, realizedUsd: totals.realizedUsd, valued: totals.valued }
+      },
+      recent: (name) => botRecent(j.botRows(), name, now(), (mint: string) => wordName(mint)),
+      payWallet: (agent, wallet) => payWalletOf(agent, wallet, undefined),
+      feeBps: (agent) => status.get(agent)?.feeBps ?? FALLBACK_FEE_BPS,
+      sharedWith: botSharedWith,
+      ownWallet: (agent) => ownWalletSteps(agent),
+      backtestOf: (definition) => backtestFromJournal(j.rows(), definition),
+      lab: (agent) => haccOffered(agent) && plans.planFor(agent).plan === "max",
+      strategy: async (agent, id) => {
+        if (!haccOffered(agent)) return { ok: false, code: "HACC_OFF", message: "Hacc's data isn't open to this agent, so its saved strategies can't be read." }
+        const got = await hacc.get(agent, `/v1/strategies/${id}`)
+        if (got.kind !== "ok") return { ok: false, code: got.kind === "refused" ? got.code : "HACC_UNREACHABLE", message: got.kind === "refused" ? `Hacc refused: ${got.message}` : "Hacc didn't answer for that strategy." }
+        return strategyFrom(got.body, id)
+      },
+      propose: async (client, c, reason) => {
+        const card = await cards.propose({
+          client,
+          agent: client.agent,
+          tool: BOTS_TOOL_NAME,
+          args: { action: c.action === "flatten" ? "flatten" : "propose", name: c.name, ...(c.params.action === "flatten" && c.params.kind === "code" ? { kind: "code" } : {}) },
+          params: c.params as unknown as Record<string, unknown>,
+          kind: "bot",
+          idKey: "coreOpId",
+          title: c.title,
+          botCard: { spec: c.spec, ...(c.paysFrom ? { paysFrom: c.paysFrom } : {}), ...(c.slippage ? { slippage: c.slippage } : {}) },
+          ...(c.warning ? { warning: c.warning } : {}),
+          ...(c.fills?.length ? { fills: c.fills } : {}),
+          ...(reason ? { reason } : {}),
+        })
+        return card.opId
+      },
+      wokenBy: (tokenId) => engine.turnOf(tokenId)?.woken?.trigger,
+      // Code bots: read with what the Bots tab shows of each (its report, held exits and process).
+      code: {
+        book: codeBots,
+        views: () => botsTopic().code ?? [],
+        testsLeftOpen: () =>
+          botPositions.openWhere((name) => isTestName(name) && !codeBots.isTest(name)).map((p) => ({ test: p.bot, agent: p.agent, token: symbolOf(p.mint) ?? p.mint, since: p.entryAt })),
+      },
+    })
     const face = new ToolFace({
       pool,
       schemaOf: (agent, tool) => pool.for(agent).tools().find((t) => t.name === tool)?.inputSchema as { properties?: Record<string, unknown> } | undefined,
@@ -1048,7 +1547,25 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
       mode: () => mode,
       cli: cliTool,
       sizing: { markets, pricing, spendAsset: () => config.trade.spendAsset },
+      wokenBy: (tokenId) => engine.turnOf(tokenId)?.woken?.trigger,
+      turn: (tokenId) => engine.turnState(tokenId),
       research: (client, name, args) => researchCall(paths.researchDir(client.agent), name, args),
+      // The code runner: held to the agent's research folder, journalled with the command, said in Activity.
+      run: async (client, args) => {
+        const programs = runPrograms(client.agent)
+        if (!programs) {
+          const why = runHold.ok ? `the code runner is off for ${client.agent}` : `the code runner can't be held on this machine (${runHold.why})`
+          return { ok: false, code: "TOOL_HIDDEN", message: `research_run isn't offered: ${why}.` }
+        }
+        const r = await researchRun({ root: paths.researchDir(client.agent), programs, args, path: opts.env.PATH, home: opts.env.HOME, keep: [paths.configDir], self: selfCommand(), now })
+        if (r.row) {
+          const ran = [r.row.program, ...r.row.args].join(" ")
+          const ended = r.ok ? (r.row.timedOut ? "stopped at 60 s" : r.row.signal ? `stopped by ${r.row.signal}` : `exit ${r.row.exitCode}`) : "not held, nothing ran"
+          await j.append({ type: "research.run", mode, agent: client.agent, clientId: client.clientId, ...r.row, ...(r.ok ? {} : { refused: r.code }) })
+          publish("activity", { kind: "research.run", agent: client.agent, text: `${client.agent} ran ${ran.length > 80 ? `${ran.slice(0, 79)}…` : ran} · ${ended} in ${(r.row.ms / 1000).toFixed(1)} s` })
+        }
+        return r
+      },
       skills: (client) => skillsOf(client.agent),
       history: (client, args) => historyCall(j.rows(), client.agent, args, { now, sessionEnd: () => sessionEnd }),
       pnl: (_client, args) => pnlCall(pnl, args, { now, sessionEnd: () => sessionEnd, mode: () => mode }),
@@ -1071,6 +1588,8 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
         },
         propose: (client, args, reason) => autonomyDesk.propose(client, args, reason),
       },
+      triggers: triggersTool,
+      bots: botsTool,
       hacc: async (client, name, args) => {
         if (!config.hacc.enabled) return { content: [{ type: "text", text: JSON.stringify({ success: false, error: { code: "HACC_OFF", message: "Hacc's data is turned off in this Candle Harness's config ([hacc] enabled = false)." } }) }], isError: true }
         return haccTools.call(client.agent, name, args, client)
@@ -1119,6 +1638,8 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
     // Positions showed USDC and RIFT as mints, and `sell 100% ORE` on a fresh core wasn't a trade).
     // Names learned from Candle are kept: the journal's replay just below names its tokens.
     const symbolOf = (mint: string) => markets.get(mint)?.symbol ?? symbols.get(mint) ?? portfolioSymbol(prices.lastPortfolio()?.result, mint) ?? baseAssetForMint(mint)
+    // In words (Activity, the Journal, notices, the bots' rows), a name that could pass for another token's carries its short address.
+    const wordName = (mint: string) => tokenLabel(symbolOf(mint), mint)
     const tradeLog = new TradeLog({
       symbolOf,
       onLine: (entry) => {
@@ -1159,9 +1680,25 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
       priceOf: (mint) => latest.usd(mint),
       symbolOf,
       stretch: () => budget.stretch("pnl"),
+      // Each bot's figures from its own fills: its open positions at the newest price the core holds.
+      // Rules bots and code bots alike: each one's count from its own fills.
+      bots: () =>
+        [...bots.entries(), ...codeBots.entries()].map((b) => {
+          const t = botPositions.totals(b.name, b.mode)
+          let unrealizedUsd: number | null = null
+          let unpriced = 0
+          for (const p of botPositions.open(b.name, b.mode)) {
+            const price = latest.usd(p.mint) ?? triggerWatch?.latest(p.mint)?.priceUsd ?? undefined
+            const up = price !== undefined && price !== null ? botPositions.unrealizedUsd(p, price) : undefined
+            if (up === undefined) unpriced++
+            else unrealizedUsd = (unrealizedUsd ?? 0) + up
+          }
+          return { name: b.name, ...("kind" in b && b.kind === "code" ? { kind: "code" as const } : {}), agent: b.agent, mode: b.mode, open: t.open, closed: t.closed, realizedUsd: t.realizedUsd, unrealizedUsd, ...(t.valued ? {} : { unvalued: true as const }), ...(unpriced ? { unpriced } : {}) }
+        }),
       publish: () => {
         const view = pnl.view()
         publish("pnl", view)
+        triggerWatch?.pnlRead()
         publishStatus?.()
         nameMints(view.agents.flatMap((a) => [...(a.book?.crossed ?? []), ...(a.book?.positions ?? [])].filter((r) => !r.symbol).map((r) => r.mint)).concat(view.trades.filter((t) => !t.symbol).map((t) => t.mint)))
       },
@@ -1362,6 +1899,8 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
     // Staged upload files whose operation can't be re-sent any more: the cards they were for are gone.
     await uploads.sweep(new Set(operations.list().filter((op) => op.state === "unknown" || op.state === "pending").map((op) => op.opId)))
 
+    // Whether this core can show the computer's own notification with no view open: a Mac, or a Linux desktop.
+    const notifyNative = opts.notify?.native ?? canNotifyNative(process.platform, opts.env)
     const statusView = () => ({
       coreId,
       account,
@@ -1392,7 +1931,18 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
       paused: paused(),
       typedTrades: config.cards.typedTrades,
       headless: opts.headless,
+      pid: process.pid,
       startedAt,
+      // The triggers that keep the core up, and keep-awake.
+      triggersOn: triggers.keepingUp().length,
+      botsOn: botsUp().length,
+      // How many run live, whatever the Candle Harness's mode: a bot's mode is its own.
+      botsLive: botsUp().filter((b) => b.mode === "live").length,
+      keepAwake: keepAwake.view(),
+      // How notifications go with no view open, for the doctor.
+      notify: { mode: (config.notify ?? DEFAULT_NOTIFY).mode, native: notifyNative },
+      // What holds a view-started core up now, in words; a headless core runs until it's stopped.
+      holds: holdWords(),
       ...(configSeenMtime !== undefined ? { configSeenMtime } : {}),
       ...(operations.losingNextReply() ? { debugLoseNextReply: true } : {}),
       viewCount: server?.viewCount() ?? 0,
@@ -1418,6 +1968,7 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
       tickets,
       now,
       identity: () => ({ coreId, account, agents: Object.keys(config.agents), activeAgent, mode, paused: paused() }),
+      admitBot: (bot) => codeBots.admits(bot),
     })
     const s = server
     s.events.provideSnapshot("status", statusView)
@@ -1444,17 +1995,239 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
       enabled: () => config.hacc.enabled,
       host: opts.haccHost ?? HACC_HOST,
       cursorPath: paths.signalsCursor,
-      wanted: () => ({ signals: s.events.subscriberCount("signals") > 0, mine: s.events.subscriberCount("signals:mine") > 0 }),
+      // A trigger watching the tape or personal signals holds them open as a view's subscription does.
+      wanted: () => {
+        const need = triggerWatch?.needs() ?? { tape: false, mine: false }
+        return { signals: s.events.subscriberCount("signals") > 0 || need.tape, mine: s.events.subscriberCount("signals:mine") > 0 || need.mine }
+      },
       filters: () => s.events.filtersOf("signals").filter((f): f is SignalFilter => f !== null),
-      publish: (topic, data) => publish(topic, data),
+      publish: (topic, data) => {
+        // The stream's own rows (not a filter's read-back, which is older rows for one view) reach the triggers.
+        if (!data.for) {
+          const rows = data.rows.filter((r): r is SignalRow => !isGap(r))
+          if (topic === "signals") void triggerWatch?.onTape(rows).catch(() => {})
+          else void triggerWatch?.onMine(rows).catch(() => {})
+        }
+        return publish(topic, data)
+      },
       onState: () => publishHacc?.(),
       record: (entry) => void j.append({ ...entry, type: String(entry.type), mode }).catch(() => {}),
+      now,
+    })
+    // Rules bots read Hacc's full tape, as Hacc's replays do, on a stream of their own: the views and triggers keep the
+    // curated one. It's open while a bot enters, and its rows reach only the bots' entries, never a view.
+    const botSignals = new SignalStream({
+      hacc,
+      onFrame: (bytes) => usage.streamFrame(bytes),
+      agents: () => Object.keys(config.agents).flatMap((agent) => (keys.has(agent) ? [{ agent, key: keys.get(agent)! }] : [])),
+      enabled: () => config.hacc.enabled,
+      host: opts.haccHost ?? HACC_HOST,
+      cursorPath: paths.botSignalsCursor,
+      quality: "all",
+      wanted: () => ({ signals: botEntries?.needsTape() ?? false, mine: false }),
+      publish: (topic, data) => {
+        if (topic === "signals" && !data.for) void botEntries?.onTape(data.rows.filter((r): r is SignalRow => !isGap(r))).catch(() => {})
+      },
+      onState: () => {},
+      record: (entry) => void j.append({ ...entry, type: String(entry.type), mode, tape: "all" }).catch(() => {}),
       now,
     })
     s.events.provideFilter("signals", signalsTopicFilter)
     s.events.provideSnapshot("signals", (_sub, filter) => signals.snapshot(filter as SignalFilter | undefined))
     s.events.provideSnapshot("signals:mine", () => signals.mineSnapshot())
     s.events.onSubscriptionsChanged(() => signals.poke())
+    // Triggers' watchers: levels on Candle's market read (not counted toward a key's limit), the tape and
+    // personal signals through the stream above, P&L after each read, fills, cards and replays from the journal,
+    // and schedules. They run whether or not a view is open.
+    /** Run after each heartbeat's reads, before the bots' exits check. */
+    const afterBeatHooks: (() => void)[] = []
+    triggerWatch = new TriggerWatch({
+      book: triggers,
+      clock: opts.triggerClock ?? {
+        now,
+        schedule: (run, ms) => {
+          const timer = setTimeout(run, ms)
+          timer.unref?.()
+          return () => clearTimeout(timer)
+        },
+      },
+      market: async (chain, mint) => {
+        const agent = budget.uncountedKey()
+        if (!agent) return undefined
+        // The panes' prices learn from it; the watcher keeps its own answer itself.
+        const outcome = await pool.for(agent).call("candle_get_market", { chain, mint }, { uncounted: true })
+        latest.noteMarket(outcome, now())
+        return outcome
+      },
+      positions: () => pnl.agentsView().flatMap((a) => a.book?.positions ?? []),
+      walletOf: (agent, wallet, mint) => payWalletOf(agent, wallet, mint)?.address,
+      pnlUsd: (window) => {
+        const own = window !== undefined ? sinceStart(window, now(), sessionEnd) : undefined
+        return (own ? pnl.figure(own) : pnl.figure()).usd
+      },
+      pnlNow: () => void pnl.readNow().catch(() => {}),
+      hacc: (agent, route, query) => (config.hacc.enabled ? hacc.get(agent, route, query) : Promise.resolve({ kind: "refused", code: "HACC_NO_KEY", message: "Hacc is off in this Candle Harness's config ([hacc] enabled = false).", ms: 0 })),
+      nameOf: (mint) => wordName(mint),
+      needsChanged: () => signals.poke(),
+      onChange: () => void publish("triggers", triggers.view()),
+      exitTokens: () => botExits?.tokens() ?? [],
+      // Not awaited: a sell's answer takes seconds, and the next heartbeat's reads mustn't wait for it.
+      afterBeat: async (beat) => {
+        for (const hook of afterBeatHooks) hook()
+        void botExits?.check(beat).catch(() => {})
+      },
+    })
+    triggers.setWatchInfo((name) => triggerWatch?.info(name))
+    // Each bot's book for the Bots tab, at the prices the watcher read: told after each heartbeat while a bot holds
+    // a position, and after each of a bot's rows, only when it changed. A backtest is looked up once a definition,
+    // and again after a replay ends.
+    const backtests = new Map<string, Backtest | null>()
+    const backtestOfBot = (definition: Definition): Backtest | undefined => {
+      const key = canonicalJson(definition)
+      if (!backtests.has(key)) backtests.set(key, backtestFromJournal(j.rows(), definition) ?? null)
+      return backtests.get(key) ?? undefined
+    }
+    codeBook = (name, mode) => {
+      const at = now()
+      return botBook({
+        name,
+        mode,
+        exit: undefined,
+        exitOf: (p) => heldExitsRef?.of(p.id)?.exit,
+        positions: botPositions,
+        priceOf: (mint) => triggerWatch?.latest(mint)?.priceUsd ?? undefined,
+        priceFor: (p) => positionPrice(triggerWatch?.latest(p.mint), Date.parse(p.entryAt), at) ?? undefined,
+        unpricedSince: (id) => botExits?.unpricedSince(id),
+        symbolOf: (mint) => symbolOf(mint) ?? short(mint),
+        lab: false,
+        now: at,
+      })
+    }
+    botsTopic = () => {
+      // On Free too: a bot held by the plan still holds what it bought, and its sells still run. Its book is the
+      // journal's and the prices already read, so it costs no read.
+      const v = bots.view()
+      const at = now()
+      const rows = j.botRows()
+      const books = Object.fromEntries(
+        v.bots.map((b) => {
+          const entry = bots.entry(b.name)
+          return [
+            b.name,
+            botBook({
+              name: b.name,
+              mode: b.mode,
+              exit: entry?.definition.exit,
+              positions: botPositions,
+              priceOf: (mint) => triggerWatch?.latest(mint)?.priceUsd ?? undefined,
+              priceFor: (p) => positionPrice(triggerWatch?.latest(p.mint), Date.parse(p.entryAt), at) ?? undefined,
+              unpricedSince: (id) => botExits?.unpricedSince(id),
+              symbolOf: (mint) => symbolOf(mint) ?? short(mint),
+              skips: botSkips(rows, b.name, at),
+              ...(entry && backtestOfBot(entry.definition) ? { backtest: backtestOfBot(entry.definition)! } : {}),
+              lab: haccOffered(b.agent) && plans.planFor(b.agent).plan === "max",
+              now: at,
+            }),
+          ]
+        }),
+      )
+      const views = v.bots.map((b) => {
+        const held = botExits?.heldSells(b.name) ?? []
+        const shared = b.mode === "live" ? botSharedWith(b.agent, b.wallet, b.name) : []
+        // The way to a wallet of its own, as its card offered it: where the wallet is shared or asks every time.
+        const asks = b.mode === "live" && payWalletOf(b.agent, b.wallet, undefined)?.setting.setting === "ask"
+        const own = b.mode === "live" && b.state !== "stopped" && (shared.length > 0 || asks) ? ownWalletSteps(b.agent) : []
+        return { ...b, ...(held.length ? { sellsHeld: held } : {}), ...(shared.length ? { sharedWith: shared } : {}), ...(own.length ? { ownWallet: own } : {}) }
+      })
+      return withCode({ ...v, bots: views, books })
+    }
+    let botsTold = ""
+    let botsSoon: ReturnType<typeof setTimeout> | undefined
+    /** The kill switch's report following a held bot's positions: set once the kill switch is made. */
+    let botsMovedRef: (() => void) | undefined
+    const tellBots = () => {
+      const topic = botsTopic()
+      const said = JSON.stringify(topic)
+      if (said === botsTold) return
+      botsTold = said
+      void publish("bots", topic)
+    }
+    // A bot changed (a card approved, or narrowed): a buy it asked for under the version before, still waiting for the
+    // person, would pay as that version said. It's withdrawn, said to the bot, which asks again under the new one.
+    j.onAppend((row) => {
+      if (row.type !== "bot.changed" || typeof row.name !== "string") return
+      const name = row.name
+      void cards
+        .withdrawWhere((card) => card.origin.role === "core" && card.origin.bot?.name === name && card.side !== "sell", "bot_changed")
+        .catch(() => {})
+    })
+    j.onAppend((row) => {
+      if (row.type === "hacc.replay" || row.type === "hacc.change") backtests.clear()
+      // A bot's trade ending (its operation's row names no bot) closes a position and ends an exit under way: said at once.
+      const botTrade = row.type.startsWith("operation.") && typeof row.opId === "string" && cards.held(row.opId)?.origin.bot !== undefined
+      // A code bot's card made, approved or gone: the Build tab's folder line follows it.
+      const codeCard = row.type.startsWith("card.") && typeof row.cardId === "string" && cards.get(row.cardId)?.params.action === "saveCode"
+      if (!row.type.startsWith("bot.") && typeof row.bot !== "string" && row.type !== "hacc.replay" && !botTrade && !codeCard) return
+      botsSoon ??= setTimeout(() => {
+        botsSoon = undefined
+        tellBots()
+        // The kill report's held bots name what they hold open: it follows a fill.
+        botsMovedRef?.()
+      }, 250)
+    })
+    // Each heartbeat's prices reach the Bots tab while any bot, rules or code, holds a position.
+    afterBeatHooks.push(() => {
+      if ([...bots.entries(), ...codeBots.entries()].some((b) => botPositions.open(b.name).length > 0)) tellBots()
+    })
+    // A trigger's card that expired with nobody there, for the Triggers overlay's run it now: from the kept rows, then as they come.
+    for (const row of j.rows()) triggers.noteRow(row, { quiet: true })
+    j.onAppend((row) => triggers.noteRow(row))
+    // What a fill filled, for `on fill` triggers: a trade's or swap's agent and the tokens it named (its argv on the CLI route).
+    const ADDRESS = /^(?:[1-9A-HJ-NP-Za-km-z]{32,44}|0x[0-9a-fA-F]{40})$/
+    const fillOf = (row: JournalRow) => {
+      const op = typeof row.opId === "string" ? operations.get(row.opId) : undefined
+      if (!op || (op.kind !== "trade" && op.kind !== "swap")) return undefined
+      const values = [...Object.values(op.params), ...(Array.isArray(op.params.argv) ? op.params.argv : [])]
+      return { agent: op.agent, mints: [...new Set(values.filter((v): v is string => typeof v === "string" && ADDRESS.test(v) && v !== op.wallet))] }
+    }
+    // A row a trigger's own card or operation caused carries its name, so it never fires that trigger again; one
+    // from a turn a trigger woke carries that trigger's, so a woken turn's fill never wakes it again.
+    const withTrigger = (row: JournalRow): JournalRow => {
+      if (row.trigger !== undefined || typeof row.opId !== "string") return row
+      const origin = cards.held(row.opId)?.origin
+      const name = origin?.trigger?.name
+      if (name) return { ...row, trigger: name }
+      return origin?.woken && row.woken === undefined ? { ...row, woken: origin.woken.trigger } : row
+    }
+    // What a rules bot did, for `on bot` triggers: an entry's or exit's buy or sell filled (live by its card, paper by its
+    // own row), or a pause, whoever paused it.
+    const botEventOf = (row: JournalRow): BotEventSeen | undefined => {
+      // A code bot's own word: what a trigger set as `on bot "<name>" says "<word>"` waits on.
+      if (row.type === "bot.event" && typeof row.name === "string" && typeof row.word === "string") {
+        return { bot: row.name, what: "says", word: row.word, ...(typeof row.text === "string" ? { text: row.text } : {}), ...(typeof row.agent === "string" ? { agent: row.agent } : {}) }
+      }
+      if (row.type === "bot.paused" && typeof row.name === "string") {
+        return { bot: row.name, what: "paused", ...(typeof row.agent === "string" ? { agent: row.agent } : {}), ...(row.how === "candle" ? { reason: "Candle stopped its key" } : row.how === "agent" ? { reason: `by ${String(row.changedBy ?? row.agent ?? "its agent")}` } : { reason: "by you" }) }
+      }
+      const origin =
+        row.type === "operation.succeeded" && typeof row.opId === "string"
+          ? cards.held(row.opId)?.origin.bot
+          : row.type === "paper.call" && row.isError !== true && typeof row.bot === "string" && (row.botAct === "entry" || row.botAct === "exit")
+            ? { name: row.bot, act: row.botAct, ...(typeof row.botReason === "string" ? { reason: row.botReason } : {}) }
+            : undefined
+      if (!origin) return undefined
+      const args = row.type === "paper.call" ? (row.args as Record<string, unknown> | undefined) : cards.held(String(row.opId))?.params
+      const mint = typeof args?.mint === "string" ? args.mint : undefined
+      return {
+        bot: origin.name,
+        what: origin.act === "entry" ? "entered" : "exited",
+        ...(typeof row.agent === "string" ? { agent: row.agent } : {}),
+        ...(mint ? { mint } : {}),
+        ...(origin.reason ? { reason: EXIT_WORDS[origin.reason] ?? origin.reason } : {}),
+        ...(row.type === "paper.call" ? { paper: true as const } : {}),
+      }
+    }
+    j.onAppend((row) => void triggerWatch?.onJournal(withTrigger(row), fillOf, botEventOf).catch(() => {}))
     // Candle's lists while a view's `feeds` subscription names them.
     s.events.provideFilter("feeds", feedsTopicFilter)
     s.events.provideSnapshot("feeds", (_sub, filter) => (filter ? feedsTopicFilter.apply(feeds.view(), filter as FeedsFilter) ?? {} : feeds.view()))
@@ -1471,8 +2244,9 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
     s.events.provideSnapshot("pnl", () => pnl.view())
     s.events.onSubscriptionsChanged(() => pnl.poke())
     publishHacc = () => publish("hacc", haccView())
-    s.events.provideSnapshot("cards", (sub) => cards.list().filter((c) => sub.role === "view" || c.origin.clientId === sub.clientId))
-    s.events.provideSnapshot("operations", (sub) => operations.list().filter((op) => sub.role === "view" || cardOwner.get(op.cardId) === sub.clientId))
+    // Both fit one attach message: what's still open or in flight, then the newest that ended.
+    s.events.provideSnapshot("cards", (sub) => cards.listWithin(undefined, (c) => sub.role === "view" || c.origin.clientId === sub.clientId))
+    s.events.provideSnapshot("operations", (sub) => operations.listWithin(undefined, (op) => sub.role === "view" || cardOwner.get(op.cardId) === sub.clientId))
 
     // This build's engines (engine/registry.ts); a test registers its own over them.
     const { engines: extraEngines, without, ...engineSeams } = opts.engine ?? {}
@@ -1500,11 +2274,18 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
       shim: opts.shim ?? selfCommand(),
       engines,
       choice: (agent) => engineState.get(agent),
-      tools: (agent) => config.agents[agent]?.tools,
+      // The code runner reaches the prompt only where it's offered: on, held here, and not denied.
+      tools: (agent) => {
+        const t = config.agents[agent]?.tools
+        return t && runOn(t.run) && !runPrograms(agent) ? { ...t, run: "off" as const } : t
+      },
       preset: (agent) => engineState.preset(agent, config.agents[agent]?.preset).preset,
       skills: (agent) => skillsOf(agent),
       memory: { forTurn: (agent) => memory.forTurn(agent), afterTurn: (agent, turnId) => memory.afterTurn(agent, turnId), longChars: LONG_INDEX_CHARS },
-      offers: (agent, tool) => tool === "hacc_lab" && haccOffered(agent) && haccOffer(agent).some((t) => t.name === tool),
+      offers: (agent, tool) =>
+        tool === "hacc_lab"
+          ? haccOffered(agent) && haccOffer(agent).some((t) => t.name === tool)
+          : (tool === "harness_triggers" ? triggers.gate(agent).state === "ok" : tool === "harness_bots" ? bots.gate(agent).state === "ok" : false) && toolAllowed(config.agents[agent]?.tools ?? DEFAULT_TOOLS, tool),
       stepCap: config.engine.stepCap,
       data: (agent) =>
         haccDataLine({
@@ -1526,6 +2307,7 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
       },
       session: (agent) =>
         [
+          clockNote(now()),
           sessionNote(tradeLog.sessionTrades(), tradeLog.paper(), { leftOut: tradeLog.sessionLeftOut(), wallets: [walletsNote(wallets.view(), agent), stoppedNote(stoppedWallets.all(), agent), autonomyNote(agentAutonomy(agent).wallets, agent, mode)].filter(Boolean).join(" ") || undefined }),
           replayNote(j.rows(), agent, now()),
         ]
@@ -1558,6 +2340,8 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
           return [agent, { ...engineState.get(agent), preset: preset.preset, presetFrom: preset.from, ...(last ? { last } : {}), ...(tools ? { tools } : {}) }]
         }),
       ),
+      // Whether the code runner can be held here, and if not, why and what fixes it.
+      runner: runHold,
       engines: Object.fromEntries(
         [...engines].map(([id, e]) => {
           const list = models.get(id)
@@ -1582,8 +2366,20 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
       ),
     })
     s.events.provideSnapshot("engine", engineView)
+    // A harness found on a newer major version than its holds were checked on is journalled, once for each
+    // version: nothing is blocked or marked, the record says which version ran from when.
+    const newerMajorNoted = new Set<string>()
+    const noteNewerMajor = (id: EngineId): void => {
+      const version = engine.lastCheck(id)?.version
+      const checked = engines.get(id)?.checkedVersion
+      if (!version || !checked || !newerMajor(version, checked) || newerMajorNoted.has(`${id} ${version}`)) return
+      newerMajorNoted.add(`${id} ${version}`)
+      if (j.rows().some((r) => r.type === "engine.newer_major" && r.engine === id && r.version === version)) return
+      void j.append({ type: "engine.newer_major", mode, engine: id, label: engines.get(id)!.label, version, checked }).catch(() => {})
+    }
     // Every engine is checked in the background as the core starts, never on a turn's path, then its list read.
     void Promise.all([...engines.keys()].map((id) => engine.check(id, true).catch(() => undefined))).then(async () => {
+      for (const id of engines.keys()) noteNewerMajor(id)
       publish("engine", engineView())
       await Promise.all([...engines.keys()].map((id) => readEngine(id).catch(() => undefined)))
       publish("engine", engineView())
@@ -1613,10 +2409,223 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
       nameOf: (address, kind, label) => nameOf(address, kind, label),
       pnl: pnlFigure,
       insideLimits: () => autonomyDesk.inside(),
+      triggersHeld: () => triggersHeldByPause(),
+      // Each bot that enters now: the pause holds its entries, and its exits go on guarding what it holds.
+      botsHeld: () =>
+        bots.live().map((b) => {
+          const open = botPositions.open(b.name).map((p) => symbolOf(p.mint) ?? short(p.mint))
+          const guards = open.length ? `its exits still sell, guarding ${open.length === 1 ? `its ${open[0]} position` : `${open.length} open positions (${open.slice(0, 4).join(", ")}${open.length > 4 ? ", …" : ""})`}` : "it holds nothing open"
+          return { name: b.name, agent: b.agent, mode: b.mode, open, words: `its entries are held until you resume; ${guards}` }
+        }).concat(
+          // A code bot whose buys run now: its buys and swaps are held, and it's told; its sells and held exits go.
+          codeBots.entries().flatMap((b) => {
+            if (!codeBots.runs(b).buys) return []
+            const positions = botPositions.open(b.name)
+            const open = positions.map((p) => symbolOf(p.mint) ?? short(p.mint))
+            const guarded = positions.filter((p) => heldExitsRef?.of(p.id)).length
+            const what = open.length === 1 ? `its ${open[0]} position` : `its ${open.length} open positions (${open.slice(0, 4).join(", ")}${open.length > 4 ? ", …" : ""})`
+            const holds = !open.length ? "it holds nothing open" : `its sells still go, for ${what}${guarded ? `, and the core's exits guard ${guarded === open.length ? (open.length === 1 ? "it" : "every one") : `${guarded} of them`}` : ""}`
+            return [{ name: b.name, kind: "code" as const, agent: b.agent, mode: b.mode, open, words: `its buys and swaps are held until you resume, and it's told; ${holds}` }]
+          }),
+        ),
+      // The bots' skips gathered while paused are journalled before the pause ends, never after it.
+      beforeResume: async () => {
+        await botEntries?.flush()
+      },
       publish: (report) => publish("activity", { kind: "kill.report", report }),
-      onChange: () => publishStatus?.(),
+      onChange: () => {
+        publishStatus?.()
+        tellKill()
+      },
     })
     const killSwitch = kill
+    botsMovedRef = () => killSwitch.botsMoved()
+    // Every connected code bot hears the kill switch go on or off: its buys and swaps held, its sells still going.
+    let killTold = kill.paused()
+    function tellKill() {
+      const paused = killSwitch.paused()
+      if (paused === killTold) return
+      killTold = paused
+      const told = { kind: "kill" as const, paused, words: paused ? "The kill switch is on: your buys and swaps are held until the person resumes; your sells still go." : "The kill switch is off: your buys and swaps run again." }
+      for (const b of codeBots.entries()) codeBotDeskTell(b.name, told)
+    }
+    // Triggers' firing path: each part proposed as the trigger's own, by the core's own client, through its
+    // wallet's figures (never as typed, so never typed-instant), in paper mode as its agent's paper trade.
+    // What a firing saw, for its cards: the `trigger.fired` row's words, by its id.
+    const firedWords = (fireId: string | undefined): { fired?: string } => {
+      if (!fireId) return {}
+      const row = j.rows().findLast((r) => r.type === "trigger.fired" && r.fireId === fireId)
+      return typeof row?.words === "string" ? { fired: row.words } : {}
+    }
+    /**
+     * Candle's breaker for a trigger's trade: a pair Candle's route breaker refuses, and a sell after two failed sells of
+     * its token, are refused in words; past the key's pace a buy or swap is refused and a sell waits for the next slot.
+     */
+    const triggerBreaker = (part: { tool: string; args: Record<string, unknown> }, client: FaceClient) => botTrades.waitForRoom(part, client.agent, (mint) => symbolOf(mint) ?? short(mint))
+    const firer = new TriggerFirer({
+      book: triggers,
+      journal: j,
+      send: async (part, client) => {
+        await triggerBreaker(part, client)
+        // The trigger's own mode, as approved: a live stop stays live while the Candle Harness is on paper.
+        const own = modeFor(client, mode)
+        const verdict = classify(part.tool, part.args, own)
+        if (verdict.class === "refused") throw refused(verdict.code, verdict.reason)
+        if (verdict.class === "paper") return { paper: await face.call(client, part.tool, part.args) }
+        if (verdict.class !== "card") throw refused("NOT_A_CARD", "A trigger's command is a trade, a sell or a swap.")
+        const card = await cards.propose({ client, agent: client.agent, tool: part.tool, args: part.args, params: normaliseForMode(part.tool, part.args, own), kind: verdict.kind, idKey: verdict.idKey, reason: `the trigger "${client.trigger?.name ?? ""}" fired`, ...firedWords(client.trigger?.fireId) })
+        const alone = await cards.runWithoutCard(card, client)
+        if (alone.ran) return { ...alone.card, instant: alone.ran }
+        return cards.get(card.cardId) ?? card
+      },
+      card: (cardId) => cards.get(cardId),
+      operation: (opId) => operations.get(opId),
+      paused: () => killSwitch.paused(),
+      nameOf: (mint) => symbolOf(mint),
+      wake: (t, r, cause, fireId) => waker.wake(t, r, cause, fireId),
+    })
+    // Waking an agent: a turn treated like the person's message, capped per agent, held by the pause.
+    const waker = new Waker({
+      journal: j,
+      mode: () => mode,
+      now,
+      runner: engine,
+      caps: wakeCaps,
+      paused: () => killSwitch.paused(),
+    })
+    triggerFirer = firer
+    triggers.setFirer((t, cause, fireId) => firer.fire(t, cause, fireId))
+    /** A bot's trade, as its own, by its own client, in the bot's mode (bot-trades.ts). */
+    const sendAsBot = (trade: { tool: string; args: Record<string, unknown> }, given: FaceClient, botMode: "paper" | "live", reason: string) => botTrades.send(trade, given, botMode, reason)
+    // Code bots' requests (bot-protocol.ts): each with the bot's own id, recorded before it's proposed, as the bot's own
+    // through the same seam as rules bots, held to its card's figures. Told to the bot's own connection.
+    const tellBot = (name: string, told: BotTold) => {
+      for (const c of s.clients()) if (c.role === "bot" && c.bot === name) publish("bot", told, c.clientId)
+    }
+    codeBotDeskTell = tellBot
+    // The exits the core holds on code bots' positions, from the journal: set on a buy, by the bot, or removed by the person.
+    const heldExits = new HeldExits()
+    for (const row of j.botRows()) heldExits.note(row)
+    j.onAppend((row) => heldExits.note(row))
+    heldExitsRef = heldExits
+    const desk = new CodeBotDesk({
+      codeBots,
+      positions: botPositions,
+      journal: j,
+      now,
+      paused: () => killSwitch.paused(),
+      room: (agent, mint, side, label) => botTrades.room(agent, mint, side, label),
+      failed: failedSells,
+      send: (trade, client, botMode, reason, check) => botTrades.send(trade, client, botMode, reason, check),
+      holding: (agent, wallet, mint) => {
+        const address = wallet === "embedded" ? payWalletOf(agent, "embedded", undefined)?.address : wallet
+        return address ? holdingNow(agent, address, mint) : Promise.resolve("unreadable" as const)
+      },
+      decimalsOf: (mint) => decimalsIn(prices.lastPortfolio()?.result, mint) ?? triggerWatch?.latest(mint)?.decimals,
+      byAmount: (wallet, mint) => wallet !== "embedded" || triggerWatch?.latest(mint)?.decimals !== undefined,
+      market: async (chain, mint) => {
+        const agent = budget.uncountedKey()
+        if (!agent) return undefined
+        const outcome = await pool.for(agent).call("candle_get_market", { chain, mint }, { uncounted: true })
+        latest.noteMarket(outcome, now())
+        triggerWatch?.noteMarket(outcome)
+        return outcome
+      },
+      card: (cardId) => cards.get(cardId),
+      nameOf: (mint) => symbolOf(mint),
+      tell: tellBot,
+      heldExits: (position) => heldExits.of(position),
+      exitUnderWay: (position) => botExits?.selling(position) ?? false,
+    })
+    await desk.rebuild(j.botRows())
+    j.onAppend((row) => desk.note(row))
+    codeBotDesk = desk
+    s.events.provideSnapshot("bot", (sub) => {
+      const name = s.clients().find((c) => c.clientId === sub.clientId)?.bot
+      return name ? { kind: "snapshot", state: desk.stateNow(name) ?? null, open: desk.open(name), paused: killSwitch.paused() } : null
+    })
+    // Rules bots' entries: each bot's definition matched on its own full tape, and each buy proposed as the bot's own,
+    // by its own client, through its wallet's figures (never typed-instant). The decision is journalled first.
+    const entries = new BotEntries({
+      bots: { live: () => bots.live(), onSince: (name) => bots.stateOf(name)?.onSince, setLastSignal: (name, signal) => bots.setLastSignal(name, signal) },
+      positions: botPositions,
+      journal: j,
+      clock: opts.triggerClock ?? {
+        now,
+        schedule: (run, ms) => {
+          const timer = setTimeout(run, ms)
+          timer.unref?.()
+          return () => clearTimeout(timer)
+        },
+      },
+      mode: () => mode,
+      market: async (chain, mint) => {
+        const agent = budget.uncountedKey()
+        if (!agent) return undefined
+        const outcome = await pool.for(agent).call("candle_get_market", { chain, mint }, { uncounted: true })
+        latest.noteMarket(outcome, now())
+        triggerWatch?.noteMarket(outcome)
+        return outcome
+      },
+      hacc: (agent, route, query) => (config.hacc.enabled ? hacc.get(agent, route, query) : Promise.resolve({ kind: "refused", code: "HACC_NO_KEY", message: "Hacc is off in this Candle Harness's config ([hacc] enabled = false).", ms: 0 })),
+      solUsd: (agent, wallet) => {
+        const address = wallet === "embedded" ? payWalletOf(agent, "embedded", undefined)?.address : wallet
+        const usd = portfolioNow().wallets.find((w) => w.address === address)?.sol?.usd
+        return typeof usd === "number" ? usd : undefined
+      },
+      feeBps: (agent) => status.get(agent)?.feeBps ?? FALLBACK_FEE_BPS,
+      paused: () => killSwitch.paused(),
+      send: (trade, client, botMode) => sendAsBot(trade, client, botMode, `the bot "${client.bot?.name ?? ""}" entered on a signal`),
+      breaker: { entry: (agent, mint, label) => botTrades.entryRoom(agent, mint, label) },
+      card: (cardId) => cards.get(cardId),
+      nameOf: (mint) => wordName(mint),
+      needsChanged: () => botSignals.poke(),
+    })
+    coreReserveOf = (agent) => (bots.keepingUp().some((b) => b.agent === agent) ? Math.max(0, PACE_TRADES - tradePace.used(agent, now())) * CORE_TRADE_REQUESTS : 0)
+    // What each bot decided and what's still under way, from the journal; then each row as it comes.
+    const botRowsAtStart = [...j.botRows()]
+    j.onAppend((row) => entries.note(row))
+    await entries.rebuild(botRowsAtStart)
+    botEntries = entries
+    entries.refresh()
+    // Rules bots' exits: each open position against its bot's exits after every heartbeat of the triggers' watcher,
+    // sold as the bot's own, with no card on any wallet. The decision is journalled first.
+    const exits = new BotExits({
+      bots: {
+        exiting: () => bots.entries().flatMap((b) => (bots.runs(b).exits ? [{ bot: b, definition: bots.approvedVersion(b.name)?.definition ?? b.definition }] : [])),
+        slippage: (name) => bots.approvedSlippage(name),
+      },
+      // A code bot's held exits run while its sells do: paused, crashed or not connected, and through the kill switch.
+      held: {
+        // A Build pane's paper test too, while it runs: a test of a bot that leans on held exits shows them sell.
+        exiting: () => [...codeBots.entries(), ...codeBots.testEntries()].filter((b) => codeBots.runs(b).sells),
+        exitOf: (position) => heldExits.of(position)?.exit,
+        slippage: (name) => codeBots.approvedVersion(name)?.run.maxSlippageBps,
+        busy: (position) => desk.sellUnderWay(position),
+      },
+      positions: botPositions,
+      journal: j,
+      clock: opts.triggerClock ?? { now },
+      mode: () => mode,
+      reading: (mint) => triggerWatch?.latest(mint),
+      // A position's wallet is "embedded" or a TEE wallet's address; the portfolio read names the embedded one by its address.
+      holding: (agent, wallet, mint) => {
+        const address = wallet === "embedded" ? payWalletOf(agent, "embedded", undefined)?.address : wallet
+        return address ? holdingNow(agent, address, mint) : Promise.resolve("unreadable" as const)
+      },
+      decimalsOf: (mint) => decimalsIn(prices.lastPortfolio()?.result, mint),
+      failed: failedSells,
+      breaker: { exit: (agent, mint, label) => botTrades.exitRoom(agent, mint, label) },
+      send: (trade, client, botMode, reason) => sendAsBot(trade, client, botMode, reason),
+      card: (cardId) => cards.get(cardId),
+      nameOf: (mint) => wordName(mint),
+    })
+    j.onAppend((row) => exits.note(row))
+    await exits.rebuild(botRowsAtStart)
+    botExits = exits
+    bots.setFlattener(async (b, by) => ({ said: exits.flatten(b, { how: by.how, ...(by.agent ? { agent: by.agent } : {}) }).said }))
+    bots.setSellsNow((name, was, next) => exits.wouldSell(name, was, next))
+    codeBots.setFlattener((b, by) => ({ said: exits.flatten({ name: b.name, kind: "code", agent: b.agent }, { how: by.how, ...(by.agent ? { agent: by.agent } : {}) }).said }))
     // The report stays pinned until resume: a view attaching later gets it in the snapshot.
     s.events.provideSnapshot("activity", () => ({ killReport: killSwitch.current() ?? null, lines: tradeLog.activity().slice(-50) }))
     s.events.provideSnapshot("portfolio", portfolioNow)
@@ -1628,6 +2637,32 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
       publish: (data, clientId) => publish("asks", data, clientId),
       now,
     })
+    // Notifications: to the main view the person last used, which sends them while it isn't focused; with none
+    // open, the core shows them itself where the machine can.
+    const isPersonView = (c: { role: string; clientName: string }) => c.role === "view" && !c.clientName.includes("--pane") && !OBSERVER_CLIENTS.has(c.clientName)
+    const notifySettings = config.notify ?? DEFAULT_NOTIFY
+    const notifier = new CoreNotifier({
+      settings: notifySettings,
+      now,
+      target: () => viewAsks.latest(s.clients().filter((c) => isPersonView(c) && s.events.topicsOf(c.clientId).includes("notices")).map((c) => c.clientId)),
+      publish: (data, clientId) => publish("notices", data, clientId),
+      waiting: (cardId) => cards.get(cardId)?.state === "awaiting_approval",
+      origin: (opId) => tradeLog.originOfOp(opId),
+      symbolOf: (mint) => wordName(mint),
+      native: opts.notify?.native ?? (process.env.NODE_ENV !== "test" && notifyNative),
+      platform: process.platform === "darwin" ? "darwin" : "linux",
+      spawn:
+        opts.notify?.spawn ??
+        (async (argv) => {
+          const child = Bun.spawn(argv, { stdin: "ignore", stdout: "ignore", stderr: "pipe" })
+          const [exitCode, stderr] = await Promise.all([child.exited, new Response(child.stderr).text()])
+          return { exitCode, stderr }
+        }),
+      journal: { append: (r) => j.append({ ...r, mode }) },
+      ...(opts.notify?.quietMs !== undefined ? { quietMs: opts.notify.quietMs } : {}),
+    })
+    j.onAppend((row) => notifier.row(row, tradeLog.lineFor(row.seq)?.text))
+    s.events.provideSnapshot("notices", () => ({ settings: notifySettings }))
     askView = async (client, args) => {
       // A pin of a token the pane doesn't show yet moves the link to it first, as the agent showing it would.
       if (args.action === "pin" && args.mint !== undefined) {
@@ -1819,9 +2854,10 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
     }
 
     const faceClient = (call: CallContext): FaceClient => {
-      // A pane may call only pane.redeem and pane.report (METHOD_ROLES): it's never a client of cards or tools.
-      if (call.client.role === "pane") throw refused("FORBIDDEN_FOR_ROLE", "A pane may not call this.")
-      return { clientId: call.client.clientId, role: call.client.role, agent: call.agent, ...(call.client.tokenId ? { tokenId: call.client.tokenId } : {}) }
+      // A pane, a code bot and a Build pane are never clients of cards or tools here (METHOD_ROLES): each has its own methods.
+      const role = call.client.role
+      if (role !== "view" && role !== "harness") throw refused("FORBIDDEN_FOR_ROLE", `A ${role} may not call this.`)
+      return { clientId: call.client.clientId, role, agent: call.agent, ...(call.client.tokenId ? { tokenId: call.client.tokenId } : {}) }
     }
     const own = (call: CallContext, ownerClientId: string | undefined) => call.access !== "own" || ownerClientId === call.client.clientId
     const cardFor = (call: CallContext, cardId: unknown) => {
@@ -1853,8 +2889,30 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
         budget: budget.use().map((k) => ({ agent: k.agent, used: k.used, background: k.background })),
       },
     }))
+    // `candle-harness stop`: the person's, from a terminal, with no question. It answers with what it stops, then stops.
+    s.handle("core.stop", async (_params, call) => {
+      const n = (count: number, one: string, many = `${one}s`) => `${count} ${count === 1 ? one : many}`
+      const on = triggers.keepingUp().length
+      const running = botsUp().length
+      const views = personViews().filter((c) => c.clientId !== call.client.clientId).length
+      const open = cards.list().filter((c) => c.state === "awaiting_approval").length
+      const stopped = [
+        ...(on ? [`${n(on, "trigger")} stopped watching; ${on === 1 ? "it starts" : "they start"} again with the next core`] : []),
+        ...(running ? [`${n(running, "bot")} stopped watching, ${running === 1 ? "its" : "their"} positions held as they are; ${running === 1 ? "it starts" : "they start"} again with the next core`] : []),
+        ...((supervisor?.runningCount() ?? 0) > 0 ? [`${n(supervisor!.runningCount(), "code bot's process", "code bots' processes")} ended; ${supervisor!.runningCount() === 1 ? "it starts" : "they start"} again with the next core`] : []),
+        ...(engine.busy() ? ["an agent's turn was stopped"] : []),
+        ...(operations.busy() ? ["a trade or step in flight is read back when the core next starts, and never sent twice"] : []),
+        ...(open ? [`${n(open, "card")} waiting expired unapproved`] : []),
+        ...(views ? [`${n(views, "open view")} lost ${views === 1 ? "its" : "their"} core: quit ${views === 1 ? "it" : "them"} and start the Candle Harness again`] : []),
+        ...(keepAwake.view().active ? ["keep-awake ended, so the Mac can sleep"] : []),
+      ]
+      // After the answer has gone.
+      setTimeout(() => void stop("candle-harness stop"), 50)
+      return { pid: process.pid, headless: opts.headless, stopped }
+    })
     s.handle("tools.list", async (_params, call) => {
       if (!keys.has(call.agent)) return { tools: [] }
+      // harness_triggers and harness_bots, as triggers and bots, are Pro and Max: a Free agent, or one whose plan isn't read yet, isn't offered them.
       const all = [
         ...withOwnPrefix(withReason(offeredTools(pool.for(call.agent).tools())), apiKeyPrefix(keys.get(call.agent) ?? "")),
         cliTool.definition(),
@@ -1863,9 +2921,12 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
         GROUP_WALLETS_TOOL,
         VIEW_TOOL,
         ...RESEARCH_TOOLS,
+        ...[runPrograms(call.agent)].flatMap((p) => (p ? [runTool(p)] : [])),
         HISTORY_TOOL,
         PNL_TOOL,
         LIMITS_TOOL,
+        ...(triggers.gate(call.agent).state === "ok" ? [TRIGGERS_TOOL] : []),
+        ...(bots.gate(call.agent).state === "ok" ? [BOTS_TOOL] : []),
         ...[skillTool(skillsOf(call.agent))].filter((t) => t !== undefined),
         ...(haccOffered(call.agent) ? haccOffer(call.agent) : []),
       ]
@@ -1891,6 +2952,10 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
       call.client.role === "view" && !call.client.clientName.includes("--pane") && !OBSERVER_CLIENTS.has(call.client.clientName) && !viewState.holdsPane(call.client.clientId)
     const mainViewOnly = (call: { client: { clientId: string; clientName: string; role: string } }, what: string) => {
       if (!fromMainView(call)) throw refused("MAIN_VIEW_ONLY", `${what} is the person's step, from the main window.`)
+    }
+    // The doctor, the sampler, `stop` and `cards` only look: they change nothing a person set. `ask` still sends its message.
+    const onlyLooks = (call: { client: { clientName: string } }) => {
+      if (READ_ONLY_CLIENTS.has(call.client.clientName)) throw refused("OBSERVER", "The doctor, the sampler, stop and cards only look: they change nothing.")
     }
     s.handle("cards.propose", async (params, call) => {
       refuseHidden(call, params.tool)
@@ -1938,15 +3003,15 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
       }
       return cards.get(card.cardId) ?? card
     })
-    s.handle("cards.list", async (_params, call) => ({ cards: cards.list().filter((c) => own(call, c.origin.clientId)) }))
+    s.handle("cards.list", async (_params, call) => ({ cards: cards.listWithin(undefined, (c) => own(call, c.origin.clientId)) }))
     s.handle("cards.get", async (params, call) => cardFor(call, params.cardId))
     // A view can't claim "instant": that's the core's own approval of a typed trade.
     // Only the core's own paths approve as instant or typed.
-    s.handle("cards.approve", async (params, call) => (mainViewOnly(call, "Approving a card"), cards.approve(call.client.clientId, params.cardId, params.cardHash, params.how === "instant" || params.how === "typed" || params.how === "inside-limits" ? "view" : params.how)))
+    s.handle("cards.approve", async (params, call) => (mainViewOnly(call, "Approving a card"), cards.approve(call.client.clientId, params.cardId, params.cardHash, typeof params.how === "string" && CORE_HOWS.includes(params.how) ? "view" : params.how)))
     s.handle("cards.reject", async (params, call) => cards.reject(call.client.clientId, params.cardId))
     s.handle("cards.withdraw", async (params, call) => cards.withdraw(call.client.clientId, params.cardId))
     s.handle("cards.requote", async (params, call) => cards.requote(call.client.clientId, params.cardId, params.wallet === undefined ? {} : { wallet: params.wallet }))
-    s.handle("operations.list", async (_params, call) => ({ operations: operations.list().filter((op) => own(call, cardOwner.get(op.cardId))) }))
+    s.handle("operations.list", async (_params, call) => ({ operations: operations.listWithin(undefined, (op) => own(call, cardOwner.get(op.cardId))) }))
     s.handle("operations.get", async (params, call) => {
       const op = typeof params.opId === "string" ? operations.get(params.opId) : undefined
       if (!op || !own(call, cardOwner.get(op.cardId))) throw refused("OPERATION_NOT_FOUND", "No operation with that id.")
@@ -1954,10 +3019,13 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
     })
     s.handle("operations.resolve", async (params, call) => {
       if (params.action !== "resend" && params.action !== "abandon") throw invalidParams('action is "resend" or "abandon".')
+      // A re-send is a send: the main window's, as approving is. Letting go of one is a stop, open to every view but those that only look.
+      if (params.action === "resend") mainViewOnly(call, "Re-sending a trade")
+      else onlyLooks(call)
       return operations.resolve(call.client.clientId, params.opId, params.action)
     })
     // The undo chip on an Activity line: the person's click, so it runs at once.
-    s.handle("hacc.undo", async (params, call) => haccChanges.undo(call.client.clientId, params.changeId))
+    s.handle("hacc.undo", async (params, call) => (onlyLooks(call), haccChanges.undo(call.client.clientId, params.changeId)))
     s.handle("wallets.name", async (params, call) => {
       const asks = renameAsks(params)
       if (!asks) throw invalidParams("names is a list of 1 to 256 { wallet, name }, each a string; or give wallet and name.")
@@ -1986,7 +3054,7 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
     // that leaves something behind is read back from where it lives, each time, so a resume runs nothing twice.
     const onboarding = new OnboardingStore({ file: paths.onboarding, now })
     const ownerJson = (args: string[]) => candleCli.runExact({ argv: candleCli.finalArgs({ args, json: true, withRpcUrl: false }), json: true }).catch(() => undefined)
-    // When setup last read the agent's wallets, which costs 7 of a Free key's 30 requests a minute.
+    // When setup last read the agent's wallets, which costs 8 of a Free key's 30 requests a minute.
     let setupReadAt = Number.NEGATIVE_INFINITY
     // What the last view read from the CLI and Candle: a step gone past is answered from it at once, and read again after.
     let lastFacts: OnboardingFacts | undefined
@@ -2006,7 +3074,10 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
       let plan: string | undefined
       if (name !== undefined && storedPrefix) {
         // Not on every step's change: read when an owner step has changed something, and at most every 20 s otherwise.
-        if (opts.fresh || status.get(name) === undefined || now() - setupReadAt >= SETUP_READ_EVERY_MS) {
+        // A status read the core made itself counts, such as the one when a new agent's key is loaded, so setup
+        // doesn't read the same wallets again a moment later on a key Candle allows 30 requests a minute.
+        const lastRead = Math.max(setupReadAt, status.get(name)?.readAt ?? Number.NEGATIVE_INFINITY)
+        if (opts.fresh || status.get(name) === undefined || now() - lastRead >= SETUP_READ_EVERY_MS) {
           setupReadAt = now()
           await wallets.refresh(name).catch(() => {}) // its status read first, then its TEE wallets
         }
@@ -2125,7 +3196,7 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
     })
     // Setup's step 2: a harness's own sign-in, from the fixed list, in the pane, as the person.
     s.handle("onboarding.harness", async (params, call) => {
-      mainViewOnly(call, "Signing in to a harness")
+      mainViewOnly(call, "Signing in to an engine")
       if (!isEngineId(params.engine)) throw invalidParams("engine is one of the engines' ids.")
       const id = params.engine
       const argv = harnessSignInArgv(id, enginePathOf(config, id))
@@ -2213,6 +3284,462 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
       const set = await autonomyDesk.set({ clientId: call.client.clientId, popped: !fromMainView(call) }, params)
       return { wallet: set.wallet, name: set.name, was: set.was, now: set.now }
     })
+    // Triggers: kept in triggers.toml, saved only by the person's press on a trigger's card. Off and removal from
+    // any view; back on, as approved, from the main view. Pro and Max: on Free the topic says so and nothing fires.
+    s.events.provideSnapshot("triggers", () => triggers.view())
+    s.handle("triggers.list", async () => triggers.view())
+    s.handle("triggers.set", async (params, call) => {
+      if (typeof params.name !== "string" || typeof params.on !== "boolean") throw invalidParams("name is a trigger's name, and on is true or false.")
+      return triggers.set(params.name, params.on, { clientId: call.client.clientId, main: fromMainView(call) })
+    })
+    s.handle("triggers.remove", async (params, call) => {
+      if (typeof params.name !== "string") throw invalidParams("name is a trigger's name.")
+      return triggers.remove(params.name, { clientId: call.client.clientId })
+    })
+    s.handle("triggers.fire", async (params, call) => {
+      if (typeof params.name !== "string") throw invalidParams("name is a trigger's name.")
+      // The doctor and the sampler only look.
+      if (READ_ONLY_CLIENTS.has(call.client.clientName)) throw refused("OBSERVER", "The doctor and the sampler don't fire triggers.")
+      const f = await triggers.fire(params.name, { clientId: call.client.clientId })
+      const fired = { name: f.name, fireId: f.fireId, said: `"${f.name}" fired.` }
+      if (params.wait !== true) return fired
+      // `candle-harness trigger` waits for what it did: a trade to fill, a card to be pressed or expire, a notice, a wake.
+      const end = await (f.run as Promise<FireEnd>).catch((error: unknown): FireEnd => ({ kind: "stopped", words: (error as Error)?.message ?? String(error) }))
+      const line = tradeLog.firingLine(f.fireId)
+      return { ...fired, ended: fireEndSaid(end), ...(line ? { line } : {}) }
+    })
+    // `run it now` on a trigger's card that expired with nobody there: its line again at a fresh price, from the
+    // part that expired on. A trade that may run without a card, so the main view's, as a typed trade is.
+    s.handle("triggers.runNow", async (params, call) => {
+      if (typeof params.cardId !== "string") throw invalidParams("cardId is a trigger's expired card.")
+      mainViewOnly(call, "Running a trigger's line again")
+      const held = cards.get(params.cardId)
+      // A card from before a restart is read from the journal: its proposal names the trigger, and its close says it expired.
+      const rows = j.rows()
+      const created = held ? undefined : rows.find((r) => r.type === "card.created" && r.cardId === params.cardId)
+      const origin = held?.origin.trigger ?? (created && typeof created.trigger === "string" && typeof created.fireId === "string" ? { name: created.trigger, fireId: created.fireId, part: typeof created.part === "number" ? created.part : 0 } : undefined)
+      if (!held && !created) throw refused("CARD_NOT_FOUND", "No card with that id.")
+      const state = held?.state ?? (rows.some((r) => r.type === "card.expired" && r.cardId === params.cardId) ? "expired" : "awaiting_approval")
+      if (rows.some((r) => r.type === "trigger.run_now" && r.cardId === params.cardId)) throw refused("ALREADY_RUN", "This card's line was already run again. Nothing was sent.")
+      const ran = await firer.runNow({ cardId: params.cardId, state, ...(origin ? { trigger: origin } : {}) }, call.client.clientId)
+      return { said: ran.said, runId: ran.runId }
+    })
+    // Bots: kept in bots.toml, saved only by the person's press on a bot's card. Paused or narrowed from any view;
+    // stopped, back on as approved, flattened and removed from the main view. Pro and Max, as triggers.
+    s.events.provideSnapshot("bots", () => botsTopic())
+    s.handle("bots.list", async () => botsTopic())
+    const botName = (params: Record<string, unknown>) => {
+      if (typeof params.name !== "string") throw invalidParams("name is a bot's name.")
+      return params.name
+    }
+    // The doctor and the sampler only look.
+    const notObserver = (call: { client: { clientName: string } }) => {
+      if (READ_ONLY_CLIENTS.has(call.client.clientName)) throw refused("OBSERVER", "The doctor and the sampler don't change bots.")
+    }
+    // A code bot's controls go to its own book: the same methods, by its name.
+    const isCode = (name: string) => codeBots.entry(name) !== undefined || codeBots.stateOf(name) !== undefined
+    s.handle("bots.pause", async (params, call) => {
+      const name = botName(params)
+      notObserver(call)
+      if (isCode(name)) return codeBots.pause(name, { clientId: call.client.clientId, how: "view" })
+      return bots.pause(name, { clientId: call.client.clientId, how: "view" })
+    })
+    s.handle("bots.narrow", async (params, call) => {
+      const name = botName(params)
+      notObserver(call)
+      if (isCode(name)) {
+        const figures: Record<string, number> = {}
+        for (const key of ["perTradeUsd", "perDayUsd", "maxOpen", "maxSlippageBps"] as const) {
+          if (params[key] === undefined) continue
+          if (typeof params[key] !== "number") throw invalidParams(`${key} is a number.`)
+          figures[key] = params[key] as number
+        }
+        if (!Object.keys(figures).length) throw invalidParams("A code bot narrows by perTradeUsd, perDayUsd, maxOpen or maxSlippageBps.")
+        return codeBots.narrow(name, figures, { clientId: call.client.clientId, how: "view" })
+      }
+      if (params.definition === undefined) throw invalidParams("definition is the bot's narrower definition, in Hacc's JSON.")
+      if (params.maxSlippageBps !== undefined && typeof params.maxSlippageBps !== "number") throw invalidParams("maxSlippageBps is a whole number of basis points.")
+      return bots.narrow(name, { definition: params.definition, ...(typeof params.maxSlippageBps === "number" ? { maxSlippageBps: params.maxSlippageBps } : {}) }, { clientId: call.client.clientId, how: "view" })
+    })
+    s.handle("bots.stop", async (params, call) => {
+      const name = botName(params)
+      notObserver(call)
+      if (isCode(name)) return codeBots.stop(name, { clientId: call.client.clientId, main: fromMainView(call) })
+      return bots.stop(name, { clientId: call.client.clientId, main: fromMainView(call) })
+    })
+    s.handle("bots.resume", async (params, call) => {
+      const name = botName(params)
+      notObserver(call)
+      if (isCode(name)) return codeBots.resume(name, { clientId: call.client.clientId, main: fromMainView(call) })
+      return bots.resume(name, { clientId: call.client.clientId, main: fromMainView(call) })
+    })
+    s.handle("bots.flatten", async (params, call) => {
+      const name = botName(params)
+      notObserver(call)
+      if (isCode(name)) return codeBots.flatten(name, { clientId: call.client.clientId, main: fromMainView(call) })
+      return bots.flatten(name, { clientId: call.client.clientId, main: fromMainView(call) })
+    })
+    // Two failed sells of a token held a bot's exits: the person says to try once more.
+    s.handle("bots.retry", async (params, call) => {
+      const name = botName(params)
+      notObserver(call)
+      if (!fromMainView(call)) throw refused("MAIN_VIEW_ONLY", "A bot's held sells are retried from the main window, not a popped pane.")
+      if (!bots.entry(name) && !isCode(name)) throw refused("UNKNOWN_BOT", `No bot named "${name}".`)
+      const released = botExits?.retry(name) ?? 0
+      void botExits?.check().catch(() => {})
+      return { name, released, said: released ? `"${name}" tries ${released === 1 ? "its held sell" : `its ${released} held sells`} once more.` : `None of "${name}"'s sells were held.` }
+    })
+    // A code bot's process, the supervisor's: started, stopped and started again; its token for running it
+    // elsewhere, written to a 0600 file in its folder and never answered; and its log, redacted when it was kept.
+    // Stopping its process leaves the bot on, so its held exits still run; only the main window stops its trades.
+    const supervised = (call: { client: { clientName: string } }): Supervisor => {
+      if (READ_ONLY_CLIENTS.has(call.client.clientName)) throw refused("OBSERVER", "The doctor and the sampler don't change bots.")
+      if (!supervisor) throw refused("NOT_SUPERVISED", "This core doesn't run code bots.")
+      return supervisor
+    }
+    const codeName = (params: Record<string, unknown>): string => {
+      const name = typeof params.name === "string" ? params.name : ""
+      if (!name) throw invalidParams("name must name a code bot.")
+      if (!codeBots.entry(name)) {
+        const names = codeBots.entries().map((b) => `"${b.name}"`)
+        throw refused("UNKNOWN_BOT", `No code bot named "${name}".${names.length ? ` Code bots: ${names.join(", ")}.` : " There are no code bots."}`)
+      }
+      return name
+    }
+    s.handle("bots.process.start", async (params, call) => supervised(call).startByPerson(codeName(params)))
+    s.handle("bots.process.stop", async (params, call) => supervised(call).stopByPerson(codeName(params)))
+    s.handle("bots.process.restart", async (params, call) => supervised(call).restart(codeName(params)))
+    s.handle("bots.token", async (params, call) => supervised(call).outside(codeName(params)))
+    s.handle("bots.logs", async (params) => {
+      const name = codeName(params)
+      const lines = typeof params.lines === "number" && Number.isInteger(params.lines) ? Math.min(Math.max(params.lines, 1), 5_000) : 200
+      return readLogTail(paths.botLogsDir, name, lines)
+    })
+    // The person removes the exits the core holds on a code bot's position: its own code sells it from then on.
+    s.handle("bots.exits.remove", async (params, call) => {
+      const name = botName(params)
+      notObserver(call)
+      if (!fromMainView(call)) throw refused("MAIN_VIEW_ONLY", "A bot's held exits are removed from the main window, not a popped pane.")
+      if (!isCode(name)) throw refused("NOT_A_CODE_BOT", `"${name}" isn't a code bot: a rules bot's exits are its definition's, changed on its card.`)
+      if (typeof params.position !== "string") throw invalidParams("position is the position's id, from the Bots tab.")
+      return desk.removeExits(name, params.position, call.client.clientId)
+    })
+    s.handle("bots.remove", async (params, call) => {
+      const name = botName(params)
+      notObserver(call)
+      if (params.positions !== "flatten" && params.positions !== "leave") throw invalidParams('positions is "flatten", to sell its open positions first, or "leave", to leave them in the wallet.')
+      if (isCode(name)) {
+        const guarded = params.positions === "leave" ? botPositions.open(name).filter((p) => heldExits.of(p.id)).length : 0
+        const removed = await codeBots.remove(name, { clientId: call.client.clientId, main: fromMainView(call) }, params.positions)
+        return guarded ? { ...removed, said: `${removed.said} The exits the core held on ${guarded === 1 ? "it" : `${guarded} of them`} end with the bot.` } : removed
+      }
+      return bots.remove(name, params.positions, { clientId: call.client.clientId, main: fromMainView(call) })
+    })
+    // A code bot reads its own settings and state, by its token: never another's.
+    s.handle("bot.self", async (_params, call) => {
+      const name = call.client.bot
+      const b = name ? codeBots.entry(name) : undefined
+      if (!name || !b) throw refused("UNKNOWN_BOT", "This bot isn't in bots.toml now.")
+      const v = codeBots.viewOf(b)
+      const run = codeBots.approvedVersion(name)?.run
+      return {
+        name,
+        agent: b.agent,
+        mode: v.mode,
+        state: v.state,
+        buys: v.buys,
+        sells: v.sells,
+        ...(v.held ? { held: v.held } : {}),
+        ...(v.stateWords ? { stateWords: v.stateWords } : {}),
+        // What it's held to: the figures its card approved, whatever a hand edit says.
+        ...(run ? { figures: { perTradeUsd: run.perTradeUsd, perDayUsd: run.perDayUsd, maxOpen: run.maxOpen, ...(run.maxSlippageBps !== undefined ? { maxSlippageBps: run.maxSlippageBps } : {}) } } : {}),
+        ...(v.paysFrom ? { paysFrom: v.paysFrom } : {}),
+      }
+    })
+    // A code bot's trades and reads, by its token: always its own (bot-protocol.ts).
+    const botOf = (call: { client: { bot?: string } }) => {
+      const name = call.client.bot
+      if (!name || !codeBots.entry(name)) throw refused("UNKNOWN_BOT", "This bot isn't in bots.toml now.")
+      return name
+    }
+    s.handle("bot.buy", async (params, call) => desk.buy(botOf(call), params))
+    s.handle("bot.sell", async (params, call) => desk.sell(botOf(call), params))
+    s.handle("bot.swap", async (params, call) => desk.swap(botOf(call), params))
+    s.handle("bot.request", async (params, call) => desk.status(botOf(call), params))
+    s.handle("bot.positions", async (_params, call) => desk.positions(botOf(call)))
+    s.handle("bot.fills", async (params, call) => desk.fills(botOf(call), params))
+    s.handle("bot.market", async (params, call) => desk.market(botOf(call), params))
+    // Exits the core holds on one of its positions: set, changed or cleared by the bot, watched by the core.
+    s.handle("bot.exits", async (params, call) => {
+      const kept = await desk.setExits(botOf(call), params)
+      void botExits?.check().catch(() => {})
+      return kept
+    })
+    // Its own report about itself: kept beside the core's count, and shown on the Bots tab as "the bot says".
+    s.handle("bot.report", async (params, call) => {
+      const kept = botReports.take(botOf(call), params)
+      reportPublish ??= setTimeout(() => {
+        reportPublish = undefined
+        void publish("bots", botsTopic())
+      }, 1_000)
+      reportPublish.unref?.()
+      return kept
+    })
+    // What it says, one word and a line: journalled as its own, and a trigger on its word fires on the row.
+    const botEvents = new BotEvents(now)
+    s.handle("bot.event", async (params, call) => {
+      const name = botOf(call)
+      const said = botEvents.take(name, params)
+      const row = await j.append({ type: "bot.event", mode, kind: "code", agent: codeBots.entry(name)!.agent, name, word: said.word, ...(said.text ? { text: said.text } : {}) })
+      return { word: said.word, at: row.at }
+    })
+    // Hacc's reads its agent's plan offers, with its agent's key: never a change, which is the person's or the agent's.
+    s.handle("bot.hacc", async (params, call) => {
+      const name = botOf(call)
+      const agent = codeBots.entry(name)!.agent
+      if (!config.hacc.enabled) throw refused("HACC_OFF", "Hacc's data is turned off in this Candle Harness's config ([hacc] enabled = false).")
+      const tool = typeof params.tool === "string" ? params.tool : ""
+      const offered = haccOffered(agent) ? haccOffer(agent).map((t) => t.name) : []
+      if (!offered.includes(tool)) throw refused("NOT_OFFERED", `${tool || "That"} isn't one of Hacc's reads ${agent}'s plan offers: ${offered.join(", ") || "none now"}.`)
+      const { tool: _tool, ...args } = params
+      const view = HACC_TOOLS.find((t) => t.name === tool)?.views[String(args.view)]
+      if (view?.change) throw refused("READS_ONLY", "A bot reads Hacc; a change to it (a follow, a rule, a group, a strategy) is the person's or the agent's.")
+      const answer = await haccTools.call(agent, tool, args)
+      const text = answer.content[0]?.text ?? "{}"
+      let data: unknown
+      try {
+        data = JSON.parse(text)
+      } catch {
+        data = { text }
+      }
+      if (answer.isError) {
+        const e = (data as { error?: { code?: unknown; message?: unknown } }).error
+        throw refused(typeof e?.code === "string" ? e.code : "HACC_REFUSED", typeof e?.message === "string" ? e.message : "Hacc refused the read.")
+      }
+      return data
+    })
+    // A Build pane proposes a code bot for its agent: a card in the person's view. A change that only lowers a figure
+    // or tightens its slippage bound happens at once; anything else is the person's press.
+    /** A code bot's card, for the person's press: from a Build pane's proposal, or a control its report offered. */
+    const proposeCodeCard = (check: ReturnType<typeof codeBots.check>, client: FaceClient, wasMode: "paper" | "live" | undefined, reason?: string) => {
+      const input = codeBotCard(check, {
+        pays: payWalletOf(client.agent, check.run.wallet, undefined),
+        sharedWith: check.run.mode === "live" ? botSharedWith(client.agent, check.run.wallet, check.name) : [],
+        ownWallet: ownWalletSteps(client.agent),
+        ...(wasMode ? { wasMode } : {}),
+      })
+      return cards.propose({
+        client,
+        agent: client.agent,
+        tool: BOTS_TOOL_NAME,
+        args: { action: "propose", kind: "code", name: check.name, hash: check.hash },
+        params: input.params as unknown as Record<string, unknown>,
+        kind: "bot",
+        idKey: "coreOpId",
+        title: input.title,
+        botCard: { spec: input.spec, ...(input.paysFrom ? { paysFrom: input.paysFrom } : {}), ...(input.slippage ? { slippage: input.slippage } : {}) },
+        ...(input.warning ? { warning: input.warning } : {}),
+        ...(input.fills?.length ? { fills: input.fills } : {}),
+        ...(reason ? { reason } : {}),
+      })
+    }
+    s.handle("bots.proposeCode", async (params, call) => {
+      const agent = call.client.agent
+      if (!agent) throw refused("UNKNOWN_AGENT", "This Build pane builds for no agent.")
+      const name = typeof params.name === "string" ? params.name.trim() : ""
+      if (!name) throw invalidParams("name is the bot's name.")
+      const replace = params.replace === true
+      const saved = codeBots.entry(name)
+      if (saved && !replace) throw refused("NAME_TAKEN", `A code bot named "${name}" is saved already. To change it, propose again with replace: true; for another one, give it a name of its own. Nothing was proposed.`)
+      if (!saved && replace) throw refused("UNKNOWN_BOT", `No code bot is named "${name}", so there's nothing to replace. Nothing was proposed.`)
+      if (saved && saved.agent !== agent) throw refused("NOT_ITS_AGENT", `"${name}" is ${saved.agent}'s bot: a Build pane for ${agent} can't change it.`)
+      // The bot's settings as given; a change keeps the saved bot's where one is left out. check() reads each.
+      const given = <T>(key: string, was: T | undefined): T | undefined => (params[key] === undefined ? was : (params[key] as T))
+      const wallet = given<string>("wallet", saved?.wallet)
+      const mode = given<"paper" | "live">("mode", saved?.mode)
+      if (typeof wallet !== "string" || wallet === "") throw refused("ASK_FIRST", "Ask the person which wallet it pays from: they pick. Offer a wallet of its own for a live bot. Nothing was proposed.")
+      if (mode !== "paper" && mode !== "live") throw refused("ASK_FIRST", "Ask the person whether it runs on paper or live: they pick. Nothing was proposed.")
+      const bps = given<number>("maxSlippageBps", saved?.maxSlippageBps)
+      const proposal: CodeBotProposal = {
+        name,
+        run: {
+          agent,
+          wallet,
+          mode,
+          folder: given<string>("folder", saved?.folder) as string,
+          command: given<string[]>("command", saved?.command) as string[],
+          perTradeUsd: given<number>("perTradeUsd", saved?.perTradeUsd) as number,
+          perDayUsd: given<number>("perDayUsd", saved?.perDayUsd) as number,
+          maxOpen: given<number>("maxOpen", saved?.maxOpen) as number,
+          ...(bps !== undefined ? { maxSlippageBps: bps } : {}),
+        },
+      }
+      const check = codeBots.check(proposal, agent)
+      const reason = typeof params.reason === "string" ? params.reason : undefined
+      // A change that only narrows a bot that runs as approved: at once.
+      if (saved && check.changes && check.changes.what.length && !check.changes.wider.length && !codeBots.heldBy(saved)) {
+        const next = { perTradeUsd: check.run.perTradeUsd, perDayUsd: check.run.perDayUsd, maxOpen: check.run.maxOpen, ...(check.run.maxSlippageBps !== undefined ? { maxSlippageBps: check.run.maxSlippageBps } : {}) }
+        const done = await codeBots.narrow(name, next, { clientId: call.client.clientId, how: "build", agent })
+        return { done: true, said: done.said }
+      }
+      if (saved && check.changes && !check.changes.what.length) throw refused("NO_CHANGE", `That's what "${name}" already runs, so nothing was proposed.`)
+      // One open card for a bot's name: proposed again with other settings, the card before is withdrawn.
+      await cards.withdrawWhere((c) => c.kind === "bot" && c.origin.role === "build" && c.agent === agent && c.asked.kind === "code" && c.asked.name === name && c.asked.hash !== check.hash, "proposed_again")
+      const card = await proposeCodeCard(check, { clientId: call.client.clientId, role: "build", agent }, saved?.mode, reason)
+      return { cardId: card.cardId, said: `"${name}" waits on a card in the person's main window. Nothing runs before they press it.` }
+    })
+
+    // Build panes: each gets a token of its own when it opens, minted for the agent the person builds for and handed
+    // to the main view, which puts it in the pane's environment alone. It's revoked when the pane closes, when the view
+    // that opened it goes, and with the core. Through it, the person's own harness reads the books, a bot's log and its
+    // agent's record, tests a bot on paper, and proposes one: it approves, trades and changes nothing itself.
+    const buildSessions = new Map<string, { agent: string; viewId: string; harness?: string }>()
+    const closeBuild = async (tokenId: string) => {
+      const session = buildSessions.get(tokenId)
+      if (!session) return false
+      buildSessions.delete(tokenId)
+      await tokens.revoke(tokenId)
+      s.disconnectToken(tokenId)
+      await codeBots.endTestsOf(tokenId)
+      await j.append({ type: "build.session", mode, agent: session.agent, what: "closed", tokenId })
+      return true
+    }
+    s.handle("build.open", async (params, call) => {
+      notObserver(call)
+      mainViewOnly(call, "Opening a Build pane")
+      const agent = typeof params.agent === "string" && params.agent ? params.agent : undefined
+      if (!agent || !keys.has(agent)) throw refused("UNKNOWN_AGENT", agent ? `${agent} has no key here, so there's no agent to build for.` : "agent is the agent the bots are built for.")
+      // The bots folder, by where it really is, at every open.
+      const place = folderPlace(typedFolder(readBuildPrefs(paths.buildPrefs, config.build).folder))
+      if (place) throw refused("BAD_FOLDER", `The bots ${place}. Pick another with harness ▾. Nothing was opened.`)
+      const harness = typeof params.harness === "string" ? terminalText(params.harness).slice(0, 80) : undefined
+      const minted = await tokens.mintBuild(`build-${agent}`, agent)
+      buildSessions.set(minted.tokenId, { agent, viewId: call.client.clientId, ...(harness ? { harness } : {}) })
+      await j.append({ type: "build.session", mode, agent, what: "opened", tokenId: minted.tokenId, ...(harness ? { harness } : {}) })
+      return new WithSecret({ tokenId: minted.tokenId, agent, socketPath: paths.socket, gate: codeBots.gateView() ?? null }, { token: minted.token }, "view")
+    })
+    // The Build pane's folder and harness: as last picked in the pane, else config.toml's [build], else the defaults.
+    // Each engine's binary goes with them, as config names it, so the pane opens the harness the person's turns run on.
+    s.handle("build.prefs", async (params, call) => {
+      const set = params.set as { folder?: unknown; harness?: unknown; opened?: unknown } | undefined
+      if (set !== undefined) {
+        notObserver(call)
+        mainViewOnly(call, "Choosing the Build pane's folder or harness")
+        const change: { folder?: string; harness?: string; opened?: true } = {}
+        if (set.folder !== undefined) {
+          const problem = typeof set.folder === "string" ? folderProblem(set.folder) : "A folder is a path."
+          if (problem) throw refused("INVALID_PARAMS", problem)
+          const place = folderPlace(typedFolder(set.folder as string))
+          if (place) throw refused("INVALID_PARAMS", `The bots ${place}.`)
+          change.folder = (set.folder as string).trim()
+        }
+        if (set.harness !== undefined) {
+          const problem = typeof set.harness === "string" ? harnessProblem(set.harness) : "A harness is an engine's id or a command."
+          if (problem) throw refused("INVALID_PARAMS", problem)
+          change.harness = (set.harness as string).trim()
+        }
+        if (set.opened === true) change.opened = true
+        saveBuildPrefs(paths.buildPrefs, change)
+      }
+      const read = readBuildPrefs(paths.buildPrefs, config.build)
+      // A saved folder that's now one of ours (or /, or the home) is asked for again, never opened.
+      const refusedPlace = folderPlace(typedFolder(read.folder))
+      const prefs = refusedPlace ? { ...read, opened: false, folderRefused: `The bots ${refusedPlace}.` } : read
+      return { ...prefs, bins: Object.fromEntries(ENGINE_IDS.map((id) => [id, enginePathOf(config, id)])) }
+    })
+    s.handle("build.close", async (params, call) => {
+      const tokenId = typeof params.tokenId === "string" ? params.tokenId : ""
+      const session = buildSessions.get(tokenId)
+      if (!session) return { closed: false }
+      if (session.viewId !== call.client.clientId) throw refused("NOT_YOURS", "A Build pane is closed by the view that opened it.")
+      return { closed: await closeBuild(tokenId) }
+    })
+    const buildAgent = (call: { client: { agent?: string; tokenId?: string } }) => {
+      const agent = call.client.agent
+      if (!agent || !call.client.tokenId || !buildSessions.has(call.client.tokenId)) throw refused("UNAUTHENTICATED", "This Build pane's token isn't open now.")
+      return { agent, tokenId: call.client.tokenId }
+    }
+    s.handle("build.books", async (_params, call) => {
+      buildAgent(call)
+      return botsTopic()
+    })
+    s.handle("build.logs", async (params, call) => {
+      const { agent, tokenId } = buildAgent(call)
+      const name = typeof params.bot === "string" ? params.bot : ""
+      const entry = codeBots.entry(name)
+      if (!entry || (codeBots.isTest(name) && codeBots.testOwner(name) !== tokenId)) throw refused("UNKNOWN_BOT", `No code bot named "${name}" is saved here.`)
+      // A Build pane reads its own agent's bots' logs, as it proposes only its own agent's bots.
+      if (entry.agent !== agent) throw refused("NOT_ITS_AGENT", `"${name}" is ${entry.agent}'s bot: a Build pane for ${agent} can't read its log.`)
+      if (codeBots.isTest(name)) throw refused("TEST_RUN", "A test run's output is in the terminal that ran it: the core keeps no log of it.")
+      const lines = typeof params.lines === "number" && Number.isInteger(params.lines) ? Math.min(Math.max(params.lines, 1), 5_000) : 200
+      return readLogTail(paths.botLogsDir, name, lines)
+    })
+    s.handle("build.journal", async (params, call) => {
+      const { agent } = buildAgent(call)
+      const answer = historyCall(j.rows(), agent, params, { now, sessionEnd: () => sessionEnd })
+      if (!answer.ok) throw refused(answer.code, answer.message)
+      return answer.body
+    })
+    s.handle("build.test", async (params, call) => {
+      const { agent, tokenId } = buildAgent(call)
+      const num = (k: string) => (typeof params[k] === "number" ? (params[k] as number) : undefined)
+      const started = await codeBots.startTest({
+        folder: params.folder as string,
+        command: params.command as string[],
+        agent,
+        buildTokenId: tokenId,
+        ...(num("perTradeUsd") !== undefined ? { perTradeUsd: num("perTradeUsd")! } : {}),
+        ...(num("perDayUsd") !== undefined ? { perDayUsd: num("perDayUsd")! } : {}),
+        ...(num("maxOpen") !== undefined ? { maxOpen: num("maxOpen")! } : {}),
+      })
+      const { token, ...rest } = started
+      return new WithSecret(rest, { token }, "build")
+    })
+    s.handle("build.testEnd", async (params, call) => {
+      const { tokenId } = buildAgent(call)
+      const name = typeof params.name === "string" ? params.name : ""
+      if (codeBots.testOwner(name) !== tokenId) return { ended: false }
+      const done = await codeBots.endTest(name, "ended")
+      return { ended: !!done, ...(done ? { said: done.said } : {}) }
+    })
+    // The person's `stop test` in the Build tab: a paper test a Build pane of this view started, ended at once.
+    s.handle("build.endTest", async (params, call) => {
+      notObserver(call)
+      const name = typeof params.name === "string" ? params.name : ""
+      const owner = codeBots.testOwner(name)
+      const session = owner ? buildSessions.get(owner) : undefined
+      if (!owner || !session) return { ended: false }
+      if (session.viewId !== call.client.clientId) throw refused("NOT_YOURS", "A paper test is ended from the view whose Build pane started it.")
+      const done = await codeBots.endTest(name, "ended")
+      return { ended: !!done, ...(done ? { said: done.said } : {}) }
+    })
+    // A control the bot's own report offers, clicked by the person: a pause or a lowered figure at once; a raised
+    // figure, a looser bound or one under the route's default a card. The bot only suggests: nothing it says changes it.
+    s.handle("bots.control", async (params, call) => {
+      const name = botName(params)
+      notObserver(call)
+      if (!fromMainView(call)) throw refused("MAIN_VIEW_ONLY", "A bot's controls are clicked in the main window, not a popped pane.")
+      const b = codeBots.entry(name)
+      if (!b) throw refused("UNKNOWN_BOT", `No code bot named "${name}".`)
+      const id = typeof params.id === "string" ? params.id : ""
+      const c = botReports.control(name, id)
+      if (!c) throw refused("UNKNOWN_CONTROL", `"${name}" doesn't offer that control now. Nothing changed.`)
+      if ("pause" in c) return codeBots.pause(name, { clientId: call.client.clientId, how: "view" })
+      const approved = codeBots.approvedVersion(name)?.run
+      if (!approved) throw refused("NOT_APPROVED", `"${name}" hasn't been approved as it is, so its figures can't change from its controls. Nothing changed.`)
+      const e = controlEffect(approved, c, routeSlippageBps(approved.wallet))
+      if (e.how === "same" || !e.next) return { name, said: `"${name}" runs so already, so nothing changed.` }
+      const next = e.next
+      if (e.how === "at once" && !codeBots.heldBy(b)) {
+        const done = await codeBots.narrow(name, { perTradeUsd: next.perTradeUsd, perDayUsd: next.perDayUsd, maxOpen: next.maxOpen, ...(next.maxSlippageBps !== undefined ? { maxSlippageBps: next.maxSlippageBps } : {}) }, { clientId: call.client.clientId, how: "view" })
+        return { name, said: done.said }
+      }
+      // Wider, or a bot held: a card for what its card approved, with the control's figures, for the person's press.
+      const proposal: CodeBotProposal = { name, run: { ...next, command: [...next.command] } }
+      const check = codeBots.check(proposal, b.agent)
+      const card = await proposeCodeCard(check, { clientId: call.client.clientId, role: "view", agent: b.agent }, approved.mode, `the bot "${name}" offers: ${c.label}`)
+      return { name, cardId: card.cardId, said: `"${name}"'s ${c.label} is more than a lowering of what you approved, so it's a card: press it to change the bot.` }
+    })
     // The person's pick: the link moves to it if Candle has a market for it. A pick
     // answered after a later one says so, and the view lets it go.
     const lastPicked = new Map<string, { mint: string; at: number }>()
@@ -2236,25 +3763,30 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
       await j.append({ type: "view.picked", mode, mint, chain, ...(v.followed?.symbol ? { symbol: v.followed.symbol } : {}), ...(from ? { from } : {}), by: call.client.clientId })
       return { linked: true, ...(v.followed?.symbol ? { symbol: v.followed.symbol } : {}) }
     })
-    // A token pane pinned on a token, by where it is (a tab's name): the linked token unless one is named.
+    // A token pane pinned on a token, by where it is (a tab's name, and which of its token panes): the linked token unless one is named.
     s.handle("view.pin", async (params) => {
       const at = placeParam(params.at)
       if (!at) throw invalidParams("at names the tab the token pane is on.")
+      const pane = tokenPaneParam(params.pane)
+      if (!pane) throw invalidParams(`pane is one of ${TOKEN_PANES.join(", ")}: which of the tab's token panes.`)
       const v = tokenWatch.view()
       const named = params.mint === undefined ? undefined : mintParam(params.mint)
       if (params.mint !== undefined && !named) throw invalidParams("mint is a token's address.")
       const token = named === undefined || named === v.followed?.mint ? v.followed : v.pinned?.find((p) => p.mint === named)
       if (!token) throw refused("NOT_WATCHED", "Pick the token first: a pin holds the token pane on the token it shows.")
-      const pinned = await viewState.pin({ at, mint: token.mint, chain: token.chain, ...(token.symbol ? { symbol: token.symbol } : {}) })
+      const pinned = await viewState.pin({ at, ...(pane !== "token" ? { pane } : {}), mint: token.mint, chain: token.chain, ...(token.symbol ? { symbol: token.symbol } : {}) })
       if (!pinned.ok) throw refused("TOO_MANY_PINS", pinned.message)
       tokenWatch.setPinned(viewState.pins())
       publishViews()
       return { pins: viewState.pins() }
     })
+    // `pane` "all": every pin on the tab (a tab removed).
     s.handle("view.unpin", async (params) => {
       const at = placeParam(params.at)
       if (!at) throw invalidParams("at names the tab the token pane is on.")
-      if (await viewState.unpin(at)) {
+      const pane = params.pane === "all" ? "all" : tokenPaneParam(params.pane)
+      if (!pane) throw invalidParams(`pane is one of ${TOKEN_PANES.join(", ")}, or "all".`)
+      if (await viewState.unpin(at, pane)) {
         tokenWatch.setPinned(viewState.pins())
         publishViews()
       }
@@ -2327,6 +3859,12 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
           }
         : {}),
       holdings: awayHoldings,
+      // Each bot's own book: the Candle Harness's count from its fills.
+      bots: (from, to) =>
+        [...bots.entries(), ...codeBots.entries()].map((b) => {
+          const r = botPositions.realizedBetween(b.name, from, to, b.mode)
+          return { name: b.name, agent: b.agent, mode: b.mode, realizedUsd: r.valued ? Number(r.usd.toFixed(2)) : null, open: botPositions.open(b.name, b.mode).map((p) => ({ mint: p.mint, ...(symbolOf(p.mint) ? { symbol: symbolOf(p.mint)! } : {}) })) }
+        }),
       publish: (view) => publish("away", view),
     })
     awayPortfolioRead = () => away.portfolioRead()
@@ -2337,7 +3875,14 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
       if (!isMainView(client) || s.clients().filter(isMainView).length !== 1) return
       void away.opened(client.clientId, sessionEnd).catch(() => {})
     })
+    // A code bot connecting or dropping: the Bots tab says whether it's connected.
+    s.onAttached((client) => {
+      if (client.role === "bot") void publish("bots", botsTopic())
+    })
     s.onDetached((client) => {
+      if (client.role === "bot") void publish("bots", botsTopic())
+      // A view that goes takes its Build panes with it: their harnesses were its children.
+      if (client.role === "view") for (const [tokenId, b] of buildSessions) if (b.viewId === client.clientId) void closeBuild(tokenId).catch(() => {})
       if (client.role === "view" && viewState.unpop(client.clientId)) publishViews()
       if (client.role === "view") viewAsks.detached(client.clientId)
       // The main view closed: "since last session" runs from here next time, and the Away summary's gap starts here too.
@@ -2411,7 +3956,7 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
     }
     for (const row of j.rows()) notePick(row)
     j.onAppend(notePick)
-    const journalSymbol = (mint: string) => symbolOf(mint) ?? picked.get(mint)
+    const journalSymbol = (mint: string) => wordName(mint) ?? tokenLabel(picked.get(mint), mint)
     const journalDeps = (current?: () => boolean): QueryDeps => ({ memory: () => j.rows(), tail: j.tail, path: j.path, redactor, symbolOf: journalSymbol, ...(current ? { current } : {}) })
     s.handle("journal.query", async (params, call) => {
       const problem = queryProblem(params)
@@ -2432,10 +3977,20 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
         await saveMode(paths.modeState, mode, now())
         await j.append({ type: "mode.changed", mode, by: call.client.clientId })
         publishStatus?.()
+        // How a trigger runs is said by its own mode and the mode now: the overlay's words follow the switch.
+        void publish("triggers", triggers.view())
+        // A trigger keeps the mode it was approved in: said at the switch, so a live stop isn't taken for a paper one.
+        const other = triggers.live().filter((t) => triggers.modeOf(t) !== mode && triggers.resolved(t)?.action.kind === "command")
+        if (other.length) {
+          const kind = mode === "paper" ? "live" : "paper"
+          const still = mode === "paper" ? "still real" : "still on paper"
+          return { mode, said: other.length === 1 ? `1 ${kind} trigger stays as approved: its trades are ${still}.` : `${other.length} ${kind} triggers stay as approved: their trades are ${still}.` }
+        }
       }
       return { mode }
     })
     s.handle("agent.setActive", async (params, call) => {
+      onlyLooks(call)
       const agent = params.agent
       if (typeof agent !== "string" || !Object.hasOwn(config.agents, agent)) throw refused("UNKNOWN_AGENT", "No agent by that name is configured.")
       activeAgent = agent
@@ -2458,7 +4013,10 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
     s.handle("resume", async (_params, call) => (mainViewOnly(call, "Resuming after the kill switch"), killSwitch.resume(call.client.clientId)))
     s.handle("agent.send", async (params, call) => {
       if (Object.keys(config.agents).length === 0) throw refused("NO_AGENT_YET", "There's no agent yet: finish setting up first, and your message goes to it then.")
-      return engine.send(typeof params.agent === "string" ? params.agent : activeAgent, params.text, call.client.clientId)
+      const agent = typeof params.agent === "string" ? params.agent : activeAgent
+      // `candle-harness ask`: the person's own message from outside, under the same rules, marked as from outside.
+      const outside = call.client.clientName === ASK_CLIENT
+      return { agent, ...(await engine.send(agent, params.text, call.client.clientId, { outside })) }
     })
     s.handle("agent.cancel", async (params, call) => {
       const agent = typeof params.agent === "string" ? params.agent : activeAgent
@@ -2476,22 +4034,32 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
     // A harness installed after the core started (Claude Code installed while onboarding was open had
     // stayed "not installed"): checked again only when its last check failed, so one that runs costs nothing.
     // A missing binary fails at once; one just installed is spawned for its version once.
-    const recheck = async (id: EngineId): Promise<void> => {
-      if (engine.lastCheck(id)?.ok) return
+    // `again`: checked even when the last check passed, for a harness that may have updated itself (the Build pane's
+    // harnesses do), its version and sign-in read afresh.
+    const recheck = async (id: EngineId, again = false): Promise<void> => {
+      if (engine.lastCheck(id)?.ok && !again) return
       const was = engine.lastCheck(id)
+      const wasSigned = signedIn.get(id)
       const check = await engine.check(id, true).catch(() => undefined)
-      if (check?.ok) await readEngine(id).catch(() => undefined)
-      if (check?.ok !== was?.ok || check?.version !== was?.version) publish("engine", engineView())
+      noteNewerMajor(id)
+      // Its models are read again only when it's newly there or a new version; the same one has its sign-in read.
+      const changed = check?.ok !== was?.ok || check?.version !== was?.version
+      const e = engines.get(id)
+      if (check?.ok && changed) await readEngine(id).catch(() => undefined)
+      else if (check?.ok && e?.signedIn) signedIn.set(id, await e.signedIn(harnessEnv(opts.env)).catch(() => undefined))
+      if (check?.ok !== was?.ok || check?.version !== was?.version || signedIn.get(id) !== wasSigned) publish("engine", engineView())
     }
     s.handle("engine.check", async (params) => {
       const e = engineNamed(params.engine)
-      await recheck(e.id)
+      await recheck(e.id, params.again === true)
       return { engine: e.id, check: engine.lastCheck(e.id) ?? null }
     })
     s.handle("engine.models", async (params) => {
       const e = engineNamed(params.engine)
       const fresh = params.fresh === true
-      if (fresh) await recheck(e.id)
+      // One that runs is checked again behind the answer (it may have updated itself); one that failed, before it.
+      if (fresh && engine.lastCheck(e.id)?.ok) void recheck(e.id, true).catch(() => {})
+      else if (fresh) await recheck(e.id)
       const list = await models.read(e.id, { fresh })
       if (fresh && e.signedIn) {
         signedIn.set(e.id, await e.signedIn(harnessEnv(opts.env)).catch(() => undefined))
@@ -2500,6 +4068,7 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
       return { engine: e.id, models: list.models, ...(list.notes.length ? { notes: list.notes } : {}), readAt: list.readAt, ...(list.error ? { error: list.error } : {}) }
     })
     s.handle("engine.choose", async (params, call) => {
+      onlyLooks(call)
       const agent = typeof params.agent === "string" ? params.agent : activeAgent
       if (!Object.hasOwn(config.agents, agent)) throw refused("UNKNOWN_AGENT", "No agent by that name is configured.")
       const e = engineNamed(params.engine)
@@ -2519,6 +4088,7 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
     })
     // The agent's preset: the person's choice, from the agent's next turn.
     s.handle("preset.choose", async (params, call) => {
+      onlyLooks(call)
       const agent = typeof params.agent === "string" ? params.agent : activeAgent
       if (!Object.hasOwn(config.agents, agent)) throw refused("UNKNOWN_AGENT", "No agent by that name is configured.")
       const preset = params.preset
@@ -2529,8 +4099,41 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
       publish("engine", engineView())
       return { agent, preset }
     })
+    // The code runner for an agent, turned on or off by the person from the picker or the palette: written into its
+    // own [agents.<name>.tools] table and used from its next turn. On writes the documented programs found here.
+    s.handle("agent.run", async (params, call) => {
+      mainViewOnly(call, "Turning the code runner on or off")
+      const agent = typeof params.agent === "string" ? params.agent : activeAgent
+      if (!Object.hasOwn(config.agents, agent)) throw refused("UNKNOWN_AGENT", "No agent by that name is configured.")
+      if (typeof params.on !== "boolean") throw invalidParams("on is true or false.")
+      if (params.on && !runHold.ok) throw refused("NOT_HELD", `The code runner can't be held on this machine: ${runHold.why}. It needs ${runHold.fix}.`)
+      const found = RUN_EXAMPLE.filter((p) => Bun.which(p, { PATH: opts.env.PATH ?? "/usr/bin:/bin" }))
+      if (params.on && found.length === 0) throw refused("NOT_INSTALLED", `None of ${RUN_EXAMPLE.join(", ")} is installed here, so there's nothing for the code runner to run.`)
+      const run = params.on ? found : ("off" as const)
+      const recorded = await recordAgentRun(paths, agent, run)
+      if (!recorded.ok) throw refused("NOT_RECORDED", `${recorded.why.charAt(0).toUpperCase()}${recorded.why.slice(1)}. Nothing changed.`)
+      const was = config.agents[agent]!.tools
+      config.agents[agent] = { ...config.agents[agent]!, tools: { ...DEFAULT_TOOLS, ...was, ...(run === "off" ? { run: "off" } : { run }) } }
+      sawConfig()
+      await j.append({ type: "tools.run", mode, agent, run, by: call.client.clientId })
+      publish("activity", { kind: "tools.run", agent, text: run === "off" ? `${agent}'s code runner is off` : `${agent}'s code runner is on for ${runWords(run)}, held to its research folder with no network` })
+      publish("engine", engineView())
+      return { agent, run }
+    })
     // Skill folders of the person's own: read as settings ▾ → skills opens, and turned on or off there.
     s.events.provideSnapshot("skills", () => skillFolders.topic())
+    // Keep-awake: the person's, from the main view; the choice is kept in state.
+    s.handle("core.keepAwake", async (params, call) => {
+      mainViewOnly(call, "Keeping the Mac awake")
+      if (typeof params.on !== "boolean") throw invalidParams("on is true or false.")
+      if (!keepAwake.available()) throw refused("NOT_MACOS", "Keep-awake is macOS only: it keeps a Mac from sleeping while a trigger or bot is on.")
+      keepAwake.set(params.on)
+      keepAwake.update(keptUp())
+      await j.append({ type: "core.keep_awake", mode, on: params.on, by: call.client.clientId })
+      publish("activity", { kind: "core.keep_awake", text: params.on ? "the Mac is kept awake while a trigger or bot is on" : "keep-awake is off: the Mac may sleep while triggers or bots are on" })
+      publishStatus?.()
+      return keepAwake.view()
+    })
     s.handle("skills.read", async () => {
       const topic = skillFolders.topic()
       publish("skills", topic)
@@ -2549,7 +4152,7 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
       publish("skills", topic)
       return topic
     })
-    // The person's deletes from an agent's memory: a line of its index, a file, or all of it.
+    // The person's deletes from an agent's memory (a line of its index, a file, or all of it), and their pins.
     s.events.provideSnapshot("memory", memoryTopic)
     // Read fresh as the overlay opens, so a file the person edited in their own editor shows.
     s.handle("memory.read", async () => {
@@ -2561,6 +4164,15 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
       const agent = typeof params.agent === "string" ? params.agent : activeAgent
       if (!Object.hasOwn(config.agents, agent)) throw refused("UNKNOWN_AGENT", "No agent by that name is configured.")
       const done = await memory.delete(agent, call.client.clientId, { entry: params.entry, file: params.file, all: params.all })
+      if (!done.ok) throw refused(done.code, done.message)
+      return { agent, view: memory.view(agent) }
+    })
+    // The person's pin or unpin of a line: it moves under the index's ## Pinned, or out from under it.
+    s.handle("memory.pin", async (params, call) => {
+      const agent = typeof params.agent === "string" ? params.agent : activeAgent
+      if (!Object.hasOwn(config.agents, agent)) throw refused("UNKNOWN_AGENT", "No agent by that name is configured.")
+      if (typeof params.pinned !== "boolean") throw invalidParams("pinned is true to pin the line, false to unpin it.")
+      const done = await memory.pin(agent, call.client.clientId, params.entry, params.pinned)
       if (!done.ok) throw refused(done.code, done.message)
       return { agent, view: memory.view(agent) }
     })
@@ -2625,7 +4237,8 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
       const answer = {
         title,
         bin: entry.grant.bin,
-        steps,
+        // The card's steps name the configured RPC by a marker: the address goes in here, to the launcher alone.
+        steps: steps.map((step) => ({ ...step, argv: candleCli.realArgs(step.argv) })),
         identity: pane.identity,
         ...(pane.agent ? { agent: pane.agent } : {}),
         ...(pane.askPaths ? { askPaths: pane.askPaths } : {}),
@@ -2704,6 +4317,42 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
     })
 
     await s.listen()
+    // Code bots run once the socket they connect to listens: what an earlier core left running is ended first.
+    if (opts.supervise !== false) {
+      supervisor = new Supervisor({
+        statePath: paths.supervisorState,
+        logsDir: paths.botLogsDir,
+        socketPath: paths.socket,
+        journal: j,
+        mode: () => mode,
+        now,
+        parentEnv: opts.env,
+        redact: (text) => redactor.text(text),
+        names: () => [...new Set([...codeBots.entries().map((b) => b.name)])],
+        wanted: (name) => {
+          const b = codeBots.entry(name)
+          const v = codeBots.approvedVersion(name)
+          if (!b || !v) return { start: false, keep: false, why: `"${name}" isn't approved here: propose it from the Build tab, and approve its card` }
+          const spec = { folder: v.run.folder, command: v.run.command, agent: v.run.agent }
+          // Every start checks where its folder really is now: a link changed since its card can't move it into ours.
+          const place = folderPlace(v.run.folder)
+          if (place) return { start: false, keep: false, spec, why: place }
+          if (codeBots.runState(b) === "stopped") return { start: false, keep: false, spec, why: "it's stopped: put it back on from the Bots tab, in the main window" }
+          const held = codeBots.heldBy(b)
+          if (held && !held.sells) return { start: false, keep: false, spec, why: held.words }
+          const no = codeBots.admits(name)
+          return no ? { start: false, keep: true, spec, why: no.message } : { start: true, keep: true, spec }
+        },
+        issueToken: (name, why) => codeBots.issueToken(name, why),
+        endToken: (name, why) => codeBots.endToken(name, why),
+        hasToken: (name) => tokens.botToken(name) !== undefined,
+        onChange: () => void publish("bots", botsTopic()),
+        ...(opts.supervise ? { tuning: opts.supervise } : {}),
+      })
+      void supervisor.start().catch(async (error) => {
+        await j.append({ type: "bot.process", mode, kind: "code", what: "supervisor_failed", words: String(error) }).catch(() => {})
+      })
+    }
     await j.append({ type: "core.started", mode, modeFrom: starting.from, pid: process.pid, coreId, coreVersion: VERSION, headless: opts.headless, agents: [...keys.keys()], ...(losesNextReply(opts.env) ? { debugLoseNextReply: true } : {}) })
     cards.start()
     tickets.start()
@@ -2711,6 +4360,8 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
     // Candle, in the background: each child can hold its start for 15 s.
     const candleReady = (async () => {
       await pool.start()
+      // What a past core left unknown, read back by its id now that there's a Candle to ask.
+      operations.readBack()
       for (const agent of pool.agents()) {
         await wallets.refresh(agent) // its status read first, then its TEE wallets
         const unknown = unclassifiedTools(pool.for(agent).tools().map((t) => t.name))
@@ -2721,6 +4372,7 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
       plans.noticeChanges()
       plans.start()
       pnl.start()
+      triggerWatch?.start()
     })()
       .catch(async (error) => {
         await j.append({ type: "candle.start_failed", mode, error: String(error) }).catch(() => {})
@@ -2730,9 +4382,26 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
     // The idle rule.
     const idle = new IdleWatch({ headless: opts.headless, idleMs: opts.idleExitMs ?? IDLE_EXIT_MS })
     let stopping: Promise<void> | undefined
-    const holds = () =>
-      s.clients().some((c) => c.role === "view" && !OBSERVER_CLIENTS.has(c.clientName)) || tokens.harnessCount() > 0 || engine.busy() || operations.busy() || cards.list().some((c) => c.state === "awaiting_approval")
+    const personViews = () => s.clients().filter((c) => c.role === "view" && !OBSERVER_CLIENTS.has(c.clientName))
+    holdWords = () => {
+      const n = (count: number, one: string, many = `${one}s`) => `${count} ${count === 1 ? one : many}`
+      const on = triggers.keepingUp().length
+      const running = botsUp().length
+      const views = personViews().length
+      const open = cards.list().filter((c) => c.state === "awaiting_approval").length
+      return [
+        ...(running ? [`${n(running, "bot")} running`] : []),
+        ...(on ? [`${n(on, "trigger")} on`] : []),
+        ...(views ? [`${n(views, "view")} attached`] : []),
+        ...(tokens.harnessCount() > 0 || engine.busy() ? ["an agent's turn"] : []),
+        ...(operations.busy() ? ["a trade or step in flight"] : []),
+        ...(open ? [`${n(open, "card")} waiting`] : []),
+      ]
+    }
+    const holds = () => personViews().length > 0 || tokens.harnessCount() > 0 || engine.busy() || operations.busy() || cards.list().some((c) => c.state === "awaiting_approval") || keptUp()
     const idleTimer = setInterval(() => {
+      // Keep-awake follows the triggers and bots here too: a plan read or an agent removed changes what keeps the core up.
+      keepAwake.update(keptUp())
       if (idle.tick(now(), holds(), keys.size === 0 ? Math.min(IDLE_EXIT_NO_AGENTS_MS, opts.idleExitMs ?? IDLE_EXIT_MS) : undefined)) void stop("idle")
     }, opts.idleTickMs ?? 1_000)
     idleTimer.unref?.()
@@ -2741,6 +4410,7 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
       stopping ??= (async () => {
         clearInterval(idleTimer)
         clearInterval(modelsTimer)
+        if (botsSoon) clearTimeout(botsSoon)
         if (walletsTimer) clearInterval(walletsTimer)
         await engine.stop()
         cards.stop()
@@ -2752,14 +4422,28 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
         research.stop()
         emptyAccounts.close()
         pnl.stop()
+        triggerWatch?.stop()
+        botEntries?.stop()
+        botPositions.flush()
+        keepAwake.stop()
+        triggerFirer?.stop("the core stopped")
+        // A planned stop, said to every view first, so none tells the person the core stopped unexpectedly.
+        await notifier.stop()
+        for (const c of s.clients()) if (c.role === "view") publish("notices", { stopping: reason }, c.clientId)
+        // Each connected code bot hears it too: its connection ends with the core.
+        for (const c of s.clients()) if (c.role === "bot" && c.bot) publish("bot", { kind: "stopping", words: `The core is stopping (${reason}): your connection ends now, and nothing of yours is sent until it's back.` }, c.clientId)
+        // Each supervised code bot's process ends with it, and starts again with the next core.
+        await supervisor?.stopAll(reason).catch(() => {})
         away.stop()
         plans.stop()
         haccChanges.stop()
         await signals.stop()
+        await botSignals.stop()
         await s.close()
         await pool.stop()
         await pnlSamples.flush()
         await away.flush()
+        await botEntries?.flush().catch(() => {})
         await j.append({ type: "core.stopped", mode, reason }).catch(() => {})
         await j.close()
         // A core started while this one was stopping may hold the lock, the socket and the view token by now: only ours go.
@@ -2773,7 +4457,7 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
       return stopping
     }
 
-    return { server: s, cards, operations, pool, engine, journal: j, wallets, destinations, hacc, plans, signals, pnl, autonomy: autonomyDesk, emptyAccounts, account, coreId, candleReady, stop }
+    return { server: s, cards, operations, pool, engine, journal: j, wallets, destinations, hacc, plans, signals, pnl, autonomy: autonomyDesk, emptyAccounts, lines, triggers, bots, codeBots, tokens, botEntries: entries, botExits: exits, failedSells, tradePace, routeWaits, watchBeat: async () => void (await triggerWatch?.beat()), botSignals, account, coreId, candleReady, stop }
   } catch (error) {
     await journal?.close().catch(() => {})
     await lock.release()
@@ -2785,6 +4469,17 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
  * What `wallet` holds of `mint`, from a candle_get_portfolio result (the SDK's PortfolioResult): the
  * embedded wallet or a TEE wallet, each listed under its own array.
  */
+/** A token's decimals in a portfolio read, from any wallet that holds it. */
+export function decimalsIn(result: unknown, mint: string): number | undefined {
+  const body = result as { embedded?: unknown; tee?: unknown } | undefined
+  for (const w of [...(Array.isArray(body?.embedded) ? body.embedded : []), ...(Array.isArray(body?.tee) ? body.tee : [])]) {
+    const tokens = (w as { tokens?: unknown }).tokens
+    const t = Array.isArray(tokens) ? (tokens.find((x) => (x as { mint?: unknown }).mint === mint) as { decimals?: unknown } | undefined) : undefined
+    if (typeof t?.decimals === "number" && Number.isInteger(t.decimals) && t.decimals >= 0) return t.decimals
+  }
+  return undefined
+}
+
 export function holdingFrom(result: unknown, wallet: string, mint: string): { amountRaw: bigint; decimals: number } | "none" | "unreadable" {
   const body = result as { embedded?: unknown; tee?: unknown } | undefined
   if (!Array.isArray(body?.embedded)) return "unreadable"

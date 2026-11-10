@@ -242,3 +242,24 @@ test("a wallet stopped outside the Candle Harness, then stopped in it: the Candl
   expect(w.all()).toEqual([])
   expect(w.gone(a)).toBe("retired")
 })
+
+test("a stopped Hood wallet is kept across a core start, matched in any case, and never sent to the Solana chain read", async () => {
+  const HOOD = "0xAbCdEf0123456789aBcDeF0123456789abCDef01"
+  const read: string[] = []
+  const c = await startTestCore(
+    { chainBalance: async (address: string) => (read.push(address), { error: "not read in tests", readAt: Date.now() }) },
+    { before: (p) => void Bun.write(p.stoppedWallets, JSON.stringify({ stopped: [{ address: HOOD, label: "hood-desk", agent: "momentum", at: "2026-11-01T00:00:00.000Z", confirmed: true }, { address: TEE, at: "2026-11-01T00:00:00.000Z", confirmed: true }] })) },
+  )
+  cores.push(c)
+  // Loaded from the file a past core left: the 0x wallet is still there.
+  const kept = new StoppedWallets({ file: c.p.stoppedWallets })
+  await kept.load()
+  expect(kept.all().map((w) => w.address)).toEqual([HOOD, TEE])
+  expect(kept.gone(HOOD.toLowerCase())).toBe("stopped")
+  const view = await c.view()
+  await view.request("subscribe", { topics: ["portfolio"] })
+  await until(() => read.includes(TEE))
+  await until(() => latest<PortfolioView>(view, "portfolio")?.wallets.some((w) => w.address === HOOD && w.balanceError !== undefined) === true)
+  expect(latest<PortfolioView>(view, "portfolio")!.wallets.find((w) => w.address === HOOD)).toMatchObject({ stopped: true, balanceError: "Hood balances aren't read yet" })
+  expect(read).not.toContain(HOOD)
+})

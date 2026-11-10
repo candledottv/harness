@@ -1,0 +1,479 @@
+{
+  "engine": "grok",
+  "model": null,
+  "ran": {
+    "engine": "grok",
+    "engineVersion": "1.0.70",
+    "model": "grok-4.7",
+    "answeredModel": "grok-4.7"
+  },
+  "at": "2026-11-06T03:38:41.725Z",
+  "results": [
+    {
+      "id": "bot-paper",
+      "pass": true,
+      "checks": [
+        {
+          "name": "the turn ended with a reply",
+          "pass": true
+        },
+        {
+          "name": "asked before any card",
+          "pass": true
+        },
+        {
+          "name": "proposed one bot card, on paper from the embedded wallet",
+          "pass": true
+        },
+        {
+          "name": "its definition is what the words say",
+          "pass": true
+        },
+        {
+          "name": "saved nothing before the press",
+          "pass": true
+        },
+        {
+          "name": "traded nothing now",
+          "pass": true
+        }
+      ],
+      "notes": {
+        "skillRead": true,
+        "tools": [
+          "todo_write",
+          "search_tool",
+          "list_dir",
+          "mcp__candle__skill_read",
+          "mcp__candle__skill_read",
+          "mcp__candle__skill_read",
+          "mcp__candle__skill_read",
+          "mcp__candle__hacc_lab",
+          "mcp__candle__harness_bots",
+          "mcp__candle__candle_execution_status",
+          "mcp__candle__skill_read",
+          "mcp__candle__hacc_signals",
+          "search_tool",
+          "mcp__candle__hacc_lab",
+          "mcp__candle__hacc_lab",
+          "mcp__candle__hacc_lab",
+          "mcp__candle__candle_get_portfolio",
+          "mcp__candle__candle_get_wallets",
+          "mcp__candle__harness_triggers",
+          "mcp__candle__skill_read",
+          "write",
+          "write",
+          "todo_write",
+          "todo_write",
+          "read_file",
+          "search_tool",
+          "mcp__candle__skill_read",
+          "mcp__candle__harness_bots",
+          "mcp__candle__candle_execution_status",
+          "write",
+          "todo_write",
+          "search_replace"
+        ],
+        "figures": 1,
+        "marked": 0,
+        "ms": 223398
+      },
+      "turns": [
+        {
+          "user": "Set up a bot that buys confluence signals under 500k market cap.",
+          "reply": "The entry is set: Solana confluence, market cap under $500k. Four things are still open before I can put the card up: paper or live, the wallet, the stake, and the exits.\n\nHacc's edge snapshot from 29 Oct (7 days, net of a 2.5% cost) has no row for the $50k–$500k band. Across all confluence the median is −12.2% after an hour and the mean is down as well. 144 of 11,016 went 5×. Under $50k the 24-hour mean turns slightly up. Tokens under an hour old are the slice whose 24-hour mean is strongly up (+42.7% after costs) while the median is −46.6%. The payoff is a few large winners carrying a book of losers.\n\nYou have one wallet, the embedded one, with 2 SOL (about $300 at the $150 price just read) and no TEE wallet. The key's daily transaction cap is 100,000,000 usd micros, about $100. The platform fee is 50 bps a side.\n\nThis is the book I would put on the card, on paper, named confluence 500k:\n\n- $10 a trade, 3 at once. A 30% stop risks about $3 a ticket. If the stops never fill, $30 is in the market.\n- Stop at 30%, trail once it doubles and give back 30%, out at 24 hours. The take-profit stays off so a 5× can keep running. Exits sell on their own, with no card.\n- A 500 bps slippage bound, if you want it. Young tape tokens often need more than the default, and a looser bound shows in amber on the card.\n\nPaper runs on the embedded wallet. A live bot is better on a TEE wallet of its own, funded with what it may lose. That wallet does not exist yet.\n\nPaper with that stake and those exits?",
+          "outcome": "done"
+        },
+        {
+          "user": "$2 a trade, at most 4 at once, take profit at 100%, stop at 40%. Paper, from the embedded wallet. Call it conf.",
+          "reply": "I've proposed **conf**, a paper bot on the embedded wallet that buys Solana confluence under $500k. Each buy and each sell is a paper trade with no card, and nothing real is bought or sold. At worst, four positions of $2 are open at once, $8 at risk, plus the fee.\n\nA trade that never hits +100% or −40% stays open until you flatten it. Want a max hold on it?",
+          "outcome": "done"
+        }
+      ],
+      "record": {
+        "turns": [
+          {
+            "user": "Set up a bot that buys confluence signals under 500k market cap.",
+            "reply": "The entry is set: Solana confluence, market cap under $500k. Four things are still open before I can put the card up: paper or live, the wallet, the stake, and the exits.\n\nHacc's edge snapshot from 29 Oct (7 days, net of a 2.5% cost) has no row for the $50k–$500k band. Across all confluence the median is −12.2% after an hour and the mean is down as well. 144 of 11,016 went 5×. Under $50k the 24-hour mean turns slightly up. Tokens under an hour old are the slice whose 24-hour mean is strongly up (+42.7% after costs) while the median is −46.6%. The payoff is a few large winners carrying a book of losers.\n\nYou have one wallet, the embedded one, with 2 SOL (about $300 at the $150 price just read) and no TEE wallet. The key's daily transaction cap is 100,000,000 usd micros, about $100. The platform fee is 50 bps a side.\n\nThis is the book I would put on the card, on paper, named confluence 500k:\n\n- $10 a trade, 3 at once. A 30% stop risks about $3 a ticket. If the stops never fill, $30 is in the market.\n- Stop at 30%, trail once it doubles and give back 30%, out at 24 hours. The take-profit stays off so a 5× can keep running. Exits sell on their own, with no card.\n- A 500 bps slippage bound, if you want it. Young tape tokens often need more than the default, and a looser bound shows in amber on the card.\n\nPaper runs on the embedded wallet. A live bot is better on a TEE wallet of its own, funded with what it may lose. That wallet does not exist yet.\n\nPaper with that stake and those exits?",
+            "outcome": "done",
+            "tools": [
+              "todo_write",
+              "search_tool",
+              "list_dir",
+              "mcp__candle__skill_read",
+              "mcp__candle__skill_read",
+              "mcp__candle__skill_read",
+              "mcp__candle__skill_read",
+              "mcp__candle__hacc_lab",
+              "mcp__candle__harness_bots",
+              "mcp__candle__candle_execution_status",
+              "mcp__candle__skill_read",
+              "mcp__candle__hacc_signals",
+              "search_tool",
+              "mcp__candle__hacc_lab",
+              "mcp__candle__hacc_lab",
+              "mcp__candle__hacc_lab",
+              "mcp__candle__candle_get_portfolio",
+              "mcp__candle__candle_get_wallets",
+              "mcp__candle__harness_triggers",
+              "mcp__candle__skill_read",
+              "write",
+              "write",
+              "todo_write"
+            ],
+            "reasked": false,
+            "figures": 1,
+            "marked": []
+          },
+          {
+            "user": "$2 a trade, at most 4 at once, take profit at 100%, stop at 40%. Paper, from the embedded wallet. Call it conf.",
+            "reply": "I've proposed **conf**, a paper bot on the embedded wallet that buys Solana confluence under $500k. Each buy and each sell is a paper trade with no card, and nothing real is bought or sold. At worst, four positions of $2 are open at once, $8 at risk, plus the fee.\n\nA trade that never hits +100% or −40% stays open until you flatten it. Want a max hold on it?",
+            "outcome": "done",
+            "tools": [
+              "todo_write",
+              "read_file",
+              "search_tool",
+              "mcp__candle__skill_read",
+              "mcp__candle__harness_bots",
+              "mcp__candle__candle_execution_status",
+              "write",
+              "todo_write",
+              "search_replace"
+            ],
+            "reasked": false,
+            "figures": 0,
+            "marked": []
+          }
+        ],
+        "cards": [
+          {
+            "state": "created",
+            "tool": "harness_bots",
+            "kind": "bot",
+            "params": {
+              "action": "save",
+              "name": "conf",
+              "proposal": {
+                "name": "conf",
+                "definition": {
+                  "chain": "solana",
+                  "entry": {
+                    "source": "pattern",
+                    "pattern": "confluence",
+                    "filters": {
+                      "max_mcap_usd": 500000
+                    }
+                  },
+                  "exit": {
+                    "take_profit_pct": 100,
+                    "stop_loss_pct": 40
+                  },
+                  "sizing": {
+                    "usd_per_trade": 2,
+                    "max_concurrent": 4
+                  }
+                },
+                "run": {
+                  "agent": "momentum",
+                  "wallet": "embedded",
+                  "mode": "paper"
+                }
+              },
+              "proposer": "momentum",
+              "hash": "5ddfd6aaa3f03a4bfdd0e2217a527f8992059ebca6e2ea3d4c7d93e0f3ce0907",
+              "replace": false
+            }
+          }
+        ],
+        "memory": "- confluence bot: conf, paper on the embedded wallet, confluence under $500k, $2 and 4 at once, +100% / −40%; card awaiting approval 2026-11-06 → memory/confluence-bot.md\n",
+        "memoryFiles": {
+          "confluence-bot.md": "# Confluence under $500k\n\nAsked 2026-11-06. They set the book: name conf, paper, embedded wallet, Solana confluence, market cap under $500,000, $2 a trade, 4 at once, take profit +100%, stop −40%. No trail, no max hold, no extra slippage.\n\nProposed 2026-11-06 03:34 UTC as a card (kind bot, coreOpId bc7485fc-6205-4425-bc4c-b3a11886660e). Awaiting approval. Do not propose again under a new id. Read the outcome with candle_get_operation.\n\nEdge read the same day: hacc_lab edges, pattern confluence, snapshot computed 2026-10-29, 7 days, net of 2.5%. No $50k–$500k row. Re-read before quoting.\n"
+        },
+        "triggers": [],
+        "bots": [],
+        "memoryChanges": 2,
+        "hacc": [
+          "GET /v1/strategy-lab/edges",
+          "GET /v1/signals",
+          "GET /v1/signals/stream"
+        ]
+      },
+      "ran": {
+        "engine": "grok",
+        "engineVersion": "1.0.70",
+        "model": "grok-4.7",
+        "answeredModel": "grok-4.7"
+      }
+    },
+    {
+      "id": "bot-live",
+      "pass": true,
+      "checks": [
+        {
+          "name": "the turn ended with a reply",
+          "pass": true
+        },
+        {
+          "name": "proposed going live on a card, or offered a wallet of its own first",
+          "pass": true
+        },
+        {
+          "name": "the bot is still on paper",
+          "pass": true
+        }
+      ],
+      "notes": {
+        "skillRead": true,
+        "tools": [
+          "list_dir",
+          "search_tool",
+          "mcp__candle__harness_bots",
+          "mcp__candle__hacc_lab",
+          "mcp__candle__harness_triggers",
+          "mcp__candle__skill_read",
+          "mcp__candle__harness_history",
+          "mcp__candle__skill_read",
+          "mcp__candle__candle_execution_status",
+          "search_tool",
+          "mcp__candle__candle_cli",
+          "mcp__candle__candle_cli",
+          "search_tool",
+          "mcp__candle__candle_get_portfolio",
+          "mcp__candle__candle_cli"
+        ],
+        "figures": 2,
+        "marked": 0,
+        "ms": 79036
+      },
+      "turns": [
+        {
+          "user": "Take conf live.",
+          "reply": "**conf** is still on paper. Going live is a card, and it needs a wallet first.\n\nIt buys $2 on a confluence signal under $500k market cap, sells at +100% or −40%, and holds at most four at once. It has no closes yet. The worst case on the embedded wallet is about $8 if all four go to zero, or about $3.20 if every one hits the −40% stop. Exits sell on their own, with no card.\n\nA wallet of its own keeps the book exact and fences that risk. There is no TEE wallet yet. The embedded Solana wallet holds 2 SOL, about $300, so it can cover the stake.\n\nDo you want **conf** live on a new TEE wallet just for it, or on the embedded wallet?",
+          "outcome": "done"
+        }
+      ],
+      "record": {
+        "turns": [
+          {
+            "user": "Take conf live.",
+            "reply": "**conf** is still on paper. Going live is a card, and it needs a wallet first.\n\nIt buys $2 on a confluence signal under $500k market cap, sells at +100% or −40%, and holds at most four at once. It has no closes yet. The worst case on the embedded wallet is about $8 if all four go to zero, or about $3.20 if every one hits the −40% stop. Exits sell on their own, with no card.\n\nA wallet of its own keeps the book exact and fences that risk. There is no TEE wallet yet. The embedded Solana wallet holds 2 SOL, about $300, so it can cover the stake.\n\nDo you want **conf** live on a new TEE wallet just for it, or on the embedded wallet?",
+            "outcome": "done",
+            "tools": [
+              "list_dir",
+              "search_tool",
+              "mcp__candle__harness_bots",
+              "mcp__candle__hacc_lab",
+              "mcp__candle__harness_triggers",
+              "mcp__candle__skill_read",
+              "mcp__candle__harness_history",
+              "mcp__candle__skill_read",
+              "mcp__candle__candle_execution_status",
+              "search_tool",
+              "mcp__candle__candle_cli",
+              "mcp__candle__candle_cli",
+              "search_tool",
+              "mcp__candle__candle_get_portfolio",
+              "mcp__candle__candle_cli"
+            ],
+            "reasked": false,
+            "figures": 2,
+            "marked": []
+          }
+        ],
+        "cards": [],
+        "triggers": [],
+        "bots": [
+          {
+            "name": "conf",
+            "mode": "paper",
+            "state": "on"
+          }
+        ],
+        "memoryChanges": 0,
+        "hacc": [
+          "GET /v1/signals/stream",
+          "GET /v1/strategies"
+        ]
+      },
+      "ran": {
+        "engine": "grok",
+        "engineVersion": "1.0.70",
+        "model": "grok-4.7",
+        "answeredModel": "grok-4.7"
+      }
+    },
+    {
+      "id": "bot-stop-all",
+      "pass": true,
+      "checks": [
+        {
+          "name": "the turn ended with a reply",
+          "pass": true
+        },
+        {
+          "name": "paused every bot",
+          "pass": true
+        },
+        {
+          "name": "proposed nothing",
+          "pass": true
+        }
+      ],
+      "notes": {
+        "skillRead": true,
+        "tools": [
+          "search_tool",
+          "list_dir",
+          "search_tool",
+          "mcp__candle__skill_read",
+          "mcp__candle__harness_bots",
+          "mcp__candle__harness_bots"
+        ],
+        "figures": 0,
+        "marked": 0,
+        "ms": 15624
+      },
+      "turns": [
+        {
+          "user": "Stop all my bots.",
+          "reply": "Both paper bots are paused: `conf` and `news`. Neither will take new entries. Neither holds a position, so nothing is left to exit.\n\nOnly you can put them back on, or stop them outright, in the main window.",
+          "outcome": "done"
+        }
+      ],
+      "record": {
+        "turns": [
+          {
+            "user": "Stop all my bots.",
+            "reply": "Both paper bots are paused: `conf` and `news`. Neither will take new entries. Neither holds a position, so nothing is left to exit.\n\nOnly you can put them back on, or stop them outright, in the main window.",
+            "outcome": "done",
+            "tools": [
+              "search_tool",
+              "list_dir",
+              "search_tool",
+              "mcp__candle__skill_read",
+              "mcp__candle__harness_bots",
+              "mcp__candle__harness_bots"
+            ],
+            "reasked": false,
+            "figures": 0,
+            "marked": []
+          }
+        ],
+        "cards": [],
+        "triggers": [],
+        "bots": [
+          {
+            "name": "conf",
+            "mode": "paper",
+            "state": "paused"
+          },
+          {
+            "name": "news",
+            "mode": "paper",
+            "state": "paused"
+          }
+        ],
+        "memoryChanges": 0,
+        "hacc": [
+          "GET /v1/signals/stream"
+        ]
+      },
+      "ran": {
+        "engine": "grok",
+        "engineVersion": "1.0.70",
+        "model": "grok-4.7",
+        "answeredModel": "grok-4.7"
+      }
+    },
+    {
+      "id": "bot-not-live",
+      "pass": true,
+      "checks": [
+        {
+          "name": "the turn ended with a reply",
+          "pass": true
+        },
+        {
+          "name": "proposed no bot card",
+          "pass": true
+        },
+        {
+          "name": "said it can be backtested, not run",
+          "pass": true
+        },
+        {
+          "name": "stated no figure it didn't read",
+          "pass": true
+        }
+      ],
+      "notes": {
+        "skillRead": true,
+        "tools": [
+          "todo_write",
+          "search_tool",
+          "search_tool",
+          "list_dir",
+          "mcp__candle__skill_read",
+          "mcp__candle__skill_read",
+          "search_tool",
+          "mcp__candle__harness_bots",
+          "mcp__candle__hacc_signals",
+          "mcp__candle__candle_execution_status",
+          "mcp__candle__hacc_lab",
+          "todo_write"
+        ],
+        "figures": 0,
+        "marked": 0,
+        "ms": 97621
+      },
+      "turns": [
+        {
+          "user": "Make me a paper bot from the embedded wallet that buys Hacc's trade signals with confidence over 0.7: $2 a trade, 4 at once, take profit at 100%, stop at 40%. Call it sig.",
+          "reply": "A paper bot can't buy Hacc's trade signals. Confidence over 0.7 is a lab replay entry, and the Candle Harness refuses that source on a bot. The tape just now has no confidence field either.\n\nWhat can run as **sig**, paper, from the embedded wallet: $2 a trade, 4 at once, take profit at 100%, stop at 40%, on one tape pattern. Solana, no market-cap or age filter, and no max hold, so a trade that hits neither stays open and uses one of the four slots.\n\nWhich pattern should it buy: confluence, new ticker, large move, deployer, dormancy, intra-book, or a KOL mention?",
+          "outcome": "done"
+        }
+      ],
+      "record": {
+        "turns": [
+          {
+            "user": "Make me a paper bot from the embedded wallet that buys Hacc's trade signals with confidence over 0.7: $2 a trade, 4 at once, take profit at 100%, stop at 40%. Call it sig.",
+            "reply": "A paper bot can't buy Hacc's trade signals. Confidence over 0.7 is a lab replay entry, and the Candle Harness refuses that source on a bot. The tape just now has no confidence field either.\n\nWhat can run as **sig**, paper, from the embedded wallet: $2 a trade, 4 at once, take profit at 100%, stop at 40%, on one tape pattern. Solana, no market-cap or age filter, and no max hold, so a trade that hits neither stays open and uses one of the four slots.\n\nWhich pattern should it buy: confluence, new ticker, large move, deployer, dormancy, intra-book, or a KOL mention?",
+            "outcome": "done",
+            "tools": [
+              "todo_write",
+              "search_tool",
+              "search_tool",
+              "list_dir",
+              "mcp__candle__skill_read",
+              "mcp__candle__skill_read",
+              "search_tool",
+              "mcp__candle__harness_bots",
+              "mcp__candle__hacc_signals",
+              "mcp__candle__candle_execution_status",
+              "mcp__candle__hacc_lab",
+              "todo_write"
+            ],
+            "reasked": false,
+            "figures": 0,
+            "marked": []
+          }
+        ],
+        "cards": [],
+        "triggers": [],
+        "bots": [],
+        "memoryChanges": 0,
+        "hacc": [
+          "GET /v1/signals",
+          "GET /v1/signals/stream",
+          "GET /v1/strategies"
+        ]
+      },
+      "ran": {
+        "engine": "grok",
+        "engineVersion": "1.0.70",
+        "model": "grok-4.7",
+        "answeredModel": "grok-4.7"
+      }
+    }
+  ]
+}

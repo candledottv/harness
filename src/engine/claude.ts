@@ -22,6 +22,8 @@ import { DEFAULT_TOOLS, shellFor, type ToolSettings, toolAllowed } from "./tools
 
 /** `--restricted` arrived in 2.1.310. */
 export const MIN_CLAUDE_CODE = "2.1.310"
+/** The newest version its holds were checked on; a newer major version is said, never blocked. */
+export const CHECKED_CLAUDE_CODE = "2.1.321"
 
 /** The research set; the shell is the agent's setting, off unless it's turned on. */
 export const CLAUDE_TOOLS = ["WebSearch", "WebFetch", "Read", "Write", "Edit"]
@@ -171,6 +173,7 @@ export function claudeEngine(bin: string): Engine {
     id: "claude-code",
     label: "Claude Code",
     minVersion: MIN_CLAUDE_CODE,
+    checkedVersion: CHECKED_CLAUDE_CODE,
     capabilities: () => ({ webSearch: true, webFetch: true, files: "own", shellList: true, deltas: true }),
     check: async (env) => {
       const r = await readVersion(bin, [], env)

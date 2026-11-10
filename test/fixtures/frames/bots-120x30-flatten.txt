@@ -1,0 +1,62 @@
+ agent-a ▾  LIVE  today $12.00 / $100.00  P&L 24h +$3.40  ● 1 card waiting  ⚡ 4 triggers  3 bots        ctrl-x ×2 kill 
+ 1 Trade  2 Cockpit  3 Research  4 Bots  5 Build   settings ▾                                                           
+                                                                                                                        
+╭─ Bots · 2 on · 2 live ─────────────────╮ ╭─ conf · agent-a's ────────────────────────────────────────────────────────╮
+│ ● conf  live      +$3.86  2 open       │ │ Buys $2 when several tracked wallets buy the same token, under $500K      │
+│   agent-a · bot-conf                   │ │ market cap and under 1 hour old. Sells at +100%, at -40%, on a 20% fall   │
+│                                        │ │ from its peak once it's reached 1.5× what it paid, or after 24 hours. At  │
+│ ● fresh paper    ≈+$1.10  1 open       │ │ most 4 at once.                                                           │
+│   agent-b · embedded                   │ │ live · on since Jan 12 · pays from bot-conf                               │
+│                                        │ │                                                                           │
+│ ● woke  live      -$0.52  1 open       │ │ Flatten "conf"? It sells every open position now, at market, as its       │
+│   paused by agent-a at 05:02 · exits…  │ │ exits sell: no card. The bot stays on, so its next signal may buy again   │
+│                                        │ │ at once.                                                                  │
+│ ○ test1 live      -$1.10               │ │  flatten it    pause, then flatten    keep it                             │
+│   stopped by you, Jan 13               │ │                                                                           │
+│                                        │ │ open 2 of 4                                                               │
+│                                        │ │ BONKX   -10.0% -40% ├─────────●──┼───────────────────────────────┤ +100%  │
+│                                        │ │        -$0.20 on $2.00 · 25m of 24h                                       │
+╰─ ⇱ ────────────────────────────────────╯ ╰─ ⇱ ─────────────────────────────────────────────────────────── ↓ 13 more ─╯
+                                                                                                                        
+╭─ agent-a ─────────────────────────────────────────────────────────────────────────────────── Claude Code · sonnet ▾ ─╮
+│   Mint JupF…1111. Want a small buy?  ⧉                                                                               │
+│                                                                                                                      │
+│ 1 card waiting · ⏎ approves the highlighted one                                                                      │
+│ ▌ BUY 0.1 SOL of JUPF                                                                                           50s  │
+│ ▌ agent-a · pays from embedded · live · JupF…1111                                                                    │
+│ ▌  ⏎ approve    ctrl-n reject    ctrl-o details                                                                      │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+                                                                                                                        
+› type a command or ask the agent                                                ⏎ approve   ctrl-k palette    ? help   
+
+--- colours ---
+0: 6cb6ff/1f3654×11 0b0d10/3ddc84×6 ffffff/0e1115×1 959dab/0e1115×6 f6f8fb/0e1115×6 959dab/0e1115×10 ffffff/0e1115×2 959dab/0e1115×8 3ddc84/0e1115×6 ffffff/0e1115×2 f5a524/0e1115×16 ffffff/0e1115×1 6cb6ff/16263a×23 ffffff/0e1115×6 ff5c5c/3a1619×16
+1: ffffff/0b0d10×1 6cb6ff/0b0d10×7 ffffff/0b0d10×2 6cb6ff/0b0d10×9 ffffff/0b0d10×2 6cb6ff/0b0d10×10 ffffff/0b0d10×2 f6f8fb/0b0d10+9×6 ffffff/0b0d10×2 6cb6ff/0b0d10×7 ffffff/0b0d10×2 6cb6ff/16263a×12 ffffff/0b0d10×58
+2: ffffff/0b0d10×120
+3: 252a33/111419×2 b392f0/111419×22 252a33/111419×18 ffffff/0b0d10×1 252a33/111419×2 b392f0/111419×18 252a33/111419×57
+4: 252a33/111419×1 ffffff/111419×1 3ddc84/111419×2 f6f8fb/111419×6 3ddc84/111419×16 959dab/111419×8 ffffff/111419×7 252a33/111419×1 ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 dde2ea/111419×68 ffffff/111419×6 252a33/111419×1
+5: 252a33/111419×1 ffffff/111419×1 959dab/111419×20 ffffff/111419×19 252a33/111419×1 ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 dde2ea/111419×71 ffffff/111419×3 252a33/111419×1
+6: 252a33/111419×1 ffffff/111419×40 252a33/111419×1 ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 dde2ea/111419×72 ffffff/111419×2 252a33/111419×1
+7: 252a33/111419×1 ffffff/111419×1 3ddc84/111419×2 f6f8fb/111419×6 959dab/111419×7 3ddc84/111419×9 959dab/111419×8 ffffff/111419×7 252a33/111419×1 ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 dde2ea/111419×15 ffffff/111419×59 252a33/111419×1
+8: 252a33/111419×1 ffffff/111419×1 959dab/111419×20 ffffff/111419×19 252a33/111419×1 ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 3ddc84/111419×4 959dab/111419×39 ffffff/111419×31 252a33/111419×1
+9: 252a33/111419×1 ffffff/111419×40 252a33/111419×1 ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×75 252a33/111419×1
+10: 252a33/111419×1 ffffff/111419×1 f5a524/111419×2 f6f8fb/111419×6 3ddc84/111419×7 ff5c5c/111419×9 959dab/111419×8 ffffff/111419×7 252a33/111419×1 ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 f5a524/111419×67 ffffff/111419×7 252a33/111419×1
+11: 252a33/111419×1 ffffff/111419×1 f5a524/111419×37 ffffff/111419×2 252a33/111419×1 ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 f5a524/111419×71 ffffff/111419×3 252a33/111419×1
+12: 252a33/111419×1 ffffff/111419×40 252a33/111419×1 ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 f5a524/111419×8 ffffff/111419×66 252a33/111419×1
+13: 252a33/111419×1 ffffff/111419×1 959dab/111419×8 3ddc84/111419×7 ff5c5c/111419×9 959dab/111419×8 ffffff/111419×7 252a33/111419×1 ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 0b0d10/6cb6ff×12 dde2ea/111419×2 0b0d10/6cb6ff×21 dde2ea/111419×2 6cb6ff/16263a×9 ffffff/111419×28 252a33/111419×1
+14: 252a33/111419×1 ffffff/111419×1 959dab/111419×24 ffffff/111419×15 252a33/111419×1 ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×75 252a33/111419×1
+15: 252a33/111419×1 ffffff/111419×40 252a33/111419×1 ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 b392f0/111419×11 ffffff/111419×63 252a33/111419×1
+16: 252a33/111419×1 ffffff/111419×40 252a33/111419×1 ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 f6f8fb/111419×7 ff5c5c/111419×8 959dab/111419×5 252a33/111419×10 ff5c5c/111419×1 252a33/111419×2 dde2ea/111419×1 252a33/111419×32 959dab/111419×6 ffffff/111419×2 252a33/111419×1
+17: 252a33/111419×1 ffffff/111419×40 252a33/111419×1 ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 959dab/111419×35 ffffff/111419×39 252a33/111419×1
+18: 252a33/111419×2 6cb6ff/16263a×3 252a33/111419×37 ffffff/0b0d10×1 252a33/111419×2 6cb6ff/16263a×3 252a33/111419×59 959dab/111419×11 252a33/111419×2
+19: ffffff/0b0d10×120
+20: 32fe9f/111419×2 b392f0/111419×9 32fe9f/111419×83 6cb6ff/16263a×24 32fe9f/111419×2
+21: 32fe9f/111419×1 ffffff/111419×1 dde2ea/111419×7 f6f8fb/111419×9 dde2ea/111419×19 959dab/111419×1 6cb6ff/16263a×3 ffffff/111419×78 32fe9f/111419×1
+22: 32fe9f/111419×1 ffffff/111419×118 32fe9f/111419×1
+23: 32fe9f/111419×1 ffffff/111419×1 959dab/111419×47 ffffff/111419×70 32fe9f/111419×1
+24: 32fe9f/111419×1 ffffff/111419×1 f5a524/111419×2 f6f8fb/111419×19 dde2ea/111419×91 f5a524/111419×3 ffffff/111419×2 32fe9f/111419×1
+25: 32fe9f/111419×1 ffffff/111419×1 f5a524/111419×2 959dab/111419×47 ffffff/111419×68 32fe9f/111419×1
+26: 32fe9f/111419×1 ffffff/111419×1 f5a524/111419×2 0b0d10/6cb6ff×11 dde2ea/111419×2 6cb6ff/16263a×15 dde2ea/111419×2 6cb6ff/16263a×16 ffffff/111419×69 32fe9f/111419×1
+27: 32fe9f/111419×120
+28: 959dab/0b0d10×1 ffffff/0b0d10×119
+29: f6f8fb/0e1115×2 959dab/0e1115×31 ffffff/0e1115×48 dde2ea/0e1115×1 959dab/0e1115×10 6cb6ff/16263a×16 959dab/0e1115×2 6cb6ff/16263a×8 959dab/0e1115×2

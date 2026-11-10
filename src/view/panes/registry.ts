@@ -7,6 +7,8 @@ import type { PortfolioView } from "../../core/portfolio-view"
 import { pinnedView, type TokenView } from "../../core/token-watch"
 import type { ActivityEntry } from "../../core/trade-log"
 import type { PaneId, Rect } from "../layout"
+import { isTokenPane, type TokenPane } from "../../shared/panes"
+import { pinPane } from "../../core/view-state"
 import type { CoreView } from "../store"
 import { C, fit } from "../theme"
 import { activityLines } from "./activity"
@@ -20,7 +22,10 @@ import { type SignalsChipId, signalLine, signalsChips, signalsLines, type Signal
 import { journalHead, journalKey, journalLines, type JournalSearch } from "./journal"
 import { checkLines, mentionLines, researchTitle, tokenSignalLines, traderLines } from "./research"
 import { tokenLines } from "./token"
+import { countWords, runnableCards, triggersPaneLines } from "../triggers-view"
+import { type BotConfirm, botDetailLines, botNamed, botsListLines, botsTitle, botTitle, everyBot } from "../bots-view"
 import { awayLines, awayTitle } from "./away"
+import { type BuildFolder, type DaemonView, folderLines, folderTitle, testLines, testTitle } from "../build-view"
 import { emptyWallets, type WalletsFind, grouping, insideWallets, walletLines, walletsFound, walletsHead, walletsTitle } from "./wallets"
 
 /**
@@ -32,8 +37,8 @@ export type Order = "list" | "tail" | "head"
 
 export interface PaneDef {
   id: PaneId
-  /** The agent pane draws its own conversation and cards; the rest draw framed lines. */
-  kind: "agent" | "lines"
+  /** The agent pane draws its own conversation and cards, the Build pane a terminal; the rest draw framed lines. */
+  kind: "agent" | "terminal" | "lines"
   /** Whether it fills what it's given (the agent, the token pane's chart) rather than asking for the rows its lines need. `at` is the tab it's on. */
   fills: (view: CoreView, at?: string) => boolean
   /** Whether it scrolls: every pane does. */
@@ -53,10 +58,14 @@ export interface PaneDef {
 
 const lines = (id: PaneId, over: Partial<PaneDef> = {}): PaneDef => ({ id, kind: "lines", fills: () => false, scrolls: true, order: "list", follows: false, pops: true, scoped: true, compact: false, minWidth: 24, ...over })
 
+const tokenPane = (id: TokenPane): PaneDef => lines(id, { fills: (view, at) => !!tokenShown(view, at, id), follows: true, scoped: false })
+
 export const PANES: Readonly<Record<PaneId, PaneDef>> = {
   agent: { id: "agent", kind: "agent", fills: () => true, scrolls: true, order: "tail", follows: false, pops: false, scoped: false, compact: false, minWidth: 36 },
   // A followed token's chart fills what it's given; before a token, Candle's trending list is lines like any other.
-  token: lines("token", { fills: (view, at) => !!tokenShown(view, at), follows: true, scoped: false }),
+  token: tokenPane("token"),
+  "token:2": tokenPane("token:2"),
+  "token:3": tokenPane("token:3"),
   positions: lines("positions"),
   wallets: lines("wallets", { compact: true }),
   activity: lines("activity", { order: "tail" }),
@@ -84,6 +93,16 @@ export const PANES: Readonly<Record<PaneId, PaneDef>> = {
   lists: lines("lists", { scoped: false, minWidth: 32 }),
   // While you were away: the last gap's summary, every section.
   away: lines("away", { scoped: false }),
+  // The triggers, two lines each, and a chip to the overlay where one is switched off, removed or run again.
+  triggers: lines("triggers", { scoped: false }),
+  // Rules bots: the list to pick from, and the picked bot in full with its chips.
+  bots: lines("bots", { scoped: false, minWidth: 32 }),
+  bot: lines("bot", { scoped: false }),
+  // The Build tab: the person's own coding harness in a terminal, which fills what it's given and stays in this view,
+  // and beside it the bots folder and the paper test running.
+  build: { id: "build", kind: "terminal", fills: () => true, scrolls: false, order: "list", follows: false, pops: false, scoped: false, compact: false, minWidth: 40 },
+  "build-folder": lines("build-folder", { scoped: false }),
+  "build-test": lines("build-test", { scoped: false }),
 }
 
 /** What the list pane shows: one of Candle's lists, or Hacc's tape, in this order round its ◂ ▸ chips. */
@@ -110,11 +129,12 @@ export function perpsLines(width: number): Line[] {
 }
 
 /**
- * What the token pane on tab `at` shows: the token it's pinned on, else the link, and
- * how it got there; undefined before any token. A pin whose token the core hasn't read yet shows its name.
+ * What a token pane on tab `at` shows (its first, unless `pane` names another): the token it's pinned on,
+ * else the link, and how it got there; undefined before any token. A pin whose token the core hasn't read
+ * yet shows its name.
  */
-export function tokenShown(view: CoreView, at: string | undefined): { market: TokenView; how: "pinned" | "you" | "agent" } | undefined {
-  const pin = at === undefined ? undefined : view.views?.pins.find((p) => p.at === at)
+export function tokenShown(view: CoreView, at: string | undefined, pane: TokenPane = "token"): { market: TokenView; how: "pinned" | "you" | "agent" } | undefined {
+  const pin = at === undefined ? undefined : view.views?.pins.find((p) => p.at === at && pinPane(p) === pane)
   if (pin) {
     const base: TokenView = view.market ?? { followed: null, market: null, check: null, samples: [], history: [], historyRead: null, change1h: null, trending: null }
     const market = pinnedView(base, pin.mint) ?? { ...base, followed: { mint: pin.mint, chain: pin.chain, ...(pin.symbol ? { symbol: pin.symbol } : {}), since: 0 }, market: null, check: null, samples: [], history: [], historyRead: null, change1h: null }
@@ -176,6 +196,14 @@ export interface PaneLinesInput {
   lists?: ListSource
   /** The Wallets pane's open group and its search: this view's own. */
   wallets?: { open?: string; find?: WalletsFind }
+  /** The bot the Bots list's highlight rests on, by name; the first where none. */
+  bot?: string
+  /** A flatten or remove asking once, in the picked bot's pane. */
+  botConfirm?: BotConfirm
+  /** The bots folder as this view read it, for the Build tab; unset before the Build pane's first open. */
+  buildFolder?: BuildFolder
+  /** The daemons a harness left behind, each with a stop chip in the bots folder's pane. */
+  daemons?: readonly DaemonView[]
 }
 
 export interface PaneLines {
@@ -204,8 +232,10 @@ function body(id: Exclude<PaneId, "agent">, p: PaneLinesInput): PaneLines {
     return words ? ` · ${words}` : ""
   }
   switch (id) {
-    case "token": {
-      const shown = tokenShown(whole, p.at)
+    case "token":
+    case "token:2":
+    case "token:3": {
+      const shown = tokenShown(whole, p.at, id)
       const f = shown?.market.followed
       // A pin on the linked token is read as the linked one.
       const read = shown?.how === "pinned" && f?.mint !== whole.market?.followed?.mint ? "pins" : "linked"
@@ -237,7 +267,7 @@ function body(id: Exclude<PaneId, "agent">, p: PaneLinesInput): PaneLines {
     case "activity": {
       // Before Activity's first line, Hacc's tape where no Signals pane on the tab shows it already.
       const tape = !activityTape(whole, p.panes ?? []) ? [] : (whole.signals?.rows ?? []).slice(-ACTIVITY_TAPE).map((r) => signalLine(r, width, now))
-      return { title: tape.length && view.activity.every((e) => e.hidden) ? "Activity · Hacc's tape" : "Activity", lines: activityLines(view.activity, width, now, tape) }
+      return { title: tape.length && view.activity.every((e) => e.hidden) ? "Activity · Hacc's tape" : "Activity", lines: activityLines(view.activity, width, now, tape, runnableCards(whole.triggers)) }
     }
     case "feed":
     case "new":
@@ -288,6 +318,24 @@ function body(id: Exclude<PaneId, "agent">, p: PaneLinesInput): PaneLines {
     // While you were away: the core's `away` topic.
     case "away":
       return { title: awayTitle(whole.away, width), lines: awayLines(whole.away, { width, now, ...(shownInFull ? { shownInFull } : {}) }) }
+    // The triggers: the core's `triggers` topic.
+    case "triggers":
+      return { title: whole.triggers?.triggers.length && !whole.triggers.gate ? `Triggers · ${countWords(whole.triggers)}` : "Triggers", lines: triggersPaneLines(whole.triggers, width, now) }
+    // Rules bots: the core's `bots` topic, each with its book.
+    case "bots":
+      return { title: botsTitle(whole.bots, whole.status?.paused === true), lines: botsListLines(whole.bots, width, whole.status?.paused === true) }
+    case "bot": {
+      const b = botNamed(whole.bots, p.bot) ?? everyBot(whole.bots)[0]
+      return { title: botTitle(b), lines: botDetailLines(b, b ? whole.bots?.books?.[b.name] : undefined, { width, now, killed: whole.status?.paused === true, ...(p.botConfirm ? { confirm: p.botConfirm } : {}), ...(whole.bots ? { topic: whole.bots } : {}) }) }
+    }
+    // The Build tab's side column: the bots folder, and the paper test running.
+    case "build-folder":
+      return { title: folderTitle(p.buildFolder), lines: folderLines({ folder: p.buildFolder, topic: whole.bots, daemons: p.daemons ?? [], width, now }) }
+    case "build-test":
+      return { title: testTitle(whole.bots), lines: testLines({ topic: whole.bots, width, now }) }
+    // The Build pane is a terminal, drawn by the tab itself; on its own (popped, or the palette's overlay) it says so.
+    case "build":
+      return { title: "Build", lines: [line("Your coding harness runs in the Build tab.", C.dim)] }
   }
 }
 
@@ -310,8 +358,8 @@ export function borderChips(id: PaneId, p: Pick<PaneLinesInput, "only" | "signal
 /** The chip on a pane's top border, if it has one: whose positions, wallets or activity; which signals; or the token pane's pin. */
 export function borderChip(id: PaneId, p: Pick<PaneLinesInput, "only" | "signals" | "view" | "at"> & { width?: number }): string | undefined {
   if (id === "signals") return signalsChips(p.signals ?? {}, p.width).map((c) => c.text).join("    ")
-  if (id === "token") {
-    const shown = tokenShown(p.view, p.at)
+  if (isTokenPane(id)) {
+    const shown = tokenShown(p.view, p.at, id)
     return shown ? (shown.how === "pinned" ? "unpin" : "pin") : undefined
   }
   // The P&L window: its chip opens the menu that picks it.
@@ -333,7 +381,7 @@ export function paneLines(id: Exclude<PaneId, "agent">, p: PaneLinesInput): Pane
   const [name, ...more] = drawn.title.split(" · ")
   if (drawn.title.length <= room || more.length === 0) return drawn
   // The token pane drops how it got there rather than give its chart a row: its chip says pin or unpin.
-  if (id === "token") return { ...drawn, title: fit(drawn.title.length <= room ? drawn.title : [name, more[0]].join(" · "), room) }
+  if (isTokenPane(id)) return { ...drawn, title: fit(drawn.title.length <= room ? drawn.title : [name, more[0]].join(" · "), room) }
   // The moved line takes one of the pane's rows.
   const kept = p.rows === undefined ? drawn.lines : body(id, { ...p, rows: p.rows - 1 }).lines
   return { ...drawn, title: fit(name!, room), lines: [line(more.join(" · "), C.dim), ...kept] }

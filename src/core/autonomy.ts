@@ -140,6 +140,8 @@ export interface PayWallet {
   name: string
   kind: "embedded" | "tee"
   agents: string[]
+  /** A TEE wallet bound to its agent's key that Candle doesn't list as able to sign yet. */
+  cantSign?: true
 }
 
 /** One wallet on the `autonomy` topic. */
@@ -155,6 +157,8 @@ export interface AutonomyWallet {
   agents: string[]
   /** No agent here pays from it now: retired, swept or unbound. Its entry is kept, and applies to nothing. */
   gone?: true
+  /** Bound to its agent's key, but Candle doesn't list it as able to sign yet: nothing trades from it. */
+  cantSign?: true
   setAt?: string
   /**
    * What the person should read beside it: an agent's own Candle Harness limit that binds before the
@@ -284,7 +288,7 @@ export class AutonomyDesk {
 
   view(): AutonomyTopic {
     const { list, read } = this.deps.wallets()
-    const out: AutonomyWallet[] = list.map((w) => this.walletView(w.address, w.name, w.agents, w.kind))
+    const out: AutonomyWallet[] = list.map((w) => ({ ...this.walletView(w.address, w.name, w.agents, w.kind), ...(w.cantSign ? { cantSign: true as const } : {}) }))
     for (const e of this.deps.autonomy.all()) {
       if (!list.some((w) => w.address === e.wallet)) out.push({ ...this.walletView(e.wallet, e.name ?? e.wallet, []), ...(read ? { gone: true as const } : {}) })
     }

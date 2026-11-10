@@ -4,7 +4,8 @@ name: Release
 # pushed to candledottv/harness: the tests, the four binaries built with the tag's version, a smoke test,
 # SHA256SUMS and latest.json (scripts/build.ts --release), every file signed keyless with Sigstore as this
 # workflow on this tag, each signature checked again by cosign and by Candle's own `candle verify` (what
-# install.sh runs), install.sh run against the signed folder, then the tag's GitHub release.
+# install.sh runs), install.sh run against the signed folder, then the tag's GitHub release: made as a
+# draft, filled, and only then published.
 #
 # The identity a release is signed as is
 #   https://github.com/candledottv/harness/.github/workflows/release.yaml@refs/tags/v<version>
@@ -17,12 +18,22 @@ name: Release
 # `production` environment's reviewer gates only this workflow's own publish job; the signed folder is
 # also kept as a workflow artifact, which anyone with write access could publish by hand.
 #
-# Three jobs before the publish, so the release identity never sits beside the project's own code:
+# What the one-line install trusts beyond the signature: it fetches install.sh itself from the latest
+# release, unverified, and install.sh carries the pins. Replacing a published release's file needs only
+# contents: write on this repository, no tag and no signature. What stops that is the repository's
+# immutable releases setting, which this workflow is written for: the release is created as a draft, every
+# file is uploaded once, and it's published last, so a published release never changes and `latest` never
+# points at one with files missing. A second run on a tag that's already published fails; it replaces
+# nothing.
+#
+# Four jobs before the publish, so the release identity never sits beside the project's own code:
 #   build   runs the install, the typecheck, the tests and the build with read access only, and hands
 #           over the folder unsigned;
 #   sign    alone holds id-token: write. It runs no project code and installs no dependencies: it checks
 #           the folder against its SHA256SUMS and install.sh against the tagged commit's, signs with
-#           cosign, and verifies with cosign and the pinned candle;
+#           cosign, and verifies with cosign. Nothing downloaded is run there;
+#   verify  runs Candle's own `candle verify`, the check install.sh makes, over the signed folder, with
+#           read access only: the downloaded CLI never runs beside the release identity;
 #   install runs install.sh and the binary against the signed folder, with read access only.
 # A dependency that tampers with the build's own output is still signed: only review or a reproducible
 # build would catch that. What the split stops is code run in the build minting the release identity and
@@ -30,7 +41,7 @@ name: Release
 #
 # A manual run (workflow_dispatch) on a branch builds, signs and verifies, and publishes nothing: the
 # rehearsal. It signs as this workflow on its branch, which install.sh's pin doesn't accept, and the install
-# job is skipped. Started from a tag it would sign exactly as a release, so it's refused there.
+# job is skipped; the verify job still runs. Started from a tag it would sign exactly as a release, so it's refused there.
 #
 # Every third-party action is pinned to a full commit SHA, with its tag in a trailing comment: the sign
 # job holds id-token: write and signs what users install. Bun itself, and the runtime each binary embeds,
@@ -151,7 +162,7 @@ jobs:
           for f in candle-harness-darwin-arm64 candle-harness-darwin-x64 candle-harness-linux-arm64 candle-harness-linux-x64 install.sh SHA256SUMS latest.json; do
             cosign sign-blob --yes --new-bundle-format --bundle "${f}.sigstore.json" "${f}"
           done
-      - name: Verify with cosign and with Candle's candle verify
+      - name: Verify with cosign
         working-directory: release
         run: |
           # The exact identity this run signed as: a tag build's ends @refs/tags/v<version>, a rehearsal's
@@ -160,22 +171,6 @@ jobs:
           files="candle-harness-darwin-arm64 candle-harness-darwin-x64 candle-harness-linux-arm64 candle-harness-linux-x64 install.sh SHA256SUMS latest.json"
           for f in $files; do
             cosign verify-blob --new-bundle-format --bundle "${f}.sigstore.json" --certificate-identity "${identity}" --certificate-oidc-issuer "${ISSUER}" "${f}"
-          done
-          # Candle's CLI at the version install.sh pins, checked against install.sh's own SHA-256 for it and,
-          # by cosign, against Candle's signature as its release workflow on that tag, before it's trusted as
-          # a verifier. Then the same check install.sh makes, run by the same verifier users have.
-          cli_tag="$(sed -n "s/^CLI_TAG='\(.*\)'$/\1/p" ../source/install.sh)"
-          cli_identity="$(sed -n "s/^CLI_IDENTITY='\(.*\)'$/\1/p" ../source/install.sh)"
-          [ "${cli_identity}" = "https://github.com/candledottv/cli/.github/workflows/release.yaml@refs/tags/${cli_tag}" ] || { echo "install.sh's CLI_IDENTITY isn't Candle's release workflow on ${cli_tag}: ${cli_identity}"; exit 1; }
-          pin="$(sed -n "s/^    candle-linux-x64) echo '\([0-9a-f]*\)' ;;$/\1/p" ../source/install.sh)"
-          mkdir -p "${RUNNER_TEMP}/candle"
-          curl --proto '=https' -fsSL -o "${RUNNER_TEMP}/candle/candle" "https://github.com/candledottv/cli/releases/download/${cli_tag}/candle-linux-x64"
-          curl --proto '=https' -fsSL -o "${RUNNER_TEMP}/candle/candle.sigstore.json" "https://github.com/candledottv/cli/releases/download/${cli_tag}/candle-linux-x64.sigstore.json"
-          [ "$(sha256sum "${RUNNER_TEMP}/candle/candle" | awk '{print $1}')" = "$pin" ] || { echo "candle-linux-x64 at ${cli_tag} isn't the file install.sh pins"; exit 1; }
-          cosign verify-blob --new-bundle-format --bundle "${RUNNER_TEMP}/candle/candle.sigstore.json" --certificate-identity "${cli_identity}" --certificate-oidc-issuer "${ISSUER}" "${RUNNER_TEMP}/candle/candle"
-          chmod 755 "${RUNNER_TEMP}/candle/candle"
-          for f in $files; do
-            CANDLE_NO_UPDATE_NOTIFIER=1 "${RUNNER_TEMP}/candle/candle" verify "${f}" --bundle "${f}.sigstore.json" --identity "${identity}" --issuer "${ISSUER}"
           done
       - uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be # v2
         # For install.sh's last route, gh attestation verify, where there's neither candle nor cosign.
@@ -189,6 +184,51 @@ jobs:
           path: release
           if-no-files-found: error
           retention-days: 7
+
+  verify:
+    name: Verify with Candle's candle verify
+    # Runs on a release and on a rehearsal alike. It holds read access only: the CLI it downloads and runs
+    # can mint nothing and publish nothing.
+    needs: [build, sign]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      # The tagged commit, read and never run: install.sh's pins for Candle's CLI.
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+          path: source
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: release
+          path: release
+      - uses: sigstore/cosign-installer@398d4b0eeef1380460a10c8013a76f728fb906ac # v3
+        with:
+          cosign-release: "v2.5.2"
+      - name: Verify with Candle's candle verify
+        working-directory: release
+        run: |
+          set -euo pipefail
+          identity="https://github.com/${GITHUB_REPOSITORY}/.github/workflows/release.yaml@${GITHUB_REF}"
+          files="candle-harness-darwin-arm64 candle-harness-darwin-x64 candle-harness-linux-arm64 candle-harness-linux-x64 install.sh SHA256SUMS latest.json"
+          # Candle's CLI at the version install.sh pins, checked against install.sh's own SHA-256 for it and,
+          # by cosign, against Candle's signature as its release workflow on that tag, before it's trusted as
+          # a verifier. Then the same check install.sh makes, run by the same verifier users have.
+          cli_tag="$(sed -n "s/^CLI_TAG='\(.*\)'$/\1/p" ../source/install.sh)"
+          cli_identity="$(sed -n "s/^CLI_IDENTITY='\(.*\)'$/\1/p" ../source/install.sh)"
+          [ "${cli_identity}" = "https://github.com/candledottv/cli/.github/workflows/release.yaml@refs/tags/${cli_tag}" ] || { echo "install.sh's CLI_IDENTITY isn't Candle's release workflow on ${cli_tag}: ${cli_identity}"; exit 1; }
+          pin="$(sed -n "s/^    candle-linux-x64) echo '\([0-9a-f]*\)' ;;$/\1/p" ../source/install.sh)"
+          [ -n "${cli_tag}" ] && [ -n "${pin}" ] || { echo "install.sh names no CLI tag or no SHA-256 for candle-linux-x64"; exit 1; }
+          mkdir -p "${RUNNER_TEMP}/candle"
+          curl --proto '=https' -fsSL -o "${RUNNER_TEMP}/candle/candle" "https://github.com/candledottv/cli/releases/download/${cli_tag}/candle-linux-x64"
+          curl --proto '=https' -fsSL -o "${RUNNER_TEMP}/candle/candle.sigstore.json" "https://github.com/candledottv/cli/releases/download/${cli_tag}/candle-linux-x64.sigstore.json"
+          [ "$(sha256sum "${RUNNER_TEMP}/candle/candle" | awk '{print $1}')" = "$pin" ] || { echo "candle-linux-x64 at ${cli_tag} isn't the file install.sh pins"; exit 1; }
+          cosign verify-blob --new-bundle-format --bundle "${RUNNER_TEMP}/candle/candle.sigstore.json" --certificate-identity "${cli_identity}" --certificate-oidc-issuer "${ISSUER}" "${RUNNER_TEMP}/candle/candle"
+          chmod 755 "${RUNNER_TEMP}/candle/candle"
+          for f in $files; do
+            CANDLE_NO_UPDATE_NOTIFIER=1 "${RUNNER_TEMP}/candle/candle" verify "${f}" --bundle "${f}.sigstore.json" --identity "${identity}" --issuer "${ISSUER}"
+          done
 
   install:
     name: Check install.sh's pin, and install from the signed folder
@@ -217,7 +257,7 @@ jobs:
 
   publish:
     name: Publish the release
-    needs: [build, sign, install]
+    needs: [build, sign, verify, install]
     if: github.event_name == 'push' && github.repository == 'candledottv/harness'
     # The production environment waits for a reviewer before this job publishes. It gates this job only:
     # the tag ruleset is what decides who can make a release users will install.
@@ -241,5 +281,14 @@ jobs:
           set -euo pipefail
           # What the sign job signed is what's published: the artifact hop must not change a byte.
           sha256sum -c SHA256SUMS
-          gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --verify-tag --title "Candle Harness ${VERSION}" --generate-notes
-          gh release upload "$TAG" --clobber ./*
+          # A draft first, so nothing is published until every file is up: `latest` never names a release
+          # with files missing, and a published release is never written to again. A tag that already has
+          # a published release stops here; no file of it is replaced.
+          if gh release view "$TAG" --json isDraft --jq .isDraft > "${RUNNER_TEMP}/draft" 2>/dev/null; then
+            [ "$(cat "${RUNNER_TEMP}/draft")" = "true" ] || { echo "${TAG} is already published: a published release isn't changed. A fix ships as a new version."; exit 1; }
+            # A draft an earlier run left half filled: start it again, so each file is uploaded exactly once.
+            gh release delete "$TAG" --yes
+          fi
+          gh release create "$TAG" --draft --verify-tag --title "Candle Harness ${VERSION}" --generate-notes
+          gh release upload "$TAG" ./*
+          gh release edit "$TAG" --draft=false --latest

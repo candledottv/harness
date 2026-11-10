@@ -391,7 +391,7 @@ test("opened on a model deep in a long list, the presets still show at the top (
   const t = topic({ momentum: { engine: "pi", model: "openrouter/m300", from: "saved" } })
   const rows = pickerRows(t, { ...LISTS, pi: many }, "", "momentum")
   const index = pickable(rows).findIndex((r) => r.kind === "model" && r.current)
-  setup = await testRender(<EnginePicker agent="momentum" rows={rows} query="" index={index} width={80} height={24} onPick={() => {}} onPickPreset={() => {}} onScroll={() => {}} />, { width: 80, height: 24 })
+  setup = await testRender(<EnginePicker agent="momentum" rows={rows} query="" index={index} width={80} height={24} onPick={() => {}} onPickPreset={() => {}} onPickRunner={() => {}} onScroll={() => {}} />, { width: 80, height: 24 })
   await setup.renderOnce()
   const f = frame()
   expect(f).toContain("── preset ")

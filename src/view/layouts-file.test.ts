@@ -2,7 +2,8 @@
 // and read back as written. A bad file never stops the Candle Harness: the presets stand in.
 import { describe, expect, test } from "bun:test"
 import { AGENT_FIRST, COCKPIT, panesOf } from "./layout"
-import { allTabs, DEFAULT_TABS, HEADER, layoutNamed, layoutOf, layoutsText, neededWidth, parseLayouts } from "./layouts-file"
+import { allTabs, DEFAULT_TABS, EMPTY_FILE, HEADER, layoutNamed, layoutOf, layoutsText, neededWidth, parseLayouts, treeOf } from "./layouts-file"
+import { isTokenPane, openable } from "../shared/panes"
 
 const DESK = `tabs = [
   { name = "Trade", layout = "Agent-first" },
@@ -17,8 +18,11 @@ root = ["row",
 `
 
 describe("reading", () => {
-  test("no file, or an empty one: the eight tabs, each on its preset", () => {
-    expect(parseLayouts("")).toEqual({ tabs: [...DEFAULT_TABS], hidden: [], added: [], own: [], problems: [] })
+  test("no file, or an empty one: five tabs shown, each on its preset, and the other five a tick away", () => {
+    const f = parseLayouts("")
+    expect(f).toEqual(EMPTY_FILE)
+    expect(f.tabs.map((t) => t.name)).toEqual(["Trade", "Cockpit", "Research", "Bots", "Build"])
+    expect(allTabs(f).map((t) => `${t.shown ? "+" : "-"}${t.tab.name}`)).toEqual(["+Trade", "+Cockpit", "-Trending", "-Signals", "-P&L", "+Research", "-Journal", "-Perps", "+Bots", "+Build"])
     expect(DEFAULT_TABS).toEqual([
       { name: "Trade", layout: "Agent-first" },
       { name: "Cockpit", layout: "Cockpit" },
@@ -28,7 +32,13 @@ describe("reading", () => {
       { name: "Research", layout: "Research" },
       { name: "Journal", layout: "Journal" },
       { name: "Perps", layout: "Perps" },
+      { name: "Bots", layout: "Bots" },
+      { name: "Build", layout: "Build" },
     ])
+    // Written, a fresh install's file reads back as it was, nothing added.
+    const again = parseLayouts(layoutsText(f))
+    expect(again.added).toEqual([])
+    expect(allTabs(again)).toEqual(allTabs(f))
   })
 
   test("tabs and a layout of your own, as a tree of rows, columns and weighted panes", () => {
@@ -61,7 +71,8 @@ describe("reading", () => {
 
   test("a file that isn't TOML: named with its line, and the presets used", () => {
     const f = parseLayouts(`tabs = [\n  { name = "Trade", layout = Agent-first },\n]\n`)
-    expect(f.tabs).toEqual([...DEFAULT_TABS])
+    expect(f.tabs).toEqual(EMPTY_FILE.tabs)
+    expect(f.hidden).toEqual(EMPTY_FILE.hidden)
     expect(f.own).toEqual([])
     expect(f.problems).toHaveLength(1)
     expect(f.problems[0]).toMatch(/^layouts\.toml line 2 isn't valid TOML .*: the presets are used\.$/)
@@ -120,10 +131,10 @@ root = ["row", ["column", "token"]]
     // Tape keeps its place, after Trade. Cockpit's layout is Tape's, and Signals' is Watch's, so neither is added.
     expect(f.hidden).toEqual([
       { tab: { name: "Tape", layout: "Cockpit" }, at: 1 },
-      ...["Trending", "P&L", "Research", "Journal", "Perps"].map((name) => ({ tab: DEFAULT_TABS.find((d) => d.name === name)!, at: 2 })),
+      ...["Trending", "P&L", "Research", "Journal", "Perps", "Bots", "Build"].map((name) => ({ tab: DEFAULT_TABS.find((d) => d.name === name)!, at: 2 })),
     ])
-    expect(f.added).toEqual(["Trending", "P&L", "Research", "Journal", "Perps"])
-    expect(allTabs(f).map((t) => `${t.shown ? "+" : "-"}${t.tab.name}`)).toEqual(["+Trade", "-Tape", "+Watch", "-Trending", "-P&L", "-Research", "-Journal", "-Perps"])
+    expect(f.added).toEqual(["Trending", "P&L", "Research", "Journal", "Perps", "Bots", "Build"])
+    expect(allTabs(f).map((t) => `${t.shown ? "+" : "-"}${t.tab.name}`)).toEqual(["+Trade", "-Tape", "+Watch", "-Trending", "-P&L", "-Research", "-Journal", "-Perps", "-Bots", "-Build"])
     // Written, every tab is listed, the ticked off with shown = false, so nothing is added the next time.
     const text = layoutsText(f)
     expect(text).toContain(`{ name = "Tape", layout = "Cockpit", shown = false },\n  { name = "Watch", layout = "Signals" },\n  { name = "Trending", layout = "Trending", shown = false },`)
@@ -178,4 +189,15 @@ describe("writing", () => {
     expect(neededWidth(AGENT_FIRST.root)).toBeLessThanOrEqual(AGENT_FIRST.collapse.below)
     expect(neededWidth(COCKPIT.root)).toBeLessThanOrEqual(COCKPIT.collapse.below)
   })
+})
+
+test("a layout holds up to three token panes, by token, token:2 and token:3; the menu offers only the next", () => {
+  const two = treeOf(["row", "agent 40", "token 30", "token:2 30"], true, new Set())
+  expect(typeof two === "string" ? two : panesOf(two)).toEqual(["agent", "token", "token:2"])
+  expect(treeOf(["row", "token", "token:4"], true, new Set())).toContain("there's no pane called")
+  expect(treeOf(["row", "token:2", "token:2"], true, new Set())).toBe('"token:2" is in it twice')
+  expect(openable(["agent"]).filter(isTokenPane)).toEqual(["token"])
+  expect(openable(["agent", "token"]).filter(isTokenPane)).toEqual(["token:2"])
+  expect(openable(["agent", "token", "token:2"]).filter(isTokenPane)).toEqual(["token:3"])
+  expect(openable(["token", "token:2", "token:3"]).filter(isTokenPane)).toEqual([])
 })

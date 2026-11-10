@@ -21,7 +21,7 @@ describe("refusals", () => {
   test("a word given as the subcommand of a command that has none says to put it in args (help keys)", () => {
     expect(resolve("help", "keys")).toEqual({ ok: false, code: "NOT_IN_MAP", message: 'candle help has no subcommands: pass "keys" in args instead (candle help keys).' })
     expect(resolve("help", undefined, ["keys"])).toMatchObject({ ok: true })
-    expect(resolve("rm", "rf")).toMatchObject({ ok: false, code: "NOT_IN_MAP", message: "candle rm isn't a command in candle 0.13.11, the CLI the Candle Harness was checked against." })
+    expect(resolve("rm", "rf")).toMatchObject({ ok: false, code: "NOT_IN_MAP", message: "candle rm isn't a command in candle 0.13.18, the CLI the Candle Harness was checked against." })
   })
 
   test("flags that change who or where it runs, --yes and --rpc-url are refused, even where the command declares them", () => {
@@ -285,10 +285,10 @@ describe("candle_cli through the core", () => {
     writeFileSync(join(s.dir, "fake-cli.json"), JSON.stringify({ version: "0.13.5" }))
     const out = await s.call({ command: "tee", subcommand: "fund", args: ["Wallet1", "--amount", "0.1"] })
     expect(out.error.code).toBe("CLI_TOO_OLD")
-    expect(out.error.message).toBe("candle 0.13.5 is older than the Candle Harness needs (0.13.11): run candle update, then ask again. Nothing was run.")
+    expect(out.error.message).toBe("candle 0.13.5 is older than the Candle Harness needs (0.13.18): run candle update, then ask again. Nothing was run.")
     expect((await s.view.request("cli.run", { argv: ["update"] })).result).toMatchObject({ kind: "pane" })
     // Updated, the next step goes, with no restart.
-    writeFileSync(join(s.dir, "fake-cli.json"), JSON.stringify({ version: "0.13.11" }))
+    writeFileSync(join(s.dir, "fake-cli.json"), JSON.stringify({ version: "0.13.18" }))
     expect((await s.call({ command: "tee", subcommand: "fund", args: ["Wallet1", "--amount", "0.1"] })).error.code).toBe("APPROVAL_REQUIRED")
   })
 

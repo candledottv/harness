@@ -216,6 +216,9 @@ function fieldRow(items: ObItem[], id: FieldId, lead: Run[], value: string, opts
   return { kind: "field", item: items.length - 1, lead, value, width: opts.width ?? 8, ...(opts.dollars ? { dollars: true } : {}), ...(opts.after ? { after: opts.after } : {}) }
 }
 
+/** The coding tools an agent can run on, as setup names them before its first step. */
+export const CODING_TOOLS = "Claude Code, Codex, Grok, OpenCode or Pi"
+
 /** A step's rows and choices, from what the core read back and the screen's own state. */
 export function stepRows(input: { view: OnboardingView; engine?: EngineTopic; local: ObLocal; width: number; paneOpen: boolean; ctx?: ObContext }): { rows: ObRow[]; items: ObItem[] } {
   const { view, local, width } = input
@@ -230,9 +233,11 @@ export function stepRows(input: { view: OnboardingView; engine?: EngineTopic; lo
     case "welcome": {
       rows.push(text("Welcome to Candle", C.head), gap())
       rows.push(...para("A trading terminal where your own agent works beside you: Candle's feed, signals, positions and P&L, and an agent that proposes the trades you approve.", width), gap())
-      rows.push(text("Setup takes about 3 minutes:"), gap())
+      // What it needs and how long it takes, said before the first step: the coding tool is a second product with
+      // an account of its own, and installing one is most of a first run's time.
+      rows.push(...para(`You need one AI coding tool with its own account: ${CODING_TOOLS}. With it signed in, setup takes about 5 minutes; longer if you install it first:`, width))
       for (const [n, t] of [
-        ["1", "Sign in to Candle"],
+        ["1", "Sign in to Candle, in your browser"],
         ["2", "Connect your agent, and test it"],
         ["3", "A vault or not, its key, wallet, limits and approvals"],
         ["4", "A 60-second tour"],
@@ -240,8 +245,8 @@ export function stepRows(input: { view: OnboardingView; engine?: EngineTopic; lo
       ] as const)
         rows.push({ kind: "text", runs: [[`  ${n}  `, C.dim], [t, C.ink]] })
       rows.push(gap())
-      rows.push(itemRow(items, { kind: "welcome", straightIn: false }, [["Guided setup", C.ctl]], ["every step, about 3 minutes", C.dim]))
-      rows.push(itemRow(items, { kind: "welcome", straightIn: true }, [["Straight in", C.ctl]], ["sign in, your model and its key, then the Candle Harness on paper", C.dim]))
+      rows.push(itemRow(items, { kind: "welcome", straightIn: false }, [["Guided setup", C.ctl]], ["every step, about 5 minutes", C.dim]))
+      rows.push(itemRow(items, { kind: "welcome", straightIn: true }, [["Straight in", C.ctl]], ["sign in, your agent and its key, then straight to paper", C.dim]))
       rows.push(gap(), ...para("Quit any time: setup picks up where you stopped, and never runs a step twice.", width, C.dim))
       break
     }
@@ -274,12 +279,20 @@ export function stepRows(input: { view: OnboardingView; engine?: EngineTopic; lo
         // passphrase from the environment, which this Candle Harness's core took when it started. Reading again or signing in
         // can't work until it's set and the Candle Harness started again, so only that is offered.
         const rc = /zsh$/.test(process.env.SHELL ?? "") ? "~/.zshrc" : "~/.bashrc"
-        const line = `echo 'export CANDLE_KEYRING_PASSPHRASE="<a passphrase of your own>"' >> ${rc}`
-        rows.push(...para("This machine has no keychain, so the Candle CLI keeps its sign-in in a file locked by a passphrase you choose. The Candle Harness reads it when it starts, so set it first:", width), gap())
+        // The line goes into the file in an editor, never through a command: typed at a prompt, the passphrase
+        // would stay in the shell's history, and the file would be left readable by others.
+        const line = `export CANDLE_KEYRING_PASSPHRASE="<a passphrase of your own>"`
+        const lock = `chmod 600 ${rc}`
+        const keyAdd = "candle-harness key add --agent agent-a"
+        rows.push(...para(`This machine has no keychain, so the Candle CLI locks its sign-in file with a passphrase you choose. Add this line to ${rc} in an editor, with a passphrase of your own, kept from then on:`, width), gap())
         rows.push(...wrap(line, width - 2).map((l) => text(`  ${l}`, C.ink)))
-        rows.push(itemRow(items, { kind: "copy", text: line, what: "the line" }, [["⧉ Copy the line", C.ctl]], ["then put your own passphrase in it", C.dim]), gap())
-        rows.push(...para("Then quit (ctrl-c twice), open a new terminal, and run candle-harness again. Keep the same passphrase from then on.", width), gap())
-        rows.push(...para("This isn't a vault's passphrase. It only locks the CLI's sign-in file on this machine; a vault, if you make one, has its own.", width, C.dim))
+        rows.push(itemRow(items, { kind: "copy", text: line, what: "the line" }, [["⧉ Copy the line", C.ctl]], [`paste it into ${rc} in an editor, not at a prompt`, C.dim]))
+        rows.push(itemRow(items, { kind: "copy", text: lock, what: lock }, [[`⧉ ${lock}`, C.ctl]], ["run it after, so only you can read the file", C.dim]), gap())
+        rows.push(...para("Then quit (ctrl-c twice) and run candle-harness in a new terminal.", width), gap())
+        // The other way: no owner sign-in here at all, only an agent's key made where the owner is signed in.
+        rows.push(...para("Or keep the owner sign-in off this machine: make an agent's key where you're signed in, quit, and add it here:", width))
+        rows.push(itemRow(items, { kind: "copy", text: keyAdd, what: "the command" }, [[`⧉ ${keyAdd}`, C.ctl]], ["it asks for the key", C.dim]), gap())
+        rows.push(...para("This isn't a vault's passphrase. It only locks the CLI's sign-in file.", width, C.dim))
         break
       } else if (f.signIn.state === "unreadable") {
         rows.push(...para("The Candle Harness couldn't read the candle CLI's sign-in. Check `candle auth status` runs in a terminal, then read it again.", width), gap())
@@ -305,12 +318,12 @@ export function stepRows(input: { view: OnboardingView; engine?: EngineTopic; lo
         const [first, held] = HARNESS_SIGN_INS[local.before].before!.split(/(?<=\.) (?=A ChatGPT)/)
         rows.push(...para(first!, width), gap())
         if (held) rows.push(...para(`! ${held}`, width, C.look), gap())
-        rows.push(...para("The key goes into the harness's own store, by the harness. The Candle Harness never stores a model key.", width, C.dim), gap())
+        rows.push(...para(`The key goes into ${label}'s own store, by ${label}. The Candle Harness never stores a model key.`, width, C.dim), gap())
         rows.push(itemRow(items, { kind: "harness", engine: local.before }, [[`Open ${label}'s sign-in`, C.ctl]]))
         rows.push(itemRow(items, { kind: "back" }, [["Back", C.ctl]]))
         break
       }
-      rows.push(gap(), ...para("Your agent runs on a harness you already use, signed in as you. The Candle Harness keeps your own setup out of it and never stores a model key.", width), gap())
+      rows.push(gap(), ...para("Your agent runs on an engine: an AI coding tool you already use, as you. The Candle Harness keeps your setup out of it and stores no model key.", width), gap())
       const chosen = view.state.engine
       for (const id of ENGINE_IDS) {
         const info = input.engine?.engines[id]
@@ -530,7 +543,7 @@ function stepThree(input: { view: OnboardingView; local: ObLocal; width: number;
       rows.push(itemRow(items, { kind: "inside", on: false }, [[inside ? "○ " : "● ", C.focus], ["ask every time", C.ctl]], ["every trade is a card you approve", C.dim]))
       rows.push(itemRow(items, { kind: "inside", on: true }, [[inside ? "● " : "○ ", C.focus], ["trade inside limits", C.ctl]]))
       if (inside) {
-        rows.push(...under("buys, sells and swaps inside two figures of its own run without a card, with a receipt:", false))
+        rows.push(...under("buys and swaps inside two figures of its own run without a card; every sell runs without one, whatever its size, unless slippage is looser:", false))
         const trade = fieldValue(local, "autoTrade", "")
         const day = fieldValue(local, "autoDay", "")
         rows.push(fieldRow(items, "autoTrade", [["    per trade    ", C.ink]], trade, { dollars: true, width: 8 }))
@@ -539,7 +552,7 @@ function stepThree(input: { view: OnboardingView; local: ObLocal; width: number;
         const d = parseFigure(day)
         for (const note of bindsFirst([agent], ctx.agents ?? [], t.ok ? t.usd : undefined, d.ok ? d.usd : undefined)) rows.push(text(`    ${note}`, C.look))
       }
-      rows.push(gap(), ...dim("Every limit on the last step still holds, and the kill switch still stops it all. Change it any time in settings ▾ → approvals."))
+      rows.push(gap(), ...dim("Every limit on the last step still holds, and the kill switch still holds buys and swaps; sells still go. Change it any time in settings ▾ → approvals."))
       return
     }
     case "fund": {
@@ -671,7 +684,7 @@ export function OnboardingScreen(props: {
             </box>
           ))}
           <box flexGrow={1} />
-          <text fg={C.dim}>{" about 3 minutes"}</text>
+          <text fg={C.dim}>{" about 5 minutes"}</text>
           <text fg={C.dim}>{" quit any time: it picks"}</text>
           <text fg={C.dim}>{" up where you stopped"}</text>
         </box>

@@ -12,16 +12,20 @@ import { type Skill, SKILL_TOOL_NAMES, skillRead } from "../engine/skills"
 import { canonicalJson } from "../shared/canonical-json"
 import { PANE_IDS } from "../shared/panes"
 import { invalidParams } from "../shared/rpc"
-import { BASE_ASSETS, type BaseAsset, isBaseAsset } from "./assets"
+import { cleanData } from "../shared/terminal-text"
+import { BASE_ASSETS, type BaseAsset, isBaseAsset, notATradeToken } from "./assets"
 import type { ToolOutcome } from "./candle-mcp"
 import type { CliCardRequest } from "./cli-cards"
 import type { PaneRequest } from "./pane-plan"
 import { type CardKind, classify, type IdKey, type Mode, normaliseForMode, TOOL_CLASSES } from "./classify"
+import { type Fill, readFill } from "./fill"
 import { cutToBudget, HACC_TOOL_NAMES, PATTERNS } from "./hacc-tools"
 import { HISTORY_TOOL_NAME } from "./history-tool"
 import { JOURNAL_KINDS } from "./journal-query"
 import { LIMITS_TOOL_NAME, narrowingArgs, narrows } from "./limits-tool"
 import { PNL_TOOL_NAME } from "./pnl-tool"
+import { TRIGGERS_TOOL_NAME, type TriggerSpec, type TriggersOutcome } from "./triggers-tool"
+import { BOTS_TOOL_NAME, type BotSpec, type BotsOutcome } from "./bots-tool"
 import type { Journal } from "./journal"
 import { RESEARCH_TOOL_NAMES } from "./research-tools"
 import { PAPER_CLOSED_WORDS } from "./trade-log"
@@ -37,11 +41,102 @@ const ownCard = (client: FaceClient, card: { agent: string }): boolean => client
 
 export interface FaceClient {
   clientId: string
-  role: "view" | "harness"
+  /**
+   * "core": the core's own client, proposing a trigger's command when it fires, or a bot's trade. "build": a Build
+   * pane's harness, proposing a code bot's card.
+   */
+  role: "view" | "harness" | "core" | "build"
   /** The agent this client acts as: a harness acts as the active agent of its turn. */
   agent: string
   /** A harness's token, which names the turn it was minted for. */
   tokenId?: string
+  /** The trigger whose firing this is, on the core's own client. */
+  trigger?: TriggerOrigin
+  /** The rules bot whose trade this is, on the core's own client. */
+  bot?: BotOrigin
+}
+
+/** A trigger's firing, carried on each card, row and paper trade it causes. */
+export interface TriggerOrigin {
+  name: string
+  /** The firing, by its `trigger.fired` row's id. */
+  fireId: string
+  /** Which part of its line: 0 for a single trade. */
+  part: number
+  /** The trigger's own mode, approved on its card: its trades go as paper or live whatever the Candle Harness's mode is. */
+  mode?: Mode
+}
+
+/**
+ * A bot's trade, carried on the card and the paper trade it causes, so its own book (bot-book.ts) finds its fills in
+ * the journal. Only the core sets it (bot-trades.ts `botClient`).
+ */
+export interface BotOrigin {
+  name: string
+  /** A rules bot or a code bot. Absent on a rules bot's, as every row before code bots: read as a rules bot. */
+  kind?: "rules" | "code"
+  /** A code bot's own id for the trade it asked for: read back by it, never sent twice. */
+  request?: string
+  /** An entry, or an exit from one of its positions. */
+  act: "entry" | "exit"
+  /** An exit's position, by its entry's id. */
+  position?: string
+  /** An entry's signal, by Hacc's id. */
+  signal?: number
+  /** An exit's reason: take profit, stop, max hold, trailing, flatten. */
+  reason?: string
+  /** An exit's tokens the wallet no longer held, raw: sold outside the bot. */
+  outside?: string
+  /** The bot's own mode, approved on its card: its trades go as paper or live whatever the Candle Harness's mode is. */
+  mode?: Mode
+  /** The slippage bound the bot was approved with, where it has one: inside the wallet's figures its trades run at it with no card. */
+  slippageBps?: number
+  /** A code bot's sell of part of a position: the position stays open with what's left. */
+  partial?: true
+  /** What a code bot's sell sells of its position, raw, where it sells by amount: a paper fill doesn't say. */
+  sellsRaw?: string
+}
+
+/**
+ * The mode a call goes in: a bot's or a trigger's own, set on its card, for the core's own client proposing its
+ * trade; the Candle Harness's for everything else. Only the core sets a client's bot or trigger, so no harness or
+ * view can pick a mode this way.
+ */
+export const modeFor = (client: Pick<FaceClient, "role" | "bot"> & { trigger?: Pick<TriggerOrigin, "mode"> }, harnessMode: Mode): Mode =>
+  client.role === "core" ? (client.bot?.mode ?? client.trigger?.mode ?? harnessMode) : harnessMode
+
+/** A bot's trade on the rows it causes. */
+export const botFields = (b: BotOrigin | undefined): Record<string, unknown> =>
+  b
+    ? {
+        bot: b.name,
+        botAct: b.act,
+        ...(b.position ? { botPosition: b.position } : {}),
+        ...(b.signal !== undefined ? { botSignal: b.signal } : {}),
+        ...(b.reason ? { botReason: b.reason } : {}),
+        ...(b.outside ? { botOutside: b.outside } : {}),
+        // A rules bot's rows read as they always have: only a code bot's say its kind.
+        ...(b.kind === "code" ? { botKind: "code" } : {}),
+        ...(b.request ? { botRequest: b.request } : {}),
+        ...(b.partial ? { botPartial: true } : {}),
+        ...(b.sellsRaw ? { botSellsRaw: b.sellsRaw } : {}),
+      }
+    : {}
+
+/** Who a card or a row is from: the person in a view, an agent's harness, a trigger, or a bot. */
+export type Source = "person" | "agent" | "trigger" | "bot" | "build"
+export const sourceOf = (client: Pick<FaceClient, "role" | "trigger" | "bot">): Source => (client.trigger ? "trigger" : client.bot ? "bot" : client.role === "view" ? "person" : client.role === "build" ? "build" : "agent")
+
+/**
+ * A trigger's firing on the rows it causes: its name as `trigger` (so an `on fill` or `on card expired`
+ * trigger never fires on its own rows), the firing and the part.
+ */
+export const triggerFields = (t: TriggerOrigin | undefined): Record<string, unknown> => (t ? { trigger: t.name, fireId: t.fireId, part: t.part } : {})
+
+/** A harness's row in a turn a trigger woke: that trigger's name, as `woken`. */
+const wokenField = (client: FaceClient, wokenBy: ((tokenId: string) => string | undefined) | undefined): Record<string, unknown> => {
+  const name = client.role === "harness" && client.tokenId ? wokenBy?.(client.tokenId) : undefined
+  return name ? { woken: name } : {}
 }
 
 export type CardState = "awaiting_approval" | "approved" | "rejected" | "withdrawn" | "expired"
@@ -59,12 +154,17 @@ export interface CardView {
   agent: string
   state: CardState
   expiresAt: string
-  /** `paper`: a live sell Candle answered by closing the key's paper position, the live wallet holding none. */
-  operation?: { state: OperationState; result?: unknown; error?: unknown; paper?: boolean }
+  /**
+   * `paper`: a live sell Candle answered by closing the key's paper position, the live wallet holding none.
+   * `partial`: a swap whose first leg landed, with its hash, and whose second failed.
+   */
+  operation?: { state: OperationState; result?: unknown; error?: unknown; paper?: boolean; partial?: { leg1: string } }
   /** It ran without a card, inside its wallet's limits, in words. */
   withoutCard?: string
   /** A trade on a wallet that trades inside limits that is a card all the same, and why. */
   cardBecause?: string
+  /** Paper or live, as the card was made: said in its answer, so the agent knows which it asked for. */
+  mode?: Mode
 }
 
 export interface CardDesk {
@@ -79,6 +179,8 @@ export interface CardDesk {
     kind: CardKind
     idKey: IdKey
     reason?: string
+    /** For a trigger's card: what its firing saw, in words ("JUPF was $0.3990, under $0.40"). */
+    fired?: string
     /** The card's title, for kinds the card book doesn't title itself. */
     title?: string
     /** A line the user should read before the press, such as a TEE wallet a revoke would strand. */
@@ -89,9 +191,15 @@ export interface CardDesk {
     cli?: CliCardRequest
     /** A row that runs in the prompt pane, which the card book plans itself. */
     pane?: PaneRequest
+    /** A trigger's card: its exact line, its words, how it runs, and the wallet that pays. */
+    triggerCard?: { spec: TriggerSpec; paysFrom?: string }
+    /** A rules bot's card: the bot in words, its definition, how it runs, the wallet that pays and its own slippage. */
+    botCard?: { spec: BotSpec; paysFrom?: string; slippage?: { words: string; looser: boolean } }
   }): Promise<CardView>
   /** A trade card just proposed, run at once by the core when its wallet's rule says so. */
   runWithoutCard?(card: CardView, client: FaceClient): Promise<{ card: CardView }>
+  /** Withdraws an open card of this client's. */
+  withdraw?(clientId: string, cardId: string): Promise<unknown>
 }
 
 export interface AgentChildren {
@@ -105,6 +213,9 @@ const text = (body: unknown, isError = false): ToolResult => ({
 
 const refusal = (code: string, message: string, extra: Record<string, unknown> = {}): ToolResult =>
   text({ success: false, error: { code, message }, ...extra }, true)
+
+/** Said to a call of a turn that was stopped, wherever it's caught. */
+export const TURN_ENDED_WORDS = "This turn was stopped, so nothing more of it runs. Nothing was sent."
 
 const PAPER_NOTE = { type: "text" as const, text: JSON.stringify({ mode: "paper", note: "Paper trade: nothing was broadcast and no funds moved." }) }
 const paperNote = (usd: string) => ({ type: "text" as const, text: JSON.stringify({ mode: "paper", valueUsd: usd, note: `Paper trade: nothing was broadcast and no funds moved. The pair asset's side is worth about $${usd} at its current price; say it in dollars.` }) })
@@ -132,16 +243,28 @@ export async function paperDollars(agent: string, text: string | undefined, pric
   return usd >= 0.01 ? usd.toFixed(2) : usd.toPrecision(2)
 }
 
+/** A paper trade's fill from Candle's answer text, or undefined where it doesn't read. */
+function paperFill(text: string | undefined): Fill | undefined {
+  try {
+    return readFill({ wallet: "paper", result: JSON.parse(text ?? ""), paper: true })
+  } catch {
+    return undefined
+  }
+}
+
+// One rule wherever a waiting card is spoken of: no turn sees the press, so the turn ends on the proposal.
+// An agent told to "read the outcome" reads it again and again inside the turn, and nothing changes there.
 const NEXT_PENDING = (kind: string, idKey: string) =>
-  `The user approves this in the Candle Harness with one key press. Read the outcome with candle_get_operation using this id (kind: ${kind}). Never send it again under a new id; to retry, send the same request with the same ${idKey}.`
+  `The user approves this in the Candle Harness with one key press, which no turn of yours sees. Say what you proposed and end your turn now: don't wait, and don't read it again to see. Read candle_get_operation with this id (kind: ${kind}) only when a later message asks how it went. Never send it again under a new id; to retry, send the same request with the same ${idKey}.`
 const NEXT_FINAL = "Final. Don't propose this again unless the user asks."
 const NEXT_UNKNOWN = "Don't propose this again; the user is resolving it in the Candle Harness."
 
 /** The answer for a card and its operation, in whatever state they are. */
 export function cardAnswer(card: CardView): ToolResult {
   // How it was approved, when the core ran it without a card: the person didn't press anything.
-  const ids = { cardId: card.cardId, [card.idKey]: card.opId, opId: card.opId, kind: card.kind, agent: card.agent, ...(card.withoutCard ? { approved: card.withoutCard } : {}) }
-  const op = card.operation
+  const ids = { cardId: card.cardId, [card.idKey]: card.opId, opId: card.opId, kind: card.kind, agent: card.agent, ...(card.mode ? { mode: card.mode } : {}), ...(card.withoutCard ? { approved: card.withoutCard } : {}) }
+  // Candle's own result and error carry text anyone can write (a token's name): cleaned as drawn text is.
+  const op = card.operation ? { ...card.operation, result: cleanData(card.operation.result), error: cleanData(card.operation.error) as NonNullable<CardView["operation"]>["error"] } : undefined
   if (op === undefined) {
     if (card.state === "awaiting_approval") {
       return text({
@@ -160,7 +283,7 @@ export function cardAnswer(card: CardView): ToolResult {
   if (op.state === "succeeded" && op.paper) return text({ success: true, ...ids, state: op.state, paperClosed: true, note: `Nothing live was sold: ${PAPER_CLOSED_WORDS}. The live tokens, if any are held elsewhere, are still held.`, result: op.result ?? null })
   if (op.state === "succeeded") return text({ success: true, ...ids, state: op.state, result: op.result ?? null })
   if (op.state === "submitting" || op.state === "pending") {
-    return text({ success: false, error: { code: "OPERATION_PENDING", message: "Approved and running." }, ...ids, state: op.state, next: `Read it again with candle_get_operation (kind: ${card.kind}).` })
+    return text({ success: false, error: { code: "OPERATION_PENDING", message: "Approved and running." }, ...ids, state: op.state, next: `It settles in seconds. Read it once more with candle_get_operation (kind: ${card.kind}); if it's still running then, say so and end your turn.` })
   }
   if (op.state === "failed" || op.state === "refused") {
     return text({ success: false, error: op.error ?? { code: op.state.toUpperCase(), message: op.state }, ...ids, state: op.state, result: op.result ?? null, next: NEXT_FINAL }, true)
@@ -192,9 +315,11 @@ export function candleFits(result: unknown): unknown {
   return cutToBudget((d, cut) => (cut ? { cut, data: d } : (d as Record<string, unknown>)), result, undefined, CANDLE_ANSWER_BUDGET, more)
 }
 
+// Candle's answers reach an agent cleaned as drawn text is: a token's name or description is anyone's to
+// write, and an invisible or direction character in one would be read by the agent and never seen by the person.
 function relay(outcome: ToolOutcome): ToolResult {
-  if (outcome.kind === "ok") return text(candleFits(outcome.result))
-  if (outcome.kind === "error") return text(outcome.body ?? { success: false, error: { code: outcome.code } }, true)
+  if (outcome.kind === "ok") return text(cleanData(candleFits(outcome.result)))
+  if (outcome.kind === "error") return text(cleanData(outcome.body ?? { success: false, error: { code: outcome.code } }), true)
   return refusal("CANDLE_NO_ANSWER", `Candle didn't answer (${outcome.reason.replace("_", " ")}). Read it again before assuming anything.`)
 }
 
@@ -286,15 +411,60 @@ export function withReason<T extends { name: string; inputSchema: { type: "objec
     if (tool.name === "candle_get_operation") {
       const kind = tool.inputSchema.properties?.kind
       if (kind === null || typeof kind !== "object") return tool
-      return { ...tool, inputSchema: { ...tool.inputSchema, properties: { ...tool.inputSchema.properties, kind: { ...kind, enum: [...OPERATION_KINDS] } } } }
+      return { ...tool, description: GET_OPERATION_DESCRIPTION, inputSchema: { ...tool.inputSchema, properties: { ...tool.inputSchema.properties, kind: { ...kind, enum: [...OPERATION_KINDS] } } } }
     }
     if (!REASON_TOOLS.has(tool.name)) return tool
     const properties = { ...tool.inputSchema.properties }
     properties.reason ??= REASON_PROPERTY
     if (tool.name === "candle_trade") properties.amountUsd ??= AMOUNT_USD_PROPERTY
     if (tool.name === "candle_trade" || tool.name === "candle_swap") properties.wallet ??= WALLET_PROPERTY
-    return { ...tool, inputSchema: { ...tool.inputSchema, properties } }
+    // What the Candle Harness sets or refuses itself is never offered: the mode decides paper, and a card is the quote.
+    for (const dropped of NOT_OFFERED[tool.name] ?? []) delete properties[dropped]
+    const said = (tool as { description?: unknown }).description
+    const note = HARNESS_NOTES[tool.name]
+    return { ...tool, ...(note ? { description: `${typeof said === "string" ? `${said}\n\n` : ""}${note}` } : {}), inputSchema: { ...tool.inputSchema, properties } }
   })
+}
+
+/** Arguments of Candle's the agent isn't offered here: the Candle Harness's mode decides paper, and it never builds a trade to spend later. */
+const NOT_OFFERED: Readonly<Record<string, readonly string[]>> = { candle_trade: ["paper", "deferExecution"] }
+
+/**
+ * Candle's own descriptions are written for a client that calls its server directly. Where the Candle Harness
+ * answers another way, the agent is told so on the tool itself: these go after Candle's words, and say which
+ * of them don't hold here.
+ */
+const HARNESS_NOTES: Readonly<Record<string, string>> = {
+  candle_trade:
+    'In the Candle Harness, where this differs from the above: a live trade answers APPROVAL_REQUIRED with a card for the user to approve (or runs at once where the paying wallet trades inside its limits, and says so), so read its outcome with candle_get_operation. The wallet that pays is the agent\'s default, or the one `wallet` names, which may be a TEE wallet. A sell names `percent` (1 to 100) or `amount`: leaving both out is refused, never the whole position. Paper or live is the Candle Harness\'s mode, set by the user: there is no `paper` argument.',
+  candle_swap:
+    'In the Candle Harness, where this differs from the above: a swap answers APPROVAL_REQUIRED with a card for the user to approve (or runs at once where the paying wallet trades inside its limits, and says so), so read its outcome with candle_get_operation (kind: swap) rather than sending it again. The wallet that pays is the agent\'s default, or the one `wallet` names, which may be a TEE wallet.',
+}
+
+/**
+ * candle_get_operation as this face answers it. Candle's own description names its server's states
+ * (`confirmed`, `built`, a swap's `job.outcome`), none of which an agent sees here for a card the core holds.
+ */
+export const GET_OPERATION_DESCRIPTION = `Look up what became of a trade, swap, launch or any other card by the id its call answered with. Reads only; moves nothing.
+
+In the Candle Harness a write becomes an approval card first, so the answers are the Candle Harness's own. The next move for each:
+- error.code APPROVAL_REQUIRED, state awaiting_approval: the card waits for the user's key press. Not a failure. Read again later; never send the write again.
+- error.code OPERATION_PENDING, state submitting or pending: approved and running. Read again.
+- success true, state succeeded: done. \`result\` is Candle's answer.
+- state failed or refused: final. \`error\` says why.
+- error.code CARD_REJECTED, CARD_EXPIRED or CARD_WITHDRAWN: the card ended without running. Final: don't propose it again unless the user asks.
+- error.code OUTCOME_UNKNOWN: Candle couldn't confirm it, which isn't proof that nothing moved. The user resolves it in the Candle Harness: don't propose it again.
+
+Pass \`clientId\`, the id the write's answer gave, and \`kind\`, the kind that answer gave. Every card the Candle Harness holds is read here, a swap included. A trade or a launch it doesn't hold is read from Candle. A swap it doesn't hold can't be read by its id (OPERATION_NOT_HELD). Never send a write under a new id to find out what happened: a new id is a second trade, swap or launch.`
+
+/**
+ * The words of Candle's own descriptions that the notes above answer. A recorded description that stops saying
+ * one of them means Candle changed its story, and the note beside it is due a fresh read.
+ */
+export const DESCRIPTION_BASIS: Readonly<Record<string, readonly string[]>> = {
+  candle_get_operation: ["`confirmed`/`failed`", "`built`/`submitted`", "job.outcome", "Do NOT re-send the write"],
+  candle_trade: ["the payer is the account's embedded (main) wallet", "Omitting the amount on a sell sells the whole position", "Pass `paper: true` to rehearse"],
+  candle_swap: ["This tool spends the embedded wallets", "send the SAME request with that id"],
 }
 
 /**
@@ -302,7 +472,7 @@ export function withReason<T extends { name: string; inputSchema: { type: "objec
  * every other kind, the CLI's card rows included (without them the agent couldn't read an upload's
  * URL or a less-access result). Only a trade or a launch the core doesn't hold is read from Candle.
  */
-const OPERATION_KINDS = ["trade", "launch", "swap", "stake", "claim", "public", "upload", "lessaccess", "lp", "close", "hacc", "autonomy"]
+const OPERATION_KINDS = ["trade", "launch", "swap", "stake", "claim", "public", "upload", "lessaccess", "lp", "close", "hacc", "autonomy", "trigger", "bot"]
 const CANDLE_READS = new Set(["trade", "launch"])
 
 /**
@@ -397,7 +567,7 @@ export const VIEW_TOOL = {
       action: { type: "string", enum: ["read", "tab", "layout", "open", "close", "build", "add_tab", "rename_tab", "remove_tab", "show_tab", "hide_tab", "pin", "unpin", "signals", "journal", "theme", "make_theme"] },
       tab: { type: "string", description: "The tab's name; left out, the tab on screen (for \"signals\" and \"journal\", else the tab named after the pane, else the first with it). For \"tab\", the tab to switch to (or its number, 1 to 9)." },
       layout: { type: "string", description: "\"layout\" and \"add_tab\": a layout's name, such as \"Cockpit\"." },
-      pane: { type: "string", description: `"open" and "close": a pane's id (${PANE_IDS.join(", ")}). "tab": a pane to show, on the tab named or the first tab that has it.` },
+      pane: { type: "string", description: `"open" and "close": a pane's id (${PANE_IDS.join(", ")}; token:2 and token:3 are more token panes, to compare tokens side by side). "tab": a pane to show, on the tab named or the first tab that has it. "pin" and "unpin": which token pane; left out, the first.` },
       near: { type: "string", description: "\"open\": the pane to open it beside; left out, at the end." },
       root: { type: "array", description: "\"build\": the tree, as layouts.toml writes one: [\"row\", [\"column\", 62, \"feed 40\", \"token 60\"], \"agent 38\"]. Each pane once." },
       name: { type: "string", description: "\"build\": the name the layout is kept as, if kept. \"add_tab\" and \"rename_tab\": the tab's new name (1 to 20 characters). \"theme\" and \"make_theme\": the theme's name." },
@@ -430,6 +600,13 @@ export class ToolFace {
       mode: () => Mode
       /** For a paper buy sized in dollars: converted here, since paper trades never become cards. */
       sizing?: SizingDeps
+      /** The trigger that woke the agent's turn a harness token was minted for, if one did: a paper trade in it says so. */
+      wokenBy?: (tokenId: string) => string | undefined
+      /**
+       * Where the turn a harness token was minted for stands: stopped or over, and the mode it began in. Undefined
+       * for a harness with no turn (one registered on its own), which is never held to either.
+       */
+      turn?: (tokenId: string) => { ended: boolean; mode?: Mode } | undefined
       /** candle_cli, answered by the core rather than Candle's MCP server. */
       cli?: { call(client: FaceClient, args: Record<string, unknown>, reason?: string): Promise<ToolResult> }
       /** Whether a wallet word names the account's embedded wallet for this agent ("embedded", or its own name). */
@@ -444,6 +621,8 @@ export class ToolFace {
       view?: (client: FaceClient, args: Record<string, unknown>) => Promise<{ ok: true; text: string } | { ok: false; code: string; message: string }>
       /** research_read and research_list, held to the client's agent's research folder. */
       research?: (client: FaceClient, name: string, args: Record<string, unknown>) => Promise<{ ok: true; body: Record<string, unknown> } | { ok: false; code: string; message: string }>
+      /** research_run: one program held to the client's agent's research folder. */
+      run?: (client: FaceClient, args: Record<string, unknown>) => Promise<{ ok: true; body: Record<string, unknown> } | { ok: false; code: string; message: string }>
       /** The skills the client's agent has: its preset's, and the person's own. */
       skills?: (client: FaceClient) => readonly Skill[]
       /** harness_history: the client's agent's own past turns, cards and paper trades. */
@@ -454,6 +633,10 @@ export class ToolFace {
       limits?: { read(client: FaceClient): Record<string, unknown>; propose(client: FaceClient, args: Record<string, unknown>, reason?: string): Promise<CardView> }
       /** Hacc's reads, answered by the core with the client's agent's own key. */
       hacc?: (client: FaceClient, name: string, args: Record<string, unknown>) => Promise<ToolResult>
+      /** harness_triggers: read, propose as a card, narrow or switch off at once. */
+      triggers?: { call(client: FaceClient, args: Record<string, unknown>, reason?: string): Promise<TriggersOutcome> }
+      /** harness_bots: read, propose as a card, narrow or pause at once, flatten as a card. */
+      bots?: { call(client: FaceClient, args: Record<string, unknown>, reason?: string): Promise<BotsOutcome> }
     },
   ) {}
 
@@ -462,6 +645,8 @@ export class ToolFace {
     if (typeof name !== "string" || name.length === 0 || name.length > 64) throw invalidParams("name must name a tool.")
     if (args === null || typeof args !== "object" || Array.isArray(args)) throw invalidParams("args must be an object.")
     let callArgs = args as Record<string, unknown>
+    // The person stopped this turn (or it's over): nothing its harness still asks for acts, a call already on its way in included.
+    if (this.turnEnded(client)) return this.refuseEnded(client, name)
     if (name === SHOW_WALLETS_TOOL.name) {
       if (!this.deps.showWallets) return Promise.resolve(refusal("METHOD_NOT_AVAILABLE", "harness_show_wallets isn't in this build of the core."))
       return this.deps.showWallets(client, callArgs.show).then((r) => (r.ok ? text({ success: true, shown: r.text }) : refusal(r.code, r.message)))
@@ -483,6 +668,10 @@ export class ToolFace {
       if (typeof callArgs.action !== "string" || !VIEW_ACTIONS.has(callArgs.action)) return Promise.resolve(refusal("MCP_VALIDATION", `action is one of ${[...VIEW_ACTIONS].join(", ")}.`))
       if (JSON.stringify(callArgs).length > VIEW_ARGS_MAX) return Promise.resolve(refusal("MCP_VALIDATION", "That's too much for one change to the screen."))
       return this.deps.view(client, callArgs).then((r) => (r.ok ? text({ success: true, done: r.text }) : refusal(r.code, r.message)))
+    }
+    if (name === "research_run") {
+      if (!this.deps.run) return Promise.resolve(refusal("METHOD_NOT_AVAILABLE", `${name} isn't in this build of the core.`))
+      return this.deps.run(client, callArgs).then((r) => (r.ok ? text(r.body) : refusal(r.code, r.message)))
     }
     if (RESEARCH_TOOL_NAMES.has(name)) {
       if (!this.deps.research) return Promise.resolve(refusal("METHOD_NOT_AVAILABLE", `${name} isn't in this build of the core.`))
@@ -507,6 +696,15 @@ export class ToolFace {
       if (!this.deps.limits) return Promise.resolve(refusal("METHOD_NOT_AVAILABLE", `${name} isn't in this build of the core.`))
       return this.limits(client, callArgs, reason ?? (typeof callArgs.reason === "string" ? callArgs.reason : undefined))
     }
+    if (name === TRIGGERS_TOOL_NAME) {
+      if (!this.deps.triggers) return Promise.resolve(refusal("METHOD_NOT_AVAILABLE", `${name} isn't in this build of the core.`))
+      return this.triggers(client, callArgs, reason ?? (typeof callArgs.reason === "string" ? callArgs.reason : undefined))
+    }
+    if (name === BOTS_TOOL_NAME) {
+      if (!this.deps.bots) return Promise.resolve(refusal("METHOD_NOT_AVAILABLE", `${name} isn't in this build of the core.`))
+      if (JSON.stringify(callArgs).length > 32 * 1024) return Promise.resolve(refusal("MCP_VALIDATION", "That's too much for one bot."))
+      return this.bots(client, callArgs, reason ?? (typeof callArgs.reason === "string" ? callArgs.reason : undefined))
+    }
     if (HACC_TOOL_NAMES.has(name)) {
       if (!this.deps.hacc) return Promise.resolve(refusal("METHOD_NOT_AVAILABLE", `${name} isn't in this build of the core.`))
       return this.deps.hacc(client, name, callArgs)
@@ -525,8 +723,34 @@ export class ToolFace {
     return this.answer(client, name, callArgs, reason)
   }
 
+  /** Whether the turn this harness's token was minted for was stopped or is over. A harness with no turn never is. */
+  private turnEnded(client: FaceClient): boolean {
+    return client.role === "harness" && client.tokenId !== undefined && this.deps.turn?.(client.tokenId)?.ended === true
+  }
+
+  private async refuseEnded(client: FaceClient, tool: string): Promise<ToolResult> {
+    const message = TURN_ENDED_WORDS
+    await this.deps.journal.append({ type: "tool.refused", mode: this.deps.mode(), agent: client.agent, clientId: client.clientId, role: client.role, ...wokenField(client, this.deps.wokenBy), tool, code: "TURN_ENDED", message })
+    return refusal("TURN_ENDED", message)
+  }
+
+  /**
+   * The turn began on paper, and was told so, and the Candle Harness is live now: what it asks for next would be
+   * real where it expects paper. Refused, with why, so the agent says so and the person decides. The other way
+   * round needs nothing: the trade is a paper one, and its answer says so.
+   */
+  private wentLive(client: FaceClient): boolean {
+    return client.role === "harness" && client.tokenId !== undefined && this.deps.turn?.(client.tokenId)?.mode === "paper" && this.deps.mode() === "live"
+  }
+
+  private async refuseWentLive(client: FaceClient, tool: string): Promise<ToolResult> {
+    const message = "The person switched the Candle Harness from paper to live during this turn, which began on paper. Nothing was sent. Say that the mode changed, and ask before doing this for real."
+    await this.deps.journal.append({ type: "tool.refused", mode: this.deps.mode(), agent: client.agent, clientId: client.clientId, role: client.role, ...wokenField(client, this.deps.wokenBy), tool, code: "MODE_CHANGED", message })
+    return refusal("MODE_CHANGED", message)
+  }
+
   private async answer(client: FaceClient, name: string, given: Record<string, unknown>, reason?: string): Promise<ToolResult> {
-    const mode = this.deps.mode()
+    const mode = modeFor(client, this.deps.mode())
     const child = () => this.deps.pool.for(client.agent)
     let args = numbersFromText(given, this.deps.schemaOf?.(client.agent, name))
     const verdict = classify(name, args, mode)
@@ -544,36 +768,51 @@ export class ToolFace {
       // A paper trade is the key's own paper book, with no wallet behind it; naming a TEE wallet asks for one.
       const { wallet, ...unwalleted } = args
       const embedded = typeof wallet === "string" && (wallet.trim().toLowerCase() === "embedded" || this.deps.isEmbedded?.(client.agent, wallet) === true)
-      if (wallet !== undefined && !embedded) {
-        await this.deps.journal.append({ type: "tool.refused", mode, agent: client.agent, clientId: client.clientId, role: client.role, tool: name, code: "NO_PAPER_TEE", message: "TEE wallets have no paper form." })
-        return refusal("NO_PAPER_TEE", "TEE wallets have no paper form; switch to live to trade from one. Nothing was sent.")
+      // A paper trade refused before Candle trades it leaves a row, with whose it was, as every refusal does: with no
+      // `paper.call` row, nothing else would record it (a bot's request waited on one for good).
+      const refusedHere = async (code: string, message: string, said = message): Promise<ToolResult> => {
+        await this.deps.journal.append({ type: "tool.refused", mode, agent: client.agent, clientId: client.clientId, role: client.role, ...triggerFields(client.trigger), ...botFields(client.bot), ...wokenField(client, this.deps.wokenBy), tool: name, code, message })
+        return refusal(code, said)
       }
+      if (wallet !== undefined && !embedded) return refusedHere("NO_PAPER_TEE", "TEE wallets have no paper form.", "TEE wallets have no paper form; switch to live to trade from one. Nothing was sent.")
       args = unwalleted
+      // What trades spend isn't a trade's token on paper either: the paper book would hold a position no live trade can make.
+      const spent = name === "candle_trade" ? notATradeToken(args.mint) : undefined
+      if (spent !== undefined) return refusedHere("BASE_ASSET", spent)
       let paperArgs = args
       if (name === "candle_trade" && args.amountUsd !== undefined) {
-        if (!this.deps.sizing) return refusal("METHOD_NOT_AVAILABLE", "amountUsd isn't in this build of the core.")
+        if (!this.deps.sizing) return refusedHere("METHOD_NOT_AVAILABLE", "amountUsd isn't in this build of the core.")
         const sized = await sizeInUsd(client.agent, args, this.deps.sizing)
-        if (!sized.ok) return refusal(sized.code, sized.message)
+        if (!sized.ok) return refusedHere(sized.code, sized.message)
         paperArgs = sized.args
       }
       const sent = normaliseForMode(name, paperArgs, "paper")
       const outcome = await child().call(name, sent)
       const result = relay(outcome)
+      const answer = result.content[0]?.text
+      // What it filled, with its pair asset's price now, so a bot's paper book is rebuilt from this row alone.
+      const fill = name === "candle_trade" && !result.isError ? paperFill(answer) : undefined
+      const assetPoint = fill && this.deps.sizing && isBaseAsset(fill.asset) ? await this.deps.sizing.pricing.asset(client.agent, fill.asset).catch(() => undefined) : undefined
+      const assetUsd = assetPoint && Number.isFinite(assetPoint.usd) && assetPoint.usd > 0 ? assetPoint.usd : undefined
       await this.deps.journal.append({
         type: "paper.call",
         mode: "paper",
         agent: client.agent,
         clientId: client.clientId,
         role: client.role,
+        ...triggerFields(client.trigger),
+        ...botFields(client.bot),
+        ...wokenField(client, this.deps.wokenBy),
         tool: name,
         args: sent,
         ...(typeof wallet === "string" ? { walletNamed: wallet } : {}),
         isError: result.isError === true,
-        answer: result.content[0]?.text.slice(0, 2000) ?? null,
+        answer: answer?.slice(0, 2000) ?? null,
+        ...(fill ? { fill: assetUsd !== undefined ? { ...fill, assetUsd } : fill } : {}),
       })
       if (result.isError) return result
       // Every quote carries dollars: a paper fill is Candle's own answer, in the pair asset alone.
-      const usd = name === "candle_trade" && this.deps.sizing ? await paperDollars(client.agent, result.content[0]?.text, this.deps.sizing.pricing) : undefined
+      const usd = name === "candle_trade" && this.deps.sizing ? await paperDollars(client.agent, answer, this.deps.sizing.pricing) : undefined
       return { ...result, content: [...result.content, usd ? paperNote(usd) : PAPER_NOTE] }
     }
 
@@ -598,6 +837,8 @@ export class ToolFace {
       return cardAnswer(held)
     }
 
+    if (this.wentLive(client)) return this.refuseWentLive(client, name)
+
     try {
       const card = await this.deps.cards.propose({
         client,
@@ -609,6 +850,11 @@ export class ToolFace {
         idKey: verdict.idKey,
         ...(reason !== undefined ? { reason } : {}),
       })
+      // The turn was stopped while this was being priced: the card is taken back and nothing runs, with or without a press.
+      if (this.turnEnded(client)) {
+        await this.deps.cards.withdraw?.(client.clientId, card.cardId).catch(() => {})
+        return this.refuseEnded(client, name)
+      }
       // A trade its wallet runs without a card goes now; anything else stays a card.
       if (verdict.kind !== "trade" && verdict.kind !== "swap") return cardAnswer(card)
       return cardAnswer((await this.deps.cards.runWithoutCard?.(card, client))?.card ?? card)
@@ -637,6 +883,48 @@ export class ToolFace {
       await this.deps.journal.append({ type: "tool.refused", mode: this.deps.mode(), agent: client.agent, clientId: client.clientId, role: client.role, tool: LIMITS_TOOL_NAME, code: e.code, message: String(e.message) })
       return refusal(e.code, String(e.message))
     }
+  }
+
+  /** harness_triggers: an answer, a card answered as every card is, or a refusal, journalled. */
+  private async triggers(client: FaceClient, args: Record<string, unknown>, reason?: string): Promise<ToolResult> {
+    // A trigger takes the mode it's proposed in, for good: one asked for in a turn told "paper" isn't made a live one.
+    if (args.action === "propose" && this.wentLive(client)) return this.refuseWentLive(client, TRIGGERS_TOOL_NAME)
+    const out = await this.deps.triggers!.call(client, args, reason)
+    if ("card" in out) {
+      const card = this.deps.cards.held(out.card)
+      if (!card) return refusal("CARD_NOT_FOUND", "The card was made and then gone; read the triggers again.")
+      // The card's own words reach the agent too: how the trigger will run, and the wallet of its own where it asks.
+      const answer = cardAnswer(card)
+      const d = (card as CardView & { display?: { triggerCard?: TriggerSpec; warning?: string } }).display
+      if (!d?.triggerCard || card.state !== "awaiting_approval") return answer
+      const body = JSON.parse(answer.content[0]!.text) as Record<string, unknown>
+      return text({ ...body, trigger: { line: d.triggerCard.line, words: d.triggerCard.words, runs: d.triggerCard.runs }, ...(d.warning ? { warning: d.warning } : {}), tell: "Tell the person how it will run, in a line, as the card says it: on its own, or asking them each time (and, for one that asks, the wallet of its own it suggests)." })
+    }
+    if (out.ok) return text(out.body)
+    await this.deps.journal.append({ type: "tool.refused", mode: this.deps.mode(), agent: client.agent, clientId: client.clientId, role: client.role, tool: TRIGGERS_TOOL_NAME, code: out.code, message: out.message })
+    return refusal(out.code, out.message)
+  }
+
+  /** harness_bots: an answer, a card answered as every card is (with the card's own words), or a refusal, journalled. */
+  private async bots(client: FaceClient, args: Record<string, unknown>, reason?: string): Promise<ToolResult> {
+    const out = await this.deps.bots!.call(client, args, reason)
+    if ("card" in out) {
+      const card = this.deps.cards.held(out.card)
+      if (!card) return refusal("CARD_NOT_FOUND", "The card was made and then gone; read the bots again.")
+      const answer = cardAnswer(card)
+      const d = (card as CardView & { display?: { botCard?: BotSpec; warning?: string } }).display
+      if (!d?.botCard || card.state !== "awaiting_approval") return answer
+      const b = d.botCard
+      const body = JSON.parse(answer.content[0]!.text) as Record<string, unknown>
+      const bot = b.flatten ? { name: b.name, flatten: b.flatten } : { name: b.name, words: b.words, mode: b.mode, runs: [b.runs.entries, b.runs.exits].filter(Boolean).join(" "), worst: b.worst, ...(b.backtest ? { backtest: b.backtest } : {}), ...(b.from ? { from: b.from } : {}) }
+      const tell = b.flatten
+        ? "Tell the person the card sells every open position of the bot once they press it, and that the bot stays as it is."
+        : "Tell the person, in a line or two, as the card says it: paper or live, how its buys and its exits run, and its worst case. Where a warning suggests a wallet of its own, offer it."
+      return text({ ...body, bot, ...(d.warning ? { warning: d.warning } : {}), ...("note" in out && out.note ? { note: out.note } : {}), tell })
+    }
+    if (out.ok) return text(out.body)
+    await this.deps.journal.append({ type: "tool.refused", mode: this.deps.mode(), agent: client.agent, clientId: client.clientId, role: client.role, tool: BOTS_TOOL_NAME, code: out.code, message: out.message })
+    return refusal(out.code, out.message)
   }
 
   private async getOperation(client: FaceClient, args: Record<string, unknown>, child: () => ReturnType<AgentChildren["for"]>): Promise<ToolResult> {

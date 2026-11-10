@@ -1,0 +1,37 @@
+{
+  "name": "schema-filter-hours-et-half",
+  "host": "hacc",
+  "method": "POST",
+  "route": "/v1/strategy-lab/replay",
+  "query": {},
+  "body": {
+    "definition": {
+      "chain": "solana",
+      "entry": {
+        "source": "pattern",
+        "pattern": "confluence",
+        "filters": {
+          "hours_et": [
+            9.5,
+            17
+          ]
+        }
+      },
+      "exit": {
+        "take_profit_pct": 100
+      },
+      "sizing": {
+        "usd_per_trade": 5,
+        "max_concurrent": 2
+      }
+    },
+    "from": "2026-10-01T00:00:00Z",
+    "to": "2026-10-30T00:00:00Z"
+  },
+  "status": 400,
+  "ms": 131,
+  "bytes": 70,
+  "answer": {
+    "error": "entry.filters.hours_et.0: Expected integer, received float"
+  }
+}

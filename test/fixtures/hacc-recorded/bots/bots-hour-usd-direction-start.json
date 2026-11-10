@@ -1,0 +1,35 @@
+{
+  "name": "hour-usd-direction-start",
+  "host": "hacc",
+  "method": "POST",
+  "route": "/v1/strategy-lab/replay",
+  "query": {},
+  "body": {
+    "definition": {
+      "chain": "solana",
+      "entry": {
+        "source": "pattern",
+        "pattern": "large_move",
+        "filters": {
+          "min_usd": 15000,
+          "direction": "in"
+        }
+      },
+      "exit": {
+        "max_hold_hours": 1
+      },
+      "sizing": {
+        "usd_per_trade": 10,
+        "max_concurrent": 50
+      }
+    },
+    "from": "2026-11-05T14:46:20.937Z",
+    "to": "2026-11-05T15:46:21.219Z"
+  },
+  "status": 202,
+  "ms": 144,
+  "bytes": 14,
+  "answer": {
+    "job_id": 231
+  }
+}

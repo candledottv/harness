@@ -6,7 +6,8 @@ import { afterEach, expect, test } from "bun:test"
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
 import { act } from "react"
-import { CLOCK, drawScene, SIGNAL_ROWS, type SceneName, settleJournal } from "../../test/frame-scenes"
+import { CLOCK, drawScene, everyTab, followed, MINT, SIGNAL_ROWS, type SceneName, settleJournal } from "../../test/frame-scenes"
+import { memoryStore } from "./layouts-store"
 import { CANDLE_DARK, CANDLE_LIGHT } from "./theme"
 import { memoryThemes } from "./themes"
 
@@ -228,7 +229,8 @@ test("P&L frame: pnl-full-140x40-window-menu (its chip clicked)", async () => {
 })
 
 test("the P&L topic is asked for only while a P&L pane is on screen, and the chart's points with it", async () => {
-  const drawn = await drawScene("followed", 140, 40, "trade", undefined, { pnl: "full" })
+  // Every tab on, as a person who ticked P&L on has it: P&L is the fifth.
+  const drawn = await drawScene("followed", 140, 40, "trade", everyTab(), { pnl: "full" })
   setup = drawn.setup
   expect(drawn.session.wanted.at(-1)).not.toContain("pnl")
   expect(drawn.session.requests.some((r) => r.method === "pnl.series")).toBe(false)
@@ -305,10 +307,11 @@ for (const variant of ["jup", "young"] as const) {
 test("Research's reads are asked for only while one of its panes is on screen: collapsed, the one shown; leaving the tab drops them", async () => {
   for (const [width, parts] of [
     [160, ["check", "traders", "signals", "mentions"]],
-    // Collapsed, the token shows first: nothing of Research's until Check is switched to.
+    // Collapsed, Check shows first, so the tab doesn't open looking like the Cockpit: only Check is read.
     [100, []],
   ] as const) {
-    const drawn = await drawScene("followed", width, 45)
+    // Every tab on, so Research is the sixth.
+    const drawn = await drawScene("followed", width, 45, "trade", everyTab())
     setup = drawn.setup
     const s = drawn.setup
     const press = async (fn: () => void) => {
@@ -322,13 +325,14 @@ test("Research's reads are asked for only while one of its panes is on screen: c
       expect(drawn.session.wanted.at(-1)).toEqual(["feeds", "research", "asks"])
       expect(drawn.session.filters.at(-1)).toEqual({ feeds: { buckets: ["onfire"] }, research: { parts: [...parts] } })
     } else {
-      expect(drawn.session.wanted.at(-1)).toEqual(["asks"])
-      // Down to the switched pane, and along to Check.
-      await press(() => s.mockInput.pressArrow("down"))
-      await clickText(s, "╭─ Token")
-      await press(() => s.mockInput.pressArrow("right"))
       expect(s.captureCharFrame()).toContain("╭─ Check")
       expect(drawn.session.filters.at(-1)).toEqual({ research: { parts: ["check"] } })
+      // Down to the switched pane, and back to the token: nothing of Research's is read while it shows.
+      await press(() => s.mockInput.pressArrow("down"))
+      await clickText(s, "╭─ Check")
+      await press(() => s.mockInput.pressArrow("left"))
+      expect(s.captureCharFrame()).toContain("╭─ Token")
+      expect(drawn.session.wanted.at(-1)).toEqual(["asks"])
     }
     await press(() => s.mockInput.pressArrow("up"))
     for (const arrow of ["up", "left"] as const) await press(() => s.mockInput.pressArrow(arrow))
@@ -378,7 +382,8 @@ test("Candle's lists are subscribed only while a pane on screen shows them; leav
     // Collapsed, one list shows at a time over the token: only it is read.
     [100, ["new"]],
   ] as const) {
-    const drawn = await drawScene("followed", width, 45)
+    // Every tab on, so Trending is the third.
+    const drawn = await drawScene("followed", width, 45, "trade", everyTab())
     setup = drawn.setup
     const s = drawn.setup
     const press = async (fn: () => void) => {
@@ -396,4 +401,146 @@ test("Candle's lists are subscribed only while a pane on screen shows them; leav
     await act(async () => s.dispose())
     setup = undefined
   }
+})
+
+// Token panes side by side: a layout of the person's own with two or three token panes,
+// the first following the link and the others each pinned on a token of its own, from the scenes' data.
+const COMPARE = `tabs = [
+  { name = "Compare", layout = "Compare" },
+  { name = "Trade", layout = "Agent-first" },
+]
+
+[layouts.Compare]
+root = ["row", "agent 36", ["column", 64, ["row", 70, "token", "token:2", "token:3"], "positions 30"]]
+`
+const COMPARE_TOLD = ["Cockpit", "Trending", "Signals", "P&L", "Research", "Journal", "Perps"]
+const LUMEN = "Trend2".padEnd(43, "1")
+const QUILL = "Trend5".padEnd(43, "1")
+/** A pinned token's data, as the core sends it beside the linked one: the scene's JUPF, moved to another token and price. */
+const pinnedLike = (mint: string, symbol: string, name: string, scale: number) => {
+  const t = followed()
+  const by = <T extends { usd: number }>(rows: readonly T[]) => rows.map((r) => ({ ...r, usd: r.usd * scale }))
+  return {
+    mint,
+    chain: "solana" as const,
+    symbol,
+    since: CLOCK - 9 * 60_000,
+    market: { ...t.market!, name, symbol, priceUsd: (t.market!.priceUsd ?? 0) * scale, marketCap: (t.market!.marketCap ?? 0) * scale },
+    check: t.check,
+    samples: by(t.samples),
+    history: by(t.history),
+    historyRead: t.historyRead,
+    candles: t.candles!.map((c) => ({ at: c.at, open: c.open * scale, high: c.high * scale, low: c.low * scale, close: c.close * scale })),
+    change1h: -0.012,
+  }
+}
+for (const [width, height] of [
+  [160, 45],
+  [140, 40],
+  [80, 24],
+] as const) {
+  const name = `compare-${width}x${height}`
+  test(`Token panes side by side frame: ${name}`, async () => {
+    const drawn = await drawScene("followed", width, height, "trade", memoryStore(COMPARE, {}, COMPARE_TOLD))
+    const push = async (topic: string, data: unknown) => {
+      await act(async () => drawn.session.push(topic, data))
+      await drawn.setup.renderOnce()
+    }
+    await push("market", { ...followed(), pinned: [pinnedLike(LUMEN, "LUMEN", "Lumen Fake", 0.0007), pinnedLike(QUILL, "QUILL", "Quill Fake", 0.0091)] })
+    await push("views", {
+      link: { mint: MINT, chain: "solana", symbol: "JUPF", since: CLOCK - 20 * 60_000, by: "agent" },
+      pins: [
+        { at: "Compare", pane: "token:2", mint: LUMEN, chain: "solana", symbol: "LUMEN" },
+        { at: "Compare", pane: "token:3", mint: QUILL, chain: "solana", symbol: "QUILL" },
+      ],
+      signals: [],
+      popped: [],
+    })
+    // Narrow, the token panes are the switched pane's: → walks it to the second.
+    await compare(name, drawn, width < 100 ? [{ arrow: "right" }, { arrow: "right" }] : [])
+  })
+}
+
+// An agent's memory with pinned lines: they're first, marked, with an unpin chip; a pinned line's delete asks once.
+const MEMORY_VIEW = {
+  dir: "/r/agent-a/memory",
+  entries: [
+    { id: "p1", text: "- never buy a token under an hour old, whatever the signal", pinned: true },
+    { id: "p2", text: "- sizing: a quarter of the usual buy on a dip → memory/sizing.md", pinned: true },
+    { id: "e1", text: "- risk check first: read skill:candle-risk-gate before any first buy of a token" },
+    { id: "e2", text: "- the slow fill: a TEE buy that took long last week → history:2026-10-21 slow fill" },
+  ],
+  files: [{ path: "sizing.md", bytes: 1_240 }],
+  chars: 360,
+  long: false,
+}
+for (const [width, height] of [
+  [120, 30],
+  [80, 24],
+] as const) {
+  for (const asking of [false, true]) {
+    const name = `memory-pinned-${width}x${height}${asking ? "-asking" : ""}`
+    test(`Memory frame: ${name}`, async () => {
+      const drawn = await drawScene("followed", width, height)
+      const s = drawn.setup
+      const go = async (fn: () => void | Promise<void>) => {
+        await act(async () => {
+          await fn()
+        })
+        await s.renderOnce()
+      }
+      await go(() => drawn.session.push("memory", { agents: { "agent-a": MEMORY_VIEW } }))
+      await go(() => s.mockInput.pressKey("k", { ctrl: true }))
+      await go(() => s.mockInput.typeText("agent-a's memory"))
+      await go(() => s.mockInput.pressEnter())
+      expect(s.captureCharFrame()).toContain("agent-a's memory")
+      // ⌫ on the first line, a pinned one, asks before it deletes.
+      if (asking) {
+        await go(() => s.mockInput.pressBackspace())
+        expect(s.captureCharFrame()).toContain("delete this pinned line?")
+        expect(drawn.session.requests.some((r) => r.method === "memory.delete")).toBe(false)
+      }
+      await compare(name, drawn, [])
+    })
+  }
+}
+
+test("a heading in an agent's memory is a row that deletes and never pins, and the highlighted row shows whole, its tail too", async () => {
+  const tail = "and treat anything the tape likes as already checked"
+  const view = {
+    ...MEMORY_VIEW,
+    entries: [
+      { id: "h1", text: "# Standing rule: size up on tokens the tape likes", heading: true },
+      { id: "e9", text: `- a long note that runs well past one row of the overlay so its end would be out of sight, ${tail}` },
+    ],
+  }
+  const drawn = await drawScene("followed", 80, 24)
+  setup = drawn.setup
+  const s = drawn.setup
+  const go = async (fn: () => void | Promise<void>) => {
+    await act(async () => {
+      await fn()
+    })
+    await s.renderOnce()
+  }
+  await go(() => drawn.session.push("memory", { agents: { "agent-a": view } }))
+  await go(() => s.mockInput.pressKey("k", { ctrl: true }))
+  await go(() => s.mockInput.typeText("agent-a's memory"))
+  await go(() => s.mockInput.pressEnter())
+  const rows = s.captureCharFrame().split("\n")
+  const heading = rows.find((r) => r.includes("# Standing rule: size up"))!
+  expect(heading).toContain("✕")
+  expect(heading).not.toContain("pin")
+  // The long line, not highlighted, is cut; its tail isn't on screen yet.
+  expect(s.captureCharFrame()).not.toContain("already checked")
+  // ⏎ on the heading pins nothing.
+  await go(() => s.mockInput.pressEnter())
+  expect(drawn.session.requests.some((r) => r.method === "memory.pin")).toBe(false)
+  // ↓ to the long line: all of it shows, wrapped under itself.
+  await go(() => s.mockInput.pressArrow("down"))
+  expect(s.captureCharFrame().replace(/[│\s]+/g, " ")).toContain("already checked")
+  // ⌫ on the heading deletes it, as any line.
+  await go(() => s.mockInput.pressArrow("up"))
+  await go(() => s.mockInput.pressBackspace())
+  expect(drawn.session.requests.find((r) => r.method === "memory.delete")?.params).toMatchObject({ agent: "agent-a", entry: "h1" })
 })

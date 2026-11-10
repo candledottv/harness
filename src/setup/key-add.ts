@@ -387,3 +387,54 @@ export async function recordAgentLimits(p: Paths, agent: string, limits: { perTr
   await writeAtomic(p.configFile, next, statSync(p.configFile).mode & 0o777)
   return { ok: true, wrote: true }
 }
+
+/**
+ * An agent's code runner, as the model picker or the palette turns it on or off: the `run` line in its own
+ * `[agents.<agent>.tools]` table set, or the table added after the agent's last table, and nothing else in the file.
+ * The result must parse to exactly this setting, or nothing is written.
+ */
+export async function recordAgentRun(p: Paths, agent: string, run: "off" | readonly string[]): Promise<{ ok: true; wrote: boolean } | { ok: false; why: string }> {
+  if (!isAgentName(agent)) return { ok: false, why: `"${agent}" can't be an agent name` }
+  let existing: string
+  try {
+    existing = readFileSync(p.configFile, "utf8")
+  } catch {
+    return { ok: false, why: "there's no config.toml to write to" }
+  }
+  const value = run === "off" ? `"off"` : `[${run.map((r) => JSON.stringify(r)).join(", ")}]`
+  const lines = existing.split("\n")
+  const name = agent.replace(/[-]/g, "\\-")
+  const header = new RegExp(`^\\s*\\[agents\\.${name}\\.tools\\]\\s*(#.*)?$`)
+  const at = lines.findIndex((l) => header.test(l))
+  if (at >= 0) {
+    let end = lines.findIndex((l, i) => i > at && /^\s*\[/.test(l))
+    if (end < 0) end = lines.length
+    const line = lines.findIndex((l, i) => i > at && i < end && /^\s*run\s*=/.test(l))
+    if (line < 0) lines.splice(at + 1, 0, `run = ${value}`)
+    else {
+      // A list written over several lines goes with it.
+      let last = line
+      if (/=\s*\[/.test(lines[line]!) && !/\]/.test(lines[line]!)) while (last + 1 < end && !/\]/.test(lines[last]!)) last++
+      lines.splice(line, last - line + 1, `run = ${value}`)
+    }
+  } else {
+    // After the agent's own tables: [agents.<agent>] and [agents.<agent>.*].
+    const own = new RegExp(`^\\s*\\[agents\\.${name}(\\.[A-Za-z]+)?\\]\\s*(#.*)?$`)
+    const tables = lines.flatMap((l, i) => (own.test(l) ? [i] : []))
+    if (tables.length === 0) return { ok: false, why: `config.toml has no table for ${agent}` }
+    let end = lines.findIndex((l, i) => i > tables[tables.length - 1]! && /^\s*\[/.test(l))
+    if (end < 0) end = lines.length
+    while (end > 0 && lines[end - 1]!.trim() === "") end--
+    lines.splice(end, 0, "", `[agents.${agent}.tools]`, `run = ${value}`)
+  }
+  const next = lines.join("\n")
+  if (next === existing) return { ok: true, wrote: false }
+  try {
+    const parsed = parseConfig(next, p.configFile).config.agents[agent]?.tools?.run ?? "off"
+    if (JSON.stringify(parsed) !== JSON.stringify(run)) return { ok: false, why: "config.toml wouldn't hold the setting as it's written" }
+  } catch (error) {
+    return { ok: false, why: `config.toml wouldn't hold the setting as it's written: ${(error as Error).message}` }
+  }
+  await writeAtomic(p.configFile, next, statSync(p.configFile).mode & 0o777)
+  return { ok: true, wrote: true }
+}

@@ -1,0 +1,13 @@
+{
+  "name": "live-trade-signals",
+  "host": "hacc",
+  "method": "GET",
+  "route": "/v1/trade-signals",
+  "query": {},
+  "status": 403,
+  "ms": 129,
+  "bytes": 43,
+  "answer": {
+    "error": "requires agent or trading scope"
+  }
+}

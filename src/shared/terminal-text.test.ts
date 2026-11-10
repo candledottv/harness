@@ -19,8 +19,17 @@ test("other invisible format characters are stripped, so a lookalike draws as wi
   expect(terminalText("MO\u200bON\u2060\ufeff\u00ad")).toBe("MOON")
   // Tag characters carry text a person never sees ("hi" here) while an agent reads it.
   expect(terminalText("MOON\u{e0068}\u{e0069}")).toBe("MOON")
-  // The joiners emoji and some scripts need stay.
-  expect(terminalText("👩\u200d💻 می\u200cخواهم")).toBe("👩\u200d💻 می\u200cخواهم")
+  // The joiner stays between two emoji, which it joins into one.
+  expect(terminalText("👩\u200d💻 🏳\ufe0f\u200d🌈 👍🏽\u200d👍")).toBe("👩\u200d💻 🏳\ufe0f\u200d🌈 👍🏽\u200d👍")
+})
+
+test("a joiner or non-joiner anywhere else goes: a terminal may draw it as a glyph, and the row's columns slip", () => {
+  // A token named "Inu" and a joiner drew "InuĂ" in Apple's font, and the pane's border sat a column off.
+  expect(terminalText("Inu \u200d")).toBe("Inu ")
+  expect(terminalText("In\u200du")).toBe("Inu")
+  expect(terminalText("👩\u200dX")).toBe("👩X")
+  expect(terminalText("X\u200d💻")).toBe("X💻")
+  expect(terminalText("می\u200cخواهم")).toBe("میخواهم")
 })
 
 test("blank fillers and selectors that draw nothing are stripped, but an emoji keeps its own selector", () => {

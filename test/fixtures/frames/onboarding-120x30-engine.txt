@@ -4,8 +4,8 @@
  │                          │ │                                                                                       │ 
  │ ✓ Welcome                │ │  Connect your agent                                                                   │ 
  │                          │ │                                                                                       │ 
- │ ✓ Sign in to Candle      │ │  Your agent runs on a harness you already use, signed in as you. The Candle Harness   │ 
- │  Wall…1111 · candle-     │ │  keeps your own setup out of it and never stores a model key.                         │ 
+ │ ✓ Sign in to Candle      │ │  Your agent runs on an engine: an AI coding tool you already use, as you. The Candle  │ 
+ │  Wall…1111 · candle-     │ │  Harness keeps your setup out of it and stores no model key.                          │ 
  │                          │ │                                                                                       │ 
  │ ▸ Connect your agent     │ │  ▸ Claude Code 2.1.316 · signed in                                                    │ 
  │                          │ │       ● sonnet · Claude Sonnet 5.5 · default                                          │ 
@@ -22,7 +22,7 @@
  │                          │ │                                                                                       │ 
  │                          │ │                                                                                       │ 
  │                          │ │                                                                                       │ 
- │ about 3 minutes          │ │                                                                                       │ 
+ │ about 5 minutes          │ │                                                                                       │ 
  │ quit any time: it picks  │ │                                                                                       │ 
  │ up where you stopped     │ │                                                                                       │ 
  ╰──────────────────────────╯ ╰───────────────────────────────────────────────────────────────────────────────────────╯ 
@@ -36,8 +36,8 @@
 3: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×26 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×87 32fe9f/111419×1 ffffff/0b0d10×1
 4: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 3ddc84/111419×1 dde2ea/111419×8 ffffff/111419×16 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 b392f0/111419×18 ffffff/111419×67 32fe9f/111419×1 ffffff/0b0d10×1
 5: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×26 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×87 32fe9f/111419×1 ffffff/0b0d10×1
-6: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 3ddc84/111419×1 dde2ea/111419×18 ffffff/111419×6 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 dde2ea/111419×82 ffffff/111419×3 32fe9f/111419×1 ffffff/0b0d10×1
-7: ffffff/0b0d10×1 252a33/111419×1 dde2ea/111419×2 959dab/111419×19 ffffff/111419×5 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 dde2ea/111419×60 ffffff/111419×25 32fe9f/111419×1 ffffff/0b0d10×1
+6: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 3ddc84/111419×1 dde2ea/111419×18 ffffff/111419×6 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 dde2ea/111419×83 ffffff/111419×2 32fe9f/111419×1 ffffff/0b0d10×1
+7: ffffff/0b0d10×1 252a33/111419×1 dde2ea/111419×2 959dab/111419×19 ffffff/111419×5 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 dde2ea/111419×59 ffffff/111419×26 32fe9f/111419×1 ffffff/0b0d10×1
 8: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×26 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×87 32fe9f/111419×1 ffffff/0b0d10×1
 9: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 32fe9f/111419×1 dde2ea/111419×1 f6f8fb/111419×18 ffffff/111419×5 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 32fe9f/1d2430×2 b392f0/1d2430×31 ffffff/1d2430×50 ffffff/111419×2 32fe9f/111419×1 ffffff/0b0d10×1
 10: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×26 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 32fe9f/111419×7 f6f8fb/111419×36 ffffff/111419×42 32fe9f/111419×1 ffffff/0b0d10×1

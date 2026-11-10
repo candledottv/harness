@@ -286,3 +286,19 @@ test("an alias's line refused for an unknown name asks the agent in its words, a
   expect(session.requests.at(-1)).toEqual({ method: "agent.send", params: { text: "buy $1 of WOOF" } })
   expect(frame()).not.toContain("› b1 WOOF")
 })
+
+test("a typed paper trade the core refuses stays on screen as an error past a passing note's 6 s, and the line comes back to fix", async () => {
+  const MINT = "JUPyiwrYJFskUPiHa7hkeR8VLUAvNHpoo2DM8aGTnCB"
+  const refusal = { success: false, error: { code: "TOKEN_UNKNOWN", message: "Candle doesn't know this token." } }
+  const session = new FakeSession((method) => (method === "cards.propose" ? { paper: { isError: true, content: [{ type: "text", text: JSON.stringify(refusal) }] } } : {}))
+  await start(session, undefined, { mode: "paper" })
+  await send(`buy $1 of ${MINT}`)
+  expect(session.proposals().map((r) => r.params)).toEqual([{ tool: "candle_trade", args: { mint: MINT, side: "buy", amountUsd: "1" }, typed: true }])
+  // The message wraps under the agent pane: its two rows.
+  expect(frame()).toContain("(paper): refused. Candle")
+  expect(frame()).toContain("doesn't know this token. (TOKEN_UNKNOWN)")
+  expect(frame()).toContain(`› buy $1 of ${MINT}`)
+  clock += 10_000
+  await input(() => {})
+  expect(frame()).toContain("doesn't know this token. (TOKEN_UNKNOWN)")
+})

@@ -1,20 +1,29 @@
-// The Quant preset's bundled skills are Candle's own, copied unchanged
-// from candledottv/agentic at one commit. skills/SOURCE names the commit and each file's sha256. This
-// checks that the files in skills/ are exactly the ones SOURCE lists, unchanged.
+// Candle's own skills, copied unchanged from candledottv/agentic at one commit, in two folders: skills/ (the Quant
+// preset's, read by the trading agent) and build-skills/ (the bot-building ones the Build tab writes into a bots
+// folder). Each folder's SOURCE names the commit and each file's sha256. This checks that the files in a folder are
+// exactly the ones its SOURCE lists, unchanged.
 //
-//   bun scripts/skills-check.ts                         the files against SOURCE (offline; a test runs it)
+//   bun scripts/skills-check.ts                         both folders against their SOURCE (offline; a test runs it)
 //   bun scripts/skills-check.ts --upstream <checkout>   also against the commit in a checkout of the repo
 //   bun scripts/skills-check.ts --write <checkout>      SOURCE written afresh from that checkout's commit,
 //                                                       for an update, after reading every changed skill
+//   --dir build-skills                                  one folder only
 //
 // An update is a Candle Harness release: read each changed skill for anything that tells the agent to act outside
-// the core, and give it a Candle Harness note in src/engine/skills.ts where it does.
+// the core, and give it a Candle Harness note where it does: src/engine/skills.ts for skills/, the bots folder's
+// AGENTS.md (src/build/agents-md.ts) for build-skills/.
 import { spawnSync } from "node:child_process"
 import { createHash } from "node:crypto"
 import { readdirSync, readFileSync, statSync, writeFileSync } from "node:fs"
 import { join, relative } from "node:path"
 
 export const SKILLS_DIR = join(import.meta.dir, "..", "skills")
+export const BUILD_SKILLS_DIR = join(import.meta.dir, "..", "build-skills")
+/** What each folder's SOURCE says it's for, on its first line. */
+const PURPOSE: Record<string, string> = {
+  skills: "Candle's skills, copied unchanged for the Candle Harness's Quant preset.",
+  "build-skills": "Candle's bot-building skills, copied unchanged for the bots folder the Candle Harness's Build tab writes.",
+}
 const REPO = "https://github.com/candledottv/agentic"
 
 export interface Source {
@@ -95,7 +104,7 @@ function writeSource(checkout: string, dir = SKILLS_DIR): void {
   writeFileSync(
     join(dir, "SOURCE"),
     [
-      "Candle's skills, copied unchanged for the Candle Harness's Quant preset.",
+      PURPOSE[dir.split("/").at(-1)!] ?? PURPOSE.skills!,
       `repo: ${REPO}`,
       `commit: ${commit}`,
       `date: ${date}`,
@@ -113,13 +122,18 @@ if (import.meta.main) {
     const i = process.argv.indexOf(flag)
     return i >= 0 ? process.argv[i + 1] : undefined
   }
+  const only = at("--dir")
+  const dirs = only ? [join(import.meta.dir, "..", only)] : [SKILLS_DIR, BUILD_SKILLS_DIR]
   const write = at("--write")
-  if (write) writeSource(write)
+  if (write) for (const dir of dirs) writeSource(write, dir)
   const checkout = at("--upstream") ?? write
-  const problems = [...checkSkills(), ...(checkout ? checkUpstream(checkout) : [])]
-  if (problems.length) {
-    for (const p of problems) console.error(`skills: ${p}`)
-    process.exit(1)
+  let failed = false
+  for (const dir of dirs) {
+    const name = relative(join(import.meta.dir, ".."), dir)
+    const problems = [...checkSkills(dir), ...(checkout ? checkUpstream(checkout, dir) : [])]
+    for (const p of problems) console.error(`${name}: ${p}`)
+    if (problems.length) failed = true
+    else console.log(`${name}: ${bundledFiles(dir).length} files match SOURCE${checkout ? " and the commit upstream" : ""}`)
   }
-  console.log(`skills: ${bundledFiles().length} files match SOURCE${checkout ? " and the commit upstream" : ""}`)
+  if (failed) process.exit(1)
 }

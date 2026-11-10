@@ -1,0 +1,16 @@
+{
+  "name": "trades-limit-501",
+  "host": "hacc",
+  "method": "GET",
+  "route": "/v1/trades",
+  "query": {
+    "run_id": "1",
+    "limit": "501"
+  },
+  "status": 400,
+  "ms": 163,
+  "bytes": 59,
+  "answer": {
+    "error": "limit: Number must be less than or equal to 500"
+  }
+}

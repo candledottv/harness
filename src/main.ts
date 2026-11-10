@@ -1,6 +1,7 @@
-// candle-harness [view|core|mcp|key add|doctor|version|cli-pane]. With no subcommand, it runs the view.
+// candle-harness [view|core|stop|service|ask|trigger|bots|mcp|key add|doctor|version|cli-pane]. With no subcommand, it runs the view.
 import { spawnSync } from "node:child_process"
 import { readFileSync } from "node:fs"
+import { homedir } from "node:os"
 import { ConfigError, loadConfig } from "./config"
 import { PathsError, type Paths, paths, UnsafeStateDir } from "./paths"
 import { parseState, unfinished } from "./setup/onboarding"
@@ -21,14 +22,31 @@ const USAGE = `Usage: candle-harness [command]
   setup          onboarding again on a set-up machine, to add an agent (--straight-in: skip the tour)
   view --pane <id>  one pane alone, popped out of the main view (ctrl-p there starts it in a tmux or cmux split)
   core           run the core headless
+  stop           stop the core, saying what it stopped (triggers stop watching until a core runs again)
+  service        install | uninstall | status: run the core at login, for triggers with no terminal open
+  ask            send an agent your message from a script or another terminal, and print its reply:
+                 ask [--agent <name>] [--no-wait] [--json] <words…> (the words from stdin when there are none)
+  cards          list the cards waiting and how each ended, from a script; it only reads, and never approves:
+                 cards [--json] [--wait] [--all] [<card id>]
+  trigger        fire an "on call" trigger by its name, and wait for what it did: trigger [--no-wait] <name>
+  bots           code bots' processes: bots list | start | stop | restart | token | logs <name>; bots init [folder]
+                 writes a bots folder (~/candle-bots by default): the rules, the client and Candle's skills
+  build          in the Build tab's terminal: build books | logs <bot> | journal | test <folder> | propose <name>
   mcp            the MCP server an engine uses to reach the core (--empty: one with no tools, for the doctor)
   key add        add an agent's key, read from stdin: key add --agent <name>
   doctor         check the setup and say what to fix (--offline skips Candle and the engines' turns)
-  version        print the version and the commit it was built from
+  version        print the version and the commit it was built from (also --version); version --core prints
+                 the version of the core that's running, when one is
   cli-pane       the prompt pane's launcher, which the view starts for a card you approved
 `
 
 export async function main(argv: string[], io: Io): Promise<number> {
+  // The code runner's exec stage on Linux (core/hold.ts), started by the core for research_run: it holds itself,
+  // then becomes the program. Before anything else, so nothing of ours runs or prints first.
+  if (argv[0] === "run-held") {
+    const { runHeldStage } = await import("./core/hold")
+    return runHeldStage(argv.slice(1), io.err)
+  }
   // 0.2's CANDLE_TUI_* variables, read under their new names (shared/old-env.ts): said once, where a person reads it.
   const oldEnv = adoptOldEnv(process.env)
   if (oldEnv.length > 0 && argv[0] !== "mcp" && argv[0] !== "cli-pane") io.err(`${oldEnvNotice(oldEnv)}\n`)
@@ -48,6 +66,35 @@ export async function main(argv: string[], io: Io): Promise<number> {
     }
     case "core":
       return runCore(rest, io)
+    case "stop": {
+      const { stopCommand } = await import("./setup/stop")
+      return stopCommand(rest, io, { env: process.env, platform: process.platform, home: process.env.HOME ?? homedir() })
+    }
+    case "service": {
+      const { serviceCommand, defaultServiceDeps } = await import("./setup/service")
+      const { selfCommand } = await import("./engine/registry")
+      return serviceCommand(rest, io, defaultServiceDeps(process.env, selfCommand(), loginName()))
+    }
+    case "ask": {
+      const { askCommand } = await import("./setup/ask")
+      return askCommand(rest, { ...io, readStdin: async () => (process.stdin.isTTY ? undefined : Bun.stdin.text()) }, { env: process.env })
+    }
+    case "cards": {
+      const { cardsCommand } = await import("./setup/cards")
+      return cardsCommand(rest, io, { env: process.env })
+    }
+    case "trigger": {
+      const { triggerCommand } = await import("./setup/ask")
+      return triggerCommand(rest, io, { env: process.env })
+    }
+    case "bots": {
+      const { botsCommand } = await import("./setup/bots")
+      return botsCommand(rest, io, { env: process.env })
+    }
+    case "build": {
+      const { buildCommand } = await import("./setup/build")
+      return buildCommand(rest, io, { env: process.env, cwd: process.cwd() })
+    }
     case "mcp": {
       const { runShim } = await import("./mcp/shim")
       return runShim(rest, io.err)
@@ -73,6 +120,13 @@ export async function main(argv: string[], io: Io): Promise<number> {
     }
     case "version":
     case "--version":
+      if (rest.length === 1 && rest[0] === "--core") {
+        // Nothing when no core runs or it can't be asked: the installer reads this after replacing the binary.
+        const { runningCoreVersion } = await import("./setup/core-version")
+        const running = await runningCoreVersion(process.env)
+        if (running !== undefined) io.out(`core ${running}\n`)
+        return 0
+      }
       io.out(`candle-harness ${VERSION} (${COMMIT})\n`)
       return 0
     case "help":
@@ -301,11 +355,12 @@ async function readKeyFromStdin(prompt: string): Promise<string> {
 
 /**
  * `candle-harness core`: the core, headless, until it's stopped. `--exit-when-idle` is how a view starts
- * one for itself: that core exits 60 s after nothing holds it.
+ * one for itself: that core exits 60 s after nothing holds it. `--service` is how the login service starts
+ * one: headless, and a core already running isn't a failure, so the service manager doesn't restart it.
  */
 async function runCore(args: string[], io: Io): Promise<number> {
-  const unknown = args.filter((a) => a !== "--exit-when-idle")
-  if (unknown.length > 0) {
+  const unknown = args.filter((a) => a !== "--exit-when-idle" && a !== "--service")
+  if (unknown.length > 0 || (args.includes("--exit-when-idle") && args.includes("--service"))) {
     io.err(`Usage: candle-harness core\n`)
     return 2
   }
@@ -346,7 +401,8 @@ async function runCore(args: string[], io: Io): Promise<number> {
     const code = (error as { code?: unknown }).code
     if (code === "CORE_ALREADY_RUNNING") {
       io.err(`${(error as Error).message}\n`)
-      return 1
+      // The login service found a core a view started: nothing to restart, so a clean exit.
+      return args.includes("--service") ? 0 : 1
     }
     throw error
   }

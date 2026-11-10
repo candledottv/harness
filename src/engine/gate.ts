@@ -3,14 +3,16 @@
 // Each one passes labelled with the most trusted source that saw it, or is flagged unknown: an agent
 // that invents or mistypes an address is caught by the harness, not by hoping the prompt holds.
 
+import { addressKey as keyOf } from "../shared/address-key"
 import { terminalText } from "../shared/terminal-text"
 
-export type Source = "candle" | "hacc" | "web" | "shell" | "file"
+/** Where an address was seen. "you": the person's own message this turn, which no tool vouches for. */
+export type Source = "candle" | "hacc" | "web" | "shell" | "file" | "you"
 export type SeenValue = { value: string; source: Source }
 export type GateResult = { ok: boolean; labelled: { address: string; source: Source }[]; unknown: string[] }
 
 /** Most trusted first. */
-const RANK: Record<Source, number> = { candle: 0, hacc: 1, web: 2, shell: 3, file: 4 }
+const RANK: Record<Source, number> = { candle: 0, hacc: 1, web: 2, shell: 3, file: 4, you: 5 }
 
 const BASE58 = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
 const BASE58_WORD = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/
@@ -33,8 +35,6 @@ function base58Length(s: string): number {
   return zeros + bytes
 }
 
-/** The key two spellings of one address share: EVM ignores case (checksums are mixed case); Solana doesn't. */
-const keyOf = (address: string) => (address.startsWith("0x") ? address.toLowerCase() : address)
 
 /** Every address in `text`, Solana (base58 words that decode to exactly 32 bytes) and EVM, in order of
  *  appearance, each spelling once: an EVM address written in two cases is there twice. */

@@ -22,6 +22,8 @@
 import { JOURNAL_KINDS, type JournalKind, KIND_WORDS } from "../core/journal-query"
 import type { SignalsChoice } from "../core/view-state"
 import { type Layout, PANE_IDS, type PaneId, panesOf } from "./layout"
+import { isTokenPane, TOKEN_PANES, type TokenPane } from "../shared/panes"
+import { placeWords } from "../core/view-state"
 import { closed, freeName, nameProblem, opened, type Refused, tabAdded, tabRemoved, tabRenamed, tabShownIn } from "./layout-edit"
 import { allLayouts, allTabs, type HiddenTab, isPreset, layoutNamed, layoutOf, type LayoutsFile, rootText, type Tab, treeOf } from "./layouts-file"
 import type { SignalsChange } from "./keys"
@@ -44,7 +46,7 @@ export interface ViewToolContext {
   /** The tab on screen, by index. */
   tab: number
   previews: Readonly<Record<string, AgentPreview>>
-  pins: readonly { at: string; symbol?: string; mint: string }[]
+  pins: readonly { at: string; pane?: Exclude<TokenPane, "token">; symbol?: string; mint: string }[]
   theme: { current: string; names: readonly string[]; read: (name: string) => string | undefined }
   /** Each tab's Signals choice (the core's `views` topic), and whether the Signals pane is paused. */
   signals?: readonly SignalsChoice[]
@@ -66,8 +68,8 @@ export type ViewPlan =
   | { kind: "tabs"; file: LayoutsFile; before: Tab[]; hidden?: HiddenTab[]; select?: number; renamed?: { from: string; to: string }; text: string; words: string }
   | { kind: "signals"; tab: string; at?: number; change: SignalsChange; paused?: boolean; text: string; words: string }
   | { kind: "journal"; at?: number; search: JournalSearch; text: string; words: string }
-  | { kind: "pin"; tab: string; mint?: string }
-  | { kind: "unpin"; tab: string }
+  | { kind: "pin"; tab: string; pane: TokenPane; mint?: string }
+  | { kind: "unpin"; tab: string; pane: TokenPane }
   | { kind: "theme"; name: string }
   | { kind: "makeTheme"; name: string; source: string; text: string; words: string }
 
@@ -162,7 +164,7 @@ function readText(ctx: ViewToolContext): string {
   const layouts = allLayouts(ctx.file).map((l) => `${l.name}${isPreset(l.name) ? " (preset)" : " (theirs)"}`)
   const off = ctx.file.hidden.map((h) => h.tab.name)
   const signals = ctx.file.tabs.filter((t) => panesOf(drawn(ctx, t).root).includes("signals")).map((t) => `${t.name}, ${pickWords(signalsChoiceOf(ctx.signals, t.name))}`)
-  const pins = ctx.pins.map((p) => `${p.at} on ${p.symbol ?? p.mint}`)
+  const pins = ctx.pins.map((p) => `${placeWords(p)} on ${p.symbol ?? p.mint}`)
   const themes = ctx.theme.names.map((n) => `${n}${n === ctx.theme.current ? " (on)" : ""}${BUILT_IN_NAMES.includes(n) ? "" : ctx.theme.read(n)?.startsWith(AGENT_THEME_MARK) ? " (made by an agent)" : " (theirs)"}`)
   return [
     "Tabs, each with the layout it shows and its tree:",
@@ -268,7 +270,9 @@ export function planView(args: Record<string, unknown>, ctx: ViewToolContext): V
       if (args.near !== undefined && (!near || !panesOf(base.root).includes(near))) return refused(`near names a pane on ${t.tab.name}'s layout: ${panesOf(base.root).join(", ")}.`, "UNKNOWN_PANE")
       const next = action === "open" ? opened(base, pane, near) : closed(base, pane)
       if (isRefused(next)) return refused(next.refused, "LAYOUT_REFUSED")
-      return preview(ctx, t.tab, next, action === "open" ? `${pane} opened${near ? ` beside ${near}` : ""}` : `${pane} closed`)
+      const planned = preview(ctx, t.tab, next, action === "open" ? `${pane} opened${near ? ` beside ${near}` : ""}` : `${pane} closed`)
+      // Another token pane shows the link until it's pinned: comparing tokens means pinning it on one.
+      return action === "open" && isTokenPane(pane) && pane !== "token" && planned.kind === "preview" ? { ...planned, text: `${planned.text} It shows the linked token until you pin it on one: "pin" with pane "${pane}" and the token's mint.` } : planned
     }
     case "build": {
       const t = tabOf(ctx, args.tab)
@@ -316,9 +320,13 @@ export function planView(args: Record<string, unknown>, ctx: ViewToolContext): V
     case "unpin": {
       const t = tabOf(ctx, args.tab)
       if (typeof t === "string") return refused(t, "UNKNOWN_TAB")
-      if (!panesOf(drawn(ctx, t.tab).root).includes("token")) return refused(`${t.tab.name} has no token pane to pin: open one first.`, "NO_TOKEN_PANE")
+      const on = panesOf(drawn(ctx, t.tab).root)
+      if (!on.includes("token")) return refused(`${t.tab.name} has no token pane to pin: open one first.`, "NO_TOKEN_PANE")
+      const pane = args.pane === undefined ? "token" : paneId(args.pane)
+      if (!isTokenPane(pane)) return refused(`pane is one of ${TOKEN_PANES.join(", ")}: which of ${t.tab.name}'s token panes.`, "UNKNOWN_PANE")
+      if (!on.includes(pane)) return refused(`${t.tab.name} has no ${pane}: open it first (its token panes: ${on.filter(isTokenPane).join(", ")}).`, "NO_TOKEN_PANE")
       const mint = str(args.mint)
-      return action === "pin" ? { kind: "pin", tab: t.tab.name, ...(mint ? { mint } : {}) } : { kind: "unpin", tab: t.tab.name }
+      return action === "pin" ? { kind: "pin", tab: t.tab.name, pane, ...(mint ? { mint } : {}) } : { kind: "unpin", tab: t.tab.name, pane }
     }
     case "theme": {
       const name = str(args.name)

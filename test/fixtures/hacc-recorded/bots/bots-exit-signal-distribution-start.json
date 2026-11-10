@@ -1,0 +1,35 @@
+{
+  "name": "exit-signal-distribution-start",
+  "host": "hacc",
+  "method": "POST",
+  "route": "/v1/strategy-lab/replay",
+  "query": {},
+  "body": {
+    "definition": {
+      "chain": "solana",
+      "entry": {
+        "source": "pattern",
+        "pattern": "new_ticker",
+        "filters": {}
+      },
+      "exit": {
+        "exit_on_signal": true
+      },
+      "sizing": {
+        "usd_per_trade": 10,
+        "max_concurrent": 50
+      }
+    },
+    "from": "2026-11-05T06:25:00.000Z",
+    "to": "2026-11-05T06:55:00.000Z",
+    "asset_ids": [
+      141128109
+    ]
+  },
+  "status": 202,
+  "ms": 169,
+  "bytes": 14,
+  "answer": {
+    "job_id": 224
+  }
+}

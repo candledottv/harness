@@ -6,7 +6,7 @@ import { mkdtempSync, readFileSync, rmSync, statSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { Redactor } from "../shared/redact"
-import { AWAY_MIN_GAP_MS, type AwayDeps, AwayDesk, awayRecords, coreDown, type HoldingsSnapshot, holdingChanges, outsideFills } from "./away"
+import { AWAY_MIN_GAP_MS, type AwayDeps, AwayDesk, awayRecords, coreDown, type HoldingChange, type HoldingsSnapshot, holdingChanges, markOutside, outsideFills, withBooks } from "./away"
 import type { ToolOutcome } from "./candle-mcp"
 import type { HaccAnswer } from "./hacc"
 import type { JournalRow } from "./journal"
@@ -301,6 +301,8 @@ test("the wallets then and now: compared once the attach's portfolio read lands;
   d.portfolioRead()
   const s = d.view().summary!
   expect(s.holdings).toMatchObject({ state: "read", then: T0 - 5_000, changes: [{ asset: MOON, symbol: "MOON", then: 10, now: 4 }] })
+  // Nothing this Candle Harness sent in the gap explains it: another key on the wallet did.
+  expect(s.holdings.changes[0]!.outside).toBe(true)
   expect(s.counts.holdings).toBe(1)
   expect(s.happened).toBe(true)
   d.stop()
@@ -338,4 +340,153 @@ test("a Candle Harness trade whose outcome is unknown is never called outside, t
   expect(s.trades[0]).toMatchObject({ outcome: "unknown", withoutCard: true })
   await d.flush()
   expect(JSON.parse(readFileSync(join(dir, "away.json"), "utf8")).summary.id).toBe(s.id)
+})
+
+test("the triggers: what fired, what waited and was never pressed (with run it now), what the kill switch held, what was missed", () => {
+  const trig = { trigger: "dip", fireId: "fire_1", part: 0 }
+  const rows = journal(
+    [5, "trigger.fired", { agent: "agent-a", name: "dip", fireId: "fire_1", words: "MOON was $0.39, under $0.40" }],
+    [5.01, "card.created", { agent: "agent-a", cardId: "card_t", opId: "op_t", kind: "trade", tool: "candle_trade", mint: MOON, side: "buy", role: "core", ...trig, title: "a trade", headline: "BUY $1 of MOON", value: { usd: 1 }, wallet: "embedded" }],
+    [5.02, "trigger.waiting", { agent: "agent-a", name: "dip", fireId: "fire_1", cardId: "card_t", words: "BUY $1 of MOON waits for you: the embedded wallet asks every time" }],
+    [6, "card.expired", { agent: "agent-a", cardId: "card_t", opId: "op_t", trigger: "dip" }],
+    [20, "trigger.held", { agent: "agent-a", name: "dip", reason: "paused", words: "the kill switch holds its buy, so it wasn't sent" }],
+    [30, "trigger.missed", { agent: "agent-a", name: "every day 09:00", words: "Missed its 09:00 run" }],
+    [40, "trigger.ran", { agent: "agent-a", name: "round", outcome: "done", words: "Chain done", sent: 2 }],
+  )
+  const r = awayRecords(rows, T0, T0 + HOUR, symbolOf)
+  expect(r.triggers.map((e) => e.text)).toEqual([
+    `trigger "every day 09:00": Missed its 09:00 run`,
+    `trigger "dip": the kill switch holds its buy, so it wasn't sent`,
+    `trigger "dip": BUY $1 of MOON waits for you: the embedded wallet asks every time`,
+    `trigger "dip" fired: MOON was $0.39, under $0.40`,
+  ])
+  // A chain that ran to the end is in the trades it made, not here.
+  expect(r.triggers.some((e) => e.text.includes("round"))).toBe(false)
+  expect(r.trades).toEqual([expect.objectContaining({ outcome: "expired", trigger: "dip", runNow: "card_t" })])
+  // Once run again, no chip.
+  const again = awayRecords([...rows, ...journal([50, "trigger.run_now", { agent: "agent-a", name: "dip", cardId: "card_t" }]).map((x) => ({ ...x, seq: x.seq + 100 }))], T0, T0 + HOUR, symbolOf)
+  expect(again.trades[0]!.runNow).toBeUndefined()
+})
+
+test("what an agent changed with nobody there: a trigger switched off or narrowed, a bot narrowed, a trigger that stopped watching", () => {
+  const rows = journal(
+    [5, "trigger.changed", { agent: "agent-a", name: "stop", on: false, how: "agent", changedBy: "agent-b", woken: "dip", sells: [MOON] }],
+    [6, "trigger.changed", { agent: "agent-a", name: "dip", hash: "h", on: true, how: "agent", changedBy: "agent-a", narrowed: ["its level, from $0.40 to $0.35"] }],
+    [7, "trigger.changed", { agent: "agent-a", name: "note", on: false, how: "agent", changedBy: "agent-a" }],
+    // The person's own switch, and their approved change, are theirs to remember.
+    [8, "trigger.changed", { agent: "agent-a", name: "mine", on: false, how: "view" }],
+    [9, "trigger.changed", { agent: "agent-a", name: "mine", hash: "h2", on: true, by: "card" }],
+    [10, "trigger.held", { agent: "agent-a", name: "tee stop", reason: "unreadable", words: "its line doesn't read now, so it isn't watching: tee-one hasn't been read from Candle yet" }],
+    [20, "bot.changed", { agent: "agent-a", name: "conf", how: "agent", changedBy: "agent-a", narrowed: ["a stake of $1, from $2"] }],
+    [21, "bot.changed", { agent: "agent-a", name: "conf", how: "card" }],
+  )
+  const r = awayRecords(rows, T0, T0 + HOUR, symbolOf)
+  expect(r.triggers.map((e) => [e.text, e.tone])).toEqual([
+    [`trigger "tee stop": its line doesn't read now, so it isn't watching: tee-one hasn't been read from Candle yet`, "warn"],
+    ['agent-a switched off trigger "note"', "info"],
+    ['agent-a narrowed trigger "dip": its level, from $0.40 to $0.35', "info"],
+    ['agent-b switched off trigger "stop": its sell of MOON no longer waits', "warn"],
+  ])
+  expect(r.bots.find((b) => b.name === "conf")?.held.map((e) => e.text)).toEqual(['agent-a narrowed the bot "conf": a stake of $1, from $2'])
+})
+
+test("the bots: each one's fills, exits by why, skips and what was held, never in Trades; its book's P&L and what's open", () => {
+  const entry = (at: number, opId: string, signal: number, mint = MOON) =>
+    trade(at, opId, { mint, how: "inside-limits" }).map(([m, type, f]): [number, string, Record<string, unknown>] => [m, type, type === "card.created" || type === "card.approved" ? { ...f, role: "core", bot: "conf", botAct: "entry", botSignal: signal } : f])
+  const exit = (at: number, opId: string, position: string, reason: string) =>
+    trade(at, opId, { side: "sell", how: "bot-exit" }).map(([m, type, f]): [number, string, Record<string, unknown>] => [m, type, type === "card.created" || type === "card.approved" ? { ...f, role: "core", bot: "conf", botAct: "exit", botPosition: position, botReason: reason } : f])
+  const rows = journal(
+    [5, "bot.entering", { agent: "agent-a", name: "conf", signalId: 1, mint: MOON, usd: 1, botMode: "live", words: "buys $1.00 of MOON" }],
+    ...entry(5, "op_e1", 1),
+    [9, "bot.skipped", { agent: "agent-a", name: "conf", reason: "slot_full", count: 3, words: "3 signals" }],
+    ...entry(12, "op_e2", 2, PEPE),
+    ...exit(20, "op_x1", "op_e1", "stop_loss"),
+    [25, "bot.waiting", { agent: "agent-a", name: "conf", signalId: 3, mint: PEPE, cardId: "card_w", words: "its buy of $1.00 of PEPE waits for you: the embedded wallet asks every time" }],
+    [30, "paper.call", { mode: "paper", agent: "agent-b", role: "core", bot: "paper-one", botAct: "entry", botSignal: 9, tool: "candle_trade", args: { mint: MOON, side: "buy" }, isError: false, answer: JSON.stringify({ api: { paper: true, side: "buy", mint: MOON, quoteAsset: "sol", amountRaw: "10000000", tokenAmount: 5 } }) }],
+    // The person's own bot change is the Journal's, not the note's.
+    [35, "bot.paused", { agent: "agent-a", name: "conf", how: "view" }],
+  )
+  const r = awayRecords(rows, T0, T0 + HOUR, symbolOf)
+  expect(r.trades).toEqual([])
+  const conf = r.bots.find((b) => b.name === "conf")!
+  expect(conf).toMatchObject({ mode: "live", bought: 2, sold: 1, exits: { stop: 1 }, skipped: 3 })
+  expect(conf.trades).toHaveLength(3)
+  expect(conf.held.map((e) => e.text)).toEqual(['the bot "conf": its buy of $1.00 of PEPE waits for you: the embedded wallet asks every time'])
+  expect(r.bots.find((b) => b.name === "paper-one")).toMatchObject({ mode: "paper", bought: 1, sold: 0 })
+  // Every bot fill is still the Candle Harness's own, so Candle's fills never call it outside.
+  expect(r.harness.map((t) => t.opId)).toEqual(["op_e1", "op_e2", "op_x1"])
+  // Its book: P&L over the gap and what it holds; a quiet bot shows only while it holds something.
+  const merged = withBooks(r.bots, [
+    { name: "conf", agent: "agent-a", mode: "live", realizedUsd: -0.41, open: [{ mint: PEPE, symbol: "PEPE" }] },
+    { name: "idle", agent: "agent-a", mode: "live", realizedUsd: 0, open: [] },
+    { name: "holder", agent: "agent-a", mode: "paper", realizedUsd: 0, open: [{ mint: MOON }] },
+  ])
+  expect(merged.map((b) => [b.name, b.realizedUsd, b.open?.length])).toEqual([
+    ["conf", -0.41, 1],
+    ["paper-one", undefined, undefined],
+    ["holder", undefined, 1],
+  ])
+})
+
+test("a code bot in the gap: its requests' fills and its own sells, what waited or ended with nothing, a crash and giving up", () => {
+  const req = (at: number, opId: string, request: string, side: "buy" | "sell", extra: Record<string, unknown> = {}) =>
+    trade(at, opId, side === "sell" ? { side: "sell", how: "bot-exit" } : { mint: MOON, how: "inside-limits" }).map(([m, type, f]): [number, string, Record<string, unknown>] => [m, type, type === "card.created" || type === "card.approved" ? { ...f, role: "core", bot: "grid", botAct: side === "sell" ? "exit" : "entry", botKind: "code", botRequest: request, ...extra } : f])
+  const rows = journal(
+    [5, "bot.request", { kind: "code", agent: "agent-a", name: "grid", request: "r1", side: "buy", mint: MOON, usd: 1, botMode: "live", words: "buys $1.00 of MOON" }],
+    ...req(5, "op_r1", "r1", "buy"),
+    ...req(15, "op_r2", "r2", "sell", { botPosition: "op_r1", botReason: "bot" }),
+    [20, "bot.request_waiting", { kind: "code", agent: "agent-a", name: "grid", request: "r3", cardId: "card_w", words: "its buy of $1.00 of PEPE waits for you: the embedded wallet asks every time" }],
+    [22, "bot.request_ended", { kind: "code", agent: "agent-a", name: "grid", request: "r4", side: "buy", outcome: "rejected", words: "you rejected it" }],
+    [25, "bot.process", { kind: "code", agent: "agent-a", name: "grid", what: "crashed", crashes: 1, words: "crashed (exit 1) at 09:25; it starts again in 2 s" }],
+    [26, "bot.process", { kind: "code", agent: "agent-a", name: "grid", what: "started", pid: 7 }],
+    [40, "bot.process", { kind: "code", agent: "agent-a", name: "grid", what: "gave_up", crashes: 5, words: "crashed (exit 1) at 09:40: 5 crashes in 10 min, so it isn't started again until you start it" }],
+  )
+  const r = awayRecords(rows, T0, T0 + HOUR, symbolOf)
+  expect(r.trades).toEqual([])
+  const grid = r.bots.find((b) => b.name === "grid")!
+  expect(grid).toMatchObject({ mode: "live", bought: 1, sold: 1, exits: { "its own sell": 1 } })
+  expect(grid.held.map((e) => e.text)).toEqual([
+    `the code bot "grid" crashed (exit 1) at 09:40: 5 crashes in 10 min, so it isn't started again until you start it`,
+    'the code bot "grid" crashed (exit 1) at 09:25; it starts again in 2 s',
+    'the code bot "grid": its buy of $1.00 of PEPE waits for you: the embedded wallet asks every time',
+  ])
+})
+
+test("one line a firing: its notice or the agent it woke joins the line that says what fired", () => {
+  const rows = journal(
+    [5, "trigger.fired", { agent: "agent-a", name: "bought", fireId: "fire_1", words: "the code bot said bought" }],
+    [5.01, "trigger.notify", { agent: "agent-a", name: "bought", fireId: "fire_1", words: '"bought" fired' }],
+    [9, "trigger.fired", { agent: "agent-a", name: "wake", fireId: "fire_2", words: "MOON was $0.39" }],
+    [9.01, "trigger.woke", { agent: "agent-a", name: "wake", fireId: "fire_2", woke: "agent-a", words: "MOON was $0.39" }],
+  )
+  const r = awayRecords(rows, T0, T0 + HOUR, symbolOf)
+  expect(r.triggers.map((e) => e.text)).toEqual([`trigger "wake" fired: MOON was $0.39 → woke agent-a`, `trigger "bought" fired: the code bot said bought → notified you`])
+})
+
+test("a code bot's day figure reached in the gap is said once, from when, not once a refusal", () => {
+  const refused = (at: number): [number, string, Record<string, unknown>] => [at, "bot.refused", { kind: "code", agent: "agent-a", name: "grid", code: "FIGURE_DAY", words: "A buy of $2.00 would take today's buys to $22.00, over its $20.00 a day, so nothing was sent." }]
+  const r = awayRecords(journal(refused(20), refused(22), refused(24)), T0, T0 + HOUR, symbolOf)
+  const grid = r.bots.find((b) => b.name === "grid")!
+  const from = new Date(T0 + 20 * MIN)
+  const hm = `${String(from.getHours()).padStart(2, "0")}:${String(from.getMinutes()).padStart(2, "0")}`
+  expect(grid.dayFigure).toMatchObject({ figure: "$20.00" })
+  expect(grid.held.map((e) => e.text)).toEqual([`refused its buys from ${hm} on: over its $20.00 a day`])
+})
+
+test("a wallet's change no live trade this Candle Harness sent in the gap explains is marked as from other keys", () => {
+  const sol: HoldingChange = { wallet: "W1", name: "embedded", asset: "SOL", symbol: "SOL", then: 0.0479, now: 0.0437 }
+  const moon: HoldingChange = { wallet: "W1", name: "embedded", asset: MOON, symbol: "MOON", then: 10, now: 4 }
+  const sent = (o: Record<string, unknown>) => ({ opId: "op", unknown: false, ...o })
+  // An all-paper hour (no live trade at all): both are other keys'.
+  expect(markOutside([sol, moon], [], T0, T0 + HOUR).map((c) => c.outside)).toEqual([true, true])
+  // A live sell of MOON from W1 in the gap explains MOON and the SOL it brought.
+  expect(markOutside([sol, moon], [sent({ wallet: "W1", mint: MOON, side: "sell", sentAt: T0 + 60_000 })], T0, T0 + HOUR).map((c) => c.outside)).toEqual([undefined, undefined])
+  // From another wallet, or before the gap, or never sent: it explains nothing.
+  for (const t of [sent({ wallet: "W2", mint: MOON, sentAt: T0 + 60_000 }), sent({ wallet: "W1", mint: MOON, sentAt: T0 - 60_000 }), sent({ wallet: "W1", mint: MOON })]) {
+    expect(markOutside([moon], [t], T0, T0 + HOUR)[0]!.outside).toBe(true)
+  }
+  // Another token's buy from W1 explains the SOL, not MOON.
+  expect(markOutside([sol, moon], [sent({ wallet: "W1", mint: "PEPE", side: "buy", sentAt: T0 + 60_000 })], T0, T0 + HOUR).map((c) => c.outside)).toEqual([undefined, true])
+  // A sent trade whose wallet wasn't recorded may be the Candle Harness's own: never called outside.
+  expect(markOutside([moon], [sent({ mint: MOON, sentAt: T0 + 60_000 })], T0, T0 + HOUR)[0]!.outside).toBeUndefined()
 })

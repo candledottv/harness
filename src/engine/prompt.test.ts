@@ -2,7 +2,8 @@
 import { expect, test } from "bun:test"
 import { researchLine, traderPrompt } from "./prompt"
 
-const prompt = traderPrompt({ agent: "momentum", mode: "live", researchDir: "/tmp/research", stepCap: 30 })
+const base = { agent: "momentum", mode: "live" as const, researchDir: "/tmp/research", stepCap: 30 }
+const prompt = traderPrompt(base)
 
 test("the agent doesn't restate the card: one sentence for what it proposed and why", () => {
   expect(prompt).toContain("The card shows the amounts, the price, the wallet, the limits and the expiry.")
@@ -51,7 +52,11 @@ test("the research line names what this engine has", () => {
 })
 
 test("only the person switches the engine: asked to, the agent says how", () => {
-  expect(prompt).toContain("Only the person picks which harness and model you run on, since it spends their subscription or credit: ctrl-g, or the chip on your pane's border. You can't switch; asked to, tell them that.")
+  expect(prompt).toContain("Only the person picks which engine and model you run on, since it spends their subscription or credit: ctrl-g, or the chip on your pane's border. You can't switch; asked to, tell them that.")
+})
+
+test("the prompt calls what the agent runs on an engine, as the screen does", () => {
+  expect(prompt).not.toMatch(/which harness|whichever harness/)
 })
 
 test("the research line follows the agent's tool settings and shell", () => {
@@ -76,6 +81,16 @@ test("Hacc's data line sits beside Candle's tools when given, and is absent when
   expect(prompt).not.toContain("Hacc")
 })
 
+test("where triggers are offered, a turn can start from one and later work is a trigger; where they aren't, the agent acts only on a message", () => {
+  const offered = traderPrompt({ ...base, triggers: true })
+  expect(offered).toContain("a trigger they approved wakes you")
+  expect(offered).toContain("propose it with harness_triggers")
+  expect(offered).not.toContain("You act only when the person messages you")
+  const free = traderPrompt(base)
+  expect(free).toContain("You act only when the person messages you")
+  expect(free).not.toContain("harness_triggers")
+})
+
 test("how the agent writes for the pane: Markdown, names over ids, no closing disclaimers, a question for the next step", () => {
   const p = traderPrompt({ agent: "momentum", mode: "live", researchDir: "/tmp/research", stepCap: 30 })
   expect(p).toContain("The pane renders Markdown")
@@ -83,4 +98,11 @@ test("how the agent writes for the pane: Markdown, names over ids, no closing di
   expect(p).toContain("No closing disclaimers or repeated caveats")
   expect(p).toContain("end with one direct question offering it")
   expect(p).toContain("unless you say it's from memory")
+})
+
+test("the code runner is named in the research line only where it's on: off says nothing of it", () => {
+  const can = { webSearch: true, webFetch: true, files: "own" as const }
+  expect(researchLine("/r", can)).not.toMatch(/research_run|run a script/)
+  expect(researchLine("/r", can, { shell: "off", deny: [], run: "off" })).not.toMatch(/research_run|run a script/)
+  expect(researchLine("/r", can, { shell: "off", deny: [], run: ["python3", "node"] })).toContain("run a script with research_run, on the candle MCP server: python3, node, held to your research folder with no network.")
 })

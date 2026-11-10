@@ -3,7 +3,7 @@ import { spawnSync } from "node:child_process"
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
-import { BUILT_IN_RULES, parsePersonalPatterns, scanText } from "./scrub-check"
+import { BUILT_IN_RULES, identEmail, identityFindings, parsePersonalPatterns, scanText } from "./scrub-check"
 
 const dirs: string[] = []
 afterEach(() => {
@@ -85,4 +85,53 @@ test("a big text file is read, staged or tracked, so a key in it is still found"
   const tracked = check()
   expect(tracked.status).toBe(1)
   expect(tracked.stdout).toContain("big.txt:1: candle-key")
+})
+
+test("who a commit is made as: only a no-reply address passes, for the author and the committer alike, and the address is never echoed", () => {
+  const noreply = "Dev One <1234+dev-one@users.noreply.github.com> 1700000000 +0000"
+  const own = "Dev One <dev.one@mail.example> 1700000000 +0000"
+  expect(identEmail(noreply)).toBe("1234+dev-one@users.noreply.github.com")
+  expect(identityFindings({ author: noreply, committer: noreply })).toEqual([])
+  expect(identityFindings({ author: "Helper <noreply@anthropic.com>", committer: noreply })).toEqual([])
+  const author = identityFindings({ author: own, committer: noreply })
+  expect(author).toHaveLength(1)
+  expect(author[0]).toStartWith("commit author: its email isn't a no-reply address")
+  expect(author[0]).not.toContain("mail.example")
+  expect(identityFindings({ author: noreply, committer: own })[0]).toStartWith("commit committer:")
+  // A look-alike domain, or no address at all.
+  expect(identityFindings({ author: "X <x@users.noreply.github.com.example>", committer: "X <>" })).toEqual([
+    "commit author: its email isn't a no-reply address (set one with: git config user.email <id>+<login>@users.noreply.github.com)",
+    "commit committer: no email could be read",
+  ])
+})
+
+test("the hooks refuse a commit made as a personal address, before the commit and at its message; a scan of the tree doesn't ask", () => {
+  const dir = mkdtempSync(join(tmpdir(), "chrn-scrub-id-"))
+  dirs.push(dir)
+  spawnSync("git", ["init", "-q"], { cwd: dir })
+  writeFileSync(join(dir, "a.txt"), "fine\n")
+  spawnSync("git", ["add", "a.txt"], { cwd: dir })
+  writeFileSync(join(dir, "msg"), "A change\n")
+  const check = (email: { author: string; committer: string }, ...args: string[]) =>
+    spawnSync("bun", [join(import.meta.dir, "scrub-check.ts"), ...args], {
+      cwd: dir,
+      encoding: "utf8",
+      env: { ...process.env, CANDLE_HARNESS_SCRUB_PATTERNS: join(dir, "none"), GIT_AUTHOR_NAME: "Dev", GIT_AUTHOR_EMAIL: email.author, GIT_COMMITTER_NAME: "Dev", GIT_COMMITTER_EMAIL: email.committer },
+    })
+  const ok = "1234+dev@users.noreply.github.com"
+  const own = "dev@mail.example"
+  for (const args of [["--staged"], ["--message", join(dir, "msg")]]) {
+    expect(check({ author: ok, committer: ok }, ...args).status).toBe(0)
+    const author = check({ author: own, committer: ok }, ...args)
+    expect(author.status).toBe(1)
+    expect(author.stdout).toContain("commit author: its email isn't a no-reply address")
+    expect(`${author.stdout}${author.stderr}`).not.toContain(own)
+    expect(check({ author: ok, committer: own }, ...args).stdout).toContain("commit committer:")
+  }
+  // With no personal patterns file the check still runs, and only warns about the file.
+  const warned = check({ author: ok, committer: ok }, "--staged")
+  expect(warned.status).toBe(0)
+  expect(warned.stderr).toContain("no personal patterns file")
+  // The tracked tree's scan makes no commit, so it asks nothing of the identity.
+  expect(check({ author: own, committer: own }).status).toBe(0)
 })

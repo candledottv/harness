@@ -21,7 +21,7 @@ const DEFINITION_CHARS = 3000
 export const HISTORY_TOOL = {
   name: HISTORY_TOOL_NAME,
   description:
-    "Reads your own past turns, cards, paper trades and Hacc replays in this Candle Harness, newest first: further back than the conversation your prompt carries, paper trades, which Candle doesn't keep, and each replay's definition and window, which Hacc doesn't keep. Each card and replay says how it ended, and a trade that ran without a card says so. Narrow it by date, token or words; a memory's history: pointer names them. For \"what happened while I was away?\", pass since: \"last session\". Only your own, never another agent's.",
+    "Reads your own past turns, cards, paper trades and Hacc replays in this Candle Harness, newest first: further back than the conversation your prompt carries, paper trades, which Candle doesn't keep, and each replay's definition and window, which Hacc doesn't keep. Each card and replay says how it ended, a trade that ran without a card says so, and your bots' trades, rules and code, are marked with the bot. Narrow it by date, token or words; a memory's history: pointer names them. For \"what happened while I was away?\", pass since: \"last session\". Only your own, never another agent's.",
   inputSchema: {
     type: "object" as const,
     properties: {
@@ -61,6 +61,29 @@ const OP_ENDS: Record<string, string> = {
   "operation.abandoned": "abandoned",
 }
 
+/** Who proposed a card or a paper trade: a trigger, a bot (rules or code), the person, or the agent itself. */
+const byOf = (r: Record<string, unknown>): string =>
+  typeof r.trigger === "string"
+    ? `the trigger "${r.trigger}", fired`
+    : typeof r.bot === "string"
+      ? `your ${r.botKind === "code" ? "code" : "rules"} bot "${r.bot}", ${r.botAct === "exit" ? "selling" : "buying"} on its own`
+      : r.role === "view"
+        ? "the person, typed"
+        : typeof r.woken === "string"
+          ? `you, woken by the trigger "${r.woken}"`
+          : "you"
+
+/**
+ * A bot's trade, marked: its name, entry or exit, and an exit's reason. A code bot's says so, with its own request id;
+ * its own sell has no exit's why, and one the core held for it says which.
+ */
+const botOf = (r: Record<string, unknown>): Record<string, unknown> => {
+  if (typeof r.bot !== "string") return {}
+  const why = typeof r.botReason === "string" && r.botReason !== "bot" ? `: ${r.botReason.replace(/_/g, " ")}` : ""
+  const code = r.botKind === "code" ? { botKind: "code", ...(typeof r.botRequest === "string" ? { botRequest: r.botRequest } : {}) } : {}
+  return { bot: r.bot, botTrade: r.botAct === "exit" ? `${r.botKind === "code" && typeof r.botRequest === "string" ? "its own sell" : `exit${why}`}` : "entry", ...code }
+}
+
 /** The agent's items from the journal, oldest first: each turn, each card with how it ended, each paper trade. */
 export function historyItems(rows: readonly JournalRow[], agent: string): Item[] {
   const items: Item[] = []
@@ -82,7 +105,8 @@ export function historyItems(rows: readonly JournalRow[], agent: string): Item[]
         at: row.at,
         kind: "turn",
         mode: r.mode,
-        person: clip(r.user, USER_CHARS),
+        // A turn a trigger woke has no words of the person's: what woke it, under its own name.
+        ...(Array.isArray(r.woken) && r.woken.length ? { wokenBy: r.woken.map(String), woke: clip(r.user, USER_CHARS) } : { person: clip(r.user, USER_CHARS), ...(r.outside === true ? { fromOutside: true } : {}) }),
         you: clip(r.reply, REPLY_CHARS),
         ...(r.outcome !== "done" ? { ended: r.outcome } : {}),
         ...(tools.length ? { tools: tools.slice(0, TOOLS_LISTED), ...(tools.length > TOOLS_LISTED ? { moreTools: tools.length - TOOLS_LISTED } : {}) } : {}),
@@ -95,7 +119,8 @@ export function historyItems(rows: readonly JournalRow[], agent: string): Item[]
         at: row.at,
         kind: "card",
         mode: r.mode,
-        by: r.role === "view" ? "the person, typed" : "you",
+        by: byOf(r),
+        ...botOf(r),
         title: clip(r.title, 200),
         ...(typeof r.headline === "string" ? { headline: clip(r.headline, 200) } : {}),
         tool: r.tool,
@@ -113,6 +138,7 @@ export function historyItems(rows: readonly JournalRow[], agent: string): Item[]
         card.state = CARD_ENDS[row.type]
         // Nobody pressed anything: the core ran it inside its wallet's limits.
         if (r.how === "inside-limits") card.ran = "without a card, inside its wallet's limits"
+        else if (r.how === "bot-exit") card.ran = "without a card, as its bot's exit"
         else if (r.how === "instant") card.ran = "typed, with no card (instant)"
       }
     } else if (OP_ENDS[row.type] && typeof r.opId === "string") {
@@ -146,7 +172,8 @@ export function historyItems(rows: readonly JournalRow[], agent: string): Item[]
         seq: row.seq,
         at: row.at,
         kind: "paper",
-        by: r.role === "view" ? "the person, typed" : "you",
+        by: byOf(r),
+        ...botOf(r),
         tool: r.tool,
         ...Object.fromEntries(["mint", "side", "amount", "percent", "inputMint", "outputMint"].filter((k) => args[k] !== undefined).map((k) => [k, args[k]])),
         state: r.isError === true ? "refused" : "filled on paper",

@@ -81,6 +81,13 @@ export const TIMING: Timing = {
   maxFillPages: 5,
 }
 
+/**
+ * A core started within this long of the last one's cursor carries on from it: a reopen reads the gap back
+ * from the tape (a trigger watching the tape then sees what came in while the core was down), and personal
+ * signals carry on from Hacc's cursor. Older than this, the stream starts from now, as a new core's would.
+ */
+export const REFILL_WITHIN_MS = 60 * 60_000
+
 export const CACHE_ROWS = 500
 /** A filter's read-back, at most once in this long (one a minute for each view, refusals included). */
 export const READBACK_MS = 60_000
@@ -172,6 +179,15 @@ function clean(v: unknown): unknown {
 
 const byTime = (a: StreamRow, b: StreamRow) => Date.parse(a.created_at) - Date.parse(b.created_at) || (isGap(a) || isGap(b) ? 0 : a.id - b.id)
 
+/** Personal signals' cursor (Hacc's `next_after`, a whole number as text) from the same file, and when it was kept. */
+export function readMineCursor(path: string): { after: string; savedAt?: string } | undefined {
+  try {
+    const c = JSON.parse(readFileSync(path, "utf8")) as { mineAfter?: unknown; savedAt?: unknown }
+    if (typeof c.mineAfter === "string" && /^[\w-]{1,64}$/.test(c.mineAfter)) return { after: c.mineAfter, ...(typeof c.savedAt === "string" ? { savedAt: c.savedAt } : {}) }
+  } catch {}
+  return undefined
+}
+
 export function readCursor(path: string): (Cursor & { savedAt?: string }) | undefined {
   try {
     const c = JSON.parse(readFileSync(path, "utf8")) as { at?: unknown; id?: unknown; savedAt?: unknown }
@@ -215,6 +231,11 @@ export interface SignalStreamDeps {
   openSocket?(url: string, key: string): SocketLike
   /** Tests only: ask why an upgrade was refused another way. */
   probe?(url: string, key: string): Promise<{ status?: number; words: string }>
+  /**
+   * "all": Hacc's full tape, on the socket and every read back, where it's left out the curated one. Hacc's
+   * strategy replays run on the full tape, so a rules bot reads it (measured: about twice the new tickers).
+   */
+  quality?: "all"
 }
 
 export class SignalStream {
@@ -256,6 +277,10 @@ export class SignalStream {
     this.t = { ...TIMING, ...deps.timing }
     this.leftOff = readCursor(deps.cursorPath)
     if (!deps.enabled()) this.state = "off"
+    const recent = (savedAt: string | undefined) => savedAt !== undefined && deps.now() - Date.parse(savedAt) <= REFILL_WITHIN_MS
+    if (this.leftOff && recent(this.leftOff.savedAt)) this.heard = { at: this.leftOff.at, id: this.leftOff.id }
+    const mine = readMineCursor(deps.cursorPath)
+    if (mine && recent(mine.savedAt)) this.mineCursor = mine.after
   }
 
   /** What the `hacc` topic shows of the stream. No rows, no key. */
@@ -318,7 +343,7 @@ export class SignalStream {
   }
 
   private async readBackOne(key: string, filter: SignalFilter, agent: string): Promise<void> {
-    const answer = await this.deps.hacc.get(agent, "/v1/signals", { pattern: filter.pattern?.[0], chain: filter.chain?.[0], limit: SNAPSHOT_ROWS })
+    const answer = await this.deps.hacc.get(agent, "/v1/signals", { pattern: filter.pattern?.[0], chain: filter.chain?.[0], limit: SNAPSHOT_ROWS, quality: this.deps.quality })
     const held = this.backs.get(key)
     if (this.stopped || !held) return
     const at = new Date(this.deps.now()).toISOString()
@@ -409,6 +434,7 @@ export class SignalStream {
     this.agent = pick.agent
     const url = new URL("/v1/signals/stream", this.deps.host)
     url.protocol = url.protocol === "https:" ? "wss:" : "ws:"
+    if (this.deps.quality) url.searchParams.set("quality", this.deps.quality)
     this.setState(this.heard ? "filling" : "opening", this.heard ? "Reopening Hacc's stream; what came in meanwhile is read back first." : undefined)
     const ws = this.deps.openSocket ? this.deps.openSocket(url.toString(), pick.key) : openBunSocket(url.toString(), pick.key)
     this.ws = ws
@@ -505,7 +531,7 @@ export class SignalStream {
       }
       // From a millisecond before: whether Hacc's `since` takes its own instant isn't documented, so rows
       // sharing the last one's time are read again and dropped by id, never skipped.
-      const answer = await this.deps.hacc.get(agent, "/v1/signals", { since: new Date(Date.parse(since) - 1).toISOString(), order: "asc", limit: PAGE })
+      const answer = await this.deps.hacc.get(agent, "/v1/signals", { since: new Date(Date.parse(since) - 1).toISOString(), order: "asc", limit: PAGE, quality: this.deps.quality })
       if (this.stopped || !this.held || gen !== this.fillGen) return
       if (answer.kind !== "ok") {
         gap = { from: since, why: answer.message }
@@ -619,12 +645,12 @@ export class SignalStream {
   private async save(): Promise<void> {
     if (this.saveTimer) clearTimeout(this.saveTimer)
     this.saveTimer = undefined
-    const cursor = this.cursor()
-    if (!cursor) return
+    const cursor = this.cursor() ?? this.heard
+    if (!cursor && !this.mineCursor) return
     const path = this.deps.cursorPath
     const temp = `${path}.tmp-${randomBytes(6).toString("base64url")}`
     try {
-      await writeFile(temp, `${JSON.stringify({ ...cursor, savedAt: new Date(this.deps.now()).toISOString() })}\n`, { mode: 0o600, flag: "wx" })
+      await writeFile(temp, `${JSON.stringify({ ...cursor, ...(this.mineCursor ? { mineAfter: this.mineCursor } : {}), savedAt: new Date(this.deps.now()).toISOString() })}\n`, { mode: 0o600, flag: "wx" })
       await chmod(temp, 0o600)
       await rename(temp, path)
     } catch {}
@@ -660,7 +686,10 @@ export class SignalStream {
         // Only Hacc's own cursor, a whole number here: Hacc refuses a date for `after` on this route (seen live),
         // so a row's created_at is never sent. With none yet, the next poll reads Hacc's first page again.
         const next = haccCursor(body?.next_after)
-        if (next) this.mineCursor = next
+        if (next && next !== this.mineCursor) {
+          this.mineCursor = next
+          this.scheduleSave()
+        }
         this.setMine("polling")
         if (fresh.length) this.deps.publish("signals:mine", { rows: fresh })
       } else if (answer.code === "PLAN_REQUIRED") {

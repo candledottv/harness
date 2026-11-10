@@ -1,0 +1,36 @@
+{
+  "name": "schema-exit-trailing",
+  "host": "hacc",
+  "method": "POST",
+  "route": "/v1/strategy-lab/replay",
+  "query": {},
+  "body": {
+    "definition": {
+      "chain": "solana",
+      "entry": {
+        "source": "pattern",
+        "pattern": "confluence",
+        "filters": {}
+      },
+      "exit": {
+        "trailing": {
+          "arm_multiple": 2,
+          "drop_pct": 30
+        }
+      },
+      "sizing": {
+        "usd_per_trade": 5,
+        "max_concurrent": 2
+      }
+    },
+    "from": "2026-10-01T00:00:00Z",
+    "to": "2026-10-30T00:00:00Z"
+  },
+  "status": 400,
+  "ms": 129,
+  "bytes": 74,
+  "answer": {
+    "error": "window cannot exceed 14 days for a lab key",
+    "code": "lab_window"
+  }
+}

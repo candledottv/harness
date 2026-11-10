@@ -29,6 +29,21 @@ test("a snapshot replaces the cards, keeping when each was first seen", () => {
   expect(openCards(v).map((c) => c.cardId)).toEqual(["a", "b"])
 })
 
+test("a card that arrives while another waits is marked, so Enter takes longer to reach it; one arriving alone, or in a snapshot, isn't", () => {
+  let v = applyEvent(EMPTY_VIEW, { topic: "cards", seq: 1, data: card("a") }, 100)
+  expect(v.behind).toBeUndefined()
+  v = applyEvent(v, { topic: "cards", seq: 2, data: card("b") }, 5_000)
+  expect(v.behind).toEqual({ b: true })
+  // Once the first is settled, the next arrives alone.
+  v = applyEvent(v, { topic: "cards", seq: 3, data: { ...card("a"), state: "approved" } }, 6_000)
+  v = applyEvent(v, { topic: "cards", seq: 4, data: { ...card("b"), state: "rejected" } }, 6_000)
+  v = applyEvent(v, { topic: "cards", seq: 5, data: card("c") }, 7_000)
+  expect(v.behind).toEqual({ b: true })
+  // A snapshot's cards show together: none slid in under another.
+  const fresh = applyEvent(EMPTY_VIEW, { topic: "cards", seq: 1, data: [card("a"), card("b")], snapshot: true }, 500)
+  expect(fresh.behind).toBeUndefined()
+})
+
 test("a reply streams, a re-ask voids what streamed, and the gated reply is final", () => {
   const e = (data: Record<string, unknown>) => ({ topic: "agent", seq: 0, data: { agent: "momentum", turnId: "t", ...data } })
   let v = applyEvent(EMPTY_VIEW, e({ type: "started", user: "hi" }), 0)

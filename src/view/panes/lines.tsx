@@ -6,7 +6,7 @@ import { Chip, type ChipKind, chipText } from "../chip"
 import { C } from "../theme"
 
 /** What a click on a segment does, for the card it's on. */
-export type Act = "focus" | "approve" | "reject" | "details" | "requote" | "resend" | "abandon" | "stopHelp" | "copyReply" | "copy" | "walletsAll" | "walletsActive" | "fill" | "undo" | "tab" | "offer" | "ask" | "signals" | "pnlSpan" | "journalSearch" | "journalKind" | "journalOlder" | "approvals" | "away" | "walletsFind" | "closeEmpty" | "openToken"
+export type Act = "focus" | "approve" | "reject" | "details" | "requote" | "resend" | "abandon" | "stopHelp" | "copyReply" | "copy" | "walletsAll" | "walletsActive" | "fill" | "undo" | "tab" | "offer" | "ask" | "signals" | "pnlSpan" | "journalSearch" | "journalKind" | "journalOlder" | "approvals" | "away" | "walletsFind" | "closeEmpty" | "openToken" | "runNow" | "triggers" | "bot" | "build"
 
 export interface Seg {
   text: string

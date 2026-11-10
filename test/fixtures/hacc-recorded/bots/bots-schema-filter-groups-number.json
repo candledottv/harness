@@ -1,0 +1,36 @@
+{
+  "name": "schema-filter-groups-number",
+  "host": "hacc",
+  "method": "POST",
+  "route": "/v1/strategy-lab/replay",
+  "query": {},
+  "body": {
+    "definition": {
+      "chain": "solana",
+      "entry": {
+        "source": "pattern",
+        "pattern": "confluence",
+        "filters": {
+          "groups": [
+            1
+          ]
+        }
+      },
+      "exit": {
+        "take_profit_pct": 100
+      },
+      "sizing": {
+        "usd_per_trade": 5,
+        "max_concurrent": 2
+      }
+    },
+    "from": "2026-10-01T00:00:00Z",
+    "to": "2026-10-30T00:00:00Z"
+  },
+  "status": 400,
+  "ms": 130,
+  "bytes": 68,
+  "answer": {
+    "error": "entry.filters.groups.0: Expected string, received number"
+  }
+}

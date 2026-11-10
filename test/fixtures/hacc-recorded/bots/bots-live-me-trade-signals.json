@@ -1,0 +1,15 @@
+{
+  "name": "live-me-trade-signals",
+  "host": "hacc",
+  "method": "GET",
+  "route": "/v1/me/trade-signals",
+  "query": {},
+  "status": 404,
+  "ms": 225,
+  "bytes": 91,
+  "answer": {
+    "message": "Route GET:/v1/me/trade-signals not found",
+    "error": "Not Found",
+    "statusCode": 404
+  }
+}

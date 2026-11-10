@@ -14,6 +14,8 @@ on a throwaway Max account, then scrubbed by `scripts/scrub-hacc.ts`.
 `test/hacc-recorded.test.ts` keeps the fake in step: every read the tools use answers from the fake
 with every field recorded here.
 
+**`bots/`** (2026-11-05): a rules bot's reads, from `test/record-bots.ts`; see its README.
+
 **`research/`** (2026-10-30): the `research` phase of `test/record-hacc.ts`, scrubbed the
 same way. For JUP and for a token nine minutes old: top traders, profile, launch overview, market,
 mentions, and the token's own signals (`/v1/signals?asset=<mint>`, not in the first recording). Then the

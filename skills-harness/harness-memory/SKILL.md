@@ -5,7 +5,7 @@ description: How to keep your memory in the Candle Harness. Use when you're abou
 
 # Your memory in the Candle Harness
 
-Your memory is `memory/index.md` in your research folder, plus any files beside it in `memory/`. The Candle Harness puts the index into every turn's prompt, read fresh, whichever harness you run on that turn. The files beside it are read only when you open them. Nothing else carries over: the conversation in your prompt holds the last 30 exchanges, and `harness_history` reaches further back.
+Your memory is `memory/index.md` in your research folder, plus any files beside it in `memory/`. The Candle Harness puts the index into every turn's prompt, read fresh, whichever engine you run on that turn. The files beside it are read only when you open them. Nothing else carries over: the conversation in your prompt holds the last 30 exchanges, and `harness_history` reaches further back.
 
 The person can see all of it and can delete any line or file. Write it so they'd be glad to read it.
 
@@ -21,6 +21,19 @@ Each line is a name and a hook: the hook says when the memory matters, so a late
 ```
 
 A good hook names the situation, not just the topic: "when they ask to buy a dip", not "dips".
+
+## Pinned lines
+
+Lines directly under a `## Pinned` heading at the top of the index are pinned: the person pinned them in the Candle Harness's memory view, or asked you to. Keep each one word for word under that heading whenever you rewrite the index, and never merge, reword or prune one away, even when the index is long. Deleting a pinned line is the person's call: if one looks wrong or stale, ask them.
+
+```
+## Pinned
+- never buy a token under an hour old, whatever the signal
+
+- sizing: the person sizes dip buys at a quarter of their usual buy → memory/sizing.md
+```
+
+When the person asks you to pin a line ("always remember this"), put it under `## Pinned`, with a blank line after the pinned lines and before the rest.
 
 ## Point rather than copy
 
@@ -47,7 +60,7 @@ Never:
 
 ## Keeping it short
 
-When your prompt says the index is long, merge or prune it in that turn:
+When your prompt says the index is long, merge or prune it in that turn, leaving the pinned lines as they are:
 - merge lines about the same thing into one, and move the detail into a file;
 - drop what's stale or no longer true, and lessons the person has since overruled;
 - keep each line to one sentence.

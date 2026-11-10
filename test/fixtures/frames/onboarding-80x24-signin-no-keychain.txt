@@ -4,21 +4,21 @@
 │                                                                              │
 │  Sign in to Candle                                                           │
 │                                                                              │
-│  This machine has no keychain, so the Candle CLI keeps its sign-in in a      │
-│  file locked by a passphrase you choose. The Candle Harness reads it when    │
-│  it starts, so set it first:                                                 │
+│  This machine has no keychain, so the Candle CLI locks its sign-in file      │
+│  with a passphrase you choose. Add this line to ~/.bashrc in an editor,      │
+│  with a passphrase of your own, kept from then on:                           │
 │                                                                              │
-│    echo 'export CANDLE_KEYRING_PASSPHRASE="<a passphrase of your own>"' >>   │
-│    ~/.bashrc                                                                 │
-│  ▸ ⧉ Copy the line                      then put your own passphrase in it   │
+│    export CANDLE_KEYRING_PASSPHRASE="<a passphrase of your own>"             │
+│  ▸ ⧉ Copy the line   paste it into ~/.bashrc in an editor, not at a prompt   │
+│    ⧉ chmod 600 ~/.bashrc       run it after, so only you can read the file   │
 │                                                                              │
-│  Then quit (ctrl-c twice), open a new terminal, and run candle-harness       │
-│  again. Keep the same passphrase from then on.                               │
+│  Then quit (ctrl-c twice) and run candle-harness in a new terminal.          │
 │                                                                              │
-│  This isn't a vault's passphrase. It only locks the CLI's sign-in file on    │
-│  this machine; a vault, if you make one, has its own.                        │
+│  Or keep the owner sign-in off this machine: make an agent's key where       │
+│  you're signed in, quit, and add it here:                                    │
+│    ⧉ candle-harness key add --agent agent-a            it asks for the key   │
 │                                                                              │
-│                                                                              │
+│  This isn't a vault's passphrase. It only locks the CLI's sign-in file.      │
 │                                                                              │
 ╰──────────────────────────────────────────────────────────────────────────────╯
  ↑/↓ moves · ⏎ or a click picks · esc back                      ctrl-c ×2 quits 
@@ -31,20 +31,20 @@
 4: 32fe9f/111419×1 ffffff/111419×2 b392f0/111419×17 ffffff/111419×59 32fe9f/111419×1
 5: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
 6: 32fe9f/111419×1 ffffff/111419×2 dde2ea/111419×70 ffffff/111419×6 32fe9f/111419×1
-7: 32fe9f/111419×1 ffffff/111419×2 dde2ea/111419×72 ffffff/111419×4 32fe9f/111419×1
-8: 32fe9f/111419×1 ffffff/111419×2 dde2ea/111419×27 ffffff/111419×49 32fe9f/111419×1
+7: 32fe9f/111419×1 ffffff/111419×2 dde2ea/111419×70 ffffff/111419×6 32fe9f/111419×1
+8: 32fe9f/111419×1 ffffff/111419×2 dde2ea/111419×49 ffffff/111419×27 32fe9f/111419×1
 9: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
-10: 32fe9f/111419×1 ffffff/111419×2 dde2ea/111419×73 ffffff/111419×3 32fe9f/111419×1
-11: 32fe9f/111419×1 ffffff/111419×2 dde2ea/111419×11 ffffff/111419×65 32fe9f/111419×1
-12: 32fe9f/111419×1 ffffff/111419×2 32fe9f/1d2430×2 f6f8fb/1d2430×15 ffffff/1d2430×22 959dab/1d2430×35 ffffff/111419×2 32fe9f/111419×1
+10: 32fe9f/111419×1 ffffff/111419×2 dde2ea/111419×63 ffffff/111419×13 32fe9f/111419×1
+11: 32fe9f/111419×1 ffffff/111419×2 32fe9f/1d2430×2 f6f8fb/1d2430×15 ffffff/1d2430×3 959dab/1d2430×54 ffffff/111419×2 32fe9f/111419×1
+12: 32fe9f/111419×1 ffffff/111419×2 32fe9f/111419×2 6cb6ff/111419×21 ffffff/111419×7 959dab/111419×44 ffffff/111419×2 32fe9f/111419×1
 13: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
-14: 32fe9f/111419×1 ffffff/111419×2 dde2ea/111419×69 ffffff/111419×7 32fe9f/111419×1
-15: 32fe9f/111419×1 ffffff/111419×2 dde2ea/111419×45 ffffff/111419×31 32fe9f/111419×1
-16: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
-17: 32fe9f/111419×1 ffffff/111419×2 959dab/111419×72 ffffff/111419×4 32fe9f/111419×1
-18: 32fe9f/111419×1 ffffff/111419×2 959dab/111419×52 ffffff/111419×24 32fe9f/111419×1
+14: 32fe9f/111419×1 ffffff/111419×2 dde2ea/111419×66 ffffff/111419×10 32fe9f/111419×1
+15: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
+16: 32fe9f/111419×1 ffffff/111419×2 dde2ea/111419×69 ffffff/111419×7 32fe9f/111419×1
+17: 32fe9f/111419×1 ffffff/111419×2 dde2ea/111419×40 ffffff/111419×36 32fe9f/111419×1
+18: 32fe9f/111419×1 ffffff/111419×2 32fe9f/111419×2 6cb6ff/111419×40 ffffff/111419×12 959dab/111419×20 ffffff/111419×2 32fe9f/111419×1
 19: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
-20: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
+20: 32fe9f/111419×1 ffffff/111419×2 959dab/111419×70 ffffff/111419×6 32fe9f/111419×1
 21: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
 22: 32fe9f/111419×80
 23: 959dab/0e1115×42 ffffff/0e1115×22 959dab/0e1115×16

@@ -1,6 +1,8 @@
 // Refuses personal details in the repo: home paths, private IPs, keys, tailnet names, plus a private
 // patterns file kept outside the repo. Runs over tracked files, staged files (pre-commit) or a commit
-// message and its author line (commit-msg).
+// message and its author line (commit-msg). Before a commit it also checks who the commit is made as: the
+// author's and the committer's email must be one that names nobody's own mailbox (EMAIL_ALLOWED), since an
+// address in a commit is published with it and no later check of the files can see it.
 import { existsSync, readFileSync } from "node:fs"
 import { homedir } from "node:os"
 import { join } from "node:path"
@@ -54,6 +56,28 @@ export const BUILT_IN_RULES: readonly ScrubRule[] = [
   { name: "candle-key", pattern: /cndl_(?:live|test)_[A-Za-z0-9_-]{8,}/, personal: false },
   { name: "tailnet", pattern: /[a-z0-9-]+\.ts\.net\b/i, personal: false },
 ]
+
+/** The email addresses a commit may carry: GitHub's no-reply addresses, and the one automated co-authors use. */
+export const EMAIL_ALLOWED: readonly RegExp[] = [/^[^@\s]+@users\.noreply\.github\.com$/i, /^noreply@anthropic\.com$/i]
+
+/** The email in a `Name <email> …` identity line, as `git var GIT_AUTHOR_IDENT` prints it. */
+export function identEmail(ident: string): string | undefined {
+  return /<([^<>]*)>/.exec(ident)?.[1]?.trim()
+}
+
+/**
+ * What's wrong with who a commit is made as, by role: an email off the allowlist, or none that can be read.
+ * The address itself is never echoed: this output may end up in a log.
+ */
+export function identityFindings(idents: { author: string; committer: string }): string[] {
+  const out: string[] = []
+  for (const [role, ident] of Object.entries(idents)) {
+    const email = identEmail(ident)
+    if (email === undefined || email === "") out.push(`commit ${role}: no email could be read`)
+    else if (!EMAIL_ALLOWED.some((ok) => ok.test(email))) out.push(`commit ${role}: its email isn't a no-reply address (set one with: git config user.email <id>+<login>@users.noreply.github.com)`)
+  }
+  return out
+}
 
 const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
 
@@ -160,6 +184,14 @@ export async function main(argv: string[]): Promise<number> {
   const sources = messagePath ? commitMessage(messagePath) : argv.includes("--staged") ? stagedFiles() : trackedFiles()
   const honourScrubOk = !messagePath
   let count = 0
+  // Who the commit is made as, before a commit only (the hooks): a scan of the tracked tree makes no commit.
+  if (messagePath || argv.includes("--staged")) {
+    const ident = (which: string) => decode(git(["var", which]).out)
+    for (const finding of identityFindings({ author: ident("GIT_AUTHOR_IDENT"), committer: ident("GIT_COMMITTER_IDENT") })) {
+      console.log(finding)
+      count++
+    }
+  }
   for (const [file, text] of sources) {
     if (text === undefined) {
       console.log(`${file}: unreadable, so not checked`)

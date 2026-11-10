@@ -557,3 +557,19 @@ test("the agent's tools: hidden research tools left out and not allowed, and the
     mode: "dontAsk",
   })
 })
+
+test("Grok counts as signed in only with its sign-in file there: a lock file left beside a removed one isn't a sign-in", async () => {
+  const home = mkdtempSync(join(tmpdir(), "chrn-grok-signed-"))
+  try {
+    const e = grokEngine("grok", { homesDir: "/nowhere", grokHome: home })
+    writeFileSync(join(home, "auth.json.lock"), "")
+    expect(await e.signedIn!({ HOME: home })).toBe(false)
+    writeFileSync(join(home, "auth.json"), "{}")
+    expect(await e.signedIn!({ HOME: home })).toBe(true)
+    // Grok removes it when its sign-in is refused: read again, it's gone.
+    rmSync(join(home, "auth.json"))
+    expect(await e.signedIn!({ HOME: home })).toBe(false)
+  } finally {
+    rmSync(home, { recursive: true, force: true })
+  }
+})

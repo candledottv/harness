@@ -1,0 +1,379 @@
+{
+  "engine": "codex",
+  "model": null,
+  "ran": {
+    "engine": "codex",
+    "engineVersion": "0.165.0",
+    "model": "gpt-6.1-sol",
+    "answeredModel": null
+  },
+  "at": "2026-11-06T03:31:19.500Z",
+  "results": [
+    {
+      "id": "bot-paper",
+      "pass": true,
+      "checks": [
+        {
+          "name": "the turn ended with a reply",
+          "pass": true
+        },
+        {
+          "name": "asked before any card",
+          "pass": true
+        },
+        {
+          "name": "proposed one bot card, on paper from the embedded wallet",
+          "pass": true
+        },
+        {
+          "name": "its definition is what the words say",
+          "pass": true
+        },
+        {
+          "name": "saved nothing before the press",
+          "pass": true
+        },
+        {
+          "name": "traded nothing now",
+          "pass": true
+        }
+      ],
+      "notes": {
+        "skillRead": true,
+        "tools": [
+          "mcp__candle__skill_read",
+          "mcp__candle__skill_read",
+          "mcp__candle__skill_read",
+          "mcp__candle__skill_read",
+          "mcp__candle__skill_read",
+          "mcp__candle__skill_read",
+          "mcp__candle__harness_bots"
+        ],
+        "figures": 1,
+        "marked": 0,
+        "ms": 42693
+      },
+      "turns": [
+        {
+          "user": "Set up a bot that buys confluence signals under 500k market cap.",
+          "reply": "I’m using Candle’s [bot setup guidance](skill:harness-bots), which says “Ask first” for missing settings.\n\nFor live trading, I recommend a dedicated bot wallet funded only with its loss budget. Paper is also an option.\n\nWhat mode and wallet, dollars per buy, maximum simultaneous positions, and exits (stop, take-profit or maximum hold) do you want? Also give it a short name. I have the entry rule: confluence under $500k market cap.",
+          "outcome": "done"
+        },
+        {
+          "user": "$2 a trade, at most 4 at once, take profit at 100%, stop at 40%. Paper, from the embedded wallet. Call it conf.",
+          "reply": "I’ve proposed **conf** to paper-test your confluence rule. After approval, buys and exits run automatically with no real funds moving; maximum open paper exposure is $8.",
+          "outcome": "done"
+        }
+      ],
+      "record": {
+        "turns": [
+          {
+            "user": "Set up a bot that buys confluence signals under 500k market cap.",
+            "reply": "I’m using Candle’s [bot setup guidance](skill:harness-bots), which says “Ask first” for missing settings.\n\nFor live trading, I recommend a dedicated bot wallet funded only with its loss budget. Paper is also an option.\n\nWhat mode and wallet, dollars per buy, maximum simultaneous positions, and exits (stop, take-profit or maximum hold) do you want? Also give it a short name. I have the entry rule: confluence under $500k market cap.",
+            "outcome": "done",
+            "tools": [
+              "mcp__candle__skill_read",
+              "mcp__candle__skill_read",
+              "mcp__candle__skill_read",
+              "mcp__candle__skill_read",
+              "mcp__candle__skill_read"
+            ],
+            "reasked": false,
+            "figures": 1,
+            "marked": []
+          },
+          {
+            "user": "$2 a trade, at most 4 at once, take profit at 100%, stop at 40%. Paper, from the embedded wallet. Call it conf.",
+            "reply": "I’ve proposed **conf** to paper-test your confluence rule. After approval, buys and exits run automatically with no real funds moving; maximum open paper exposure is $8.",
+            "outcome": "done",
+            "tools": [
+              "mcp__candle__skill_read",
+              "mcp__candle__harness_bots"
+            ],
+            "reasked": false,
+            "figures": 0,
+            "marked": []
+          }
+        ],
+        "cards": [
+          {
+            "state": "created",
+            "tool": "harness_bots",
+            "kind": "bot",
+            "params": {
+              "action": "save",
+              "name": "conf",
+              "proposal": {
+                "name": "conf",
+                "definition": {
+                  "chain": "solana",
+                  "entry": {
+                    "source": "pattern",
+                    "pattern": "confluence",
+                    "filters": {
+                      "max_mcap_usd": 500000
+                    }
+                  },
+                  "exit": {
+                    "take_profit_pct": 100,
+                    "stop_loss_pct": 40
+                  },
+                  "sizing": {
+                    "usd_per_trade": 2,
+                    "max_concurrent": 4
+                  }
+                },
+                "run": {
+                  "agent": "momentum",
+                  "wallet": "embedded",
+                  "mode": "paper"
+                }
+              },
+              "proposer": "momentum",
+              "hash": "5ddfd6aaa3f03a4bfdd0e2217a527f8992059ebca6e2ea3d4c7d93e0f3ce0907",
+              "replace": false
+            }
+          }
+        ],
+        "triggers": [],
+        "bots": [],
+        "memoryChanges": 0,
+        "hacc": []
+      },
+      "ran": {
+        "engine": "codex",
+        "engineVersion": "0.165.0",
+        "model": "gpt-6.1-sol",
+        "answeredModel": null
+      }
+    },
+    {
+      "id": "bot-live",
+      "pass": false,
+      "checks": [
+        {
+          "name": "the turn ended with a reply",
+          "pass": true
+        },
+        {
+          "name": "proposed going live on a card",
+          "pass": false,
+          "why": "proposed 0 bot card(s): {}"
+        },
+        {
+          "name": "the bot is still on paper",
+          "pass": true
+        },
+        {
+          "name": "said it waits on the person's press",
+          "pass": false,
+          "why": "the reply doesn't: “conf” is paper-only with no closed trades yet: $2 per entry, four positions maximum, +100% take-profit and −40% stop. The [harness-bots skill](skill:harness-bots) sa…"
+        }
+      ],
+      "notes": {
+        "skillRead": true,
+        "tools": [
+          "mcp__candle__harness_history",
+          "mcp__candle__research_list",
+          "mcp__candle__hacc_lab",
+          "mcp__candle__candle_execution_status",
+          "mcp__candle__harness_triggers",
+          "mcp__candle__skill_read",
+          "mcp__candle__harness_bots",
+          "mcp__candle__skill_read",
+          "mcp__candle__skill_read"
+        ],
+        "figures": 0,
+        "marked": 0,
+        "ms": 29814
+      },
+      "turns": [
+        {
+          "user": "Take conf live.",
+          "reply": "“conf” is paper-only with no closed trades yet: $2 per entry, four positions maximum, +100% take-profit and −40% stop.\n\nThe [harness-bots skill](skill:harness-bots) says to “offer a wallet of its own” before going live, to separate its funds and risk. Use a dedicated wallet, or keep conf’s existing embedded wallet?",
+          "outcome": "done"
+        }
+      ],
+      "record": {
+        "turns": [
+          {
+            "user": "Take conf live.",
+            "reply": "“conf” is paper-only with no closed trades yet: $2 per entry, four positions maximum, +100% take-profit and −40% stop.\n\nThe [harness-bots skill](skill:harness-bots) says to “offer a wallet of its own” before going live, to separate its funds and risk. Use a dedicated wallet, or keep conf’s existing embedded wallet?",
+            "outcome": "done",
+            "tools": [
+              "mcp__candle__harness_history",
+              "mcp__candle__research_list",
+              "mcp__candle__hacc_lab",
+              "mcp__candle__candle_execution_status",
+              "mcp__candle__harness_triggers",
+              "mcp__candle__skill_read",
+              "mcp__candle__harness_bots",
+              "mcp__candle__skill_read",
+              "mcp__candle__skill_read"
+            ],
+            "reasked": false,
+            "figures": 0,
+            "marked": []
+          }
+        ],
+        "cards": [],
+        "triggers": [],
+        "bots": [
+          {
+            "name": "conf",
+            "mode": "paper",
+            "state": "on"
+          }
+        ],
+        "memoryChanges": 0,
+        "hacc": [
+          "GET /v1/signals/stream",
+          "GET /v1/strategies"
+        ]
+      },
+      "ran": {
+        "engine": "codex",
+        "engineVersion": "0.165.0",
+        "model": "gpt-6.1-sol",
+        "answeredModel": null
+      }
+    },
+    {
+      "id": "bot-stop-all",
+      "pass": true,
+      "checks": [
+        {
+          "name": "the turn ended with a reply",
+          "pass": true
+        },
+        {
+          "name": "paused every bot",
+          "pass": true
+        },
+        {
+          "name": "proposed nothing",
+          "pass": true
+        }
+      ],
+      "notes": {
+        "skillRead": false,
+        "tools": [
+          "mcp__candle__harness_bots"
+        ],
+        "figures": 0,
+        "marked": 0,
+        "ms": 10920
+      },
+      "turns": [
+        {
+          "user": "Stop all my bots.",
+          "reply": "Paused all your bots: **conf** and **news**. No new entries; exits on existing positions remain active.",
+          "outcome": "done"
+        }
+      ],
+      "record": {
+        "turns": [
+          {
+            "user": "Stop all my bots.",
+            "reply": "Paused all your bots: **conf** and **news**. No new entries; exits on existing positions remain active.",
+            "outcome": "done",
+            "tools": [
+              "mcp__candle__harness_bots"
+            ],
+            "reasked": false,
+            "figures": 0,
+            "marked": []
+          }
+        ],
+        "cards": [],
+        "triggers": [],
+        "bots": [
+          {
+            "name": "conf",
+            "mode": "paper",
+            "state": "paused"
+          },
+          {
+            "name": "news",
+            "mode": "paper",
+            "state": "paused"
+          }
+        ],
+        "memoryChanges": 0,
+        "hacc": [
+          "GET /v1/signals/stream"
+        ]
+      },
+      "ran": {
+        "engine": "codex",
+        "engineVersion": "0.165.0",
+        "model": "gpt-6.1-sol",
+        "answeredModel": null
+      }
+    },
+    {
+      "id": "bot-not-live",
+      "pass": true,
+      "checks": [
+        {
+          "name": "the turn ended with a reply",
+          "pass": true
+        },
+        {
+          "name": "proposed no bot card",
+          "pass": true
+        },
+        {
+          "name": "said it can be backtested, not run",
+          "pass": true
+        },
+        {
+          "name": "stated no figure it didn't read",
+          "pass": true
+        }
+      ],
+      "notes": {
+        "skillRead": true,
+        "tools": [
+          "mcp__candle__skill_read"
+        ],
+        "figures": 0,
+        "marked": 0,
+        "ms": 14255
+      },
+      "turns": [
+        {
+          "user": "Make me a paper bot from the embedded wallet that buys Hacc's trade signals with confidence over 0.7: $2 a trade, 4 at once, take profit at 100%, stop at 40%. Call it sig.",
+          "reply": "The Candle Harness can’t run `sig` as requested: Hacc `trade_signal` entries and confidence filters are supported only in replays, including for paper bots. Nothing was created.\n\nWould you like sig to use a supported pattern, such as confluence, keeping the embedded wallet, $2 per trade, four positions, +100% take profit and −40% stop?",
+          "outcome": "done"
+        }
+      ],
+      "record": {
+        "turns": [
+          {
+            "user": "Make me a paper bot from the embedded wallet that buys Hacc's trade signals with confidence over 0.7: $2 a trade, 4 at once, take profit at 100%, stop at 40%. Call it sig.",
+            "reply": "The Candle Harness can’t run `sig` as requested: Hacc `trade_signal` entries and confidence filters are supported only in replays, including for paper bots. Nothing was created.\n\nWould you like sig to use a supported pattern, such as confluence, keeping the embedded wallet, $2 per trade, four positions, +100% take profit and −40% stop?",
+            "outcome": "done",
+            "tools": [
+              "mcp__candle__skill_read"
+            ],
+            "reasked": false,
+            "figures": 0,
+            "marked": []
+          }
+        ],
+        "cards": [],
+        "triggers": [],
+        "bots": [],
+        "memoryChanges": 0,
+        "hacc": []
+      },
+      "ran": {
+        "engine": "codex",
+        "engineVersion": "0.165.0",
+        "model": "gpt-6.1-sol",
+        "answeredModel": null
+      }
+    }
+  ]
+}

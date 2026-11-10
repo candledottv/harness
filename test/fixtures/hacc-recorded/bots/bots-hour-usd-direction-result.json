@@ -1,0 +1,282 @@
+{
+  "name": "hour-usd-direction-result",
+  "host": "hacc",
+  "method": "GET",
+  "route": "/v1/strategy-lab/replay/231",
+  "query": {},
+  "status": 200,
+  "ms": 141,
+  "bytes": 4930,
+  "answer": {
+    "job_id": 231,
+    "status": "done",
+    "error": null,
+    "result": {
+      "lead_card": {
+        "regime": {
+          "note": "context only; no regime gate has paid in desk research",
+          "label": "fake-label-3",
+          "ratio": 1.3,
+          "measure": "fake-measure-1",
+          "busiest_day_share_of_entries": 1
+        },
+        "trades": 5,
+        "control": {
+          "unavailable": "fake-unavailable-1"
+        },
+        "summary": "fake-summary-4",
+        "version": 1,
+        "strategy": {
+          "win_rate": 0.2,
+          "turnover_usd": "99.42",
+          "gross_pnl_usd": "-0.58",
+          "net_pnl_usd_at_assumed_cost": "-1.82"
+        },
+        "break_even": {
+          "assumed": {
+            "fee_source": "fake-fee_source-1",
+            "fee_bps_per_side": 50,
+            "slippage_bps_per_side": 75
+          },
+          "round_trip_pct": -1.16,
+          "cost_bps_per_side": -58
+        },
+        "insufficient": false,
+        "evidence_limitations": [
+          "Control arms are priced without tick marks outside the strategy's holding spans.",
+          "Control arms do not apply max_concurrent: every drawn entry is held."
+        ]
+      },
+      "to": "2026-11-05T15:46:21.219Z",
+      "from": "2026-11-05T14:46:20.937Z",
+      "skips": {
+        "other": 0,
+        "filled": 5,
+        "displaced": 0,
+        "no_budget": 0,
+        "candidates": 28,
+        "entry_gate": 0,
+        "slots_full": 0,
+        "zero_price": 0,
+        "sizing_skip": 0,
+        "sizing_zero": 0,
+        "unpriceable": 4,
+        "already_open": 19,
+        "exited_today": 0,
+        "claimed_today": 0,
+        "mcap_at_entry": 0,
+        "max_concurrent": 0
+      },
+      "trades": [
+        {
+          "qty": 1615.1839966200391,
+          "pnl_usd": -1.0260790235696327,
+          "asset_id": 26078956,
+          "exit_usd": 8.973920976430367,
+          "lot_tier": null,
+          "closed_at": "2026-11-05T15:46:21.219Z",
+          "entry_usd": 10,
+          "opened_at": "2026-11-05T14:52:04.000Z",
+          "reason_closed": "aborted",
+          "reason_opened": {
+            "sizing": {
+              "usd": 10,
+              "applied": [],
+              "paid_usd": 10,
+              "fell_back": []
+            },
+            "pattern": "large_move",
+            "signal_id": 128179818
+          },
+          "exit_price_usd": "0.0055559744247152916",
+          "entry_price_usd": "0.0061912450971073054"
+        },
+        {
+          "qty": 9.948434050224456,
+          "pnl_usd": -0.05136932348784562,
+          "asset_id": 1,
+          "exit_usd": 9.948630676512154,
+          "lot_tier": null,
+          "closed_at": "2026-11-05T15:46:21.219Z",
+          "entry_usd": 10,
+          "opened_at": "2026-11-05T14:57:30.000Z",
+          "reason_closed": "aborted",
+          "reason_opened": {
+            "sizing": {
+              "usd": 10,
+              "applied": [],
+              "paid_usd": 10,
+              "fell_back": []
+            },
+            "pattern": "large_move",
+            "signal_id": 128185415
+          },
+          "exit_price_usd": "1.0000197645465312",
+          "entry_price_usd": "1.005183323276328"
+        },
+        {
+          "qty": 0.11187962097928143,
+          "pnl_usd": 0,
+          "asset_id": 753,
+          "exit_usd": 10,
+          "lot_tier": null,
+          "closed_at": "2026-11-05T15:46:21.219Z",
+          "entry_usd": 10,
+          "opened_at": "2026-11-05T15:30:00.000Z",
+          "reason_closed": "aborted",
+          "reason_opened": {
+            "sizing": {
+              "usd": 10,
+              "applied": [],
+              "paid_usd": 10,
+              "fell_back": []
+            },
+            "pattern": "large_move",
+            "signal_id": 128207370
+          },
+          "exit_price_usd": "89.3817829598463",
+          "entry_price_usd": "89.3817829598463"
+        },
+        {
+          "qty": 524.3080256001239,
+          "pnl_usd": 0.5443404429747929,
+          "asset_id": 16098529,
+          "exit_usd": 10.544340442974793,
+          "lot_tier": null,
+          "closed_at": "2026-11-05T15:46:21.219Z",
+          "entry_usd": 10,
+          "opened_at": "2026-11-05T15:30:35.000Z",
+          "reason_closed": "aborted",
+          "reason_opened": {
+            "sizing": {
+              "usd": 10,
+              "applied": [],
+              "paid_usd": 10,
+              "fell_back": []
+            },
+            "pattern": "large_move",
+            "signal_id": 128234963
+          },
+          "exit_price_usd": "0.02011096517339349",
+          "entry_price_usd": "0.019072757828862114"
+        },
+        {
+          "qty": 0.00013097983815874272,
+          "pnl_usd": -0.04299843948720117,
+          "asset_id": 14492,
+          "exit_usd": 9.957001560512799,
+          "lot_tier": null,
+          "closed_at": "2026-11-05T15:46:21.219Z",
+          "entry_usd": 10,
+          "opened_at": "2026-11-05T15:39:08.000Z",
+          "reason_closed": "aborted",
+          "reason_opened": {
+            "sizing": {
+              "usd": 10,
+              "applied": [],
+              "paid_usd": 10,
+              "fell_back": []
+            },
+            "pattern": "large_move",
+            "signal_id": 128246151
+          },
+          "exit_price_usd": "76019.34542357031",
+          "entry_price_usd": "76347.62831116321"
+        }
+      ],
+      "pnl_usd": "-0.5761063436",
+      "verdict": "fail",
+      "leftover": 45,
+      "universe": {
+        "assets_kept": 6,
+        "ohlcv_budget": 5000,
+        "ohlcv_failed": 1,
+        "assets_dropped": 0,
+        "empty_universe": false,
+        "candidate_assets": 6,
+        "contains_asset_id": null,
+        "dropped_asset_ids": [],
+        "overlay_asset_ids": [],
+        "ohlcv_skipped_by_cap": 0,
+        "refused_before_marks": false,
+        "ohlcv_skipped_asset_ids": []
+      },
+      "final_usd": 49.42389365643011,
+      "trade_count": 5,
+      "unpriceable": 4,
+      "evidence_kind": "legacy_mark_replay",
+      "caught_by_tier": {
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "missed": 0
+      },
+      "skip_asset_ids": {
+        "max_concurrent": []
+      },
+      "max_drawdown_pct": 0.21548966941149564,
+      "trades_truncated": false,
+      "promotion_eligible": false,
+      "required_start_usd": 50,
+      "measurement_quality": {
+        "mode": "both",
+        "excluded_assets": 6,
+        "with_exclusions": {
+          "trades": 0,
+          "pnl_usd": 0
+        },
+        "without_exclusions": {
+          "trades": 5,
+          "pnl_usd": -0.5761063435698865
+        },
+        "excluded_asset_sample": [
+          26078956,
+          1,
+          753,
+          2,
+          16098529
+        ],
+        "replayed_without_excluded_candidates": true
+      },
+      "evidence_limitations": [
+        "Mutable historical inputs, indicative marks and retrospective capital requirement; use frozen execution research for validation.",
+        "Tick outlier annotations use retrospective neighbours. Quality comparisons use current asset flags and stored peak-time exit evidence.",
+        "Control arms are priced without tick marks outside the strategy's holding spans."
+      ],
+      "peak_capital_at_risk_usd": 0,
+      "peak_multiple_by_entry_bucket": {}
+    },
+    "requested_by": "HaccFake11111111111111111111111111111111112",
+    "created_at": "2026-11-05T15:54:22.073Z",
+    "started_at": "2026-11-05T15:54:23.629Z",
+    "finished_at": "2026-11-05T15:54:34.027Z"
+  },
+  "polls": 4,
+  "seconds": 13,
+  "truncated": {
+    "$.result.measurement_quality.excluded_asset_sample": 6
+  },
+  "request": {
+    "definition": {
+      "chain": "solana",
+      "entry": {
+        "source": "pattern",
+        "pattern": "large_move",
+        "filters": {
+          "min_usd": 15000,
+          "direction": "in"
+        }
+      },
+      "exit": {
+        "max_hold_hours": 1
+      },
+      "sizing": {
+        "usd_per_trade": 10,
+        "max_concurrent": 50
+      }
+    },
+    "from": "2026-11-05T14:46:20.937Z",
+    "to": "2026-11-05T15:46:21.219Z"
+  }
+}

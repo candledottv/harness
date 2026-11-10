@@ -4,25 +4,25 @@
  │                          │ │                                                                                       │ 
  │ ✓ Welcome                │ │  Sign in to Candle                                                                    │ 
  │                          │ │                                                                                       │ 
- │ ▸ Sign in to Candle      │ │  This machine has no keychain, so the Candle CLI keeps its sign-in in a file locked   │ 
- │                          │ │  by a passphrase you choose. The Candle Harness reads it when it starts, so set it    │ 
- │ · Connect your agent     │ │  first:                                                                               │ 
+ │ ▸ Sign in to Candle      │ │  This machine has no keychain, so the Candle CLI locks its sign-in file with a        │ 
+ │                          │ │  passphrase you choose. Add this line to ~/.bashrc in an editor, with a passphrase    │ 
+ │ · Connect your agent     │ │  of your own, kept from then on:                                                      │ 
  │                          │ │                                                                                       │ 
- │ · Wallet and limits      │ │    echo 'export CANDLE_KEYRING_PASSPHRASE="<a passphrase of your own>"' >> ~/.bashrc  │ 
- │                          │ │  ▸ ⧉ Copy the line                               then put your own passphrase in it   │ 
- │ · The tour               │ │                                                                                       │ 
- │                          │ │  Then quit (ctrl-c twice), open a new terminal, and run candle-harness again. Keep    │ 
- │ · Where to start         │ │  the same passphrase from then on.                                                    │ 
+ │ · Wallet and limits      │ │    export CANDLE_KEYRING_PASSPHRASE="<a passphrase of your own>"                      │ 
+ │                          │ │  ▸ ⧉ Copy the line            paste it into ~/.bashrc in an editor, not at a prompt   │ 
+ │ · The tour               │ │    ⧉ chmod 600 ~/.bashrc                run it after, so only you can read the file   │ 
  │                          │ │                                                                                       │ 
- │                          │ │  This isn't a vault's passphrase. It only locks the CLI's sign-in file on this        │ 
- │                          │ │  machine; a vault, if you make one, has its own.                                      │ 
+ │ · Where to start         │ │  Then quit (ctrl-c twice) and run candle-harness in a new terminal.                   │ 
+ │                          │ │                                                                                       │ 
+ │                          │ │  Or keep the owner sign-in off this machine: make an agent's key where you're signed  │ 
+ │                          │ │  in, quit, and add it here:                                                           │ 
+ │                          │ │    ⧉ candle-harness key add --agent agent-a                     it asks for the key   │ 
+ │                          │ │                                                                                       │ 
+ │                          │ │  This isn't a vault's passphrase. It only locks the CLI's sign-in file.               │ 
  │                          │ │                                                                                       │ 
  │                          │ │                                                                                       │ 
  │                          │ │                                                                                       │ 
- │                          │ │                                                                                       │ 
- │                          │ │                                                                                       │ 
- │                          │ │                                                                                       │ 
- │ about 3 minutes          │ │                                                                                       │ 
+ │ about 5 minutes          │ │                                                                                       │ 
  │ quit any time: it picks  │ │                                                                                       │ 
  │ up where you stopped     │ │                                                                                       │ 
  ╰──────────────────────────╯ ╰───────────────────────────────────────────────────────────────────────────────────────╯ 
@@ -36,21 +36,21 @@
 3: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×26 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×87 32fe9f/111419×1 ffffff/0b0d10×1
 4: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 3ddc84/111419×1 dde2ea/111419×8 ffffff/111419×16 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 b392f0/111419×17 ffffff/111419×68 32fe9f/111419×1 ffffff/0b0d10×1
 5: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×26 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×87 32fe9f/111419×1 ffffff/0b0d10×1
-6: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 32fe9f/111419×1 dde2ea/111419×1 f6f8fb/111419×17 ffffff/111419×6 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 dde2ea/111419×82 ffffff/111419×3 32fe9f/111419×1 ffffff/0b0d10×1
+6: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 32fe9f/111419×1 dde2ea/111419×1 f6f8fb/111419×17 ffffff/111419×6 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 dde2ea/111419×77 ffffff/111419×8 32fe9f/111419×1 ffffff/0b0d10×1
 7: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×26 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 dde2ea/111419×81 ffffff/111419×4 32fe9f/111419×1 ffffff/0b0d10×1
-8: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 959dab/111419×1 dde2ea/111419×1 959dab/111419×18 ffffff/111419×5 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 dde2ea/111419×6 ffffff/111419×79 32fe9f/111419×1 ffffff/0b0d10×1
+8: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 959dab/111419×1 dde2ea/111419×1 959dab/111419×18 ffffff/111419×5 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 dde2ea/111419×31 ffffff/111419×54 32fe9f/111419×1 ffffff/0b0d10×1
 9: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×26 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×87 32fe9f/111419×1 ffffff/0b0d10×1
-10: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 959dab/111419×1 dde2ea/111419×1 959dab/111419×17 ffffff/111419×6 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 dde2ea/111419×83 ffffff/111419×2 32fe9f/111419×1 ffffff/0b0d10×1
-11: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×26 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 32fe9f/1d2430×2 f6f8fb/1d2430×15 ffffff/1d2430×31 959dab/1d2430×35 ffffff/111419×2 32fe9f/111419×1 ffffff/0b0d10×1
-12: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 959dab/111419×1 dde2ea/111419×1 959dab/111419×8 ffffff/111419×15 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×87 32fe9f/111419×1 ffffff/0b0d10×1
-13: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×26 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 dde2ea/111419×81 ffffff/111419×4 32fe9f/111419×1 ffffff/0b0d10×1
-14: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 959dab/111419×1 dde2ea/111419×1 959dab/111419×14 ffffff/111419×9 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 dde2ea/111419×33 ffffff/111419×52 32fe9f/111419×1 ffffff/0b0d10×1
+10: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 959dab/111419×1 dde2ea/111419×1 959dab/111419×17 ffffff/111419×6 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 dde2ea/111419×63 ffffff/111419×22 32fe9f/111419×1 ffffff/0b0d10×1
+11: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×26 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 32fe9f/1d2430×2 f6f8fb/1d2430×15 ffffff/1d2430×12 959dab/1d2430×54 ffffff/111419×2 32fe9f/111419×1 ffffff/0b0d10×1
+12: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 959dab/111419×1 dde2ea/111419×1 959dab/111419×8 ffffff/111419×15 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 32fe9f/111419×2 6cb6ff/111419×21 ffffff/111419×16 959dab/111419×44 ffffff/111419×2 32fe9f/111419×1 ffffff/0b0d10×1
+13: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×26 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×87 32fe9f/111419×1 ffffff/0b0d10×1
+14: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 959dab/111419×1 dde2ea/111419×1 959dab/111419×14 ffffff/111419×9 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 dde2ea/111419×66 ffffff/111419×19 32fe9f/111419×1 ffffff/0b0d10×1
 15: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×26 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×87 32fe9f/111419×1 ffffff/0b0d10×1
-16: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×26 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 959dab/111419×77 ffffff/111419×8 32fe9f/111419×1 ffffff/0b0d10×1
-17: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×26 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 959dab/111419×47 ffffff/111419×38 32fe9f/111419×1 ffffff/0b0d10×1
-18: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×26 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×87 32fe9f/111419×1 ffffff/0b0d10×1
+16: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×26 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 dde2ea/111419×83 ffffff/111419×2 32fe9f/111419×1 ffffff/0b0d10×1
+17: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×26 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 dde2ea/111419×26 ffffff/111419×59 32fe9f/111419×1 ffffff/0b0d10×1
+18: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×26 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 32fe9f/111419×2 6cb6ff/111419×40 ffffff/111419×21 959dab/111419×20 ffffff/111419×2 32fe9f/111419×1 ffffff/0b0d10×1
 19: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×26 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×87 32fe9f/111419×1 ffffff/0b0d10×1
-20: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×26 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×87 32fe9f/111419×1 ffffff/0b0d10×1
+20: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×26 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 959dab/111419×70 ffffff/111419×15 32fe9f/111419×1 ffffff/0b0d10×1
 21: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×26 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×87 32fe9f/111419×1 ffffff/0b0d10×1
 22: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×26 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×87 32fe9f/111419×1 ffffff/0b0d10×1
 23: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×26 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×87 32fe9f/111419×1 ffffff/0b0d10×1

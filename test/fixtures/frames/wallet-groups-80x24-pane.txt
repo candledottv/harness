@@ -1,5 +1,5 @@
  agent-a ▾  LIVE  today $12.00 / $100.00  ● 1 card waiting       ctrl-x ×2 kill 
- 1 Trade  2 Coc  3 Tre  4 Sig  5 P&L  6 Res  7 Jou  8 Per   settings ▾          
+ 1 Trade  2 Cockpit  3 Research  4 Bots  5 Build   settings ▾                   
 ╭─ agent-a ─────────── Claude Code · sonnet ▾ ─╮╭─ Wallets ──── all agents ▾ ──╮
 │                                              ││ ◂  wallets  ▸   3/4 · ←/→    │
 │  JUPF on the hour                            ││read 3s ago                   │
@@ -15,7 +15,7 @@
 │                                              ││                              │
 │1 card waiting · ⏎ approves the highlighted … ││                              │
 │▌ BUY 0.1 SOL of JUPF                     50s ││                              │
-│▌ agent-a · pays from embedded · live         ││                              │
+│▌ agent-a · embedded · live · JupF…1111       ││                              │
 │▌ why  volume up 3× on the hour, holders ris… ││                              │
 │▌  ⏎ approve    ctrl-n reject                 ││                              │
 │▌  ctrl-o details                             ││                              │
@@ -25,7 +25,7 @@
 
 --- colours ---
 0: 6cb6ff/16263a×11 0b0d10/3ddc84×6 ffffff/0e1115×1 959dab/0e1115×6 f6f8fb/0e1115×6 959dab/0e1115×10 ffffff/0e1115×2 f5a524/0e1115×16 ffffff/0e1115×6 ff5c5c/3a1619×16
-1: ffffff/0b0d10×1 f6f8fb/0b0d10+9×7 ffffff/0b0d10×2 6cb6ff/0b0d10×5 ffffff/0b0d10×2 6cb6ff/0b0d10×5 ffffff/0b0d10×2 6cb6ff/0b0d10×5 ffffff/0b0d10×2 6cb6ff/0b0d10×5 ffffff/0b0d10×2 6cb6ff/0b0d10×5 ffffff/0b0d10×2 6cb6ff/0b0d10×5 ffffff/0b0d10×2 6cb6ff/0b0d10×5 ffffff/0b0d10×2 6cb6ff/16263a×12 ffffff/0b0d10×9
+1: ffffff/0b0d10×1 f6f8fb/0b0d10+9×7 ffffff/0b0d10×2 6cb6ff/0b0d10×9 ffffff/0b0d10×2 6cb6ff/0b0d10×10 ffffff/0b0d10×2 6cb6ff/0b0d10×6 ffffff/0b0d10×2 6cb6ff/0b0d10×7 ffffff/0b0d10×2 6cb6ff/16263a×12 ffffff/0b0d10×18
 2: 252a33/111419×2 b392f0/111419×9 252a33/111419×11 6cb6ff/16263a×24 252a33/111419×2 32fe9f/111419×2 b392f0/111419×9 32fe9f/111419×4 6cb6ff/16263a×14 32fe9f/111419×3
 3: 252a33/111419×1 ffffff/111419×46 252a33/111419×1 32fe9f/111419×1 6cb6ff/16263a×3 dde2ea/111419×9 6cb6ff/16263a×3 959dab/111419×11 ffffff/111419×4 32fe9f/111419×1
 4: 252a33/111419×1 dde2ea/111419×2 b392f0/111419+1×16 ffffff/111419×28 252a33/111419×1 32fe9f/111419×1 959dab/111419×11 ffffff/111419×19 32fe9f/111419×1
@@ -41,7 +41,7 @@
 14: 252a33/111419×1 ffffff/111419×46 252a33/111419×1 32fe9f/111419×1 ffffff/111419×30 32fe9f/111419×1
 15: 252a33/111419×1 959dab/111419×45 ffffff/111419×1 252a33/111419×1 32fe9f/111419×1 ffffff/111419×30 32fe9f/111419×1
 16: 252a33/111419×1 f5a524/111419×2 f6f8fb/111419×19 dde2ea/111419×21 f5a524/111419×3 ffffff/111419×1 252a33/111419×1 32fe9f/111419×1 ffffff/111419×30 32fe9f/111419×1
-17: 252a33/111419×1 f5a524/111419×2 959dab/111419×35 ffffff/111419×9 252a33/111419×1 32fe9f/111419×1 ffffff/111419×30 32fe9f/111419×1
+17: 252a33/111419×1 f5a524/111419×2 959dab/111419×37 ffffff/111419×7 252a33/111419×1 32fe9f/111419×1 ffffff/111419×30 32fe9f/111419×1
 18: 252a33/111419×1 f5a524/111419×2 959dab/111419×5 dde2ea/111419×38 ffffff/111419×1 252a33/111419×1 32fe9f/111419×1 ffffff/111419×30 32fe9f/111419×1
 19: 252a33/111419×1 f5a524/111419×2 0b0d10/6cb6ff×11 dde2ea/111419×2 6cb6ff/16263a×15 ffffff/111419×16 252a33/111419×1 32fe9f/111419×1 ffffff/111419×30 32fe9f/111419×1
 20: 252a33/111419×1 f5a524/111419×2 6cb6ff/16263a×16 ffffff/111419×28 252a33/111419×1 32fe9f/111419×1 ffffff/111419×30 32fe9f/111419×1

@@ -205,14 +205,14 @@ describe("the person's own skills", () => {
     put(dir, "candle-risk-gate/SKILL.md", skill("My stricter gate."))
     const mine = loadOwnSkills(dir).skills
     const quant = skillsFor("quant", mine)
-    expect(own(quant)).toEqual([...CANDLE_SKILL_NAMES, "harness-memory", "harness-view", "dip-buyer"])
+    expect(own(quant)).toEqual([...CANDLE_SKILL_NAMES, "harness-memory", "harness-view", "harness-triggers", "harness-bots", "dip-buyer"])
     expect(quant.find((k) => k.name === "candle-risk-gate")).toMatchObject({ origin: "own", description: "My stricter gate." })
     // The Candle Harness's own, harness-memory, is on every preset.
-    expect(own(skillsFor("trader", mine))).toEqual(["harness-memory", "harness-view", "candle-risk-gate", "dip-buyer"])
-    expect(own(skillsFor("bare", mine))).toEqual(["harness-memory", "harness-view", "candle-risk-gate", "dip-buyer"])
-    expect(own(skillsFor("bare", []))).toEqual(["harness-memory", "harness-view"])
+    expect(own(skillsFor("trader", mine))).toEqual(["harness-memory", "harness-view", "harness-triggers", "harness-bots", "candle-risk-gate", "dip-buyer"])
+    expect(own(skillsFor("bare", mine))).toEqual(["harness-memory", "harness-view", "harness-triggers", "harness-bots", "candle-risk-gate", "dip-buyer"])
+    expect(own(skillsFor("bare", []))).toEqual(["harness-memory", "harness-view", "harness-triggers", "harness-bots"])
     expect(skillTool([])).toBeUndefined()
-    expect(skillTool(skillsFor("bare", mine))!.inputSchema.properties.name.enum).toEqual(["harness-memory", "harness-view", "candle-risk-gate", "dip-buyer"])
+    expect(skillTool(skillsFor("bare", mine))!.inputSchema.properties.name.enum).toEqual(["harness-memory", "harness-view", "harness-triggers", "harness-bots", "candle-risk-gate", "dip-buyer"])
     expect(skillTool(skillsFor("bare", mine))!.description).toContain("(the Candle Harness's own or the person's own)")
     expect(skillTool(skillsFor("bare", []))!.description).toContain("(the Candle Harness's own)")
   })
@@ -337,5 +337,20 @@ describe("skill folders of the person's own, turned on", () => {
 
   test("skill_read's description says where the person's skills come from, and that the agent can't read those folders", () => {
     expect(skillTool(CANDLE_SKILLS)!.description).toContain("turning on their Claude Code, Codex or other skill folders in settings ▾ → skills; you can't read those folders yourself")
+  })
+})
+
+describe("the Candle Harness's own skills say what the pass found the agents getting wrong", () => {
+  const body = (name: string) => skillsFor("bare", []).find((k) => k.name === name)!
+  const read = (name: string) => JSON.stringify(skillRead(skillsFor("bare", []), { name }))
+  test("harness-triggers: a cooldown only where the person's words want one, and the shortest for \"whenever\"", () => {
+    expect(body("harness-triggers")).toBeDefined()
+    expect(read("harness-triggers")).toContain("add or change a cooldown only when the person asks for one")
+    expect(read("harness-triggers")).toContain("`cooldown 1m`, the shortest there is")
+  })
+  test("harness-bots: a live bot's slippage asked about, and a wallet of its own by the person's chip, never tee new", () => {
+    expect(read("harness-bots")).toContain("Its own slippage, for a live bot")
+    expect(read("harness-bots")).toContain("Never propose `candle tee new`, `tee enable` or a rebind")
+    expect(read("harness-bots")).toContain("`tee enable` doesn't fix that")
   })
 })

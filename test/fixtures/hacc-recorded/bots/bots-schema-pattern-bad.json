@@ -1,0 +1,32 @@
+{
+  "name": "schema-pattern-bad",
+  "host": "hacc",
+  "method": "POST",
+  "route": "/v1/strategy-lab/replay",
+  "query": {},
+  "body": {
+    "definition": {
+      "chain": "solana",
+      "entry": {
+        "source": "pattern",
+        "pattern": "x",
+        "filters": {}
+      },
+      "exit": {
+        "take_profit_pct": 100
+      },
+      "sizing": {
+        "usd_per_trade": 5,
+        "max_concurrent": 2
+      }
+    },
+    "from": "2026-10-01T00:00:00Z",
+    "to": "2026-10-30T00:00:00Z"
+  },
+  "status": 400,
+  "ms": 166,
+  "bytes": 169,
+  "answer": {
+    "error": "entry.pattern: Invalid enum value. Expected 'confluence' | 'deployer' | 'large_move' | 'dormancy' | 'intra_book' | 'new_ticker' | 'kol_mention', received 'x'"
+  }
+}

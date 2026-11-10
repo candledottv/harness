@@ -1,5 +1,6 @@
 // The core's redactor; the journal half is in core/journal.test.ts.
 import { describe, expect, test } from "bun:test"
+import { generateKeyPairSync } from "node:crypto"
 import { REDACTED, Redactor, withoutFactorValue } from "./redact"
 
 const READ_KEY = `cndl_test_${"r".repeat(43)}`
@@ -161,5 +162,55 @@ describe("no false positives", () => {
   test("a clientTradeId and the fields that carry ids", () => {
     const row = { clientTradeId: "0b5f7c2e-4d1a-4e8b-9f3a-2c6d8e1f4a7b", clientSwapId: "c1d2", opId: "op-1", keyPrefix: "cndl_li" }
     expect(redactor.value(row)).toEqual(row)
+  })
+})
+
+describe("more secret shapes", () => {
+  const redactor = new Redactor()
+
+  test("refresh_token, password, client_secret, id_token and dkey URL parameters", () => {
+    const text = "https://auth.example.com/cb?refresh_token=rt_abcdef123456&password=hunter22hunter&client_secret=cs_9a8b7c6d5e&id_token=abc.def.ghi&x=1 https://lb.drpc.org/ogrpc?network=solana&dkey=AbCdEf1234567890"
+    const out = redactor.text(text)
+    for (const secret of ["rt_abcdef123456", "hunter22hunter", "cs_9a8b7c6d5e", "abc.def.ghi", "AbCdEf1234567890"]) expect(out).not.toContain(secret)
+    expect(out).toContain("x=1")
+    expect(out).toContain("network=solana")
+  })
+
+  test("a URL's user:pass@, and a Basic credential, but not the word Basic in prose", () => {
+    expect(redactor.text("postgres://admin:s3cr3tpass@db.internal:5432/app")).toBe(`postgres://${REDACTED}@db.internal:5432/app`)
+    expect(redactor.text("https://ghp_token_as_user@github.com/x/y.git")).toBe(`https://${REDACTED}@github.com/x/y.git`)
+    const basic = Buffer.from("alice:wonderland-pass").toString("base64")
+    expect(redactor.text(`Authorization: Basic ${basic}`)).toBe(`Authorization: Basic ${REDACTED}`)
+    expect(redactor.text("Basic information about the token")).toBe("Basic information about the token")
+  })
+
+  test("a JWT", () => {
+    const jwt = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U"
+    expect(redactor.text(`token ${jwt} end`)).toBe(`token ${REDACTED} end`)
+  })
+
+  test("an RPC provider's key in its URL's path", () => {
+    const out = redactor.text("rpc https://young-rough-pond.solana-mainnet.quiknode.pro/0123456789abcdef0123456789abcdef/ and https://solana-mainnet.g.alchemy.com/v2/AbCdEfGhIjKlMnOpQrStUvWxYz012345")
+    expect(out).toBe(`rpc https://young-rough-pond.solana-mainnet.quiknode.pro/${REDACTED}/ and https://solana-mainnet.g.alchemy.com/v2/${REDACTED}`)
+  })
+
+  test("a keypair file's 64-number array, and only a real keypair's", () => {
+    const { privateKey, publicKey } = generateKeyPairSync("ed25519")
+    const pair = [...privateKey.export({ format: "der", type: "pkcs8" }).subarray(-32), ...publicKey.export({ format: "der", type: "spki" }).subarray(-32)]
+    expect(redactor.text(`key: ${JSON.stringify(pair)}`)).toBe(`key: ${REDACTED}`)
+    // 64 numbers that aren't a keypair (a signature's bytes, say) stay, as does a short list.
+    const other = `[${Array.from({ length: 64 }, (_, i) => (i * 37) % 256).join(",")}]`
+    expect(redactor.text(other)).toBe(other)
+    expect(redactor.text("[1, 2, 3]")).toBe("[1, 2, 3]")
+  })
+
+  test("fields privateKey, mnemonic, secretKey and seed are never written", () => {
+    const out = redactor.value({ privateKey: "abc", mnemonic: "word word word", secretKey: [1, 2, 3], seed: "xyz", private_key: "p", mint: "MoonFake11111111111111111111111111111111111" })
+    expect(out as unknown).toEqual({ privateKey: REDACTED, mnemonic: REDACTED, secretKey: REDACTED, seed: REDACTED, private_key: REDACTED, mint: "MoonFake11111111111111111111111111111111111" })
+  })
+
+  test("a transaction signature on Solscan still shows", () => {
+    const sig = "5VERv8NMvzbJMEkV8xnrLkEaWRtSz9CosKDYjCJjBRnbJLgp8uirBgmQpjKhoR4tjF3ZpRzrFmBV6UjKdiSZkQUW"
+    expect(redactor.text(`https://solscan.io/tx/${sig}`)).toBe(`https://solscan.io/tx/${sig}`)
   })
 })

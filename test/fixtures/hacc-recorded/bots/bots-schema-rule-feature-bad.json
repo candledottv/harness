@@ -1,0 +1,42 @@
+{
+  "name": "schema-rule-feature-bad",
+  "host": "hacc",
+  "method": "POST",
+  "route": "/v1/strategy-lab/replay",
+  "query": {},
+  "body": {
+    "definition": {
+      "chain": "solana",
+      "entry": {
+        "source": "pattern",
+        "pattern": "confluence",
+        "filters": {}
+      },
+      "exit": {
+        "take_profit_pct": 100
+      },
+      "sizing": {
+        "usd_per_trade": 5,
+        "max_concurrent": 2,
+        "rules": [
+          {
+            "when": {
+              "x": {
+                "lt": 1
+              }
+            },
+            "mult": 2
+          }
+        ]
+      }
+    },
+    "from": "2026-10-01T00:00:00Z",
+    "to": "2026-10-30T00:00:00Z"
+  },
+  "status": 400,
+  "ms": 128,
+  "bytes": 250,
+  "answer": {
+    "error": "sizing.rules.0.when.x: Invalid enum value. Expected 'mcap_at_entry' | 'score_15m' | 'tracked_buyers_at_trigger' | 'proven_follow_present' | 'fomo_buyers_at_trigger' | 'momentum_since_first_bar' | 'minutes_since_first_signal', received 'x'"
+  }
+}

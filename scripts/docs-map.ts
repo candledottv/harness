@@ -13,13 +13,15 @@ import { HACC_TOOLS } from "../src/core/hacc-tools"
 import { HISTORY_TOOL_NAME } from "../src/core/history-tool"
 import { LIMITS_TOOL_NAME } from "../src/core/limits-tool"
 import { PNL_TOOL_NAME } from "../src/core/pnl-tool"
+import { TRIGGERS_TOOL_NAME } from "../src/core/triggers-tool"
+import { BOTS_TOOL_NAME } from "../src/core/bots-tool"
 import { RESEARCH_TOOLS } from "../src/core/research-tools"
 import { GROUP_WALLETS_TOOL, NAME_WALLETS_TOOL, SHOW_WALLETS_TOOL, VIEW_TOOL } from "../src/core/tool-face"
 import { SKILL_TOOL_NAME } from "../src/engine/skills"
 import { main } from "../src/main"
 import { PANE_IDS } from "../src/shared/panes"
-import { parseAliases } from "../src/view/aliases"
-import { type Command, type CommandContext, parseCommand } from "../src/view/commands"
+import { parseAliases } from "../src/shared/aliases"
+import { type Command, type CommandContext, parseCommand } from "../src/shared/commands"
 import { KEYMAP } from "../src/view/keymap"
 import { DEFAULT_TABS } from "../src/view/layouts-file"
 
@@ -114,9 +116,12 @@ export async function sources(): Promise<Sources> {
       GROUP_WALLETS_TOOL.name,
       VIEW_TOOL.name,
       ...RESEARCH_TOOLS.map((t) => t.name),
+      "research_run",
       HISTORY_TOOL_NAME,
       PNL_TOOL_NAME,
       LIMITS_TOOL_NAME,
+      TRIGGERS_TOOL_NAME,
+      BOTS_TOOL_NAME,
       SKILL_TOOL_NAME,
       ...HACC_TOOLS.map((t) => t.name),
     ],

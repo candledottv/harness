@@ -1,7 +1,8 @@
 // The long-paste check: with CANDLE_HARNESS_PASTE_LOG set, each paste the terminal
 // delivers is logged whole, so a script can diff it against what was pasted. Off unless set.
 import { afterAll, expect, test } from "bun:test"
-import { mkdtempSync, readFileSync, rmSync, statSync } from "node:fs"
+import { generateKeyPairSync } from "node:crypto"
+import { mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { act } from "react"
@@ -41,6 +42,23 @@ test("a paste shaped like a key keeps its length and SHA-256, never its text; th
   expect(secret.text).toBeUndefined()
   expect(readFileSync(file, "utf8")).not.toContain(key)
   expect(line.text).toBe(LINE)
+})
+
+test("a wallet's private key, a recovery phrase or one of the Candle Harness's own tokens keeps no text, and a file that was already there is narrowed", () => {
+  const file = join(dir, "wallets.jsonl")
+  writeFileSync(file, "", { mode: 0o644 })
+  const log = pasteLogger({ CANDLE_HARNESS_PASTE_LOG: file })!
+  const { privateKey, publicKey } = generateKeyPairSync("ed25519")
+  const pair = Buffer.concat([privateKey.export({ format: "der", type: "pkcs8" }).subarray(-32), publicKey.export({ format: "der", type: "spki" }).subarray(-32)])
+  // Twelve words of the list whose checksum holds: all-zero entropy.
+  const phrase = `${"abandon ".repeat(11)}about`
+  const secrets = [pair.toString("hex"), JSON.stringify([...pair]), `restore ${phrase}`, `chv_${"a".repeat(43)}`, `cht_${"b".repeat(12)}_${"c".repeat(43)}`]
+  for (const secret of secrets) log(secret)
+  log("plain words")
+  const rows = readFileSync(file, "utf8").trim().split("\n").map((l) => JSON.parse(l))
+  expect(rows.map((r) => r.text)).toEqual([undefined, undefined, undefined, undefined, undefined, "plain words"])
+  expect(rows.map((r) => r.length)).toEqual([...secrets.map((s) => s.length), 11])
+  expect(statSync(file).mode & 0o777).toBe(0o600)
 })
 
 test("the App hands a bracketed 4 KB paste over whole, and puts it on the input line", async () => {

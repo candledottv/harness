@@ -292,7 +292,7 @@ describe("HaccChanges alone", () => {
     expect(hacc.calls.find((x) => x.method === "POST")!.body).toMatchObject({ asset_ids: [1, 2] })
     expect(rows.map((x) => x.type)).toEqual(["hacc.change", "hacc.replay"])
     // Hacc sends pnl_usd as a decimal string: the journal keeps it as a number.
-    expect(rows[1]).toMatchObject({ status: "done", verdict: "insufficient", trades: 3, pnlUsd: 12.5, drawdownPct: 8.214285714285714 })
+    expect(rows[1]).toMatchObject({ status: "done", verdict: "fail", trades: 22, pnlUsd: -20.4454236189, drawdownPct: 83.99690371372242 })
   })
 
   test("a replay still running after the wait answers with its job id, and the core polls on until it ends", async () => {

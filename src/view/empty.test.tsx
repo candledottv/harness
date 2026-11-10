@@ -6,7 +6,7 @@ import { afterEach, describe, expect, test } from "bun:test"
 import { act } from "react"
 import type { CoreEventParams } from "../core/client"
 import { CLOCK, drawScene, freshEvents, MINT } from "../../test/frame-scenes"
-import { AGENT_FIRST, COCKPIT, JOURNAL, type Layout, PERPS, PNL, panesOf, RESEARCH, SIGNALS, TRENDING } from "./layout"
+import { AGENT_FIRST, BOTS, BUILD, COCKPIT, JOURNAL, type Layout, PERPS, PNL, panesOf, RESEARCH, SIGNALS, TRENDING } from "./layout"
 import { journalKey } from "./panes/journal"
 import { activityTape, PANES, paneLines } from "./panes/registry"
 import { tabTip } from "./panes/agent"
@@ -124,7 +124,7 @@ const before = (): CoreView => build([["status", { agents: [{ name: "agent-a", c
 
 /** A fresh install, read: nothing traded, nothing recorded. */
 const fresh = (): CoreView => {
-  const v = build([...freshEvents(), ["away", { summary: null, firstRun: true }]])
+  const v = build([...freshEvents(), ["away", { summary: null, firstRun: true }], ["bots", { bots: [], problems: [] }]])
   return { ...v, journal: { key: journalKey(undefined), entries: [] }, pnlSeries: { span: "window", from: CLOCK - 86_400_000, at: CLOCK, points: [] }, research: { token: null } }
 }
 
@@ -151,6 +151,7 @@ const failed = (): CoreView => {
     ["hacc", { enabled: true, agents: { "agent-a": { plan: null, key: "refused", why: `Hacc refused agent-a's key (${WORDS}).` } }, stream: { state: "no-key", mine: { state: "closed" } } }],
     ["feeds", { new: list("new"), graduated: list("graduated"), onfire: list("onfire"), finalstretch: list("finalstretch") }],
     ["away", { summary: quietAway(failure.words) }],
+    ["bots", { bots: [], problems: [] }],
     ["pnl", { window: "24h", figure: { window: "24h", label: "24h", start: CLOCK - 86_400_000, usd: null, from: null, short: false, agents: {} }, agents: [{ agent: "agent-a", prefix: "agntAb3d", readAt: null, book: null, failed: failure }], sum: null, wallets: [], trades: [], swaps: [], paper: {}, samplesFrom: null }],
   ])
   const token = { mint: MINT, chain: "solana" as const, symbol: "JUPF" }
@@ -162,12 +163,15 @@ const failed = (): CoreView => {
   } as CoreView
 }
 
-const LAYOUTS: Layout[] = [AGENT_FIRST, COCKPIT, TRENDING, SIGNALS, PNL, RESEARCH, JOURNAL, PERPS]
+const LAYOUTS: Layout[] = [AGENT_FIRST, COCKPIT, TRENDING, SIGNALS, PNL, RESEARCH, JOURNAL, PERPS, BOTS, BUILD]
 /** Each pane's tabs: every preset it's on, and alone, as popped out. */
 const contexts = (id: PaneId): (readonly PaneId[])[] => [...LAYOUTS.map((l) => panesOf(l.root)).filter((p) => p.includes(id)), [id]]
 
-/** The panes with nothing to read: their words are their own, so a failed read can't reach them. */
-const NO_READ: readonly PaneId[] = ["activity", "perps"]
+/**
+ * The panes with nothing to read: their words are their own, so a failed read can't reach them. The triggers and bots
+ * are the core's own, and the Build tab's are the harness's terminal, the bots folder as this view reads it, and the core's tests.
+ */
+const NO_READ: readonly PaneId[] = ["activity", "perps", "triggers", "bots", "bot", "build", "build-folder", "build-test"]
 /** Where a list is on the tab, the token pane before a token points to it, and the list says its read failed. */
 const LISTS: readonly PaneId[] = ["feed", "new", "graduated", "final-stretch", "signals", "lists"]
 const saysWhy = (id: PaneId, panes: readonly PaneId[]) => !NO_READ.includes(id) && !(id === "token" && panes.some((p) => LISTS.includes(p)))
@@ -213,6 +217,7 @@ describe("each pane says something before its first read, with nothing to show, 
     expect(tabTip(panesOf(TRENDING.root))).toBe("ctrl-t on a row: it asks me about that token.")
     expect(tabTip(panesOf(SIGNALS.root))).toBe("ctrl-t on a signal: it asks me what it means.")
     expect(tabTip(panesOf(PNL.root))).toBe('asking: "how am I doing today?"')
+    expect(tabTip(panesOf(BOTS.root))).toBe('asking: "how are my bots doing?", or for a bot of your own.')
     expect(tabTip(panesOf(JOURNAL.root))).toBe('asking: "what did I trade yesterday?"')
     expect(tabTip(panesOf(PERPS.root))).toBe("a question above, or ask me about perps on Hyperliquid.")
   })

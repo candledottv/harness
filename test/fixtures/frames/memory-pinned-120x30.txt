@@ -1,0 +1,62 @@
+ ▲ candle  agent-a ▾  LIVE  today $12.00 / $100.00  exposure $412.50  P&L 24h +$3.40  ● 1 card waiting   ctrl-x ×2 kill 
+ 1 Trade  2 Cockpit  3 Research  4 Bots  5 Build   settings ▾                                                           
+                                                                                                                        
+╭─ agent-a ────────────────────────────────── Claude Code · sonnet ▾ ─╮ ╭─ Token · JUPF · follows the agent ──── pin ──╮
+│ you › how's JUPF looking?                                           │ │ JUPF  Jupiter Fake                           │
+│                                                                     │ │ JupF…1111  ⧉                                 │
+│   JUPF on the hour                                                  │ │ $0.425  ▲ 3.1% 1h   mcap $1.3B  liq $18.4M   │
+│                                                                     │ │ Candle market read, 4s ago                   │
+│   Volume╭─ agent-a's memory ───────────────────────────────────────────────────────────────────────────────╮         │
+│         │4 in the index, 2 pinned, 360 B.                                                                  │         │
+│         │/r/agent-a/memory                                                                                 │ 3 more ─╯
+│   Price │Every line here goes into each turn, headings too. A line takes the file it points to. A pinned   │          
+│   Liquid│line stays through the agent's merges. What you told the agent in chat stays in the               │ents ▾ ──╮
+│         │conversation.                                                                                     │         │
+│   Mint J│▸ pinned · - never buy a token under an hour old, whatever the signal                   unpin   ✕ │t-a      │
+│         │  pinned · - sizing: a quarter of the usual buy on a dip → memory/sizing.md             unpin   ✕ │t-b      │
+│ 1 card w│  - risk check first: read skill:candle-risk-gate before any first buy of a token         pin   ✕ │t-a      │
+│ ▌ BUY 0.│  - the slow fill: a TEE buy that took long last week → history:2026-10-21 slow fill      pin   ✕ │ 2 more ─╯
+│ ▌ agent-│  memory/sizing.md · 1.2 KB                                                                     ✕ │          
+│ ▌ why  v│  clear all                                                                                       │ents ▾ ──╮
+│ ▌  ⏎ app│↑/↓ · ⏎ pins or unpins · ⌫ or ✕ deletes · esc closes                                              │         │
+│         ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯         │
+│                                                                     │ │ tee-one · TEE · agent-a  ⧉                   │
+│                                                                     │ │   0.5 SOL ≈$75.00 · 1 token                  │
+│                                                                     │ ╰─ ⇱ ──────────────────────────────────────────╯
+│                                                                     │                                                 
+│                                                                     │ ╭─ Activity ─────────────────── all agents ▾ ──╮
+╰─────────────────────────────────────────────────────────────────────╯ │ 07:57  filled SELL 50% QUILL · 0.21 SOL #29  │
+                                                                        │ 07:58  filled BUY 0.04 SOL → LUMEN #30       │
+› type a command or ask the a…  ⏎ approve   ctrl-k palette    ? help    ╰─ ⇱ ──────────────────────────────────────────╯
+
+--- colours ---
+0: ffffff/0e1115×1 f6f8fb/0e1115×8 ffffff/0e1115×1 6cb6ff/16263a×11 0b0d10/3ddc84×6 ffffff/0e1115×1 959dab/0e1115×6 f6f8fb/0e1115×6 959dab/0e1115×10 ffffff/0e1115×2 959dab/0e1115×9 f6f8fb/0e1115×7 ffffff/0e1115×2 959dab/0e1115×8 3ddc84/0e1115×6 ffffff/0e1115×2 f5a524/0e1115×16 ffffff/0e1115×2 ff5c5c/3a1619×16
+1: ffffff/0b0d10×1 f6f8fb/0b0d10+9×7 ffffff/0b0d10×2 6cb6ff/0b0d10×9 ffffff/0b0d10×2 6cb6ff/0b0d10×10 ffffff/0b0d10×2 6cb6ff/0b0d10×6 ffffff/0b0d10×2 6cb6ff/0b0d10×7 ffffff/0b0d10×2 6cb6ff/16263a×12 ffffff/0b0d10×58
+2: ffffff/0b0d10×120
+3: 32fe9f/111419×2 b392f0/111419×9 32fe9f/111419×34 6cb6ff/16263a×24 32fe9f/111419×2 ffffff/0b0d10×1 252a33/111419×2 b392f0/111419×34 252a33/111419×4 6cb6ff/16263a×5 252a33/111419×3
+4: 32fe9f/111419×1 ffffff/111419×1 959dab/111419×6 f6f8fb/111419×19 ffffff/111419×43 32fe9f/111419×1 ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 f6f8fb/111419+1×4 959dab/111419×14 ffffff/111419×27 252a33/111419×1
+5: 32fe9f/111419×1 ffffff/111419×69 32fe9f/111419×1 ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 959dab/111419×9 dde2ea/111419×1 6cb6ff/16263a×3 ffffff/111419×32 252a33/111419×1
+6: 32fe9f/111419×1 ffffff/111419×1 dde2ea/111419×2 b392f0/111419+1×16 ffffff/111419×50 32fe9f/111419×1 ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 f6f8fb/111419×6 dde2ea/111419×2 3ddc84/111419×6 959dab/111419×11 dde2ea/111419×5 959dab/111419×6 dde2ea/111419×6 ffffff/111419×3 252a33/111419×1
+7: 32fe9f/111419×1 ffffff/111419×1 dde2ea/111419×2 ffffff/111419×66 32fe9f/111419×1 ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 959dab/111419×26 ffffff/111419×19 252a33/111419×1
+8: 32fe9f/111419×1 ffffff/111419×1 dde2ea/111419×8 32fe9f/111419×2 b392f0/111419×18 32fe9f/111419×80 ffffff/111419×9 252a33/111419×1
+9: 32fe9f/111419×1 ffffff/111419×1 dde2ea/111419×2 ffffff/111419×6 32fe9f/111419×1 959dab/111419×32 ffffff/111419×66 32fe9f/111419×1 ffffff/111419×9 252a33/111419×1
+10: 32fe9f/111419×1 ffffff/111419×1 dde2ea/111419×8 32fe9f/111419×1 959dab/111419×17 ffffff/111419×81 32fe9f/111419×1 959dab/111419×8 252a33/111419×2
+11: 32fe9f/111419×1 ffffff/111419×1 dde2ea/111419×8 32fe9f/111419×1 959dab/111419×95 ffffff/111419×3 32fe9f/111419×1 ffffff/0b0d10×10
+12: 32fe9f/111419×1 ffffff/111419×1 dde2ea/111419×8 32fe9f/111419×1 959dab/111419×83 ffffff/111419×15 32fe9f/111419×1 6cb6ff/16263a×7 252a33/111419×3
+13: 32fe9f/111419×1 ffffff/111419×1 dde2ea/111419×2 ffffff/111419×6 32fe9f/111419×1 959dab/111419×13 ffffff/111419×85 32fe9f/111419×1 ffffff/111419×9 252a33/111419×1
+14: 32fe9f/111419×1 ffffff/111419×1 dde2ea/111419×7 f6f8fb/111419×1 32fe9f/111419×1 dde2ea/1d2430×2 b392f0/1d2430×9 dde2ea/1d2430×58 ffffff/1d2430×18 6cb6ff/16263a×7 ffffff/1d2430×1 ff5c5c/3a1619×3 32fe9f/111419×1 959dab/111419×3 ffffff/111419×6 252a33/111419×1
+15: 32fe9f/111419×1 ffffff/111419×9 32fe9f/111419×1 dde2ea/111419×2 b392f0/111419×9 dde2ea/111419×64 ffffff/111419×12 6cb6ff/16263a×7 ffffff/111419×1 ff5c5c/3a1619×3 32fe9f/111419×1 959dab/111419×3 ffffff/111419×6 252a33/111419×1
+16: 32fe9f/111419×1 ffffff/111419×1 959dab/111419×8 32fe9f/111419×1 dde2ea/111419×81 ffffff/111419×8 6cb6ff/16263a×5 ffffff/111419×1 ff5c5c/3a1619×3 32fe9f/111419×1 959dab/111419×3 ffffff/111419×6 252a33/111419×1
+17: 32fe9f/111419×1 ffffff/111419×1 f5a524/111419×2 f6f8fb/111419×6 32fe9f/111419×1 dde2ea/111419×84 ffffff/111419×5 6cb6ff/16263a×5 ffffff/111419×1 ff5c5c/3a1619×3 32fe9f/111419×1 959dab/111419×8 252a33/111419×2
+18: 32fe9f/111419×1 ffffff/111419×1 f5a524/111419×2 959dab/111419×6 32fe9f/111419×1 959dab/111419×27 ffffff/111419×68 ff5c5c/3a1619×3 32fe9f/111419×1 ffffff/0b0d10×10
+19: 32fe9f/111419×1 ffffff/111419×1 f5a524/111419×2 959dab/111419×5 dde2ea/111419×1 32fe9f/111419×1 6cb6ff/111419×11 ffffff/111419×87 32fe9f/111419×1 6cb6ff/16263a×7 252a33/111419×3
+20: 32fe9f/111419×1 ffffff/111419×1 f5a524/111419×2 0b0d10/6cb6ff×6 32fe9f/111419×1 959dab/111419×52 ffffff/111419×46 32fe9f/111419×1 ffffff/111419×9 252a33/111419×1
+21: 32fe9f/111419×1 ffffff/111419×9 32fe9f/111419×100 ffffff/111419×9 252a33/111419×1
+22: 32fe9f/111419×1 ffffff/111419×69 32fe9f/111419×1 ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 f6f8fb/111419×7 959dab/111419×16 dde2ea/111419×1 6cb6ff/16263a×3 ffffff/111419×18 252a33/111419×1
+23: 32fe9f/111419×1 ffffff/111419×69 32fe9f/111419×1 ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 dde2ea/111419×2 f6f8fb/111419×7 959dab/111419×8 dde2ea/111419×10 ffffff/111419×18 252a33/111419×1
+24: 32fe9f/111419×1 ffffff/111419×69 32fe9f/111419×1 ffffff/0b0d10×1 252a33/111419×2 6cb6ff/16263a×3 252a33/111419×43
+25: 32fe9f/111419×1 ffffff/111419×69 32fe9f/111419×1 ffffff/0b0d10×49
+26: 32fe9f/111419×1 ffffff/111419×69 32fe9f/111419×1 ffffff/0b0d10×1 252a33/111419×2 b392f0/111419×10 252a33/111419×19 6cb6ff/16263a×14 252a33/111419×3
+27: 32fe9f/111419×71 ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 959dab/111419×7 3ddc84/111419×6 dde2ea/111419×30 ffffff/111419×2 252a33/111419×1
+28: 959dab/0b0d10×1 ffffff/0b0d10×71 252a33/111419×1 ffffff/111419×1 959dab/111419×7 3ddc84/111419×6 dde2ea/111419×25 ffffff/111419×7 252a33/111419×1
+29: f6f8fb/0e1115×2 959dab/0e1115×28 ffffff/0e1115×2 dde2ea/0e1115×1 959dab/0e1115×10 6cb6ff/16263a×16 959dab/0e1115×2 6cb6ff/16263a×8 959dab/0e1115×2 ffffff/0b0d10×1 252a33/111419×2 6cb6ff/16263a×3 252a33/111419×43

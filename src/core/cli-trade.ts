@@ -14,7 +14,7 @@ import type { Redactor } from "../shared/redact"
 import { terminalText } from "../shared/terminal-text"
 import type { CandleCli, CliResult } from "./candle-cli"
 import type { Mapped, Operation, OperationError } from "./execute"
-import { keyLimitFields, refusalMessage } from "./execute"
+import { keyLimitFields, refusalMessage, routeWaitFields } from "./execute"
 import type { Journal } from "./journal"
 import { type JobState, jobState, type TradeRead } from "./reconcile"
 
@@ -118,7 +118,7 @@ function cliMessage(code: string, body: Record<string, unknown>): string {
 
 function errorOf(code: string, body: Record<string, unknown>): OperationError {
   // A held key needs when Candle's window resets, where the CLI passes it on.
-  return { code, message: cliMessage(code, body), retryable: body.retryable === true, ...(code === "KEY_LIMIT_REACHED" ? keyLimitFields(body) : {}) }
+  return { code, message: cliMessage(code, body), retryable: body.retryable === true, ...(code === "KEY_LIMIT_REACHED" ? keyLimitFields(body) : {}), ...(code === "SWAP_ROUTE_FAILING" ? routeWaitFields(body) : {}) }
 }
 
 /**

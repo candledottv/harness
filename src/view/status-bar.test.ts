@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test"
-import { pnlWords, statusFigures } from "./status-bar"
+import { pnlWords, quitNote, statusFigures, triggersOnWords } from "./status-bar"
 import type { StatusView } from "./store"
 
 const NOW = new Date(2026, 9, 30, 15, 0).getTime()
@@ -20,4 +20,15 @@ test("in paper mode the figure says it's the live books', as exposure does", () 
   expect(pnlWords({ usd: 1, label: "24h", from: NOW, short: false }, "paper", NOW)).toBe("live P&L 24h +$1.00")
   const status = { agents: [], activeAgent: "a", mode: "paper", paused: false, pnl: { usd: null, label: "24h", from: null, short: false } } as StatusView
   expect(statusFigures(status).pnl).toBe("live P&L 24h —")
+})
+
+test("triggers on: how many, while keep-awake holds the Mac awake; quitting says they keep running and how to stop them", () => {
+  expect(triggersOnWords(1)).toBe("1 trigger on")
+  expect(triggersOnWords(3, true)).toBe("3 triggers on · Mac kept awake")
+  expect(quitNote({ triggersOn: 3 })).toBe("3 triggers keep running in the background · `candle-harness stop` to end them")
+  expect(quitNote({ triggersOn: 1 })).toBe("1 trigger keeps running in the background · `candle-harness stop` to end it")
+  expect(quitNote({ triggersOn: 0 })).toBeUndefined()
+  expect(quitNote({ triggersOn: 3, botsOn: 2 })).toBe("2 bots and 3 triggers keep running in the background · `candle-harness stop` to end them")
+  expect(quitNote({ botsOn: 1 })).toBe("1 bot keeps running in the background · `candle-harness stop` to end it")
+  expect(quitNote(undefined)).toBeUndefined()
 })

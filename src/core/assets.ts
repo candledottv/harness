@@ -32,6 +32,15 @@ export function followable(mint: unknown): boolean {
   return base === undefined || base === "CNDL"
 }
 
+/**
+ * Why a mint can't be a trade's token, or undefined where it can: what trades spend (SOL, USDC, ETH, USDG) is
+ * converted with a swap. The same words on the live path and the paper one.
+ */
+export function notATradeToken(mint: unknown): string | undefined {
+  if (typeof mint !== "string" || followable(mint)) return undefined
+  return `${baseAssetForMint(mint)} is what trades spend, not a token to buy or sell: convert it with a swap (candle_swap). Nothing was sent.`
+}
+
 /** A trade's `quoteAsset` ("sol", "usdc", "cndl", "eth", "usdg") as a base asset; SOL when unset. */
 export function quoteAssetOf(value: unknown): BaseAsset | undefined {
   if (value === undefined) return "SOL"

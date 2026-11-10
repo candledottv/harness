@@ -192,7 +192,7 @@ test("where to start: Trade or Cockpit, every tab on, the files; Cockpit opens t
     const { s } = await draw(w, h, atStart())
     const frame = s.captureCharFrame()
     expect(frame).toContain("Where do you want to start?")
-    expect(frame).toContain("All eight tabs are on.")
+    expect(frame).toContain("5 of your 10 tabs are on.")
     expect(frame).toContain("layouts.toml")
     await compare(`onboarding-${w}x${h}-start`, s)
     await act(async () => s.dispose())

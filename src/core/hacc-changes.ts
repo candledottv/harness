@@ -360,7 +360,7 @@ export class HaccChanges {
               title,
               state: card.state,
               expiresAt: card.expiresAt,
-              next: "The person approves it in the Candle Harness with one press. Read the outcome with candle_get_operation (kind: hacc, clientId: this coreOpId). Don't ask again under a new card.",
+              next: "The person approves it in the Candle Harness with one press, which no turn of yours sees. Say what you proposed and end your turn now. Read candle_get_operation (kind: hacc, clientId: this coreOpId) only when a later message asks how it went. Don't ask again under a new card.",
             }),
           },
         ],

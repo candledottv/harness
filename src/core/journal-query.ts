@@ -15,21 +15,22 @@
 //     that straddles two pages comes whole on the second and nothing comes twice.
 //   - What leaves passes the redactor again: rows on disk were redacted when written, but a file can hold
 //     rows from before a key was known.
+import { ranWithoutCard } from "../shared/approved-how"
 import { open } from "node:fs/promises"
 import type { Redactor } from "../shared/redact"
 import { baseAssetForMint } from "./assets"
 import { settingWords, type WalletSetting } from "./autonomy"
 import { type JournalRow, parseRow } from "./journal"
 import { usd } from "./limits"
-import { cardTitle, doneWord, PAPER_CLOSED_WORDS, paneResult, TradeLog, withdrawnWhy } from "./trade-log"
+import { cardTitle, doneWord, PAPER_CLOSED_WORDS, paneResult, shortAddresses, TradeLog, withdrawnWhy } from "./trade-log"
 import { short } from "./wallet-names"
 
-/** The kind chips: trades, cards, the kill switch, Hacc, memory, agents, the view and the core. */
-export const JOURNAL_KINDS = ["trades", "cards", "kill", "hacc", "memory", "agents", "view", "core"] as const
+/** The kind chips: trades, cards, the kill switch, Hacc, memory, agents, rules bots, the view and the core. */
+export const JOURNAL_KINDS = ["trades", "cards", "kill", "hacc", "memory", "agents", "bots", "view", "core"] as const
 export type JournalKind = (typeof JOURNAL_KINDS)[number]
 
 /** Each kind as its chip says it. */
-export const KIND_WORDS: Record<JournalKind, string> = { trades: "trades", cards: "cards", kill: "kill switch", hacc: "Hacc", memory: "memory", agents: "agents", view: "view", core: "core" }
+export const KIND_WORDS: Record<JournalKind, string> = { trades: "trades", cards: "cards", kill: "kill switch", hacc: "Hacc", memory: "memory", agents: "agents", bots: "bots", view: "view", core: "core" }
 
 /** The kinds on by default: all but the core's own rows. */
 export const DEFAULT_KINDS: readonly JournalKind[] = JOURNAL_KINDS.filter((k) => k !== "core")
@@ -37,7 +38,8 @@ export const DEFAULT_KINDS: readonly JournalKind[] = JOURNAL_KINDS.filter((k) =>
 /**
  * Each row type the core writes, and its kind. `life`: it folds into a card's life, whose kind is trades for
  * a trade or swap and cards otherwise. `turn`: it folds into an agent's turn. `tool`: a refusal, trades for
- * a trade or swap tool and cards otherwise.
+ * a trade or swap tool and cards otherwise. A rules bot's card, paper trade or refusal is the bots kind: a busy bot
+ * trades dozens of times a day, which would bury your own trades.
  */
 export const ROW_KINDS: Readonly<Record<string, JournalKind | "life" | "turn" | "tool">> = {
   "card.created": "life",
@@ -71,6 +73,46 @@ export const ROW_KINDS: Readonly<Record<string, JournalKind | "life" | "turn" | 
   "cli.updated": "cards",
   "agent.key_not_stored": "cards",
   "autonomy.set": "cards",
+  "trigger.saved": "agents",
+  "trigger.changed": "agents",
+  "trigger.removed": "agents",
+  "trigger.held": "agents",
+  "trigger.released": "agents",
+  "trigger.fired": "agents",
+  "trigger.missed": "agents",
+  "trigger.waiting": "agents",
+  "trigger.notify": "agents",
+  "trigger.ran": "agents",
+  "trigger.run_now": "agents",
+  "trigger.woke": "agents",
+  "trigger.wake_skipped": "agents",
+  "bot.saved": "bots",
+  "bot.changed": "bots",
+  "bot.paused": "bots",
+  "bot.resumed": "bots",
+  "bot.stopped": "bots",
+  "bot.removed": "bots",
+  "bot.held": "bots",
+  "bot.released": "bots",
+  "bot.token": "bots",
+  "bot.test": "bots",
+  "build.session": "bots",
+  "bot.entering": "bots",
+  "bot.waiting": "bots",
+  "bot.entry_ended": "bots",
+  "bot.skipped": "bots",
+  "bot.exiting": "bots",
+  "bot.exit_waiting": "bots",
+  "bot.exit_ended": "bots",
+  "bot.exit_held": "bots",
+  "bot.position_left": "bots",
+  "bot.request": "bots",
+  "bot.request_waiting": "bots",
+  "bot.request_ended": "bots",
+  "bot.refused": "bots",
+  "bot.exits_set": "bots",
+  "bot.process": "bots",
+  "bot.event": "bots",
   "kill.on": "kill",
   "kill.off": "kill",
   "kill.report": "kill",
@@ -83,9 +125,12 @@ export const ROW_KINDS: Readonly<Record<string, JournalKind | "life" | "turn" | 
   "agent.message_refused": "agents",
   "agent.stop_asked": "agents",
   "agent.leftovers": "agents",
+  "agent.fetch": "agents",
   "agent.added": "agents",
   "engine.chosen": "agents",
   "preset.chosen": "agents",
+  "research.run": "agents",
+  "tools.run": "agents",
   "skills.folder": "agents",
   "view.changed": "view",
   "view.decided": "view",
@@ -101,13 +146,19 @@ export const ROW_KINDS: Readonly<Record<string, JournalKind | "life" | "turn" | 
   "core.started": "core",
   "core.stopped": "core",
   "core.bug": "core",
+  "core.keep_awake": "core",
+  "notify.sent": "core",
+  "notify.failed": "core",
   "client.attached": "core",
   "client.detached": "core",
   "client.refused": "core",
+  "client.dropped": "core",
+  "send.oversize": "core",
   "call.forbidden": "core",
   "candle.start_failed": "core",
   "candle.unclassified_tools": "core",
   "engine.homes_recovered": "core",
+  "engine.newer_major": "core",
   "harness.registered": "core",
   "journal.torn_tail": "core",
   "hacc.stream": "core",
@@ -305,7 +356,7 @@ function activityWords(row: JournalRow, symbolOf: (mint: string) => string | und
   return line ? { text: line.text, tone: line.tone, ...(line.mint ? { mint: line.mint } : {}) } : undefined
 }
 
-const HOW: Record<string, string> = { enter: "approved by Enter", click: "approved by a click", instant: "sent at once (typed cards run instantly)", typed: "typed", view: "approved", "inside-limits": "without a card, inside its wallet's limits" }
+const HOW: Record<string, string> = { enter: "approved by Enter", click: "approved by a click", instant: "sent at once (typed cards run instantly)", typed: "typed", view: "approved", "inside-limits": "without a card, inside its wallet's limits", "bot-exit": "without a card, as its bot's exit" }
 
 /** "4.3 s", "2m 05s", "3h 10m"; "under 0.1 s". */
 export function tookWords(ms: number): string {
@@ -358,19 +409,26 @@ export function matchedWhy(visible: string, hidden: readonly { where: string; te
 /** A card's life, oldest row first, in one line: who proposed what, how it was approved, how it ended and how long it took. */
 function cardLife(rows: readonly JournalRow[], symbolOf: (mint: string) => string | undefined): Built {
   const created = rows.find((r) => r.type === "card.created")
-  const kind: JournalKind = isTrade(created) || isTrade(rows.find((r) => r.type === "operation.submitting")) ? "trades" : "cards"
+  const kind: JournalKind = typeof created?.bot === "string" ? "bots" : isTrade(created) || isTrade(rows.find((r) => r.type === "operation.submitting")) ? "trades" : "cards"
   const title = created ? cardTitle(created) : "a card from before this journal's start"
   const params = record(created?.params)
   const named = str(created?.mint) ?? str(params?.mint)
   const mint = named && !baseAssetForMint(named) ? named : undefined
-  const head = created ? (activityWords(created, symbolOf)?.text ?? `you ran ${title}`) : title
+  const said = created ? (activityWords(created, symbolOf)?.text ?? `you ran ${title}`) : title
+  // A code bot's trade says it's a code bot's, and the request id its own code gave it, to find in its log.
+  const code = created?.botKind === "code"
+  const head = code ? said.replace(/^the bot "/, 'the code bot "') : said
   const parts = [head]
+  if (code && str(created?.botRequest)) parts.push(`its request ${String(created!.botRequest)}`)
   const approved = rows.find((r) => r.type === "card.approved")
   // Why a trade from a wallet that trades inside limits was a card: its figure, in the card's words.
   const because = str(rows.findLast((r) => r.type === "card.because")?.words)
-  if (because && approved?.how !== "inside-limits") parts.push(`a card: ${because}`)
+  if (because && !ranWithoutCard(approved?.how)) parts.push(`a card: ${because}`)
   if (approved && approved.how !== "typed") parts.push(HOW[String(approved.how)] ?? "approved")
-  if (rows.some((r) => r.type === "operation.resend")) parts.push("re-sent")
+  const resends = rows.filter((r) => r.type === "operation.resend")
+  // The core re-sends only a bot's exit a restart cut off, once: said, so it never reads as the person's.
+  if (resends.some((r) => r.by === "core")) parts.push("re-sent by the Candle Harness once: the core restarted mid-sell and Candle had no record of it")
+  else if (resends.length > 0) parts.push("re-sent")
   // An unpriced buy or swap, valued once it filled so the day counts it.
   const valued = rows.find((r) => r.type === "card.valued")
   if (typeof valued?.usd === "number") parts.push(`no price when proposed, counted as ${usd(valued.usd)} once it filled`)
@@ -408,8 +466,10 @@ function cardLife(rows: readonly JournalRow[], symbolOf: (mint: string) => strin
       case "operation.failed":
       case "operation.refused": {
         const said = errorWords(end)
-        parts.push(`${end.type === "operation.refused" ? "refused" : "failed"}${said ? `: ${said}` : ""}`)
-        tone = "bad"
+        // A swap whose first leg landed: part done, never plainly failed.
+        const partDone = end.type === "operation.failed" && typeof record(end.partial)?.leg1 === "string"
+        parts.push(`${end.type === "operation.refused" ? "refused" : partDone ? "part done: the first leg went, the second failed" : "failed"}${said ? `: ${said}` : ""}`)
+        tone = partDone ? "warn" : "bad"
         break
       }
       case "operation.unknown":
@@ -450,9 +510,6 @@ function cardLife(rows: readonly JournalRow[], symbolOf: (mint: string) => strin
 
 const OUTCOME: Record<string, string> = { done: "answered", stopped: "stopped at its step cap", cancelled: "stopped", error: "ended with an error" }
 
-/** Every address in a line, short: "MoonFake111…1111" as "Moon…1111". */
-const shortAddresses = (text: string): string => text.replace(/\b(?:[1-9A-HJ-NP-Za-km-z]{32,44}|0x[0-9a-fA-F]{40})\b/g, short)
-
 /** An agent's turn: what the person asked, how it ended and how long it took, and the tools it called. */
 function turnLife(rows: readonly JournalRow[]): Built {
   const started = rows.find((r) => r.type === "agent.turn_started")
@@ -461,7 +518,11 @@ function turnLife(rows: readonly JournalRow[]): Built {
   const agent = rows.find((r) => r.agent)?.agent ?? "the agent"
   const user = str(turn?.user)
   // Addresses in what you asked show short, as replies show them, so the quote keeps its words.
-  const parts = [user ? `you asked ${agent}: "${clip(shortAddresses(user.replace(/\s+/g, " ")), 80)}"` : `${agent}'s turn`]
+  // A turn a trigger woke has no words of the person's: it names the triggers, then what fired.
+  const woken = Array.isArray(turn?.woken) ? turn.woken.map(String) : Array.isArray(started?.woken) ? started.woken.map(String) : []
+  const quote = user ? `"${clip(shortAddresses(user.replace(/\s+/g, " ")), 80)}"` : ""
+  const outside = turn?.outside === true || started?.outside === true ? " from outside" : ""
+  const parts = [woken.length ? `${woken.map((w) => `trigger "${w}"`).join(", ")} woke ${agent}` : user ? `you asked ${agent}${outside}: ${quote}` : `${agent}'s turn`]
   let tone: JournalEntry["tone"] = "info"
   const last = turn ?? failed
   const took = started && last ? tookWords(Date.parse(last.at) - Date.parse(started.at)) : ""
@@ -481,7 +542,7 @@ function turnLife(rows: readonly JournalRow[]): Built {
   const tools = Array.isArray(turn?.tools) ? turn.tools.map(String) : []
   const hay = [user, reply, ...tools, str(started?.engine), str(started?.model)].filter(Boolean).join(" ")
   const hidden = [
-    { where: "what you asked", text: user },
+    { where: woken.length ? "what woke it" : "what you asked", text: user },
     { where: "its reply", text: reply },
     { where: "its tools", text: tools.join(", ") },
     { where: "its engine", text: [str(started?.engine), str(started?.model)].filter(Boolean).join(" · ") },
@@ -505,6 +566,10 @@ function ownWords(row: JournalRow): string {
       return `a ${String(row.role)} attached${str(row.clientName) && row.clientName !== row.role ? ` (${row.clientName})` : ""}`
     case "client.detached":
       return `a ${String(row.role)} detached`
+    case "client.dropped":
+      return `dropped a ${str(row.role) ?? "client"} that had stopped reading${str(row.clientName) && row.clientName !== row.role ? ` (${row.clientName})` : ""}: it reattaches when it's back`
+    case "send.oversize":
+      return `left out a ${String(row.topic)} message too large to send to a ${String(row.role)}`
     case "client.refused":
       return `refused a connection: ${String(row.reason ?? row.code ?? "")}`
     case "call.forbidden":
@@ -513,6 +578,8 @@ function ownWords(row: JournalRow): string {
       return `${agent}'s Candle connection didn't start: ${clip(String(row.error), 160)}`
     case "candle.unclassified_tools":
       return `Candle offers ${agent} tools the Candle Harness doesn't know: ${Array.isArray(row.tools) ? row.tools.join(", ") : ""}`
+    case "engine.newer_major":
+      return `${String(row.label ?? row.engine)} is ${String(row.version)}, a newer major version than the one its holds were checked on (${String(row.checked)})`
     case "engine.homes_recovered":
       return `recovered ${Array.isArray(row.removed) ? row.removed.length : 0} engine homes left by a crash`
     case "harness.registered":
@@ -560,6 +627,12 @@ function ownWords(row: JournalRow): string {
       return `${agent} is the active agent`
     case "preset.chosen":
       return `${agent} now on the ${String(row.preset)} preset`
+    case "notify.sent":
+      return `the core sent a notification${Array.isArray(row.kinds) ? ` (${row.kinds.map(String).join(", ")})` : ""}, since no Candle Harness window was open`
+    case "notify.failed":
+      return `the core couldn't show a notification on this machine: ${String(row.via ?? "")} ${row.exitCode === -1 ? "didn't start" : `exited ${String(row.exitCode)}`}${str(row.error) ? ` (${clip(String(row.error), 120)})` : ""}`
+    case "core.keep_awake":
+      return row.on ? "the Mac is kept awake while a trigger or bot is on" : "keep-awake is off: the Mac may sleep while triggers or bots are on"
     case "skills.folder":
       return row.on ? `the agents now use the skills in ${String(row.folder)}` : `the agents no longer use the skills in ${String(row.folder)}`
     case "pnl.window":
@@ -591,14 +664,107 @@ function ownWords(row: JournalRow): string {
       const who = row.how === "card" ? `${agent}'s card, which you approved,` : "you"
       return `${who} set ${name} to ${to ? settingWords(to).replace(/^asks/, "ask").replace(/^trades/, "trade") : "?"}${from ? ` (it ${pastWords(from)})` : ""}`
     }
+    case "trigger.saved":
+      return `you approved ${agent}'s trigger "${String(row.name)}": ${clip(String(row.words ?? row.line ?? ""), 200)}`
+    case "trigger.changed":
+      // An agent narrows one at once, or switches one off; widening it is a card the person approved.
+      if (row.how === "agent" && typeof row.hash === "string") return `${String(row.changedBy ?? agent)} narrowed the trigger "${String(row.name)}": ${Array.isArray(row.narrowed) ? row.narrowed.map(String).join("; ") : clip(String(row.words ?? row.line ?? ""), 200)}`
+      if (row.how === "agent") return `${String(row.changedBy ?? agent)} switched off the trigger "${String(row.name)}"${Array.isArray(row.sells) && row.sells.length ? `: its sell of ${row.sells.map((m) => short(String(m))).join(", ")} no longer waits` : ""}`
+      if (typeof row.hash === "string") return `you approved a change to ${agent}'s trigger "${String(row.name)}": ${clip(String(row.words ?? row.line ?? ""), 200)}`
+      return row.on === true ? `you switched the trigger "${String(row.name)}" back on` : `you switched off the trigger "${String(row.name)}"`
+    case "trigger.removed":
+      return `you removed the trigger "${String(row.name)}"`
+    // The plan's hold, naming every trigger; a firing's own rows are in Activity's words.
+    case "trigger.held":
+    case "trigger.released": {
+      // One firing's trade held (the kill switch, Candle's breaker); the plan's hold names every trigger.
+      if (row.type === "trigger.held" && typeof row.name === "string") return `the trigger "${row.name}" was held: ${clip(String(row.words ?? row.reason ?? ""), 200)}`
+      if (typeof row.name === "string") return `the trigger "${row.name}": ${clip(String(row.words ?? "watching again"), 200)}`
+      const names = Array.isArray(row.names) ? row.names.map((n) => `"${String(n)}"`).join(", ") : "triggers"
+      return `${row.type === "trigger.held" ? "held" : "back on"}: ${names}, since ${String(row.words ?? "the plan changed")}`
+    }
+    case "bot.saved":
+      return `you approved ${agent}'s ${row.kind === "code" ? "code bot" : "bot"} "${String(row.name)}"${botMode(row)}: ${clip(String(row.words ?? ""), 200)}`
+    case "bot.changed": {
+      // Narrowed at once from a view, or by a code bot's Build pane; anything wider is a card the person approved.
+      if (row.by === "card") return `you approved a change to ${agent}'s ${row.kind === "code" ? "code bot" : "bot"} "${String(row.name)}"${botMode(row)}: ${clip(String(row.words ?? ""), 200)}`
+      // The agent's narrowing, and Candle's or the agent's pause, are in Activity's words.
+      const who = row.how === "build" ? "the Build tab" : "you"
+      return `${who} narrowed the bot "${String(row.name)}": ${Array.isArray(row.narrowed) ? clip(row.narrowed.map(String).join("; "), 200) : clip(String(row.words ?? ""), 200)}`
+    }
+    case "bot.paused":
+      return `${row.how === "build" ? "the Build tab" : "you"} paused the bot "${String(row.name)}": ${row.kind === "code" ? "its buys are refused, its sells still run" : "no new entries, its exits still sell"}`
+    case "bot.stopped":
+      return `you stopped the bot "${String(row.name)}": ${row.kind === "code" ? "none of its trades run" : "nothing trades"}, and its positions are left to you`
+    // A code bot's token: issued when it's handed to the bot, replacing the one before; revoked when the bot is removed,
+    // when its process here ends for good, or when one run outside has a new folder or command approved.
+    case "bot.token":
+      return row.what === "revoked" ? `the bot "${String(row.name)}"'s token was revoked: it no longer connects${row.why === "new_version" ? " (it ran outside the Candle Harness, and a new folder or command was approved)" : typeof row.why === "string" && row.why.startsWith("process_") ? " (its process here ended)" : ""}` : `the bot "${String(row.name)}" was given ${row.what === "renewed" ? "a new token, replacing its last" : "its token"}${row.why === "outside" ? ", to run outside the Candle Harness" : ""}`
+    case "bot.resumed":
+      return `you put the bot "${String(row.name)}" back on, as it was approved`
+    // A Build pane's paper test of a bot's code: never supervised, never live, over within 30 minutes.
+    case "bot.test": {
+      if (row.what === "started") return `the Build tab started a paper test, "${String(row.name)}", of ${clip(String(row.folder ?? "?"), 120)}`
+      const why = { ended: "its command ended", replaced: "a new test replaced it", pane_closed: "its Build pane closed", timed_out: "after 30 minutes", agent_gone: "its agent was removed" }[String(row.why)] ?? String(row.why ?? "")
+      return `the paper test "${String(row.name)}" ended: ${why}`
+    }
+    // A Build pane opened or closed: its token is minted for its agent when it opens, and revoked when it closes.
+    case "build.session":
+      return row.what === "opened" ? `a Build pane opened for ${String(row.agent ?? "?")}${row.harness ? ` with ${clip(String(row.harness), 60)}` : ""}` : `a Build pane for ${String(row.agent ?? "?")} closed: its token was revoked`
+    // A code bot's own requests, each by its id: what it asked for, a card that waits for you, and how one ended.
+    case "bot.request":
+      return `the code bot "${String(row.name)}" ${clip(String(row.words ?? row.side ?? ""), 200)}`
+    case "bot.request_waiting":
+    case "bot.request_ended":
+      return `the code bot "${String(row.name)}": ${clip(String(row.words ?? ""), 200)}`
+    // Exits the core holds on a code bot's position: set or cleared by the bot, or removed by you.
+    case "bot.exits_set":
+      return `the code bot "${String(row.name)}": ${clip(String(row.words ?? ""), 200)}`
+    // A code bot's process, as the supervisor ran it: started with its code's hash, stopped, ended on its own, crashed,
+    // given up after too many crashes, or past a figure for memory or CPU.
+    case "bot.process": {
+      const name = `the code bot "${String(row.name ?? "?")}"`
+      const code = row.code as { hash?: unknown; lockfile?: { name?: unknown } } | undefined
+      if (row.what === "started") return `${name} started (pid ${String(row.pid ?? "?")})${typeof code?.hash === "string" ? `, its code ${code.hash.slice(0, 12)}${typeof code.lockfile?.name === "string" ? ` with ${code.lockfile.name}` : ""}${(code as { changed?: unknown }).changed === true ? ", changed since its last start" : ""}` : ""}`
+      if (row.what === "stopped") return `${name}'s process was stopped: ${clip(String(row.words ?? ""), 200)}`
+      if (row.what === "warning") return `${name}: ${clip(String(row.words ?? ""), 200)}`
+      if (row.what === "supervisor_failed") return `the code bots' supervisor didn't start: ${clip(String(row.words ?? ""), 200)}`
+      return `${name} ${clip(String(row.words ?? row.what ?? ""), 200)}`
+    }
+    // What a code bot says about itself, one word and a line: a trigger may wait on the word.
+    case "bot.event":
+      return `the code bot "${String(row.name)}" says "${String(row.word ?? "")}"${str(row.text) ? `: ${clip(String(row.text), 200)}` : ""}`
+    case "bot.refused":
+      return `the code bot "${String(row.name)}" was refused: ${clip(String(row.words ?? row.code ?? ""), 200)}`
+    case "bot.removed":
+      return `you removed the bot "${String(row.name)}"${row.positions === "flatten" ? ", selling its positions" : row.positions === "leave" ? ", leaving its positions in the wallet" : ""}`
+    // The plan's hold, naming every bot: their exits still sell.
+    case "bot.held":
+    case "bot.released": {
+      const names = Array.isArray(row.names) ? row.names.map((n) => `"${String(n)}"`).join(", ") : "bots"
+      if (row.kind === "code") return `${row.type === "bot.held" ? "buys held" : "buying again"}: ${names}, since ${String(row.words ?? "the plan changed")}`
+      return `${row.type === "bot.held" ? "entries held" : "entering again"}: ${names}, since ${String(row.words ?? "the plan changed")}`
+    }
+    case "research.run": {
+      const ran = [String(row.program ?? "a program"), ...(Array.isArray(row.args) ? row.args.map(String) : [])].join(" ")
+      const ended = str(row.refused) ? "not held, so nothing ran" : row.timedOut ? "stopped at 60 s" : str(row.signal) ? `stopped by ${row.signal}` : `exit ${String(row.exitCode)}`
+      return `${agent} ran ${clip(ran, 120)} in its research folder · ${ended}${typeof row.ms === "number" ? ` in ${(row.ms / 1000).toFixed(1)} s` : ""}`
+    }
+    case "tools.run":
+      return Array.isArray(row.run) ? `you turned on ${agent}'s code runner for ${row.run.map(String).join(", ")}` : `you turned off ${agent}'s code runner`
     case "cli.updated":
       return `candle updated${str(row.version) ? ` to ${row.version}` : ""}`
+    case "agent.fetch":
+      return `${agent} fetched ${String(row.url)}`
     case "agent.turn_failed":
       return `${agent}'s turn failed: ${clip(String(row.error), 160)}`
     default:
       return row.type.replace(/[._]/g, " ")
   }
 }
+
+/** A bot's mode, said where it's live: paper is a bot's usual start. */
+const botMode = (row: JournalRow) => ((row.run as { mode?: unknown } | undefined)?.mode === "live" ? " (live)" : " (paper)")
 
 /** An entry from its rows, oldest first. */
 type Searched = JournalEntry & { hay: string; shows: string; hidden: { where: string; text: string | undefined }[] }
@@ -613,20 +779,25 @@ function entryOf(rows: readonly JournalRow[], symbolOf: (mint: string) => string
   else if (isTurn) built = turnLife(rows)
   else {
     const said = activityWords(first, symbolOf)
-    const kind: JournalKind = type === "tool" ? (isTrade(first) ? "trades" : "cards") : type === undefined || type === "life" || type === "turn" ? (type === "turn" ? "agents" : "core") : type
+    const kind: JournalKind =
+      typeof first.bot === "string" && (type === "tool" || first.type === "paper.call") ? "bots" : type === "tool" ? (isTrade(first) ? "trades" : "cards") : type === undefined || type === "life" || type === "turn" ? (type === "turn" ? "agents" : "core") : type
     const named = said?.mint ?? str(first.mint) ?? str(record(first.args)?.mint)
     const mint = named && !baseAssetForMint(named) ? named : undefined
     built = { text: said?.text ?? ownWords(first), tone: said?.tone ?? (first.type.endsWith("refused") || first.type === "core.bug" ? "bad" : "info"), kind, ...(mint ? { mint } : {}), hay: [str(first.message), str(first.code), str(first.tool)].filter(Boolean).join(" "), hidden: [{ where: "the row", text: [str(first.message), str(first.code), str(first.tool)].filter(Boolean).join(" · ") }] }
   }
   const agent = rows.find((r) => r.agent)?.agent
   const symbol = built.mint ? symbolOf(built.mint) : undefined
+  // A row written before its token had a name says its address, short: the Journal says the name known now, as the
+  // rows after it do.
+  if (built.mint && symbol && built.text.includes(short(built.mint))) built = { ...built, text: built.text.split(short(built.mint)).join(symbol) }
   return {
     id: String(first.seq),
     seq: first.seq,
     at: first.at,
     last: rows.at(-1)!.at,
     kind: built.kind,
-    mode: first.mode,
+    // A bot's rows carry the Candle Harness's mode and the bot's own: a paper bot's trades are paper whatever the Candle Harness's mode.
+    mode: first.botMode === "paper" || first.botMode === "live" ? first.botMode : (record(first.run)?.mode === "paper" || record(first.run)?.mode === "live" ? (record(first.run)!.mode as "paper" | "live") : first.mode),
     ...(agent ? { agent } : {}),
     ...(built.mint ? { mint: built.mint } : {}),
     ...(symbol ? { symbol } : {}),

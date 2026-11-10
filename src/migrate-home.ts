@@ -72,6 +72,11 @@ async function liveCore(from: string, isAlive: (pid: number) => boolean): Promis
   }
 }
 
+/** A Candle TUI 0.2 core's pid, when one is running on 0.2's home. */
+export async function oldCoreRunning(env: Record<string, string | undefined>, isAlive: (pid: number) => boolean = pidIsAlive): Promise<number | undefined> {
+  return liveCore(oldHome(env), isAlive)
+}
+
 async function copyTree(from: string, to: string, rel: string): Promise<void> {
   const info = await lstat(from)
   await mkdir(to, { mode: 0o700 })

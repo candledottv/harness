@@ -1,0 +1,30 @@
+{
+  "name": "schema-launch-fingerprint-empty",
+  "host": "hacc",
+  "method": "POST",
+  "route": "/v1/strategy-lab/replay",
+  "query": {},
+  "body": {
+    "definition": {
+      "chain": "solana",
+      "entry": {
+        "source": "launch_fingerprint"
+      },
+      "exit": {
+        "take_profit_pct": 100
+      },
+      "sizing": {
+        "usd_per_trade": 5,
+        "max_concurrent": 2
+      }
+    },
+    "from": "2026-10-01T00:00:00Z",
+    "to": "2026-10-30T00:00:00Z"
+  },
+  "status": 400,
+  "ms": 131,
+  "bytes": 67,
+  "answer": {
+    "error": "entry.chain: Invalid literal value, expected \"solana\""
+  }
+}

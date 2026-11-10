@@ -4,9 +4,9 @@
 // An operation Candle didn't answer is pinned under it, with re-send and abandon, until it settles.
 // Cards sit at the bottom, inline: every open card, and the active agent's recent closed ones.
 import type { KillReport } from "../../core/kill"
-import { doneWord, PAPER_CLOSED_WORDS } from "../../core/trade-log"
+import { type ActivityEntry, doneWord, PAPER_CLOSED_WORDS } from "../../core/trade-log"
 import { walletName } from "../../core/wallet-names"
-import { ago, shortAddress, usd, wrap } from "../format"
+import { ago, cellWidth, firingMark, shortAddress, usd, wrap } from "../format"
 import type { Rect } from "../layout"
 import { type Exchange, unanswered, type ViewCard, type ViewOperation } from "../store"
 import { pnlWords } from "../status-bar"
@@ -27,6 +27,24 @@ function labelled(label: string, value: string, width: number, fg: string = C.in
   return wrap(value, Math.max(10, width - pad.length)).map((part, i) => ({ segs: [{ text: i === 0 ? pad : " ".repeat(pad.length), fg: C.dim }, { text: part, fg }] }))
 }
 
+/** What the pause holds, each in a few words: the wallets that trade inside limits, the triggers, the bots. */
+function heldParts(report: KillReport): string[] {
+  const wallets = report.insideLimits ?? []
+  const triggers = report.triggersHeld ?? []
+  const bots = report.botsHeld ?? []
+  return [
+    wallets.length ? (wallets.length === 1 ? `${wallets[0]!.name === "embedded" ? "embedded wallet" : wallets[0]!.name}` : `${wallets.length} wallets`) : "",
+    triggers.length ? (triggers.length === 1 ? `"${triggers[0]!.name}"` : `${triggers.length} triggers`) : "",
+    bots.length ? (bots.length === 1 ? `bot "${bots[0]!.name}"` : `${bots.length} bots`) : "",
+  ].filter(Boolean)
+}
+const heldWhat = (report: KillReport): string => heldParts(report).join(" and ")
+/** What still sells while the pause holds: the open positions held bots' exits guard, by count, else sells in general. */
+function sellsGo(report: KillReport): string {
+  const open = (report.botsHeld ?? []).reduce((n, b) => n + b.open.length, 0)
+  return open ? `; ${open === 1 ? "its 1 open position still sells" : `their ${open} open positions still sell`}` : "; sells go"
+}
+
 /**
  * The kill report, in at most `maxRows` lines. When it doesn't fit, detail goes in this order: the
  * steps for stopping other apps (shortened to one line), what you stand at, what was spent, what was
@@ -35,7 +53,7 @@ function labelled(label: string, value: string, width: number, fg: string = C.in
  */
 export function killReportLines(report: KillReport, operations: Readonly<Record<string, ViewOperation>>, now: number, width: number, maxRows = Number.POSITIVE_INFINITY): Line[] {
   const at = Date.parse(report.at)
-  const head: Line[] = [{ segs: [{ text: "KILL SWITCH ON", fg: C.bad, bold: true }, { text: fit(` · ${ago(at, now, Number.POSITIVE_INFINITY).text} · buys paused, the agent stopped`, Math.max(0, width - 14)), fg: C.dim }] }, blank()]
+  let head: Line[] = [{ segs: [{ text: "KILL SWITCH ON", fg: C.bad, bold: true }, { text: fit(` · ${ago(at, now, Number.POSITIVE_INFINITY).text} · buys paused, the agent's turn stopped`, Math.max(0, width - 14)), fg: C.dim }] }, blank()]
   const stoppedWhat = [
     ...report.stopped.turns.map((t) => `${t.agent}'s turn`),
     ...report.stopped.cards.map((c) => `withdrew ${c.title} (${c.agent})`),
@@ -73,7 +91,14 @@ export function killReportLines(report: KillReport, operations: Readonly<Record<
   const spent = s.spentToday.flatMap((sp) => labelled("spent", `${sp.agent} ${usd(sp.usd)} of ${usd(sp.perDayUsd)} today`, width))
   // A wallet that trades inside limits: the pause holds its buys and swaps, and its sells still go. Never dropped.
   // Short, so it fits two lines in a narrow pane (the core's own words ran to three at 80×24).
-  const held = (report.insideLimits ?? []).flatMap((w) => labelled("held", `${w.name === "embedded" ? "embedded wallet" : w.name}: inside limits, held by the pause; sells go`, width))
+  let heldWallets = (report.insideLimits ?? []).flatMap((w) => labelled("held", `${w.name === "embedded" ? "embedded wallet" : w.name}: inside limits, held by the pause; sells go`, width))
+  // Each trigger the pause holds, by name: one that buys, swaps or wakes. Short, as the wallets' lines are.
+  const triggersHeld = report.triggersHeld ?? []
+  let heldTriggers = triggersHeld.flatMap((t) => labelled("held", `trigger "${t.name}": ${t.words.replace(" until you resume", "")}`, width))
+  // Each bot the pause holds: its entries; its exits go on guarding what it holds.
+  const botsHeld = report.botsHeld ?? []
+  let heldBots = botsHeld.flatMap((b) => labelled("held", `bot "${b.name}": ${b.words.replace(" until you resume", "")}`, width))
+  const held = () => [...heldWallets, ...heldTriggers, ...heldBots]
   const candleStopped = report.notStopped.candleStopped.flatMap((c) => labelled("", `Candle has stopped ${c.agent}: ${c.code}`, width, C.look))
   // The steps themselves open from the chip, so the report stays short.
   // A chip that doesn't fit after its words goes on the next line, under them, so a narrow pane never cuts it off.
@@ -89,18 +114,54 @@ export function killReportLines(report: KillReport, operations: Readonly<Record<
   const disableTee: Line[] = report.notStopped.steps.flatMap((s) =>
     (s.disableTee ?? []).flatMap((t) => withChip("", `TEE wallet ${t.wallet} (${s.agent})`, chip("stop it for good", "fill"), `${t.command} as ${s.agent}`)),
   )
-  const notStopped = [...notStoppedLines, ...disableTee, ...candleStopped]
-  const resume = labelled("resume", report.resume, width)
+  // The pause couldn't be written anywhere a restart would find it: said in amber, whole, with what to do.
+  const unsaved = report.unsaved ? labelled("not saved", report.unsaved, width, C.look) : []
+  const notStopped = [...unsaved, ...notStoppedLines, ...disableTee, ...candleStopped]
+  let resume = labelled("resume", report.resume, width)
 
   const sections = { stopped, standing, spent, notStopped }
-  const total = () => head.length + sections.stopped.length + open.length + held.length + inFlight.length + sections.standing.length + sections.spent.length + sections.notStopped.length + resume.length
+  const total = () => head.length + sections.stopped.length + open.length + held().length + inFlight.length + sections.standing.length + sections.spent.length + sections.notStopped.length + resume.length
   const drops: (() => void)[] = [
     () => (sections.standing = []),
     () => (sections.spent = []),
     () => (sections.stopped = []),
+    // Still too tall: the triggers it holds in one line, by name, so none is cut unsaid.
+    () => {
+      if (triggersHeld.length > 1) heldTriggers = labelled("held", `${triggersHeld.length} triggers that buy, swap or wake: ${triggersHeld.map((t) => `"${t.name}"`).join(", ")}`, width)
+    },
+    // The bots too, by name, with how many positions their exits still guard.
+    () => {
+      const open = botsHeld.reduce((n, b) => n + b.open.length, 0)
+      if (botsHeld.length > 1) heldBots = labelled("held", `${botsHeld.length} bots' buys: ${botsHeld.map((b) => `"${b.name}"`).join(", ")}${open ? `; exits guard ${open} open` : ""}`, width)
+    },
   ]
   for (const drop of drops) if (total() > maxRows) drop()
-  const out = [...head, ...sections.stopped, ...open, ...held, ...inFlight, ...sections.standing, ...sections.spent, ...sections.notStopped]
+  // The steps for other apps go first in the cut below; past that, the blank under the heading, then what the pause
+  // holds in one line, so the report never shows a pause holding nothing.
+  const needed = () => total() - sections.notStopped.length
+  const last: (() => void)[] = [
+    () => (head = head.slice(0, 1)),
+    // The status bar's PAUSED chip resumes too, so one line of it is enough here.
+    () => (resume = [{ segs: [{ text: "resume".padEnd(12), fg: C.dim }, { text: fit(report.resume, Math.max(10, width - 12)), fg: C.ink }] }]),
+    () => {
+      const what = heldParts(report)
+      if (what.length && held().length > 1) {
+        const room = Math.max(10, width - 12)
+        const words = `${what.join(" and ")}${sellsGo(report)}`
+        heldWallets = []
+        heldBots = []
+        heldTriggers = [{ segs: [{ text: "held".padEnd(12), fg: C.dim }, { text: fit(words.length <= room ? words : what.join(" and "), room), fg: C.ink }] }]
+      }
+    },
+  ]
+  for (const drop of last) if (needed() > maxRows) drop()
+  // Two rows or fewer: what the pause holds joins the heading's row, so a short pane still says what it holds.
+  const holds = heldWhat(report)
+  if (holds && needed() > maxRows && maxRows - resume.length <= 1) {
+    head = [{ segs: [{ text: "KILL SWITCH ON", fg: C.bad, bold: true }, { text: fit(` · held ${holds}${sellsGo(report)}`, Math.max(0, width - 14)), fg: C.ink }] }]
+    return [...head, ...resume].slice(0, Math.max(1, maxRows))
+  }
+  const out = [...head, ...sections.stopped, ...open, ...held(), ...inFlight, ...sections.standing, ...sections.spent, ...sections.notStopped]
   // Still too tall: what must show keeps the room, and resume stays last.
   return [...out.slice(0, Math.max(head.length, maxRows - resume.length)), ...resume]
 }
@@ -144,7 +205,25 @@ export function resentWords(op: ViewOperation, r: { state: string; paper?: boole
  */
 export function unansweredLines(operations: Readonly<Record<string, ViewOperation>>, cards: readonly ViewCard[], now: number, width: number): Line[] {
   const out: Line[] = []
-  for (const op of unanswered({ operations })) {
+  const all = unanswered({ operations })
+  // Several read back by their ids with nothing else to say (a restart cut off a bot's exits together): the
+  // explanation once, then each on its own line with its chips, so they fit the pane.
+  const plain = (op: ViewOperation) => op.kind !== "hacc" && !op.error?.message && !op.resending && resendsUnderId(op)
+  const together = all.filter(plain)
+  if (together.length >= 2) {
+    const oldest = Math.min(...together.map((op) => op.startedAt ?? now))
+    out.push(...wrap(`NO ANSWER FROM CANDLE · ${together.length} trades · ${[...new Set(together.map((op) => op.agent))].join(", ")} · ${ago(oldest, now, Number.POSITIVE_INFINITY).text}`, Math.max(10, width)).map((t) => line(t, C.look)))
+    out.push(...wrap("The core reads each back by its id and settles it here if Candle has it. If one stays, check candle.tv for whether it ran, then re-send it (same id: never runs twice) or abandon it (stop following it):", Math.max(10, width - 2)).map((t) => line(`  ${t}`, C.dim)))
+    for (const op of together) {
+      const chips = [chip("re-send", "resend"), chip("abandon", "abandon")]
+      const title = operationTitle(op, cards)
+      const room = width - 2 - chips.reduce((n, c) => n + 3 + c.text.length, 0)
+      if (room >= 12) out.push({ segs: [{ text: `  ${fit(title, room)}`, fg: C.look }, ...chips.flatMap((c) => [{ text: "   ", fg: C.ink }, c])], cardId: op.cardId })
+      else out.push(line(`  ${fit(title, width - 2)}`, C.look), ...chipRows(chips, width).map((l) => ({ ...l, cardId: op.cardId })))
+    }
+  }
+  for (const op of all) {
+    if (together.length >= 2 && together.includes(op)) continue
     const since = op.startedAt ? ` · ${ago(op.startedAt, now, Number.POSITIVE_INFINITY).text}` : ""
     // A Hacc change is read back from Hacc's state and never sent again: abandon only.
     if (op.kind === "hacc") {
@@ -199,6 +278,7 @@ export function shortGreetingLines(agent: string, width: number, rows: number, t
 /** One thing to try on a tab, by what's on it, for the short agent pane's welcome. */
 export function tabTip(panes: readonly string[]): string {
   if (panes.includes("perps")) return "a question above, or ask me about perps on Hyperliquid."
+  if (panes.includes("bots")) return 'asking: "how are my bots doing?", or for a bot of your own.'
   if (panes.includes("pnl")) return 'asking: "how am I doing today?"'
   if (panes.includes("journal")) return 'asking: "what did I trade yesterday?"'
   if (panes.includes("signals") && !panes.some((p) => ["feed", "new", "graduated", "final-stretch"].includes(p))) return "ctrl-t on a signal: it asks me what it means."
@@ -251,8 +331,8 @@ export function greetingLines(agent: string, width: number, setUp?: SetUpSummary
   ]
 }
 
-/** When the agent acts: from a message, never on its own yet. One row at 80×24, so the welcome after setup still fits. */
-export const WHEN_I_ACT = "I act only when you message me, for now."
+/** When the agent acts: from a message, or a trigger the person approved. One row at 80×24, so the welcome after setup still fits. */
+export const WHEN_I_ACT = "I act on your messages and your triggers."
 
 /**
  * The agent pane with no agent yet. Onboarding's own screen draws every step up to the agent's key and
@@ -343,10 +423,14 @@ export function addressLines(labelled: readonly { address: string; source: strin
 }
 
 const YOU = "you › "
+const WOKEN = "⚡ woke › "
+/** ⚡ takes two cells, one more than its length. */
+const WOKEN_CELLS = WOKEN.length + 1
 const CONTINUED = "      "
+const OUTSIDE = " · from outside"
 
 /**
- * The conversation: "you ›" dim and your words bright, the agent's in the content colour, a
+ * The conversation: "you ›" dim and your words bright (a turn a trigger woke, "⚡ woke ›" and what fired), the agent's in the content colour, a
  * blank line between and around each exchange. Every answer is shown whole (the pane scrolls), and a
  * finished one ends with a ⧉ that copies all of it, as written.
  */
@@ -354,8 +438,21 @@ export function conversationLines(exchanges: readonly Exchange[], width: number,
   const out: Line[] = []
   exchanges.forEach((e, i) => {
     if (i > 0) out.push(blank())
-    const you = wrap(e.user, Math.max(10, width - 6))
-    you.forEach((t, j) => out.push({ segs: [{ text: j === 0 ? YOU : CONTINUED, fg: C.dim }, { text: t, fg: C.hi }] }))
+    if (e.woken?.length) {
+      // No person wrote a woken turn: a trigger's mark, and what fired in the Candle Harness's words, never as "you".
+      const lines = wrap(e.user.replace(/^woken by /, ""), Math.max(10, width - WOKEN_CELLS))
+      lines.forEach((t, j) => out.push({ segs: [{ text: j === 0 ? WOKEN : " ".repeat(WOKEN_CELLS), fg: C.head }, { text: t, fg: C.ink }] }))
+    } else {
+      const you = wrap(e.user, Math.max(10, width - 6))
+      you.forEach((t, j) => out.push({ segs: [{ text: j === 0 ? YOU : CONTINUED, fg: C.dim }, { text: t, fg: C.hi }] }))
+      // Sent by `candle-harness ask`, not typed here: said after the words, dim, on their last row where it fits.
+      if (e.outside) {
+        const last = out.at(-1)!
+        const used = last.segs.reduce((n, sg) => n + sg.text.length, 0)
+        if (used + OUTSIDE.length <= width) last.segs = [...last.segs, { text: OUTSIDE, fg: C.dim }]
+        else out.push(line(`${CONTINUED}${OUTSIDE.trimStart()}`, C.dim))
+      }
+    }
     if (e.queued) out.push(line("  (waiting for the turn before it · esc stops that one, and this runs)", C.dim))
     out.push(blank())
     if (e.tools.length) out.push(...wrap(`⌁ ${e.tools.map((t) => t.split(" ")[0]).join(" · ")}`, Math.max(10, width - 2)).map((t) => line(`  ${t}`, C.dim)))
@@ -403,7 +500,23 @@ export function withPrompt(convo: readonly Line[], start: number, end: number, w
   return [more ? { segs: [...prompt.segs.slice(0, -1), { ...prompt.segs.at(-1)!, text: `${prompt.segs.at(-1)!.text} …` }] } : prompt, ...shown.slice(1)]
 }
 
+/**
+ * A trigger's paper trade, which makes no card, as the line a card's firing gets ("⚡ jup stop  JUP was $0.2617,
+ * under $0.264 → paper sell …"): the agent pane says what its triggers did, paper or live. A paper bot's line too
+ * ("bot conf bought BONK, WIF · took profit on MOON").
+ */
+export function paperFiringLines(e: ActivityEntry, width: number): Line[] {
+  if (!e.firing) return []
+  // ⚡ takes two cells, one more than its length.
+  const mark = firingMark(e.firing)
+  const words = wrap(e.firing.said, Math.max(10, width - cellWidth(mark) - 2))
+  const fg = e.tone === "bad" ? C.bad : e.tone === "warn" ? C.look : e.tone === "good" ? C.good : C.ink
+  return words.map((t, i) => ({ segs: i === 0 ? [{ text: mark, fg: C.head }, { text: "  ", fg: C.ink }, { text: t, fg }] : [{ text: `${" ".repeat(cellWidth(mark) + 2)}${t}`, fg }] }))
+}
+
 export interface AgentPaneProps {
+  /** This agent's triggers' paper trades, which make no card, oldest first. */
+  firings?: readonly ActivityEntry[]
   rect: Rect
   agent: string
   /** No agent yet: setup's steps in place of the conversation, as the core last read them. */
@@ -413,10 +526,14 @@ export interface AgentPaneProps {
   exchanges: readonly Exchange[]
   killReport: KillReport | null
   operations: Readonly<Record<string, ViewOperation>>
+  /** The trigger cards that can still run again (triggers-view.ts runnableCards). */
+  runnable?: ReadonlySet<string>
   /** The cards drawn inline: open ones (any agent), then the active agent's recent closed ones. */
   cards: readonly ViewCard[]
   focusedCardId: string | undefined
   cardsFocused: boolean
+  /** A terminal pane has the keys (the Build pane's harness, a prompt pane): ⏎ is its own until ctrl-]. */
+  paneHasKeys?: boolean
   now: number
   /** Rows scrolled up from the newest. */
   scroll: number
@@ -458,6 +575,10 @@ export function offerLines(offer: AgentOffer, width: number): Line[] {
  * one card it's shaded only while the cards have focus; with several it always is, so "the
  * highlighted one" is on screen from the input line too (two cards had looked the same).
  */
+/** The heading over the cards waiting: what approves one from here. While a terminal pane has the keys, ⏎ is that pane's. */
+export const waitingWords = (count: number, paneHasKeys?: boolean): string =>
+  `${count === 1 ? "1 card" : `${count} cards`} waiting · ${paneHasKeys ? "ctrl-] then ⏎, or click" : "⏎ approves the highlighted one"}`
+
 export function highlightedCard(open: readonly { cardId: string }[], focusedCardId: string | undefined, cardsFocused: boolean): string | undefined {
   if (!cardsFocused && open.length < 2) return undefined
   return (open.find((c) => c.cardId === focusedCardId) ?? open.at(-1))?.cardId
@@ -475,7 +596,10 @@ export function AgentPane(p: AgentPaneProps) {
   const waiting = unansweredLines(p.operations, p.cards, p.now, width)
   // The re-send and abandon line stays on screen, whatever the kill report takes; a rule ends the
   // report, so the conversation under it never reads as part of it.
-  const killRoom = Math.max(0, Math.floor(rows / 2) - waiting.length - 1)
+  // At least the heading, what the pause holds and resume, where the pane has the rows for them and the re-send line.
+  // A short pane at a tab's foot gives it three: the heading, what the pause holds, and resume (the Bots tab had shown
+  // only the heading, so nothing said its bots were held).
+  const killRoom = rows < SHORT_PANE_ROWS ? Math.max(0, Math.min(3, rows - waiting.length - 2)) : Math.max(0, Math.floor(rows / 2) - waiting.length - 1, Math.min(3, rows - waiting.length - 4))
   const kill = p.killReport ? [...killReportLines(p.killReport, p.operations, p.now, width, killRoom), line("─".repeat(Math.max(1, width)), C.bad), blank()] : []
   const held = [...kill, ...(waiting.length ? [...waiting, blank()] : [])]
   const open = p.cards.filter((c) => c.state === "awaiting_approval")
@@ -487,9 +611,14 @@ export function AgentPane(p: AgentPaneProps) {
   const short = rows < SHORT_PANE_ROWS
   const cardRoom = Math.max(0, rows - held.length - (short ? 0 : 2))
   // Cards that ended, a trade's receipt among them, then the header right over what waits.
-  const drawCard = (c: ViewCard) => cardBlock.push(...cardLines(c, { now: p.now, focused: c.cardId === shaded, width, op: p.operations[c.opId], maxRows: short ? 1 : Math.max(1, cardRoom - 1) }))
+  // Cards waiting that are taller than the room (a bot's card in a tab's short agent pane, three bot buys at
+  // 80×24): each gets an equal share and folds its middle, so every headline stays on screen above its chips.
+  const fitRows = open.length ? Math.floor((cardRoom - 1) / open.length) : undefined
+  const drawCard = (c: ViewCard) =>
+    cardBlock.push(...cardLines(c, { now: p.now, focused: c.cardId === shaded, width, op: p.operations[c.opId], maxRows: short ? 1 : Math.max(1, cardRoom - 1), ...(fitRows !== undefined && c.state === "awaiting_approval" ? { fitRows } : {}), ...(p.runnable ? { runnable: p.runnable } : {}), ...(p.paneHasKeys ? { keysElsewhere: true } : {}) }))
   for (const c of p.cards) if (c.state !== "awaiting_approval") drawCard(c)
-  if (open.length) cardBlock.push(line(`${open.length === 1 ? "1 card" : `${open.length} cards`} waiting · ⏎ approves the highlighted one`, p.cardsFocused ? C.look : C.dim))
+  for (const e of p.firings ?? []) cardBlock.push(...paperFiringLines(e, width))
+  if (open.length) cardBlock.push(line(waitingWords(open.length, p.paneHasKeys), p.cardsFocused ? C.look : C.dim))
   for (const c of open) drawCard(c)
   const cardsShown = cardBlock.slice(-cardRoom)
   // While you were away: under the kill report, in the rows the cards leave, so it never covers one.
@@ -505,7 +634,8 @@ export function AgentPane(p: AgentPaneProps) {
   p.onReach?.(Math.max(0, convo.length - room))
   const end = Math.max(room, convo.length - Math.max(0, p.scroll))
   const shown = withPrompt(convo, Math.max(0, end - room), end, p.working)
-  const lines = [...pinned, ...shown, ...(spacer ? [blank()] : []), ...cardsShown]
+  // Never more than the pane's rows: what's pinned can outgrow a short pane, and a line past the last row would draw on its border.
+  const lines = [...pinned, ...shown, ...(spacer ? [blank()] : []), ...cardsShown].slice(0, rows)
   const title = agentTitle(p.agent, p.working, p.scroll)
   return (
     <Pane rect={p.rect} title={title} focused={p.focused} onFocus={p.onFocus} onScroll={p.onScroll} {...(p.edges ? { edges: p.edges } : {})}>

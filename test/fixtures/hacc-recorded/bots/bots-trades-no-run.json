@@ -1,0 +1,13 @@
+{
+  "name": "trades-no-run",
+  "host": "hacc",
+  "method": "GET",
+  "route": "/v1/trades",
+  "query": {},
+  "status": 400,
+  "ms": 176,
+  "bytes": 44,
+  "answer": {
+    "error": ": run_id or asset_id is required"
+  }
+}

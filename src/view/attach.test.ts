@@ -40,7 +40,7 @@ test("with a core running, the view attaches to it and starts nothing", async ()
     await Bun.sleep(100)
     const events: CoreEventParams[] = []
     session.onEvent((e) => events.push(e))
-    expect(events.filter((e) => e.snapshot).map((e) => e.topic).sort()).toEqual(["activity", "agent", "autonomy", "away", "cards", "engine", "hacc", "market", "memory", "onboarding", "operations", "portfolio", "skills", "status", "views", "wallets"])
+    expect(events.filter((e) => e.snapshot).map((e) => e.topic).sort()).toEqual(["activity", "agent", "autonomy", "away", "bots", "cards", "engine", "hacc", "market", "memory", "notices", "onboarding", "operations", "portfolio", "skills", "status", "triggers", "views", "wallets"])
     session.close()
   } finally {
     await c.close()

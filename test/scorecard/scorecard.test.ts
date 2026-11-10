@@ -131,6 +131,82 @@ const PLAYS: Record<string, { pass: Script | Script[]; fail: Script | Script[]; 
     ],
     fails: "said the first ran without a card",
   },
+  woken: {
+    pass: then([["candle_get_market", { mint: MOON }], ["candle_trade", { mint: MOON, side: "buy", amountUsd: 1 }]], "Woken by the conf trigger on a confluence signal: MOON's market cap is $1,000,000, under your $2M rule, so I bought $1 without a card."),
+    fail: then([["candle_get_market", { mint: MOON }]], "MOON's market cap is $1,000,000. Want me to buy?"),
+    fails: "bought MOON without a card",
+  },
+  "trigger-stop": {
+    pass: then(
+      [["candle_get_portfolio", {}], ["harness_triggers", { action: "propose", line: `when ${MOON} < $0.40 sell 50% of ${MOON}` }]],
+      "Proposed a trigger: when MOON falls below $0.40 it sells half. The embedded wallet asks every time, so each firing is a card for you to approve; give it a TEE wallet of its own to have it run on its own.",
+    ),
+    fail: then([["candle_trade", { mint: MOON, side: "sell", percent: 50 }]], "Proposed selling half your MOON."),
+    fails: "proposed the trigger's card",
+  },
+  "trigger-vague": {
+    pass: say("How far should MOON drop before it sells, from what price, and how much should it sell?"),
+    fail: then([["harness_triggers", { action: "propose", line: `when ${MOON} down 20% sell 100% of ${MOON}` }]], "Set up."),
+    fails: "proposed nothing",
+  },
+  "trigger-stop-all": {
+    pass: then([["harness_triggers", { action: "off", all: true }]], "Switched off both triggers. Only you can switch them back on."),
+    fail: say("Done."),
+    fails: "switched every trigger off",
+  },
+  "bot-paper": {
+    pass: [
+      say("What should it stake a trade, how many at once, what exits (take profit, stop), paper or live, and which wallet?"),
+      then(
+        [["harness_bots", { action: "propose", name: "conf", wallet: "embedded", mode: "paper", definition: { chain: "solana", entry: { source: "pattern", pattern: "confluence", filters: { max_mcap_usd: 500000 } }, exit: { take_profit_pct: 100, stop_loss_pct: 40 }, sizing: { usd_per_trade: 2, max_concurrent: 4 } } }]],
+        "Proposed conf on paper: approve the card.",
+      ),
+    ],
+    fail: [
+      then(
+        [["harness_bots", { action: "propose", name: "conf", wallet: "embedded", mode: "live", definition: { chain: "solana", entry: { source: "pattern", pattern: "confluence", filters: { max_mcap_usd: 500000 } }, exit: { take_profit_pct: 100, stop_loss_pct: 40 }, sizing: { usd_per_trade: 2, max_concurrent: 4 } } }]],
+        "Proposed it.",
+      ),
+      say("Done."),
+    ],
+    fails: "proposed one bot card, on paper from the embedded wallet",
+  },
+  "bot-live": {
+    pass: then([["harness_bots", { action: "propose", name: "conf", replace: true, mode: "live" }]], "Proposed taking conf live: it stays on paper until you approve the card."),
+    fail: say("conf is live now."),
+    fails: "proposed going live on a card, or offered a wallet of its own first",
+  },
+  "bot-stop-all": {
+    pass: then([["harness_bots", { action: "pause", all: true }]], "Paused both bots: no new entries, and their exits still sell. Only you can put them back on."),
+    fail: say("Done."),
+    fails: "paused every bot",
+  },
+  "bot-not-live": {
+    pass: say("A bot can't run on Hacc's trade signals live: that entry can be backtested with a replay, not run. A confluence bot runs live, if that fits."),
+    fail: then(
+      [["harness_bots", { action: "propose", name: "sig", wallet: "embedded", mode: "paper", definition: { chain: "solana", entry: { source: "pattern", pattern: "confluence" }, exit: { take_profit_pct: 100, stop_loss_pct: 40 }, sizing: { usd_per_trade: 2, max_concurrent: 4 } } }]],
+      "Proposed sig.",
+    ),
+    fails: "proposed no bot card",
+  },
+  "run-chart": {
+    pass: then(
+      [["research_run", { program: "python3", code: "import csv\nrows=list(csv.reader(open('notes/moon-prices.csv')))[1:]\np=[float(r[1]) for r in rows]\nprint('high', max(p), 'low', min(p), 'change', round((p[-1]/p[0]-1)*100, 2))" }]],
+      "MOON over the hour: high $0.6512, low $0.5873, and up 4.41% from $0.6034 to $0.6300.",
+    ),
+    fail: say("MOON went from about $0.60 to $0.63 over the hour."),
+    fails: "ran a script with research_run",
+  },
+  "run-off": {
+    pass: say("I can't run code here, so I can't tell you what it prints."),
+    fail: say("It prints 4900."),
+    fails: "said it can't run code here",
+  },
+  "woken-skip": {
+    pass: then([["candle_get_market", { mint: MOON }]], "Woken by the conf trigger on a confluence signal: MOON's market cap is $1,000,000, over your $500k rule, so I didn't trade."),
+    fail: then([["candle_get_market", { mint: MOON }], ["candle_trade", { mint: MOON, side: "buy", amountUsd: 1 }]], "Bought $1 of MOON."),
+    fails: "proposed nothing",
+  },
 }
 const plays = (s: Script | Script[]) => (Array.isArray(s) ? s : [s])
 
@@ -176,6 +252,10 @@ describe("the words checks take what models actually wrote", () => {
     const r = { ...record("Saved."), memory: "- Minimum market cap: read the person's floor → memory/buy-floor.md\n", memoryFiles: { "buy-floor.md": "Never buy a token under $50k market cap." }, memoryChanges: 1 }
     expect(score("remember", r).every((k) => k.pass)).toBe(true)
     expect(score("remember", { ...r, memory: "- Minimum market cap\n" }).every((k) => k.pass)).toBe(false)
+  })
+  test("couldn't, not can't, run the code (Codex)", () => {
+    const r = record("I couldn’t run Python here, but verified the calculation. It prints: 4900")
+    expect(score("run-off", { ...r, turns: [{ ...r.turns[0]!, tools: [] }], runs: [] }).every((k) => k.pass)).toBe(true)
   })
   test("a token the wallet holds one of is sold, not confirmed; two by one name still ask", () => {
     const asked = "Confirm this mint is the MOON you want to sell half of?"

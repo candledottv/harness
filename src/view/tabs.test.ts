@@ -4,7 +4,8 @@ import { expect, test } from "bun:test"
 import { DEFAULT_TABS } from "./layouts-file"
 import { SETTINGS_CHIP, settingsColumn, tabLabels } from "./tabs"
 
-const EIGHT = DEFAULT_TABS.map((t) => t.name)
+// The shrinking rules on eight tabs, as they were written; a fresh install's nine are checked by the frames.
+const EIGHT = DEFAULT_TABS.slice(0, 8).map((t) => t.name)
 const ELEVEN = [...EIGHT, "Watch", "Desk", "Tape"]
 const width = (labels: ReturnType<typeof tabLabels>) => labels.reduce((n, l) => n + l.label.length + 2 + (l.marked ? 1 : 0), 0) + SETTINGS_CHIP.length + 3
 

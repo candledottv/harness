@@ -212,3 +212,26 @@ test("a copy a dead start left half-made is removed at the next start; one whose
   expect(existsSync(dead)).toBe(false)
   expect(existsSync(running)).toBe(false)
 })
+
+test("triggers and rules bots come across whole: their files, their state and the bots' tape cursor, each 0600, where the new home reads them", async () => {
+  const { env, from, to } = oldMachine()
+  const files: Record<string, string> = {
+    "triggers.toml": `[[trigger]]\nname = "stop"\nline = "when MOON < $0.40 sell 50% of MOON"\n`,
+    "bots.toml": `[bots.conf]\nagent = "momentum"\nwallet = "embedded"\nmode = "paper"\n`,
+    "state/triggers.json": `{"stop":{"on":true,"hash":"h1","nextRun":null}}\n`,
+    "state/bots.json": `{"conf":{"state":"on","version":2}}\n`,
+    "state/bot-peaks.json": `{"conf":{"MOON":0.5}}\n`,
+    "state/bot-signals.json": `{"after":"2026-11-07T05:00:00.000Z"}\n`,
+    "state/signals.json": `{"after":"2026-11-07T04:00:00.000Z"}\n`,
+  }
+  for (const [path, text] of Object.entries(files)) writeFileSync(join(from, path), text, { mode: 0o600 })
+
+  expect(await migrateHome(env, { isAlive: () => false })).toEqual({ kind: "copied", from, to })
+  const p = paths(env)
+  const read = { [p.triggersFile]: "triggers.toml", [p.botsFile]: "bots.toml", [p.triggersState]: "state/triggers.json", [p.botsState]: "state/bots.json", [p.botPeaks]: "state/bot-peaks.json", [p.botSignalsCursor]: "state/bot-signals.json", [p.signalsCursor]: "state/signals.json" }
+  for (const [at, path] of Object.entries(read)) {
+    expect(at.startsWith(to)).toBe(true)
+    expect(readFileSync(at, "utf8")).toBe(files[path]!)
+    expect(statSync(at).mode & 0o777).toBe(0o600)
+  }
+})

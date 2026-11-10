@@ -84,6 +84,8 @@ export class Journal {
     lastSeq: number,
     /** Rows older than the window that the day's limits still count: see `spendRows`. */
     private readonly spendHistory: readonly JournalRow[] = [],
+    /** Rows older than the window that rules bots' books are rebuilt from: see `botRows`. */
+    private readonly botHistory: readonly JournalRow[] = [],
   ) {
     this.seq = lastSeq
   }
@@ -117,11 +119,14 @@ export class Journal {
     const kept = new Set(history.rows.map((row) => row.seq))
     const since = spendFloor(input.now())
     const spendHistory = all.rows.slice(0, cut).filter((row) => !kept.has(row.seq) && SPEND_ROW(row) && Date.parse(row.at) >= since)
+    // Every rules bot's row from before the cut, and the outcomes of its trades: a position can stay open for days.
+    const botOps = new Set(all.rows.filter((row) => row.type === "card.created" && typeof row.bot === "string" && typeof row.opId === "string").map((row) => row.opId as string))
+    const botHistory = all.rows.slice(0, cut).filter((row) => !kept.has(row.seq) && BOT_ROW(row, botOps))
 
     const handle = await open(input.path, "a", 0o600)
     // The mode on `open` applies only when the file is created; an older, looser file is tightened.
     await chmod(input.path, 0o600)
-    const journal = new Journal(input.path, tail, handle, input.redactor, input.account, input.now, history, lastSeq, spendHistory)
+    const journal = new Journal(input.path, tail, handle, input.redactor, input.account, input.now, history, lastSeq, spendHistory, botHistory)
     if (history.tornTail) {
       await journal.raw("\n")
       await journal.append({ type: "journal.torn_tail", mode: "live", skipped: history.skipped })
@@ -187,6 +192,15 @@ export class Journal {
     return [...this.spendHistory, ...this.history.rows].sort((a, b) => a.seq - b.seq)
   }
 
+  /**
+   * What rules bots' books rebuild from on a restart: `rows()`, plus every bot row and the outcome of every bot
+   * trade that fell outside the window, in order.
+   */
+  botRows(): readonly JournalRow[] {
+    if (this.botHistory.length === 0) return this.history.rows
+    return [...this.botHistory, ...this.history.rows].sort((a, b) => a.seq - b.seq)
+  }
+
   async close(): Promise<void> {
     await this.chain
     this.closed = true
@@ -206,6 +220,10 @@ export class JournalIdentityError extends Error {
     this.name = "JournalIdentityError"
   }
 }
+
+/** A rules bot's row (its card, paper trade or state), or the outcome of one of its trades. */
+const BOT_ROW = (row: JournalRow, botOps: ReadonlySet<string>): boolean =>
+  typeof row.bot === "string" || row.type.startsWith("bot.") || (row.type.startsWith("operation.") && typeof row.opId === "string" && botOps.has(row.opId))
 
 /** The rows a day's spend and Candle's refusals are rebuilt from. */
 const SPEND_ROW = (row: JournalRow): boolean => row.type === "card.approved" || row.type === "card.valued" || row.type.startsWith("operation.")

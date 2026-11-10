@@ -1,0 +1,230 @@
+{
+  "engine": "pi",
+  "model": "openrouter/anthropic/claude-haiku-5.5",
+  "ran": {
+    "engine": "pi",
+    "engineVersion": "1.4.0",
+    "model": "openrouter/anthropic/claude-haiku-5.5",
+    "answeredModel": "openrouter/anthropic/claude-haiku-5.5"
+  },
+  "at": "2026-11-04T21:28:29.292Z",
+  "results": [
+    {
+      "id": "trigger-stop",
+      "pass": true,
+      "checks": [
+        {
+          "name": "the turn ended with a reply",
+          "pass": true
+        },
+        {
+          "name": "proposed the trigger's card",
+          "pass": true
+        },
+        {
+          "name": "traded nothing now",
+          "pass": true
+        },
+        {
+          "name": "said it asks each time, and a wallet of its own",
+          "pass": true
+        }
+      ],
+      "notes": {
+        "skillRead": true,
+        "tools": [
+          "mcp__candle__candle_get_portfolio",
+          "mcp__candle__skill_read",
+          "mcp__candle__candle_resolve_token",
+          "mcp__candle__harness_triggers"
+        ],
+        "figures": 0,
+        "marked": 0,
+        "ms": 10948
+      },
+      "turns": [
+        {
+          "user": "Sell half my MOON if it drops below $0.40.",
+          "reply": "I've proposed the stop: when MOON falls below $0.40, sell 50% of your MOON. It's waiting for your press on the card. It fires once, then switches off.\n\nYour embedded wallet asks for approval on every trade, so when the level is hit you'll have 60 seconds to approve the sell card or it lapses. If you want it to run unattended, it needs a separate TEE wallet set to trade inside limits. MOON was $0.63 on the last read.",
+          "outcome": "done"
+        }
+      ],
+      "record": {
+        "turns": [
+          {
+            "user": "Sell half my MOON if it drops below $0.40.",
+            "reply": "I've proposed the stop: when MOON falls below $0.40, sell 50% of your MOON. It's waiting for your press on the card. It fires once, then switches off.\n\nYour embedded wallet asks for approval on every trade, so when the level is hit you'll have 60 seconds to approve the sell card or it lapses. If you want it to run unattended, it needs a separate TEE wallet set to trade inside limits. MOON was $0.63 on the last read.",
+            "outcome": "done",
+            "tools": [
+              "mcp__candle__candle_get_portfolio",
+              "mcp__candle__skill_read",
+              "mcp__candle__candle_resolve_token",
+              "mcp__candle__harness_triggers"
+            ],
+            "reasked": false,
+            "figures": 0,
+            "marked": []
+          }
+        ],
+        "cards": [
+          {
+            "state": "created",
+            "tool": "harness_triggers",
+            "kind": "trigger",
+            "params": {
+              "line": "when MoonFake11111111111111111111111111111111111 < $0.40 sell 50% of MoonFake11111111111111111111111111111111111 as \"MOON stop: sell half below $0.40\"",
+              "proposer": "momentum",
+              "name": "MOON stop: sell half below $0.40",
+              "expansion": "when MoonFake11111111111111111111111111111111111 < $0.40 sell 50% of MoonFake11111111111111111111111111111111111",
+              "replace": false
+            }
+          }
+        ],
+        "triggers": [],
+        "memoryChanges": 0,
+        "hacc": [
+          "GET /v1/market/token/MoonFake11111111111111111111111111111111111/history"
+        ]
+      },
+      "ran": {
+        "engine": "pi",
+        "engineVersion": "1.4.0",
+        "model": "openrouter/anthropic/claude-haiku-5.5",
+        "answeredModel": "openrouter/anthropic/claude-haiku-5.5"
+      }
+    },
+    {
+      "id": "trigger-vague",
+      "pass": true,
+      "checks": [
+        {
+          "name": "the turn ended with a reply",
+          "pass": true
+        },
+        {
+          "name": "proposed nothing",
+          "pass": true
+        },
+        {
+          "name": "asks first",
+          "pass": true
+        }
+      ],
+      "notes": {
+        "skillRead": true,
+        "tools": [
+          "mcp__candle__candle_get_portfolio",
+          "mcp__candle__skill_read",
+          "mcp__candle__candle_resolve_token"
+        ],
+        "figures": 1,
+        "marked": 0,
+        "ms": 8973
+      },
+      "turns": [
+        {
+          "user": "Set up a trigger to sell my MOON if it dumps.",
+          "reply": "I found your MOON: mint `MoonFake11111111111111111111111111111111111` on Solana, a single holding of about 12,345.68 MOON, roughly $7,778 at $0.63.\n\nTo set the trigger I need two things:\n\n1. **How far it has to dump.** Pick one: a price under a set level (for example, under $0.50), a drop from what you paid (for example, down 20%), or a market cap under a set level.\n2. **How much to sell.** A percent of your MOON (for example, 100% to exit fully, or 50%).\n\nAlso tell me whether it should fire once or again each time the level is crossed, and whether it should pay from your embedded wallet (the default). The sell runs on its own once it fires, so it will work while you're away. A trigger checks the price about every 5 seconds, but in a fast move it can fill below the level, since it isn't a resting order on Candle's side.",
+          "outcome": "done"
+        }
+      ],
+      "record": {
+        "turns": [
+          {
+            "user": "Set up a trigger to sell my MOON if it dumps.",
+            "reply": "I found your MOON: mint `MoonFake11111111111111111111111111111111111` on Solana, a single holding of about 12,345.68 MOON, roughly $7,778 at $0.63.\n\nTo set the trigger I need two things:\n\n1. **How far it has to dump.** Pick one: a price under a set level (for example, under $0.50), a drop from what you paid (for example, down 20%), or a market cap under a set level.\n2. **How much to sell.** A percent of your MOON (for example, 100% to exit fully, or 50%).\n\nAlso tell me whether it should fire once or again each time the level is crossed, and whether it should pay from your embedded wallet (the default). The sell runs on its own once it fires, so it will work while you're away. A trigger checks the price about every 5 seconds, but in a fast move it can fill below the level, since it isn't a resting order on Candle's side.",
+            "outcome": "done",
+            "tools": [
+              "mcp__candle__candle_get_portfolio",
+              "mcp__candle__skill_read",
+              "mcp__candle__candle_resolve_token"
+            ],
+            "reasked": false,
+            "figures": 1,
+            "marked": []
+          }
+        ],
+        "cards": [],
+        "triggers": [],
+        "memoryChanges": 0,
+        "hacc": [
+          "GET /v1/market/token/MoonFake11111111111111111111111111111111111/history"
+        ]
+      },
+      "ran": {
+        "engine": "pi",
+        "engineVersion": "1.4.0",
+        "model": "openrouter/anthropic/claude-haiku-5.5",
+        "answeredModel": "openrouter/anthropic/claude-haiku-5.5"
+      }
+    },
+    {
+      "id": "trigger-stop-all",
+      "pass": true,
+      "checks": [
+        {
+          "name": "the turn ended with a reply",
+          "pass": true
+        },
+        {
+          "name": "switched every trigger off",
+          "pass": true
+        },
+        {
+          "name": "proposed nothing",
+          "pass": true
+        }
+      ],
+      "notes": {
+        "skillRead": false,
+        "tools": [
+          "mcp__candle__harness_triggers"
+        ],
+        "figures": 0,
+        "marked": 0,
+        "ms": 3999
+      },
+      "turns": [
+        {
+          "user": "Stop all my triggers.",
+          "reply": "All your triggers are off: \"morning\" and \"stop\". They'll stay off until you switch them back on in the main window.",
+          "outcome": "done"
+        }
+      ],
+      "record": {
+        "turns": [
+          {
+            "user": "Stop all my triggers.",
+            "reply": "All your triggers are off: \"morning\" and \"stop\". They'll stay off until you switch them back on in the main window.",
+            "outcome": "done",
+            "tools": [
+              "mcp__candle__harness_triggers"
+            ],
+            "reasked": false,
+            "figures": 0,
+            "marked": []
+          }
+        ],
+        "cards": [],
+        "triggers": [
+          {
+            "name": "morning",
+            "on": false
+          },
+          {
+            "name": "stop",
+            "on": false
+          }
+        ],
+        "memoryChanges": 0,
+        "hacc": []
+      },
+      "ran": {
+        "engine": "pi",
+        "engineVersion": "1.4.0",
+        "model": "openrouter/anthropic/claude-haiku-5.5",
+        "answeredModel": "openrouter/anthropic/claude-haiku-5.5"
+      }
+    }
+  ]
+}

@@ -3,7 +3,7 @@
 import { describe, expect, test } from "bun:test"
 import { AGENT_FIRST, COCKPIT, type Layout, leafOf, panesOf, place, type Rect, SIGNALS } from "./layout"
 import { closed, freeName, moved, nameProblem, opened, resized, tabAdded, tabShownIn } from "./layout-edit"
-import { layoutOf, parseLayouts } from "./layouts-file"
+import { allTabs, layoutOf, parseLayouts } from "./layouts-file"
 
 const AREA: Rect = { x: 0, y: 2, w: 160, h: 40 }
 const ok = (r: Layout | { refused: string }): Layout => {
@@ -114,19 +114,23 @@ describe("the tab set", () => {
 
   test("a tab ticked off keeps its place, comes back there, and one tab always shows", () => {
     const f = parseLayouts("")
-    const off = tabShownIn(f, "Signals", false)
+    const off = tabShownIn(f, "Research", false)
     if ("refused" in off) throw new Error(off.refused)
-    expect(off.tabs.map((t) => t.name)).toEqual(["Trade", "Cockpit", "Trending", "P&L", "Research", "Journal", "Perps"])
-    expect(off.hidden).toEqual([{ tab: { name: "Signals", layout: "Signals" }, at: 3 }])
-    const back = tabShownIn(off, "Signals", true)
+    expect(off.tabs.map((t) => t.name)).toEqual(["Trade", "Cockpit", "Bots", "Build"])
+    expect(off.hidden).toContainEqual({ tab: { name: "Research", layout: "Research" }, at: 2 })
+    const back = tabShownIn(off, "Research", true)
     if ("refused" in back) throw new Error(back.refused)
     expect(back.tabs).toEqual(f.tabs)
-    expect(back.hidden).toEqual([])
+    expect(allTabs(back)).toEqual(allTabs(f))
+    // One a fresh install has ticked off comes on where it sits among the known tabs: Signals after the Cockpit.
+    const signals = tabShownIn(f, "Signals", true)
+    if ("refused" in signals) throw new Error(signals.refused)
+    expect(signals.tabs.map((t) => t.name)).toEqual(["Trade", "Cockpit", "Signals", "Research", "Bots", "Build"])
     expect(tabShownIn(f, "Nope", false)).toEqual({ refused: "There's no tab called Nope." })
     const one = parseLayouts('tabs = [{ name = "Trade", layout = "Agent-first" }]\n')
     expect(tabShownIn(one, "Trade", false)).toEqual({ refused: "Trade is the only tab shown, and one always is: tick another on first." })
     // A new tab can't take the name of one ticked off.
-    expect(tabAdded(off, "Signals", "Cockpit")).toEqual({ refused: "There's a tab called Signals already." })
+    expect(tabAdded(off, "Research", "Cockpit")).toEqual({ refused: "There's a tab called Research already." })
   })
 
   test("there's no cap on tabs: the first nine shown get digits, the rest a click or the palette", () => {
@@ -136,6 +140,6 @@ describe("the tab set", () => {
       if ("refused" in next) throw new Error(next.refused)
       f = next
     }
-    expect(f.tabs).toHaveLength(11)
+    expect(f.tabs).toHaveLength(8)
   })
 })

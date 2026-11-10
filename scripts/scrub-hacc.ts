@@ -20,10 +20,12 @@ const ENUMS = new Set([
   "period", "phase_basis", "phase_resolution", "pool", "provider", "quote_asset", "resolution", "resolve_method",
   "scope", "side", "stage", "status", "supply_source", "time_frame", "token_program", "venue_at_signal", "venues",
   "visibility", "watch_level", "wallet_tags", "wallet_chain", "window", "triaged_by", "verdict", "reason_code",
-  "exit_reason", "source", "token_extensions", "close_reason", "type", "state",
+  "exit_reason", "source", "token_extensions", "close_reason", "type", "state", "missing_fields", "required_tier",
+  // A replay's: why a trade closed, the sizing rules it applied or fell back from, and the kind of evidence.
+  "reason_closed", "applied", "fell_back", "evidence_kind", "lead_card_version", "plan", "reads",
 ])
 /** Hacc's own words: kept, but still checked for addresses and links. */
-const PROSE = new Set(["error", "message", "note", "n_basis", "lift_sentence", "rug_mechanics", "reason", "statusCode", "excluded_note", "suspect_note"])
+const PROSE = new Set(["evidence_limitations", "error", "refresh_refused", "message", "note", "n_basis", "lift_sentence", "rug_mechanics", "reason", "statusCode", "excluded_note", "suspect_note"])
 /** Hacc's query parameters whose values are its own vocabulary or flags, kept in a recording's query. */
 const QUERY_KEEP = new Set(["group_by", "order", "pattern", "chain", "resolution", "include_candles", "include_peak", "kind", "watch_level", "age", "venues", "exclude_venues", "quality", "period", "event_kind"])
 /** Values kept in any field. */

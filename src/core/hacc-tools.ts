@@ -122,7 +122,7 @@ const SIGNALS: ToolDef = {
   name: "hacc_signals",
   plan: "free",
   description:
-    "Hacc's signal tape: events Hacc's tracked wallets produced on tokens (a first buy of a new ticker, several tracked wallets buying together, a large move, a dormant wallet waking, a deployer launching, distribution, a KOL mention). view tape lists signals, newest first; view by_token ranks tokens by how many signals fired on them. Leaves out: by default the curated tape Candle keys get (quality: all for every signal), and anything Hacc's tracked wallets didn't do. A signal is what a wallet did, not a reason to trade.",
+    "Hacc's signal tape: events Hacc's tracked wallets produced on tokens (a first buy of a new ticker, several tracked wallets buying together, a large move, a dormant wallet waking, a deployer launching, distribution, a KOL mention). Leaves out: by default the curated tape Candle keys get (quality: all for every signal), and anything Hacc's tracked wallets didn't do. A signal is what a wallet did, not a reason to trade.",
   props: {
     pattern: { type: "string", enum: PATTERNS, description: "One pattern." },
     chain: CHAIN,
@@ -160,7 +160,7 @@ const SIGNALS: ToolDef = {
       rows: ["tokens"],
       cacheMs: 30_000,
       leftOut: "Counts over the window Hacc reports in coverage; a token with many signals is busy, not necessarily good.",
-      description: "tokens ranked by their signals",
+      description: "tokens ranked by how many signals fired on them",
     },
   },
 }
@@ -169,7 +169,7 @@ const TOKEN: ToolDef = {
   name: "hacc_token",
   plan: "free",
   description:
-    "One token on Hacc, by its mint (address): market (price, liquidity, market cap, volume and the safety check, in one call), history (OHLCV summary: peak, trough, drawdown and launch phases; candles: true for the candles themselves), top_traders, venues (how trading splits across pools), holders (Hood tokens only), profile (contract stage and what rug mechanics that stage allows), launch_overview, wallet_pnl (named wallets' P&L on it). view search turns a name or ticker into candidates (q). Leaves out: top_traders are the top 10 over 24 hours; holders exist only for Hood; history goes back 30 days by default and one call fetches at most 6,000 candles.",
+    "One token on Hacc, by its mint (address); view search turns a name or ticker into candidates. Leaves out: top_traders are the top 10 over 24 hours; holders exist only for Hood; history goes back 30 days by default and one call fetches at most 6,000 candles.",
   props: {
     address: ADDRESS,
     chain: CHAIN,
@@ -181,7 +181,7 @@ const TOKEN: ToolDef = {
     q: { type: "string", description: "search: a name or ticker." },
   },
   views: {
-    market: { route: "/v1/market/token/:address", params: ["chain"], cacheMs: 10_000, description: "market data and safety" },
+    market: { route: "/v1/market/token/:address", params: ["chain"], cacheMs: 10_000, description: "price, liquidity, market cap, volume and the safety check, in one call" },
     history: {
       route: "/v1/market/token/:address/history",
       params: ["chain", "resolution", "from", "to", "candles"],
@@ -190,7 +190,7 @@ const TOKEN: ToolDef = {
       cacheMs: 30_000,
       leftOut: "History starts where Hacc's coverage does (coverage.note): that may be the first trade or the resolution's limit.",
       more: () => "For the rest, read a narrower window (from, to) or a coarser resolution.",
-      description: "OHLCV summary, and candles on request",
+      description: "OHLCV summary (peak, trough, drawdown, launch phases); candles: true for the candles themselves",
     },
     top_traders: { route: "/v1/market/token/:address/top-traders", params: ["chain"], rows: ["traders"], cacheMs: 30_000, leftOut: "The top 10 over 24 hours only.", description: "the top 10 traders" },
     venues: { route: "/v1/market/token/:address/venues", rows: ["pairs"], cacheMs: 30_000, description: "pools and how trading splits" },
@@ -203,7 +203,7 @@ const TOKEN: ToolDef = {
       check: (args) => (args.chain === "hood" ? undefined : "Hacc has holders for Hood tokens only (chain: hood): a Solana token's holders aren't served. For a Solana token's concentration, candle_token_forensics has it."),
       description: "top holders (Hood)",
     },
-    profile: { route: "/v1/market/token/:address/profile", cacheMs: 60_000, description: "contract stage and rug mechanics" },
+    profile: { route: "/v1/market/token/:address/profile", cacheMs: 60_000, description: "contract stage and what rug mechanics that stage allows" },
     launch_overview: { route: "/v1/market/token/:address/launch-overview", cacheMs: 60_000, description: "the launch at a glance" },
     wallet_pnl: { route: "/v1/market/token/:address/wallet-pnl", params: ["wallets"], required: ["wallets"], rows: ["wallets"], description: "named wallets' P&L on it" },
     search: {
@@ -225,9 +225,9 @@ const MARKET: ToolDef = {
   name: "hacc_market",
   plan: "free",
   description:
-    "The market on Hacc: gainers (the week's top-gaining traders, Solana), prices (current prices for up to 60 tokens: addresses), metas (trending narratives), activity (the tokens Hacc's tracked wallets trade most; slow, about 25 s), cohort_overlap (which wallets bought all of two to five tokens, and how unusual that is: mints, k), final_stretch (Solana bonding-curve tokens closest to graduating, and those that graduated in the last 10 minutes). Leaves out: gainers and final_stretch are Solana only; activity counts only Hacc's tracked wallets.",
+    "The market on Hacc. Leaves out: gainers and final_stretch are Solana only; activity counts only Hacc's tracked wallets.",
   props: {
-    addresses: { type: "string", description: "prices: up to 60 token mints, comma-separated." },
+    addresses: { type: "string", description: "prices: up to 20 token addresses of one chain, comma-separated." },
     mints: { type: "string", description: "cohort_overlap: two to five token mints, comma-separated." },
     k: { type: "integer", minimum: 2, maximum: 5, description: "cohort_overlap: how many of the tokens a wallet must have bought." },
     hours: { type: "integer", minimum: 1, maximum: 168, description: "activity: the window in hours (24 by default)." },
@@ -235,8 +235,8 @@ const MARKET: ToolDef = {
     chain: CHAIN,
   },
   views: {
-    gainers: { route: "/v1/market/gainers", rows: ["traders"], cacheMs: 60_000, leftOut: "Solana only, over Hacc's window (window).", description: "top-gaining traders" },
-    prices: { route: "/v1/market/prices", params: ["addresses"], required: ["addresses"], rows: ["prices"], cacheMs: 10_000, description: "prices for up to 60 tokens" },
+    gainers: { route: "/v1/market/gainers", rows: ["traders"], cacheMs: 60_000, leftOut: "Solana only, over Hacc's window (window).", description: "the week's top-gaining traders" },
+    prices: { route: "/v1/market/prices", params: ["addresses", "chain"], required: ["addresses"], rows: ["prices"], cacheMs: 10_000, description: "current prices and market caps for up to 20 tokens of one chain (chain hood for Hood tokens); Hacc's price can be up to a minute old" },
     metas: { route: "/v1/market/metas", rows: ["metas"], cacheMs: 60_000, description: "trending narratives" },
     activity: {
       route: "/v1/market/activity",
@@ -244,10 +244,10 @@ const MARKET: ToolDef = {
       rows: ["tokens"],
       cacheMs: 60_000,
       leftOut: "Only Hacc's tracked wallets (coverage says how many); a token they don't trade isn't here.",
-      description: "what tracked wallets trade most",
+      description: "the tokens Hacc's tracked wallets trade most; slow, about 25 s",
     },
-    cohort_overlap: { route: "/v1/market/cohort-overlap", params: ["mints", "k"], required: ["mints", "k"], cacheMs: 60_000, description: "wallets that bought a set of tokens" },
-    final_stretch: { route: "/v1/launches/final-stretch", rows: ["rows", "graduated"], cacheMs: 15_000, leftOut: "Solana bonding curves only.", description: "tokens closest to graduating" },
+    cohort_overlap: { route: "/v1/market/cohort-overlap", params: ["mints", "k"], required: ["mints", "k"], cacheMs: 60_000, description: "which wallets bought all of two to five tokens, and how unusual that is" },
+    final_stretch: { route: "/v1/launches/final-stretch", rows: ["rows", "graduated"], cacheMs: 15_000, leftOut: "Solana bonding curves only.", description: "bonding-curve tokens closest to graduating, and those that graduated in the last 10 minutes" },
   },
 }
 
@@ -255,7 +255,7 @@ const WALLETS: ToolDef = {
   name: "hacc_wallets",
   plan: "free",
   description:
-    "Wallets on Hacc: tracked (Hacc's tracked wallets: label, groups, watch level), wallet (one by Hacc's id), groups (Hacc's wallet groups: names and sizes), group (one, by id, with its stats), labelled_trades (recent smart-money or KOL trades: kind), and any Solana wallet by address: stats (over a period), activity, token_breakdown, portfolio. Leaves out: groups show what this account's plan can see; labelled trades and wallet stats are Solana only.",
+    "Wallets on Hacc: its tracked wallets and groups, and any Solana wallet by address (stats, activity, token_breakdown, portfolio). Leaves out: groups show what this account's plan can see; labelled trades and wallet stats are Solana only.",
   props: {
     address: { type: "string", description: "A wallet's address, in full." },
     id: { type: "integer", description: "wallet or group: Hacc's id." },
@@ -282,8 +282,8 @@ const WALLETS: ToolDef = {
       leftOut: "Names and sizes only; read one with view group and its id for its members' stats.",
       description: "wallet groups: names and sizes, searched by name and paged",
     },
-    group: { route: "/v1/groups/:id", cacheMs: 300_000, description: "one group" },
-    labelled_trades: { route: "/v1/market/labelled-trades", params: ["kind"], required: ["kind"], rows: ["trades"], cacheMs: 30_000, leftOut: "Solana only, recent trades.", description: "smart-money or KOL trades" },
+    group: { route: "/v1/groups/:id", cacheMs: 300_000, description: "one group, with its stats" },
+    labelled_trades: { route: "/v1/market/labelled-trades", params: ["kind"], required: ["kind"], rows: ["trades"], cacheMs: 30_000, leftOut: "Solana only, recent trades.", description: "recent smart-money or KOL trades" },
     stats: { route: "/v1/market/wallet/:address/stats", params: ["period"], cacheMs: 60_000, leftOut: "Solana only.", description: "a wallet's performance" },
     activity: { route: "/v1/market/wallet/:address/activity", rows: ["activity", "trades"], cacheMs: 30_000, description: "a wallet's recent activity" },
     token_breakdown: { route: "/v1/market/wallet/:address/token-breakdown", rows: ["wins", "losses"], cacheMs: 60_000, description: "per-token results" },
@@ -327,7 +327,7 @@ const FOLLOWS: ToolDef = {
   name: "hacc_follows",
   plan: "pro",
   description:
-    "This account's own Hacc state (Pro and Max): follows (wallets it follows), rules (alert rules over them), signals (the personal signals those rules produced, newest first, paged by after), groups (its own wallet groups). Every key on the account shares these, so another app may have made them. Changes: follow, create_group and group_add run at once, and the person can undo each from the Candle Harness; unfollow, delete_group and group_remove are a card the person approves; add_rule is a card too, since Hacc can't remove a rule (20 at most). Caps: Pro may follow 25 and keep 1 group, Max 100 and 5, each group up to 25 wallets. Leaves out: personal signals come only from this account's own rules over wallets it follows, and Hacc doesn't push them (read again for new ones).",
+    "This account's own Hacc state (Pro and Max). Every key on the account shares it, so another app may have made what's there. Changes: follow, create_group and group_add run at once, and the person can undo each from the Candle Harness; unfollow, delete_group and group_remove are a card the person approves; add_rule is a card too, since Hacc can't remove a rule (20 at most). Caps: Pro may follow 25 and keep 1 group, Max 100 and 5, each group up to 25 wallets. Leaves out: personal signals come only from this account's own rules over wallets it follows, and Hacc doesn't push them (read again for new ones).",
   props: {
     // Hacc refuses a date here ("after: Expected number"): its cursor is a whole number, checked live.
     after: { type: "integer", minimum: 1, description: "signals: next_after from the last answer, as it came (a whole number, not a date). Leave it out for the first page." },
@@ -345,23 +345,23 @@ const FOLLOWS: ToolDef = {
     reason: CARD_REASON,
   },
   views: {
-    follows: { route: "/v1/me/follows", rows: ["follows"], description: "followed wallets" },
-    rules: { route: "/v1/me/rules", rows: ["rules"], description: "alert rules" },
-    signals: { route: "/v1/me/signals", params: ["after", "limit"], rows: ["signals"], slim: slimSignal, more: () => "For more, pass after: the answer's next_after.", description: "personal signals" },
+    follows: { route: "/v1/me/follows", rows: ["follows"], description: "the wallets it follows" },
+    rules: { route: "/v1/me/rules", rows: ["rules"], description: "alert rules over them" },
+    signals: { route: "/v1/me/signals", params: ["after", "limit"], rows: ["signals"], slim: slimSignal, more: () => "For more, pass after: the answer's next_after.", description: "the personal signals those rules produced, newest first" },
     groups: { route: "/v1/me/groups", rows: ["groups"], description: "the account's own groups" },
-    follow: { route: "/v1/me/follows", params: ["address", "chain"], required: ["address"], change: "now", description: "follow a wallet, at once (the person can undo it)" },
-    unfollow: { route: "/v1/me/follows", params: ["id", "address", "reason"], required: [["id", "address"]], change: "card", description: "unfollow a wallet: a card the person approves" },
+    follow: { route: "/v1/me/follows", params: ["address", "chain"], required: ["address"], change: "now", description: "follow a wallet" },
+    unfollow: { route: "/v1/me/follows", params: ["id", "address", "reason"], required: [["id", "address"]], change: "card", description: "unfollow a wallet" },
     add_rule: {
       route: "/v1/me/rules",
       params: ["name", "pattern", "wallet_id", "min_usd", "wallets", "window_minutes", "days", "reason"],
       required: ["name", "pattern"],
       change: "card",
-      description: "add an alert rule: a card the person approves, since Hacc can't remove one",
+      description: "add an alert rule",
     },
-    create_group: { route: "/v1/me/groups", params: ["name"], required: ["name"], change: "now", description: "make a group, at once (the person can undo it while it's empty)" },
-    delete_group: { route: "/v1/me/groups/:id", params: ["reason"], change: "card", description: "delete a group: a card the person approves" },
-    group_add: { route: "/v1/me/groups/:id/wallets", params: ["address", "chain"], required: ["address"], change: "now", description: "add a wallet to a group, at once (the person can undo it)" },
-    group_remove: { route: "/v1/me/groups/:id/wallets", params: ["wallet_id", "address", "reason"], required: [["wallet_id", "address"]], change: "card", description: "take a wallet out of a group: a card the person approves" },
+    create_group: { route: "/v1/me/groups", params: ["name"], required: ["name"], change: "now", description: "make a group (undone only while it's empty)" },
+    delete_group: { route: "/v1/me/groups/:id", params: ["reason"], change: "card", description: "delete a group" },
+    group_add: { route: "/v1/me/groups/:id/wallets", params: ["address", "chain"], required: ["address"], change: "now", description: "add a wallet to a group" },
+    group_remove: { route: "/v1/me/groups/:id/wallets", params: ["wallet_id", "address", "reason"], required: [["wallet_id", "address"]], change: "card", description: "take a wallet out of a group" },
   },
 }
 
@@ -374,7 +374,7 @@ const LAB: ToolDef = {
   name: "hacc_lab",
   plan: "max",
   description:
-    "Hacc's strategy lab (Max). Research reports: edges (what each signal pattern has paid afterwards, sliced by pattern, group_name, age_bucket, mcap_bucket and held_bucket: win rates and medians from 1 minute to 72 hours), runners (the biggest recent runners tracked wallets touched), first_signals (the first signal on each token soon after launch), assets and asset (Hacc's token directory, for asset ids). The account's saved strategies: strategies, strategy, strategy_trades, comparison (its versions), runs, trades; and replay (a replay job's status, by id). Changes: save_strategy and save_version run at once (20 saves a day; the person can undo each, which retires it), retire is a card the person approves, run_replay and cancel_replay are reads that save nothing. Leaves out: the reports are Solana only; edges come from an hourly snapshot over 7 days and are net of a 2.5% cost; a backtest is a model of the past (recorded prices, no competition for the entry): a pass is a reason to paper-trade, not to fund.",
+    "Hacc's strategy lab (Max): research reports, the account's saved strategies, and replays. Changes: save_strategy and save_version run at once (20 saves a day; the person can undo each, which retires it), retire is a card the person approves, run_replay and cancel_replay are reads that save nothing. Leaves out: the reports are Solana only; edges come from an hourly snapshot over 7 days and are net of a 2.5% cost; a backtest is a model of the past (recorded prices, no competition for the entry): a pass is a reason to paper-trade, not to fund.",
   props: {
     pattern: { type: "string", enum: PATTERNS, description: "edges: one pattern." },
     group_name: { type: "string", description: 'edges: a group\'s name, or "all".' },
@@ -414,7 +414,7 @@ const LAB: ToolDef = {
       cacheMs: 600_000,
       leftOut: "An hourly snapshot over 7 days, at least 15 signals a row, net of a 2.5% cost, Solana only. Past edges, not a forecast.",
       more: () => "For the rest, slice further: pattern, group_name, age_bucket, mcap_bucket or held_bucket.",
-      description: "what each pattern has paid, by slice",
+      description: "what each signal pattern has paid afterwards, by slice: win rates and medians from 1 minute to 72 hours",
     },
     runners: {
       route: "/v1/strategy-lab/runners",
@@ -422,7 +422,7 @@ const LAB: ToolDef = {
       rows: ["leaderboard"],
       cacheMs: 120_000,
       leftOut: "Solana only. Long windows fail on Hacc's side (6 and 24 hours did on 2026-10-29), so keep hours short.",
-      description: "recent runners and who was early",
+      description: "the biggest recent runners tracked wallets touched, and who was early",
     },
     first_signals: {
       route: "/v1/strategy-lab/first-signals",
@@ -432,7 +432,7 @@ const LAB: ToolDef = {
       cacheMs: 120_000,
       leftOut: "Solana only, up to 500 tokens (assets_omitted says how many weren't read).",
       more: () => "For the rest, narrow the window (launched_after, launched_before) or pass asset ids.",
-      description: "first signals after launch",
+      description: "the first signal on each token soon after launch",
     },
     assets: {
       route: "/v1/assets",
@@ -442,7 +442,7 @@ const LAB: ToolDef = {
       slim: slimAsset,
       cacheMs: 60_000,
       more: () => "For more, pass after: the answer's next_after, or a smaller limit.",
-      description: "Hacc's token directory",
+      description: "Hacc's token directory, for asset ids",
     },
     asset: { route: "/v1/assets/:id", cacheMs: 60_000, description: "one asset" },
     strategies: { route: "/v1/strategies", rows: ["strategies"], description: "the account's strategies" },
@@ -452,9 +452,9 @@ const LAB: ToolDef = {
     runs: { route: "/v1/strategy-runs", rows: ["runs"], description: "every run" },
     trades: { route: "/v1/trades", params: ["run_id", "asset_id"], required: [["run_id", "asset_id"]], rows: ["trades"], description: "trades across strategies" },
     replay: { route: "/v1/strategy-lab/replay/:id", params: ["limit", "offset"], pages: REPLAY_PAGES, description: "a replay job's status and result, its trades paged" },
-    save_strategy: { route: "/v1/strategies", params: ["name", "definition"], required: ["name", "definition"], change: "now", description: "save a definition as a draft, at once; Hacc backtests it later, often within minutes but not always (the person can undo it, which retires it)" },
-    save_version: { route: "/v1/strategies/:id/versions", params: ["definition"], required: ["definition"], change: "now", description: "save a new version, at once: a new strategy id (the person can undo it)" },
-    retire: { route: "/v1/strategies/:id", params: ["reason"], change: "card", description: "retire a strategy: a card the person approves" },
+    save_strategy: { route: "/v1/strategies", params: ["name", "definition"], required: ["name", "definition"], change: "now", description: "save a definition as a draft; Hacc backtests it later, often within minutes but not always" },
+    save_version: { route: "/v1/strategies/:id/versions", params: ["definition"], required: ["definition"], change: "now", description: "save a new version: a new strategy id" },
+    retire: { route: "/v1/strategies/:id", params: ["reason"], change: "card", description: "retire a strategy" },
     run_replay: {
       route: "/v1/strategy-lab/replay",
       params: ["definition", "from", "to", "asset_ids"],

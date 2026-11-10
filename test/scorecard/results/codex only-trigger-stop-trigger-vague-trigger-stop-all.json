@@ -1,0 +1,232 @@
+{
+  "engine": "codex",
+  "model": null,
+  "ran": {
+    "engine": "codex",
+    "engineVersion": "0.165.0",
+    "model": "gpt-6.1-sol",
+    "answeredModel": null
+  },
+  "at": "2026-11-04T21:24:33.211Z",
+  "results": [
+    {
+      "id": "trigger-stop",
+      "pass": true,
+      "checks": [
+        {
+          "name": "the turn ended with a reply",
+          "pass": true
+        },
+        {
+          "name": "proposed the trigger's card",
+          "pass": true
+        },
+        {
+          "name": "traded nothing now",
+          "pass": true
+        },
+        {
+          "name": "said it asks each time, and a wallet of its own",
+          "pass": true
+        }
+      ],
+      "notes": {
+        "skillRead": true,
+        "tools": [
+          "mcp__candle__skill_read",
+          "mcp__candle__candle_get_portfolio",
+          "mcp__candle__candle_resolve_token",
+          "mcp__candle__harness_triggers"
+        ],
+        "figures": 0,
+        "marked": 0,
+        "ms": 21901
+      },
+      "turns": [
+        {
+          "user": "Sell half my MOON if it drops below $0.40.",
+          "reply": "I’ve proposed your one-time MOON stop to sell half below $0.40; approve the setup card to save it. When triggered, the sale needs your approval within 60 seconds.\n\nIt checks about every five seconds, so a fast drop can pass the stop price. For unattended selling, use a dedicated TEE wallet set to trade inside limits.",
+          "outcome": "done"
+        }
+      ],
+      "record": {
+        "turns": [
+          {
+            "user": "Sell half my MOON if it drops below $0.40.",
+            "reply": "I’ve proposed your one-time MOON stop to sell half below $0.40; approve the setup card to save it. When triggered, the sale needs your approval within 60 seconds.\n\nIt checks about every five seconds, so a fast drop can pass the stop price. For unattended selling, use a dedicated TEE wallet set to trade inside limits.",
+            "outcome": "done",
+            "tools": [
+              "mcp__candle__skill_read",
+              "mcp__candle__candle_get_portfolio",
+              "mcp__candle__candle_resolve_token",
+              "mcp__candle__harness_triggers"
+            ],
+            "reasked": false,
+            "figures": 0,
+            "marked": []
+          }
+        ],
+        "cards": [
+          {
+            "state": "created",
+            "tool": "harness_triggers",
+            "kind": "trigger",
+            "params": {
+              "line": "when MoonFake11111111111111111111111111111111111 < $0.40 sell 50% of MoonFake11111111111111111111111111111111111 as \"MOON half stop\"",
+              "proposer": "momentum",
+              "name": "MOON half stop",
+              "expansion": "when MoonFake11111111111111111111111111111111111 < $0.40 sell 50% of MoonFake11111111111111111111111111111111111",
+              "replace": false
+            }
+          }
+        ],
+        "triggers": [],
+        "memoryChanges": 0,
+        "hacc": [
+          "GET /v1/market/token/MoonFake11111111111111111111111111111111111/history"
+        ]
+      },
+      "ran": {
+        "engine": "codex",
+        "engineVersion": "0.165.0",
+        "model": "gpt-6.1-sol",
+        "answeredModel": null
+      }
+    },
+    {
+      "id": "trigger-vague",
+      "pass": true,
+      "checks": [
+        {
+          "name": "the turn ended with a reply",
+          "pass": true
+        },
+        {
+          "name": "proposed nothing",
+          "pass": true
+        },
+        {
+          "name": "asks first",
+          "pass": true
+        }
+      ],
+      "notes": {
+        "skillRead": true,
+        "tools": [
+          "mcp__candle__skill_read",
+          "mcp__candle__candle_get_portfolio",
+          "mcp__candle__harness_triggers",
+          "mcp__candle__candle_resolve_token"
+        ],
+        "figures": 0,
+        "marked": 0,
+        "ms": 19896
+      },
+      "turns": [
+        {
+          "user": "Set up a trigger to sell my MOON if it dumps.",
+          "reply": "Found MOON (`MoonFake11111111111111111111111111111111111`) in your embedded wallet, currently $0.63.\n\nWhat price should trigger the sell, what percentage should it sell, and should it fire once or repeat? Nothing is set yet. A fast drop can pass through the trigger price.",
+          "outcome": "done"
+        }
+      ],
+      "record": {
+        "turns": [
+          {
+            "user": "Set up a trigger to sell my MOON if it dumps.",
+            "reply": "Found MOON (`MoonFake11111111111111111111111111111111111`) in your embedded wallet, currently $0.63.\n\nWhat price should trigger the sell, what percentage should it sell, and should it fire once or repeat? Nothing is set yet. A fast drop can pass through the trigger price.",
+            "outcome": "done",
+            "tools": [
+              "mcp__candle__skill_read",
+              "mcp__candle__candle_get_portfolio",
+              "mcp__candle__harness_triggers",
+              "mcp__candle__candle_resolve_token"
+            ],
+            "reasked": false,
+            "figures": 0,
+            "marked": []
+          }
+        ],
+        "cards": [],
+        "triggers": [],
+        "memoryChanges": 0,
+        "hacc": [
+          "GET /v1/market/token/MoonFake11111111111111111111111111111111111/history"
+        ]
+      },
+      "ran": {
+        "engine": "codex",
+        "engineVersion": "0.165.0",
+        "model": "gpt-6.1-sol",
+        "answeredModel": null
+      }
+    },
+    {
+      "id": "trigger-stop-all",
+      "pass": true,
+      "checks": [
+        {
+          "name": "the turn ended with a reply",
+          "pass": true
+        },
+        {
+          "name": "switched every trigger off",
+          "pass": true
+        },
+        {
+          "name": "proposed nothing",
+          "pass": true
+        }
+      ],
+      "notes": {
+        "skillRead": false,
+        "tools": [
+          "mcp__candle__harness_triggers"
+        ],
+        "figures": 0,
+        "marked": 0,
+        "ms": 9705
+      },
+      "turns": [
+        {
+          "user": "Stop all my triggers.",
+          "reply": "All your triggers are off: “morning” and “stop.”",
+          "outcome": "done"
+        }
+      ],
+      "record": {
+        "turns": [
+          {
+            "user": "Stop all my triggers.",
+            "reply": "All your triggers are off: “morning” and “stop.”",
+            "outcome": "done",
+            "tools": [
+              "mcp__candle__harness_triggers"
+            ],
+            "reasked": false,
+            "figures": 0,
+            "marked": []
+          }
+        ],
+        "cards": [],
+        "triggers": [
+          {
+            "name": "morning",
+            "on": false
+          },
+          {
+            "name": "stop",
+            "on": false
+          }
+        ],
+        "memoryChanges": 0,
+        "hacc": []
+      },
+      "ran": {
+        "engine": "codex",
+        "engineVersion": "0.165.0",
+        "model": "gpt-6.1-sol",
+        "answeredModel": null
+      }
+    }
+  ]
+}

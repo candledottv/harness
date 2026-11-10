@@ -86,7 +86,8 @@ describe("roles", () => {
     const viewClient = await c.view()
     const { client: harnessClient } = await c.harness(viewClient)
     const forbidden: string[] = []
-    for (const [method, roles] of Object.entries(METHOD_ROLES)) {
+    // core.stop last: a view's call stops the core.
+    for (const [method, roles] of Object.entries(METHOD_ROLES).sort(([a], [b]) => Number(a === "core.stop") - Number(b === "core.stop"))) {
       if (method === "core.hello") continue
       const answer = await harnessClient.request(method, {})
       const refused = answer.error?.data?.code === "FORBIDDEN_FOR_ROLE"
@@ -98,8 +99,9 @@ describe("roles", () => {
       const viewAnswer = await viewClient.request(method, {})
       expect(`${method}: ${viewAnswer.error?.data?.code === "FORBIDDEN_FOR_ROLE"}`).toBe(`${method}: ${roles.view === "no"}`)
     }
-    // A view is refused only the pane's own two methods.
-    expect(Object.entries(METHOD_ROLES).filter(([, r]) => r.view === "no").map(([m]) => m).sort()).toEqual(["pane.redeem", "pane.report"])
+    // A view is refused only the pane's own two methods, a code bot's own, and a Build pane's proposal.
+    const BOT_OWN = ["bot.buy", "bot.event", "bot.exits", "bot.fills", "bot.hacc", "bot.market", "bot.positions", "bot.report", "bot.request", "bot.self", "bot.sell", "bot.swap"]
+    expect(Object.entries(METHOD_ROLES).filter(([, r]) => r.view === "no").map(([m]) => m).sort()).toEqual([...BOT_OWN, "bots.proposeCode", "build.books", "build.journal", "build.logs", "build.test", "build.testEnd", "pane.redeem", "pane.report"])
     expect(forbidden.sort()).toEqual(Object.entries(METHOD_ROLES).filter(([, r]) => r.harness === "no").map(([m]) => m).sort())
     expect(forbidden).toContain("cards.approve")
     expect(forbidden).toContain("cli.run")
@@ -221,4 +223,60 @@ describe("the trade, end to end", () => {
     await client.request("tools.call", { name: "candle_trade", args: { mint: MOON, side: "buy", amount: "0.01" } })
     expect(c.core.cards.list()[0]!.agent).toBe("swing")
   })
+})
+
+describe("a core that runs for weeks", () => {
+  test("after hundreds of cards a fresh view still gets every snapshot: the open card, and the topics after cards", async () => {
+    const c = await core()
+    const first = await c.view("candle-harness")
+    const open = (await first.request("cards.propose", { tool: "candle_trade", args: { mint: MOON, side: "buy", amount: "0.0009" }, typed: true })).result as { cardId: string }
+    // Past what one message carries, were every card ever made still kept and sent.
+    for (let n = 0; n < 700; n++) {
+      const made = (await first.request("cards.propose", { tool: "candle_trade", args: { mint: MOON, side: "buy", amount: (0.001 + n / 1e6).toFixed(6) }, typed: true })).result as { cardId: string }
+      await first.request("cards.reject", { cardId: made.cardId })
+    }
+    const fresh = await c.view("candle-harness")
+    await fresh.request("subscribe", { topics: ["status", "cards", "operations", "portfolio"] })
+    await until(() => fresh.events.filter((e) => e.snapshot).length >= 4)
+    expect(fresh.events.filter((e) => e.snapshot).map((e) => e.topic)).toEqual(["status", "cards", "operations", "portfolio"])
+    const cards = fresh.events.find((e) => e.topic === "cards")!.data as { cardId: string; state: string }[]
+    expect(cards[0]).toMatchObject({ cardId: open.cardId, state: "awaiting_approval" })
+    expect(Buffer.byteLength(JSON.stringify(cards), "utf8")).toBeLessThan(1024 * 1024)
+    const listed = (await fresh.request("cards.list")).result as { cards: unknown[] }
+    expect(listed.cards.length).toBe(cards.length)
+    expect(c.core.journal.rows().some((r) => r.type === "send.oversize")).toBe(false)
+  }, 60_000)
+
+  test("a client that stops reading is dropped once enough is queued for it, written down, and the others carry on", async () => {
+    const c = await core()
+    const busy = await c.view("candle-harness")
+    for (let n = 0; n < 30; n++) {
+      const made = (await busy.request("cards.propose", { tool: "candle_trade", args: { mint: MOON, side: "buy", amount: (0.001 + n / 1e6).toFixed(6) }, typed: true })).result as { cardId: string }
+      await busy.request("cards.reject", { cardId: made.cardId })
+    }
+    // A view that says hello, then never reads again: every answer it asks for queues in the core.
+    const { createConnection } = await import("node:net")
+    const socket = createConnection(c.p.socket)
+    await new Promise<void>((resolve) => socket.once("connect", () => resolve()))
+    socket.on("error", () => {})
+    let ended = false
+    socket.on("close", () => (ended = true))
+    socket.write(`${JSON.stringify({ jsonrpc: "2.0", id: 1, method: "core.hello", params: { protocol: PROTOCOL_VERSION, token: await readViewToken(c.p.viewToken), clientName: "candle-harness" } })}\n`)
+    await new Promise<void>((resolve) => socket.once("data", () => resolve()))
+    socket.pause()
+    const dropped = () => c.core.journal.rows().find((r) => r.type === "client.dropped")
+    for (let i = 2; i < 4000 && !dropped(); i++) {
+      socket.write(`${JSON.stringify({ jsonrpc: "2.0", id: i, method: "cards.list", params: {} })}\n`)
+      if (i % 50 === 0) await Bun.sleep(5)
+    }
+    await until(() => dropped() !== undefined, 20_000)
+    expect(dropped()).toMatchObject({ role: "view", reason: "not_reading" })
+    expect(Number(dropped()!.bytes)).toBeGreaterThan(8 * 1024 * 1024)
+    // Once it reads again it finds the connection closed, and reattaches as after any disconnect.
+    socket.resume()
+    await until(() => ended, 20_000)
+    expect((await busy.request("cards.list")).error).toBeUndefined()
+    const again = await c.view("candle-harness")
+    expect((await again.request("cards.list")).error).toBeUndefined()
+  }, 60_000)
 })

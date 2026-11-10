@@ -10,7 +10,7 @@ import { PROTOCOL_VERSION } from "../shared/rpc"
 import { candleConfigDir } from "./candle-mcp"
 import { startCore } from "./core-main"
 import { Journal } from "./journal"
-import { KILL_WORDING, type KillReport, KillSwitch, pausedInJournal } from "./kill"
+import { KILL_WORDING, type KillDeps, type KillReport, KillSwitch, pausedInJournal, UNSAVED_WORDS } from "./kill"
 import { readViewToken } from "./tokens"
 import { DaySpend } from "./limits"
 
@@ -104,6 +104,9 @@ describe("kill", () => {
     // The P&L window's figure, the status bar's, named by its window.
     expect(report.standing.pnl).toMatchObject({ label: "24h" })
     expect(report.notStopped.wording).toBe(KILL_WORDING)
+    // The Harness's own bots are held, as the report's held line says: what isn't stopped is outside it.
+    expect(KILL_WORDING).toContain("holds its bots' buys (their sells and exits still go)")
+    expect(KILL_WORDING).not.toMatch(/^.*\. Bots and other apps/)
     expect(report.notStopped.steps.find((s) => s.agent === "momentum")).toMatchObject({ takeOffWallet: "candle keys self embedded-wallet deny" })
     expect(report.resume).toContain("resume")
 
@@ -256,7 +259,7 @@ describe("kill", () => {
 })
 
 describe("the state behind paused", () => {
-  async function open(rows: { type: string }[], file: unknown) {
+  async function open(rows: { type: string }[], file: unknown, extra: Partial<KillDeps> = {}) {
     const dir = `/tmp/chrn-kill-${crypto.randomUUID().slice(0, 8)}`
     mkdirSync(dir, { recursive: true })
     const journal = await Journal.open({ path: join(dir, "journal.jsonl"), redactor: new Redactor(), account: "acct_fake", now: Date.now })
@@ -281,6 +284,7 @@ describe("the state behind paused", () => {
       keyPrefix: () => "momeAb3d",
       publish: (r) => published.push(structuredClone(r)),
       onChange: () => {},
+      ...extra,
     })
     return { k, journal, dir, statePath, published }
   }
@@ -310,6 +314,63 @@ describe("the state behind paused", () => {
     await k.resume("v1")
     expect(JSON.parse(readFileSync(statePath, "utf8")).paused).toBe(false)
     expect(existsSync(statePath)).toBe(true)
+    await journal.close()
+    rmSync(dir, { recursive: true, force: true })
+  })
+
+  test("a pause that can't be written still stops the turns and the cards, says it isn't saved, and is saved by the next kill", async () => {
+    const base = await open([], undefined)
+    const missing = join(base.dir, "gone")
+    let diskFull = true
+    const stops: string[] = []
+    const failing = { rows: () => base.journal.rows(), append: async (row: never) => (diskFull ? Promise.reject(new Error("ENOSPC")) : base.journal.append(row)) } as unknown as Journal
+    const spare = await open([], undefined, {
+      journal: failing,
+      statePath: join(missing, "kill.json"),
+      engine: { cancelAll: async () => (stops.push("turns"), [{ agent: "momentum", turnId: "t1" }]) },
+      cards: { list: () => [], withdrawWhere: async () => (stops.push("cards"), []), refreshWhere: async () => (stops.push("sells"), []) },
+    })
+    const { k, published } = spare
+    const first = await k.kill("v1")
+    // The stops ran though nothing could be written, and the person is told the pause isn't saved.
+    expect(stops).toEqual(["turns", "cards", "sells"])
+    expect(k.paused()).toBe(true)
+    expect(first.report.stopped.turns).toEqual([{ agent: "momentum", turnId: "t1" }])
+    expect(first.report.unsaved).toBe(UNSAVED_WORDS)
+    expect(published.at(-1)!.unsaved).toBe(UNSAVED_WORDS)
+    expect(existsSync(join(missing, "kill.json"))).toBe(false)
+    // The disk comes back: a second kill writes the file and the journal row, and the report stops saying so.
+    mkdirSync(missing)
+    diskFull = false
+    const second = await k.kill("v1")
+    expect(second.already).toBe(true)
+    expect(second.report.unsaved).toBeUndefined()
+    expect(JSON.parse(readFileSync(join(missing, "kill.json"), "utf8")).paused).toBe(true)
+    expect(base.journal.rows().filter((r) => r.type === "kill.on")).toHaveLength(1)
+    // A third kill writes neither again.
+    await k.kill("v1")
+    expect(base.journal.rows().filter((r) => r.type === "kill.on")).toHaveLength(1)
+    // And the next core comes up paused.
+    const next = await open([], undefined, { journal: base.journal, statePath: join(missing, "kill.json") })
+    expect(next.k.paused()).toBe(true)
+    for (const made of [base, spare, next]) {
+      await made.journal.close()
+      rmSync(made.dir, { recursive: true, force: true })
+    }
+  })
+
+  test("what the pause held is said before it ends: resume journals it ahead of kill.off", async () => {
+    let journalRef: Journal | undefined
+    const { k, journal, dir } = await open([], undefined, {
+      beforeResume: async () => {
+        await journalRef!.append({ type: "bot.skipped", mode: "live", name: "conf", reason: "paused" })
+      },
+    })
+    journalRef = journal
+    await k.kill("v1")
+    await k.resume("v1")
+    const types = journal.rows().map((r) => r.type)
+    expect(types.indexOf("bot.skipped")).toBeLessThan(types.indexOf("kill.off"))
     await journal.close()
     rmSync(dir, { recursive: true, force: true })
   })

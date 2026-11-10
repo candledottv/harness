@@ -7,6 +7,8 @@ import type { OnboardingView } from "../setup/onboarding"
 import type { KeyUse, Pace, ReadKind } from "../core/key-budget"
 import type { WalletsShown } from "../core/wallets-shown"
 import type { WalletsTopic } from "../core/agent-wallets"
+import type { TriggersTopic } from "../core/triggers"
+import type { BotsTopic } from "../core/bots"
 import type { AutonomyTopic } from "../core/autonomy"
 import type { AwayView } from "../core/away"
 import type { LimitLine } from "../core/limits"
@@ -17,6 +19,7 @@ import type { FeedsView } from "../core/feeds"
 import type { ResearchView } from "../core/research-reads"
 import type { PnlView, PnlWindow } from "../core/pnl"
 import type { PnlSeries } from "./panes/pnl"
+import type { BotLogHeld } from "./bots-view"
 import type { JournalHeld, JournalRowsHeld } from "./panes/journal"
 import type { TokenView } from "../core/token-watch"
 import type { ViewsTopic } from "../core/view-state"
@@ -65,6 +68,14 @@ export interface StatusView {
   pnl?: PnlFigure | null
   pricesAgeMs?: number | null
   headless?: boolean
+  /** The triggers that keep the core running: the status bar's "3 triggers on", and what quitting says. */
+  triggersOn?: number
+  /** The bots that keep the core running: each that enters, or whose exits still sell. */
+  botsOn?: number
+  /** Of them, how many trade live: a bot's mode is its own, apart from the Candle Harness's. */
+  botsLive?: number
+  /** Keep-awake (macOS): the setting, whether this machine has it, and whether it's keeping the Mac awake now. */
+  keepAwake?: { on: boolean; available: boolean; active: boolean; failed?: string }
   /** When the core started, for whether config.toml changed under it. */
   startedAt?: number
   /** config.toml's modified time after the core's own last write or read of it: in use already. */
@@ -79,6 +90,37 @@ export interface StatusView {
 
 export interface CardDisplayView {
   title: string
+  /** The trigger whose firing proposed it, by name. */
+  trigger?: string
+  /** What that firing saw, in words: said in place of why. */
+  fired?: string
+  /** The trigger whose wake started the agent's turn that proposed it. */
+  woken?: string
+  /** The rules bot whose entry or exit it is, by name. */
+  bot?: string
+  /** A trigger's card: the exact line it saves, the trigger in words, how it runs, and whose it is when not the proposer's. */
+  triggerCard?: { line: string; words: string; runs: string; kind?: "own" | "asks" | "notifies" | "wakes" | "unknown"; agent?: string; replaces?: true }
+  /** A rules bot's card: the bot in words, its definition, how its trades run, its worst case and its backtest; or what a flatten sells. */
+  botCard?: {
+    name: string
+    words: string
+    definition: string
+    mode: "paper" | "live"
+    runs: { kind: "paper" | "own" | "asks" | "unknown"; entries: string; exits: string; amber?: string }
+    worst: string
+    /** The card's labelled lines, short: how its buys and sells run, its worst case, its backtest. */
+    parts?: { buys: string; sells: string; worst: string; tested: string }
+    backtest?: string
+    differs?: string
+    from?: string
+    replaces?: true
+    /** A change to a saved bot: what it changes. */
+    changes?: string
+    live?: true
+    flatten?: string
+    /** A code bot's card: its folder, command and figures, and what the core holds it to; `definition` is what it binds. */
+    code?: { folder: string; command: string; figures: string; holds: string }
+  }
   /** The compact card's parts; a core older than 2b sends only `title`. */
   headline?: string
   gets?: { amount: number; asset: string }
@@ -135,6 +177,16 @@ export interface CardDisplayView {
   modeNote?: string
   expiresAt: string
   supported?: boolean
+  /** The same name was read here for another token: amber, with both short addresses. */
+  otherMint?: string
+  /** A launch's links by host, its image's host and the start of its description. */
+  publishes?: string
+  /** A launch's creator fee, staker share, mode, visibility or rules, set to other than Candle's defaults: amber. */
+  launchTerms?: string
+  /** The card's mode isn't the Candle Harness's (a live bot's trade while it's on paper): amber. */
+  modeDiffers?: string
+  /** Once expired it's asked for again, never re-quoted. */
+  askAgain?: boolean
 }
 
 export interface ViewCard {
@@ -150,7 +202,7 @@ export interface ViewCard {
   params?: Record<string, unknown>
   display: CardDisplayView
   /** `paper`: a live sell Candle answered by closing the key's paper position, the wallet holding none. */
-  operation?: { state: string; paper?: boolean }
+  operation?: { state: string; paper?: boolean; partial?: { leg1: string } }
   /** How it was approved: enter, click, instant, or view when an older view didn't say. */
   approvedHow?: string
   /** Ran without a card: what it was checked against, "without a card, inside the embedded wallet's limits ($1.00 of $1.50 a trade, …)". */
@@ -159,6 +211,8 @@ export interface ViewCard {
   route?: string
   /** The card that replaced it: a wallet re-quote, or the kill switch's fresh price for a sell. */
   replacedBy?: string
+  /** Who proposed it, by role: `build` for a code bot the Build pane's harness proposed. */
+  origin?: { role?: string }
 }
 
 export interface ViewOperation {
@@ -181,6 +235,8 @@ export interface ViewOperation {
   resending?: boolean
   /** A live sell Candle answered by closing the key's paper position: nothing live was sold. */
   paper?: boolean
+  /** A swap whose first leg landed, with its hash, and whose second failed. */
+  partial?: { leg1: string }
 }
 
 /** A pane step's outcome in words, once it has one. */
@@ -220,14 +276,22 @@ export interface Exchange {
   seenAt?: number
   /** When it ended, for one from before the core started: the pane draws a divider under the last. */
   earlier?: string
+  /** The triggers that woke it, for a turn no person sent: the pane marks it as theirs. */
+  woken?: string[]
+  /** The person sent it from a script or another terminal (`candle-harness ask`): the pane says so. */
+  outside?: boolean
 }
 
 export interface CoreView {
   connected: boolean
+  /** The core this view was attached to went away; the session tries to attach again until one answers. */
+  lost?: true
   status?: StatusView
   cards: ViewCard[]
   /** When this view first saw each card, by its own clock. */
   seenAt: Record<string, number>
+  /** Cards that arrived while another was already waiting: Enter takes longer to reach each. */
+  behind?: Record<string, true>
   operations: Record<string, ViewOperation>
   conversations: Record<string, Exchange[]>
   killReport: KillReport | null
@@ -237,6 +301,10 @@ export interface CoreView {
   market?: TokenView
   /** Each wallet's autonomy: the approvals menu and the Wallets pane. */
   autonomy?: AutonomyTopic
+  /** The triggers, on the `triggers` topic: the Triggers overlay and pane. */
+  triggers?: TriggersTopic
+  /** Rules bots and each one's book, on the `bots` topic: the Bots tab, its panes and overlay. */
+  bots?: BotsTopic
   /** While you were away: the last gap's summary, for the note on startup and the Away pane. */
   away?: AwayView
   /** What each agent can pay from: `from <wallet>` and the wallet chips in a card's details. */
@@ -264,6 +332,8 @@ export interface CoreView {
   journal?: JournalHeld
   /** A Journal row's rows as recorded (ctrl-o), from `journal.rows`. */
   journalRows?: JournalRowsHeld
+  /** A code bot's log, as the view last read it for its overlay (`bots.logs`). */
+  botLog?: BotLogHeld
   /** The linked token, who moved it, and the pins: the same in every view. */
   views?: ViewsTopic
   /** Research's reads of the linked token, while a Research pane is on screen: the core sends the whole view each time. */
@@ -281,12 +351,17 @@ function learnToken(known: Map<string, string>, symbol: string | undefined, mint
   return new Map(known).set(symbol.toUpperCase(), mint)
 }
 
-function withCard(view: CoreView, card: ViewCard, now: number): CoreView {
+/** `together`: one of a snapshot's cards, which all show at once, so none slid in under another. */
+function withCard(view: CoreView, card: ViewCard, now: number, together = false): CoreView {
   const cards = view.cards.some((c) => c.cardId === card.cardId) ? view.cards.map((c) => (c.cardId === card.cardId ? card : c)) : [...view.cards, card]
   return {
     ...view,
     cards,
     seenAt: card.cardId in view.seenAt ? view.seenAt : { ...view.seenAt, [card.cardId]: now },
+    // New, with another card already waiting: the person may be reading that one.
+    ...(!together && !(card.cardId in view.seenAt) && card.state === "awaiting_approval" && view.cards.some((c) => c.cardId !== card.cardId && c.state === "awaiting_approval")
+      ? { behind: { ...view.behind, [card.cardId]: true as const } }
+      : {}),
     knownTokens: learnToken(view.knownTokens, card.display?.mintLabel, card.display?.mint),
   }
 }
@@ -301,12 +376,15 @@ function updateExchange(view: CoreView, agent: string, turnId: string, change: (
 function applyAgent(view: CoreView, data: Record<string, unknown>, now: number): CoreView {
   const agent = String(data.agent ?? "")
   const turnId = String(data.turnId ?? "")
-  const blank: Exchange = { turnId, user: String(data.user ?? ""), reply: "", streaming: false, tools: [], seenAt: now }
+  const woken = Array.isArray(data.woken) ? data.woken.map(String) : undefined
+  const blank: Exchange = { turnId, user: String(data.user ?? ""), reply: "", streaming: false, tools: [], seenAt: now, ...(woken ? { woken } : {}), ...(data.outside === true ? { outside: true } : {}) }
+  // A woken turn waiting may grow, as more wakes join it: its words and triggers come again.
+  const grown = (e: Exchange): Exchange => (woken ? { ...e, user: String(data.user ?? e.user), woken } : e)
   switch (data.type) {
     case "queued":
-      return updateExchange(view, agent, turnId, (e) => ({ ...e, queued: true }), blank)
+      return updateExchange(view, agent, turnId, (e) => ({ ...grown(e), queued: true }), blank)
     case "started":
-      return updateExchange(view, agent, turnId, (e) => ({ ...e, queued: false, streaming: true }), blank)
+      return updateExchange(view, agent, turnId, (e) => ({ ...grown(e), queued: false, streaming: true }), blank)
     case "text":
       return updateExchange(view, agent, turnId, (e) => ({ ...e, reply: e.reply + String(data.delta ?? "") }))
     case "tool_result":
@@ -327,18 +405,22 @@ function applyAgent(view: CoreView, data: Record<string, unknown>, now: number):
   }
 }
 
+/** The core went away: what's on screen is as it last stood, and says so until a core answers again. */
+export const lostCore = (view: CoreView): CoreView => ({ ...view, connected: false, lost: true })
+
 /** Folds one core event into the view. */
 export function applyEvent(view: CoreView, event: CoreEventParams, now: number): CoreView {
   const data = event.data as Record<string, unknown> | null
   switch (event.topic) {
     case "status": {
       const status = data as unknown as StatusView
-      return { ...view, connected: true, status, killReport: status.paused ? view.killReport : null }
+      const { lost: _back, ...was } = view
+      return { ...was, connected: true, status, killReport: status.paused ? view.killReport : null }
     }
     case "cards": {
       if (event.snapshot) {
         let next: CoreView = { ...view, cards: [] }
-        for (const card of (data as unknown as ViewCard[]) ?? []) next = withCard(next, card, view.seenAt[card.cardId] ?? now)
+        for (const card of (data as unknown as ViewCard[]) ?? []) next = withCard(next, card, view.seenAt[card.cardId] ?? now, true)
         return next
       }
       return withCard(view, data as unknown as ViewCard, now)
@@ -351,10 +433,10 @@ export function applyEvent(view: CoreView, event: CoreEventParams, now: number):
     }
     case "agent": {
       if (event.snapshot) {
-        const agents = ((data as { agents?: Record<string, { exchanges?: { turnId: string; user: string; reply: string; tools?: string[]; outcome?: string; marked?: Exchange["marked"]; earlier?: string }[] }> } | null)?.agents ?? {})
+        const agents = ((data as { agents?: Record<string, { exchanges?: { turnId: string; user: string; reply: string; tools?: string[]; outcome?: string; marked?: Exchange["marked"]; earlier?: string; woken?: string[]; outside?: boolean }[] }> } | null)?.agents ?? {})
         const conversations: Record<string, Exchange[]> = {}
         for (const [agent, a] of Object.entries(agents)) {
-          conversations[agent] = (a.exchanges ?? []).map((e) => ({ turnId: e.turnId, user: e.user, reply: e.reply, streaming: false, outcome: e.outcome, tools: e.tools ?? [], ...(e.marked ? { marked: e.marked } : {}), ...(typeof e.earlier === "string" ? { earlier: e.earlier } : {}) }))
+          conversations[agent] = (a.exchanges ?? []).map((e) => ({ turnId: e.turnId, user: e.user, reply: e.reply, streaming: false, outcome: e.outcome, tools: e.tools ?? [], ...(e.marked ? { marked: e.marked } : {}), ...(typeof e.earlier === "string" ? { earlier: e.earlier } : {}), ...(Array.isArray(e.woken) && e.woken.length ? { woken: e.woken } : {}), ...(e.outside === true ? { outside: true } : {}) }))
         }
         return { ...view, conversations }
       }
@@ -368,7 +450,11 @@ export function applyEvent(view: CoreView, event: CoreEventParams, now: number):
       if (data?.kind === "kill.report") return { ...view, killReport: data.report as KillReport }
       // Leftover processes arrive as a journal line too; the engine's own event is for other clients.
       if (data?.kind !== "line") return view
-      return { ...view, activity: [...view.activity, data.entry as ActivityEntry].slice(-MAX_ACTIVITY) }
+      // A trigger's firing comes again as its card and trade go: it's put in its place, not added twice.
+      const entry = data.entry as ActivityEntry
+      const at = entry.firing ? view.activity.findIndex((e) => e.seq === entry.seq) : -1
+      if (at >= 0) return { ...view, activity: view.activity.map((e, i) => (i === at ? entry : e)) }
+      return { ...view, activity: [...view.activity, entry].slice(-MAX_ACTIVITY) }
     }
     case "portfolio": {
       const portfolio = data as unknown as PortfolioView
@@ -391,6 +477,10 @@ export function applyEvent(view: CoreView, event: CoreEventParams, now: number):
       return { ...view, wallets: data as unknown as WalletsTopic }
     case "autonomy":
       return data ? { ...view, autonomy: data as unknown as AutonomyTopic } : view
+    case "triggers":
+      return data ? { ...view, triggers: data as unknown as TriggersTopic } : view
+    case "bots":
+      return data ? { ...view, bots: data as unknown as BotsTopic } : view
     case "away":
       return data ? { ...view, away: data as unknown as AwayView } : view
     case "onboarding":

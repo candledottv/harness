@@ -1,0 +1,62 @@
+ ▲ candle  agent-a ▾  LIVE  today $12.00 / $100.00  exposure $412.50  P&L 24h +$3.40  ● 1 card waiting   ctrl-x ×2 kill 
+ 1 Trade  2 Cockpit  3 Research  4 Bots  5 Build   settings ▾                                                           
+                                                                                                                        
+╭─ Build · Claude Code · for agent-a · ~/candle-bots ──────────────── harness ▾ ──╮ ╭─ Bots folder · 0 ────────────────╮
+│ > write a bot in momentum/ that buys $2 when three or more tracked wallets buy  │ │ No bot folders in ~/candle-bots  │
+│                                                                                 │ │ yet. Ask your harness to write   │
+│ ● I'll start from the candle-strategy-to-bot skill and harness-client.ts.       │ │ one: each bot gets a folder of   │
+│                 ╭─ your harness proposed a bot ────────────────────────────────────────────────────╮────── ↓ 2 more ─╯
+│ ● Write(momentum│ ▌ NEW CODE BOT "momentum"                                                     9m │                  
+│   ⎿  Wrote 71 li│ ▌ agent-a · pays from embedded · paper bot                                       │─────────────────╮
+│                 │ ▌ Runs bun run bot.ts in ~/candle-bots/momentum.                                 │ Ask your        │
+│ ● Bash(candle-ha│ ▌ ╭─ runs on its own ──────────────────────────────────────────────────────────╮ │a bot on paper:  │
+│   ⎿  paper test │ ▌ │ buys   on paper, inside its figures                                        │ │uild test        │
+│                 │ ▌ │ sells  of what it bought, on paper                                         │ │ for 30 minutes  │
+│                 │ ▌ │ limits $2.00 a trade · $10.00 a day · 3 open at most                       │ │                 │
+╰─────────────────│ ▌ │ worst  paper: nothing real at risk                                         │ │─────────────────╯
+╭─ cards ─────────│ ▌ ╰────────────────────────────────────────────────────────────────────────────╯ │─────────────────╮
+│ ▌ agent-a · pays│ ▌ The core holds this bot to these figures. What it trades inside them is its    │                 │
+│ ▌ Runs bun run b│ ▌ code's.                                                                        │                 │
+│ ▌ ╭─ runs on its│ ▌  approve    ctrl-n reject    ctrl-o details                                    │──────────────…  │
+│ ▌ │ buys   on pa│  review  or ctrl-] · the keys are still your harness's                           │                 │
+│ ▌ │ sells  of wh╰──────────────────────────────────────────────────────────────────────────────────╯                 │
+│ ▌ │ limits $2.00 a trade · $10.00 a day · 3 open at most                                                             │
+│ ▌ │ worst  paper: nothing real at risk                                                                               │
+│ ▌ ╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────…  │
+│ ▌ The core holds this bot to these figures. What it trades inside them is its code's.                                │
+│ ▌  approve    ctrl-n reject    ctrl-o details                                                                        │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+                                                                                                                        
+› type a command or ask the agent                                 ctrl-] to the bot's card   ctrl-k palette    ? help   
+
+--- colours ---
+0: ffffff/0e1115×1 f6f8fb/0e1115×8 ffffff/0e1115×1 6cb6ff/16263a×11 0b0d10/3ddc84×6 ffffff/0e1115×1 959dab/0e1115×6 f6f8fb/0e1115×6 959dab/0e1115×10 ffffff/0e1115×2 959dab/0e1115×9 f6f8fb/0e1115×7 ffffff/0e1115×2 959dab/0e1115×8 3ddc84/0e1115×6 ffffff/0e1115×2 f5a524/0e1115×16 ffffff/0e1115×2 ff5c5c/3a1619×16
+1: ffffff/0b0d10×1 6cb6ff/0b0d10×7 ffffff/0b0d10×2 6cb6ff/0b0d10×9 ffffff/0b0d10×2 6cb6ff/0b0d10×10 ffffff/0b0d10×2 6cb6ff/0b0d10×6 ffffff/0b0d10×2 f6f8fb/0b0d10+9×7 ffffff/0b0d10×2 6cb6ff/16263a×12 ffffff/0b0d10×58
+2: ffffff/0b0d10×120
+3: 32fe9f/111419×2 b392f0/111419×51 32fe9f/111419×16 6cb6ff/16263a×11 32fe9f/111419×3 ffffff/0b0d10×1 252a33/111419×2 b392f0/111419×17 252a33/111419×17
+4: 32fe9f/111419×1 ffffff/111419×1 dde2ea/111419×79 ffffff/111419×1 32fe9f/111419×1 ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 959dab/111419×31 ffffff/111419×2 252a33/111419×1
+5: 32fe9f/111419×1 ffffff/111419×1 dde2ea/111419×79 ffffff/111419×1 32fe9f/111419×1 ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 959dab/111419×30 ffffff/111419×3 252a33/111419×1
+6: 32fe9f/111419×1 ffffff/111419×1 dde2ea/111419×79 ffffff/111419×1 32fe9f/111419×1 ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 959dab/111419×30 ffffff/111419×3 252a33/111419×1
+7: 32fe9f/111419×1 ffffff/111419×1 dde2ea/111419×16 252a33/111419×2 b392f0/111419×29 252a33/111419×59 959dab/111419×10 252a33/111419×2
+8: 32fe9f/111419×1 ffffff/111419×1 dde2ea/111419×16 252a33/111419×1 ffffff/111419×1 f5a524/1d2430×2 f6f8fb/1d2430×23 dde2ea/1d2430×53 f5a524/1d2430×2 ffffff/111419×1 252a33/111419×1 ffffff/0b0d10×18
+9: 32fe9f/111419×1 ffffff/111419×1 dde2ea/111419×16 252a33/111419×1 ffffff/111419×1 f5a524/1d2430×2 959dab/1d2430×40 ffffff/1d2430×38 ffffff/111419×1 252a33/111419×19
+10: 32fe9f/111419×1 ffffff/111419×1 dde2ea/111419×16 252a33/111419×1 ffffff/111419×1 f5a524/1d2430×2 f6f8fb/1d2430×46 ffffff/1d2430×32 ffffff/111419×1 252a33/111419×1 959dab/111419×9 ffffff/111419×8 252a33/111419×1
+11: 32fe9f/111419×1 ffffff/111419×1 dde2ea/111419×16 252a33/111419×1 ffffff/111419×1 f5a524/1d2430×2 252a33/1d2430×3 f6f8fb/1d2430×15 252a33/1d2430×60 ffffff/111419×1 252a33/111419×1 959dab/111419×15 ffffff/111419×2 252a33/111419×1
+12: 32fe9f/111419×1 ffffff/111419×1 dde2ea/111419×16 252a33/111419×1 ffffff/111419×1 f5a524/1d2430×2 252a33/1d2430×2 959dab/1d2430×7 dde2ea/1d2430×67 252a33/1d2430×2 ffffff/111419×1 252a33/111419×1 959dab/111419×9 ffffff/111419×8 252a33/111419×1
+13: 32fe9f/111419×1 ffffff/111419×1 dde2ea/111419×16 252a33/111419×1 ffffff/111419×1 f5a524/1d2430×2 252a33/1d2430×2 959dab/1d2430×7 dde2ea/1d2430×67 252a33/1d2430×2 ffffff/111419×1 252a33/111419×1 959dab/111419×15 ffffff/111419×2 252a33/111419×1
+14: 32fe9f/111419×1 ffffff/111419×1 dde2ea/111419×16 252a33/111419×1 ffffff/111419×1 f5a524/1d2430×2 252a33/1d2430×2 959dab/1d2430×7 dde2ea/1d2430×67 252a33/1d2430×2 ffffff/111419×1 252a33/111419×1 ffffff/111419×17 252a33/111419×1
+15: 32fe9f/111419×18 252a33/111419×1 ffffff/111419×1 f5a524/1d2430×2 252a33/1d2430×2 959dab/1d2430×7 dde2ea/1d2430×67 252a33/1d2430×2 ffffff/111419×1 252a33/111419×19
+16: 252a33/111419×2 b392f0/111419×7 252a33/111419×10 ffffff/111419×1 f5a524/1d2430×2 252a33/1d2430×78 ffffff/111419×1 252a33/111419×19
+17: 252a33/111419×1 ffffff/111419×1 f5a524/111419×2 959dab/111419×14 252a33/111419×1 ffffff/111419×1 f5a524/1d2430×2 959dab/1d2430×75 ffffff/1d2430×3 ffffff/111419×1 252a33/111419×1 ffffff/111419×17 252a33/111419×1
+18: 252a33/111419×1 ffffff/111419×1 f5a524/111419×2 f6f8fb/111419×14 252a33/111419×1 ffffff/111419×1 f5a524/1d2430×2 959dab/1d2430×7 ffffff/1d2430×71 ffffff/111419×1 252a33/111419×1 ffffff/111419×17 252a33/111419×1
+19: 252a33/111419×1 ffffff/111419×1 f5a524/111419×2 252a33/111419×3 f6f8fb/111419×11 252a33/111419×1 ffffff/111419×1 f5a524/1d2430×2 0b0d10/6cb6ff×9 dde2ea/1d2430×2 6cb6ff/16263a×15 dde2ea/1d2430×2 6cb6ff/16263a×16 ffffff/1d2430×34 ffffff/111419×1 252a33/111419×16 ffffff/111419×2 252a33/111419×1
+20: 252a33/111419×1 ffffff/111419×1 f5a524/111419×2 252a33/111419×2 959dab/111419×7 dde2ea/111419×5 252a33/111419×1 ffffff/111419×1 6cb6ff/16263a×8 f5a524/111419×46 ffffff/111419×27 252a33/111419×1 dde2ea/111419×15 ffffff/111419×2 252a33/111419×1
+21: 252a33/111419×1 ffffff/111419×1 f5a524/111419×2 252a33/111419×2 959dab/111419×7 dde2ea/111419×5 252a33/111419×84 dde2ea/111419×15 ffffff/111419×2 252a33/111419×1
+22: 252a33/111419×1 ffffff/111419×1 f5a524/111419×2 252a33/111419×2 959dab/111419×7 dde2ea/111419×104 ffffff/111419×2 252a33/111419×1
+23: 252a33/111419×1 ffffff/111419×1 f5a524/111419×2 252a33/111419×2 959dab/111419×7 dde2ea/111419×104 ffffff/111419×2 252a33/111419×1
+24: 252a33/111419×1 ffffff/111419×1 f5a524/111419×2 252a33/111419×113 ffffff/111419×2 252a33/111419×1
+25: 252a33/111419×1 ffffff/111419×1 f5a524/111419×2 959dab/111419×83 ffffff/111419×32 252a33/111419×1
+26: 252a33/111419×1 ffffff/111419×1 f5a524/111419×2 0b0d10/6cb6ff×9 dde2ea/111419×2 6cb6ff/16263a×15 dde2ea/111419×2 6cb6ff/16263a×16 ffffff/111419×71 252a33/111419×1
+27: 252a33/111419×120
+28: 959dab/0b0d10×1 ffffff/0b0d10×119
+29: f6f8fb/0e1115×2 959dab/0e1115×31 ffffff/0e1115×33 dde2ea/0e1115×6 959dab/0e1115×20 6cb6ff/16263a×16 959dab/0e1115×2 6cb6ff/16263a×8 959dab/0e1115×2

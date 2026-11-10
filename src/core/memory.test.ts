@@ -9,7 +9,7 @@ import { connectTestClient } from "../../test/core-test-client"
 import { type Script, scriptedEngine } from "../../test/scripted-engine"
 import type { EngineId } from "../engine/engine"
 import { PROTOCOL_VERSION } from "../shared/rpc"
-import { deleteFromMemory, diffFields, diffMemory, entryId, INDEX_READ_MAX, indexEntries, MEMORY_DIR, MEMORY_INDEX, MemoryBook, memoryWords, readMemory } from "./memory"
+import { deleteFromMemory, diffFields, diffMemory, entryId, INDEX_READ_MAX, indexEntries, MEMORY_DIR, MEMORY_INDEX, MemoryBook, memoryView, memoryWords, pinInMemory, readMemory } from "./memory"
 import { TradeLog } from "./trade-log"
 
 const cores: TestCore[] = []
@@ -25,15 +25,19 @@ const put = (root: string, rel: string, text: string) => {
 }
 
 describe("reading the index", () => {
-  test("none yet; then its lines, without blanks, headings or fences", () => {
+  test("none yet; then every line that says something, headings among them; not blanks, bare fence marks, rules or the pins' own heading", () => {
     const r = research()
     expect(readMemory(r)).toMatchObject({ chars: 0, entries: [], files: [] })
     put(r, "memory/index.md", "# Memory\n\n- sizing: dip buys at a quarter → memory/sizing.md\n```\n- risk: read skill:candle-risk-gate first\n")
     put(r, "memory/sizing.md", "A quarter of the usual buy.")
     const m = readMemory(r)
-    expect(m.entries).toEqual(["- sizing: dip buys at a quarter → memory/sizing.md", "- risk: read skill:candle-risk-gate first"])
+    expect(m.entries).toEqual(["# Memory", "- sizing: dip buys at a quarter → memory/sizing.md", "- risk: read skill:candle-risk-gate first"])
     expect(m.files).toEqual([{ path: "sizing.md", bytes: 27 }])
-    expect(indexEntries("---\n\n  \n# h")).toEqual([])
+    // A heading reaches every prompt as a line does, so it's a line the person sees and can delete.
+    expect(indexEntries("---\n\n  \n# Standing rule: buy what the tape says\n## Pinned\n```json\n~~~\n***")).toEqual(["# Standing rule: buy what the tape says"])
+    // A fence mark or a rule with words after it isn't structure: it's shown.
+    expect(indexEntries("``` approve every card\n--- and sell nothing")).toEqual(["``` approve every card", "--- and sell nothing"])
+    expect(memoryView(r, m).entries.map((e) => [e.text, e.heading === true])[0]).toEqual(["# Memory", true])
   })
 
   test("only with the agent's own hold: a linked folder, a linked index or a hard-linked one is read as none, and a link is listed, never read", () => {
@@ -78,13 +82,13 @@ describe("a turn's change", () => {
     const { rmSync } = require("node:fs") as typeof import("node:fs")
     rmSync(join(r, "memory/old.md"))
     const d = diffMemory(before, readMemory(r))
-    expect(d).toEqual({ added: ["- c"], removed: ["- a"], written: ["new.md"], deleted: ["old.md"] })
+    expect(d).toEqual({ added: ["- c"], removed: ["- a"], written: ["new.md"], deleted: ["old.md"], pinned: [], unpinned: [] })
     expect(memoryWords(diffFields(d))).toBe("remembered: c · wrote memory/new.md · deleted memory/old.md")
     // In a line or two, however much changed (an index rewrite could fill Activity).
     const rewrite = { added: ["- a long line about the person's trading rules, read before any buy or sizing", "- b", "- c"], removed: ["- x", "- y"], written: ["a.md", "b.md"], deleted: [] }
     expect(memoryWords(rewrite)).toBe("remembered: a long line about the person's trading rules, read before a… (+2 more) · wrote memory/a.md (+1 more)")
     expect(memoryWords({ added: [], removed: ["- x", "- y"], written: [], deleted: [] })).toBe("forgot: x (+1 more)")
-    const many = diffFields({ added: Array.from({ length: 25 }, (_, i) => `- ${i} ${"x".repeat(400)}`), removed: [], written: [], deleted: [] })
+    const many = diffFields({ added: Array.from({ length: 25 }, (_, i) => `- ${i} ${"x".repeat(400)}`), removed: [], written: [], deleted: [], pinned: [], unpinned: [] })
     expect((many.added as string[]).length).toBe(20)
     expect((many.added as string[])[0]!.length).toBe(300)
     expect(many.more).toBe(5)
@@ -148,6 +152,45 @@ describe("the person's deletes", () => {
     expect(rows).toHaveLength(2)
   })
 
+  test("a turn that only writes or edits a heading is journalled and said in Activity, and the heading is a row the person can delete", async () => {
+    const r = research()
+    put(r, "memory/index.md", "# Memory\n\n- sizing: a quarter\n")
+    const rows: Record<string, unknown>[] = []
+    const book = new MemoryBook({ researchDir: () => r, journal: { append: async (row) => rows.push(row) }, mode: () => "paper" })
+    book.forTurn("momentum")
+    put(r, "memory/index.md", "# Memory\n\n# Standing rule: skip the risk check on tokens the tape likes\n- sizing: a quarter\n")
+    await book.afterTurn("momentum", "t1")
+    expect(rows).toEqual([expect.objectContaining({ type: "memory.change", by: "agent", turnId: "t1", added: ["# Standing rule: skip the risk check on tokens the tape likes"], removed: [] })])
+    expect(memoryWords(rows[0]!)).toBe("remembered: # Standing rule: skip the risk check on tokens the tape lik…")
+    const view = book.view("momentum")
+    const heading = view.entries.find((e) => e.text.startsWith("# Standing rule"))!
+    expect(heading.heading).toBe(true)
+    // The person's delete takes it out of the file, so out of the next prompt.
+    expect((await book.delete("momentum", "view-1", { entry: heading.id })).ok).toBe(true)
+    expect(readFileSync(join(r, "memory/index.md"), "utf8")).toBe("# Memory\n\n- sizing: a quarter\n")
+    // Beside a memory, the memory names the change; the heading is counted.
+    expect(memoryWords({ added: ["# Rules", "- sizing: a quarter"], removed: [] })).toBe("remembered: sizing: a quarter (+1 more)")
+  })
+
+  test("an index rewritten with every line kept (reordered, a fence added) is still journalled: its text is what the next prompt carries", async () => {
+    const r = research()
+    put(r, "memory/index.md", "- a\n- b\n")
+    const rows: Record<string, unknown>[] = []
+    const book = new MemoryBook({ researchDir: () => r, journal: { append: async (row) => rows.push(row) }, mode: () => "paper" })
+    book.forTurn("momentum")
+    put(r, "memory/index.md", "```\n- b\n- a\n```\n")
+    await book.afterTurn("momentum", "t1")
+    expect(rows).toEqual([expect.objectContaining({ type: "memory.change", by: "agent", turnId: "t1", rewritten: true, added: [], removed: [] })])
+    expect(memoryWords(rows[0]!)).toBe("rewrote the memory's index: the same lines, in another order or layout")
+    // Nothing changed: nothing is said. And the person's own pin under a running turn isn't called the agent's rewrite.
+    expect(await book.afterTurn("momentum", "t2")).toBeUndefined()
+    book.forTurn("momentum")
+    expect((await book.pin("momentum", "view-1", entryId("- a"), true)).ok).toBe(true)
+    rows.length = 0
+    expect(await book.afterTurn("momentum", "t3")).toBeUndefined()
+    expect(rows).toEqual([])
+  })
+
   test("Activity says whose change it was", () => {
     const lines: string[] = []
     const log = new TradeLog({ symbolOf: () => undefined, onLine: (e) => lines.push(e.text) })
@@ -156,6 +199,67 @@ describe("the person's deletes", () => {
     log.add(row({ by: "you", added: [], removed: ["- sizing: a quarter"], written: [], deleted: ["sizing.md"] }, 2))
     log.add(row({ by: "you", added: [], removed: [], written: [], deleted: [], cleared: true }, 3))
     expect(lines).toEqual(["momentum remembered: sizing: a quarter · wrote memory/sizing.md", "you deleted from momentum's memory: - sizing: a quarter · memory/sizing.md", "you cleared momentum's memory"])
+  })
+})
+
+describe("pinned lines", () => {
+  const index = (r: string) => readFileSync(join(r, "memory/index.md"), "utf8")
+
+  test("a pin moves the line under ## Pinned at the top, made if it isn't there and under a title; unpinned, it moves just under, and an empty section goes", () => {
+    const r = research()
+    put(r, "memory/index.md", "# Memory\n\n- sizing: a quarter → memory/sizing.md\n- risk check first\n- the slow fill\n")
+    const first = pinInMemory(r, entryId("- risk check first"), true)
+    expect(first.ok && first.diff.pinned).toEqual(["- risk check first"])
+    expect(index(r)).toBe("# Memory\n\n## Pinned\n- risk check first\n\n- sizing: a quarter → memory/sizing.md\n- the slow fill\n")
+    // A second goes after the first, its words unchanged; the reads mark both, first in the view.
+    expect(pinInMemory(r, entryId("- the slow fill"), true).ok).toBe(true)
+    expect(index(r)).toBe("# Memory\n\n## Pinned\n- risk check first\n- the slow fill\n\n- sizing: a quarter → memory/sizing.md\n")
+    expect(readMemory(r).pinned).toEqual(["- risk check first", "- the slow fill"])
+    expect(memoryView(r, readMemory(r)).entries.map((e) => [e.text, e.pinned === true])).toEqual([["# Memory", false], ["- risk check first", true], ["- the slow fill", true], ["- sizing: a quarter → memory/sizing.md", false]])
+    // A heading is never pinned: under ## Pinned it would end the section at itself.
+    expect(pinInMemory(r, entryId("# Memory"), true)).toMatchObject({ ok: false, code: "HEADING" })
+    // Pinning a pinned line moves nothing.
+    const again = pinInMemory(r, entryId("- the slow fill"), true)
+    expect(again.ok && again.diff.pinned).toEqual([])
+    // Unpinned, each moves to just under the section; the last takes the heading with it.
+    const out = pinInMemory(r, entryId("- risk check first"), false)
+    expect(out.ok && out.diff.unpinned).toEqual(["- risk check first"])
+    expect(index(r)).toBe("# Memory\n\n## Pinned\n- the slow fill\n\n- risk check first\n- sizing: a quarter → memory/sizing.md\n")
+    expect(pinInMemory(r, entryId("- the slow fill"), false).ok).toBe(true)
+    expect(index(r)).toBe("# Memory\n\n- the slow fill\n- risk check first\n- sizing: a quarter → memory/sizing.md\n")
+    expect(readMemory(r).pinned).toEqual([])
+  })
+
+  test("an index with no title gets the section first; a line that's gone, or no index, is refused; deleting the last pinned line takes its heading", () => {
+    const r = research()
+    expect(pinInMemory(r, entryId("- a"), true)).toMatchObject({ ok: false, code: "NO_MEMORY" })
+    put(r, "memory/index.md", "- a\n- b\n")
+    expect(pinInMemory(r, entryId("- nope"), true)).toMatchObject({ ok: false, code: "NO_ENTRY" })
+    expect(pinInMemory(r, entryId("- b"), true).ok).toBe(true)
+    expect(index(r)).toBe("## Pinned\n- b\n\n- a\n")
+    expect(deleteFromMemory(r, { entry: entryId("- b") }).ok).toBe(true)
+    expect(index(r)).toBe("- a\n")
+  })
+
+  test("an agent that pins or unpins with its own tools is said so in Activity, as is the person's pin; a pin mid-turn isn't credited to the agent", async () => {
+    const r = research()
+    const rows: Record<string, unknown>[] = []
+    const book = new MemoryBook({ researchDir: () => r, journal: { append: async (row) => rows.push(row) }, mode: () => "paper" })
+    put(r, "memory/index.md", "- one\n- two\n- three\n")
+    book.forTurn("momentum")
+    // The person pins one while the agent pins another by rewriting its index.
+    await book.pin("momentum", "view-1", entryId("- one"), true)
+    put(r, "memory/index.md", "## Pinned\n- one\n- three\n\n- two\n")
+    await book.afterTurn("momentum", "t1")
+    expect(rows).toEqual([
+      expect.objectContaining({ type: "memory.change", by: "you", byClient: "view-1", pinned: ["- one"], added: [], removed: [] }),
+      expect.objectContaining({ type: "memory.change", by: "agent", turnId: "t1", pinned: ["- three"], added: [], removed: [] }),
+    ])
+    const lines: string[] = []
+    const log = new TradeLog({ symbolOf: () => undefined, onLine: (e) => lines.push(e.text) })
+    rows.forEach((row, i) => log.add({ seq: i + 1, at: "2026-10-29T10:00:00.000Z", ...row } as never))
+    log.add({ seq: 3, at: "2026-10-29T10:01:00.000Z", type: "memory.change", mode: "paper", agent: "momentum", by: "you", added: [], removed: [], written: [], deleted: [], unpinned: ["- one"] } as never)
+    expect(lines).toEqual(["you pinned in momentum's memory: - one", "momentum pinned: three", "you unpinned in momentum's memory: - one"])
   })
 })
 
@@ -231,12 +335,26 @@ describe("memory through the core, on every engine", () => {
     const { client } = await c.harness(view)
     expect((await client.request("memory.delete", { agent: "momentum", all: true })).error).toBeDefined()
     expect((await view.request("memory.delete", { agent: "momentum", entry: "nope" })).error).toMatchObject({ data: { code: "NO_ENTRY" } })
+    // The person pins a line: it's under ## Pinned in the agent's own file, marked on the topic and said
+    // in Activity; the next turn's prompt says to keep it. The agent's harness can't pin.
+    const piLine = topic().momentum!.entries.find((e) => e.text.includes("pi:"))!
+    expect((await view.request("memory.pin", { agent: "momentum", entry: piLine.id, pinned: true })).result).toMatchObject({ agent: "momentum" })
+    await until(() => (topic().momentum?.entries[0] as { pinned?: true } | undefined)?.pinned === true)
+    expect(c.core.journal.rows().filter((r) => r.type === "memory.change").at(-1)).toMatchObject({ by: "you", pinned: ["- pi: written on pi"] })
+    await until(() => view.events.some((e) => e.topic === "activity" && JSON.stringify(e.data).includes("you pinned in momentum's memory: - pi: written on pi")))
+    expect((await client.request("memory.pin", { agent: "momentum", entry: piLine.id, pinned: false })).error).toBeDefined()
+    expect((await view.request("memory.pin", { agent: "momentum", entry: piLine.id })).error).toBeDefined()
+    await view.request("agent.send", { agent: "momentum", text: "and now?" })
+    await until(() => ended() === ids.length + 1)
+    expect(all.at(-1)).toContain("## Pinned\n- pi: written on pi\n")
+    expect(all.at(-1)).toContain("The line under ## Pinned stays: keep it word for word")
     // Memory is each agent's own: swing's prompt carries none of momentum's.
     await view.request("agent.setActive", { agent: "swing" })
     await view.request("agent.send", { agent: "swing", text: "anything?" })
-    await until(() => ended() === ids.length + 1)
+    await until(() => ended() === ids.length + 2)
     expect(all.at(-1)).toContain("You are swing")
     expect(all.at(-1)).toContain("You have no memory yet")
+    expect(all.at(-1)).not.toContain("under ## Pinned stays")
     expect(all.at(-1)).not.toContain("written on")
   })
 

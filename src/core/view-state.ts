@@ -3,9 +3,10 @@
 // the `views` topic (view-only) carries it with who moved it, and the pins.
 //
 // - A pin holds a token pane on its token while the link moves on. It's kept by where the pane is: a tab's
-//   name, or `popped out` for a popped token pane, since a layout holds one token pane. At most three, each watched at
-//   the link's 5 s; a fourth says which are pinned, to unpin one. Pins survive a restart
-//   (`state/pins.json`, 0600, as the mode is).
+//   name, or `popped out` for a popped token pane, and which of the layout's token panes it is (up to three
+//   side by side; the first unless named). At most three across every place, each watched at the link's
+//   5 s; a fourth says which are pinned, to unpin one. Pins survive a restart (`state/pins.json`, 0600, as
+//   the mode is).
 // - The person's pick: a token picked in a pane since an agent's last turn is named once in that agent's
 //   next turn, fenced as the Candle Harness's note. The agent showing a token isn't a pick.
 // - Popped panes: a view started as `candle-harness view --pane <id>` says which pane it shows,
@@ -17,7 +18,7 @@
 import { randomBytes } from "node:crypto"
 import { readFileSync } from "node:fs"
 import { chmod, rename, writeFile } from "node:fs/promises"
-import type { PaneId } from "../shared/panes"
+import { isTokenPane, type PaneId, type TokenPane } from "../shared/panes"
 import { terminalText } from "../shared/terminal-text"
 
 export const MAX_PINS = 3
@@ -29,6 +30,8 @@ export type Chain = "solana" | "hood"
 export interface Pin {
   /** Where the pinned token pane is: a tab's name. */
   at: string
+  /** Which of the place's token panes: absent, the first. */
+  pane?: Exclude<TokenPane, "token">
   mint: string
   chain: Chain
   symbol?: string
@@ -65,6 +68,14 @@ const MINT = /^[1-9A-HJ-NP-Za-km-z]{32,44}$|^0x[0-9a-fA-F]{40}$/
 /** A mint as a view may send it, or undefined. */
 export const mintParam = (value: unknown): string | undefined => (typeof value === "string" && MINT.test(value) ? value : undefined)
 export const chainParam = (value: unknown): Chain | undefined => (value === undefined || value === "solana" ? "solana" : value === "hood" ? "hood" : undefined)
+/** Which token pane a pin is on. */
+export const pinPane = (pin: Pick<Pin, "pane">): TokenPane => pin.pane ?? "token"
+const samePlace = (a: Pick<Pin, "at" | "pane">, b: Pick<Pin, "at" | "pane">) => a.at === b.at && pinPane(a) === pinPane(b)
+/** A token pane as a view may send it: absent, the first. */
+export const tokenPaneParam = (value: unknown): TokenPane | undefined => (value === undefined ? "token" : isTokenPane(value) ? value : undefined)
+/** A pin's place as it's kept: the first token pane isn't named, so a pins file from before still reads. */
+const placed = (at: string, pane: TokenPane): Pick<Pin, "at" | "pane"> => (pane === "token" ? { at } : { at, pane })
+
 /** A place's name as a view may send it: printable, at most 40 characters. */
 export const placeParam = (value: unknown): string | undefined =>
   typeof value === "string" && value.trim() !== "" && value.length <= MAX_PLACE && terminalText(value, { maxLength: MAX_PLACE }) === value ? value : undefined
@@ -76,11 +87,12 @@ function readPins(path: string): Pin[] {
     const out: Pin[] = []
     for (const p of raw) {
       const at = placeParam(p?.at)
+      const pane = tokenPaneParam(p?.pane)
       const mint = mintParam(p?.mint)
       const chain = chainParam(p?.chain)
-      if (!at || !mint || !chain || out.some((o) => o.at === at)) continue
+      if (!at || !pane || !mint || !chain || out.some((o) => samePlace(o, placed(at, pane)))) continue
       const symbol = typeof p?.symbol === "string" ? terminalText(p.symbol, { maxLength: 16 }) : undefined
-      out.push({ at, mint, chain, ...(symbol ? { symbol } : {}) })
+      out.push({ ...placed(at, pane), mint, chain, ...(symbol ? { symbol } : {}) })
     }
     return out.slice(0, MAX_PINS)
   } catch {
@@ -131,6 +143,9 @@ function readChoices(path: string | undefined): SignalsChoice[] {
   }
 }
 
+/** Where a pin is, in words: "Trade", or "Trade's token:2" for another of its token panes. */
+export const placeWords = (p: Pick<Pin, "at" | "pane">): string => (p.pane ? `${p.at}'s ${p.pane}` : p.at)
+
 export class ViewState {
   private pinList: Pin[]
   private picked: Picked | undefined
@@ -168,11 +183,11 @@ export class ViewState {
     return this.pinList.map((p) => ({ ...p }))
   }
 
-  /** Pins the token pane at `at` on a token; a fourth pin is refused, naming the three. */
+  /** Pins the token pane at `at` (its first, unless `pin.pane` names another) on a token; a fourth pin is refused, naming the three. */
   async pin(pin: Pin): Promise<{ ok: true } | { ok: false; message: string }> {
-    const others = this.pinList.filter((p) => p.at !== pin.at)
+    const others = this.pinList.filter((p) => !samePlace(p, pin))
     if (others.length >= MAX_PINS) {
-      const named = others.map((p) => `${p.at} on ${p.symbol ?? `${p.mint.slice(0, 4)}…`}`).join(", ")
+      const named = others.map((p) => `${placeWords(p)} on ${p.symbol ?? `${p.mint.slice(0, 4)}…`}`).join(", ")
       return { ok: false, message: `${MAX_PINS} token panes are pinned already (${named}): unpin one first.` }
     }
     this.pinList = [...others, { ...pin }]
@@ -180,28 +195,29 @@ export class ViewState {
     return { ok: true }
   }
 
-  /** True when there was a pin there. */
-  async unpin(at: string): Promise<boolean> {
-    if (!this.pinList.some((p) => p.at === at)) return false
-    this.pinList = this.pinList.filter((p) => p.at !== at)
+  /** The pin on the token pane at `at` (its first, unless `pane` names another) goes; with `pane` "all", every pin at `at`. True when there was one. */
+  async unpin(at: string, pane: TokenPane | "all" = "token"): Promise<boolean> {
+    const gone = (p: Pin) => p.at === at && (pane === "all" || pinPane(p) === pane)
+    if (!this.pinList.some(gone)) return false
+    this.pinList = this.pinList.filter((p) => !gone(p))
     await savePins(this.deps.path, this.pinList, this.deps.now())
     return true
   }
 
-  /** A tab renamed: its pin and its Signals choice go with it. True when there was one to move. */
+  /** A tab renamed: its pins and its Signals choice go with it. True when there was one to move. */
   async move(from: string, to: string): Promise<boolean> {
     if (from === to) return false
-    const pin = this.pinList.find((p) => p.at === from)
+    const moving = this.pinList.filter((p) => p.at === from)
     const choice = this.choiceList.find((c) => c.at === from)
-    if (pin) {
-      this.pinList = [...this.pinList.filter((p) => p.at !== from && p.at !== to), { ...pin, at: to }]
+    if (moving.length) {
+      this.pinList = [...this.pinList.filter((p) => p.at !== from && p.at !== to), ...moving.map((p) => ({ ...p, at: to }))]
       await savePins(this.deps.path, this.pinList, this.deps.now())
     }
     if (choice) {
       this.choiceList = [...this.choiceList.filter((c) => c.at !== from && c.at !== to), { ...choice, at: to }]
       await this.saveChoices()
     }
-    return pin !== undefined || choice !== undefined
+    return moving.length > 0 || choice !== undefined
   }
 
   /** Whether this connection is a popped view: it holds a pane of its own. */

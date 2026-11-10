@@ -218,5 +218,5 @@ test("a popped token pane pins at its own place, not a tab's", async () => {
   )
   const pin = find(" pin ")
   await input(() => setup!.mockMouse.click(pin.x + 2, pin.y))
-  expect(session.requests.at(-1)).toEqual({ method: "view.pin", params: { at: "popped out" } })
+  expect(session.requests.at(-1)).toEqual({ method: "view.pin", params: { at: "popped out", pane: "token" } })
 })

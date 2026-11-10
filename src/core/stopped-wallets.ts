@@ -7,6 +7,7 @@
 // account's portfolio lists: every Solana TEE wallet it has listed is remembered, and one missing from two
 // reads in a row is kept as stopped outside the Candle Harness, until it's listed again or swept.
 import { readFile, rename, writeFile } from "node:fs/promises"
+import { sameAddress } from "../shared/address-key"
 import { terminalText } from "../shared/terminal-text"
 
 export interface StoppedWallet {
@@ -28,7 +29,11 @@ export interface ListedWallet {
   agent?: string
 }
 
-const ADDRESS = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/
+/** A Solana address, or a Hood one: a 0x wallet stopped in the pane is kept across a core start like any other. */
+const ADDRESS = /^(?:[1-9A-HJ-NP-Za-km-z]{32,44}|0x[0-9a-fA-F]{40})$/
+
+/** Whether a stopped wallet is on Hood: its balance isn't read on chain, since the chain read is Solana's. */
+export const onHood = (address: string): boolean => /^0x[0-9a-fA-F]{40}$/.test(address)
 
 /**
  * Whether a portfolio read says which TEE wallets are missing: it must list TEE wallets at all, and its
@@ -121,17 +126,17 @@ export class StoppedWallets {
   }
 
   has(address: string): boolean {
-    return this.list.some((w) => w.address === address)
+    return this.list.some((w) => sameAddress(w.address, address))
   }
 
   /** Whether an address is stopped for good, or swept and retired: either way, no place to send funds. */
   gone(address: string): "stopped" | "retired" | undefined {
     if (this.has(address)) return "stopped"
-    return this.retiredList.some((w) => w.address === address) ? "retired" : undefined
+    return this.retiredList.some((w) => sameAddress(w.address, address)) ? "retired" : undefined
   }
 
   async stopped(wallet: Omit<StoppedWallet, "at" | "confirmed">, opts: { now: number; confirmed: boolean }): Promise<void> {
-    const held = this.list.find((w) => w.address === wallet.address)
+    const held = this.list.find((w) => sameAddress(w.address, wallet.address))
     const entry: StoppedWallet = {
       address: wallet.address,
       ...((wallet.label ?? held?.label) ? { label: wallet.label ?? held!.label! } : {}),
@@ -139,15 +144,15 @@ export class StoppedWallets {
       at: new Date(opts.now).toISOString(),
       confirmed: opts.confirmed || held?.confirmed === true,
     }
-    this.list = [...this.list.filter((w) => w.address !== wallet.address), entry]
+    this.list = [...this.list.filter((w) => !sameAddress(w.address, wallet.address)), entry]
     await this.save()
   }
 
   /** A sweep in the pane finished: the CLI retired the address, and there's nothing left to do. */
   async swept(address: string, now = Date.now()): Promise<void> {
-    const held = this.list.find((w) => w.address === address)
-    if (this.retiredList.some((w) => w.address === address)) return
-    this.list = this.list.filter((w) => w.address !== address)
+    const held = this.list.find((w) => sameAddress(w.address, address))
+    if (this.retiredList.some((w) => sameAddress(w.address, address))) return
+    this.list = this.list.filter((w) => !sameAddress(w.address, address))
     this.retiredList = [...this.retiredList, { address, ...(held?.label ? { label: held.label } : {}), at: new Date(now).toISOString() }]
     await this.save()
   }

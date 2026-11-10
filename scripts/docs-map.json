@@ -12,6 +12,11 @@
     "your-candle-plan": "Your Candle plan",
     "make-it-yours": "Make it yours",
     "while-you-were-away": "While you were away",
+    "triggers": "Triggers",
+    "bots": "Rules bots",
+    "code-bots": "Code bots",
+    "build": "The Build tab",
+    "vps": "Running on a VPS",
     "engines": "Engines",
     "install": "Installing",
     "troubleshooting": "Troubleshooting",
@@ -21,7 +26,8 @@
     "reference/config": "Configuration",
     "reference/cli-parity": "Candle's commands in the Candle Harness",
     "developers/architecture": "Architecture",
-    "developers/attach-protocol": "The attach protocol"
+    "developers/attach-protocol": "The attach protocol",
+    "developers/bot-protocol": "The bot protocol"
   },
   "features": [
     {
@@ -104,8 +110,9 @@
       "id": "palette",
       "name": "The palette",
       "page": "the-screen",
-      "what": "ctrl-k lists every action, tab, layout, pane, agent, preset, memory, token, alias, theme and Candle command, and typing searches them all. A pick does what its key or click does; it never approves a card or quits.",
-      "keys": ["palette"]
+      "what": "ctrl-k lists every action, tab, layout, pane, agent, preset, memory, token, alias, theme and Candle command, and typing searches them all. A pick does what its key or click does; it never approves a card or quits. Its settings row opens the settings menu by keys.",
+      "keys": ["palette"],
+      "palette": ["settings"]
     },
     {
       "id": "input-line",
@@ -139,7 +146,7 @@
       "id": "settings-menu",
       "name": "settings ▾",
       "page": "the-screen",
-      "what": "Beside the tabs: which tabs show, each tab's layout, the theme, your agent's model and memory, skill folders, aliases, the P&L window, approvals and the vault."
+      "what": "Beside the tabs: which tabs show, each tab's layout, the theme, your agent's model and memory, skill folders, aliases, the P&L window, approvals, triggers, bots and the vault."
     },
     {
       "id": "small-terminals",
@@ -195,7 +202,7 @@
       "id": "memory",
       "name": "Memory",
       "page": "your-agent",
-      "what": "Each agent keeps its own memory, an index and files in its research folder, read fresh into every turn on any engine. The memory overlay deletes any line or file, or clears it all.",
+      "what": "Each agent keeps its own memory, an index and files in its research folder, read fresh into every turn on any engine. The memory overlay pins a line so the agent keeps it through every merge, deletes any line or file, or clears it all.",
       "doctor": ["memory"]
     },
     {
@@ -219,6 +226,15 @@
       "what": "The shell is off by default, a list of commands, or everything, for each agent. allow and deny list tools, and a denied tool is hidden from the agent.",
       "doctor": ["tools"],
       "settings": ["config.toml agents.<name>.tools.shell","config.toml agents.<name>.tools.allow","config.toml agents.<name>.tools.deny"]
+    },
+    {
+      "id": "code-runner",
+      "name": "The code runner",
+      "page": "your-agent",
+      "what": "Off until you turn it on for an agent, from ctrl-g's code runner row or the palette, or with a list of programs in config. Then the agent runs a script with python3, bun or node in its research folder to compute, chart or analyse from its notes, and reads the output. The system holds every run there: it reads and writes only the research folder, has no network, and stops after 60 seconds. It works on every engine, on macOS and on Linux 6.12 or later; where the system can't hold it, it isn't offered and the doctor says why. Each run shows in Activity and the Journal with its command.",
+      "tools": ["research_run"],
+      "palette": ["runner"],
+      "settings": ["config.toml agents.<name>.tools.run"]
     },
     {
       "id": "step-cap",
@@ -311,7 +327,7 @@
       "id": "cards",
       "name": "Cards",
       "page": "trading",
-      "what": "A trade the agent proposes is a card, priced fresh and checked against limits. Enter with the line empty approves it once it has shown for 300 ms, and a click does too. ctrl-n rejects, ctrl-o shows everything it's bound to, and ctrl-r re-quotes an expired one.",
+      "what": "A trade the agent proposes is a card, priced fresh and checked against limits. Enter with the line empty approves it once it has shown for 300 ms (1.5 s when it arrived while another card was waiting), and a click does too. ctrl-n rejects, ctrl-o shows everything it's bound to, and ctrl-r re-quotes an expired one.",
       "keys": ["approve","reject","details","requote"]
     },
     {
@@ -629,6 +645,13 @@
       "palette": ["pin"]
     },
     {
+      "id": "token-panes-side-by-side",
+      "name": "Token panes side by side",
+      "page": "make-it-yours",
+      "what": "A layout holds up to three token panes to compare tokens: the first follows the link, and each one you open beside it is pinned on the token shown. Their pins count among the three.",
+      "panes": ["token:2","token:3"]
+    },
+    {
       "id": "pop-out",
       "name": "Pop-out",
       "page": "make-it-yours",
@@ -660,6 +683,127 @@
       "panes": ["away"],
       "palette": ["away"],
       "doctor": ["away"]
+    },
+    {
+      "id": "triggers",
+      "name": "Triggers",
+      "page": "triggers",
+      "what": "When something happens (a price, a market cap, a Hacc signal, a schedule or a time once, a fill), do something: a trade through the wallet's figures, a notification, or waking an agent. The agent writes each one with you and proposes it as a card that says whether it runs on its own or asks you each time; your press saves it. The Triggers overlay, from settings ▾, the palette or the status bar's ⚡ chip, switches one off or on, removes it, or runs its expired card again; the Triggers pane shows them in a layout of your own. Pro and Max.",
+      "panes": [
+        "triggers"
+      ],
+      "palette": [
+        "triggers"
+      ],
+      "settings": [
+        "triggers.toml triggers.<name>.agent",
+        "triggers.toml triggers.<name>.line",
+        "triggers.toml triggers.<name>.expansion",
+        "triggers.toml triggers.<name>.on",
+        "triggers.toml triggers.<name>.again",
+        "triggers.toml triggers.<name>.cooldown",
+        "triggers.toml triggers.<name>.mode",
+        "config.toml agents.<name>.wake.perHour",
+        "config.toml agents.<name>.wake.perDay"
+      ],
+      "tools": ["harness_triggers"]
+    },
+    {
+      "id": "bots",
+      "name": "Rules bots",
+      "page": "bots",
+      "what": "A Hacc strategy definition the Candle Harness runs for you: it enters on Hacc's tape and sells by its exits, from the wallet and agent it was approved with, on paper or live. The agent writes each one with you and proposes it as a card; your press saves it, and only your press widens one or takes it live. Pausing one stops new entries while its exits still sell; stopping one trades nothing and leaves its positions to you. A narrower bot (a smaller stake, a tighter stop, stricter filters) takes at once. Pro and Max.",
+      "settings": [
+        "bots.toml bots.<name>.agent",
+        "bots.toml bots.<name>.wallet",
+        "bots.toml bots.<name>.mode",
+        "bots.toml bots.<name>.state",
+        "bots.toml bots.<name>.maxSlippageBps",
+        "bots.toml bots.<name>.definition"
+      ],
+      "tools": ["harness_bots"],
+      "doctor": ["bot"]
+    },
+    {
+      "id": "code-bots",
+      "name": "Code bots",
+      "page": "code-bots",
+      "what": "A program of yours, in a folder of yours, that trades through the Candle Harness with a token of its own, never its agent's key. Its card shows its folder and command, the wallet it pays from, paper or live, and the figures it's held to whatever its code does: a trade's, a day's, and how many positions it may hold at once. Your press saves it; editing its code needs none. Lowering a figure takes at once; raising one, going live, or another wallet, folder or command is a new card. Pro and Max.",
+      "settings": [
+        "bots.toml bots.<name>.kind",
+        "bots.toml bots.<name>.folder",
+        "bots.toml bots.<name>.command",
+        "bots.toml bots.<name>.perTradeUsd",
+        "bots.toml bots.<name>.perDayUsd",
+        "bots.toml bots.<name>.maxOpen"
+      ]
+    },
+    {
+      "id": "code-bots-run",
+      "name": "Running code bots",
+      "page": "code-bots",
+      "what": "The Candle Harness runs each code bot you approved: its command in its folder, with a clean environment and its token. It's restarted after a crash, after 2 seconds and then longer, up to a minute; after five crashes in ten minutes it stops trying and tells you. Its output is kept, the last 5 MB, with any key or token taken out, and its memory and CPU are checked once a minute. It stops with the core and starts again with it. `candle-harness bots` lists your bots, starts, stops and restarts a code bot's process (stopping its process leaves the bot on, so the exits the core holds still run), prints its log, and writes its token to a file in its folder, readable by you alone, for a bot you run some other way.",
+      "subcommands": ["bots"]
+    },
+    {
+      "id": "build-commands",
+      "name": "Building bots with your own harness",
+      "page": "build",
+      "what": "A bots folder of your own, ~/candle-bots unless you pick another, holds each code bot in a folder of its own. The Candle Harness writes AGENTS.md there with the rules every bot runs under, the client a bot trades through, and Candle's bot-building skills where coding harnesses read them; a file you change is never written over. `candle-harness bots init` writes it. In the Build tab, your own coding harness runs `candle-harness build` to read every bot's book, a bot's log and its agent's record, to test a bot's code once on paper (never live, over within 30 minutes), and to propose a bot as a card for you to approve.",
+      "subcommands": ["build"]
+    },
+    {
+      "id": "build-tab",
+      "name": "The Build tab",
+      "page": "build",
+      "what": "Your own coding harness (Claude Code, Codex, Grok, OpenCode, Pi, or a command of yours), unmodified and signed in as you, in a terminal pane in your bots folder, with the bots folder and the paper test running beside it. The first time, the pane asks where your bots live and which harness, writes the folder, then starts it. Every key is the harness's while the pane has focus, but ctrl-] leaves it and ctrl-x twice is still the kill switch; a click goes back in. It keeps running when you switch tabs, and ⏎ starts it again after it exits. A bot it proposes opens whole over the frame: ⏎ approves it, Esc goes back to the harness and the card waits. Proposed while you're typing in the harness, it opens without the keys, and ctrl-] or a click moves to it. A daemon a harness leaves behind is listed with a stop chip, never stopped unasked. Below 100 columns the folder and the test run fold into a strip under the harness. On Free, the harness and the folder still work; testing or proposing a bot needs Pro or Max.",
+      "keys": ["buildPane"],
+      "tabs": ["Build"],
+      "panes": ["build", "build-folder", "build-test"],
+      "palette": ["build:harness", "build:folder", "build:test"],
+      "settings": ["config.toml build.folder", "config.toml build.harness"],
+      "doctor": ["build"]
+    },
+    {
+      "id": "bots-tab",
+      "name": "The Bots tab",
+      "page": "bots",
+      "what": "Your bots on the left, the one you pick on the right: its words, paper or live, each open position on a line from its stop to its target with its entry, its trailing level once armed and the price now, its book from its own fills, the backtest of its exact definition, what it skipped and its newest fills. Its chips pause it, put it back on as you approved it, stop it, flatten it (asking once), remove it, or put a change for the agent on the input line. The status bar's chip, settings ▾ and the palette open it; with no tab showing it, the same list opens over the frame.",
+      "tabs": ["Bots"],
+      "panes": ["bots", "bot"],
+      "palette": ["bots"]
+    },
+    {
+      "id": "kept-running",
+      "name": "Triggers keep running",
+      "page": "triggers",
+      "what": "A trigger that's on keeps the core running after you quit, and the status bar says how many are on. candle-harness stop ends the core and says what it stopped. On a Mac, keep-awake keeps it from sleeping while a trigger or bot is on.",
+      "subcommands": ["stop"],
+      "palette": ["keepAwake"],
+      "settings": ["config.toml core.keepAwake"],
+      "doctor": ["trigger"]
+    },
+    {
+      "id": "login-service",
+      "name": "The core at login, and on a VPS",
+      "page": "vps",
+      "what": "candle-harness service install starts the core when you log in and restarts it after a crash, so triggers run with no terminal open: a LaunchAgent on a Mac, a systemd user service on Linux. On a VPS, run the Candle Harness in tmux over SSH, install the service, and switch lingering on so the core outlives your login. uninstall and status sit beside it.",
+      "subcommands": ["service"]
+    },
+    {
+      "id": "from-outside",
+      "name": "From outside the Candle Harness",
+      "page": "triggers",
+      "what": "From a script or another terminal, as the same user, while a core runs. candle-harness ask sends an agent your message, as if typed in the Candle Harness, and prints its reply; a card it proposes still waits for your press in the Candle Harness, and the conversation, Activity and the Journal mark it from outside; --json prints the reply, how the turn ended and the cards it left as one JSON object. candle-harness cards lists the cards the Candle Harness holds and how each ended, and --wait waits for the press or the expiry; it only reads, and never approves a card. candle-harness trigger fires an on call trigger by its name, with its cooldown, its wallet's figures and the kill switch, and prints what it did. None starts a core.",
+      "subcommands": ["ask", "cards", "trigger"]
+    },
+    {
+      "id": "notifications",
+      "name": "Notifications",
+      "page": "triggers",
+      "what": "While the Candle Harness's window isn't in front, it tells you what happened: a card waiting that you didn't make, a trigger firing, a wake skipped at its cap, the kill switch, Candle holding a key, and the core stopping when nobody asked. Your computer's own notification here, the terminal's over SSH, or the bell. With no Candle Harness window open, the core sends your computer's own, on a Mac or a Linux desktop; on a VPS nothing reaches you until you reattach.",
+      "settings": ["config.toml notify.mode", "config.toml notify.on"],
+      "doctor": ["notify"]
     },
     {
       "id": "engine-differences",
@@ -721,6 +865,12 @@
       "name": "The attach protocol",
       "page": "developers/attach-protocol",
       "what": "The socket protocol views and engines use: requests, topics and events."
+    },
+    {
+      "id": "bot-protocol",
+      "name": "The bot protocol",
+      "page": "developers/bot-protocol",
+      "what": "How a code bot talks to the core with its own token: its trades by request id, the exits the core holds, its book and reads, what it's told and what it says, and the TypeScript client that speaks it."
     }
   ]
 }

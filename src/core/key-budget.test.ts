@@ -3,7 +3,7 @@
 // spread to the key with most room, and nothing on the trade path ever asked or held.
 import { describe, expect, test } from "bun:test"
 import type { ToolOutcome } from "./candle-mcp"
-import { BUDGET_WAIT, CARD_RESERVE, KeyBudget, LOWERED_MS, metered, paceWords, type ReadKind, requestsOf, WINDOW_MS } from "./key-budget"
+import { BUDGET_WAIT, CARD_RESERVE, CORE_TRADE_REQUESTS, KeyBudget, LOWERED_MS, metered, paceWords, type ReadKind, requestsOf, WINDOW_MS } from "./key-budget"
 import { PRICE_REFRESH_MS, PriceBook } from "./prices"
 import { BUCKETS, Feeds, ONFIRE_MS as TRENDING_MS } from "./feeds"
 import { SAMPLE_MS, TokenWatch, type WatchRead } from "./token-watch"
@@ -11,7 +11,7 @@ import { SAMPLE_MS, TokenWatch, type WatchRead } from "./token-watch"
 const OK: ToolOutcome = { kind: "ok", result: {} }
 const LIMITED: ToolOutcome = { kind: "error", code: "RATE_LIMITED", retryable: true, body: {} }
 
-function rig(opts: { limits?: Record<string, number | undefined>; agents?: string[]; active?: string } = {}) {
+function rig(opts: { limits?: Record<string, number | undefined>; agents?: string[]; active?: string; coreReserve?: (agent: string) => number } = {}) {
   let clock = 1_000_000
   let changes = 0
   const agents = opts.agents ?? ["agent-a"]
@@ -21,6 +21,7 @@ function rig(opts: { limits?: Record<string, number | undefined>; agents?: strin
     preferred: () => opts.active ?? agents[0],
     now: () => clock,
     onChange: () => changes++,
+    ...(opts.coreReserve ? { coreReserve: opts.coreReserve } : {}),
   })
   return { budget, tick: (ms: number) => (clock += ms), now: () => clock, changes: () => changes }
 }
@@ -35,13 +36,13 @@ function wantAll(budget: KeyBudget, d: { prices?: number; linked?: boolean; pins
 
 describe("what a call costs", () => {
   test("a tool that makes several of Candle's requests is counted as that many (measured on a Free key)", async () => {
-    expect(requestsOf("candle_execution_status")).toBe(3)
+    expect(requestsOf("candle_execution_status")).toBe(4)
     expect(requestsOf("candle_get_portfolio")).toBe(2)
     expect(requestsOf("candle_trade")).toBe(3)
     expect(requestsOf("candle_get_market")).toBe(1)
     const r = rig()
     await metered(r.budget, "agent-a", async () => OK, requestsOf("candle_execution_status"))
-    expect(r.budget.use().find((u) => u.agent === "agent-a")?.used).toBe(3)
+    expect(r.budget.use().find((u) => u.agent === "agent-a")?.used).toBe(4)
   })
 })
 
@@ -157,6 +158,34 @@ describe("taking a background read", () => {
     r.tick(WINDOW_MS)
     expect(r.budget.take("prices", "agent-a")).toBe("agent-a")
     expect(r.budget.pace()).toEqual({})
+  })
+
+  test("a key with bots on keeps room for the trades its pace still allows, so a burst of them never meets Candle's limit", () => {
+    // Pro's 300; eight of the pace's 20 used, so twelve trades still to come, each a holding read and the trade.
+    expect(CORE_TRADE_REQUESTS).toBe(5)
+    let slotsLeft = 12
+    const r = rig({ limits: { "agent-a": 300 }, coreReserve: () => slotsLeft * CORE_TRADE_REQUESTS })
+    wantAll(r.budget, { prices: 60 })
+    for (let i = 0; i < 130; i++) r.budget.noteCall("agent-a") // the bots' own calls so far, and a turn's
+    let reads = 0
+    // Each read reaches Candle through the key, counted as every call is.
+    while (r.budget.take("prices", "agent-a")) reads++, r.budget.noteCall("agent-a")
+    // 300 - 5 for a card - 60 for the twelve trades - 130 made: the reads stop at 105 more.
+    expect(reads).toBe(300 - CARD_RESERVE - 12 * CORE_TRADE_REQUESTS - 130)
+    // The twelve trades then fit, a card's five beside them.
+    expect(r.budget.use()[0]!.used + 12 * CORE_TRADE_REQUESTS + CARD_RESERVE).toBe(300)
+    // As the pace fills, its room goes back to the reads.
+    slotsLeft = 0
+    expect(r.budget.take("prices", "agent-a")).toBe("agent-a")
+  })
+
+  test("the bots' room is at most the half background reads don't get, so a Free key holding a bot's positions still reads", () => {
+    const r = rig({ coreReserve: () => 20 * CORE_TRADE_REQUESTS })
+    wantAll(r.budget, { prices: 4 })
+    let reads = 0
+    while (r.budget.take("prices", "agent-a")) reads++, r.budget.noteCall("agent-a")
+    // Free's 30: the bots keep 15 - 5 = 10, a card 5, and the reads get the other 15.
+    expect(reads).toBe(15)
   })
 
   test("a read any key may make goes to the key with most room; the active key first among equals", () => {

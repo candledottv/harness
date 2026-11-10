@@ -1,0 +1,92 @@
+ ▲ candle  agent-a ▾  LIVE  today $12.00 / $100.00  exposure $412.50  P&L 24h +$3.40  ● 1 card waiting  ⚡ 4 triggers  3 bots                    ctrl-x ×2 kill 
+ 1 Trade  2 Cockpit  3 Research  4 Bots  5 Build   settings ▾                                                                                                   
+                                                                                                                                                                
+╭─ Bots · 4 on · 2 live ───────────────────────────────╮ ╭─ momentum · agent-a's · code bot ───────────────────────────────────────────────────────────────────╮
+│ ● conf     live      +$3.86  2 open                  │ │ Runs bun run bot.ts in ~/candle-bots/momentum                                                       │
+│   agent-a · bot-conf                                 │ │ ● running here · up 2h 10m · no restarts · 41 MB · 0.4% CPU                                         │
+│                                                      │ │ live · pays from embedded · $2.00 a trade · $4.00 of $10.00 today                                   │
+│ ● fresh    paper    ≈+$1.10  1 open                  │ │                                                                                                     │
+│   agent-b · embedded                                 │ │  pause    stop    flatten    log    ask the agent    remove                                         │
+│                                                      │ │                                                                                                     │
+│ ● momentum live      -$0.31  2 open            ask   │ │ open 2 of 3 · the core's count from its fills                                                       │
+│   agent-a · embedded · code                          │ │ BONKY    -8.0% -30% ├─────────────●─────┼───────────────────────────────────────────────────┤ +80%  │
+│                                                      │ │        -$0.16 on $2.00 · 25m of 24h · exits held by the core                                        │
+│ ● relay    paper          —                          │ │         remove its exits                                                                            │
+│   runs outside · not connected                       │ │ WIFY    +12.5% no exits held: its code sells                                                        │
+│                                                      │ │        +$0.25 on $2.00 · 40m                                                                        │
+│                                                      │ │ ├ stop  ┼ entry  ● now  ╎ trailing, once armed  ┤ target                                            │
+│                                                      │ │                                                                                                     │
+│                                                      │ │ the bot says · 12s ago · its own words, not the core's count                                        │
+│                                                      │ │ status  ok · watching 38 tokens                                                                     │
+│                                                      │ │ rules   buys $2 when 3+ tracked wallets buy within 5 min, under $300K                               │
+│                                                      │ │ event   07:43 skipped MOONX: spread 9.4%                                                            │
+│                                                      │ │ offers   $1.00 a trade   at once                                                                    │
+│                                                      │ │                                                                                                     │
+│                                                      │ │ the core's count · from its fills                                                                   │
+│                                                      │ │ today     realized -$0.40 · open +$0.09                                                             │
+│                                                      │ │ in all    realized -$0.40 · 2 closed: 1 at stop, 1 sold                                             │
+│                                                      │ │ last      07:34  bought BONKY for $2.00                                                             │
+│                                                      │ │           07:19  bought WIFY for $2.00                                                              │
+│                                                      │ │           06:36  sold MOONQ at its stop  -$0.60                                                     │
+│                                                      │ │                                                                                                     │
+│                                                      │ │                                                                                                     │
+│                                                      │ │                                                                                                     │
+╰─ ⇱ ──────────────────────────────────────────────────╯ ╰─ ⇱ ─────────────────────────────────────────────────────────────────────────────────────────────────╯
+                                                                                                                                                                
+╭─ agent-a ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── Claude Code · sonnet ▾ ─╮
+│   Mint JupF…1111. Want a small buy?  ⧉                                                                                                                       │
+│                                                                                                                                                              │
+│ 1 card waiting · ⏎ approves the highlighted one                                                                                                              │
+│ ▌ BUY 0.1 SOL of JUPF                                                                                                                                   50s  │
+│ ▌ agent-a · pays from embedded · live · JupF…1111                                                                                                            │
+│ ▌  ⏎ approve    ctrl-n reject    ctrl-o details                                                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+                                                                                                                                                                
+› type a command or ask the agent                                                                   ⏎ approve  ctrl-p pop out bots   ctrl-k palette    ? help   
+
+--- colours ---
+0: ffffff/0e1115×1 f6f8fb/0e1115×8 ffffff/0e1115×1 6cb6ff/16263a×11 0b0d10/3ddc84×6 ffffff/0e1115×1 959dab/0e1115×6 f6f8fb/0e1115×6 959dab/0e1115×10 ffffff/0e1115×2 959dab/0e1115×9 f6f8fb/0e1115×7 ffffff/0e1115×2 959dab/0e1115×8 3ddc84/0e1115×6 ffffff/0e1115×2 f5a524/0e1115×16 ffffff/0e1115×1 6cb6ff/16263a×23 ffffff/0e1115×18 ff5c5c/3a1619×16
+1: ffffff/0b0d10×1 6cb6ff/0b0d10×7 ffffff/0b0d10×2 6cb6ff/0b0d10×9 ffffff/0b0d10×2 6cb6ff/0b0d10×10 ffffff/0b0d10×2 f6f8fb/0b0d10+9×6 ffffff/0b0d10×2 6cb6ff/0b0d10×7 ffffff/0b0d10×2 6cb6ff/16263a×12 ffffff/0b0d10×98
+2: ffffff/0b0d10×160
+3: 32fe9f/111419×2 b392f0/111419×22 32fe9f/111419×32 ffffff/0b0d10×1 252a33/111419×2 b392f0/111419×33 252a33/111419×68
+4: 32fe9f/111419×1 ffffff/111419×1 3ddc84/111419×2 f6f8fb/111419×9 3ddc84/111419×16 959dab/111419×8 ffffff/111419×18 32fe9f/111419×1 ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 959dab/111419×5 dde2ea/111419×40 ffffff/111419×55 252a33/111419×1
+5: 32fe9f/111419×1 ffffff/111419×1 959dab/111419×20 ffffff/111419×33 32fe9f/111419×1 ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 3ddc84/111419×2 dde2ea/111419×57 ffffff/111419×41 252a33/111419×1
+6: 32fe9f/111419×1 ffffff/111419×54 32fe9f/111419×1 ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 3ddc84/111419×4 959dab/111419×61 ffffff/111419×35 252a33/111419×1
+7: 32fe9f/111419×1 ffffff/111419×1 3ddc84/111419×2 f6f8fb/111419×9 959dab/111419×7 3ddc84/111419×9 959dab/111419×8 ffffff/111419×18 32fe9f/111419×1 ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×101 252a33/111419×1
+8: 32fe9f/111419×1 ffffff/111419×1 959dab/111419×20 ffffff/111419×33 32fe9f/111419×1 ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 6cb6ff/16263a×7 dde2ea/111419×2 6cb6ff/16263a×6 dde2ea/111419×2 6cb6ff/16263a×9 dde2ea/111419×2 6cb6ff/16263a×5 dde2ea/111419×2 6cb6ff/16263a×15 dde2ea/111419×2 6cb6ff/16263a×8 ffffff/111419×40 252a33/111419×1
+9: 32fe9f/111419×1 ffffff/111419×54 32fe9f/111419×1 ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×101 252a33/111419×1
+10: 32fe9f/111419×1 ffffff/111419×1 3ddc84/1d2430×2 f6f8fb/1d2430×9 3ddc84/1d2430×7 ff5c5c/1d2430×9 959dab/1d2430×8 dde2ea/1d2430×11 6cb6ff/16263a×5 ffffff/111419×2 32fe9f/111419×1 ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 b392f0/111419×11 959dab/111419×34 ffffff/111419×55 252a33/111419×1
+11: 32fe9f/111419×1 ffffff/111419×1 959dab/1d2430×27 ffffff/1d2430×24 ffffff/111419×2 32fe9f/111419×1 ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 f6f8fb/111419×7 ff5c5c/111419×8 959dab/111419×5 252a33/111419×14 ff5c5c/111419×1 252a33/111419×5 dde2ea/111419×1 252a33/111419×52 959dab/111419×5 ffffff/111419×2 252a33/111419×1
+12: 32fe9f/111419×1 ffffff/111419×54 32fe9f/111419×1 ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 959dab/111419×60 ffffff/111419×40 252a33/111419×1
+13: 32fe9f/111419×1 ffffff/111419×1 3ddc84/111419×2 f6f8fb/111419×9 959dab/111419×24 ffffff/111419×18 32fe9f/111419×1 ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 dde2ea/111419×7 6cb6ff/16263a×18 ffffff/111419×75 252a33/111419×1
+14: 32fe9f/111419×1 ffffff/111419×1 f5a524/111419×30 ffffff/111419×23 32fe9f/111419×1 ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 f6f8fb/111419×7 3ddc84/111419×8 959dab/111419×29 ffffff/111419×56 252a33/111419×1
+15: 32fe9f/111419×1 ffffff/111419×54 32fe9f/111419×1 ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 959dab/111419×28 ffffff/111419×72 252a33/111419×1
+16: 32fe9f/111419×1 ffffff/111419×54 32fe9f/111419×1 ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 959dab/111419×56 ffffff/111419×44 252a33/111419×1
+17: 32fe9f/111419×1 ffffff/111419×54 32fe9f/111419×1 ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×101 252a33/111419×1
+18: 32fe9f/111419×1 ffffff/111419×54 32fe9f/111419×1 ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 b392f0/111419×12 959dab/111419×48 ffffff/111419×40 252a33/111419×1
+19: 32fe9f/111419×1 ffffff/111419×54 32fe9f/111419×1 ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 b392f0/111419×8 dde2ea/111419×23 ffffff/111419×69 252a33/111419×1
+20: 32fe9f/111419×1 ffffff/111419×54 32fe9f/111419×1 ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 b392f0/111419×8 dde2ea/111419×61 ffffff/111419×31 252a33/111419×1
+21: 32fe9f/111419×1 ffffff/111419×54 32fe9f/111419×1 ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 b392f0/111419×8 dde2ea/111419×32 ffffff/111419×60 252a33/111419×1
+22: 32fe9f/111419×1 ffffff/111419×54 32fe9f/111419×1 ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 b392f0/111419×8 6cb6ff/16263a×15 959dab/111419×9 ffffff/111419×68 252a33/111419×1
+23: 32fe9f/111419×1 ffffff/111419×54 32fe9f/111419×1 ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×101 252a33/111419×1
+24: 32fe9f/111419×1 ffffff/111419×54 32fe9f/111419×1 ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 b392f0/111419×33 ffffff/111419×67 252a33/111419×1
+25: 32fe9f/111419×1 ffffff/111419×54 32fe9f/111419×1 ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 b392f0/111419×10 959dab/111419×9 ff5c5c/111419×6 959dab/111419×8 3ddc84/111419×6 ffffff/111419×61 252a33/111419×1
+26: 32fe9f/111419×1 ffffff/111419×54 32fe9f/111419×1 ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 b392f0/111419×10 959dab/111419×9 ff5c5c/111419×6 959dab/111419×30 ffffff/111419×45 252a33/111419×1
+27: 32fe9f/111419×1 ffffff/111419×54 32fe9f/111419×1 ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 b392f0/111419×10 dde2ea/111419×29 ffffff/111419×61 252a33/111419×1
+28: 32fe9f/111419×1 ffffff/111419×54 32fe9f/111419×1 ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 b392f0/111419×10 dde2ea/111419×28 ffffff/111419×62 252a33/111419×1
+29: 32fe9f/111419×1 ffffff/111419×54 32fe9f/111419×1 ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 b392f0/111419×10 dde2ea/111419×29 ff5c5c/111419×8 ffffff/111419×53 252a33/111419×1
+30: 32fe9f/111419×1 ffffff/111419×54 32fe9f/111419×1 ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×101 252a33/111419×1
+31: 32fe9f/111419×1 ffffff/111419×54 32fe9f/111419×1 ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×101 252a33/111419×1
+32: 32fe9f/111419×1 ffffff/111419×54 32fe9f/111419×1 ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×101 252a33/111419×1
+33: 32fe9f/111419×2 6cb6ff/16263a×3 32fe9f/111419×51 ffffff/0b0d10×1 252a33/111419×2 6cb6ff/16263a×3 252a33/111419×98
+34: ffffff/0b0d10×160
+35: 252a33/111419×2 b392f0/111419×9 252a33/111419×123 6cb6ff/16263a×24 252a33/111419×2
+36: 252a33/111419×1 ffffff/111419×1 dde2ea/111419×7 f6f8fb/111419×9 dde2ea/111419×19 959dab/111419×1 6cb6ff/16263a×3 ffffff/111419×118 252a33/111419×1
+37: 252a33/111419×1 ffffff/111419×158 252a33/111419×1
+38: 252a33/111419×1 ffffff/111419×1 959dab/111419×47 ffffff/111419×110 252a33/111419×1
+39: 252a33/111419×1 ffffff/111419×1 f5a524/111419×2 f6f8fb/111419×19 dde2ea/111419×131 f5a524/111419×3 ffffff/111419×2 252a33/111419×1
+40: 252a33/111419×1 ffffff/111419×1 f5a524/111419×2 959dab/111419×47 ffffff/111419×108 252a33/111419×1
+41: 252a33/111419×1 ffffff/111419×1 f5a524/111419×2 0b0d10/6cb6ff×11 dde2ea/111419×2 6cb6ff/16263a×15 dde2ea/111419×2 6cb6ff/16263a×16 ffffff/111419×109 252a33/111419×1
+42: 252a33/111419×160
+43: 959dab/0b0d10×1 ffffff/0b0d10×159
+44: f6f8fb/0e1115×2 959dab/0e1115×31 ffffff/0e1115×67 dde2ea/0e1115×1 959dab/0e1115×10 dde2ea/0e1115×6 959dab/0e1115×15 6cb6ff/16263a×16 959dab/0e1115×2 6cb6ff/16263a×8 959dab/0e1115×2

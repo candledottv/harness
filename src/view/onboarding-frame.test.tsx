@@ -165,6 +165,12 @@ const SIZES = [
 test("the welcome: guided setup or straight in, and straight in asks the core for both", async () => {
   for (const [w, h] of SIZES) {
     const { s } = await draw(w, h, onboardingProgress(at([]), facts()))
+    // The welcome says what setup needs and an honest time, before the first step.
+    const welcome = s.captureCharFrame().replace(/[│\s]+/g, " ")
+    expect(welcome).toContain("You need one AI coding tool with its own account: Claude Code, Codex, Grok,")
+    expect(welcome).toContain("about 5 minutes; longer if you")
+    expect(welcome).not.toContain("3 minutes")
+    expect(welcome).toContain("then straight to paper")
     await compare(`onboarding-${w}x${h}-welcome`, s)
     const frame = s.captureCharFrame()
     expect(frame).toContain("Welcome to Candle")
@@ -238,6 +244,9 @@ test("connect your agent: each engine as the picker reads it, a sign-in for one 
   expect(frame).toContain("sonnet · Claude Sonnet 5.5 · default")
   expect(frame).toContain("Codex 0.165.0 · not signed in")
   expect(frame).toContain("Pi · not installed")
+  // The model's coding tool is an engine on screen; "harness" is the product's name alone.
+  expect(frame).toContain("Your agent runs on an engine: an AI coding tool you already use")
+  expect(frame).not.toContain("runs on a harness")
   // Down to the test message (Claude Code, its three models, Codex, Grok, OpenCode, Pi's install line, then the test).
   for (let i = 0; i < 8; i++) await press(d.s, "down")
   await press(d.s, "enter")
@@ -258,6 +267,15 @@ test("no keychain (WSL, say): only the fix, the line to copy, then start again; 
     const frame = s.captureCharFrame()
     expect(frame).toContain("This machine has no keychain")
     expect(frame).toContain("⧉ Copy the line")
+    // The passphrase goes into the file in an editor: no command that appends it, which would leave it in the
+    // shell's history; and the file is closed to others.
+    expect(frame).not.toContain("echo ")
+    expect(frame).not.toContain(">>")
+    expect(frame).toContain('export CANDLE_KEYRING_PASSPHRASE="<a passphrase of your own>"')
+    expect(frame).toContain("⧉ chmod 600 ~/.bashrc")
+    // Or no owner sign-in here at all.
+    expect(frame).toContain("keep the owner sign-in off this machine")
+    expect(frame).toContain("⧉ candle-harness key add --agent agent-a")
     expect(frame).toContain("This isn't a vault's passphrase.")
     expect(frame).not.toContain("Read it again")
     expect(frame).not.toContain("a new profile, by Candle's device code")

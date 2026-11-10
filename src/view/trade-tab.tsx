@@ -3,6 +3,7 @@
 // Agent-first: the agent at 60% of the width beside token, positions, wallets
 // and activity, which follow what the agent is discussing; below 100 columns that column is one pane,
 // switched with ←/→ or a click on its name. The Cockpit tab adds Feed and Signals.
+import { botOfRow } from "./bots-view"
 import { Chip } from "./chip"
 import { Fragment } from "react"
 import { type PickRow, type ScrollReach, scrollOf, type UiState } from "./keys"
@@ -13,13 +14,16 @@ import type { AwaySummary } from "../core/away"
 import { type Act, chip, type Line, Lines, line, type RowPick } from "./panes/lines"
 import { innerCols, innerRows, Pane, type PaneEdges } from "./panes/pane"
 import { cardLines } from "./panes/card"
-import { highlightedCard } from "./panes/agent"
+import { highlightedCard, waitingWords } from "./panes/agent"
 import type { ViewOperation } from "./store"
 import { borderChips, type Order, PANES, paneLines } from "./panes/registry"
 import { type SignalsChipId, signalsChoiceOf } from "./panes/signals"
 import { walletsMenuChip } from "./panes/wallets"
 import type { CoreView, ViewCard } from "./store"
 import { C } from "./theme"
+import { runnableCards } from "./triggers-view"
+import type { BuildFolder, DaemonView } from "./build-view"
+import { isTokenPane, type TokenPane } from "../shared/panes"
 
 /** How long a closed card stays inline, and how many do. */
 const CLOSED_SHOWN_MS = 5 * 60_000
@@ -42,7 +46,8 @@ export function inlineCards(view: CoreView, agent: string, now: number): ViewCar
 }
 
 /** The newest inline card that has expired, for `r` (re-quote). */
-export const requotable = (cards: readonly ViewCard[]): string | undefined => cards.filter((c) => c.state === "expired").at(-1)?.cardId
+/** The newest expired card ctrl-r re-quotes: never a bot's, which was skipped and buys again on its next signal. */
+export const requotable = (cards: readonly ViewCard[]): string | undefined => cards.filter((c) => c.state === "expired" && !c.display.bot && !c.display.askAgain).at(-1)?.cardId
 
 /** What of a pane's lines shows, and how many sit above and below it. */
 export interface Window {
@@ -134,6 +139,8 @@ export interface TabBodyProps {
   ui: UiState
   cards: readonly ViewCard[]
   focusedCardId: string | undefined
+  /** A terminal pane has the keys: the cards' heading says how to reach them. */
+  paneHasKeys?: boolean
   now: number
   onFocusPane: (pane: PaneId) => void
   /** The wheel on a pane: `delta` rows towards its top when positive. */
@@ -148,8 +155,8 @@ export interface TabBodyProps {
   onAskRow?: (pane: PaneId, id: string) => void
   /** The tab's name: where its token pane's pin is kept. */
   tabName?: string
-  /** The token pane's pin chip: pins it on its token, or lets it follow the link again. */
-  onTogglePin?: () => void
+  /** A token pane's pin chip, by which of the tab's token panes: pins it on its token, or lets it follow the link again. */
+  onTogglePin?: (pane: TokenPane) => void
   onAct: (cardId: string, act: Act) => void
   onToggleOneAgent: () => void
   /** The Signals pane's chips: `source` switches Hacc's tape and your rules; `pattern` and `chain` open their menu under the chip, at column `x` of row `y`. */
@@ -169,6 +176,14 @@ export interface TabBodyProps {
   edges?: (pane: PaneId) => PaneEdges
   /** The ⇱ chip on each pane that can pop out: moves it into a split of its own. */
   onPopOut?: (pane: PaneId) => void
+  /** The Build pane: its title, its own screen's lines before the harness runs (none while it runs: its terminal is drawn over it), and its chips. */
+  build?: { title: string; lines?: readonly Line[]; onAct: (ref: string) => void; onHarness?: () => void }
+  /** The bots folder as this view read it, and the daemons a harness left, for the Build tab's side column. */
+  buildFolder?: BuildFolder
+  daemons?: readonly DaemonView[]
+  /** A folded layout's strip: its own words, and a chip that opens each folded pane over the frame. */
+  foldWords?: { text: string; fg: string }
+  onOpenFolded?: (pane: PaneId) => void
   /** The air between panes, and the rows kept for the message and input lines. */
   gap?: Gap
   foot?: number
@@ -306,7 +321,7 @@ export function TabBody(p: TabBodyProps) {
   const popChip = p.onPopOut !== undefined
   const onTab = panesOf(p.layout.root)
   const linesOf = (id: Exclude<PaneId, "agent">, rect: Rect, rows?: number) =>
-    paneLines(id, { view: p.view, rect, now: p.now, only, signals, panes: onTab, ...(p.ui.wallets ? { wallets: p.ui.wallets } : {}), ...(p.ui.lists ? { lists: p.ui.lists } : {}), ...(p.ui.pnlSpan ? { pnlSpan: p.ui.pnlSpan } : {}), ...(p.ui.journal ? { journal: p.ui.journal } : {}), ...(tabAt !== undefined ? { at: tabAt } : {}), ...(inFull ? { shownInFull: inFull } : {}), ...(rows !== undefined ? { rows } : {}) })
+    paneLines(id, { view: p.view, rect, now: p.now, only, signals, panes: onTab, ...(p.ui.wallets ? { wallets: p.ui.wallets } : {}), ...(p.ui.lists ? { lists: p.ui.lists } : {}), ...(p.ui.pnlSpan ? { pnlSpan: p.ui.pnlSpan } : {}), ...(p.ui.journal ? { journal: p.ui.journal } : {}), ...(botOfRow(p.ui.highlight?.bots?.id) ? { bot: botOfRow(p.ui.highlight?.bots?.id)! } : {}), ...(p.ui.botConfirm ? { botConfirm: p.ui.botConfirm } : {}), ...(tabAt !== undefined ? { at: tabAt } : {}), ...(inFull ? { shownInFull: inFull } : {}), ...(rows !== undefined ? { rows } : {}), ...(p.buildFolder ? { buildFolder: p.buildFolder } : {}), ...(p.daemons?.length ? { daemons: p.daemons } : {}) })
   // Each pane's lines at its column's width first, so a pane they don't fit takes rows another has spare.
   const opts: PlaceOpts = { ...(p.gap ? { gap: p.gap } : {}), ...(p.foot ? { foot: p.foot } : {}) }
   const even = place(p.layout, area, {}, opts)
@@ -339,9 +354,12 @@ export function TabBody(p: TabBodyProps) {
         exchanges={exchanges}
         killReport={p.view.killReport}
         operations={p.view.operations}
+        {...(p.view.triggers ? { runnable: runnableCards(p.view.triggers) } : {})}
         cards={p.cards}
+        firings={p.view.activity.filter((e) => e.firing?.paper && e.agent === agent && !e.hidden).slice(-3)}
         focusedCardId={p.focusedCardId}
         cardsFocused={p.ui.focus === "cards"}
+        {...(p.paneHasKeys ? { paneHasKeys: true } : {})}
         now={p.now}
         scroll={scrollOf(p.ui, "agent")}
         onReach={(max) => {
@@ -384,7 +402,7 @@ export function TabBody(p: TabBodyProps) {
     const asked = lit === undefined ? -1 : win.shown.findIndex((l) => l.pick?.id === lit && l.pick.ask !== undefined)
     const shown = lit === undefined ? win.shown : win.shown.map((l, i) => (l.pick?.id === lit ? { ...(i === asked && p.onAskRow ? withAsk(l, innerCols(rect) - 1) : l), bg: C.sel } : l))
     const onAct = (ref: string, a: Act) => (a === "ask" ? p.onAskRow?.(id, ref) : p.onAct(ref, a))
-    const onChip = id === "token" ? (p.onTogglePin ?? (() => {})) : p.onToggleOneAgent
+    const onChip = isTokenPane(id) ? () => p.onTogglePin?.(id) : p.onToggleOneAgent
     return (
       <Fragment key={key}>
         <Pane rect={rect} title={title} focused={p.ui.focus === id} onFocus={() => p.onFocusPane(id)} {...(def.scrolls ? { onScroll: (delta: number) => p.onScroll(id, delta) } : {})} {...(!group && edgesOf(id) ? { edges: edgesOf(id)! } : {})}>
@@ -409,13 +427,60 @@ export function TabBody(p: TabBodyProps) {
     )
   }
 
+  // The Build pane: its frame, and its own screen until the harness runs; the harness's terminal is the frame's, over it.
+  const drawBuild = (rect: Rect, key: string) => {
+    const b = p.build
+    // Its screen in the rows it has: blank lines go first, then its dim prose, then whatever doesn't fit above its ⏎
+    // line, which always shows (a card waiting takes rows at 80×24).
+    const rows = innerRows(rect)
+    let shown = b?.lines ?? []
+    if (shown.length > rows) shown = shown.filter((l) => l.segs.some((sg) => sg.text.trim() !== ""))
+    if (shown.length > rows) shown = shown.filter((l, i) => i === shown.length - 1 || l.segs.some((sg) => sg.act || sg.fg !== C.dim))
+    if (shown.length > rows) shown = [...shown.slice(0, Math.max(0, rows - 1)), shown.at(-1)!]
+    return (
+      <Fragment key={key}>
+        <Pane rect={rect} title={b?.title ?? "Build"} focused={p.ui.focus === "build"} onFocus={() => p.onFocusPane("build")}>
+          {b?.lines ? <Lines lines={shown} width={innerCols(rect) - 1} onAct={(ref, a) => (a === "build" ? b.onAct(ref) : p.onAct(ref, a))} /> : null}
+        </Pane>
+        {b?.onHarness && rect.w >= 40 ? <ChipsLabel rect={rect} chips={[{ text: "harness ▾", onClick: () => b.onHarness!() }]} /> : null}
+      </Fragment>
+    )
+  }
+  const drawPane = (id: PaneId, rect: Rect, key: string, group?: readonly PaneId[]) => (id === "agent" ? drawAgent(rect) : id === "build" ? drawBuild(rect, key) : drawLines(id, rect, key, group))
+
   const switched = placed.switched
   const shown = switched ? shownOf(switched.group, p.ui.recent, switched.first) : undefined
+  const folded = placed.folded
   return (
     <>
-      {placed.panes.map(({ id, rect }) => (id === "agent" ? drawAgent(rect) : drawLines(id, rect, id)))}
-      {switched && shown && shown !== "agent" ? drawLines(shown, switched.rect, "switched", switched.group.length > 1 ? switched.group : undefined) : null}
+      {placed.panes.map(({ id, rect }) => drawPane(id, rect, id))}
+      {switched && shown && shown !== "agent" ? drawPane(shown, switched.rect, "switched", switched.group.length > 1 ? switched.group : undefined) : null}
+      {folded ? <FoldStrip rect={folded.rect} group={folded.group} words={p.foldWords} daemons={p.daemons?.length ?? 0} onOpen={(pane) => p.onOpenFolded?.(pane)} /> : null}
     </>
+  )
+}
+
+/** The chip a folded pane gets on its strip. */
+export const FOLD_LABELS: Partial<Record<PaneId, string>> = { "build-folder": "bots folder ▾", "build-test": "test run ▾" }
+export const foldLabel = (pane: PaneId): string => FOLD_LABELS[pane] ?? `${pane} ▾`
+
+/** A folded layout's one row: its words, then a chip for each folded pane (and the daemons a harness left), each opening it over the frame. */
+function FoldStrip(props: { rect: Rect; group: readonly PaneId[]; words: { text: string; fg: string } | undefined; daemons: number; onOpen: (pane: PaneId) => void }) {
+  const chips = props.group.map((pane) => ({ pane, label: props.daemons > 0 && pane === "build-folder" ? `bots folder · daemons ${props.daemons} ▾` : foldLabel(pane) }))
+  const chipCells = chips.reduce((n, c) => n + c.label.length + 4, 0)
+  const room = Math.max(0, props.rect.w - chipCells - 2)
+  const words = props.words && room > 8 ? props.words.text.slice(0, room).padEnd(room) : " ".repeat(room)
+  return (
+    <box position="absolute" left={props.rect.x} top={props.rect.y} width={props.rect.w} height={1} flexDirection="row" backgroundColor={C.page}>
+      <text fg={props.words?.fg ?? C.dim}>{` ${words}`}</text>
+      {chips.map((c) => (
+        <Fragment key={c.pane}>
+          <text> </text>
+          <Chip label={c.label} onClick={() => props.onOpen(c.pane)} />
+          <text> </text>
+        </Fragment>
+      ))}
+    </box>
   )
 }
 
@@ -429,12 +494,15 @@ export function stripLines(p: {
   operations: Readonly<Record<string, ViewOperation>>
   focusedCardId: string | undefined
   cardsFocused: boolean
+  /** A terminal pane has the keys: ⏎ is its own until ctrl-]. */
+  paneHasKeys?: boolean
   now: number
   width: number
   /** The agent, while it's answering. */
   answering?: string
   /** The first tab whose layout has the agent pane. */
   agentTab?: { index: number; name: string }
+  runnable?: ReadonlySet<string>
 }): Line[] {
   const out: Line[] = []
   if (p.answering) {
@@ -444,9 +512,9 @@ export function stripLines(p: {
     })
   }
   const open = p.cards.filter((c) => c.state === "awaiting_approval")
-  if (open.length) out.push(line(`${open.length === 1 ? "1 card" : `${open.length} cards`} waiting · ⏎ approves the highlighted one`, p.cardsFocused ? C.look : C.dim))
+  if (open.length) out.push(line(waitingWords(open.length, p.paneHasKeys), p.cardsFocused ? C.look : C.dim))
   const shaded = highlightedCard(open, p.focusedCardId, p.cardsFocused)
-  for (const c of p.cards) out.push(...cardLines(c, { now: p.now, focused: c.cardId === shaded, width: p.width, op: p.operations[c.opId] }))
+  for (const c of p.cards) out.push(...cardLines(c, { now: p.now, focused: c.cardId === shaded, width: p.width, op: p.operations[c.opId], ...(p.runnable ? { runnable: p.runnable } : {}), ...(p.paneHasKeys ? { keysElsewhere: true } : {}) }))
   return out
 }
 
