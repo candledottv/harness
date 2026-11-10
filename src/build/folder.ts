@@ -19,6 +19,9 @@ export const DEFAULT_BOTS_FOLDER = "~/candle-bots"
 /** What the Candle Harness last wrote, by hash: so a file the person changed is never written over. */
 export const WRITTEN_FILE = ".harness/written.json"
 
+/** The random part of a temporary file's name, made fresh for each write; a test can fix it to plant a name first. */
+export const tempNames = { part: (): string => randomBytes(4).toString("hex") }
+
 export interface FolderFile {
   /** Relative to the bots folder. */
   path: string
@@ -134,7 +137,7 @@ export async function writeBotsFolder(folder: string, files: readonly FolderFile
     }
     await mkdir(dirname(path), { recursive: true, mode: 0o755 })
     // A new name of its own, made fresh (wx): never a file or link someone left under the name.
-    const tmp = `${path}.harness-${process.pid}-${randomBytes(4).toString("hex")}`
+    const tmp = `${path}.harness-${process.pid}-${tempNames.part()}`
     await writeFile(tmp, f.text, { mode: 0o644, flag: "wx" })
     await rename(tmp, path)
     now[f.path] = want
@@ -146,7 +149,7 @@ export async function writeBotsFolder(folder: string, files: readonly FolderFile
   await mkdir(join(folder, ".harness"), { recursive: true, mode: 0o755 })
   if (await blocked(folder, WRITTEN_FILE)) return out
   const record = join(folder, WRITTEN_FILE)
-  const tmp = `${record}.harness-${process.pid}-${randomBytes(4).toString("hex")}`
+  const tmp = `${record}.harness-${process.pid}-${tempNames.part()}`
   await writeFile(tmp, `${JSON.stringify({ note: "What the Candle Harness last wrote here, by sha256: a file you change is never written over.", files: now }, null, 2)}\n`, { mode: 0o644, flag: "wx" })
   await rename(tmp, record)
   return out

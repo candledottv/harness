@@ -1,13 +1,13 @@
 // The bots folder: what's written there, and the person's files never written over. Candle's bot-building skills go
 // in unchanged, exactly as build-skills/SOURCE lists them, with Candle's licence.
-import { afterAll, describe, expect, test } from "bun:test"
+import { afterAll, describe, expect, spyOn, test } from "bun:test"
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { BUILD_SKILLS_DIR, bundledFiles, checkSkills, parseSource } from "../../scripts/skills-check"
 import { HARNESS_CLIENT_SOURCE } from "../shared/harness-client-source"
 import { agentsMd, CLAUDE_MD, SKILL_NOTES } from "./agents-md"
-import { botsFolderFiles, botsFolderPath, writeBotsFolder, WRITTEN_FILE } from "./folder"
+import { botsFolderFiles, botsFolderPath, tempNames, writeBotsFolder, WRITTEN_FILE } from "./folder"
 import { BUILD_SKILL_FILES, BUILD_SKILLS_LICENSE } from "./skill-files"
 
 const made: string[] = []
@@ -116,6 +116,41 @@ describe("writing the bots folder", () => {
     symlinkSync(away, join(other, ".harness"))
     await writeBotsFolder(other)
     expect(existsSync(join(away, "written.json"))).toBe(false)
+  })
+
+  test("a temporary file is made fresh: a link left under its name is never written through, for a file or the record", async () => {
+    // The temporary names are fixed here, and a link to a file outside is left under the one each write will use.
+    const outsideOf = (folder: string) => {
+      const outside = join(folder, "..", "outside-temp.txt")
+      writeFileSync(outside, "theirs\n")
+      return outside
+    }
+    const plant = (target: string, at: string) => symlinkSync(target, `${at}.harness-${process.pid}-0badc0de`)
+    let named = 0
+    const spy = spyOn(tempNames, "part").mockImplementation(() => {
+      named++
+      return "0badc0de"
+    })
+    try {
+      // The record alone: no files to write, so its temporary file is the only one.
+      const record = fresh()
+      mkdirSync(join(record, ".harness"), { recursive: true })
+      const outside = outsideOf(record)
+      plant(outside, join(record, WRITTEN_FILE))
+      await writeBotsFolder(record, []).catch(() => {})
+      expect(readFileSync(outside, "utf8")).toBe("theirs\n")
+
+      // One file: its own temporary file.
+      const folder = fresh()
+      mkdirSync(folder, { recursive: true })
+      const away = outsideOf(folder)
+      plant(away, join(folder, "AGENTS.md"))
+      await writeBotsFolder(folder, [{ path: "AGENTS.md", text: "ours\n", why: "the rules" }]).catch(() => {})
+      expect(readFileSync(away, "utf8")).toBe("theirs\n")
+    } finally {
+      spy.mockRestore()
+    }
+    expect(named).toBe(2)
   })
 
   test("~ is the person's home", () => {
