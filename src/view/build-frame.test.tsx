@@ -5,7 +5,7 @@ import { afterEach, beforeAll, afterAll, expect, test } from "bun:test"
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
 import { act } from "react"
-import { advanceClock, CLOCK, drawScene, EMBEDDED, engineTopic, status } from "../../test/frame-scenes"
+import { advanceClock, card as tradeCard, CLOCK, drawScene, EMBEDDED, engineTopic, status } from "../../test/frame-scenes"
 import type { ViewCard } from "./store"
 import type { BuildSpawner } from "./build-process"
 import type { PaneProcess } from "./pane-process"
@@ -491,6 +491,8 @@ test("while a card's approval is on its way, another click or ⏎ on it sends no
   const y = lines.findIndex((l, i) => lines[i + 1]?.includes("⏎ approve · ctrl-n reject"))
   const x = lines[y]!.indexOf("⏎ approve") + 2
   await s.settle(() => s.setup.mockMouse.click(x, y))
+  // Past the 300 ms the close starts, so the next click and ⏎ reach the approval itself and are held only by it.
+  advanceClock(400)
   await s.settle(() => s.setup.mockMouse.click(x, y))
   await s.settle(() => s.setup.mockInput.pressEnter())
   await s.settle(() => s.setup.mockMouse.moveTo(0, 0))
@@ -525,4 +527,51 @@ test("a click on the Build card's approve closes it, as ⏎ does: the keys go ba
   advanceClock(2_500)
   await s.settle(() => s.session.push("cards", [{ ...buildCard(), cardId: "cb2", opId: "op-cb2", cardHash: "hash-cb2" }], true))
   expect(s.frame()).toContain("your harness proposed a bot")
+})
+
+/** The Build pane at the one size where a closed overlay's chip lines up with the live card's beneath it. */
+async function overLiveCard() {
+  const s = await running(74, 40)
+  // The live trade card waits in the strip, well past its 300 ms, before the Build card opens over it.
+  await s.settle(() => s.session.push("cards", [tradeCard], true))
+  advanceClock(5_000)
+  await s.settle(() => s.session.push("cards", [tradeCard, buildCard()], true))
+  expect(s.frame()).toContain("your harness proposed a bot")
+  const lines = s.frame().split("\n")
+  const y = lines.findIndex((l, i) => lines[i + 1]?.includes("⏎ approve · ctrl-n reject"))
+  expect(y).toBeGreaterThan(0)
+  return { s, y }
+}
+
+test("at 74×40, a double click on the Build card's approve chip approves only it, not the live trade card beneath", async () => {
+  const { s, y } = await overLiveCard()
+  const lines = s.frame().split("\n")
+  const x = lines[y]!.indexOf("⏎ approve") + 2
+  advanceClock(400)
+  await s.settle(() => s.setup.mockMouse.click(x, y))
+  await s.settle(() => s.setup.mockMouse.moveTo(0, 0))
+  // The second half of the double click, 120 ms later, lands where the live card's approve chip now draws.
+  const beneath = s.frame().split("\n")[y]!
+  expect(beneath).toMatch(/approve/)
+  advanceClock(120)
+  await s.settle(() => s.setup.mockMouse.click(x, y))
+  const approves = s.session.requests.filter((r) => r.method === "cards.approve")
+  expect(approves.map((r) => r.params.cardId)).toEqual(["cb1"])
+  expect(s.session.requests.some((r) => r.method === "cards.reject")).toBe(false)
+})
+
+test("at 74×40, a double click on the Build card's ctrl-n reject chip rejects only it, not the live trade card beneath", async () => {
+  const { s, y } = await overLiveCard()
+  const lines = s.frame().split("\n")
+  const x = lines[y]!.indexOf("ctrl-n reject") + 4
+  advanceClock(400)
+  await s.settle(() => s.setup.mockMouse.click(x, y))
+  await s.settle(() => s.setup.mockMouse.moveTo(0, 0))
+  const beneath = s.frame().split("\n")[y]!
+  expect(beneath).toMatch(/reject/)
+  advanceClock(120)
+  await s.settle(() => s.setup.mockMouse.click(x, y))
+  const rejects = s.session.requests.filter((r) => r.method === "cards.reject")
+  expect(rejects.map((r) => r.params.cardId)).toEqual(["cb1"])
+  expect(s.session.requests.some((r) => r.method === "cards.approve")).toBe(false)
 })

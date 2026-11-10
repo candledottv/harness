@@ -130,6 +130,29 @@ describe("Enter and cards", () => {
     expect(run([{ type: "clickApprove", cardId: "b", now: 1_400 }], c).effects).toEqual([{ type: "approve", cardId: "b", how: "click" }])
     expect(run([{ type: "clickReject", cardId: "a", now: 0 }], c).effects).toEqual([{ type: "reject", cardId: "a" }])
   })
+
+  test("a double click on a Build card's approve or reject acts only on it: the close starts the 300 ms again", () => {
+    const build: ViewCard = { ...card("cb"), origin: { role: "build" } } as ViewCard
+    const both = ctx({ cards: [card("c1"), build], seenAt: { c1: 0, cb: 4_000 } })
+    const open = run([{ type: "openBuildCard", cardId: "cb", now: 5_000 }], both)
+    // The first half of the double click approves the Build card and closes it over the frame.
+    const first = run([{ type: "clickApprove", cardId: "cb", now: 5_000 }], both, open.state)
+    expect(first.effects).toEqual([{ type: "approve", cardId: "cb", how: "click" }])
+    expect(first.state.overlay).toBeUndefined()
+    expect(first.state.shownSince).toBe(5_000)
+    // The second half, 120 ms later, lands on the live card that waited beneath: it approves and rejects nothing.
+    expect(run([{ type: "clickApprove", cardId: "c1", now: 5_120 }], both, first.state).effects).toEqual([])
+    expect(run([{ type: "clickReject", cardId: "c1", now: 5_120 }], both, first.state).effects).toEqual([])
+    expect(run([enter(5_120)], both, first.state).effects).toEqual([])
+    // Past the 300 ms, a click on the card beneath is the person's own.
+    expect(run([{ type: "clickApprove", cardId: "c1", now: 5_000 + APPROVE_AFTER_MS }], both, first.state).effects).toEqual([{ type: "approve", cardId: "c1", how: "click" }])
+    // A reject closes it the same way, and its second half rejects nothing either.
+    const shut = run([{ type: "clickReject", cardId: "cb", now: 5_000 }], both, open.state)
+    expect(shut.effects).toEqual([{ type: "reject", cardId: "cb" }])
+    expect(shut.state.overlay).toBeUndefined()
+    expect(run([{ type: "clickReject", cardId: "c1", now: 5_120 }], both, shut.state).effects).toEqual([])
+    expect(run([{ type: "clickApprove", cardId: "c1", now: 5_120 }], both, shut.state).effects).toEqual([])
+  })
 })
 
 describe("the kill switch", () => {

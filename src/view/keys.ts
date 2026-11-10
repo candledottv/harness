@@ -575,12 +575,21 @@ export function enterReadyAt(card: ViewCard, state: Pick<UiState, "shownSince">,
   return Math.max(seen + (ctx.behind?.[card.cardId] ? APPROVE_AFTER_BEHIND_MS : APPROVE_AFTER_MS), shown + APPROVE_AFTER_MS)
 }
 
+/**
+ * When a click may approve a card: 300 ms after it showed, counted as Enter's is but without the newcomer's longer
+ * wait, for a click was aimed at it. A Build card's click closing over the frame counts as shown too: what the overlay
+ * hid is only then on screen, so the second half of a double click can't approve the card beneath.
+ */
+function clickReadyAt(card: ViewCard, state: Pick<UiState, "shownSince">, ctx: Pick<UiContext, "seenAt">, now: number): number {
+  return Math.max(ctx.seenAt[card.cardId] ?? now, state.shownSince ?? Number.NEGATIVE_INFINITY) + APPROVE_AFTER_MS
+}
+
 function approve(state: UiState, card: ViewCard | undefined, ctx: UiContext, now: number, how: "enter" | "click"): Step {
   if (!card) return done(state)
   // Funds out to a new address: a click on "yes, a new address", never Enter.
   if (card.display.newAddress && how === "enter") return done(say(state, "This sends to a new address: check it in full on the card, then click yes, a new address.", now, "error"))
   // A card that's only just appeared can't be approved by a key meant for something else. A click was aimed at it.
-  if (now < (how === "enter" ? enterReadyAt(card, state, ctx, now) : (ctx.seenAt[card.cardId] ?? now) + APPROVE_AFTER_MS)) return done(state)
+  if (now < (how === "enter" ? enterReadyAt(card, state, ctx, now) : clickReadyAt(card, state, ctx, now))) return done(state)
   return done(state, { type: "approve", cardId: card.cardId, how })
 }
 
@@ -2156,12 +2165,17 @@ function stepOnce(state: UiState, action: UiAction, ctx: UiContext): Step {
     }
     case "clickApprove": {
       // A Build card open over the frame closes once it's approved, as ⏎ closes it: left open, it would hold the
-      // keys from the harness and keep the next bot's card in the strip.
+      // keys from the harness and keep the next bot's card in the strip. What it hid is only then shown, so the
+      // close starts the 300 ms again: a double click's second half can't approve the card beneath.
       const step = approve({ ...state, focusedCardId: action.cardId }, ctx.cards.find((c) => c.cardId === action.cardId), ctx, action.now, "click")
-      return step.effects.length && buildCardOpen(state, action.cardId) ? { ...step, state: { ...step.state, overlay: undefined } } : step
+      return step.effects.length && buildCardOpen(state, action.cardId) ? { ...step, state: { ...step.state, shownSince: action.now, overlay: undefined } } : step
     }
-    case "clickReject":
-      return done(buildCardOpen(state, action.cardId) ? { ...state, overlay: undefined } : state, { type: "reject", cardId: action.cardId })
+    case "clickReject": {
+      // The close on a Build card's reject starts the same 300 ms: within it, a click rejects nothing.
+      if (buildCardOpen(state, action.cardId)) return done({ ...state, shownSince: action.now, overlay: undefined }, { type: "reject", cardId: action.cardId })
+      if (state.shownSince !== undefined && action.now < state.shownSince + APPROVE_AFTER_MS) return done(state)
+      return done(state, { type: "reject", cardId: action.cardId })
+    }
     case "clickDetails":
       return done({ ...state, focus: "cards", focusedCardId: action.cardId, overlay: { kind: "card", cardId: action.cardId } })
     case "closeOverlay":
