@@ -214,6 +214,7 @@ async function markAnswers(folder: string): Promise<MarkAnswers> {
   const answers = { held: ask(held.pid), other: ask(other.pid), self: ask(process.pid) }
   held.kill("SIGKILL")
   other.kill("SIGKILL")
+  mark.remove()
   return answers
 }
 

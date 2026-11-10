@@ -21,7 +21,8 @@
 // why. A held script's data is capped (1 GB): on Linux by RLIMIT_DATA, on macOS by the runner's watchdog.
 import { FFIType } from "bun:ffi"
 import { randomBytes } from "node:crypto"
-import { closeSync, existsSync, openSync, readdirSync, readFileSync, realpathSync } from "node:fs"
+import { closeSync, existsSync, mkdtempSync, openSync, readdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs"
+import { tmpdir } from "node:os"
 import { dirname, isAbsolute, join, relative, sep } from "node:path"
 
 export const MIN_LANDLOCK_ABI = 6
@@ -374,26 +375,32 @@ export async function runHeldStage(argv: string[], err: (text: string) => void):
 // macOS: the Seatbelt profile.
 
 /**
- * A run's own mark: two sibling paths that exist nowhere, of which the run's profile allows only `allowed`. No other
- * profile tells two names it has never heard of apart, and a process in no sandbox is allowed both, so a process that
- * macOS allows `allowed` and refuses `denied` is held by this run's profile and no other. Under /private/var/empty,
- * whose path has no link, so the name checked is the name the profile holds.
+ * A run's own mark: two empty files in a folder of their own, of which the run's profile allows only `allowed`. No
+ * other profile tells two files it has never heard of apart, and a process in no sandbox is allowed both, so a
+ * process that macOS allows `allowed` and refuses `denied` is held by this run's profile and no other. They have to
+ * exist: macOS refuses a path check of a path that doesn't, to every process, held or not. At their real paths, so
+ * the path checked is the path the profile holds. `remove` deletes them once the run's strays are stopped.
  */
 export interface HoldMark {
   allowed: string
   denied: string
+  remove(): void
 }
 
 export function holdMark(): HoldMark {
-  const id = randomBytes(12).toString("hex")
-  return { allowed: `/private/var/empty/.candle-harness-hold-${id}-in`, denied: `/private/var/empty/.candle-harness-hold-${id}-out` }
+  const dir = realpathSync(mkdtempSync(join(tmpdir(), "candle-harness-mark-")))
+  const allowed = join(dir, "in")
+  const denied = join(dir, "out")
+  writeFileSync(allowed, "", { mode: 0o600, flag: "wx" })
+  writeFileSync(denied, "", { mode: 0o600, flag: "wx" })
+  return { allowed, denied, remove: () => rmSync(dir, { recursive: true, force: true }) }
 }
 
 /** sandbox_check's answer for `pid` reading `path`'s metadata: 0 allowed, 1 refused, -1 couldn't ask. */
 export type MarkCheck = (pid: number, path: string) => number
 
 /** Whether `pid` is held by the profile that carries `mark`. */
-export function heldByMark(pid: number, mark: HoldMark, check: MarkCheck): boolean {
+export function heldByMark(pid: number, mark: Pick<HoldMark, "allowed" | "denied">, check: MarkCheck): boolean {
   return check(pid, mark.allowed) === 0 && check(pid, mark.denied) === 1
 }
 

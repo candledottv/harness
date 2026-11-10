@@ -1,5 +1,5 @@
 import { afterAll, describe, expect, test } from "bun:test"
-import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from "node:fs"
+import { existsSync, mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { dirname, join } from "node:path"
 import { FFIType } from "bun:ffi"
@@ -33,21 +33,34 @@ test("the held command on macOS runs the program's real path, never the link tha
   expect(heldCommand("linux", "/r", ["/a", "/b"], "/opt/bun/bin/bun", ["x.ts"], ["self"])).toEqual(["self", "run-held", "/r", "/a,/b", "--", "/opt/bun/bin/bun", "x.ts"])
 })
 
-test("each run's hold carries a mark of its own: one path its profile allows and a sibling it doesn't, named nowhere else", () => {
+test("each run's hold carries a mark of its own: two files that exist, at their real paths, of which its profile allows one", () => {
   const a = holdMark()
   const b = holdMark()
-  expect(a.allowed).not.toBe(b.allowed)
-  // Siblings in a folder with no link on its path, so a check of either path is of the same name the profile holds.
-  expect(dirname(a.allowed)).toBe("/private/var/empty")
-  expect(dirname(a.denied)).toBe(dirname(a.allowed))
-  expect(a.denied).not.toBe(a.allowed)
-  const marked = seatbeltProfile("/opt/person/research", ["/opt/person/.bun"], "/opt/person/.bun/bin/bun", a)
-  expect(marked).toContain(`(allow file-read-metadata (literal "${a.allowed}"))`)
-  // The other is refused by the profile's default, so no rule names it.
-  expect(marked).not.toContain(a.denied)
-  expect(marked.replace(`\n(allow file-read-metadata (literal "${a.allowed}"))`, "")).toBe(profile)
-  const cmd = heldCommand("darwin", "/r", [], "/usr/bin/python3", ["x.py"], ["self"], a)
-  expect(cmd[2]).toContain(a.allowed)
+  try {
+    // macOS answers a path check for a path that exists: a path that doesn't is refused to every process, held or not.
+    for (const p of [a.allowed, a.denied, b.allowed, b.denied]) {
+      expect(existsSync(p)).toBe(true)
+      // No link on the way: the path the profile names is the one macOS resolves.
+      expect(realpathSync(p)).toBe(p)
+    }
+    expect(a.allowed).not.toBe(b.allowed)
+    expect(dirname(a.denied)).toBe(dirname(a.allowed))
+    expect(dirname(a.allowed)).not.toBe(dirname(b.allowed))
+    expect(a.denied).not.toBe(a.allowed)
+    const marked = seatbeltProfile("/opt/person/research", ["/opt/person/.bun"], "/opt/person/.bun/bin/bun", a)
+    expect(marked).toContain(`(allow file-read-metadata (literal "${a.allowed}"))`)
+    // The other is refused by the profile's default, so no rule names it.
+    expect(marked).not.toContain(a.denied)
+    expect(marked.replace(`\n(allow file-read-metadata (literal "${a.allowed}"))`, "")).toBe(profile)
+    const cmd = heldCommand("darwin", "/r", [], "/usr/bin/python3", ["x.py"], ["self"], a)
+    expect(cmd[2]).toContain(a.allowed)
+  } finally {
+    a.remove()
+    b.remove()
+  }
+  // Removed with its folder once the run is over.
+  expect(existsSync(dirname(a.allowed))).toBe(false)
+  expect(existsSync(dirname(b.allowed))).toBe(false)
 })
 
 test("a process is the run's own only where macOS allows the mark's one path and refuses the other", () => {

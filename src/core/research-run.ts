@@ -148,7 +148,13 @@ async function runOnce(o: RunOptions): Promise<RunAnswer> {
   const env = platform === "darwin" ? heldEnv(folder, bin) : { PATH: "/usr/bin:/bin", LANG: "C.UTF-8", ...(o.home ? { HOME: o.home } : {}) }
   const started = now()
   // Linux's stage is this binary, and it moves into the folder itself once it has started.
-  const child = Bun.spawn(command, { cwd: platform === "darwin" ? folder : "/", env, stdin: "ignore", stdout: "pipe", stderr: "pipe", detached: true })
+  let child: ReturnType<typeof Bun.spawn<"ignore", "pipe", "pipe">>
+  try {
+    child = Bun.spawn(command, { cwd: platform === "darwin" ? folder : "/", env, stdin: "ignore", stdout: "pipe", stderr: "pipe", detached: true })
+  } catch (error) {
+    mark?.remove()
+    throw error
+  }
   const group = child.pid
   // What the program started, where it can leave its group (macOS): followed while it runs, stopped with it.
   const tree = platform === "darwin" ? new ProcessTree(group) : undefined
@@ -196,6 +202,8 @@ async function runOnce(o: RunOptions): Promise<RunAnswer> {
   if (tree) tree.see(await psRows())
   await killAll()
   clearTimeout(timer)
+  // Its strays are stopped: the mark has done its work.
+  mark?.remove()
   if (watch) clearInterval(watch)
   if (early) clearInterval(early)
   if (settle) clearTimeout(settle)
