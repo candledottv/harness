@@ -3,7 +3,8 @@
 // and latest.json: the release's files, unsigned (the release workflow signs them). Run from the repo root.
 import { $ } from "bun"
 import { copyFileSync, mkdirSync, rmSync, statSync } from "node:fs"
-import { buildCommit, commitDefine, PRODUCTION_DEFINE, SHIPPED_DEFINE, versionDefine } from "./commit"
+import { assertNoAutoload, hostPlatform } from "./autoload-check"
+import { buildCommit, commitDefine, NO_AUTOLOAD, PRODUCTION_DEFINE, SHIPPED_DEFINE, versionDefine } from "./commit"
 import { binaryName, BUN_VERSION, PLATFORMS, releaseVersion, writeReleaseFiles } from "./release-files"
 import { checkedRuntime } from "./runtimes"
 
@@ -37,7 +38,9 @@ for (const { platform, out } of builds) {
   const targetFlag = platform
     ? [`--target=bun-${platform}`, `--compile-executable-path=${await checkedRuntime(platform, { cacheDir: "node_modules/.cache/candle-harness-bun-runtimes" })}`]
     : []
-  await $`bun build --compile --minify ${targetFlag} ${commitDefine(commit)} ${versionFlag} ${PRODUCTION_DEFINE} ${SHIPPED_DEFINE} src/main.ts --outfile ${out}`.quiet()
+  await $`bun build --compile ${NO_AUTOLOAD} --minify ${targetFlag} ${commitDefine(commit)} ${versionFlag} ${PRODUCTION_DEFINE} ${SHIPPED_DEFINE} src/main.ts --outfile ${out}`.quiet()
+  // Only this machine's binary can be started here; the others are built by the same line.
+  if (platform === undefined || platform === hostPlatform()) await assertNoAutoload(out)
   console.log(`${out}  ${(statSync(out).size / 1024 / 1024).toFixed(1)} MB  (${version ?? "unreleased"}, ${commit})`)
 }
 

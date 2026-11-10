@@ -11,7 +11,7 @@
     "build": "bun scripts/build.ts",
     "build:all": "bun scripts/build.ts --all",
     "test": "bun test",
-    "test:live": "bun test --path-ignore-patterns=node_modules/**",
+    "test:live": "bun test --path-ignore-patterns=node_modules/** --path-ignore-patterns=dist/**",
     "typecheck": "tsc --noEmit",
     "scrub": "bun scripts/scrub-check.ts"
   },

@@ -11,9 +11,13 @@
 //
 // Roles: METHOD_ROLES is the single copy of the table. A call outside the caller's column is
 // `-32001 FORBIDDEN_FOR_ROLE`, journalled. No method returns a key or a stored token, and every
-// outgoing message passes the redactor first, with two exceptions: `harness.register`'s new token,
-// once, to the view that asked; and `pane.redeem`'s agent key, once, to the prompt pane's launcher,
-// carried as a WithSecret that only a pane connection is ever sent.
+// outgoing message passes the redactor first, with these exceptions, each once, to the one that asked:
+// `harness.register`'s new token, to the view; `pane.redeem`'s agent key, to the prompt pane's launcher;
+// `build.open`'s new token, to the main view that puts it in a Build pane's environment; and `build.test`'s test
+// token, to the Build pane that runs the test. Each is carried as a WithSecret, sent only to the role it names.
+//
+// The bot role: a code bot's token (`chb_`), bound to the bot and its agent. It's refused at hello where the bot
+// isn't approved here, or the plan is Free. The build role: a Build pane's token (`chd_`), bound to its agent.
 //
 // The pane role: the launcher's hello carries a single-use ticket instead of a token
 // (tickets.ts), and it's accepted only from the process the approving view named, by the socket's
@@ -33,6 +37,8 @@ import {
   LineDecoder,
   PROTOCOL_VERSION,
   protocolMajor,
+  MAX_UNREAD_BYTES,
+  MessageTooLarge,
   RPC_FORBIDDEN_FOR_ROLE,
   RPC_INTERNAL_ERROR,
   RPC_INVALID_REQUEST,
@@ -52,12 +58,55 @@ import { cleanName, type Role, type TokenBook } from "./tokens"
 /** `yes`: may call. `own`: may call, scoped to its own cards, operations or topics. `no`: refused. */
 export type Access = "yes" | "own" | "no"
 
-/** The method table. Methods not listed here don't exist. A pane may call only what names it. */
-export const METHOD_ROLES: Readonly<Record<string, { view: Access; harness: Access; pane?: Access }>> = {
-  "core.hello": { view: "yes", harness: "yes", pane: "yes" },
+/**
+ * The method table. Methods not listed here don't exist. A pane, a code bot and a Build pane may call only what
+ * names their role: a role a method leaves out is refused.
+ */
+export const METHOD_ROLES: Readonly<Record<string, { view: Access; harness: Access; pane?: Access; bot?: Access; build?: Access }>> = {
+  "core.hello": { view: "yes", harness: "yes", pane: "yes", bot: "yes", build: "yes" },
+  // A code bot reads its own settings and state: never another bot's, an agent's or the person's.
+  "bot.self": { view: "no", harness: "no", bot: "own" },
+  // A code bot's trades, each with its own request id, as the core's own proposal with its card's run settings; what
+  // became of one by its id; its own book from the core's count; Candle's market read; Hacc's reads its agent's plan
+  // offers. Never another bot's or agent's.
+  "bot.buy": { view: "no", harness: "no", bot: "own" },
+  "bot.sell": { view: "no", harness: "no", bot: "own" },
+  "bot.swap": { view: "no", harness: "no", bot: "own" },
+  "bot.request": { view: "no", harness: "no", bot: "own" },
+  "bot.positions": { view: "no", harness: "no", bot: "own" },
+  "bot.fills": { view: "no", harness: "no", bot: "own" },
+  "bot.market": { view: "no", harness: "no", bot: "own" },
+  "bot.hacc": { view: "no", harness: "no", bot: "own" },
+  // A code bot's own report about itself (its status, health, alerts, rules in words, counts and events): kept beside the
+  // core's count, never in place of it. Only its own.
+  "bot.report": { view: "no", harness: "no", bot: "own" },
+  // What a code bot says, one word and a line: a trigger on its word fires. Only its own.
+  "bot.event": { view: "no", harness: "no", bot: "own" },
+  // Exits the core holds on one of its own positions: set, changed or cleared by the bot, and watched by the core.
+  "bot.exits": { view: "no", harness: "no", bot: "own" },
+  // A Build pane proposes a code bot for its agent, as a card the person approves in the main view.
+  "bots.proposeCode": { view: "no", harness: "no", build: "own" },
+  // A Build pane's own reads and paper tests, by its token (`candle-harness build …`): every bot's book, a code bot's
+  // log, its agent's own record, and a paper test run of a bot's code that ends with the pane. It approves, trades and
+  // changes nothing. The main view opens a pane's token and closes it.
+  "build.open": { view: "yes", harness: "no" },
+  "build.close": { view: "yes", harness: "no" },
+  // The Build pane's folder and harness, as last picked: read by any view, set by the main view's pane.
+  "build.prefs": { view: "yes", harness: "no" },
+  "build.endTest": { view: "yes", harness: "no" },
+  // The person's stop of a paper test their own Build pane started, from the test box.
+  "build.books": { view: "no", harness: "no", build: "own" },
+  "build.logs": { view: "no", harness: "no", build: "own" },
+  "build.journal": { view: "no", harness: "no", build: "own" },
+  "build.test": { view: "no", harness: "no", build: "own" },
+  "build.testEnd": { view: "no", harness: "no", build: "own" },
   // Every agent's limits, spend and wallets: the person's. An agent reads its own through harness_limits and harness_pnl.
   "core.status": { view: "yes", harness: "no" },
   "core.usage": { view: "yes", harness: "no" },
+  // Stopping the core: the person's, from `candle-harness stop` with the view token. No agent stops it.
+  "core.stop": { view: "yes", harness: "no" },
+  // Keep-awake (macOS): the person's setting, from the main view.
+  "core.keepAwake": { view: "yes", harness: "no" },
   "tools.list": { view: "yes", harness: "yes" },
   "tools.call": { view: "yes", harness: "yes" },
   "cards.propose": { view: "yes", harness: "yes" },
@@ -90,6 +139,32 @@ export const METHOD_ROLES: Readonly<Record<string, { view: Access; harness: Acce
   "onboarding.paper": { view: "yes", harness: "no" },
   // Autonomy per wallet is the person's: no agent widens its own leash. It narrows on a card.
   "autonomy.set": { view: "yes", harness: "no" },
+  // Triggers: saved only by approving a trigger's card. Off and removal from any view; back on from the main view.
+  // The agent reads and switches them through harness_triggers. Fired from outside by the person's own view token.
+  "triggers.list": { view: "yes", harness: "no" },
+  "triggers.set": { view: "yes", harness: "no" },
+  "triggers.remove": { view: "yes", harness: "no" },
+  "triggers.fire": { view: "yes", harness: "no" },
+  "triggers.runNow": { view: "yes", harness: "no" },
+  // Bots: made, widened or taken live only by approving a bot's card. Paused or narrowed from any view; stopped,
+  // put back on, flattened and removed from the main view. The agent reads, pauses and narrows through its tool.
+  "bots.list": { view: "yes", harness: "no" },
+  "bots.pause": { view: "yes", harness: "no" },
+  "bots.narrow": { view: "yes", harness: "no" },
+  "bots.stop": { view: "yes", harness: "no" },
+  "bots.resume": { view: "yes", harness: "no" },
+  "bots.flatten": { view: "yes", harness: "no" },
+  "bots.retry": { view: "yes", harness: "no" },
+  "bots.remove": { view: "yes", harness: "no" },
+  "bots.exits.remove": { view: "yes", harness: "no" },
+  "bots.control": { view: "yes", harness: "no" },
+  // A code bot's process, the supervisor's: started, stopped (the bot stays on) and started again; its token written to a
+  // 0600 file in its folder for running it elsewhere; and its log.
+  "bots.process.start": { view: "yes", harness: "no" },
+  "bots.process.stop": { view: "yes", harness: "no" },
+  "bots.process.restart": { view: "yes", harness: "no" },
+  "bots.token": { view: "yes", harness: "no" },
+  "bots.logs": { view: "yes", harness: "no" },
   // The linked token and the pins are the person's picks; the agent moves the link by showing a token.
   "view.link": { view: "yes", harness: "no" },
   "view.pin": { view: "yes", harness: "no" },
@@ -125,9 +200,11 @@ export const METHOD_ROLES: Readonly<Record<string, { view: Access; harness: Acce
   "engine.choose": { view: "yes", harness: "no" },
   // So is its preset, Quant or Trader.
   "preset.choose": { view: "yes", harness: "no" },
+  "agent.run": { view: "yes", harness: "no" },
   // The agent's memory is its own to write, with its file tools; deleting from it is the person's.
   "memory.read": { view: "yes", harness: "no" },
   "memory.delete": { view: "yes", harness: "no" },
+  "memory.pin": { view: "yes", harness: "no" },
   // Skill folders of the person's own: which are used is the person's choice, from the main view.
   "skills.read": { view: "yes", harness: "no" },
   "skills.set": { view: "yes", harness: "no" },
@@ -136,8 +213,9 @@ export const METHOD_ROLES: Readonly<Record<string, { view: Access; harness: Acce
   "pane.spawned": { view: "yes", harness: "no" },
   "pane.redeem": { view: "no", harness: "no", pane: "yes" },
   "pane.report": { view: "no", harness: "no", pane: "yes" },
-  subscribe: { view: "yes", harness: "own" },
-  unsubscribe: { view: "yes", harness: "own" },
+  // A code bot subscribes to what's told to it alone (`bot`) and to Hacc's tape (`signals`).
+  subscribe: { view: "yes", harness: "own", bot: "own" },
+  unsubscribe: { view: "yes", harness: "own", bot: "own" },
 }
 
 const HELLO_TIMEOUT_MS = 10_000
@@ -147,6 +225,8 @@ export class WithSecret {
   constructor(
     readonly value: Record<string, unknown>,
     readonly secret: Record<string, string>,
+    /** Who may be sent the secret: the prompt pane's launcher, unless another role is named. */
+    readonly to: Role = "pane",
   ) {}
 }
 
@@ -162,8 +242,10 @@ export interface ClientInfo {
   clientName: string
   harnessKind?: string
   tokenId?: string
-  /** A harness acts as the agent its turn was started for. */
+  /** A harness acts as the agent its turn was started for; a bot and a Build pane as theirs. */
   agent?: string
+  /** A code bot: its name. */
+  bot?: string
   /** A pane: the ticket it said hello with, by id. */
   ticketId?: string
   connectedAt: string
@@ -216,6 +298,8 @@ export class CoreServer {
       tokens: TokenBook
       /** The prompt pane's tickets; without them a ticket hello is refused. */
       tickets?: PaneTickets
+      /** Whether a code bot may say hello now: undefined when it may, else the refusal. Without it, no bot connects. */
+      admitBot?: (bot: string) => { code: string; message: string } | undefined
       now: () => number
       identity: () => CoreIdentity
     },
@@ -278,7 +362,7 @@ export class CoreServer {
     if (server) await new Promise<void>((resolve) => server.close(() => resolve()))
   }
 
-  /** Disconnects every client attached with a harness token, when its turn ends. */
+  /** Disconnects every client attached with a token, when its turn or pane ends, or a bot's is revoked or replaced. */
   disconnectToken(tokenId: string): void {
     for (const connection of this.connections.values()) if (connection.client?.tokenId === tokenId) connection.socket.destroy()
   }
@@ -343,7 +427,9 @@ export class CoreServer {
         // Only a pane is ever sent a secret; anyone else gets the value redacted, without it. The pane's
         // value is the exact command its launcher runs, so it goes unchanged: a keyed RPC address
         // (`?api-key=…`) redacted there would run the step against a broken RPC.
-        if (connection.client?.role === "pane") this.sendRaw(connection.socket, { jsonrpc: "2.0", id, result: { ...result.value, ...result.secret } })
+        if (connection.client?.role === "pane" && result.to === "pane") this.sendRaw(connection.socket, { jsonrpc: "2.0", id, result: { ...result.value, ...result.secret } })
+        // A token for a view or a Build pane: the rest redacted as ever, the token added after.
+        else if (connection.client?.role === result.to) this.sendRaw(connection.socket, { jsonrpc: "2.0", id, result: { ...(this.options.redactor.value(result.value) as Record<string, unknown>), ...result.secret } })
         else this.send(connection.socket, { jsonrpc: "2.0", id, result: this.options.redactor.value(result.value) })
       } else this.send(connection.socket, { jsonrpc: "2.0", id, result })
       // A pane's connection ends with its report.
@@ -367,23 +453,43 @@ export class CoreServer {
       await this.options.journal.append({ type: "client.refused", mode, reason: "UNAUTHENTICATED" })
       throw closing(refused("UNAUTHENTICATED", "The token isn't one this core issued, or it's been replaced. A view reads the current one from view.token."))
     }
+    if (who.role === "bot") {
+      const no = this.options.admitBot ? this.options.admitBot(who.bot) : { code: "METHOD_NOT_AVAILABLE", message: "This core runs no code bots." }
+      if (no) {
+        await this.options.journal.append({ type: "client.refused", mode, reason: no.code, role: "bot", bot: who.bot })
+        throw closing(refused(no.code, no.message))
+      }
+    }
     // A view's token is single-use: the next view reads the new one from view.token.
-    if (who.role === "view") await this.options.tokens.rotateViewToken()
-    const clientName = cleanName(params.clientName) ?? (who.role === "view" ? "view" : who.name)
+    if (who.role === "view") {
+      try {
+        await this.options.tokens.rotateViewToken()
+      } catch {
+        // The new token couldn't be written, so the old one stands and the file still holds it: this attach is
+        // refused by name, and the next one works once the folder can be written.
+        await this.options.journal.append({ type: "client.refused", mode, reason: "VIEW_TOKEN_NOT_WRITTEN" }).catch(() => {})
+        throw closing(refused("VIEW_TOKEN_NOT_WRITTEN", "The core couldn't write a new view token, so this attach was refused. The token in view.token still works: check the disk and the state folder, then open the Candle Harness again."))
+      }
+    }
+    // A bot is named by its own name, whatever it says; the rest by what they say, or their token's name.
+    const clientName = who.role === "bot" ? who.bot : (cleanName(params.clientName) ?? (who.role === "view" ? "view" : who.name))
     const harnessKind = who.role === "harness" ? cleanName(params.harnessKind) : undefined
     const client: ClientInfo = {
       clientId: connectionId,
       role: who.role,
       clientName,
       ...(harnessKind !== undefined ? { harnessKind } : {}),
-      ...(who.role === "harness" ? { tokenId: who.tokenId, agent: who.agent } : {}),
+      ...(who.role !== "view" ? { tokenId: who.tokenId, agent: who.agent } : {}),
+      ...(who.role === "bot" ? { bot: who.bot } : {}),
       connectedAt: new Date(this.options.now()).toISOString(),
     }
     if (connection.helloTimer) clearTimeout(connection.helloTimer)
     connection.client = client
-    await this.options.journal.append({ type: "client.attached", mode, ...(client.agent ? { agent: client.agent } : {}), clientId: client.clientId, role: client.role, clientName })
+    await this.options.journal.append({ type: "client.attached", mode, ...(client.agent ? { agent: client.agent } : {}), clientId: client.clientId, role: client.role, clientName, ...(client.bot ? { bot: client.bot } : {}) })
     if (client.role === "view") this.viewsChanged()
     for (const listener of this.attachListeners) listener({ ...client })
+    // A code bot and a Build pane learn only what they act as, not the core's agents, account or mode.
+    if (client.role === "bot" || client.role === "build") return { protocol: PROTOCOL_VERSION, coreVersion: this.options.coreVersion, clientId: client.clientId, role: client.role, agent: client.agent, ...(client.bot ? { bot: client.bot } : {}) }
     const identity = this.options.identity()
     return { protocol: PROTOCOL_VERSION, coreVersion: this.options.coreVersion, ...identity, clientId: client.clientId, role: client.role }
   }
@@ -450,7 +556,18 @@ export class CoreServer {
   /** Unredacted: only for a WithSecret's answer to a pane, the launcher's own command and its key. */
   private sendRaw(socket: Socket, message: unknown): void {
     if (socket.destroyed) return
+    // A peer that has stopped reading is dropped rather than buffered for without limit; it reattaches when it's back.
+    if (socket.writableLength > MAX_UNREAD_BYTES) return this.dropUnread(socket)
     socket.write(encodeLine(message))
+  }
+
+  private dropUnread(socket: Socket): void {
+    const bytes = socket.writableLength
+    const found = [...this.connections].find(([, c]) => c.socket === socket)
+    socket.destroy()
+    void this.options.journal
+      .append({ type: "client.dropped", mode: this.options.identity().mode, ...(found ? { clientId: found[0] } : {}), ...(found?.[1].client ? { role: found[1].client.role, clientName: found[1].client.clientName } : {}), reason: "not_reading", bytes })
+      .catch(() => {})
   }
 
   private subscriberFor(client: ClientInfo): Subscriber {
@@ -458,10 +575,29 @@ export class CoreServer {
     return {
       clientId: client.clientId,
       role: client.role,
+      // An event too large for one message is skipped and written down, never thrown into whatever published it.
       send: (notification) => {
-        if (connection) this.send(connection.socket, notification)
+        if (!connection) return
+        try {
+          this.send(connection.socket, notification)
+        } catch (error) {
+          this.sendFailed(String(notification.params.topic), client, error)
+        }
       },
     }
+  }
+
+  private sendFailed(topic: string, client: Pick<ClientInfo, "clientId" | "role">, error: unknown): void {
+    void this.options.journal
+      .append({
+        type: "send.oversize",
+        mode: this.options.identity().mode,
+        clientId: client.clientId,
+        role: client.role,
+        topic,
+        ...(error instanceof MessageTooLarge ? { bytes: error.bytes } : { error: terminalText(error instanceof Error ? error.message : String(error)).slice(0, 200) }),
+      })
+      .catch(() => {})
   }
 
   private registerBuiltins(): void {
@@ -492,7 +628,14 @@ export class CoreServer {
       }
       for (const topic of Object.keys(filters)) if (!(asked as string[]).includes(topic)) throw invalidParams(`A filter for ${terminalText(topic).slice(0, 80)} needs that topic subscribed in the same call.`)
       // The response goes out before the replay or snapshot it triggers.
-      queueMicrotask(() => this.events.subscribe(this.subscriberFor(call.client), asked as string[], since, filters))
+      // Nothing thrown here has a caller: a failure is written down, and the connection carries on.
+      queueMicrotask(() => {
+        try {
+          this.events.subscribe(this.subscriberFor(call.client), asked as string[], since, filters)
+        } catch (error) {
+          this.sendFailed("subscribe", call.client, error)
+        }
+      })
       return { topics: [...new Set([...this.events.topicsOf(call.client.clientId), ...(asked as string[])])] }
     })
     this.handle("unsubscribe", async (params, call) => {

@@ -18,6 +18,8 @@ const SETTING_W = 15
 export const APPROVALS_WIDE = 100
 
 const pad = (text: string, w: number) => text.padEnd(w)
+/** What trading inside limits doesn't hold to its figures: said in the draft, before the click, and after. */
+export const SELLS_NO_CARD = "Sells run with no card, at any size, unless slippage is looser."
 
 /** The cells a figure takes, chip or typed, so who holds it lines up on both rows. */
 const FIGURE_W = 12
@@ -49,6 +51,7 @@ export function approvalsDetail(input: { wallet: AutonomyWallet | undefined; sta
   // Its groups: a group never sets anything, so the line says the setting is its own.
   const grouped = groupLine(input.groups ?? [], w.wallet)
   if (grouped) out.push(...wrap(grouped, input.width).map((t) => line(t, C.dim)))
+  if (w.cantSign) out.push(...wrap(CANT_SIGN_NOTE, input.width).map((t) => line(t, C.look, { key: "cantSign" })))
   out.push(blank())
   if (o.draft) out.push(line("Turn on trading inside limits: type its figures, then one click.", C.look))
   else if (w.setting === "inside") out.push({ segs: [mark("ask"), { text: "✓ trades inside limits", fg: C.good, bold: true }, { text: "   ", fg: C.ink }, { ...chip("ask every time", "approvals"), ref: "ask" }], ...sel("ask") })
@@ -65,7 +68,8 @@ export function approvalsDetail(input: { wallet: AutonomyWallet | undefined; sta
     out.push({ segs: [mark("perDay"), { text: pad("", 16), fg: C.dim }, { text: pad("a day", 9), fg: C.ink }, ...figureSegs(day, typingOn("perDay"), "perDay"), ...who, ...used], ...sel("perDay") })
     if (o.draft) out.push({ segs: [mark(focus === "cancel" ? "cancel" : "confirm"), { text: pad("", 24), fg: C.ink }, { ...chip("turn on", "approvals", "primary"), ref: "confirm" }, { text: "  ", fg: C.ink }, { ...chip("cancel", "approvals"), ref: "cancel" }], ...(focus === "confirm" || focus === "cancel" ? { bg: C.sel } : {}) })
     for (const words of bindsFirst(w.agents, input.limits, trade, day)) out.push(line(`  ${words}`, C.dim))
-    if (!o.draft) out.push(line("  Inside both figures, trades run with no card. Sells always fit.", C.dim, { key: "hint" }))
+    // Said before the click that turns it on, not only after: sells aren't held to the figures.
+    for (const t of wrap(o.draft ? SELLS_NO_CARD : "No card inside both figures or for sells; looser slippage asks.", input.width - 2)) out.push(line(`  ${t}`, C.dim, { key: "hint" }))
   }
   out.push(blank())
   out.push(line("limits on its agents, and who holds them", C.head))
@@ -81,6 +85,9 @@ export function approvalsDetail(input: { wallet: AutonomyWallet | undefined; sta
   for (const t of wrap(LOSS_LIMITS_NOTE, input.width)) out.push(line(t, C.dim, { key: "note" }))
   return out
 }
+
+/** A fresh TEE wallet whose signing Candle hasn't recorded: listed, so it doesn't vanish, and said plainly. */
+export const CANT_SIGN_NOTE = "Candle doesn't list this wallet as able to sign for its key yet, so nothing trades from it. That's on Candle's side: no owner step here changes it."
 
 /** The hint under the menu, by where the keys are. */
 export function approvalsHint(o: ApprovalsState, wide = true): string {

@@ -1,6 +1,7 @@
 // The pane role over the socket, with this test process as the launcher: the view
 // names this process's pid, so the hello's peer pid matches.
 import { afterAll, afterEach, expect, test } from "bun:test"
+import { readFileSync } from "node:fs"
 import { AGENT_KEY, cleanupHomes, fakeCandle, startTestCore, type TestCore, until } from "../../test/core-fixture"
 import type { TestClient } from "../../test/core-test-client"
 import { PROTOCOL_VERSION } from "../shared/rpc"
@@ -67,6 +68,25 @@ test("a keyed RPC address reaches the pane's command as configured, and no view 
   expect(redeemed.steps.at(-1)!.argv).toEqual(["vault", "list", "--json", "--rpc-url", rpcUrl])
   for (const frame of view.frames) expect(frame).not.toContain(rpcUrl)
   expect(JSON.stringify(c.core.journal.rows())).not.toContain(rpcUrl)
+})
+
+test("an RPC address keyed in its path reaches the pane alone: no view, no harness and no journal row holds it, and the card names it by a marker", async () => {
+  const rpcUrl = `https://rpc.example/v2/${"p".repeat(24)}${Date.now()}`
+  const c = await startTestCore({}, { config: { candle: { mcp: { route: "cli", path: "candle-mcp" }, cliPath: await fakeCandle(), rpcUrl, profile: undefined } } })
+  cores.push(c)
+  const view = await c.view()
+  await view.request("subscribe", { topics: ["cards", "operations", "activity"] })
+  const r = (await view.request("cli.run", { argv: ["vault", "list"] })).result as { ticket: string; ticketId: string }
+  await view.request("pane.spawned", { ticketId: r.ticketId, pid: process.pid })
+  const { client: pane } = await c.hello(r.ticket)
+  const redeemed = (await pane.request("pane.redeem")).result as { steps: { argv: string[] }[] }
+  expect(redeemed.steps.at(-1)!.argv).toEqual(["vault", "list", "--json", "--rpc-url", rpcUrl])
+  const cards = (await view.request("cards.list")).result as { cards: { params: unknown }[] }
+  expect(JSON.stringify(cards)).toContain('"--rpc-url","@config"')
+  await view.request("operations.list")
+  for (const frame of view.frames) expect(frame).not.toContain(rpcUrl)
+  expect(JSON.stringify(c.core.journal.rows())).not.toContain(rpcUrl)
+  expect(readFileSync(c.p.journal, "utf8")).not.toContain(rpcUrl)
 })
 
 test("an agent's row: its key goes once, to the pane, and to no view", async () => {

@@ -1,0 +1,50 @@
+ agent-a ▾  LIVE  today $12.00 / $100.00  ● 1 card waiting       ctrl-x ×2 kill 
+ 1 Trade  2 Cockpit  3 Research  4 Bots  5 Build   settings ▾                   
+╭─ Build · first open ─────────────────────────────────────────────────────────╮
+│Where should your bots live?                                                  │
+│╭──────────────────────────────────────────────╮                              │
+││ ~/candle-bots█                               │                              │
+│╰──────────────────────────────────────────────╯                              │
+│Which coding harness?                                                         │
+│› Claude Code  2.1.316   signed in                                            │
+│  Codex        0.165.0   signed in                                            │
+│  Grok         1.0.70    not signed in · it asks when it starts               │
+│  OpenCode     1.19.5    signed in                                            │
+│  Pi           1.4.0     signed in                                            │
+│  ⏎ start in ~/candle-bots   tab next  ↑/↓ harness                            │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ cards ──────────────────────────────────────────────────────────────────────╮
+│1 card waiting · ⏎ approves the highlighted one                               │
+│▌ BUY 0.1 SOL of JUPF                                                     50s │
+│▌ agent-a · pays from embedded · live · JupF…1111                             │
+│▌ why  volume up 3× on the hour, holders rising                               │
+│▌  ⏎ approve    ctrl-n reject    ctrl-o details                               │
+╰──────────────────────────────────────────────────────────────────────────────╯
+                                                                                
+› type a command or ask the agent          ⏎ start   ctrl-k palette    ? help   
+
+--- colours ---
+0: 6cb6ff/16263a×11 0b0d10/3ddc84×6 ffffff/0e1115×1 959dab/0e1115×6 f6f8fb/0e1115×6 959dab/0e1115×10 ffffff/0e1115×2 f5a524/0e1115×16 ffffff/0e1115×6 ff5c5c/3a1619×16
+1: ffffff/0b0d10×1 6cb6ff/0b0d10×7 ffffff/0b0d10×2 6cb6ff/0b0d10×9 ffffff/0b0d10×2 6cb6ff/0b0d10×10 ffffff/0b0d10×2 6cb6ff/0b0d10×6 ffffff/0b0d10×2 f6f8fb/0b0d10+9×7 ffffff/0b0d10×2 6cb6ff/16263a×12 ffffff/0b0d10×18
+2: 32fe9f/111419×2 b392f0/111419×20 32fe9f/111419×58
+3: 32fe9f/111419×1 b392f0/111419×28 ffffff/111419×50 32fe9f/111419×1
+4: 32fe9f/111419×49 ffffff/111419×30 32fe9f/111419×1
+5: 32fe9f/111419×3 f6f8fb/111419×44 32fe9f/111419×2 ffffff/111419×30 32fe9f/111419×1
+6: 32fe9f/111419×49 ffffff/111419×30 32fe9f/111419×1
+7: 32fe9f/111419×1 b392f0/111419×21 ffffff/111419×57 32fe9f/111419×1
+8: 32fe9f/111419×3 f6f8fb/111419×13 959dab/111419×19 ffffff/111419×44 32fe9f/111419×1
+9: 32fe9f/111419×3 dde2ea/111419×13 959dab/111419×19 ffffff/111419×44 32fe9f/111419×1
+10: 32fe9f/111419×3 dde2ea/111419×13 959dab/111419×48 ffffff/111419×15 32fe9f/111419×1
+11: 32fe9f/111419×3 dde2ea/111419×13 959dab/111419×19 ffffff/111419×44 32fe9f/111419×1
+12: 32fe9f/111419×3 dde2ea/111419×13 959dab/111419×19 ffffff/111419×44 32fe9f/111419×1
+13: 32fe9f/111419×1 dde2ea/111419×1 6cb6ff/16263a×26 959dab/111419×23 ffffff/111419×28 32fe9f/111419×1
+14: 32fe9f/111419×80
+15: 252a33/111419×2 b392f0/111419×7 252a33/111419×71
+16: 252a33/111419×1 959dab/111419×47 ffffff/111419×31 252a33/111419×1
+17: 252a33/111419×1 f5a524/111419×2 f6f8fb/111419×19 dde2ea/111419×53 f5a524/111419×3 ffffff/111419×1 252a33/111419×1
+18: 252a33/111419×1 f5a524/111419×2 959dab/111419×47 ffffff/111419×29 252a33/111419×1
+19: 252a33/111419×1 f5a524/111419×2 959dab/111419×5 dde2ea/111419×40 ffffff/111419×31 252a33/111419×1
+20: 252a33/111419×1 f5a524/111419×2 0b0d10/6cb6ff×11 dde2ea/111419×2 6cb6ff/16263a×15 dde2ea/111419×2 6cb6ff/16263a×16 ffffff/111419×30 252a33/111419×1
+21: 252a33/111419×80
+22: 959dab/0b0d10×1 ffffff/0b0d10×79
+23: f6f8fb/0e1115×2 959dab/0e1115×31 ffffff/0e1115×10 dde2ea/0e1115×1 959dab/0e1115×8 6cb6ff/16263a×16 959dab/0e1115×2 6cb6ff/16263a×8 959dab/0e1115×2

@@ -93,7 +93,8 @@ export class DaySpend {
       if (key !== undefined && typeof row.opId === "string" && typeof row.usd === "number" && row.side !== "sell") {
         this.record(row.opId, key, row.usd, Date.parse(row.at))
       } else if (typeof row.opId === "string" && row.type.startsWith("operation.")) {
-        this.settle(row.opId, row.type.slice("operation.".length))
+        // A swap that failed at its second leg spent its first: it still counts, as it did while the core ran.
+        this.settle(row.opId, row.type === "operation.failed" && row.partial ? "partial" : row.type.slice("operation.".length))
       }
     }
   }

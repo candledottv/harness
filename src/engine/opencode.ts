@@ -36,6 +36,8 @@ import { join } from "node:path"
 // imports it as a module, or the bundler would refuse the text import.
 // @ts-expect-error a text import of a module
 import GATE_SOURCE from "./opencode-gate.ts" with { type: "text" }
+import { withoutBunVars } from "../shared/bun-env"
+import { resolveBin, withAbsolutePath } from "../shared/exec-path"
 import { versionAtLeast } from "../core/candle-mcp"
 import { type Engine, type EngineCheck, type EngineModel, type EngineTurn, type McpServer, readVersion, withSaid } from "./engine"
 import type { EngineEvent, Turn } from "./events"
@@ -45,6 +47,8 @@ import { DEFAULT_TOOLS, RESEARCH_NAMES, type ResearchName, shellFor, type ShellS
 
 /** The version the read checks passed on, with the gate plugin and `question` off. */
 export const MIN_OPENCODE = "1.19.5"
+/** The newest version its holds were checked on; a newer major version is said, never blocked. */
+export const CHECKED_OPENCODE = "1.19.5"
 
 /** The research set (the gate's own list must match): file tools, web fetch and the to-do list. Candle's tools are `candle_*`. */
 export const OPENCODE_TOOLS = ["read", "write", "edit", "multiedit", "apply_patch", "patch", "list", "glob", "grep", "webfetch", "todowrite", "todoread", "invalid"]
@@ -274,7 +278,7 @@ export function filterModels(ids: string[], auth: { name: string; kind: string }
     if (a.kind !== "oauth") continue
     const id = [...providers].find((p) => norm(p) === norm(a.name))
     const sub = id ? SUBSCRIPTIONS[id] : undefined
-    if (id && sub) held.set(id, `Your ${sub.plan} sign-in in OpenCode isn't offered here: subscriptions run through their own harness. Pick ${sub.harness} for it.`)
+    if (id && sub) held.set(id, `Your ${sub.plan} sign-in in OpenCode isn't offered here: subscriptions run through their own engine. Pick ${sub.harness} for it.`)
   }
   const models: EngineModel[] = ids.filter((id) => !held.has(splitModel(id)?.providerID ?? "")).map((id) => ({ id, label: id }))
   const usable = models.filter((m) => !m.id.startsWith("opencode/"))
@@ -373,6 +377,7 @@ export function opencodeEngine(bin: string, o: { folder: string; xdg?: Record<st
     id: "opencode",
     label: "OpenCode",
     minVersion: MIN_OPENCODE,
+    checkedVersion: CHECKED_OPENCODE,
     capabilities: () => ({ webSearch: false, webFetch: true, files: "own", shellList: true, deltas: true }),
     signIn: "opencode auth login, for an API key or OpenRouter",
     needsModel: true,
@@ -451,7 +456,7 @@ function runServer(o: { bin: string; cwd: string; env: Record<string, string>; p
 
   let server: ReturnType<typeof spawn>
   try {
-    server = spawn(o.bin, ["serve", "--hostname", "127.0.0.1", "--port", "0"], { cwd: o.cwd, env: o.env, detached: true, stdio: ["ignore", "pipe", "pipe"] })
+    server = spawn(resolveBin(o.bin, o.env.PATH), ["serve", "--hostname", "127.0.0.1", "--port", "0"], { cwd: o.cwd, env: withoutBunVars(withAbsolutePath(o.env)), detached: true, stdio: ["ignore", "pipe", "pipe"] })
   } catch (error) {
     return failed(`OpenCode couldn't start: ${(error as Error).message}`)
   }

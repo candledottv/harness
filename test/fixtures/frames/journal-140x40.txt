@@ -1,9 +1,9 @@
  ▲ candle  agent-a ▾  LIVE  today $12.00 / $100.00  exposure $412.50  P&L 24h +$3.40  ● 1 card waiting                       ctrl-x ×2 kill 
- 1 Trade  2 Cockpit  3 Trending  4 Signals  5 P&L  6 Research  7 Journal  8 Perps   settings ▾                                              
+ 1 Trade  2 Cockpit  3 Research  4 Journal  5 Bots  6 Build   settings ▾  4 new tabs are ticked off: Trending, Signals, P&L an…  show them  
                                                                                                                                             
 ╭─ Journal · 50+ rows ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │  search  ↑ or a click to search everything recorded: words, a token, an agent                                                            │
-│  ✓ trades   ✓ cards   ✓ kill switch   ✓ Hacc   ✓ memory   ✓ agents   ✓ view   core                                                       │
+│  ✓ trades   ✓ cards   ✓ kill switch   ✓ Hacc   ✓ memory   ✓ agents   ✓ bots   ✓ view   core                                              │
 │ ── today ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────  │
 │ 07:16  agent-a proposed BUY 0.1 SOL (≈$15.00) → JUPF from embedded · approved by Enter · no answer: being read back                      │
 │ 07:15  you ran candle keys list                                                                                                          │
@@ -15,7 +15,7 @@
 │ 07:13  agent-b proposed BUY 0.2 SOL (≈$30.00) → MOON from embedded · rejected after 9.0 s                                                │
 │ 07:12  refused agent-b's trade: Over agent-b's per-trade limit of $10: this is $40.00.                                                   │
 │ 07:12  agent-a proposed SELL 50% JUPF (≈$7.40) from tee-one · approved by a click · filled in 8.1 s                                      │
-│ 07:11  paper · paper buy MOON by agent-b: ≈1240 MOON at the quoted price                                                                 │
+│ 07:11  paper · paper buy MOON by agent-b: ≈1,240 MOON at the quoted price                                                                │
 │ 07:11  you picked MOON (feed, by a click)                                                                                                │
 ╰─ ⇱ ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
                                                                                                                                             
@@ -33,7 +33,7 @@
 │                                                                                                                                          │
 │ 1 card waiting · ⏎ approves the highlighted one                                                                                          │
 │ ▌ BUY 0.1 SOL of JUPF                                                                                                               50s  │
-│ ▌ agent-a · pays from embedded · live                                                                                                    │
+│ ▌ agent-a · pays from embedded · live · JupF…1111                                                                                        │
 │ ▌  ⏎ approve    ctrl-n reject    ctrl-o details                                                                                          │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
                                                                                                                                             
@@ -41,11 +41,11 @@
 
 --- colours ---
 0: ffffff/0e1115×1 f6f8fb/0e1115×8 ffffff/0e1115×1 6cb6ff/16263a×11 0b0d10/3ddc84×6 ffffff/0e1115×1 959dab/0e1115×6 f6f8fb/0e1115×6 959dab/0e1115×10 ffffff/0e1115×2 959dab/0e1115×9 f6f8fb/0e1115×7 ffffff/0e1115×2 959dab/0e1115×8 3ddc84/0e1115×6 ffffff/0e1115×2 f5a524/0e1115×16 ffffff/0e1115×22 ff5c5c/3a1619×16
-1: ffffff/0b0d10×1 6cb6ff/0b0d10×7 ffffff/0b0d10×2 6cb6ff/0b0d10×9 ffffff/0b0d10×2 6cb6ff/0b0d10×10 ffffff/0b0d10×2 6cb6ff/0b0d10×9 ffffff/0b0d10×2 6cb6ff/0b0d10×5 ffffff/0b0d10×2 6cb6ff/0b0d10×10 ffffff/0b0d10×2 f6f8fb/0b0d10+9×9 ffffff/0b0d10×2 6cb6ff/0b0d10×7 ffffff/0b0d10×2 6cb6ff/16263a×12 ffffff/0b0d10×45
+1: ffffff/0b0d10×1 6cb6ff/0b0d10×7 ffffff/0b0d10×2 6cb6ff/0b0d10×9 ffffff/0b0d10×2 6cb6ff/0b0d10×10 ffffff/0b0d10×2 f6f8fb/0b0d10+9×9 ffffff/0b0d10×2 6cb6ff/0b0d10×6 ffffff/0b0d10×2 6cb6ff/0b0d10×7 ffffff/0b0d10×2 6cb6ff/16263a×12 ffffff/0b0d10×1 f5a524/0b0d10×54 6cb6ff/16263a×11 ffffff/0b0d10×1
 2: ffffff/0b0d10×140
 3: 252a33/111419×2 b392f0/111419×20 252a33/111419×118
 4: 252a33/111419×1 ffffff/111419×1 6cb6ff/16263a×8 dde2ea/111419×1 959dab/111419×68 ffffff/111419×60 252a33/111419×1
-5: 252a33/111419×1 ffffff/111419×1 6cb6ff/16263a×10 dde2ea/111419×1 6cb6ff/16263a×9 dde2ea/111419×1 6cb6ff/16263a×15 dde2ea/111419×1 6cb6ff/16263a×8 dde2ea/111419×1 6cb6ff/16263a×10 dde2ea/111419×1 6cb6ff/16263a×10 dde2ea/111419×1 6cb6ff/16263a×8 dde2ea/111419×1 6cb6ff/16263a×6 dde2ea/111419×1 ffffff/111419×53 252a33/111419×1
+5: 252a33/111419×1 ffffff/111419×1 6cb6ff/16263a×10 dde2ea/111419×1 6cb6ff/16263a×9 dde2ea/111419×1 6cb6ff/16263a×15 dde2ea/111419×1 6cb6ff/16263a×8 dde2ea/111419×1 6cb6ff/16263a×10 dde2ea/111419×1 6cb6ff/16263a×10 dde2ea/111419×1 6cb6ff/16263a×8 dde2ea/111419×1 6cb6ff/16263a×8 dde2ea/111419×1 6cb6ff/16263a×6 ffffff/111419×45 252a33/111419×1
 6: 252a33/111419×1 ffffff/111419×1 959dab/111419×135 ffffff/111419×2 252a33/111419×1
 7: 252a33/111419×1 ffffff/111419×1 959dab/111419×7 f5a524/111419×7 dde2ea/111419×101 ffffff/111419×22 252a33/111419×1
 8: 252a33/111419×1 ffffff/111419×1 959dab/111419×7 dde2ea/111419×24 ffffff/111419×106 252a33/111419×1
@@ -57,7 +57,7 @@
 14: 252a33/111419×1 ffffff/111419×1 959dab/111419×7 dde2ea/111419×82 ffffff/111419×48 252a33/111419×1
 15: 252a33/111419×1 ffffff/111419×1 959dab/111419×7 ff5c5c/111419×7 dde2ea/111419×72 ffffff/111419×51 252a33/111419×1
 16: 252a33/111419×1 ffffff/111419×1 959dab/111419×7 3ddc84/111419×7 dde2ea/111419×85 ffffff/111419×38 252a33/111419×1
-17: 252a33/111419×1 ffffff/111419×1 959dab/111419×15 dde2ea/111419×57 ffffff/111419×65 252a33/111419×1
+17: 252a33/111419×1 ffffff/111419×1 959dab/111419×15 dde2ea/111419×58 ffffff/111419×64 252a33/111419×1
 18: 252a33/111419×1 ffffff/111419×1 959dab/111419×7 dde2ea/111419×34 ffffff/111419×96 252a33/111419×1
 19: 252a33/111419×2 6cb6ff/16263a×3 252a33/111419×135
 20: ffffff/0b0d10×140
@@ -75,7 +75,7 @@
 32: 32fe9f/111419×1 ffffff/111419×138 32fe9f/111419×1
 33: 32fe9f/111419×1 ffffff/111419×1 959dab/111419×47 ffffff/111419×90 32fe9f/111419×1
 34: 32fe9f/111419×1 ffffff/111419×1 f5a524/111419×2 f6f8fb/111419×19 dde2ea/111419×111 f5a524/111419×3 ffffff/111419×2 32fe9f/111419×1
-35: 32fe9f/111419×1 ffffff/111419×1 f5a524/111419×2 959dab/111419×35 ffffff/111419×100 32fe9f/111419×1
+35: 32fe9f/111419×1 ffffff/111419×1 f5a524/111419×2 959dab/111419×47 ffffff/111419×88 32fe9f/111419×1
 36: 32fe9f/111419×1 ffffff/111419×1 f5a524/111419×2 0b0d10/6cb6ff×11 dde2ea/111419×2 6cb6ff/16263a×15 dde2ea/111419×2 6cb6ff/16263a×16 ffffff/111419×89 32fe9f/111419×1
 37: 32fe9f/111419×140
 38: 959dab/0b0d10×1 ffffff/0b0d10×139

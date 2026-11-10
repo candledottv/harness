@@ -5,7 +5,8 @@ import { $ } from "bun"
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
-import { CandleCli } from "./candle-cli"
+import { Redactor } from "../shared/redact"
+import { CandleCli, RPC_FROM_CONFIG } from "./candle-cli"
 
 const KEY = `cndl_live_${"c".repeat(40)}`
 let dir: string
@@ -79,7 +80,8 @@ describe("candleCli.run", () => {
 
   test("--rpc-url comes only from config, and reaches the CLI in its environment, never on its command line", async () => {
     const { runner, runs } = cli({ rpcUrl: "https://rpc.example.com/solana" })
-    expect(runner.finalArgs({ args: ["portfolio"], withRpcUrl: true })).toEqual(["portfolio", "--rpc-url", "https://rpc.example.com/solana"])
+    // What's saved names the address by a marker; the address itself goes in only where the command runs.
+    expect(runner.finalArgs({ args: ["portfolio"], withRpcUrl: true })).toEqual(["portfolio", "--rpc-url", RPC_FROM_CONFIG])
     await runner.run({ args: ["portfolio"], withRpcUrl: true })
     expect(runs()[0].argv).toEqual(["portfolio"])
     expect(runs()[0].env.CANDLE_SOLANA_RPC_URL).toBe("https://rpc.example.com/solana")
@@ -89,6 +91,36 @@ describe("candleCli.run", () => {
     await expect(runner.run({ args: ["portfolio", "--rpc-url", "https://evil.example"] })).rejects.toThrow(/rpc-url/)
     await expect(runner.run({ args: ["portfolio", "--rpc-url=https://evil.example"] })).rejects.toThrow(/rpc-url/)
     expect(runs()).toHaveLength(2)
+  })
+
+  test("saved arguments that went through the journal's redactor still run against the configured address, key and all", async () => {
+    const rpcUrl = `https://rpc.example.com/?api-key=${"k".repeat(16)}`
+    const pathKeyed = `https://rpc.example.com/v2/${"p".repeat(32)}`
+    for (const url of [rpcUrl, pathKeyed]) {
+      const { runner, runs } = cli({ rpcUrl: url })
+      const saved = runner.finalArgs({ args: ["swap", "SOL", "MoonFake", "--amount", "0.04"], json: true, withRpcUrl: true })
+      // Nothing saved holds the address, so a redacted copy read back from the journal is the same arguments.
+      expect(JSON.stringify(saved)).not.toContain("rpc.example.com")
+      const reread = JSON.parse(JSON.stringify(new Redactor().value({ argv: saved }))) as { argv: string[] }
+      expect(reread.argv).toEqual(saved)
+      await runner.runExact({ argv: reread.argv, json: true })
+      expect(runs()[0].env.CANDLE_SOLANA_RPC_URL).toBe(url)
+      expect(runs()[0].argv).toEqual(["swap", "SOL", "MoonFake", "--amount", "0.04", "--json"])
+    }
+  })
+
+  test("arguments an older version saved with the address itself, redacted since, run against the configured one; with none configured the flag goes", async () => {
+    const rpcUrl = `https://rpc.example.com/?api-key=${"k".repeat(16)}`
+    const old = new Redactor().value(["swap", "SOL", "MoonFake", "--json", "--rpc-url", rpcUrl])
+    expect(old.at(-1)).toContain("[redacted]")
+    const configured = cli({ rpcUrl })
+    await configured.runner.runExact({ argv: old })
+    expect(configured.runs()[0].env.CANDLE_SOLANA_RPC_URL).toBe(rpcUrl)
+    const none = cli()
+    expect(none.runner.realArgs(old)).toEqual(["swap", "SOL", "MoonFake", "--json"])
+    expect(none.runner.realArgs(["swap", "--rpc-url", RPC_FROM_CONFIG])).toEqual(["swap"])
+    await none.runner.runExact({ argv: old })
+    expect(none.runs()[0].env.CANDLE_SOLANA_RPC_URL).toBeUndefined()
   })
 
   test("an unknown agent is refused, never run as the user", async () => {

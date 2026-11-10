@@ -4,8 +4,9 @@ import { expect, test } from "bun:test"
 import { C } from "../theme"
 import type { KillReport } from "../../core/kill"
 import type { Exchange } from "../store"
-import { addressLines, conversationLines, greetingLines, highlightedCard, killReportLines, operationTitle, replyRows, resendsUnderId, resentWords, unansweredLines, withPrompt } from "./agent"
+import { addressLines, conversationLines, greetingLines, highlightedCard, killReportLines, operationTitle, paperFiringLines, replyRows, resendsUnderId, resentWords, unansweredLines, withPrompt } from "./agent"
 import { textOf } from "./lines"
+import { activityLines } from "./activity"
 
 const MOON = "MoonFake11111111111111111111111111111111111"
 const NOW = Date.parse("2026-10-26T14:00:00.000Z")
@@ -42,7 +43,7 @@ test("the kept cards are named as cards once they aren't all sells: an unstake a
 
 test("the kill report: what it stopped, what's still open, what's in flight, where you stand, what it didn't stop, how to resume", () => {
   const t = texts(killReportLines(report(), {}, NOW, 200))
-  expect(t).toContain("KILL SWITCH ON · 30s ago · buys paused, the agent stopped")
+  expect(t).toContain("KILL SWITCH ON · 30s ago · buys paused, the agent's turn stopped")
   expect(t).toContain("stopped     momentum's turn · withdrew BUY 0.1 SOL (≈$15.00) → MOON (momentum)")
   // The open sell itself is drawn below as a full card.
   expect(t).toContain("open        1 sell, below: one press to approve, or let it expire, which is safe")
@@ -145,6 +146,23 @@ test("a conversation: you, the tools in a quiet line, the reply wrapped, and add
   expect(lines.at(-1)).toBe("  ⌖  Moon…1111  from candle  ⧉  ")
 })
 
+test("a woken turn: the trigger's mark and what fired, never \"you ›\"", () => {
+  const exchange: Exchange = { turnId: "t2", user: 'woken by the trigger "conf": a confluence signal on BONK at 14:02', reply: "Woke on conf: bought $1 of BONK.", streaming: false, outcome: "done", tools: [], woken: ["conf"] }
+  const lines = conversationLines([exchange], 80).map(textOf)
+  expect(lines[0]).toBe('⚡ woke › the trigger "conf": a confluence signal on BONK at 14:02')
+  expect(lines.some((l) => l.startsWith("you ›"))).toBe(false)
+})
+
+test("a message sent from outside (candle-harness ask): yours, said dim after the words, or on a row of its own where it won't fit", () => {
+  const exchange: Exchange = { turnId: "t3", user: "how am I doing?", reply: "Up $1.20 today.", streaming: false, outcome: "done", tools: [], outside: true }
+  const lines = conversationLines([exchange], 80)
+  expect(textOf(lines[0]!)).toBe("you › how am I doing? · from outside")
+  expect(lines[0]!.segs.at(-1)).toMatchObject({ text: " · from outside", fg: C.dim })
+  const narrow = conversationLines([exchange], 24).map(textOf)
+  expect(narrow.slice(0, 2)).toEqual(["you › how am I doing?", "      · from outside"])
+  expect(conversationLines([{ ...exchange, outside: undefined }], 80).map(textOf)[0]).toBe("you › how am I doing?")
+})
+
 test("Markdown emphasis and code markers don't show as characters", () => {
   const lines = conversationLines([{ turnId: "t", user: "hi", reply: "**Check:** id `abc` and __done__", streaming: false, outcome: "done", tools: [] }], 80).map(textOf)
   expect(lines.at(-1)).toBe("  Check: id abc and done  ⧉ ")
@@ -177,6 +195,20 @@ test("an operation Candle didn't answer: what it was, that it's read back, and r
   expect(actions.cardId).toBe("card-a")
   expect(actions.segs.filter((s) => s.act).map((s) => s.act)).toEqual(["resend", "abandon"])
   expect(unansweredLines({}, [], NOW, 100)).toEqual([])
+})
+
+test("three trades Candle didn't answer, read back by their ids (a restart cut off a bot's exits): said once, each a line with its chips", () => {
+  const op = (id: string, mint: string) => ({ opId: id, cardId: `card-${id}`, agent: "momentum", state: "unknown", kind: "trade", params: { mint, side: "sell", percent: 100 }, startedAt: NOW - 38_000 })
+  const ops = { a: op("a", MOON), b: op("b", "Ejax1111111111111111111111111111111111pump"), c: op("c", "G2hd111111111111111111111111111111111Wgjs") }
+  const lines = unansweredLines(ops, [], NOW, 45)
+  const text = lines.map(textOf)
+  expect(text[0]).toBe("NO ANSWER FROM CANDLE · 3 trades · momentum ·")
+  expect(text.filter((t) => t.includes("reads each back by its id"))).toHaveLength(1)
+  const rows = lines.filter((l) => l.segs.some((s) => s.act === "resend"))
+  expect(rows.map((l) => l.cardId)).toEqual(["card-a", "card-b", "card-c"])
+  for (const r of rows) expect(r.segs.filter((s) => s.act).map((s) => s.act)).toEqual(["resend", "abandon"])
+  // At 80×24's agent pane, the three fit in under half the rows they took one block each.
+  expect(lines.length).toBeLessThanOrEqual(12)
 })
 
 test("a post, fee claim or upload Candle didn't answer says a re-send may run it twice, with its card's note", () => {
@@ -377,4 +409,71 @@ test("a conversation from before the core started ends in a dim divider naming w
   // Under the last of them, before the new message.
   expect(lines.indexOf(dividers[0]!)).toBeLessThan(lines.findIndex((l) => l.includes("and now?")))
   expect(conversationLines([{ turnId: "t3", user: "x", reply: "y", streaming: false, outcome: "done", tools: [] }], 50).map(textOf).some((l) => l.startsWith("── earlier"))).toBe(false)
+})
+
+test("the kill report names each trigger the pause holds, short, beside the wallets it holds", () => {
+  const lines = texts(killReportLines(report({ triggersHeld: [{ name: "dip", agent: "momentum", words: "its buys and swaps are held until you resume; its sells still go" }] }), {}, NOW, 200))
+  expect(lines).toContain('held        trigger "dip": its buys and swaps are held; its sells still go')
+})
+
+test("a kill report too tall for its slot names every trigger the pause holds in one line, rather than cutting some unsaid", () => {
+  const words = "wakes momentum: held, no wake until you resume"
+  const triggersHeld = ["fill review", "check tape", "daily buy"].map((name) => ({ name, agent: "momentum", words }))
+  const lines = texts(killReportLines(report({ triggersHeld, stillOpen: [], inFlight: [] }), {}, NOW, 46, 7)).split("\n")
+  expect(lines.join(" ").replace(/\s+/g, " ")).toContain('3 triggers that buy, swap or wake: "fill review", "check tape", "daily buy"')
+  expect(lines.at(-2)).toContain("resume")
+  // With room, each has its own line.
+  expect(texts(killReportLines(report({ triggersHeld }), {}, NOW, 200)).split("\n").filter((l) => l.startsWith("held        trigger"))).toHaveLength(3)
+  // At its smallest (an unanswered trade pinned under it), what it holds still has a line.
+  const tiny = texts(killReportLines(report({ triggersHeld, stillOpen: [], inFlight: [], insideLimits: [{ wallet: "W", name: "embedded" }] } as never), {}, NOW, 46, 3)).split("\n")
+  expect(tiny).toEqual(["KILL SWITCH ON · 30s ago · buys paused, the a…", "held        embedded wallet and 3 triggers", expect.stringMatching(/^resume {6}type resume/)])
+})
+
+test("the kill report names each bot whose entries the pause holds, and what its exits still guard", () => {
+  const botsHeld = [{ name: "conf", agent: "momentum", mode: "live" as const, open: ["MOON"], words: "its entries are held until you resume; its exits still sell, guarding its MOON position" }]
+  expect(texts(killReportLines(report({ botsHeld }), {}, NOW, 200))).toContain('held        bot "conf": its entries are held; its exits still sell, guarding its MOON position')
+  // Too tall for its slot: every bot in one line, by name, with how many positions their exits guard.
+  const many = ["conf", "fast", "slow"].map((name) => ({ ...botsHeld[0]!, name }))
+  const lines = texts(killReportLines(report({ botsHeld: many, stillOpen: [], inFlight: [] }), {}, NOW, 46, 7)).split("\n")
+  expect(lines.join(" ").replace(/\s+/g, " ")).toContain(`3 bots' buys: "conf", "fast", "slow"; exits guard 3 open`)
+  expect(lines.at(-2)).toContain("resume")
+})
+
+test("in two rows, as the short pane at 80×24 gives it, the kill report still says what the pause holds", () => {
+  const botsHeld = [{ name: "jup-paper", agent: "momentum", mode: "paper" as const, open: ["JUP"], words: "its entries are held until you resume; its exits still sell, guarding its JUP position" }]
+  const lines = texts(killReportLines(report({ botsHeld }), {}, NOW, 76, 2)).split("\n")
+  expect(lines).toHaveLength(2)
+  expect(lines[0]).toContain('KILL SWITCH ON · held bot "jup-paper"; its 1 open position still sells')
+  expect(lines[1]).toStartWith("resume")
+})
+
+test("Activity's run it now chip on a trigger's expired card carries the card", () => {
+  const lines = activityLines([{ seq: 1, at: new Date(NOW).toISOString(), text: "expired BUY 0.02 SOL → MOON: nobody pressed it", tone: "warn", runNow: "c7" }], 80, NOW)
+  const chip = lines.flatMap((l) => l.segs.map((s) => ({ s, ref: (l as { ref?: string }).ref }))).find((x) => x.s.act === "runNow")
+  expect(chip?.s.text.trim()).toBe("run it now")
+  expect(chip?.ref).toBe("c7")
+})
+
+test("once a trigger's expired card is run again, its run it now chip goes, in Activity and on the card", () => {
+  const entry = { seq: 1, at: new Date(NOW).toISOString(), text: "expired BUY 0.02 SOL → MOON: nobody pressed it", tone: "warn" as const, runNow: "c7" }
+  const chipOf = (lines: ReturnType<typeof activityLines>) => lines.flatMap((l) => l.segs).find((x) => x.act === "runNow")
+  expect(chipOf(activityLines([entry], 80, NOW, [], new Set(["c7"])))).toBeDefined()
+  expect(chipOf(activityLines([entry], 80, NOW, [], new Set()))).toBeUndefined()
+})
+
+test("a trigger's paper trade, which makes no card, is a firing line in the agent pane: ⚡ and its name, then what it saw and did", () => {
+  const e = { seq: 1, at: new Date(NOW).toISOString(), agent: "momentum", text: "x", tone: "info" as const, firing: { name: "JUP stop", said: "JUP was $0.2617, under $0.264 → paper sell JUP: ≈3.82 JUP for ≈0.0104 SOL at the quoted price", paper: true as const } }
+  const lines = paperFiringLines(e, 60)
+  expect(lines[0]!.segs[0]).toMatchObject({ text: "⚡ JUP stop", fg: C.head })
+  expect(lines.map(textOf).join(" ").replace(/\s+/g, " ")).toBe("⚡ JUP stop JUP was $0.2617, under $0.264 → paper sell JUP: ≈3.82 JUP for ≈0.0104 SOL at the quoted price")
+  for (const l of lines) expect(textOf(l).length + (textOf(l).includes("⚡") ? 1 : 0)).toBeLessThanOrEqual(60)
+})
+
+test("a pause that couldn't be saved says so in amber, whole; a saved one says nothing of it", () => {
+  const unsaved = "The pause couldn't be saved (the disk or the state folder can't be written), so it won't survive a restart of the Candle Harness. Press the kill switch again once it can."
+  const lines = killReportLines(report({ unsaved }), {}, NOW, 60)
+  const said = lines.filter((l) => l.segs.some((seg) => seg.fg === C.look)).map(textOf).join(" ").replace(/\s+/g, " ")
+  expect(said).toContain("The pause couldn't be saved")
+  expect(said).toContain("Press the kill switch again once it can.")
+  expect(texts(killReportLines(report(), {}, NOW, 60))).not.toContain("couldn't be saved")
 })

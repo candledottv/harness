@@ -159,8 +159,8 @@ describe("starting the children", () => {
     const { pool } = setup()
     await pool.start()
     const tools = pool.for("momentum").tools()
-    // 0.10.29's 87, less the four listed only to a key that may edit its profile (the fake leaves them out).
-    expect(tools).toHaveLength(83)
+    // 0.10.30's 92, less the four listed only to a key that may edit its profile (the fake leaves them out).
+    expect(tools).toHaveLength(88)
     expect(tools.find((t) => t.name === "candle_trade")!.inputSchema).toEqual(
       fixture.tools.find((t) => t.name === "candle_trade")!.inputSchema as never,
     )
@@ -182,12 +182,33 @@ describe("counting each key's calls", () => {
     const meter = { noteCall: (agent: string, n = 1) => void counted.push(`${agent}×${n}`), noteOutcome: (agent: string, o: { kind: string; code?: string }) => void answers.push(`${agent}:${o.kind === "error" ? o.code : o.kind}`) }
     const { pool } = setup({ agents: [["momentum", KEY_A], ["scout", KEY_B]], scripts: { scout: { rateLimitPerMin: 2 } }, meter })
     await pool.start()
+    counted.length = 0
     await pool.for("momentum").call("candle_get_portfolio", {})
     await pool.for("scout").call("candle_get_portfolio", {})
     const refused = await pool.for("scout").call("candle_get_portfolio", {})
     expect(refused).toMatchObject({ kind: "error", code: "RATE_LIMITED", retryable: true })
     expect(counted).toEqual(["momentum×2", "scout×2", "scout×2"])
     expect(answers).toEqual(["momentum:ok", "scout:ok", "scout:RATE_LIMITED"])
+  })
+
+  test("a read Candle doesn't count (its market read, for triggers' levels) counts nothing toward the key, and its answer is still told", async () => {
+    const counted: string[] = []
+    const answers: string[] = []
+    const meter = { noteCall: (agent: string, n = 1) => void counted.push(`${agent}×${n}`), noteOutcome: (agent: string, o: { kind: string }) => void answers.push(`${agent}:${o.kind}`) }
+    const { pool } = setup({ meter })
+    await pool.start()
+    counted.length = 0
+    await pool.for("momentum").call("candle_get_market", { chain: "solana", mint: "MoonFake11111111111111111111111111111111111" }, { uncounted: true })
+    await pool.for("momentum").call("candle_get_market", { chain: "solana", mint: "MoonFake11111111111111111111111111111111111" })
+    expect(counted).toEqual(["momentum×0", "momentum×1"])
+    expect(answers).toEqual(["momentum:ok", "momentum:ok"])
+  })
+
+  test("the server's own reads as it starts (whether the key may edit its profile, at start and on its tool list) count toward the key", async () => {
+    const counted: string[] = []
+    const { pool } = setup({ agents: [["momentum", KEY_A], ["scout", KEY_B]], meter: { noteCall: (agent: string, n = 1) => void counted.push(`${agent}×${n}`), noteOutcome: () => {} } })
+    await pool.start()
+    expect(counted.sort()).toEqual(["momentum×2", "scout×2"])
   })
 
   test("a call while the child is down reaches nothing, so it isn't counted", async () => {

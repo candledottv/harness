@@ -1,7 +1,7 @@
 // The key reducer: every rule that keeps a stray key from trading, and a
 // burst of keys landing where the last state says.
 import { describe, expect, test } from "bun:test"
-import { APPROVE_AFTER_MS, scrollOf, type Effect, ERROR_MESSAGE_MS, INITIAL_UI, joinWrappedAddresses, KILL_WINDOW_MS, type Key, MESSAGE_MS, paletteFound, step, type UiAction, type UiContext, type UiState, SETTINGS } from "./keys"
+import { APPROVE_AFTER_BEHIND_MS, APPROVE_AFTER_MS, scrollOf, type Effect, ERROR_MESSAGE_MS, INITIAL_UI, joinWrappedAddresses, KILL_WINDOW_MS, type Key, MESSAGE_MS, paletteFound, step, type UiAction, type UiContext, type UiState, SETTINGS } from "./keys"
 import { AGENT_FIRST, type PaneId, paneNav, place, shownOf } from "./layout"
 import type { ViewCard } from "./store"
 
@@ -56,6 +56,34 @@ describe("Enter and cards", () => {
     // The first Enter sends `buy …`; the card arrives at 1000; the second Enter lands 120 ms later.
     expect(run([enter(1_120)], c).effects).toEqual([])
     expect(run([enter(1_000 + APPROVE_AFTER_MS - 1)], c).effects).toEqual([])
+  })
+
+  test("a card that arrived while another was open waits 1.5 s for Enter; a click on it, and a card that arrived alone, keep 300 ms", () => {
+    const late = { ...c, behind: { b: true as const } }
+    expect(run([enter(1_000 + APPROVE_AFTER_MS)], late).effects).toEqual([])
+    expect(run([enter(1_000 + APPROVE_AFTER_BEHIND_MS - 1)], late).effects).toEqual([])
+    expect(run([enter(1_000 + APPROVE_AFTER_BEHIND_MS)], late).effects).toEqual([{ type: "approve", cardId: "b", how: "enter" }])
+    expect(run([{ type: "clickApprove", cardId: "b", now: 1_000 + APPROVE_AFTER_MS }], late).effects).toEqual([{ type: "approve", cardId: "b", how: "click" }])
+    // The card it arrived under is still one move away, on its own 300 ms.
+    expect(run([key("tab", 1_400), key("up", 1_400), enter(1_400)], late).effects).toEqual([{ type: "approve", cardId: "a", how: "enter" }])
+  })
+
+  test("after the frame comes back from a window too small to draw, Enter's 300 ms starts over on every card", () => {
+    const back: UiAction = { type: "shown", now: 9_000 }
+    expect(run([back, enter(9_100)], c).effects).toEqual([])
+    expect(run([back, enter(9_000 + APPROVE_AFTER_MS)], c).effects).toEqual([{ type: "approve", cardId: "b", how: "enter" }])
+  })
+
+  test("a Build card that opened while the person typed in the harness doesn't hold the keys until it's taken, and then waits its 300 ms", () => {
+    const build = ctx({ cards: [{ ...card("a"), origin: { role: "build" } } as ViewCard], seenAt: { a: 0 } })
+    const typing = run([{ type: "openBuildCard", cardId: "a", typing: true, now: 0 }], build)
+    expect(typing.state.overlay).toEqual({ kind: "card", cardId: "a", build: true, waiting: true })
+    const taken = run([{ type: "takeBuildCard", now: 5_000 }], build, typing.state)
+    expect(taken.state.overlay).toEqual({ kind: "card", cardId: "a", build: true })
+    expect(run([enter(5_100)], build, taken.state).effects).toEqual([])
+    expect(run([enter(5_000 + APPROVE_AFTER_MS)], build, taken.state).effects).toEqual([{ type: "approve", cardId: "a", how: "enter" }])
+    // Not typing: it opens with the keys, as ever.
+    expect(run([{ type: "openBuildCard", cardId: "a", now: 0 }], build).state.overlay).toEqual({ kind: "card", cardId: "a", build: true })
   })
 
   test("a card the user moved to is the one Enter approves", () => {
@@ -269,6 +297,8 @@ describe("the input line", () => {
     const typed = run([key("2")])
     expect(typed.state.tab).toBe(0)
     expect(typed.state.input).toBe("2")
+    // A fresh install shows five tabs: 5 is the last, and 9 picks nothing.
+    expect(run([key("up"), key("5")]).state.tab).toBe(4)
     expect(run([key("up"), key("9")]).state.tab).toBe(0)
   })
 })

@@ -15,7 +15,7 @@
 // journal keeps only a window of rows in memory. Either one saying paused means paused: a crash
 // between the two writes errs towards staying paused.
 import { randomBytes } from "node:crypto"
-import { chmod, readFile, rename, writeFile } from "node:fs/promises"
+import { chmod, readFile, rename, unlink, writeFile } from "node:fs/promises"
 import type { Card } from "./cards"
 import { pausedStops } from "./classify"
 import type { Operation } from "./execute"
@@ -26,7 +26,10 @@ import { walletName } from "./wallet-names"
 import type { OperationState } from "./tool-face"
 
 export const KILL_WORDING =
-  "Stops the agent and everything that trades through the Candle Harness. Bots and other apps using your keys aren't stopped. To stop those too, take the key off the wallet (you can allow it again) or revoke it (permanent)."
+  "Stops the agent and everything that trades through the Candle Harness, and holds its bots' buys (their sells and exits still go). Other apps, and bots outside the Candle Harness, using your keys aren't stopped. To stop those too, take the key off the wallet (you can allow it again) or revoke it (permanent)."
+
+/** What the report says while the pause couldn't be saved anywhere: rare, and the person's to act on. */
+export const UNSAVED_WORDS = "The pause couldn't be saved (the disk or the state folder can't be written), so it won't survive a restart of the Candle Harness. Press the kill switch again once it can."
 
 const IN_FLIGHT: ReadonlySet<OperationState> = new Set(["submitting", "pending", "unknown"])
 /** The kinds whose open cards the report lists as kept: what moves value or takes something down. */
@@ -64,7 +67,31 @@ export interface KillReport {
    * pause holds its buys and swaps as it holds cards, and its sells still go.
    */
   insideLimits?: { wallet: string; name: string; words: string }[]
+  /**
+   * Each live trigger the pause holds: one that buys, swaps or wakes. Its sells still go, and resuming
+   * leaves each trigger as it was.
+   */
+  triggersHeld?: { name: string; agent: string; words: string }[]
+  /**
+   * Each bot the pause holds, rules or code: its buys, while its sells and exits still go, guarding the positions it
+   * holds open.
+   * Resuming leaves each bot as it was.
+   */
+  botsHeld?: BotHeldByKill[]
+  /** The pause couldn't be written to the state file or the journal: it holds now, and wouldn't after a restart. */
+  unsaved?: string
   resume: string
+}
+
+export interface BotHeldByKill {
+  name: string
+  /** A code bot: the person's own code, its buys and swaps held. Absent: a rules bot, its entries held. */
+  kind?: "code"
+  agent: string
+  mode: "paper" | "live"
+  /** Its open positions' tokens, by name: what its exits still guard. */
+  open: string[]
+  words: string
 }
 
 /** The P&L window's figure as the report shows it: Candle's, from the Candle Harness's samples, naming its window. */
@@ -113,6 +140,12 @@ export interface KillDeps {
   nameOf?: (address: string, kind: "embedded" | "tee", label?: string) => string
   /** The wallets that trade inside limits now. */
   insideLimits?: () => { wallet: string; name: string }[]
+  /** The live triggers the pause holds, by name, in words. */
+  triggersHeld?: () => { name: string; agent: string; words: string }[]
+  /** The bots that enter now, whose entries the pause holds, with their open positions. */
+  botsHeld?: () => BotHeldByKill[]
+  /** Just before the pause ends: what was held during it is said while it's still on (the bots' skips). */
+  beforeResume?: () => Promise<void>
   /** Publishes the report, and each update to it, on `activity`. */
   publish: (report: KillReport) => void
   onChange: () => void
@@ -131,6 +164,9 @@ export function pausedInJournal(rows: readonly JournalRow[]): boolean {
 export class KillSwitch {
   private on = false
   private report: KillReport | undefined
+  /** Whether this pause is in the state file, and in the journal: a restart needs one of them. */
+  private savedInFile = false
+  private savedInJournal = false
 
   private constructor(private readonly deps: KillDeps) {}
 
@@ -141,7 +177,10 @@ export class KillSwitch {
     try {
       fromFile = (JSON.parse(await readFile(deps.statePath, "utf8")) as { paused?: unknown }).paused === true
     } catch {}
-    k.on = fromFile || pausedInJournal(deps.journal.rows())
+    const fromJournal = pausedInJournal(deps.journal.rows())
+    k.on = fromFile || fromJournal
+    k.savedInFile = fromFile
+    k.savedInJournal = fromJournal
     if (k.on) {
       const last = [...deps.journal.rows()].reverse().find((r) => r.type === "kill.report")
       if (last && typeof last.report === "object") k.report = last.report as KillReport
@@ -163,37 +202,72 @@ export class KillSwitch {
    */
   async kill(by: string): Promise<{ paused: true; report: KillReport; already: boolean }> {
     const already = this.on
-    if (!already) {
-      this.on = true
-      await this.persist(true)
-      await this.deps.journal.append({ type: "kill.on", mode: this.deps.mode(), by })
-      this.deps.onChange()
-    }
-    const turns = await this.deps.engine.cancelAll()
-    const withdrawn = await this.deps.cards.withdrawWhere(pausedStops, "kill_switch")
+    // Buys are refused from here, and every turn ends, before anything is written: neither needs the disk. The
+    // pause is then written down, and a write that fails is caught, so it never leaves a buy card open: the
+    // cards are withdrawn either way, and whichever write didn't take is tried again, now and by each later kill,
+    // until the pause is somewhere a restart will find it.
+    this.on = true
+    if (!already) this.deps.onChange()
+    const turns = await this.deps.engine.cancelAll().catch(() => [])
+    await this.save(by)
+    const withdrawn = await this.deps.cards.withdrawWhere(pausedStops, "kill_switch").catch(() => [])
     // Each kept sell starts again at a fresh price, so reading the report doesn't run out its 60 s.
-    await this.deps.cards.refreshWhere(isSell, "kill_switch_fresh")
+    await this.deps.cards.refreshWhere(isSell, "kill_switch_fresh").catch(() => [])
+    await this.save(by)
     if (already && this.report) {
       this.report.stopped.turns.push(...turns)
       this.report.stopped.cards.push(...withdrawn.map(cardLine))
       this.report.stillOpen = this.stillOpen()
+      const held = this.deps.triggersHeld?.() ?? []
+      if (held.length) this.report.triggersHeld = held
+      else delete this.report.triggersHeld
+      const bots = this.deps.botsHeld?.() ?? []
+      if (bots.length) this.report.botsHeld = bots
+      else delete this.report.botsHeld
       for (const line of this.approvingLines()) if (!this.report.inFlight.some((l) => l.opId === line.opId)) this.report.inFlight.push(line)
-      await this.deps.journal.append({ type: "kill.report", mode: this.deps.mode(), by, again: true, report: this.report })
+      this.noteSaved(this.report)
+      await this.deps.journal.append({ type: "kill.report", mode: this.deps.mode(), by, again: true, report: this.report }).catch(() => {})
       this.refresh()
       return { paused: true, report: this.report, already }
     }
     this.report = this.build(by, turns, withdrawn)
-    await this.deps.journal.append({ type: "kill.report", mode: this.deps.mode(), by, report: this.report })
+    this.noteSaved(this.report)
+    await this.deps.journal.append({ type: "kill.report", mode: this.deps.mode(), by, report: this.report }).catch(() => {})
     this.deps.publish(this.report)
     return { paused: true, report: this.report, already }
   }
 
+  /** Writes the pause to the state file and the journal: either one brings the next core up paused. */
+  private async save(by: string): Promise<void> {
+    if (!this.savedInFile) {
+      try {
+        await this.persist(true)
+        this.savedInFile = true
+      } catch {}
+    }
+    if (!this.savedInJournal) {
+      try {
+        await this.deps.journal.append({ type: "kill.on", mode: this.deps.mode(), by })
+        this.savedInJournal = true
+      } catch {}
+    }
+  }
+
+  /** The report says so while the pause is nowhere a restart would find it, and stops saying so once it is. */
+  private noteSaved(report: KillReport): void {
+    if (this.savedInFile || this.savedInJournal) delete report.unsaved
+    else report.unsaved = UNSAVED_WORDS
+  }
+
   async resume(by: string): Promise<{ paused: false; already: boolean }> {
     if (!this.on) return { paused: false, already: true }
+    await this.deps.beforeResume?.().catch(() => {})
     // The journal first, then the file: a crash between them leaves the file saying paused, which errs safe.
     await this.deps.journal.append({ type: "kill.off", mode: this.deps.mode(), by })
     this.on = false
     this.report = undefined
+    this.savedInFile = false
+    this.savedInJournal = false
     await this.persist(false)
     this.deps.onChange()
     return { paused: false, already: false }
@@ -207,6 +281,19 @@ export class KillSwitch {
     if (op.held) line.held = true
     else delete line.held
     this.deps.publish(this.report!)
+  }
+
+  /**
+   * A held bot's positions moved (one opened, or its exit sold it): while the report shows, its bots line follows, so it
+   * never says a position still sells after it sold.
+   */
+  botsMoved(): void {
+    if (!this.report) return
+    const bots = this.deps.botsHeld?.() ?? []
+    if (JSON.stringify(bots) === JSON.stringify(this.report.botsHeld ?? [])) return
+    if (bots.length) this.report.botsHeld = bots
+    else delete this.report.botsHeld
+    this.refresh()
   }
 
   private refresh(): void {
@@ -261,6 +348,14 @@ export class KillSwitch {
         const inside = this.deps.insideLimits?.() ?? []
         return inside.length ? { insideLimits: inside.map((w) => ({ ...w, words: `${w.name === "embedded" ? "embedded wallet" : w.name}: trades inside limits, held by the pause. Its sells still go.` })) } : {}
       })(),
+      ...(() => {
+        const held = this.deps.triggersHeld?.() ?? []
+        return held.length ? { triggersHeld: held } : {}
+      })(),
+      ...(() => {
+        const bots = this.deps.botsHeld?.() ?? []
+        return bots.length ? { botsHeld: bots } : {}
+      })(),
       resume: "Type resume, or use the status bar, to allow buys again.",
     }
   }
@@ -281,9 +376,14 @@ export class KillSwitch {
 
   private async persist(paused: boolean): Promise<void> {
     const temp = `${this.deps.statePath}.tmp-${randomBytes(6).toString("base64url")}`
-    await writeFile(temp, `${JSON.stringify({ paused, at: new Date(this.deps.now()).toISOString() })}\n`, { mode: 0o600, flag: "wx" })
-    await chmod(temp, 0o600)
-    await rename(temp, this.deps.statePath)
+    try {
+      await writeFile(temp, `${JSON.stringify({ paused, at: new Date(this.deps.now()).toISOString() })}\n`, { mode: 0o600, flag: "wx" })
+      await chmod(temp, 0o600)
+      await rename(temp, this.deps.statePath)
+    } catch (error) {
+      await unlink(temp).catch(() => {})
+      throw error
+    }
   }
 }
 

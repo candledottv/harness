@@ -1,0 +1,280 @@
+{
+  "name": "hour-clean-confluence-result",
+  "host": "hacc",
+  "method": "GET",
+  "route": "/v1/strategy-lab/replay/233",
+  "query": {},
+  "status": 200,
+  "ms": 194,
+  "bytes": 102406,
+  "answer": {
+    "job_id": 233,
+    "status": "done",
+    "error": null,
+    "result": {
+      "lead_card": {
+        "regime": {
+          "note": "context only; no regime gate has paid in desk research",
+          "label": "fake-label-3",
+          "ratio": 1.3,
+          "measure": "fake-measure-1",
+          "busiest_day_share_of_entries": 1
+        },
+        "trades": 222,
+        "control": {
+          "unavailable": "fake-unavailable-1"
+        },
+        "summary": "fake-summary-4",
+        "version": 1,
+        "strategy": {
+          "win_rate": 0.2,
+          "turnover_usd": "4348.65",
+          "gross_pnl_usd": "-91.35",
+          "net_pnl_usd_at_assumed_cost": "-145.71"
+        },
+        "break_even": {
+          "assumed": {
+            "fee_source": "fake-fee_source-1",
+            "fee_bps_per_side": 50,
+            "slippage_bps_per_side": 75
+          },
+          "round_trip_pct": -4.22,
+          "cost_bps_per_side": -211
+        },
+        "insufficient": false,
+        "evidence_limitations": [
+          "Control arms are priced without tick marks outside the strategy's holding spans.",
+          "Control arms do not apply max_concurrent: every drawn entry is held."
+        ]
+      },
+      "to": "2026-11-05T15:46:21.219Z",
+      "from": "2026-11-05T14:46:20.937Z",
+      "skips": {
+        "other": 0,
+        "filled": 222,
+        "displaced": 0,
+        "no_budget": 0,
+        "candidates": 389,
+        "entry_gate": 0,
+        "slots_full": 0,
+        "zero_price": 0,
+        "sizing_skip": 0,
+        "sizing_zero": 0,
+        "unpriceable": 36,
+        "already_open": 131,
+        "exited_today": 0,
+        "claimed_today": 0,
+        "mcap_at_entry": 0,
+        "max_concurrent": 0
+      },
+      "trades": [
+        {
+          "qty": 738818.2231796621,
+          "pnl_usd": -7.901044735420403,
+          "asset_id": 141671515,
+          "exit_usd": 2.0989552645795966,
+          "lot_tier": null,
+          "closed_at": "2026-11-05T15:46:21.219Z",
+          "entry_usd": 10,
+          "opened_at": "2026-11-05T14:46:57.000Z",
+          "reason_closed": "aborted",
+          "reason_opened": {
+            "sizing": {
+              "usd": 10,
+              "applied": [],
+              "paid_usd": 10,
+              "fell_back": []
+            },
+            "pattern": "confluence",
+            "signal_id": 128172927
+          },
+          "exit_price_usd": "0.0000028409630389817594",
+          "entry_price_usd": "0.000013535129056458384"
+        },
+        {
+          "qty": 1850227.548275104,
+          "pnl_usd": -4.652482969996152,
+          "asset_id": 141634724,
+          "exit_usd": 5.347517030003848,
+          "lot_tier": null,
+          "closed_at": "2026-11-05T15:46:21.219Z",
+          "entry_usd": 10,
+          "opened_at": "2026-11-05T14:48:13.000Z",
+          "reason_closed": "aborted",
+          "reason_opened": {
+            "sizing": {
+              "usd": 10,
+              "applied": [],
+              "paid_usd": 10,
+              "fell_back": []
+            },
+            "pattern": "confluence",
+            "signal_id": 128175006
+          },
+          "exit_price_usd": "0.0000028901942547494403",
+          "entry_price_usd": "0.000005404740627347493"
+        },
+        {
+          "qty": 2407.906153860344,
+          "pnl_usd": -0.4010690172341729,
+          "asset_id": 8176,
+          "exit_usd": 9.598930982765827,
+          "lot_tier": null,
+          "closed_at": "2026-11-05T15:46:21.219Z",
+          "entry_usd": 10,
+          "opened_at": "2026-11-05T14:48:55.000Z",
+          "reason_closed": "aborted",
+          "reason_opened": {
+            "sizing": {
+              "usd": 10,
+              "applied": [],
+              "paid_usd": 10,
+              "fell_back": []
+            },
+            "pattern": "confluence",
+            "signal_id": 128175952
+          },
+          "exit_price_usd": "0.003986422380862669",
+          "entry_price_usd": "0.004152985773124109"
+        },
+        {
+          "qty": 0.22071083443439304,
+          "pnl_usd": 0.5922137830304592,
+          "asset_id": 55192007,
+          "exit_usd": 10.59221378303046,
+          "lot_tier": null,
+          "closed_at": "2026-11-05T15:46:21.219Z",
+          "entry_usd": 10,
+          "opened_at": "2026-11-05T14:49:51.000Z",
+          "reason_closed": "aborted",
+          "reason_opened": {
+            "sizing": {
+              "usd": 10,
+              "applied": [],
+              "paid_usd": 10,
+              "fell_back": []
+            },
+            "pattern": "confluence",
+            "signal_id": 128177091
+          },
+          "exit_price_usd": "47.99136304375229",
+          "entry_price_usd": "45.30815184323237"
+        },
+        {
+          "qty": 41242.2558002956,
+          "pnl_usd": 0.7863564966145802,
+          "asset_id": 94646022,
+          "exit_usd": 10.78635649661458,
+          "lot_tier": null,
+          "closed_at": "2026-11-05T15:46:21.219Z",
+          "entry_usd": 10,
+          "opened_at": "2026-11-05T14:49:54.000Z",
+          "reason_closed": "aborted",
+          "reason_opened": {
+            "sizing": {
+              "usd": 10,
+              "applied": [],
+              "paid_usd": 10,
+              "fell_back": []
+            },
+            "pattern": "confluence",
+            "signal_id": 128177045
+          },
+          "exit_price_usd": "0.00026153653061182145",
+          "entry_price_usd": "0.00024246976325500427"
+        }
+      ],
+      "pnl_usd": "-91.3530570192",
+      "verdict": "fail",
+      "leftover": 778,
+      "universe": {
+        "assets_kept": 251,
+        "ohlcv_budget": 5000,
+        "ohlcv_failed": 0,
+        "assets_dropped": 0,
+        "empty_universe": false,
+        "candidate_assets": 251,
+        "contains_asset_id": null,
+        "dropped_asset_ids": [],
+        "overlay_asset_ids": [],
+        "ohlcv_skipped_by_cap": 0,
+        "refused_before_marks": false,
+        "ohlcv_skipped_asset_ids": []
+      },
+      "final_usd": 2128.6469429808385,
+      "trade_count": 222,
+      "unpriceable": 36,
+      "evidence_kind": "legacy_mark_replay",
+      "caught_by_tier": {
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "missed": 2
+      },
+      "skip_asset_ids": {
+        "max_concurrent": []
+      },
+      "max_drawdown_pct": 0.9147775382219333,
+      "trades_truncated": false,
+      "promotion_eligible": false,
+      "required_start_usd": 2220,
+      "measurement_quality": {
+        "mode": "both",
+        "excluded_assets": 250,
+        "with_exclusions": {
+          "trades": 1,
+          "pnl_usd": -2.5200976579602266
+        },
+        "without_exclusions": {
+          "trades": 222,
+          "pnl_usd": -91.3530570191617
+        },
+        "excluded_asset_sample": [
+          141682182,
+          141682247,
+          141671515,
+          141647593,
+          141634724
+        ],
+        "replayed_without_excluded_candidates": true
+      },
+      "evidence_limitations": [
+        "Mutable historical inputs, indicative marks and retrospective capital requirement; use frozen execution research for validation.",
+        "Tick outlier annotations use retrospective neighbours. Quality comparisons use current asset flags and stored peak-time exit evidence.",
+        "Control arms are priced without tick marks outside the strategy's holding spans."
+      ],
+      "peak_capital_at_risk_usd": 0,
+      "peak_multiple_by_entry_bucket": {}
+    },
+    "requested_by": "HaccFake11111111111111111111111111111111112",
+    "created_at": "2026-11-05T15:56:06.326Z",
+    "started_at": "2026-11-05T15:56:06.970Z",
+    "finished_at": "2026-11-05T15:56:45.160Z"
+  },
+  "polls": 13,
+  "seconds": 41,
+  "truncated": {
+    "$.result.trades": 222,
+    "$.result.measurement_quality.excluded_asset_sample": 200
+  },
+  "request": {
+    "definition": {
+      "chain": "solana",
+      "entry": {
+        "source": "pattern",
+        "pattern": "confluence",
+        "filters": {}
+      },
+      "exit": {
+        "max_hold_hours": 1
+      },
+      "sizing": {
+        "usd_per_trade": 10,
+        "max_concurrent": 1000
+      }
+    },
+    "from": "2026-11-05T14:46:20.937Z",
+    "to": "2026-11-05T15:46:21.219Z"
+  }
+}

@@ -56,11 +56,15 @@ export class ViewAsks {
 
   /** The view the agent's change goes to, if any is open. */
   target(): string | undefined {
-    const listening = this.deps.listening()
-    if (listening.length === 0) return undefined
+    return this.latest(this.deps.listening())
+  }
+
+  /** Of `ids`, the view the person last pressed a key or clicked in; with none used yet, the newest. */
+  latest(ids: readonly string[]): string | undefined {
+    if (ids.length === 0) return undefined
     let best: string | undefined
     let at = -1
-    for (const id of listening) {
+    for (const id of ids) {
       const used = this.lastUsed.get(id) ?? -1
       if (used >= at) {
         best = id

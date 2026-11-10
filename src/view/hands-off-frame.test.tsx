@@ -159,6 +159,8 @@ for (const [width, height] of SIZES) {
       expect(d.setup.captureCharFrame()).toContain("no cap on this key")
       expect(d.setup.captureCharFrame()).toContain("‹ wallets")
     }
+    // On, the menu says sells aren't held to the figures, and that a looser slippage still asks.
+    expect(d.setup.captureCharFrame()).toContain("No card inside both figures or for sells; looser slippage asks.")
   })
 
   test(`turning a wallet on, its day's figure being typed, at ${width}×${height}`, async () => {
@@ -168,6 +170,8 @@ for (const [width, height] of SIZES) {
     const frame = d.setup.captureCharFrame()
     expect(frame).toContain("Turn on trading inside limits")
     expect(frame).toContain("$10▏")
+    // What the figures don't hold is said before the click that turns it on.
+    expect(frame).toContain("Sells run with no card, at any size, unless slippage is looser.")
     expect(d.session.requests.some((r) => r.method === "autonomy.set")).toBe(false)
     await compare(`hands-off-${width}x${height}-menu-turning`, d.setup)
   })
@@ -212,7 +216,7 @@ test("a trade sent without a card that Candle refused says so, and drops the fig
   const refused: ViewCard = { ...ran, operation: { state: "failed" } }
   const op = { opId: "op-c5", cardId: "c5", agent: "agent-a", state: "failed", kind: "trade", error: { code: "KEY_LIMIT_REACHED", message } } as never
   const text = cardLines(refused, { now: CLOCK, focused: false, width: 90, op }).map((l) => l.segs.map((s) => s.text).join(""))
-  expect(text.join("\n")).toContain("failed, sent without a card")
+  expect(text.join("\n")).toContain("failed · without a card")
   expect(text.join("\n")).toContain("Nothing was sent.")
   expect(text.join("\n")).not.toContain("Nothing was sent. ·")
   expect(text.join("\n")).not.toContain("of $5.00 today")

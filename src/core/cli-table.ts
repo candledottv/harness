@@ -83,9 +83,9 @@ export interface PaneSpec {
 
 /**
  * The oldest CLI the Candle Harness runs on: the one its command table was read from (cli-source.json), which
- * bundles MCP server 0.10.28. One CLI: the one it was checked against.
+ * bundles MCP server 0.10.30. One CLI: the one it was checked against.
  */
-export const MIN_CANDLE_CLI = "0.13.11"
+export const MIN_CANDLE_CLI = "0.13.18"
 
 /** The rules that run in the prompt pane. */
 export const PANE_RULES: ReadonlySet<CliRule> = new Set(["owner", "ceremony", "funds-out"])
@@ -324,6 +324,19 @@ const ROWS: readonly RowInput[] = [
   r("keys self", "less-access", "cli", "agent", { note: "On its own it prints its usage." }),
   r("keys self embedded-wallet", "less-access", "cli", "agent", { note: "Only `deny`: a key can never allow itself.", takes: 1 }),
   r("keys revoke", "less-access", "cli", "owner"),
+  // A key's per-asset caps (0.13.18), set with the profile's own API key: Candle takes only a lower cap
+  // or a first one (raising or removing one is LOOSEN_REQUIRES_SESSION, the owner's in the web key
+  // manager), so it only narrows.
+  r("keys limits", "less-access", "cli", "agent", { note: "It can only lower a key's per-asset caps or add one: Candle refuses raising or removing one, which is yours in Candle's web key manager." }),
+  // Pausing one key on Candle over the device token (0.13.18): everything it does stops, sells
+  // included, until keys resume. Stopping only narrows; resuming widens, so it's the owner's.
+  r("keys stop", "less-access", "cli", "owner", { note: "Candle stops everything the key does, sells and its bots' exits included, until candle keys resume.", takes: 1 }),
+  r("keys resume", "owner", "pane", "owner", { takes: 1 }),
+  // A new secret for an existing key (0.13.18). The CLI replaces only its own profile's copy; the Candle Harness
+  // holds each agent's key itself, and its copy stops working when the grace window ends.
+  r("keys rotate", "owner", "later", "owner", {
+    held: "Rotating gives the key a new secret, and the Candle Harness holds its own copy of each agent's key, which stops working when the old secret does. The Candle Harness doesn't store a rotated secret yet: for an agent's key, make a fresh one with candle keys create and revoke the old one once the agent runs on it.",
+  }),
   r("keys wallets", "read", "cli", "agent"),
   r("keys wallets set", "less-access", "cli", "agent", { note: "From a key it can only narrow the set." }),
   // From a key the CLI refuses a widening (LOOSEN_REQUIRES_SESSION), so only the narrowing is the agent's.
@@ -343,6 +356,16 @@ const ROWS: readonly RowInput[] = [
   r("wallets untrust", "less-access", "cli", "owner"),
   r("wallets allow-launch", "owner", "pane", "owner", { pane: { confirms: [CONFIRM] } }),
   r("wallets disallow-launch", "less-access", "cli", "owner"),
+  // The account's withdrawal allowlist (0.13.18): a read, which says approving an address is the owner's, in Candle's agent console.
+  r("wallets allowlist", "read", "cli", "agent"),
+  // Opens the Agents console's grant-only page in the browser and waits until every embedded wallet
+  // carries Candle's signer (0.13.18). The grant happens in the browser, as the member, so no factor step.
+  r("wallets authorize", "ceremony", "pane", "agent", {
+    pane: {
+      confirms: ["it opens Candle's agent console in your browser, where you approve the grant"],
+      shows: "Lets agent keys use your account's embedded wallets, approved in your browser.",
+    },
+  }),
   // From a TEE wallet. Candle keeps it off on a deployment until AGENT_TEE_CLOSE_EMPTY_ENABLED; on Candle's
   // production server it closed four accounts through it and read the close back under its id, so it's on. The Wallets pane's `close` chip and the typed line follow the row.
   r("wallets close-empty", "card", "card", "agent", {
@@ -385,6 +408,9 @@ const ROWS: readonly RowInput[] = [
   never("spend max-per-call", SPEND_NOTE),
   never("spend pause", SPEND_NOTE),
   never("spend resume", SPEND_NOTE),
+  // One question to Candle's Quant over the agent's key (0.13.18). It never pays: past the day's free
+  // answers it prints the price and stops.
+  r("quant ask", "read", "cli", "agent", { note: "It sends the question to Candle's Quant and prints the answer. It never pays: past today's free answers it says the price and stops." }),
   // Accepting Quant's terms is the person's own act, typed at the CLI's prompt (commands/quant-terms.ts).
   r("quant terms", "ceremony", "pane", "agent", {
     pane: { confirms: ["you'll type accept"], shows: "Accepts Quant's terms for your account (docs.candle.tv/terms)." },
@@ -529,7 +555,6 @@ const ROWS: readonly RowInput[] = [
   never("core mcp", "The Candle Harness has its own MCP server for agents: candle-harness mcp."),
   never("tui", "This is the Candle Harness."),
   // Staging only (0.13.9): Candle's own tool for test members, from its team's keychain items.
-  never("accounts create", "Candle's own tool for making test accounts on its staging server. It doesn't run against Candle itself."),
   never("completion", "Shell setup, not a Candle Harness feature."),
   never("completion zsh", "Shell setup, not a Candle Harness feature."),
   never("completion bash", "Shell setup, not a Candle Harness feature."),

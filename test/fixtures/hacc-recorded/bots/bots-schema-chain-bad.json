@@ -1,0 +1,32 @@
+{
+  "name": "schema-chain-bad",
+  "host": "hacc",
+  "method": "POST",
+  "route": "/v1/strategy-lab/replay",
+  "query": {},
+  "body": {
+    "definition": {
+      "chain": "x",
+      "entry": {
+        "source": "pattern",
+        "pattern": "confluence",
+        "filters": {}
+      },
+      "exit": {
+        "take_profit_pct": 100
+      },
+      "sizing": {
+        "usd_per_trade": 5,
+        "max_concurrent": 2
+      }
+    },
+    "from": "2026-10-01T00:00:00Z",
+    "to": "2026-10-30T00:00:00Z"
+  },
+  "status": 400,
+  "ms": 129,
+  "bytes": 87,
+  "answer": {
+    "error": "chain: Invalid enum value. Expected 'solana' | 'hood' | 'any', received 'x'"
+  }
+}

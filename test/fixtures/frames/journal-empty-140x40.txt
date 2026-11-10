@@ -1,9 +1,9 @@
  ▲ candle  agent-a ▾  LIVE  today $12.00 / $100.00  exposure $412.50  P&L 24h +$3.40  ● 0 cards waiting                      ctrl-x ×2 kill 
- 1 Trade  2 Cockpit  3 Trending  4 Signals  5 P&L  6 Research  7 Journal  8 Perps   settings ▾                                              
+ 1 Trade  2 Cockpit  3 Research  4 Journal  5 Bots  6 Build   settings ▾  4 new tabs are ticked off: Trending, Signals, P&L an…  show them  
                                                                                                                                             
 ╭─ Journal ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │  search  ↑ or a click to search everything recorded: words, a token, an agent                                                            │
-│  ✓ trades   ✓ cards   ✓ kill switch   ✓ Hacc   ✓ memory   ✓ agents   ✓ view   core                                                       │
+│  ✓ trades   ✓ cards   ✓ kill switch   ✓ Hacc   ✓ memory   ✓ agents   ✓ bots   ✓ view   core                                              │
 │ Nothing recorded yet. Cards, trades, the agent's turns and the kill switch show here as they happen.                                     │
 │                                                                                                                                          │
 │                                                                                                                                          │
@@ -41,11 +41,11 @@
 
 --- colours ---
 0: ffffff/0e1115×1 f6f8fb/0e1115×8 ffffff/0e1115×1 6cb6ff/16263a×11 0b0d10/3ddc84×6 ffffff/0e1115×1 959dab/0e1115×6 f6f8fb/0e1115×6 959dab/0e1115×10 ffffff/0e1115×2 959dab/0e1115×9 f6f8fb/0e1115×7 ffffff/0e1115×2 959dab/0e1115×8 3ddc84/0e1115×6 ffffff/0e1115×2 959dab/0e1115×17 ffffff/0e1115×21 ff5c5c/3a1619×16
-1: ffffff/0b0d10×1 6cb6ff/0b0d10×7 ffffff/0b0d10×2 6cb6ff/0b0d10×9 ffffff/0b0d10×2 6cb6ff/0b0d10×10 ffffff/0b0d10×2 6cb6ff/0b0d10×9 ffffff/0b0d10×2 6cb6ff/0b0d10×5 ffffff/0b0d10×2 6cb6ff/0b0d10×10 ffffff/0b0d10×2 f6f8fb/0b0d10+9×9 ffffff/0b0d10×2 6cb6ff/0b0d10×7 ffffff/0b0d10×2 6cb6ff/16263a×12 ffffff/0b0d10×45
+1: ffffff/0b0d10×1 6cb6ff/0b0d10×7 ffffff/0b0d10×2 6cb6ff/0b0d10×9 ffffff/0b0d10×2 6cb6ff/0b0d10×10 ffffff/0b0d10×2 f6f8fb/0b0d10+9×9 ffffff/0b0d10×2 6cb6ff/0b0d10×6 ffffff/0b0d10×2 6cb6ff/0b0d10×7 ffffff/0b0d10×2 6cb6ff/16263a×12 ffffff/0b0d10×1 f5a524/0b0d10×54 6cb6ff/16263a×11 ffffff/0b0d10×1
 2: ffffff/0b0d10×140
 3: 252a33/111419×2 b392f0/111419×9 252a33/111419×129
 4: 252a33/111419×1 ffffff/111419×1 6cb6ff/16263a×8 dde2ea/111419×1 959dab/111419×68 ffffff/111419×60 252a33/111419×1
-5: 252a33/111419×1 ffffff/111419×1 6cb6ff/16263a×10 dde2ea/111419×1 6cb6ff/16263a×9 dde2ea/111419×1 6cb6ff/16263a×15 dde2ea/111419×1 6cb6ff/16263a×8 dde2ea/111419×1 6cb6ff/16263a×10 dde2ea/111419×1 6cb6ff/16263a×10 dde2ea/111419×1 6cb6ff/16263a×8 dde2ea/111419×1 6cb6ff/16263a×6 dde2ea/111419×1 ffffff/111419×53 252a33/111419×1
+5: 252a33/111419×1 ffffff/111419×1 6cb6ff/16263a×10 dde2ea/111419×1 6cb6ff/16263a×9 dde2ea/111419×1 6cb6ff/16263a×15 dde2ea/111419×1 6cb6ff/16263a×8 dde2ea/111419×1 6cb6ff/16263a×10 dde2ea/111419×1 6cb6ff/16263a×10 dde2ea/111419×1 6cb6ff/16263a×8 dde2ea/111419×1 6cb6ff/16263a×8 dde2ea/111419×1 6cb6ff/16263a×6 ffffff/111419×45 252a33/111419×1
 6: 252a33/111419×1 ffffff/111419×1 959dab/111419×100 ffffff/111419×37 252a33/111419×1
 7: 252a33/111419×1 ffffff/111419×138 252a33/111419×1
 8: 252a33/111419×1 ffffff/111419×138 252a33/111419×1

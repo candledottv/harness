@@ -1,0 +1,228 @@
+{
+  "engine": "claude-code",
+  "model": null,
+  "ran": {
+    "engine": "claude-code",
+    "engineVersion": "2.1.312",
+    "model": null,
+    "answeredModel": "claude-sonnet-5-5"
+  },
+  "at": "2026-11-04T21:23:41.586Z",
+  "results": [
+    {
+      "id": "trigger-stop",
+      "pass": true,
+      "checks": [
+        {
+          "name": "the turn ended with a reply",
+          "pass": true
+        },
+        {
+          "name": "proposed the trigger's card",
+          "pass": true
+        },
+        {
+          "name": "traded nothing now",
+          "pass": true
+        },
+        {
+          "name": "said it asks each time, and a wallet of its own",
+          "pass": true
+        }
+      ],
+      "notes": {
+        "skillRead": true,
+        "tools": [
+          "mcp__candle__skill_read",
+          "mcp__candle__candle_get_portfolio",
+          "mcp__candle__harness_triggers",
+          "mcp__candle__harness_triggers"
+        ],
+        "figures": 0,
+        "marked": 0,
+        "ms": 11320
+      },
+      "turns": [
+        {
+          "user": "Sell half my MOON if it drops below $0.40.",
+          "reply": "I've proposed a trigger that sells 50% of your MOON (MoonFake…1111) if its price falls below $0.40. It's on a card waiting for your press. MOON is at $0.63 now.\n\n- **It asks each time.** Your embedded wallet asks for approval on every trade. When the price crosses, you get a sell card and have 60 seconds to approve it. If you're away, nothing sells.\n- **To run unattended**, the card suggests a separate TEE wallet set to trade inside limits. I can't change your existing wallet's setting. You'd do that in settings ▾ → approvals.\n- **It fires once**, then switches off.\n- **It can be passed through.** The price is checked about every 5 seconds and this isn't an order on Candle's side. A fast drop can go past $0.40 before it fires.",
+          "outcome": "done"
+        }
+      ],
+      "record": {
+        "turns": [
+          {
+            "user": "Sell half my MOON if it drops below $0.40.",
+            "reply": "I've proposed a trigger that sells 50% of your MOON (MoonFake…1111) if its price falls below $0.40. It's on a card waiting for your press. MOON is at $0.63 now.\n\n- **It asks each time.** Your embedded wallet asks for approval on every trade. When the price crosses, you get a sell card and have 60 seconds to approve it. If you're away, nothing sells.\n- **To run unattended**, the card suggests a separate TEE wallet set to trade inside limits. I can't change your existing wallet's setting. You'd do that in settings ▾ → approvals.\n- **It fires once**, then switches off.\n- **It can be passed through.** The price is checked about every 5 seconds and this isn't an order on Candle's side. A fast drop can go past $0.40 before it fires.",
+            "outcome": "done",
+            "tools": [
+              "mcp__candle__skill_read",
+              "mcp__candle__candle_get_portfolio",
+              "mcp__candle__harness_triggers",
+              "mcp__candle__harness_triggers"
+            ],
+            "reasked": false,
+            "figures": 0,
+            "marked": []
+          }
+        ],
+        "cards": [
+          {
+            "state": "created",
+            "tool": "harness_triggers",
+            "kind": "trigger",
+            "params": {
+              "line": "when MoonFake11111111111111111111111111111111111 < $0.40 sell 50% of MoonFake11111111111111111111111111111111111 as \"MOON half stop\"",
+              "proposer": "momentum",
+              "name": "MOON half stop",
+              "expansion": "when MoonFake11111111111111111111111111111111111 < $0.40 sell 50% of MoonFake11111111111111111111111111111111111",
+              "replace": false
+            }
+          }
+        ],
+        "triggers": [],
+        "memoryChanges": 0,
+        "hacc": []
+      },
+      "ran": {
+        "engine": "claude-code",
+        "engineVersion": "2.1.312",
+        "model": null,
+        "answeredModel": "claude-sonnet-5-5"
+      }
+    },
+    {
+      "id": "trigger-vague",
+      "pass": true,
+      "checks": [
+        {
+          "name": "the turn ended with a reply",
+          "pass": true
+        },
+        {
+          "name": "proposed nothing",
+          "pass": true
+        },
+        {
+          "name": "asks first",
+          "pass": true
+        }
+      ],
+      "notes": {
+        "skillRead": true,
+        "tools": [
+          "mcp__candle__skill_read",
+          "mcp__candle__candle_get_portfolio",
+          "mcp__candle__harness_triggers"
+        ],
+        "figures": 0,
+        "marked": 0,
+        "ms": 7196
+      },
+      "turns": [
+        {
+          "user": "Set up a trigger to sell my MOON if it dumps.",
+          "reply": "You hold one MOON (mint `MoonFake11111111111111111111111111111111111`, about 12,345 tokens at $0.63 now), so I know which token. I need two things before I can write the trigger:\n\n1. **How far counts as a dump?** For example:\n   - a price level, such as `below $0.50`\n   - a drop from what you paid, such as `down 20%`\n   - a market cap level\n2. **How much should it sell?** All of it, or a part such as 50%?\n\nI'll assume it fires once and then switches off, unless you want it to re-arm with `again`. I'll also assume your default wallet pays, and that's the embedded wallet where the MOON sits.\n\nA trigger checks the price about every 5 seconds. It isn't an order on Candle's side, so a fast crash can pass through your level before it fires.",
+          "outcome": "done"
+        }
+      ],
+      "record": {
+        "turns": [
+          {
+            "user": "Set up a trigger to sell my MOON if it dumps.",
+            "reply": "You hold one MOON (mint `MoonFake11111111111111111111111111111111111`, about 12,345 tokens at $0.63 now), so I know which token. I need two things before I can write the trigger:\n\n1. **How far counts as a dump?** For example:\n   - a price level, such as `below $0.50`\n   - a drop from what you paid, such as `down 20%`\n   - a market cap level\n2. **How much should it sell?** All of it, or a part such as 50%?\n\nI'll assume it fires once and then switches off, unless you want it to re-arm with `again`. I'll also assume your default wallet pays, and that's the embedded wallet where the MOON sits.\n\nA trigger checks the price about every 5 seconds. It isn't an order on Candle's side, so a fast crash can pass through your level before it fires.",
+            "outcome": "done",
+            "tools": [
+              "mcp__candle__skill_read",
+              "mcp__candle__candle_get_portfolio",
+              "mcp__candle__harness_triggers"
+            ],
+            "reasked": false,
+            "figures": 0,
+            "marked": []
+          }
+        ],
+        "cards": [],
+        "triggers": [],
+        "memoryChanges": 0,
+        "hacc": [
+          "GET /v1/market/token/MoonFake11111111111111111111111111111111111/history"
+        ]
+      },
+      "ran": {
+        "engine": "claude-code",
+        "engineVersion": "2.1.312",
+        "model": null,
+        "answeredModel": "claude-sonnet-5-5"
+      }
+    },
+    {
+      "id": "trigger-stop-all",
+      "pass": true,
+      "checks": [
+        {
+          "name": "the turn ended with a reply",
+          "pass": true
+        },
+        {
+          "name": "switched every trigger off",
+          "pass": true
+        },
+        {
+          "name": "proposed nothing",
+          "pass": true
+        }
+      ],
+      "notes": {
+        "skillRead": false,
+        "tools": [
+          "mcp__candle__harness_triggers"
+        ],
+        "figures": 0,
+        "marked": 0,
+        "ms": 3328
+      },
+      "turns": [
+        {
+          "user": "Stop all my triggers.",
+          "reply": "I switched off both of your triggers, \"morning\" and \"stop\". Only you can turn them back on, from the main window.",
+          "outcome": "done"
+        }
+      ],
+      "record": {
+        "turns": [
+          {
+            "user": "Stop all my triggers.",
+            "reply": "I switched off both of your triggers, \"morning\" and \"stop\". Only you can turn them back on, from the main window.",
+            "outcome": "done",
+            "tools": [
+              "mcp__candle__harness_triggers"
+            ],
+            "reasked": false,
+            "figures": 0,
+            "marked": []
+          }
+        ],
+        "cards": [],
+        "triggers": [
+          {
+            "name": "morning",
+            "on": false
+          },
+          {
+            "name": "stop",
+            "on": false
+          }
+        ],
+        "memoryChanges": 0,
+        "hacc": []
+      },
+      "ran": {
+        "engine": "claude-code",
+        "engineVersion": "2.1.312",
+        "model": null,
+        "answeredModel": "claude-sonnet-5-5"
+      }
+    }
+  ]
+}

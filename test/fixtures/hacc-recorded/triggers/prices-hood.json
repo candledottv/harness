@@ -1,0 +1,53 @@
+{
+  "name": "prices-hood",
+  "host": "hacc",
+  "route": "/v1/market/prices",
+  "query": {
+    "addresses": "fake-addresses-1"
+  },
+  "status": 200,
+  "ms": 313,
+  "bytes": 1218,
+  "answer": {
+    "prices": [
+      {
+        "address": "0xfa4e000000000000000000000000000000000001",
+        "symbol": null,
+        "price_usd": null,
+        "market_cap_usd": null
+      },
+      {
+        "address": "0xfa4e000000000000000000000000000000000002",
+        "symbol": null,
+        "price_usd": null,
+        "market_cap_usd": null
+      },
+      {
+        "address": "0xfa4e000000000000000000000000000000000003",
+        "symbol": null,
+        "price_usd": null,
+        "market_cap_usd": null
+      },
+      {
+        "address": "0xfa4e000000000000000000000000000000000004",
+        "symbol": null,
+        "price_usd": null,
+        "market_cap_usd": null
+      },
+      {
+        "address": "0xfa4e000000000000000000000000000000000005",
+        "symbol": null,
+        "price_usd": null,
+        "market_cap_usd": null
+      }
+    ],
+    "research_credits": 0,
+    "provenance": {
+      "source": "provider_refresh",
+      "retrieved_at": "2026-11-04T16:48:55.496Z"
+    }
+  },
+  "truncated": {
+    "$.prices": 10
+  }
+}

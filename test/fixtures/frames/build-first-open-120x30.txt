@@ -1,0 +1,62 @@
+ ▲ candle  agent-a ▾  LIVE  today $12.00 / $100.00  exposure $412.50  P&L 24h +$3.40  ● 1 card waiting   ctrl-x ×2 kill 
+ 1 Trade  2 Cockpit  3 Research  4 Bots  5 Build   settings ▾                                                           
+                                                                                                                        
+╭─ Build · first open ─────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ Where should your bots live?                                                                                         │
+│ ╭──────────────────────────────────────────────╮                                                                     │
+│ │ ~/candle-bots█                               │                                                                     │
+│ ╰──────────────────────────────────────────────╯                                                                     │
+│ Each bot is a folder in it. Your editor, git and backups find it there.                                              │
+│ Which coding harness?                                                                                                │
+│ › Claude Code  2.1.316   signed in                                                                                   │
+│   Codex        0.165.0   signed in                                                                                   │
+│   Grok         1.0.70    not signed in · it asks when it starts                                                      │
+│   OpenCode     1.19.5    signed in                                                                                   │
+│   Pi           1.4.0     signed in                                                                                   │
+│   another command…                                                                                                   │
+│ Over SSH or on a VPS, each one signs in by a code in the pane; the docs give each one's command.                     │
+│   ⏎ start in ~/candle-bots   tab next  ↑/↓ harness                                                                   │
+│                                                                                                                      │
+│                                                                                                                      │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ cards ──────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ 1 card waiting · ⏎ approves the highlighted one                                                                      │
+│ ▌ BUY 0.1 SOL of JUPF                                                                                             …  │
+│ ▌ agent-a · pays from embedded · live · JupF…1111                                                                    │
+│ ▌ why  volume up 3× on the hour, holders rising                                                                      │
+│ ▌  ⏎ approve    ctrl-n reject    ctrl-o details                                                                      │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+                                                                                                                        
+› type a command or ask the agent                                                  ⏎ start   ctrl-k palette    ? help   
+
+--- colours ---
+0: ffffff/0e1115×1 f6f8fb/0e1115×8 ffffff/0e1115×1 6cb6ff/16263a×11 0b0d10/3ddc84×6 ffffff/0e1115×1 959dab/0e1115×6 f6f8fb/0e1115×6 959dab/0e1115×10 ffffff/0e1115×2 959dab/0e1115×9 f6f8fb/0e1115×7 ffffff/0e1115×2 959dab/0e1115×8 3ddc84/0e1115×6 ffffff/0e1115×2 f5a524/0e1115×16 ffffff/0e1115×2 ff5c5c/3a1619×16
+1: ffffff/0b0d10×1 6cb6ff/0b0d10×7 ffffff/0b0d10×2 6cb6ff/0b0d10×9 ffffff/0b0d10×2 6cb6ff/0b0d10×10 ffffff/0b0d10×2 6cb6ff/0b0d10×6 ffffff/0b0d10×2 f6f8fb/0b0d10+9×7 ffffff/0b0d10×2 6cb6ff/16263a×12 ffffff/0b0d10×58
+2: ffffff/0b0d10×120
+3: 32fe9f/111419×2 b392f0/111419×20 32fe9f/111419×98
+4: 32fe9f/111419×1 ffffff/111419×1 b392f0/111419×28 ffffff/111419×89 32fe9f/111419×1
+5: 32fe9f/111419×1 ffffff/111419×1 32fe9f/111419×48 ffffff/111419×69 32fe9f/111419×1
+6: 32fe9f/111419×1 ffffff/111419×1 32fe9f/111419×2 f6f8fb/111419×44 32fe9f/111419×2 ffffff/111419×69 32fe9f/111419×1
+7: 32fe9f/111419×1 ffffff/111419×1 32fe9f/111419×48 ffffff/111419×69 32fe9f/111419×1
+8: 32fe9f/111419×1 ffffff/111419×1 959dab/111419×71 ffffff/111419×46 32fe9f/111419×1
+9: 32fe9f/111419×1 ffffff/111419×1 b392f0/111419×21 ffffff/111419×96 32fe9f/111419×1
+10: 32fe9f/111419×1 ffffff/111419×1 32fe9f/111419×2 f6f8fb/111419×13 959dab/111419×19 ffffff/111419×83 32fe9f/111419×1
+11: 32fe9f/111419×1 ffffff/111419×1 32fe9f/111419×2 dde2ea/111419×13 959dab/111419×19 ffffff/111419×83 32fe9f/111419×1
+12: 32fe9f/111419×1 ffffff/111419×1 32fe9f/111419×2 dde2ea/111419×13 959dab/111419×48 ffffff/111419×54 32fe9f/111419×1
+13: 32fe9f/111419×1 ffffff/111419×1 32fe9f/111419×2 dde2ea/111419×13 959dab/111419×19 ffffff/111419×83 32fe9f/111419×1
+14: 32fe9f/111419×1 ffffff/111419×1 32fe9f/111419×2 dde2ea/111419×13 959dab/111419×19 ffffff/111419×83 32fe9f/111419×1
+15: 32fe9f/111419×1 ffffff/111419×1 32fe9f/111419×2 dde2ea/111419×16 ffffff/111419×99 32fe9f/111419×1
+16: 32fe9f/111419×1 ffffff/111419×1 959dab/111419×96 ffffff/111419×21 32fe9f/111419×1
+17: 32fe9f/111419×1 ffffff/111419×1 dde2ea/111419×1 6cb6ff/16263a×26 959dab/111419×23 ffffff/111419×67 32fe9f/111419×1
+18: 32fe9f/111419×1 ffffff/111419×118 32fe9f/111419×1
+19: 32fe9f/111419×1 ffffff/111419×118 32fe9f/111419×1
+20: 32fe9f/111419×120
+21: 252a33/111419×2 b392f0/111419×7 252a33/111419×111
+22: 252a33/111419×1 ffffff/111419×1 959dab/111419×47 ffffff/111419×70 252a33/111419×1
+23: 252a33/111419×1 ffffff/111419×1 f5a524/111419×2 f6f8fb/111419×19 dde2ea/111419×93 f5a524/111419×1 ffffff/111419×2 252a33/111419×1
+24: 252a33/111419×1 ffffff/111419×1 f5a524/111419×2 959dab/111419×47 ffffff/111419×68 252a33/111419×1
+25: 252a33/111419×1 ffffff/111419×1 f5a524/111419×2 959dab/111419×5 dde2ea/111419×40 ffffff/111419×70 252a33/111419×1
+26: 252a33/111419×1 ffffff/111419×1 f5a524/111419×2 0b0d10/6cb6ff×11 dde2ea/111419×2 6cb6ff/16263a×15 dde2ea/111419×2 6cb6ff/16263a×16 ffffff/111419×69 252a33/111419×1
+27: 252a33/111419×120
+28: 959dab/0b0d10×1 ffffff/0b0d10×119
+29: f6f8fb/0e1115×2 959dab/0e1115×31 ffffff/0e1115×50 dde2ea/0e1115×1 959dab/0e1115×8 6cb6ff/16263a×16 959dab/0e1115×2 6cb6ff/16263a×8 959dab/0e1115×2

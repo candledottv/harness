@@ -20,7 +20,9 @@ interface Recording {
 }
 const recordings = new Map<string, Recording>()
 // The Research recordings sit in research/; their names start research-, so they never clash.
-for (const sub of [dir, join(dir, "research")])
+// The triggers' recordings sit in triggers/; their names (prices-, tape-, mine-) don't clash either.
+// The bots' sit in bots/, each name starting bots-.
+for (const sub of [dir, join(dir, "research"), join(dir, "triggers"), join(dir, "bots")])
   for (const f of readdirSync(sub)) if (f.endsWith(".json")) recordings.set(f.slice(0, -5), JSON.parse(readFileSync(join(sub, f), "utf8")))
 
 /** A fresh copy of a recorded answer. */
@@ -30,6 +32,12 @@ export function recorded(name: string): Json {
   return structuredClone(r.answer) as Json
 }
 const rowOf = (name: string, field: string) => structuredClone((recorded(name)[field] as Json[])[0]) as Json
+
+/** How long Hacc answered a price read from its stored snapshot before refreshing: 65 s, measured live. */
+export const PRICE_REFRESH_MS = 65_000
+/** Hacc's limit on those refreshes, as measured live: this many in this window. */
+export const PRICE_REFRESH_LIMIT = 10
+export const PRICE_REFRESH_WINDOW_MS = 60_000
 
 const PATTERNS = ["confluence", "deployer", "large_move", "dormancy", "intra_book", "new_ticker", "distribution", "kol_mention"]
 
@@ -54,6 +62,16 @@ export interface FakeHaccSwitches {
    * name one recorded token whatever was asked): `{ [mint]: { market: {...}, safety: {...} } }`.
    */
   tokens: Record<string, { market?: Json; safety?: Json }>
+  /**
+   * What the price read answers per token (`/v1/market/prices`), by address: a token not here is priced
+   * null, as Hacc answers a token it doesn't price. A Hood token is priced only when the read names
+   * `chain=hood`, as recorded.
+   */
+  prices: Record<string, { price: number | null; mcap?: number | null; symbol?: string | null }>
+  /** How long a price read is answered from Hacc's stored snapshot before it refreshes from its provider. */
+  priceRefreshMs: number
+  /** Refreshes from the provider Hacc makes for the key in PRICE_REFRESH_WINDOW_MS before it refuses one. */
+  priceRefreshLimit: number
 }
 export interface FakeHaccCall {
   method: string
@@ -69,7 +87,7 @@ const CAPS: Record<Exclude<Plan, "free">, { follows: number; rules: number; grou
 }
 
 export function startFakeHacc(initial: Partial<FakeHaccSwitches> & { keys: string[] }) {
-  const sw: FakeHaccSwitches = { plan: "max", slow: {}, fail: {}, maxSockets: 8, pingMs: 20_000, replayPolls: 2, replayEnds: "done", replayQuota: 20, tokens: {}, ...initial }
+  const sw: FakeHaccSwitches = { plan: "max", slow: {}, fail: {}, maxSockets: 8, pingMs: 20_000, replayPolls: 2, replayEnds: "done", replayQuota: 20, tokens: {}, prices: {}, priceRefreshMs: PRICE_REFRESH_MS, priceRefreshLimit: PRICE_REFRESH_LIMIT, ...initial }
   const calls: FakeHaccCall[] = []
   const sockets = new Set<ServerWebSocket<{ key: string }>>()
 
@@ -95,6 +113,8 @@ export function startFakeHacc(initial: Partial<FakeHaccSwitches> & { keys: strin
   const mine: Json[] = []
   const replays = new Map<number, { polls: number; status: string; key: string }>()
   let ids = 1
+  const priceSnapshots = new Map<string, { at: number; prices: Json[] }>()
+  const priceRefreshes: number[] = []
 
   const json = (status: number, body: unknown) => Response.json(body, { status })
   const err = (status: number, error: string, extra: Json = {}) => json(status, { error, ...extra })
@@ -152,6 +172,16 @@ export function startFakeHacc(initial: Partial<FakeHaccSwitches> & { keys: strin
       if (pattern) rows = rows.filter((r) => r.pattern === pattern)
       if (chain) rows = rows.filter((r) => r.asset_chain === chain)
       if (asset) rows = rows.filter((r) => r.asset_address === asset || String(r.asset_id) === asset)
+      // Recorded: a market-cap filter passes a token whose market cap Hacc doesn't know (`max_mcap_usd=1`
+      // still answered a new ticker's rows). Here a token's market cap is the one the price read gives.
+      const mcapOf = (r: Json) => sw.prices[String(r.asset_address)]?.mcap
+      const lo = q.has("min_mcap_usd") ? Number(q.get("min_mcap_usd")) : undefined
+      const hi = q.has("max_mcap_usd") ? Number(q.get("max_mcap_usd")) : undefined
+      if (lo !== undefined || hi !== undefined)
+        rows = rows.filter((r) => {
+          const mcap = mcapOf(r)
+          return mcap === undefined || mcap === null || ((lo === undefined || mcap >= lo) && (hi === undefined || mcap <= hi))
+        })
       if (q.get("order") !== "asc") rows.reverse()
       const offset = Number(q.get("offset") ?? 0)
       rows = rows.slice(offset, offset + Number(q.get("limit") ?? 50))
@@ -173,7 +203,38 @@ export function startFakeHacc(initial: Partial<FakeHaccSwitches> & { keys: strin
     }],
     ["GET /v1/market/token-search", /^\/v1\/market\/token-search$/, () => json(200, recorded("token-search-common"))],
     ["GET /v1/market/gainers", /^\/v1\/market\/gainers$/, () => json(200, recorded("market-gainers"))],
-    ["GET /v1/market/prices", /^\/v1\/market\/prices$/, () => json(200, recorded("market-prices"))],
+    ["GET /v1/market/prices", /^\/v1\/market\/prices$/, (_m, q) => {
+      const refused = needs("pro")
+      if (refused) return refused
+      // Recorded: Hacc's own words for none and for more than 20 (the docs say 60).
+      if (!q.get("addresses")) return json(400, recorded("prices-none"))
+      const addresses = q.get("addresses")!.split(",")
+      if (addresses.length > 20) return json(400, recorded("prices-solana-21"))
+      const hood = q.get("chain") === "hood"
+      // Recorded: each set of tokens has its own snapshot, refreshed from Hacc's provider when it's missing or
+      // older than the refresh window, and answered as stored in between, with the prices as they were then.
+      // Past the refresh limit, a set with a snapshot answers it stored; one without answers no prices at all.
+      const now = Date.now()
+      const set = `${hood ? "hood" : "solana"}:${addresses.join(",")}`
+      let snap = priceSnapshots.get(set)
+      const due = !snap || now - snap.at >= sw.priceRefreshMs
+      while (priceRefreshes.length && now - priceRefreshes[0]! >= PRICE_REFRESH_WINDOW_MS) priceRefreshes.shift()
+      const limited = due && priceRefreshes.length >= sw.priceRefreshLimit
+      if (limited && !snap) return json(200, recorded("prices-refresh-refused"))
+      if (due && !limited) {
+        priceRefreshes.push(now)
+        const prices = addresses.map((address) => {
+          const p = sw.prices[address]
+          const priced = p && (address.startsWith("0x") ? hood : !hood)
+          return { address, symbol: priced ? (p.symbol ?? null) : null, price_usd: priced ? p.price : null, market_cap_usd: priced ? (p.mcap ?? null) : null }
+        })
+        snap = { at: now, prices }
+        priceSnapshots.set(set, snap)
+        return json(200, { prices, research_credits: 0, provenance: { source: "provider_refresh", retrieved_at: new Date(now).toISOString() } })
+      }
+      const provenance = { source: "stored_snapshot", observed_at: new Date(snap!.at).toISOString(), stale: false, refresh_available: priceRefreshes.length < sw.priceRefreshLimit }
+      return json(200, { prices: structuredClone(snap!.prices), research_credits: 0, provenance })
+    }],
     ["GET /v1/market/metas", /^\/v1\/market\/metas$/, () => json(200, recorded("market-metas"))],
     ["GET /v1/market/activity", /^\/v1\/market\/activity$/, () => json(200, recorded("market-activity"))],
     ["GET /v1/market/cohort-overlap", /^\/v1\/market\/cohort-overlap$/, () => json(200, recorded("market-cohort-overlap"))],
@@ -292,11 +353,11 @@ export function startFakeHacc(initial: Partial<FakeHaccSwitches> & { keys: strin
       if (!job) return err(404, "replay not found") // made up
       if (job.status === "running" && ++job.polls > sw.replayPolls) job.status = sw.replayEnds
       // Recorded: running, cancelled (`failed`, error "cancelled") and Hacc's 10-minute stop (`failed`,
-      // "hard timeout after 600s"). No recorded replay finished, so `done`'s result is the docs' fields.
+      // "hard timeout after 600s"). A finished replay answers as the recorded one did, result and all.
       if (job.status === "running") return json(200, { ...recorded("replay-poll-000"), job_id: Number(m[1]) })
       if (job.status === "cancelled") return json(200, { ...recorded("replay-after-cancel"), job_id: Number(m[1]) })
       if (job.status === "timeout") return json(200, { ...recorded("replay-poll-last"), job_id: Number(m[1]) })
-      return json(200, { ...recorded("replay-poll-last"), job_id: Number(m[1]), status: "done", error: null, result: DONE_RESULT })
+      return json(200, { ...recorded("bots-sizing-result"), job_id: Number(m[1]) })
     }],
     ["POST /v1/strategy-lab/replay/:id/cancel", /^\/v1\/strategy-lab\/replay\/(\d+)\/cancel$/, (m) => {
       const job = replays.get(Number(m[1]))
@@ -338,7 +399,22 @@ export function startFakeHacc(initial: Partial<FakeHaccSwitches> & { keys: strin
     ["GET /v1/strategies/:id/comparison", /^\/v1\/strategies\/(\d+)\/comparison$/, () => needs("max") ?? json(200, recorded("strategy-comparison"))],
     ["GET /v1/strategy-runs", /^\/v1\/strategy-runs$/, () => needs("max") ?? json(200, recorded("strategy-runs-after"))],
     ["GET /v1/trades", /^\/v1\/trades$/, (_m, q) =>
-      needs("max") ?? (q.has("run_id") || q.has("asset_id") ? json(200, recorded("trades-asset")) : json(400, recorded("trades-after")))],
+      needs("max") ??
+      (Number(q.get("limit") ?? 0) > 500
+        ? json(400, recorded("bots-trades-limit-501"))
+        : q.has("run_id")
+          ? json(200, recorded("bots-trades-run-page"))
+          : q.has("asset_id")
+            ? json(200, recorded("trades-asset"))
+            : json(400, recorded("bots-trades-no-run")))],
+    ["GET /v1/strategy-lab/status", /^\/v1\/strategy-lab\/status$/, () => {
+      const refused = needs("max")
+      if (refused) return refused
+      const used = [...replays.values()].length
+      const active = [...replays.entries()].find(([, j]) => j.status === "running")
+      const status = recorded("bots-lab-status")
+      return json(200, { ...status, replays: { ...(status.replays as Json), cap: sw.replayQuota, used }, active_job_id: active ? active[0] : null })
+    }],
   ]
 
   function remove(list: Json[], id: string, what: string) {
@@ -427,24 +503,6 @@ export function startFakeHacc(initial: Partial<FakeHaccSwitches> & { keys: strin
   }
 }
 export type FakeHacc = ReturnType<typeof startFakeHacc>
-
-/**
- * A finished replay's result: the fields Candle's docs list ("Replay a definition"), made-up values. Only
- * a stopped replay was recorded; a live one that finished showed Hacc sending `pnl_usd` as a decimal string
- * ("-39.7997042568") and the drawdown unrounded, as here.
- */
-const DONE_RESULT = {
-  verdict: "insufficient",
-  trade_count: 3,
-  pnl_usd: "12.5000000000",
-  max_drawdown_pct: 8.214285714285714,
-  required_start_usd: 100,
-  final_usd: 112.5,
-  peak_capital_at_risk_usd: 75,
-  skips: { no_slot: 2, unpriceable: 1 },
-  trades: [],
-  universe: { considered: 40, priced: 37 },
-}
 
 // The stream's frames, in the recorded shapes (fixtures/hacc-recorded/stream-main.json).
 function streamFrame(i: number): Json {

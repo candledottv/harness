@@ -1,0 +1,34 @@
+{
+  "name": "schema-filter-mcap-negative",
+  "host": "hacc",
+  "method": "POST",
+  "route": "/v1/strategy-lab/replay",
+  "query": {},
+  "body": {
+    "definition": {
+      "chain": "solana",
+      "entry": {
+        "source": "pattern",
+        "pattern": "confluence",
+        "filters": {
+          "min_mcap_usd": -1
+        }
+      },
+      "exit": {
+        "take_profit_pct": 100
+      },
+      "sizing": {
+        "usd_per_trade": 5,
+        "max_concurrent": 2
+      }
+    },
+    "from": "2026-10-01T00:00:00Z",
+    "to": "2026-10-30T00:00:00Z"
+  },
+  "status": 400,
+  "ms": 161,
+  "bytes": 69,
+  "answer": {
+    "error": "entry.filters.min_mcap_usd: Number must be greater than 0"
+  }
+}

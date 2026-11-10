@@ -8,6 +8,7 @@ import { cleanupHomes, prefixedKey, startTestCore, testConfig, testEngine, testH
 import { answers } from "../shared/socket-path"
 import { pidIsAlive } from "../shared/lock"
 import { connectTestClient } from "../../test/core-test-client"
+import { scripted } from "../../test/scripted-engine"
 import { PROTOCOL_VERSION } from "../shared/rpc"
 import { ViewSession } from "./client"
 import { readViewToken } from "./tokens"
@@ -44,6 +45,10 @@ describe("a harness installed after the core started", () => {
       const after = readFileSync(runs, "utf8").split("\n").filter(Boolean).length
       expect(await ask()).toMatchObject({ ok: true, version: "0.165.0" })
       expect(readFileSync(runs, "utf8").split("\n").filter(Boolean).length).toBe(after)
+      // It updates itself (harnesses do, in the Build pane): `again` reads the new version; a plain check keeps the last.
+      writeFileSync(bin, `#!/bin/sh\necho run >> "${runs}"\necho "codex-cli 0.167.0"\n`)
+      expect(await ask()).toMatchObject({ ok: true, version: "0.165.0" })
+      expect(((await view.request("engine.check", { engine: "codex", again: true })).result as { check: { version?: string } }).check.version).toBe("0.167.0")
       // The harness can't ask.
       const { client: harness } = await c.harness(view)
       expect((await harness.request("engine.check", { engine: "codex" })).error?.data?.code).toBe("FORBIDDEN_FOR_ROLE")
@@ -453,6 +458,17 @@ describe("limits with who enforces them", () => {
     await view.request("operations.resolve", { opId: card.opId, action: "resend" })
     await until(() => c.core.cards.get(card.cardId)?.operation?.state === "succeeded")
     expect(c.core.cards.get(card.cardId)!.operation).toMatchObject({ state: "succeeded", paper: true })
+  })
+
+  test("a typed paper buy the core refuses before Candle trades it (a token Candle doesn't know) answers the refusal and leaves a row", async () => {
+    const c = await startTestCore({}, { config: { mode: "paper" } })
+    cores.push(c)
+    const view = await c.view()
+    const buy = { tool: "candle_trade", args: { mint: "UnknFake11111111111111111111111111111111111", side: "buy", amountUsd: "1" }, typed: true }
+    const answer = (await view.request("cards.propose", buy)).result as { paper: { isError?: boolean; content: { text: string }[] } }
+    expect(answer.paper.isError).toBe(true)
+    expect(answer.paper.content[0]!.text).toContain("TOKEN_UNKNOWN")
+    expect(c.core.journal.rows().find((r) => r.type === "tool.refused" && r.code === "TOKEN_UNKNOWN")).toMatchObject({ role: "view", tool: "candle_trade", message: "Candle doesn't know this token." })
   })
 
   test("a view can't claim a trade ran without a card: its approval is recorded as the view's", async () => {
@@ -959,5 +975,77 @@ describe("each key's request budget", () => {
     await client.request("tools.call", { name: "candle_get_portfolio", args: {} })
     const after = await budgetNow()
     expect(after.keys[0]!.used).toBeGreaterThan(before.keys[0]!.used)
+  })
+})
+
+describe("what only the main window may do, and what a client that only looks may not", () => {
+  test("re-sending a trade is the main window's: a popped view and the doctor are refused, and letting go of one stays any view's but theirs that only look", async () => {
+    const c = await startTestCore({ env: { ...process.env, CANDLE_HARNESS_DEBUG_LOSE_NEXT_REPLY: "1" } })
+    cores.push(c)
+    const main = await c.view("candle-harness")
+    const popped = await c.view("candle-harness view --pane activity")
+    const doctor = await c.view("candle-harness doctor")
+    const card = (await main.request("cards.propose", { tool: "candle_trade", args: { mint: "MoonFake11111111111111111111111111111111111", side: "buy", amount: "0.01" }, typed: true })).result as { cardId: string; cardHash: string; opId: string }
+    await main.request("cards.approve", { cardId: card.cardId, cardHash: card.cardHash })
+    await until(() => c.core.operations.get(card.opId)?.state === "unknown")
+    for (const client of [popped, doctor]) expect((await client.request("operations.resolve", { opId: card.opId, action: "resend" })).error?.data?.code).toBe("MAIN_VIEW_ONLY")
+    expect(c.core.journal.rows().some((r) => r.type === "operation.resend")).toBe(false)
+    expect((await doctor.request("operations.resolve", { opId: card.opId, action: "abandon" })).error?.data?.code).toBe("OBSERVER")
+    expect(c.core.operations.get(card.opId)!.state).toBe("unknown")
+    // The main window's re-send still runs, and a popped view may still let one go.
+    expect((await main.request("operations.resolve", { opId: card.opId, action: "resend" })).error).toBeUndefined()
+    await until(() => c.core.operations.get(card.opId)?.state === "succeeded")
+  })
+
+  test("the doctor changes no agent, engine or preset; a message from `ask` is still sent", async () => {
+    const quiet = scripted([async (_t, push) => push({ type: "text", delta: "hello" })])
+    const c = await startTestCore({ engine: { start: quiet.start, version: () => ({ ok: true, version: "2.1.310" }), processes: () => [], leftoverDelayMs: 10 } })
+    cores.push(c)
+    const doctor = await c.view("candle-harness doctor")
+    for (const [method, params] of [
+      ["agent.setActive", { agent: "swing" }],
+      ["engine.choose", { agent: "momentum", engine: "claude-code" }],
+      ["preset.choose", { agent: "momentum", preset: "trader" }],
+      ["hacc.undo", { changeId: "none" }],
+    ] as const) {
+      expect([method, (await doctor.request(method, params)).error?.data?.code]).toEqual([method, "OBSERVER"])
+    }
+    expect(c.core.journal.rows().some((r) => r.type === "agent.active" || r.type === "engine.chosen")).toBe(false)
+    const ask = await c.view("candle-harness ask")
+    expect((await ask.request("agent.send", { text: "hello" })).error).toBeUndefined()
+  })
+})
+
+describe("a swap that failed at its second leg", () => {
+  test("still counts toward the agent's day: its first leg left the wallet", async () => {
+    const c = await startTestCore({}, { candle: { momentum: { tools: { candle_swap: { refuse: "LEG2_FAILED", extra: { leg1: "Leg1HashFake" } } } } } })
+    cores.push(c)
+    const view = await c.view("candle-harness")
+    const spentToday = async () => ((await view.request("core.status", {})).result as { agents: { name: string; spentTodayUsd?: number }[] }).agents.find((a) => a.name === "momentum")?.spentTodayUsd
+    const card = (await view.request("cards.propose", { tool: "candle_swap", args: { from: "SOL", to: "USDC", amount: "0.02" }, typed: true })).result as { cardId: string; cardHash: string; opId: string }
+    await view.request("cards.approve", { cardId: card.cardId, cardHash: card.cardHash })
+    await until(() => c.core.operations.get(card.opId)?.state === "failed")
+    expect(c.core.operations.get(card.opId)!.partial).toEqual({ leg1: "Leg1HashFake" })
+    expect(c.core.cards.get(card.cardId)!.operation).toMatchObject({ state: "failed", partial: { leg1: "Leg1HashFake" } })
+    const value = c.core.cards.get(card.cardId)!.value.usd!
+    expect(value).toBeGreaterThan(0)
+    expect(await spentToday()).toBeCloseTo(value, 6)
+  })
+})
+
+describe("a token by a name the wallet already holds for another mint", () => {
+  test("its card says so, with both short addresses; a token whose name is its own alone says nothing", async () => {
+    const MOON = "MoonFake11111111111111111111111111111111111"
+    const c = await startTestCore({}, { candle: { momentum: { heldTwin: true }, swing: { heldTwin: true } } })
+    cores.push(c)
+    const view = await c.view("candle-harness")
+    await view.request("subscribe", { topics: ["portfolio", "cards"] })
+    // The wallet's holdings are read, the twin among them, before the card is made.
+    await until(() => view.events.some((e) => e.topic === "portfolio" && JSON.stringify(e.data).includes("MoonTwin")))
+    const card = (await view.request("cards.propose", { tool: "candle_trade", args: { mint: MOON, side: "buy", amount: "0.01" }, typed: true })).result as { display: { otherMint?: string; mint?: string } }
+    expect(card.display.mint).toBe(MOON)
+    expect(card.display.otherMint).toBe("another MOON is in a wallet or on an earlier card here (Moon…1111): this one is Moon…1111")
+    const pepe = (await view.request("cards.propose", { tool: "candle_trade", args: { mint: "PepeFake11111111111111111111111111111111111", side: "buy", amount: "0.01" }, typed: true })).result as { display: { otherMint?: string } }
+    expect(pepe.display.otherMint).toBeUndefined()
   })
 })

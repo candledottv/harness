@@ -1,0 +1,30 @@
+{
+  "name": "schema-conviction-empty",
+  "host": "hacc",
+  "method": "POST",
+  "route": "/v1/strategy-lab/replay",
+  "query": {},
+  "body": {
+    "definition": {
+      "chain": "solana",
+      "entry": {
+        "source": "conviction"
+      },
+      "exit": {
+        "take_profit_pct": 100
+      },
+      "sizing": {
+        "usd_per_trade": 5,
+        "max_concurrent": 2
+      }
+    },
+    "from": "2026-10-01T00:00:00Z",
+    "to": "2026-10-30T00:00:00Z"
+  },
+  "status": 400,
+  "ms": 164,
+  "bytes": 48,
+  "answer": {
+    "error": "entry.score_window_minutes: Required"
+  }
+}

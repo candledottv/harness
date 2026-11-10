@@ -58,7 +58,9 @@ case "$1" in
 esac
 `
 
-const fakeHarness = (version: string) => `#!/usr/bin/env bash\necho "candle-harness ${version} (abc1234)"\n`
+// The fake candle-harness: its version line, and for `version --core` the running core's, from a file beside it.
+const fakeHarness = (version: string) =>
+  `#!/usr/bin/env bash\nif [ "$*" = "version --core" ]; then cat "$(dirname "$0")/.fake-core" 2>/dev/null; exit 0; fi\necho "candle-harness ${version} (abc1234)"\n`
 const bundle = (bytes: string, identity: string) => JSON.stringify({ sha256: sha256(bytes), identity })
 
 interface Scene {
@@ -427,6 +429,63 @@ describe("a good install", () => {
   })
 })
 
+describe("a core the old version left running", () => {
+  const install = (core: string | undefined) => {
+    const s = scene()
+    release(s, "1.2.3")
+    const bin = join(s.home, "bin")
+    candleIn(bin)
+    if (core !== undefined) writeFileSync(join(bin, ".fake-core"), core)
+    return run(s, ["--from", s.release], { path: [bin] })
+  }
+
+  test("is named with its version and how to restart it, and is never stopped from here", () => {
+    const r = install("core 1.2.2\n")
+    expect(r.code).toBe(0)
+    expect(r.out).toContain("A core from 1.2.2 is still running, with its triggers and bots. It carries on as 1.2.2 until it's restarted: candle-harness stop, then open candle-harness again.")
+  })
+
+  test("nothing is said with no core running, with one already on this version, or when the answer isn't a version", () => {
+    for (const core of [undefined, "core 1.2.3\n", "candle-harness 1.2.2 (abc1234)\n", "core $(reboot)\n"]) {
+      const r = install(core)
+      expect(r.code).toBe(0)
+      expect(r.out).not.toContain("still running")
+    }
+  })
+})
+
+describe("a download cut short", () => {
+  // Piped from curl, bash runs what it has read so far. Cut anywhere, the script must do nothing at all.
+  const cutAt = (script: string, s: Scene, bin: string, before: string[], at: number) => {
+    const r = run(s, ["--from", s.release], { path: [bin], script: script.slice(0, at) })
+    expect({ at, files: snapshot(s.home), out: r.out.includes("Installed") || r.out.includes("Checking this machine") }).toEqual({ at, files: before, out: false })
+  }
+
+  test("at any line's end, or anywhere in the last line, installs nothing and starts nothing", () => {
+    const s = scene()
+    release(s, "1.2.3")
+    const bin = join(s.home, "bin")
+    candleIn(bin)
+    const before = snapshot(s.home)
+    const whole = SCRIPT.trimEnd()
+    let at = -1
+    while ((at = whole.indexOf("\n", at + 1)) >= 0) cutAt(whole, s, bin, before, at + 1)
+    const lastLine = whole.lastIndexOf("\n") + 1
+    for (let i = lastLine; i < whole.length; i++) cutAt(whole, s, bin, before, i)
+    // The whole script, with no newline at its end, still installs.
+    expect(run(s, ["--from", s.release], { path: [bin], script: whole }).out).toContain("Installed candle-harness 1.2.3")
+  }, 120_000)
+
+  test("the pins and constants stay at the top level, one to a line, where the workflow and the pin script read them", () => {
+    const top = SHIPPED.slice(0, SHIPPED.indexOf("\nmain() {\n"))
+    for (const line of ["REPOSITORY='candledottv/harness'", "TAG_PREFIX='v'", `IDENTITY_PREFIX='${PREFIX}'`, "UNSIGNED_OK=0", "# BEGIN CLI PINS", `CLI_TAG='cli-v${MIN_CANDLE_CLI}'`, `CLI_IDENTITY='${CLI_IDENTITY}'`, "# END CLI PINS"]) {
+      expect(top.split("\n")).toContain(line)
+    }
+    expect(top).toMatch(/\n    candle-linux-x64\) echo '[0-9a-f]{64}' ;;\n/)
+    expect(SHIPPED.trimEnd().endsWith('\n{ main "$@"; }')).toBe(true)
+  })
+})
+
 /** Runs install.sh expecting a refusal, and checks the home is exactly as it was. */
 function refused(s: Scene, args: string[], opts: Parameters<typeof run>[2] = {}): Run {
   const before = snapshot(s.home)
@@ -504,7 +563,7 @@ describe("refusals leave the machine unchanged", () => {
     expect(r.out).toContain(`The Candle CLI isn't installed, and the Candle Harness needs it (${MIN_CANDLE_CLI}).`)
     expect(r.out).toContain("Install the Candle CLI now?")
     expect(r.out).toContain("No: there's no terminal to answer on")
-    expect(r.out).toContain("nothing here can check")
+    expect(r.out).toContain("The Candle CLI wasn't installed, and nothing else here can check")
     const s2 = scene()
     release(s2, "1.2.3")
     expect(refused(s2, ["--from", s2.release], { tty: answer(s2, "n") }).out).toContain("Install the Candle CLI now? [y/N]")
@@ -614,6 +673,19 @@ describe("the Candle CLI first", () => {
     expect(r.out).toContain("doesn't carry Candle's signature")
   })
 
+  test("a release refused after the CLI went in says the CLI stays, and never that nothing was installed", () => {
+    const s = scene()
+    release(s, "1.2.3", { signedAs: `${PREFIX}1.2.2` })
+    const cli = cliRelease(s)
+    const r = run(s, ["--from", s.release, "--yes"], { script: cli.script, env: { CANDLE_HARNESS_CLI_RELEASE_DIR: cli.dir } })
+    expect(r.code).not.toBe(0)
+    const bin = join(s.home, ".local", "bin")
+    expect(r.out).toContain(`isn't signed by ${PREFIX}1.2.3; candle-harness wasn't installed. The Candle CLI ${MIN_CANDLE_CLI} this run installed stays at ${bin}/candle`)
+    expect(r.out.toLowerCase()).not.toContain("nothing installed")
+    expect(r.out.toLowerCase()).not.toContain("nothing was installed")
+    expect(snapshot(s.home).map((l) => l.split(" ")[0])).toEqual([".local", ".local/bin", ".local/bin/candle", ".local/bin/candle-fido2"])
+  })
+
   test("the shipped script's pins carry no copy of the fake's: they're Candle's own", () => {
     const s = scene()
     const cli = cliRelease(s)
@@ -640,7 +712,7 @@ describe("the Candle CLI first", () => {
     const bin = join(s.home, "bin")
     candleIn(bin, "0.12.0")
     const r = refused(s, ["--from", s.release], { path: [bin], tty: answer(s, "n") })
-    expect(r.out).toContain("nothing here can check")
+    expect(r.out).toContain(`The Candle CLI here is 0.12.0, older than ${MIN_CANDLE_CLI}, and nothing else here can check`)
     expect(verifyCalls(s)).toEqual([])
   })
 })
@@ -700,13 +772,57 @@ describe("what install.sh is pinned to", () => {
     expect(workflow.jobs.install?.permissions).toEqual({ contents: "read" })
     expect(workflow.jobs.install?.needs).toContain("sign")
     expect(workflow.jobs.install?.steps.some((step) => step.run?.includes("install.sh --from"))).toBe(true)
-    expect(workflow.jobs.publish?.needs).toEqual(expect.arrayContaining(["sign", "install"]))
+    expect(workflow.jobs.publish?.needs).toEqual(expect.arrayContaining(["sign", "verify", "install"]))
+    // Candle's CLI is a download: it runs in a job of its own with read access only, on a release and on
+    // a rehearsal, and never in the job that holds the release identity.
+    for (const step of steps) expect(step.run ?? "").not.toMatch(/candle\/candle|curl /)
+    const verifyJob = workflow.jobs.verify as { if?: string; needs?: string[]; permissions?: Record<string, string>; steps: { run?: string }[] } | undefined
+    expect(verifyJob?.permissions).toEqual({ contents: "read" })
+    expect(verifyJob?.needs).toContain("sign")
+    expect(verifyJob?.if).toBeUndefined()
     // The candle it verifies with is checked by cosign against Candle's own signature before it's run.
-    const verify = steps.find((step) => step.run?.includes('/candle/candle" verify'))?.run ?? ""
+    const verify = verifyJob?.steps.find((step) => step.run?.includes('/candle/candle" verify'))?.run ?? ""
     const cosignCandle = verify.indexOf('--certificate-identity "${cli_identity}"')
     expect(cosignCandle).toBeGreaterThan(0)
     expect(cosignCandle).toBeLessThan(verify.indexOf('/candle/candle" verify'))
     expect(verify).toContain('[ "${cli_identity}" = "https://github.com/candledottv/cli/.github/workflows/release.yaml@refs/tags/${cli_tag}" ]')
+  })
+
+  test("a release is a draft until every file is up, and a published one is never written to again", () => {
+    const workflow = Bun.YAML.parse(readFileSync(join(ROOT, ".github", "workflows", "release.yaml"), "utf8")) as {
+      jobs: Record<string, { steps: { run?: string }[] }>
+    }
+    const publish = workflow.jobs.publish?.steps.find((step) => step.run?.includes("gh release create"))?.run ?? ""
+    expect(publish).not.toContain("--clobber")
+    const create = publish.indexOf('gh release create "$TAG" --draft')
+    const upload = publish.indexOf('gh release upload "$TAG" ./*')
+    const live = publish.indexOf('gh release edit "$TAG" --draft=false')
+    expect(create).toBeGreaterThan(0)
+    expect(upload).toBeGreaterThan(create)
+    expect(live).toBeGreaterThan(upload)
+    // The step itself, against a stand-in gh: a tag that's already published stops before anything is sent.
+    const dir = mkdtempSync(join(tmpdir(), "chrn-publish-"))
+    dirs.push(dir)
+    const log = join(dir, "gh.log")
+    writeFileSync(join(dir, "file"), "bytes")
+    writeFileSync(join(dir, "SHA256SUMS"), `${sha256("bytes")}  file\n`)
+    const gh = join(dir, "gh")
+    writeFileSync(gh, `#!/usr/bin/env bash\necho "$*" >> "${log}"\nif [ "$2" = view ]; then [ -n "$GH_STATE" ] || exit 1; echo "$GH_STATE"; fi\n`)
+    chmodSync(gh, 0o755)
+    const publishWith = (state: string) => {
+      writeFileSync(log, "")
+      const r = spawnSync("bash", ["-c", publish], { cwd: dir, encoding: "utf8", env: { PATH: `${dir}:${process.env.PATH ?? ""}`, RUNNER_TEMP: dir, TAG: "v1.2.3", VERSION: "1.2.3", GH_STATE: state } })
+      return { code: r.status, out: `${r.stdout}${r.stderr}`, calls: readFileSync(log, "utf8").trim().split("\n").map((line) => line.split(" ").slice(0, 2).join(" ")) }
+    }
+    const fresh = publishWith("")
+    expect(fresh.code).toBe(0)
+    expect(fresh.calls).toEqual(["release view", "release create", "release upload", "release edit"])
+    const published = publishWith("false")
+    expect(published.code).not.toBe(0)
+    expect(published.out).toContain("v1.2.3 is already published")
+    expect(published.calls).toEqual(["release view"])
+    // A draft an earlier run left behind is started again, so no file is uploaded over another.
+    expect(publishWith("true").calls).toEqual(["release view", "release delete", "release create", "release upload", "release edit"])
   })
 
   test("a rehearsal started from a tag is refused, since it would sign exactly as a release", () => {

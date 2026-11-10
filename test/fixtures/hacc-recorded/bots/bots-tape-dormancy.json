@@ -1,0 +1,137 @@
+{
+  "name": "tape-dormancy",
+  "host": "hacc",
+  "method": "GET",
+  "route": "/v1/signals",
+  "query": {
+    "pattern": "dormancy",
+    "since": "2026-11-05T11:46:34.543Z",
+    "limit": "200"
+  },
+  "status": 200,
+  "ms": 145,
+  "bytes": 2503,
+  "answer": {
+    "signals": [
+      {
+        "id": 128167516,
+        "rule_id": 4,
+        "pattern": "dormancy",
+        "wallet_id": 468632,
+        "asset_id": 120643476,
+        "event_id": 82411555,
+        "event_kind": "transfer",
+        "summary": "fake-summary-23",
+        "payload": {
+          "dormant_days": 29,
+          "prior_event_at": "2026-10-07T13:24:13.000Z"
+        },
+        "created_at": "2026-11-05T14:42:04.892Z",
+        "wallet_address": "HaccFake1111111111111111111111111111111111e",
+        "wallet_label": null,
+        "wallet_chain": "solana",
+        "wallet_entity": null,
+        "wallet_groups": [
+          "fake-wallet_groups-13",
+          "fake-wallet_groups-3"
+        ],
+        "display_label": null,
+        "label_source": null,
+        "asset_symbol": "fake-asset_symbol-13",
+        "asset_address": "HaccFake1111111111111111111111111111111111f",
+        "asset_chain": "solana",
+        "burst": false
+      },
+      {
+        "id": 128097346,
+        "rule_id": 4,
+        "pattern": "dormancy",
+        "wallet_id": 234834,
+        "asset_id": 112756933,
+        "event_id": 82396468,
+        "event_kind": "transfer",
+        "summary": "fake-summary-24",
+        "payload": {
+          "dormant_days": 18,
+          "prior_event_at": "2026-10-17T20:46:43.000Z"
+        },
+        "created_at": "2026-11-05T14:03:24.192Z",
+        "wallet_address": "0xfa4e000000000000000000000000000000000001",
+        "wallet_label": null,
+        "wallet_chain": "hood",
+        "wallet_entity": null,
+        "wallet_groups": [
+          "fake-wallet_groups-3",
+          "fake-wallet_groups-14"
+        ],
+        "display_label": null,
+        "label_source": null,
+        "asset_symbol": "fake-asset_symbol-14",
+        "asset_address": "0xfa4e000000000000000000000000000000000002",
+        "asset_chain": "hood",
+        "burst": false
+      },
+      {
+        "id": 128027876,
+        "rule_id": 4,
+        "pattern": "dormancy",
+        "wallet_id": 3302,
+        "asset_id": 2,
+        "event_id": 82378145,
+        "event_kind": "transfer",
+        "summary": "fake-summary-25",
+        "payload": {
+          "dormant_days": 36,
+          "prior_event_at": "2026-09-30T01:49:02.000Z"
+        },
+        "created_at": "2026-11-05T13:19:54.772Z",
+        "wallet_address": "HaccFake1111111111111111111111111111111111g",
+        "wallet_label": "fake-wallet_label-1",
+        "wallet_chain": "solana",
+        "wallet_entity": "fake-wallet_entity-1",
+        "wallet_groups": [
+          "fake-wallet_groups-15",
+          "fake-wallet_groups-3",
+          "fake-wallet_groups-16",
+          "fake-wallet_groups-17",
+          "fake-wallet_groups-18"
+        ],
+        "display_label": "fake-display_label-5",
+        "label_source": "entity",
+        "asset_symbol": "SOL",
+        "asset_address": "native",
+        "asset_chain": "solana",
+        "burst": false
+      },
+      {
+        "id": 127903676,
+        "rule_id": 4,
+        "pattern": "dormancy",
+        "wallet_id": 16502,
+        "asset_id": 141433984,
+        "event_id": 82346479,
+        "event_kind": "transfer",
+        "summary": "fake-summary-26",
+        "payload": {
+          "dormant_days": 18,
+          "prior_event_at": "2026-10-17T20:55:11.000Z"
+        },
+        "created_at": "2026-11-05T11:49:04.350Z",
+        "wallet_address": "0xfa4e000000000000000000000000000000000003",
+        "wallet_label": null,
+        "wallet_chain": "hood",
+        "wallet_entity": null,
+        "wallet_groups": [
+          "fake-wallet_groups-19",
+          "fake-wallet_groups-20"
+        ],
+        "display_label": null,
+        "label_source": null,
+        "asset_symbol": "fake-asset_symbol-15",
+        "asset_address": "0xfa4e000000000000000000000000000000000004",
+        "asset_chain": "hood",
+        "burst": false
+      }
+    ]
+  }
+}

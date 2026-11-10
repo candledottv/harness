@@ -33,6 +33,11 @@ const READS = [
   "candle_perps_account",
   "candle_perps_risk",
   "candle_perps_thresholds",
+  // Server 0.10.30.
+  "candle_get_price_history",
+  "candle_get_paper_inventory",
+  "candle_get_profile_paper",
+  "candle_get_account_pnl",
 ]
 const CARD_TOOLS = [
   "candle_launch_token",
@@ -75,6 +80,16 @@ describe("the table", () => {
     const verdict = classify("candle_report_activity", {}, "live")
     expect(verdict).toMatchObject({ class: "refused", code: "NOT_NEEDED", listed: false })
     expect(verdict.class === "refused" && verdict.reason).toContain("candle swap")
+  })
+
+  test("a trade built to spend later (server 0.10.30) is refused, and its spend half is never offered: the card is the quote, the press spends", () => {
+    for (const deferExecution of [true, "true", 1, "1"]) {
+      for (const mode of ["live", "paper"] as const) {
+        expect(classify("candle_trade", { side: "buy", deferExecution }, mode)).toMatchObject({ class: "refused", code: "DEFER_NOT_USED", listed: true })
+      }
+    }
+    expect(classify("candle_trade", { side: "buy", deferExecution: false }, "live")).toMatchObject({ class: "card", kind: "trade" })
+    expect(classify("candle_trade_execute", { clientTradeId: "x" }, "live")).toMatchObject({ class: "refused", code: "NOT_NEEDED", listed: false })
   })
 
   test("launches, staking, claims, profile edits and posts are one-press cards in live mode", () => {

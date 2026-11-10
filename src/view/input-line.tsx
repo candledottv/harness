@@ -28,7 +28,7 @@ export function hintParts(here: Here, room: number, chips: { palette: boolean; h
     .filter((h) => h.id !== "palette")
     .map((h) => ({ kind: "hint", id: h.id, chord: h.chord, words: h.words }))
   const all: Part[] = [...hints, ...(chips.palette ? [{ kind: "chip", id: "palette", label: PALETTE_CHIP } as Part] : []), ...(chips.help && here.empty ? [{ kind: "chip", id: "help", label: HELP_CHIP } as Part] : [])]
-  const rank = (p: Part) => ["search", "searchJournal", "approve", "send", "palette", "stop", "popOut", "help"].indexOf(p.id)
+  const rank = (p: Part) => ["search", "searchJournal", "approve", "send", "palette", "stop", "popOut", "help", "tabDigit"].indexOf(p.id)
   let left = room
   const kept = new Set<Part>()
   for (const p of [...all].sort((a, b) => rank(a) - rank(b))) {

@@ -117,6 +117,18 @@ for (const [width, height] of SIZES) {
   })
 }
 
+test("the note shows on whichever tab the view opens on: the Cockpit at 120×30 too, over the welcome", async () => {
+  for (const scene of ["followed", "fresh"] as const) {
+    const drawn = await drawScene(scene, 120, 30, "cockpit")
+    setup = drawn.setup
+    await act(async () => drawn.session.push("away", realisticAway(), true))
+    await drawn.setup.renderOnce()
+    expect(drawn.setup.captureCharFrame()).toContain("While you were away · 3h 12m")
+    await act(async () => drawn.setup.dispose())
+    setup = undefined
+  }
+})
+
 test("the note shows only in the view whose attach made the summary, and only when something happened", async () => {
   const other = realisticAway()
   other.summary!.forView = "v2"
@@ -146,6 +158,16 @@ test("✕ dismisses the note, ask puts the question on the input line, and the n
   await click(d.setup, "✕")
   expect(d.setup.captureCharFrame()).not.toContain("While you were away")
   expect(d.session.requests.slice(sent).filter((r) => r.method !== "view.active" && r.method !== "view.set")).toEqual([])
+})
+
+test("a turn the person sent from elsewhere ends the note too: drawn over meanwhile, it doesn't come back", async () => {
+  const d = await away(120, 30, realisticAway())
+  expect(d.setup.captureCharFrame()).toContain("While you were away")
+  const agent = d.setup.captureCharFrame().match(/╭─ (\S+)/)?.[1] ?? ""
+  // A message from another view (or a script) starts a turn this view sees start.
+  await d.push("agent", { type: "started", agent, turnId: "t-elsewhere", user: "what did I miss?" })
+  await d.push("agent", { type: "ended", agent, turnId: "t-elsewhere", text: "Not much.", outcome: "ok" })
+  expect(d.setup.captureCharFrame()).not.toContain("While you were away")
 })
 
 test("show all opens over the frame and changes no layout; ↑/↓ scroll it and any other key closes it: a click never adds a pane", async () => {
@@ -215,9 +237,23 @@ test("the note's lines fit what they're given, the head and its chips last", () 
   expect(textOf(full[1]!)).toStartWith("│ While you were away")
   expect(textOf(full.at(-2)!)).toBe(`╰${"─".repeat(58)}╯`)
   expect(textOf(full.at(-1)!)).toBe("")
-  // Short of rows, lines go first, then the blank row; the box stays round the head while it fits.
-  expect(awayNoteLines(s, 60, 3, CLOCK).map(textOf)).toEqual([`╭${"─".repeat(58)}╮`, expect.stringMatching(/^│ While you were away/), `╰${"─".repeat(58)}╯`])
-  expect(awayNoteLines(s, 60, 2, CLOCK).map(textOf)[0]).toStartWith("While you were away")
+  // Short of rows, lines go first, then the blank row, but the box keeps one line: a note never shows only its head.
+  const first = awayNoteItems(s, CLOCK)[0]!.text
+  const four = awayNoteLines(s, 60, 4, CLOCK).map(textOf)
+  expect(four).toEqual([`╭${"─".repeat(58)}╮`, expect.stringMatching(/^│ While you were away/), expect.stringContaining(first.slice(0, 20)), `╰${"─".repeat(58)}╯`])
+  // No room for the box and a line: the head unboxed on a row, its chips beside it, and the lines under it.
+  const three = awayNoteLines(s, 60, 3, CLOCK).map(textOf)
+  expect(three).toHaveLength(3)
+  expect(three[0]).toStartWith("While you were away")
+  expect(three[0]).toContain("show all")
+  expect(three[1]).toContain(first.slice(0, 20))
+  // One row: the head and the weightiest line share it.
+  const one = awayNoteLines(s, 60, 1, CLOCK).map(textOf)
+  expect(one).toHaveLength(1)
+  expect(one[0]).toStartWith("While you were away")
+  expect(one[0]).toContain(first.slice(0, 10))
+  // Nothing to list: no note at all.
+  expect(awayNoteLines({ ...s, counts: { ...s.counts, stopped: 0, trades: 0, outside: 0, maybe: 0, triggers: 0, botTrades: 0, botHeld: 0, signals: 0, turns: 0, cards: 0, holdings: 0, changes: 0 }, pnl: { ...s.pnl, state: "reading" }, coreDown: [] } as typeof s, 60, 20, CLOCK)).toEqual([])
 })
 
 test("a live sell Candle closed as paper isn't counted as filled, nor as a paper-mode trade", () => {
@@ -246,4 +282,93 @@ test("rows that name a token are picks with ctrl-t's question; addresses carry �
   expect(trades.length).toBeGreaterThan(2)
   expect(trades.every((l) => l.pick!.ask?.includes("JUPF"))).toBe(true)
   expect(lines.some((l) => l.segs.some((s) => s.act === "copy"))).toBe(true)
+})
+
+test("the triggers: a section of their own, a line in the note, and run it now on a trigger's card nobody pressed", () => {
+  const v = realisticAway()
+  const s = v.summary!
+  const at = new Date(s.from + 30 * 60_000).toISOString()
+  s.triggers = [
+    { at, last: at, agent: "agent-a", mode: "live", text: 'trigger "dip": BUY $1.50 of JUP waits for you: the embedded wallet asks every time', tone: "warn", seqs: [901] },
+    { at, last: at, agent: "agent-a", mode: "live", text: 'trigger "dip" fired: JUP was $0.39, under $0.40', tone: "info", seqs: [900] },
+  ]
+  s.counts = { ...s.counts, triggers: 2, fired: 1 }
+  s.trades = [{ at, last: at, agent: "agent-a", mode: "live", text: 'trigger "dip" proposed BUY $1.50 of JUP · expired, never ran', tone: "info", seqs: [902], outcome: "expired", trigger: "dip", runNow: "card_t" }, ...s.trades]
+  s.counts.trades += 1
+  const lines = awayLines(v, { width: 96, now: s.to })
+  const all = lines.map(textOf)
+  expect(all).toContain("Triggers · 1 firing")
+  expect(all.some((l) => l.includes('trigger "dip" fired: JUP was $0.39, under $0.40'))).toBe(true)
+  const chip = lines.flatMap((l) => l.segs).find((seg) => seg.act === "runNow")
+  expect(chip).toMatchObject({ ref: "card_t" })
+  expect(awayNoteItems(s, s.to).map((i) => i.text)).toContain("Triggers: 1 firing, 1 waited for you")
+})
+
+test("the bots: a line in the note and a section of their own, each bot's P&L the Candle Harness's count, what was held first", () => {
+  const v = realisticAway()
+  const s = v.summary!
+  const at = new Date(s.from + 40 * 60_000).toISOString()
+  s.bots = [
+    {
+      name: "conf",
+      agent: "agent-a",
+      mode: "live",
+      bought: 3,
+      sold: 2,
+      exits: { "take profit": 1, stop: 1 },
+      skipped: 4,
+      trades: [{ at, last: at, agent: "agent-a", mode: "live", text: 'the bot "conf" proposed SELL 100 JUP from embedded · without a card, as its bot\'s exit · filled in 3.1 s', tone: "good", seqs: [950] }],
+      held: [{ at, last: at, agent: "agent-a", mode: "live", text: 'the bot "conf": its buy of $1.50 of WIF waits for you: the embedded wallet asks every time', tone: "warn", seqs: [951] }],
+      realizedUsd: 0.62,
+      open: [{ mint: "WifFake111111111111111111111111111111111111", symbol: "WIF" }],
+    },
+  ]
+  s.counts = { ...s.counts, botTrades: 5, botHeld: 1 }
+  expect(awayNoteItems(s, s.to).map((i) => i.text)).toContain("conf: bought 3, sold 2 (1 at its take profit, 1 at its stop), 4 skipped · P&L +$0.62 · 1 open (WIF) · 1 held or refused")
+  const all = awayLines(v, { width: 120, now: s.to }).map(textOf)
+  const head = all.indexOf("Bots · 1 bot")
+  expect(head).toBeGreaterThan(-1)
+  expect(all[head + 1]).toContain("the Candle Harness's count from its own fills")
+  expect(all.slice(head + 2, head + 6)).toEqual(["  conf", "    bought 3, sold 2 (1 at its take profit, 1 at its stop), 4 skipped", "    P&L over the gap +$0.62, from what its exits sold", "    still open: WIF"])
+  expect(all[head + 6]).toContain("waits for you")
+  expect(all[head + 7]).toContain("filled in 3.1 s")
+  // In a narrow overlay its P&L and what's still open wrap onto lines of their own, never cut off.
+  s.bots[0]!.skipped = 225
+  s.bots[0]!.open = ["Jose", "TAOLF", "APU"].map((symbol, i) => ({ mint: `Mint${i}111111111111111111111111111111111111`, symbol }))
+  const narrow = awayLines(v, { width: 56, now: s.to }).map(textOf)
+  expect(narrow).toContain("    stop), 225 skipped")
+  expect(narrow).toContain("    P&L over the gap +$0.62, from what its exits sold")
+  expect(narrow).toContain("    still open: Jose, TAOLF, APU")
+})
+
+test("a stretch with the core down that began on another day names today at its end", () => {
+  const v = goneAway()
+  const s = v.summary!
+  s.coreGoneThroughout = false
+  const end = new Date(s.to - 60_000)
+  const start = new Date(end.getTime() - 25 * 3_600_000)
+  s.coreDown = [{ from: start.getTime(), to: end.getTime() }]
+  const text = awayLines(v, { width: 120, now: s.to }).map(textOf).join(" ")
+  const hhmm = (d: Date) => d.toTimeString().slice(0, 5)
+  expect(text).toContain(`The core wasn't running from yesterday ${hhmm(start)} to today ${hhmm(end)}`)
+})
+
+test("a wallet's change no trade this Candle Harness sent explains says so, in the note and the section", () => {
+  const v = realisticAway()
+  const s = v.summary!
+  s.holdings = { state: "read", then: s.from, changes: [{ wallet: "W1", name: "embedded", asset: "SOL", symbol: "SOL", then: 0.0479, now: 0.0437, outside: true }] }
+  s.counts = { ...s.counts, holdings: 1 }
+  const said = "embedded wallet: SOL 0.0479 → 0.0437, not from this Candle Harness's trades (other keys pay from this wallet)"
+  expect(awayNoteItems(s, s.to).map((i) => i.text)).toContain(said)
+  expect(awayLines(v, { width: 200, now: s.to }).map(textOf).some((l) => l.includes(said))).toBe(true)
+})
+
+test("the note's P&L says live beside a paper bot, since it's Candle's books and the bot's own figure is paper", () => {
+  const view = realisticAway()
+  const s = view.summary!
+  const plain = awayNoteItems(s, CLOCK).find((i) => i.text.includes("since last session"))!
+  expect(plain.text.startsWith("P&L since last session")).toBe(true)
+  const withPaperBot = { ...s, bots: [{ name: "conf", mode: "paper" as const, bought: 1, sold: 1, exits: {}, skipped: 0, trades: [], held: [], realizedUsd: -0.07 }] }
+  const live = awayNoteItems(withPaperBot, CLOCK).find((i) => i.text.includes("since last session"))!
+  expect(live.text.startsWith("live P&L since last session")).toBe(true)
 })

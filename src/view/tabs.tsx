@@ -3,7 +3,7 @@
 // `settings ▾` chip opens what's set up once and rarely changed: the layout menu, themes, the model, memory
 // and aliases (the corner under the kill switch was crowded).
 //
-// With eight tabs the names don't fit at 80 columns. The tab you're on always
+// With nine tabs the names don't fit at 80 columns. The tab you're on always
 // keeps its name; the others shrink to a digit and three letters, then to their digit, and `settings ▾`
 // is never cut. The first nine tabs have digits; any after them shrink to their first letter, and where
 // even that won't fit, they're left off the bar, reached by the palette.

@@ -11,9 +11,9 @@
 │    ● ask every time                      every trade is a card you approve   │
 │    ○ trade inside limits                                                     │
 │                                                                              │
-│  Every limit on the last step still holds, and the kill switch still stops   │
-│  it all. Change it any time in settings ▾ → approvals.                       │
-│                                                                              │
+│  Every limit on the last step still holds, and the kill switch still holds   │
+│  buys and swaps; sells still go. Change it any time in settings ▾ →          │
+│  approvals.                                                                  │
 │                                                                              │
 │                                                                              │
 │                                                                              │
@@ -38,8 +38,8 @@
 11: 32fe9f/111419×1 ffffff/111419×2 32fe9f/111419×4 6cb6ff/111419×19 ffffff/111419×53 32fe9f/111419×1
 12: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
 13: 32fe9f/111419×1 ffffff/111419×2 959dab/111419×73 ffffff/111419×3 32fe9f/111419×1
-14: 32fe9f/111419×1 ffffff/111419×2 959dab/111419×53 ffffff/111419×23 32fe9f/111419×1
-15: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
+14: 32fe9f/111419×1 ffffff/111419×2 959dab/111419×66 ffffff/111419×10 32fe9f/111419×1
+15: 32fe9f/111419×1 ffffff/111419×2 959dab/111419×10 ffffff/111419×66 32fe9f/111419×1
 16: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
 17: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
 18: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1

@@ -61,7 +61,7 @@ test("a folder holding anything but the release's assets is refused, since every
 
 test("pin-cli rewrites install.sh's pins from Candle's latest.json, and the shipped pins are exactly that", () => {
   const script = readFileSync(join(ROOT, "install.sh"), "utf8")
-  const latest = JSON.parse(readFileSync(join(ROOT, "test", "fixtures", "candle-cli-release", "cli-v0.13.11-latest.json"), "utf8"))
+  const latest = JSON.parse(readFileSync(join(ROOT, "test", "fixtures", "candle-cli-release", "cli-v0.13.18-latest.json"), "utf8"))
   expect(withPins(script, latest)).toBe(script)
   const moved = withPins(script, { ...latest, version: "0.13.10", tag: "cli-v0.13.10" })
   expect(moved).toContain("CLI_TAG='cli-v0.13.10'")

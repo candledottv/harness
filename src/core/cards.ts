@@ -8,16 +8,18 @@
 // on whose behalf; the display isn't hashed. It lives 60 s (trades and swaps) whether or not a view
 // is attached; approving it late proposes a fresh one at the current price, and the late one never
 // runs.
+import { tokenLabel } from "../shared/token-label"
 import { createHash, randomBytes, randomUUID } from "node:crypto"
+import { CORE_HOWS } from "../shared/approved-how"
 import { canonicalJson } from "../shared/canonical-json"
 import { invalidParams, refused } from "../shared/rpc"
 import { terminalText } from "../shared/terminal-text"
 import { type AgentStatus, FALLBACK_FEE_BPS } from "./agent-status"
 import type { PayerResult } from "./agent-wallets"
 import { ASK, type WalletSetting } from "./autonomy"
-import { amountText, BASE_ASSETS, type BaseAsset, fromRaw, isBaseAsset, priceText, settlementAsset, toRaw } from "./assets"
+import { amountText, BASE_ASSETS, type BaseAsset, fromRaw, isBaseAsset, notATradeToken, priceText, settlementAsset, toRaw } from "./assets"
 import type { ToolOutcome } from "./candle-mcp"
-import { type CardKind, type IdKey, type Mode, pausedMessage, pausedStops } from "./classify"
+import { type CardKind, type IdKey, type Mode, pausedMessage, pausedStops, unknownArgument } from "./classify"
 import type { CliResult } from "./candle-cli"
 import { type CliCardRequest, type CliRowParams, planCliRow, type UploadStage } from "./cli-cards"
 import { type CliTradeParams, teeSwapArgs } from "./cli-trade"
@@ -28,12 +30,38 @@ import { capText, type DaySpend, heldMessage, type KeyHolds, type Limits, overAs
 import type { MarketInfo, Resolved } from "./markets"
 import type { Pricing, Quote } from "./pricing"
 import { type SpendAsset, sizeInUsd } from "./sizing"
-import type { CardDesk, CardState, CardView, FaceClient, OperationState } from "./tool-face"
+import { type CardDesk, type CardState, type CardView, type FaceClient, type OperationState, type Source, sourceOf, type BotOrigin, modeFor, botFields, type TriggerOrigin, triggerFields, TURN_ENDED_WORDS } from "./tool-face"
+import type { TriggerSpec } from "./triggers-tool"
+import type { BotSpec } from "./bots-tool"
 import { short, walletName } from "./wallet-names"
 
 export const OPEN_CARD_CAP = 5
+/** The core's own client holds every trigger's cards: more at once than one view or harness, still bounded. */
+export const TRIGGER_OPEN_CARD_CAP = 20
+/** A card's origin fields on its rows: the trigger's firing, or the bot's trade. */
+const ORIGIN_FIELDS = new Set(["trigger", "fireId", "part", "bot", "botAct", "botPosition", "botSignal", "botReason", "botOutside", "botKind", "botRequest", "botPartial", "botSellsRaw"])
 const MAX_REASON = 500
 const MAX_PARAMS_BYTES = 64 * 1024
+
+/** A bot's card words, each cut to what a card can hold and cleaned for the terminal. */
+function botSpecShown(spec: BotSpec): BotSpec {
+  const t = (v: string, n: number) => terminalText(v, { maxLength: n })
+  return {
+    ...spec,
+    name: t(spec.name, 40),
+    words: t(spec.words, 1000),
+    definition: t(spec.definition, 16 * 1024),
+    runs: { kind: spec.runs.kind, entries: t(spec.runs.entries, 600), exits: t(spec.runs.exits, 300), ...(spec.runs.amber ? { amber: t(spec.runs.amber, 300) } : {}), ...(spec.runs.buys ? { buys: t(spec.runs.buys, 200) } : {}), ...(spec.runs.sells ? { sells: t(spec.runs.sells, 200) } : {}) },
+    worst: t(spec.worst, 300),
+    ...(spec.backtest ? { backtest: t(spec.backtest, 600) } : {}),
+    ...(spec.differs ? { differs: t(spec.differs, 600) } : {}),
+    ...(spec.from ? { from: t(spec.from, 300) } : {}),
+    ...(spec.changes ? { changes: t(spec.changes, 400) } : {}),
+    ...(spec.flatten ? { flatten: t(spec.flatten, 1000) } : {}),
+    ...(spec.parts ? { parts: { buys: t(spec.parts.buys, 200), sells: t(spec.parts.sells, 200), worst: t(spec.parts.worst, 200), tested: t(spec.parts.tested, 200) } } : {}),
+    ...(spec.code ? { code: { folder: t(spec.code.folder, 1024), command: t(spec.code.command, 1024), figures: t(spec.code.figures, 200), holds: t(spec.code.holds, 200) } } : {}),
+  }
+}
 
 export function cardLifetimeMs(kind: CardKind): number {
   return kind === "trade" || kind === "swap" ? 60_000 : 10 * 60_000
@@ -76,8 +104,18 @@ export interface CardDisplay {
   slippage?: string
   /** The bound is looser than the default: drawn amber. */
   slippageLooser?: boolean
+  /** The bound itself, in basis points, where it's shown. */
+  slippageBps?: number
   /** What kind of wallet pays, for the compact card: "embedded", or a TEE wallet's label. */
   walletLabel?: string
+  /** The trigger whose firing proposed it, by name: the card and its receipt say "by trigger". */
+  trigger?: string
+  /** What that firing saw, in words: the card and its receipt say it in place of why. */
+  fired?: string
+  /** The rules bot whose entry or exit it is, by name: the card and its receipt say "by the bot". */
+  bot?: string
+  /** The trigger whose wake started the agent's turn that proposed it: the card and its receipt say "woke on". */
+  woken?: string
   /** A TEE wallet that pays: "pays from tee-one (TEE · 7xKX…AsU)". */
   paysFrom?: string
   /** What "re-send" does for this card, when an answer is lost: the CLI route's, a launch's, a post's. */
@@ -132,6 +170,23 @@ export interface CardDisplay {
   supported: boolean
   /** A trade on a wallet that trades inside limits that is a card all the same, and why: "over the embedded wallet's $1.00 a trade without a card". */
   cardBecause?: string
+  /** A trigger's card: the exact line it saves, the trigger in words, and whether it runs on its own or asks each time. */
+  triggerCard?: TriggerSpec
+  /** A bot's card: the bot in words, its definition (or a code bot's settings) exactly, how its trades run, its worst case and its backtest. */
+  botCard?: BotSpec
+  /**
+   * The same name is held in a wallet, or was on an earlier card, for another token: said in amber, with that
+   * token's short address, so a copy of a ticker isn't taken for the one the person knows.
+   */
+  otherMint?: string
+  /** A launch's own words and links, by host: what the press publishes besides the name. */
+  publishes?: string
+  /** A launch's creator fee, staker share, mode, visibility or launch rules set to something other than the default: amber. */
+  launchTerms?: string
+  /** The card's mode isn't the Candle Harness's (a live bot's buy while it's on paper): said in amber. */
+  modeDiffers?: string
+  /** Once expired it's asked for again, never re-quoted: what it was made from may have changed since. */
+  askAgain?: boolean
 }
 
 /**
@@ -139,15 +194,19 @@ export interface CardDisplay {
  * under `cards.typedTrades = "instant"`, or for a line the user typed that runs in the prompt pane
  * ("typed", so every pane goes through the one ticket path). A view that doesn't say is "view".
  */
-/** `inside-limits`: the core ran it without a card, inside its wallet's figures. Only the core says it. */
-export type ApprovedHow = "enter" | "click" | "instant" | "typed" | "view" | "inside-limits"
+/**
+ * `inside-limits`: the core ran it without a card, inside its wallet's figures. `bot-exit`: the core ran a rules bot's
+ * sell without a card, on any wallet, since the person approved its exits with the bot. Only the core says either.
+ */
+export type ApprovedHow = "enter" | "click" | "instant" | "typed" | "view" | "inside-limits" | "bot-exit"
 const VIEW_HOW: readonly string[] = ["enter", "click"]
 
 export interface Card extends CardView {
   params: Record<string, unknown>
   approvedHow?: ApprovedHow
   cardHash: string
-  origin: { clientId: string; role: "view" | "harness" }
+  /** Who proposed it: a view's person, an agent's harness, or the core for a trigger, with the trigger's firing. */
+  origin: { clientId: string; role: FaceClient["role"]; source: Source; trigger?: TriggerOrigin; bot?: BotOrigin; woken?: { trigger: string; fireId: string } }
   reason?: string
   wallet: string
   account: string
@@ -175,6 +234,8 @@ export interface Card extends CardView {
   withoutCard?: string
   /** A trade on a wallet that trades inside limits that is a card all the same, and why. */
   cardBecause?: string
+  /** The asset a trade settles in, as the card worked it out: a fill whose answer names none is read in it. */
+  settles?: BaseAsset
 }
 
 /**
@@ -189,8 +250,25 @@ export type WithoutCard =
   | { run: true; words: string; figures?: { perTradeUsd: number; perDayUsd: number; usedUsd: number } }
   | { run: false; words?: string }
 
+/**
+ * Whether a looser slippage bound on a rules bot's trade is the one the person approved with the bot: its trades at
+ * that bound or tighter run as any trade inside the figures, and each receipt names it. Only the core's own client
+ * carries a bot, and its bound comes from the bot's approved version.
+ */
+export function botBound(card: { origin?: Pick<Card["origin"], "role" | "bot">; display?: Pick<CardDisplay, "slippageBps"> }): number | undefined {
+  const bound = card.origin?.role === "core" ? card.origin.bot?.slippageBps : undefined
+  const bps = card.display?.slippageBps
+  return bound !== undefined && bps !== undefined && bps <= bound ? bps : undefined
+}
+
+/** ", at the bot's approved slippage of 5%", on a receipt that ran at a bot's own looser bound. */
+const boundWords = (card: Parameters<typeof botBound>[0] & { display?: Pick<CardDisplay, "slippageLooser"> }): string => {
+  const bps = card.display?.slippageLooser ? botBound(card) : undefined
+  return bps !== undefined ? `, at the bot's approved slippage of ${percentText(bps)}` : ""
+}
+
 export function withoutCard(input: {
-  card: Pick<Card, "kind" | "mode" | "side" | "row" | "route" | "value"> & { walletName: string; display?: Pick<CardDisplay, "slippage" | "slippageLooser"> }
+  card: Pick<Card, "kind" | "mode" | "side" | "row" | "route" | "value"> & { walletName: string; origin?: Pick<Card["origin"], "role" | "bot">; display?: Pick<CardDisplay, "slippage" | "slippageLooser" | "slippageBps"> }
   setting: WalletSetting
   /** Spent today without a card from this wallet, by every agent, before this trade; undefined when it can't be counted. */
   usedUsd: number | undefined
@@ -203,8 +281,8 @@ export function withoutCard(input: {
   const whose = card.walletName === "embedded" ? "the embedded wallet's" : `${card.walletName}'s`
   if (input.inFlight) return { run: false, words: "the same trade is still in flight, so this one waits for you" }
   // A bound looser than the route's default, sells included: a confused or misled agent could dump into a thin pool.
-  if (card.display?.slippageLooser) return { run: false, words: `${card.display.slippage}, looser than that, so this one waits for you` }
-  if (card.side === "sell") return { run: true, words: `without a card: ${card.walletName === "embedded" ? "the embedded wallet" : card.walletName} trades inside limits, and sells aren't limited` }
+  if (card.display?.slippageLooser && botBound(card) === undefined) return { run: false, words: `${card.display.slippage}, looser than that, so this one waits for you` }
+  if (card.side === "sell") return { run: true, words: `without a card: ${card.walletName === "embedded" ? "the embedded wallet" : card.walletName} trades inside limits, and sells aren't limited${boundWords(card)}` }
   if (input.usedUsd === undefined) return { run: false, words: `the core can't count ${whose} day without a card` }
   const value = card.value.usd
   if (value === undefined) return { run: false, words: `no price, so ${whose} figures can't be checked` }
@@ -216,7 +294,7 @@ export function withoutCard(input: {
   }
   return {
     run: true,
-    words: `without a card, inside ${whose} limits (${usd(value)} of ${usd(setting.perTradeUsd)} a trade, ${usd(input.usedUsd + value)} of ${usd(setting.perDayUsd)} today)`,
+    words: `without a card, inside ${whose} limits (${usd(value)} of ${usd(setting.perTradeUsd)} a trade, ${usd(input.usedUsd + value)} of ${usd(setting.perDayUsd)} today)${boundWords(card)}`,
     figures: { perTradeUsd: setting.perTradeUsd, perDayUsd: setting.perDayUsd, usedUsd: input.usedUsd },
   }
 }
@@ -245,6 +323,13 @@ export interface CardBookDeps {
   walletSpend?: DaySpend
   /** Keys Candle refused with KEY_LIMIT_REACHED: their buys and swaps wait until it lifts. */
   holds?: KeyHolds
+  /**
+   * The amber line on a person's or an agent's sell of a token whose last two sells on this key failed: their sell
+   * isn't held, but a third failure stops the key on Candle, sells included.
+   */
+  sellWarning?(agent: string, mint: string): string | undefined
+  /** The other mints this token's name is held or was carded under here, newest first: a card says so. */
+  otherMints?(symbol: string, mint: string): string[]
   /** Each wallet's autonomy: a trade on one that trades inside limits may run with no card. */
   autonomy?: { get(wallet: string): WalletSetting }
   /** The kill switch: buys and swaps are refused while it's on. */
@@ -284,8 +369,13 @@ export interface CardBookDeps {
    */
   candle?: (agent: string, tool: string, args: Record<string, unknown>) => Promise<ToolOutcome>
   /** The engine turn a harness token was minted for, and the time since its message. */
-  turnOf?: (tokenId: string) => { turnId: string; msSinceStart: number } | undefined
+  /** `correcting`: the turn is on its second run, asked only to correct its reply. */
+  turnOf?: (tokenId: string) => { turnId: string; msSinceStart: number; woken?: { trigger: string; fireId: string }; correcting?: true } | undefined
+  /** Whether the turn a harness token was minted for was stopped or is over: what it still asks for makes no card. */
+  turnEnded?: (tokenId: string) => boolean
   onChange?: (card: Card) => void
+  /** A closed card left the book: whatever was kept by its id can go too. */
+  onDropped?: (card: Card) => void
 }
 
 export type ApproveResult =
@@ -351,15 +441,42 @@ interface Planned {
   sizedFromUsd?: string
   pricedAt?: number
   pricedBy?: string
+  /** A buy's quoted expected out, raw: a bot's book caps a read-back buy's own at it plus the slippage bound. */
+  quoteOutRaw?: string
   risks?: string
   preview?: string
   publicNote?: string
   resendNote?: string
+  /** The token's own name, as Candle's market read gives it, for the other tokens read by it. */
+  symbol?: string
+  settles?: BaseAsset
+  publishes?: string
+  launchTerms?: string
 }
+
+/** How many closed cards the book keeps: every open one stays, and a card being approved or still in flight. */
+export const CLOSED_CARDS_KEPT = 200
+/** The cards a snapshot or a list carries: under one attach message's megabyte, with room for its envelope. */
+export const CARDS_LIST_BYTES = 768 * 1024
+
+/** The kinds a planner rebuilds from what was asked: any other card is made from its proposer's own words. */
+const REPLAYED_KINDS: ReadonlySet<CardKind> = new Set(["trade", "swap", "launch", "stake", "claim", "public"])
+
+/**
+ * An expired card that isn't a trade or one of Candle's own tools is never made again from what was asked: its
+ * words, its warning and what it runs came from its proposer (a trigger's line, a bot's settings, a wallet's
+ * figures), and any of them may have changed since.
+ */
+const ASK_AGAIN_WORDS = "This card expired, and what it was made from may have changed since: ask for it again. Nothing ran."
+
+/** A bot's buy that waited past its card: skipped, as the bot's card said it would be. */
+const botSkippedWords = (name: string) => `The bot "${name}"'s buy waited past its card and was skipped: it buys again on its next signal. Nothing was sent.`
 
 export class CardBook implements CardDesk {
   private readonly cards = new Map<string, Card>()
   private readonly byOpId = new Map<string, Card>()
+  /** The agent's turn each card was proposed in, while the card is kept. */
+  private readonly turnOfCard = new WeakMap<Card, string>()
   /** Cards being approved: a second press is refused, and a racing twin sees them in flight. */
   private readonly approving = new Set<string>()
   private sweep: ReturnType<typeof setInterval> | undefined
@@ -386,6 +503,52 @@ export class CardBook implements CardDesk {
 
   list(): Card[] {
     return [...this.cards.values()]
+  }
+
+  /**
+   * The cards a view or a harness is sent, in the order they were made: every open one, then the newest closed
+   * ones while they fit `maxBytes`, so one message never outgrows what the attach interface carries.
+   */
+  listWithin(maxBytes = CARDS_LIST_BYTES, keep: (card: Card) => boolean = () => true): Card[] {
+    const all = [...this.cards.values()].filter(keep)
+    const size = (card: Card) => Buffer.byteLength(JSON.stringify(card), "utf8") + 1
+    const chosen = new Set<Card>()
+    let used = 0
+    for (const card of all) {
+      if (!this.live(card)) continue
+      chosen.add(card)
+      used += size(card)
+    }
+    for (let i = all.length - 1; i >= 0; i--) {
+      const card = all[i]!
+      if (chosen.has(card)) continue
+      const bytes = size(card)
+      if (used + bytes > maxBytes) break
+      chosen.add(card)
+      used += bytes
+    }
+    return all.filter((card) => chosen.has(card))
+  }
+
+  /** Open, being approved, or approved with its operation not yet at an end: never dropped. */
+  private live(card: Card): boolean {
+    if (isOpen(card) || this.approving.has(card.cardId)) return true
+    if (card.state !== "approved") return false
+    const state = card.operation?.state
+    return state === undefined || UNSETTLED.has(state)
+  }
+
+  /**
+   * Drops the oldest closed cards past `CLOSED_CARDS_KEPT`: a core that runs for weeks would otherwise hold
+   * every card it ever made, and send them all to each view that attaches. `onDropped` hears each one.
+   */
+  private prune(): void {
+    const closed = [...this.cards.values()].filter((card) => !this.live(card))
+    for (const card of closed.slice(0, Math.max(0, closed.length - CLOSED_CARDS_KEPT))) {
+      this.cards.delete(card.cardId)
+      if (this.byOpId.get(card.opId) === card) this.byOpId.delete(card.opId)
+      this.deps.onDropped?.(card)
+    }
   }
 
   /** Records what happened to a card's operation (its execution and reconciliation). */
@@ -421,20 +584,35 @@ export class CardBook implements CardDesk {
     if (Buffer.byteLength(JSON.stringify(input.params), "utf8") > MAX_PARAMS_BYTES) throw invalidParams("params is over 64 KiB.")
     const asked = structuredClone(input.args)
     const given = structuredClone(input.params)
-    const mode = this.deps.mode()
+    // A rules bot's trade goes in the bot's own mode; every other card in the Candle Harness's.
+    const mode = modeFor(client, this.deps.mode())
 
     // The same request from the same proposer while its card is open is that card, unless this one replaces it.
     // An agent's harness clients are one proposer: its MCP connection can reattach mid-turn (where a second,
     // identical call once made a second funds-out card).
     const askedKey = canonicalJson({ tool, agent, asked: withoutId(asked, idKey) })
-    const sameProposer = (card: Card) => card.origin.clientId === client.clientId || (card.origin.role === "harness" && client.role === "harness")
+    // A Build pane's commands each connect afresh, so the Build clients of one agent are one proposer too.
+    const sameBuild = (card: Card) => card.origin.role === "build" && client.role === "build" && card.agent === agent
+    const sameProposer = (card: Card) => card.origin.clientId === client.clientId || (card.origin.role === "harness" && client.role === "harness") || sameBuild(card)
     for (const card of this.cards.values()) {
       if (isOpen(card) && card.cardId !== input.replaces && sameProposer(card) && canonicalJson({ tool: card.tool, agent: card.agent, asked: withoutId(card.asked, idKey) }) === askedKey) {
         return card
       }
     }
-    const openByClient = [...this.cards.values()].filter((c) => isOpen(c) && c.origin.clientId === client.clientId && c.cardId !== input.replaces).length
-    if (openByClient >= OPEN_CARD_CAP) await this.refuse(client, agent, tool, "TOO_MANY_OPEN_CARDS", `A client may hold ${OPEN_CARD_CAP} open cards at once.`)
+    // A turn's second run, made only to correct its reply, starts with no memory of the first: the same request
+    // again is the first run's card, however that card ended, never a second trade or a second card.
+    const turn = client.role === "harness" && client.tokenId ? this.deps.turnOf?.(client.tokenId) : undefined
+    if (turn?.correcting) {
+      for (const card of this.cards.values()) {
+        if (this.turnOfCard.get(card) === turn.turnId && canonicalJson({ tool: card.tool, agent: card.agent, asked: withoutId(card.asked, idKey) }) === askedKey) return card
+      }
+    }
+    const openByClient = [...this.cards.values()].filter((c) => isOpen(c) && (c.origin.clientId === client.clientId || sameBuild(c)) && c.cardId !== input.replaces).length
+    const cap = client.role === "core" ? TRIGGER_OPEN_CARD_CAP : OPEN_CARD_CAP
+    if (openByClient >= cap) {
+      const words = client.bot ? `A bot may hold ${cap} open cards at once, and ${cap} of "${client.bot.name}"'s wait for you now.` : client.role === "core" ? `Triggers may hold ${cap} open cards at once, and ${cap} wait for you now.` : `A client may hold ${cap} open cards at once.`
+      await this.refuse(client, agent, tool, "TOO_MANY_OPEN_CARDS", words)
+    }
 
     // Paused refuses whatever spends or publishes at once, before anything is read from Candle.
     const row = input.cli?.row ?? input.pane?.row.path
@@ -446,6 +624,10 @@ export class CardBook implements CardDesk {
     // A key Candle has refused for its cap: its buys and swaps wait; one Candle stopped: every trade waits.
     // Before anything is read.
     if (!input.cli && !input.pane && (kind === "swap" || kind === "trade")) await this.refuseIfHeld(client, agent, tool, kind === "swap" ? "swap" : given.side === "sell" ? "sell" : "buy")
+
+    // An argument the tool's list doesn't name is refused by name: the card shows what it knows how to show.
+    const stray = input.cli || input.pane ? undefined : unknownArgument(tool, given)
+    if (stray !== undefined) await this.refuse(client, agent, tool, "UNKNOWN_ARGUMENT", `${tool} doesn't take \`${terminalText(stray, { maxLength: 40 })}\` here. Nothing was sent.`)
 
     // The core mints every id: ids are unique per account, across keys, so the proposer's is ignored.
     const opId = randomUUID()
@@ -460,6 +642,7 @@ export class CardBook implements CardDesk {
     else if (kind === "stake") planned = await this.planStake(client, agent, tool, given, status, opId)
     else if (kind === "claim") planned = await this.planClaim(client, agent, tool, given, status)
     else if (kind === "public") planned = await this.planPublic(client, agent, tool, given)
+    else if (tool === "candle_set_profile_wallets" && input.title === undefined) planned = await this.planKeyWallets(client, agent, given)
     else {
       const title = input.title !== undefined ? terminalText(input.title, { maxLength: 200 }) : kind === "lessaccess" ? `LESS ACCESS · ${terminalText(tool)}` : `${terminalText(tool)} (not supported yet)`
       planned = { params: withoutId(given, idKey), wallet: "none", usd: undefined, title, headline: title }
@@ -470,6 +653,9 @@ export class CardBook implements CardDesk {
     const now = this.deps.now()
     const limit = planned.side ? this.deps.limits.check({ usd: planned.usd, side: planned.side, agent, now, ...(planned.feeBps ? { feeBps: planned.feeBps } : {}) }) : undefined
     if (limit && !limit.ok) await this.refuse(client, agent, tool, limit.code, limit.message, { line: limit.line })
+    // The turn that asked was stopped while this was being priced: no card is made, so there's none to press or to
+    // run without a press. Nothing is awaited from here until the card is in the book.
+    if (client.role === "harness" && client.tokenId !== undefined && this.deps.turnEnded?.(client.tokenId)) await this.refuse(client, agent, tool, "TURN_ENDED", TURN_ENDED_WORDS)
 
     // A CLI card runs exactly its argv, with the agent's key; the argv carries the id already. A pane
     // card runs exactly its steps, in the launcher.
@@ -494,6 +680,7 @@ export class CardBook implements CardDesk {
     const expiresAt = new Date(now + cardLifetimeMs(kind)).toISOString()
     const reason = input.reason !== undefined ? terminalText(input.reason, { maxLength: MAX_REASON }) : undefined
     const keyLimit = status?.keyLimit
+    // The agent's turn that proposed it, read above, and the trigger that woke that turn, if one did.
     const card: Card = {
       cardId: `card_${randomBytes(12).toString("base64url")}`,
       opId,
@@ -506,7 +693,7 @@ export class CardBook implements CardDesk {
       expiresAt,
       params,
       cardHash: hashCard({ kind, tool, params, opId, account: this.deps.account, agent, wallet: planned.wallet, mode, ...(route ? { route } : {}) }),
-      origin: { clientId: client.clientId, role: client.role },
+      origin: { clientId: client.clientId, role: client.role, source: sourceOf(client), ...(client.trigger ? { trigger: client.trigger } : {}), ...(client.bot ? { bot: client.bot } : {}), ...(turn?.woken ? { woken: turn.woken } : {}) },
       ...(reason ? { reason } : {}),
       wallet: planned.wallet,
       account: this.deps.account,
@@ -540,7 +727,43 @@ export class CardBook implements CardDesk {
         ...(planned.pricedAt !== undefined ? { pricedAt: new Date(planned.pricedAt).toISOString() } : {}),
         ...(planned.pricedBy ? { pricedBy: planned.pricedBy } : {}),
         ...(planned.risks ? { risks: planned.risks } : {}),
-        ...(input.warning ? { warning: terminalText(input.warning, { maxLength: 600 }) } : {}),
+        ...(planned.publishes ? { publishes: planned.publishes } : {}),
+        ...(planned.launchTerms ? { launchTerms: planned.launchTerms } : {}),
+        ...(() => {
+          // The same name held here, or on an earlier card, for another token: a copy of a ticker reads exactly as the one the person knows.
+          const other = planned.mint && planned.symbol ? this.deps.otherMints?.(planned.symbol, planned.mint)[0] : undefined
+          return other ? { otherMint: `another ${terminalText(planned.symbol!, { maxLength: 24 })} is in a wallet or on an earlier card here (${short(other)}): this one is ${short(planned.mint!)}` } : {}
+        })(),
+        ...(() => {
+          // Real funds under a paper screen: a live bot's trade, or a live bot proposed, while the Candle Harness is on paper.
+          const liveBot = client.bot && mode === "live" ? client.bot.name : input.botCard && !input.botCard.spec.flatten && input.botCard.spec.mode === "live" ? input.botCard.spec.name : undefined
+          return liveBot !== undefined && this.deps.mode() === "paper" ? { modeDiffers: `real funds: the bot "${terminalText(liveBot, { maxLength: 40 })}" is live, though the Candle Harness is on paper` } : {}
+        })(),
+        ...(input.cli || input.pane || REPLAYED_KINDS.has(kind) || (tool === "candle_set_profile_wallets" && input.title === undefined) ? {} : { askAgain: true }),
+        ...(() => {
+          // A sell of a token two sells of which just failed on this key: one more failure stops the key on Candle.
+          const breaker = planned.side === "sell" && planned.mint && client.role !== "core" ? this.deps.sellWarning?.(agent, planned.mint) : undefined
+          const warning = [input.warning, breaker].filter((w): w is string => Boolean(w)).join(" ")
+          return warning ? { warning: terminalText(warning, { maxLength: 600 }) } : {}
+        })(),
+        ...(input.triggerCard
+          ? {
+              triggerCard: {
+                ...input.triggerCard.spec,
+                line: terminalText(input.triggerCard.spec.line, { maxLength: 1000 }),
+                words: terminalText(input.triggerCard.spec.words, { maxLength: 1000 }),
+                runs: terminalText(input.triggerCard.spec.runs, { maxLength: 600 }),
+              },
+              ...(input.triggerCard.paysFrom ? { paysFrom: `pays from ${terminalText(input.triggerCard.paysFrom, { maxLength: 64 })}` } : {}),
+            }
+          : {}),
+        ...(input.botCard
+          ? {
+              botCard: botSpecShown(input.botCard.spec),
+              ...(input.botCard.paysFrom ? { paysFrom: `pays from ${terminalText(input.botCard.paysFrom, { maxLength: 64 })}` } : {}),
+              ...(input.botCard.slippage ? { slippage: terminalText(input.botCard.slippage.words, { maxLength: 120 }), slippageLooser: input.botCard.slippage.looser } : {}),
+            }
+          : {}),
         ...(input.fills?.length ? { fills: input.fills.map((f) => ({ label: terminalText(f.label, { maxLength: 60 }), line: terminalText(f.line, { maxLength: 300 }) })) } : {}),
         ...(planned.pane ? { paneSteps: planned.pane.steps, paneNote: PANE_NOTE } : {}),
         ...(input.pane?.notes?.length ? { paneNotes: input.pane.notes.map((n) => terminalText(n, { maxLength: 300 })) } : {}),
@@ -551,8 +774,14 @@ export class CardBook implements CardDesk {
         limits: limit ? `Candle Harness limit: ${limit.line}` : "",
         ...(keyLimit && planned.side ? { candleKeyLimit: `Candle key limit: ${usd(keyLimit.usd)} ${keyLimit.reset}${keyLimit.reset === "daily" ? " (UTC day)" : ""}` } : {}),
         ...(reason ? { why: reason } : {}),
+        ...(client.trigger ? { trigger: client.trigger.name } : {}),
+        ...(client.bot ? { bot: client.bot.name } : {}),
+        ...(client.trigger && input.fired ? { fired: terminalText(input.fired, { maxLength: MAX_REASON }) } : {}),
+        ...(turn?.woken ? { woken: turn.woken.trigger } : {}),
         mode,
         ...(kind === "hacc" && mode === "paper" ? { modeNote: HACC_IN_PAPER } : {}),
+        // A bot runs in its own mode, whatever the Candle Harness's: the card says the bot's.
+        ...(input.botCard && !input.botCard.spec.flatten ? { modeNote: `${input.botCard.spec.mode} bot` } : {}),
         expiresAt,
         supported: kind !== "unknown" && !input.pane?.blocked,
       },
@@ -560,11 +789,13 @@ export class CardBook implements CardDesk {
       ...(route ? { route } : {}),
       ...(input.cli ? { row: input.cli.row, cliRequest: input.cli } : {}),
       ...(input.pane ? { row: input.pane.row.path, paneRequest: input.pane } : {}),
+      ...(planned.settles ? { settles: planned.settles } : {}),
     }
     this.cards.set(card.cardId, card)
     this.byOpId.set(opId, card)
+    if (turn) this.turnOfCard.set(card, turn.turnId)
+    this.prune()
     // The time from a message to its card, read from the journal by the passes. Nothing shows it.
-    const turn = client.role === "harness" && client.tokenId ? this.deps.turnOf?.(client.tokenId) : undefined
     await this.deps.journal.append({
       type: "card.created",
       mode,
@@ -573,6 +804,8 @@ export class CardBook implements CardDesk {
       opId,
       clientId: client.clientId,
       role: client.role,
+      ...triggerFields(client.trigger),
+      ...botFields(client.bot),
       kind,
       tool,
       params,
@@ -582,11 +815,13 @@ export class CardBook implements CardDesk {
       ...(row ? { row } : input.pane ? { row: input.pane.row.path } : {}),
       ...(card.side ? { side: card.side } : {}),
       ...(planned.mint ? { mint: planned.mint } : {}),
+      ...(planned.quoteOutRaw && card.side === "buy" ? { quoteOutRaw: planned.quoteOutRaw } : {}),
       value: card.value,
       title: card.display.title,
       ...(card.display.headline ? { headline: card.display.headline } : {}),
       expiresAt,
       ...(turn ? { turnId: turn.turnId, msSinceTurnStart: turn.msSinceStart } : {}),
+      ...(turn?.woken ? { woken: turn.woken.trigger, wokenFireId: turn.woken.fireId } : {}),
       ...(input.replaces ? { replaces: input.replaces } : {}),
       // What a pane card says besides its steps (where funds go, who a key makes): the agent's record reads it.
       ...(card.display.paneNotes ? { notes: card.display.paneNotes } : {}),
@@ -610,7 +845,7 @@ export class CardBook implements CardDesk {
     if (card.kind === "unknown") throw refused("NOT_SUPPORTED", "The Candle Harness can't run this tool yet. Reject it, or run it yourself with the candle CLI.")
     if (card.display.blocked) throw refused("NO_VAULT", `${card.display.blocked.why} Set one up first: ${card.display.blocked.fill.line}. Nothing was approved.`)
     if (cardHash !== card.cardHash) return this.refuseApproval(card, viewClientId, "CARD_HASH_MISMATCH", "The card changed after it was drawn. Nothing was approved; look at it again.")
-    const expected = hashCard({ kind: card.kind, tool: card.tool, params: card.params, opId: card.opId, account: this.deps.account, agent: card.agent, wallet: card.wallet, mode: this.deps.mode(), ...(card.route ? { route: card.route } : {}) })
+    const expected = hashCard({ kind: card.kind, tool: card.tool, params: card.params, opId: card.opId, account: this.deps.account, agent: card.agent, wallet: card.wallet, mode: modeFor(card.origin, this.deps.mode()), ...(card.route ? { route: card.route } : {}) })
     if (expected !== card.cardHash) return this.refuseApproval(card, viewClientId, "CARD_CHANGED", "The mode or the agent changed since this card was made. Nothing was approved.")
     if (now >= Date.parse(card.expiresAt)) return this.repropose(card, viewClientId)
     const spends = card.side === "buy" || card.side === "swap"
@@ -623,10 +858,10 @@ export class CardBook implements CardDesk {
     if (hold) return this.refuseApproval(card, viewClientId, hold.why === "stopped" ? "RISK_LIMIT_REACHED" : "KEY_LIMIT_REACHED", heldMessage(hold, now))
 
     // A view can say Enter or click; only the core's own paths say instant, typed or inside-limits.
-    const approvedHow: ApprovedHow = how === "instant" || how === "typed" || how === "inside-limits" || (typeof how === "string" && VIEW_HOW.includes(how)) ? (how as ApprovedHow) : "view"
+    const approvedHow: ApprovedHow = typeof how === "string" && (CORE_HOWS.includes(how) || VIEW_HOW.includes(how)) ? (how as ApprovedHow) : "view"
     // Without a card: the wallet's figures are checked here, with nothing awaited before the
     // spend is recorded below, so two agents racing on one wallet can't both pass its day figure.
-    const inside = approvedHow === "inside-limits" ? this.insideCheck(card, now) : undefined
+    const inside = approvedHow === "inside-limits" ? this.insideCheck(card, now) : approvedHow === "bot-exit" ? this.exitCheck(card) : undefined
     if (inside && !inside.run) throw refused("NOT_INSIDE_LIMITS", `This needs a card${inside.words ? `: ${inside.words}` : ""}. Nothing was approved.`)
     // A new address is approved by a click on "yes, a new address", never a key press or the core.
     if (card.display.newAddress && approvedHow !== "click") return this.refuseApproval(card, viewClientId, "NEW_ADDRESS_NEEDS_A_CLICK", "This sends to a new address: check it in full, then click yes, a new address. Nothing was approved.")
@@ -648,6 +883,8 @@ export class CardBook implements CardDesk {
           opId: card.opId,
           viewClientId,
           how: approvedHow,
+          ...triggerFields(card.origin.trigger),
+          ...botFields(card.origin.bot),
           wallet: card.wallet,
           ...(card.side ? { side: card.side } : {}),
           ...(card.value.usd !== undefined ? { usd: card.value.usd } : {}),
@@ -715,18 +952,52 @@ export class CardBook implements CardDesk {
   async runWithoutCard(card: CardView, client: FaceClient): Promise<{ card: Card; ran?: ApproveResult }> {
     const held = this.cards.get(card.cardId)
     if (!held || !isOpen(held) || this.approving.has(held.cardId)) return { card: held ?? (card as Card) }
-    const check = this.insideCheck(held, this.deps.now())
+    // A rules bot's sell goes by its own rule, on any wallet; everything else by its wallet's.
+    const how = held.origin.bot?.act === "exit" ? "bot-exit" : "inside-limits"
+    const check = how === "bot-exit" ? this.exitCheck(held) : this.insideCheck(held, this.deps.now())
     if (!check.run) {
       if (check.words && held.display.cardBecause !== check.words) {
         held.cardBecause = check.words
         held.display.cardBecause = check.words
         // Why it's a card, kept with its life, so the Journal can say why a trade wasn't hands off.
-        await this.deps.journal.append({ type: "card.because", mode: held.mode, agent: held.agent, cardId: held.cardId, opId: held.opId, words: check.words })
+        await this.deps.journal.append({ type: "card.because", mode: held.mode, agent: held.agent, cardId: held.cardId, opId: held.opId, words: check.words, ...triggerFields(held.origin.trigger), ...botFields(held.origin.bot) })
         this.deps.onChange?.(held)
       }
       return { card: held }
     }
-    return { card: held, ran: await this.approve(client.clientId, held.cardId, held.cardHash, "inside-limits") }
+    return { card: held, ran: await this.approve(client.clientId, held.cardId, held.cardHash, how) }
+  }
+
+  /**
+   * A rules bot's sell runs with no card on any wallet, a wallet that asks every time included: the person approved
+   * its exits with the bot, and a stop that waits for a press isn't a stop. Only the core's own proposal of a bot's
+   * exit, a live sell; a looser slippage bound or the same sell still in flight waits for the person, as any trade.
+   */
+  private exitCheck(card: Card): WithoutCard {
+    const bot = card.origin.bot
+    if (!bot || bot.act !== "exit" || card.origin.role !== "core" || card.mode !== "live" || card.kind !== "trade" || card.side !== "sell" || card.row !== undefined || card.route === "pane") return { run: false }
+    if (this.inFlight(card)) return { run: false, words: "the same sell is still in flight, so this one waits for you" }
+    if (bot.kind === "code" && bot.position && this.positionSelling(card, bot.name, bot.position)) return { run: false, words: "another sell of this position is still in flight, so this one waits for you" }
+    if (card.display.slippageLooser && botBound(card) === undefined) return { run: false, words: `${card.display.slippage}, looser than that, so this one waits for you` }
+    // A flatten is the person's own ask (theirs, or the agent's card they approved), not one of its exits.
+    if (bot.reason === "flatten") return { run: true, words: `without a card, to flatten the bot "${bot.name}", as you asked${boundWords(card)}` }
+    return { run: true, words: `without a card, as the bot "${bot.name}"'s exit: you approved its exits with it${boundWords(card)}` }
+  }
+
+  /**
+   * Another sell of the same position of a code bot, approved and not yet settled, whatever its size or its request's
+   * id: two sells of one position at once would each be sized from the whole of it.
+   */
+  private positionSelling(card: Card, bot: string, position: string): boolean {
+    for (const other of this.cards.values()) {
+      if (other === card || (other.state !== "approved" && !this.approving.has(other.cardId))) continue
+      const o = other.origin.bot
+      if (!o || o.name !== bot || o.act !== "exit" || o.position !== position) continue
+      const state = other.operation?.state
+      if (state !== undefined && !UNSETTLED.has(state)) continue
+      return true
+    }
+    return false
   }
 
   /** The rule for this card now: its wallet's setting and use today, and whether the same trade is in flight. */
@@ -748,13 +1019,17 @@ export class CardBook implements CardDesk {
 
   /**
    * Another trade from the same agent with the same request, approved and not yet settled, however it was
-   * approved: a press, or the core. One a restart left in flight counts too, from the operations, since
-   * cards don't survive a restart.
+   * approved: a press, or the core. A rules bot's trade is only ever its own bot's retry. One a restart left in
+   * flight counts too, from the operations, since cards don't survive a restart.
    */
   private inFlight(card: Card): boolean {
     const asked = canonicalJson({ tool: card.tool, asked: withoutId(card.asked, card.idKey) })
     for (const other of this.cards.values()) {
       if (other === card || other.agent !== card.agent || (other.state !== "approved" && !this.approving.has(other.cardId))) continue
+      // Two bots buying one token, or a bot and its agent, are two trades, not a retry: a bot never retries another's.
+      if ((card.origin.bot || other.origin.bot) && card.origin.bot?.name !== other.origin.bot?.name) continue
+      // A code bot's two requests, each with its own id, are two trades: the core never sends one id twice itself.
+      if (card.origin.bot?.request && other.origin.bot?.request && card.origin.bot.request !== other.origin.bot.request) continue
       const state = other.operation?.state
       if (state !== undefined && !UNSETTLED.has(state)) continue
       if (canonicalJson({ tool: other.tool, asked: withoutId(other.asked, other.idKey) }) === asked) return true
@@ -836,7 +1111,9 @@ export class CardBook implements CardDesk {
       else if (row.type === "card.approved" || row.type === "card.rejected" || row.type === "card.withdrawn" || row.type === "card.expired") open.delete(row.cardId)
     }
     for (const [cardId, row] of open) {
-      await this.deps.journal.append({ type: "card.expired", mode: row.mode, ...(row.agent ? { agent: row.agent } : {}), cardId, opId: row.opId, reason: "core_restarted" })
+      // A trigger's or a bot's card keeps its origin, so its records still say whose it was.
+      const origin = Object.fromEntries(Object.entries(row).filter(([k]) => ORIGIN_FIELDS.has(k)))
+      await this.deps.journal.append({ type: "card.expired", mode: row.mode, ...(row.agent ? { agent: row.agent } : {}), cardId, opId: row.opId, ...origin, reason: "core_restarted" })
     }
     return [...open.keys()]
   }
@@ -852,8 +1129,14 @@ export class CardBook implements CardDesk {
   async requote(viewClientId: string, cardId: unknown, opts: { wallet?: unknown } = {}): Promise<Card> {
     const card = typeof cardId === "string" ? this.cards.get(cardId) : undefined
     if (card === undefined) throw refused("CARD_NOT_FOUND", "No card with that id.")
+    // A bot's buy is the bot's: one that expired was skipped, and it pays from the wallet the bot was approved on.
+    // A fresh card would be a buy no bot's book holds.
+    const bot = card.origin.bot
+    if (bot && opts.wallet === undefined) throw refused("BOT_ENTRY_SKIPPED", botSkippedWords(bot.name))
+    if (bot) throw refused("WALLET_FIXED", `The bot "${bot.name}" pays from the wallet it was approved on. Ask the agent to change the bot to pay from another.`)
     if (opts.wallet === undefined) {
       if (card.state !== "expired") throw refused("CARD_NOT_EXPIRED", `This card is ${card.state}; only an expired card is re-quoted.`)
+      if (card.display.askAgain) throw refused("ASK_AGAIN", ASK_AGAIN_WORDS)
       return this.fresh(card)
     }
     if (card.tool !== "candle_trade" && card.tool !== "candle_swap") throw refused("WALLET_FIXED", "Only a trade or a swap can be paid from another wallet.")
@@ -882,6 +1165,8 @@ export class CardBook implements CardDesk {
 
   private async repropose(card: Card, viewClientId: string): Promise<ApproveResult> {
     await this.close(card.cardId, "expired", { reason: "approved_after_expiry", by: viewClientId })
+    if (card.origin.bot) throw refused("BOT_ENTRY_SKIPPED", botSkippedWords(card.origin.bot.name))
+    if (card.display.askAgain) throw refused("ASK_AGAIN", ASK_AGAIN_WORDS)
     return { kind: "reproposed", expired: card, fresh: await this.fresh(card) }
   }
 
@@ -889,7 +1174,7 @@ export class CardBook implements CardDesk {
   private fresh(card: Card, change: Record<string, unknown> = {}, replaces?: string): Promise<Card> {
     const asked = { ...card.asked, ...change }
     return this.propose({
-      client: { clientId: card.origin.clientId, role: card.origin.role, agent: card.agent },
+      client: { clientId: card.origin.clientId, role: card.origin.role, agent: card.agent, ...(card.origin.trigger ? { trigger: card.origin.trigger } : {}) },
       agent: card.agent,
       tool: card.tool,
       args: asked,
@@ -906,6 +1191,10 @@ export class CardBook implements CardDesk {
   private async planTrade(client: FaceClient, agent: string, given: Record<string, unknown>, status: AgentStatus | undefined, opId: string): Promise<Planned> {
     const tool = "candle_trade"
     const invalid = (message: string) => this.refuse(client, agent, tool, "INVALID_TRADE", message)
+    // What trades spend isn't a trade's token. Sold as one, it would be a conversion that every limit, the
+    // wallet's figures and the kill switch let through as a sell. CNDL trades like any token.
+    const spent = notATradeToken(given.mint)
+    if (spent !== undefined) return this.refuse(client, agent, tool, "BASE_ASSET", spent)
     const sized = await sizeInUsd(agent, given, { markets: this.deps.markets, pricing: this.deps.pricing, spendAsset: this.deps.spendAsset })
     if (!sized.ok) return this.refuse(client, agent, tool, sized.code, sized.message)
     const args = sized.args
@@ -929,7 +1218,8 @@ export class CardBook implements CardDesk {
     const payer = await this.paying(client, agent, tool, status, market.chain, word)
     const wallet = payer.address
     const tee = payer.kind === "tee" ? payer : undefined
-    const label = market.symbol ?? short(mint)
+    // A name that could pass for another token's carries its short address, as everywhere else it's shown.
+    const label = tokenLabel(market.symbol, mint) ?? short(mint)
     const { amount: _a, percent: _p, paper: _paper, wallet: _w, ...rest } = args
     const feeBps = status?.feeBps ?? FALLBACK_FEE_BPS
 
@@ -937,6 +1227,7 @@ export class CardBook implements CardDesk {
     if ("invalid" in settled) return invalid(settled.invalid)
     const asset = settled.asset
     const assetName = asset ?? "its pair asset"
+    const named = { ...(market.symbol ? { symbol: market.symbol } : {}), ...(asset ? { settles: asset } : {}) }
     // Over the key's Candle cap for the asset a buy spends: Candle would refuse it when it builds the
     // trade, so it's refused here in Candle's words, before any read.
     if (side === "buy" && asset !== undefined && amount !== undefined) {
@@ -947,7 +1238,7 @@ export class CardBook implements CardDesk {
     // A TEE wallet's trade runs through `candle swap`: the argv is what the card binds.
     let via: Pick<Planned, "tee" | "cli"> = {}
     if (tee) {
-      if (this.deps.mode() === "paper") return this.refuse(client, agent, tool, "NO_PAPER_TEE", "TEE wallets have no paper form; switch to live to trade from one.")
+      if (modeFor(client, this.deps.mode()) === "paper") return this.refuse(client, agent, tool, "NO_PAPER_TEE", "TEE wallets have no paper form; switch to live to trade from one.")
       if (asset === undefined) return this.refuse(client, agent, tool, "PAIR_UNKNOWN", `${label} trades against an asset the Candle Harness doesn't know, so it can't be traded from a TEE wallet yet. Nothing was sent.`)
       const slippage = slippageBps(args.maxSlippageBps)
       if (slippage === null) return invalid("maxSlippageBps is a whole number of basis points, from 0 to 10000.")
@@ -1001,6 +1292,7 @@ export class CardBook implements CardDesk {
         return {
           params: { ...rest, mint, side, amount: amount! },
           ...via,
+          ...named,
           side: "buy",
           ...(asset ? { spent: { asset, amount: amount! } } : {}),
           wallet,
@@ -1019,12 +1311,14 @@ export class CardBook implements CardDesk {
           ...(sized.fromUsd ? { sizedFromUsd: `${usd(sized.fromUsd.usd)} at ${sized.fromUsd.asset} ${priceText(sized.fromUsd.assetPriceUsd)}` } : {}),
           pricedAt: quote.quotedAt,
           pricedBy: "Candle quote",
+          ...(/^\d{1,78}$/.test(String(quote.amountOutRaw)) ? { quoteOutRaw: String(quote.amountOutRaw) } : {}),
           ...riskText(quote),
         }
       }
       return {
         params: { ...rest, mint, side, amount: amount! },
         ...via,
+        ...named,
         side: "buy",
         ...(asset ? { spent: { asset, amount: amount! } } : {}),
         wallet,
@@ -1088,6 +1382,7 @@ export class CardBook implements CardDesk {
       return {
         params: { ...rest, mint, side, ...sizing },
         ...via,
+        ...named,
         side: "sell",
         wallet,
         usd: quotedUsd,
@@ -1109,6 +1404,7 @@ export class CardBook implements CardDesk {
     return {
       params: { ...rest, mint, side, ...sizing },
       ...via,
+      ...named,
       side: "sell",
       wallet,
       usd: usdValue,
@@ -1140,7 +1436,7 @@ export class CardBook implements CardDesk {
     let via: Pick<Planned, "tee" | "cli"> = {}
     if (payer.kind === "tee") {
       const refuse = (code: string, message: string) => this.refuse(client, agent, "candle_swap", code, message)
-      if (this.deps.mode() === "paper") return refuse("NO_PAPER_TEE", "TEE wallets have no paper form; switch to live to swap from one.")
+      if (modeFor(client, this.deps.mode()) === "paper") return refuse("NO_PAPER_TEE", "TEE wallets have no paper form; switch to live to swap from one.")
       // SOL or USDC to ETH or USDG is a bridge between two TEE wallets in `candle swap`: not yet.
       if (BASE_ASSETS[to].chain !== BASE_ASSETS[from].chain) return refuse("BRIDGE_LATER", `${from} to ${to} is a bridge between chains, which the Candle Harness doesn't run from a TEE wallet yet. Nothing was sent.`)
       const slippage = slippageBps(args.maxSlippageBps)
@@ -1220,8 +1516,12 @@ export class CardBook implements CardDesk {
       ceiling,
       status?.dailyLaunchCap !== undefined ? `${status.dailyLaunchCap} launches a day, shared by every key on the account` : undefined,
     ].filter(Boolean)
+    const publishes = launchPublishes(given)
+    const setTerms = launchTerms(given)
     return {
       params,
+      ...(publishes ? { publishes } : {}),
+      ...(setTerms ? { launchTerms: setTerms } : {}),
       ...(seed !== undefined ? { side: "buy" as const } : {}),
       wallet,
       usd: spendUsd,
@@ -1338,6 +1638,20 @@ export class CardBook implements CardDesk {
       preview: "paid to the wallet the reward was recorded for; Candle pays the network fee",
       resendNote: "Re-send claims the same rewardId, which never pays twice.",
     }
+  }
+
+  /**
+   * Narrowing a key's wallets through Candle's own tool: the card says which key, by its prefix, and how many
+   * wallets it keeps, rather than the tool's name alone. Nothing is read.
+   */
+  private async planKeyWallets(client: FaceClient, agent: string, given: Record<string, unknown>): Promise<Planned> {
+    const tool = "candle_set_profile_wallets"
+    const invalid = (message: string) => this.refuse(client, agent, tool, "INVALID_WALLETS", message)
+    if (typeof given.keyPrefix !== "string" || given.keyPrefix.length === 0 || given.keyPrefix.length > 32) return invalid("Name the key by its prefix, as candle_get_profile_wallets lists it.")
+    if (!Array.isArray(given.walletIds) || given.walletIds.some((id) => typeof id !== "string")) return invalid("walletIds is the list of wallets the key keeps.")
+    const n = given.walletIds.length
+    const title = `LESS ACCESS · key ${terminalText(given.keyPrefix, { maxLength: 32 })} keeps ${n === 0 ? "no wallets" : `${n} wallet${n === 1 ? "" : "s"}`}`
+    return { params: given, wallet: "none", usd: undefined, title, headline: title }
   }
 
   /** Profile edits and posts: public, on the agent's own page, and said so on the card. Nothing is read. */
@@ -1517,7 +1831,7 @@ export class CardBook implements CardDesk {
         agent,
         tool,
         "EMBEDDED_WALLET_NOT_PERMITTED",
-        `${agent}'s key isn't allowed to trade from the account's embedded wallet. The owner allows it in their own terminal: candle keys update ${prefix} --embedded-wallet allow`,
+        `${agent}'s key isn't allowed to trade from the account's embedded wallet. The owner allows it by typing this in the Candle Harness, where it runs in the prompt pane as them: candle keys update ${prefix} --embedded-wallet allow`,
       )
     }
     const wallet = chain === "hood" ? status.wallets.evm : status.wallets.solana
@@ -1535,14 +1849,14 @@ export class CardBook implements CardDesk {
 
   /** A held key's trade, refused in Candle's words with when it lifts. Live only: paper never reaches Candle. */
   private async refuseIfHeld(client: FaceClient, agent: string, tool: string, side: Side): Promise<void> {
-    if (this.deps.mode() !== "live") return
+    if (modeFor(client, this.deps.mode()) !== "live") return
     const now = this.deps.now()
     const hold = this.deps.holds?.held(agent, now, side)
     if (hold) await this.refuse(client, agent, tool, hold.why === "stopped" ? "RISK_LIMIT_REACHED" : "KEY_LIMIT_REACHED", heldMessage(hold, now), { until: hold.until })
   }
 
   private async refuse(client: FaceClient, agent: string, tool: string, code: string, message: string, details: Record<string, unknown> = {}): Promise<never> {
-    await this.deps.journal.append({ type: "card.refused", mode: this.deps.mode(), agent, clientId: client.clientId, role: client.role, tool, code, message })
+    await this.deps.journal.append({ type: "card.refused", mode: modeFor(client, this.deps.mode()), agent, clientId: client.clientId, role: client.role, ...triggerFields(client.trigger), ...botFields(client.bot), tool, code, message })
     throw refused(code, message, details)
   }
 
@@ -1556,8 +1870,9 @@ export class CardBook implements CardDesk {
     if (card === undefined) throw refused("CARD_NOT_FOUND", "No card with that id.")
     if (!isOpen(card) || this.approving.has(card.cardId)) throw refused("CARD_NOT_AWAITING", `This card is ${card.state}.`, { state: card.state })
     card.state = state
-    await this.deps.journal.append({ type: `card.${state}`, mode: card.mode, agent: card.agent, cardId: card.cardId, opId: card.opId, ...detail })
+    await this.deps.journal.append({ type: `card.${state}`, mode: card.mode, agent: card.agent, cardId: card.cardId, opId: card.opId, ...triggerFields(card.origin.trigger), ...botFields(card.origin.bot), ...detail })
     this.deps.onChange?.(card)
+    this.prune()
     return card
   }
 }
@@ -1575,14 +1890,14 @@ export const CLI_SLIPPAGE_BPS = 50
 const percentText = (bps: number) => `${(bps / 100).toLocaleString("en-US", { maximumFractionDigits: 2 })}%`
 
 /** The card's slippage line, when the agent set a bound that isn't its route's default. */
-export function slippageShown(kind: CardKind, planned: Pick<Planned, "params" | "tee">): Pick<CardDisplay, "slippage" | "slippageLooser"> {
+export function slippageShown(kind: CardKind, planned: Pick<Planned, "params" | "tee">): Pick<CardDisplay, "slippage" | "slippageLooser" | "slippageBps"> {
   if (kind !== "trade" && kind !== "swap") return {}
   const bps = planned.params.maxSlippageBps
   const fallback = planned.tee ? CLI_SLIPPAGE_BPS : CANDLE_SLIPPAGE_BPS
   if (bps === undefined || bps === fallback) return {}
   // A bound that isn't a whole number of basis points in range fails closed: a card, never a run on a guess.
   if (typeof bps !== "number" || !Number.isInteger(bps) || bps < 0 || bps > 10_000) return { slippage: `a slippage bound that isn't a whole number of basis points from 0 to 10000, the default is ${percentText(fallback)}`, slippageLooser: true }
-  return { slippage: `slippage ${percentText(bps)}, the default is ${percentText(fallback)}`, ...(bps > fallback ? { slippageLooser: true } : {}) }
+  return { slippage: `slippage ${percentText(bps)}, the default is ${percentText(fallback)}`, slippageBps: bps, ...(bps > fallback ? { slippageLooser: true } : {}) }
 }
 
 /** `--slippage-bps` from the agent's maxSlippageBps: undefined leaves the CLI's default (50); null isn't one. */
@@ -1632,4 +1947,53 @@ function withoutId(args: Record<string, unknown>, idKey: IdKey): Record<string, 
   if (idKey === "coreOpId") return args
   const { [idKey]: _id, ...rest } = args
   return rest
+}
+
+/** Just the host of a link, cleaned: "x.com", or the text itself, cut, where it isn't an address. */
+function hostOf(value: unknown): string | undefined {
+  if (typeof value !== "string" || value.trim() === "") return undefined
+  try {
+    return terminalText(new URL(value).host, { maxLength: 60 })
+  } catch {
+    return terminalText(value, { maxLength: 40 })
+  }
+}
+
+/**
+ * What a launch publishes besides its name and ticker, in words: each link by its host, the image's and the
+ * banner's hosts, and the start of the description. They're on the token's page for good once it launches.
+ */
+export function launchPublishes(given: Record<string, unknown>): string | undefined {
+  const socials = record(given.socials) ?? {}
+  const links = Object.entries(socials).flatMap(([key, value]) => {
+    const host = hostOf(value)
+    return host ? [`${terminalText(key, { maxLength: 16 })} ${host}`] : []
+  })
+  const image = hostOf(given.imageUrl)
+  const banner = hostOf(given.bannerUrl)
+  const description = typeof given.description === "string" && given.description.trim() !== "" ? terminalText(given.description, { maxLength: 120 }) : undefined
+  const parts = [
+    links.length ? `links: ${links.join(", ")}` : undefined,
+    image ? `image from ${image}` : undefined,
+    banner ? `banner from ${banner}` : undefined,
+    description ? `description: ${description}` : undefined,
+  ].filter(Boolean)
+  return parts.length ? parts.join(" · ") : undefined
+}
+
+/**
+ * A launch's terms the agent set to something other than Candle's defaults, in words: who earns the fees and
+ * who may buy change what the token is, so the card says them before the press.
+ */
+export function launchTerms(given: Record<string, unknown>): string | undefined {
+  const pct = (bps: unknown) => (typeof bps === "number" && Number.isFinite(bps) ? `${(bps / 100).toLocaleString("en-US", { maximumFractionDigits: 2 })}%` : terminalText(String(bps), { maxLength: 16 }))
+  const word = (v: unknown) => terminalText(typeof v === "string" ? v : JSON.stringify(v), { maxLength: 80 })
+  const parts = [
+    given.creatorFeeBps !== undefined ? `creator fee ${pct(given.creatorFeeBps)}` : undefined,
+    given.stakerAllocationBps !== undefined ? `staker share ${pct(given.stakerAllocationBps)}` : undefined,
+    given.mode !== undefined ? `mode ${word(given.mode)}` : undefined,
+    given.visibility !== undefined && given.visibility !== "public" ? `visibility ${word(given.visibility)}` : undefined,
+    given.launchRules !== undefined ? `launch rules ${word(given.launchRules)}` : undefined,
+  ].filter(Boolean)
+  return parts.length ? `set by the agent, not Candle's defaults: ${parts.join(" · ")}` : undefined
 }

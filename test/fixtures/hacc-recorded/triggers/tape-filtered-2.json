@@ -1,0 +1,84 @@
+{
+  "name": "tape-filtered-2",
+  "host": "hacc",
+  "route": "/v1/signals",
+  "query": {
+    "asset": "HaccFake1111111111111111111111111111111111E",
+    "pattern": "intra_book",
+    "since": "2026-11-04T16:26:45.329Z",
+    "limit": "20",
+    "max_mcap_usd": "1000000000000",
+    "max_age_minutes": "5256000"
+  },
+  "status": 200,
+  "ms": 225,
+  "bytes": 876,
+  "answer": {
+    "signals": [
+      {
+        "id": 126523005,
+        "rule_id": 5,
+        "pattern": "intra_book",
+        "wallet_id": 406381,
+        "asset_id": 8954,
+        "event_id": 81764657,
+        "event_kind": "transfer",
+        "summary": "fake-summary-12",
+        "payload": {
+          "amount": "1399000",
+          "tx_hash": "fake-tx_hash-2",
+          "direction": "out",
+          "counterparty_address": "HaccFake1111111111111111111111111111111111C",
+          "counterparty_wallet_id": 556851
+        },
+        "created_at": "2026-11-04T16:26:45.330Z",
+        "wallet_address": "HaccFake1111111111111111111111111111111111D",
+        "wallet_label": null,
+        "wallet_chain": "solana",
+        "wallet_entity": null,
+        "wallet_groups": [
+          "fake-wallet_groups-2",
+          "fake-wallet_groups-3"
+        ],
+        "display_label": "fake-display_label-1",
+        "label_source": "pumpfun",
+        "asset_symbol": "fake-asset_symbol-2",
+        "asset_address": "HaccFake1111111111111111111111111111111111E",
+        "asset_chain": "solana",
+        "burst": false
+      }
+    ]
+  },
+  "streamRow": {
+    "id": 126523005,
+    "rule_id": 5,
+    "pattern": "intra_book",
+    "wallet_id": 406381,
+    "asset_id": 8954,
+    "event_id": 81764657,
+    "event_kind": "transfer",
+    "summary": "fake-summary-12",
+    "payload": {
+      "amount": "1399000",
+      "tx_hash": "fake-tx_hash-2",
+      "direction": "out",
+      "counterparty_address": "HaccFake1111111111111111111111111111111111C",
+      "counterparty_wallet_id": 556851
+    },
+    "created_at": "2026-11-04T16:26:45.330Z",
+    "wallet_address": "HaccFake1111111111111111111111111111111111D",
+    "wallet_label": null,
+    "wallet_chain": "solana",
+    "wallet_entity": null,
+    "wallet_groups": [
+      "fake-wallet_groups-2",
+      "fake-wallet_groups-3"
+    ],
+    "display_label": "fake-display_label-1",
+    "label_source": "pumpfun",
+    "asset_symbol": "fake-asset_symbol-2",
+    "asset_address": "HaccFake1111111111111111111111111111111111E",
+    "asset_chain": "solana",
+    "burst": false
+  }
+}

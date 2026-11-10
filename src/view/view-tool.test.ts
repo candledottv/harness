@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test"
 import { AGENT_FIRST, panesOf } from "./layout"
-import { EMPTY_FILE, layoutsText, parseLayouts } from "./layouts-file"
+import { DEFAULT_TABS, EMPTY_FILE, layoutsText, parseLayouts } from "./layouts-file"
 import { AGENT_THEME_MARK, planView, type ViewToolContext } from "./view-tool"
 import { parseTheme } from "./themes"
 
@@ -22,7 +22,7 @@ test("read says the tabs, each layout's tree, the panes, pins and themes, whose 
   const text = (plan as { text: string }).text
   expect(text).toContain('1. Trade (on screen): Agent-first, ["row", "agent 60", ["column", 40, "token 4", "positions 3", "wallets 2", "activity 3"]]')
   expect(text).toContain("2. Cockpit: Cockpit")
-  expect(text).toContain("Layouts: Agent-first (preset), Cockpit (preset), Trending (preset), Signals (preset), P&L (preset), Research (preset), Journal (preset), Perps (preset).")
+  expect(text).toContain("Layouts: Agent-first (preset), Cockpit (preset), Trending (preset), Signals (preset), P&L (preset), Research (preset), Journal (preset), Perps (preset), Bots (preset), Build (preset).")
   expect(text).toContain("Pinned token panes: Trade on MOON.")
   expect(text).toContain("Themes: Candle dark (on), Candle light, Terminal, Mine (theirs).")
 })
@@ -84,11 +84,28 @@ test("tabs are added, renamed and removed at once, with the tabs before for an u
 })
 
 test("a pin needs a token pane on the tab; a theme that exists is switched to by its name", () => {
-  expect(planView({ action: "pin", mint: "MoonFake11111111111111111111111111111111111" }, ctx())).toEqual({ kind: "pin", tab: "Trade", mint: "MoonFake11111111111111111111111111111111111" })
+  expect(planView({ action: "pin", mint: "MoonFake11111111111111111111111111111111111" }, ctx())).toEqual({ kind: "pin", tab: "Trade", pane: "token", mint: "MoonFake11111111111111111111111111111111111" })
   const noToken = { Trade: { agent: "momentum", layout: { ...AGENT_FIRST, root: { dir: "row" as const, weight: 1, children: [{ pane: "agent" as const, weight: 1 }] } } } }
   expect(planView({ action: "pin" }, ctx({ previews: noToken }))).toMatchObject({ kind: "refused", code: "NO_TOKEN_PANE" })
   expect(planView({ action: "theme", name: "candle light" }, ctx())).toEqual({ kind: "theme", name: "Candle light" })
   expect(planView({ action: "theme", name: "Dusk" }, ctx())).toMatchObject({ kind: "refused", code: "UNKNOWN_THEME" })
+})
+
+test("another token pane is pinned by its id, only where the tab has it; opening one tells the agent to pin it", () => {
+  // Trade's layout has one token pane: token:2 isn't there to pin, and a pane that isn't a token pane isn't one.
+  expect(planView({ action: "pin", pane: "token:2" }, ctx())).toMatchObject({ kind: "refused", code: "NO_TOKEN_PANE", text: expect.stringContaining("open it first") })
+  expect(planView({ action: "pin", pane: "wallets" }, ctx())).toMatchObject({ kind: "refused", code: "UNKNOWN_PANE" })
+  const opened = planView({ action: "open", pane: "token:2", near: "token" }, ctx())
+  expect(opened.kind).toBe("preview")
+  expect(opened.kind === "preview" && opened.text).toContain('"pin" with pane "token:2"')
+  // With the preview on the tab, token:2 pins, and unpins, by its id.
+  if (opened.kind !== "preview") throw new Error("not a preview")
+  const two = { Trade: { agent: "momentum", layout: opened.layout } }
+  expect(planView({ action: "pin", pane: "token:2", mint: "MoonFake11111111111111111111111111111111111" }, ctx({ previews: two }))).toEqual({ kind: "pin", tab: "Trade", pane: "token:2", mint: "MoonFake11111111111111111111111111111111111" })
+  expect(planView({ action: "unpin", pane: "token:2" }, ctx({ previews: two }))).toEqual({ kind: "unpin", tab: "Trade", pane: "token:2" })
+  // The screen's read names which token pane each pin is on.
+  const read = planView({ action: "read" }, ctx({ pins: [{ at: "Trade", pane: "token:2", mint: "MoonFake11111111111111111111111111111111111", symbol: "MOON" }] }))
+  expect(read.kind === "read" && read.text).toContain("Pinned token panes: Trade's token:2 on MOON.")
 })
 
 test("make_theme writes a checked theme with the agent's mark; an unreadable one, a bad colour, or a theme of theirs by that name is refused", () => {
@@ -113,16 +130,16 @@ test("make_theme writes a checked theme with the agent's mark; an unreadable one
   expect(planView({ action: "make_theme", name: "Dusk", base: "Candle light" }, agents)).toMatchObject({ kind: "makeTheme", words: "changed the theme Dusk" })
 })
 
-// The tabs: the eight of a fresh install, and TWO's six ticked off.
-const EIGHT = EMPTY_FILE
+// The tabs: every one shown, as a person who ticked them all on has them, and TWO's eight ticked off.
+const EVERY = parseLayouts(layoutsText({ tabs: [...DEFAULT_TABS], own: [] }))
 
 test("tab with a pane goes to the tab that has it; a tab ticked off says show_tab ticks it on", () => {
-  expect(planView({ action: "tab", pane: "final-stretch" }, ctx({ file: EIGHT }))).toMatchObject({ kind: "tab", at: 2, pane: "final-stretch", words: "showed final-stretch on the Trending tab" })
+  expect(planView({ action: "tab", pane: "final-stretch" }, ctx({ file: EVERY }))).toMatchObject({ kind: "tab", at: 2, pane: "final-stretch", words: "showed final-stretch on the Trending tab" })
   // The tab on screen first, when it has the pane: Signals on the Cockpit stays there.
-  expect(planView({ action: "tab", pane: "signals" }, ctx({ file: EIGHT, tab: 1 }))).toMatchObject({ kind: "tab", at: 1, pane: "signals" })
-  expect(planView({ action: "tab", pane: "signals", tab: "Signals" }, ctx({ file: EIGHT, tab: 1 }))).toMatchObject({ kind: "tab", at: 3 })
-  expect(planView({ action: "tab", pane: "journal", tab: "Trade" }, ctx({ file: EIGHT }))).toMatchObject({ kind: "refused", text: "Trade has no journal pane (Journal has one)." })
-  expect(planView({ action: "tab", pane: "chart" }, ctx({ file: EIGHT }))).toMatchObject({ kind: "refused", code: "UNKNOWN_PANE" })
+  expect(planView({ action: "tab", pane: "signals" }, ctx({ file: EVERY, tab: 1 }))).toMatchObject({ kind: "tab", at: 1, pane: "signals" })
+  expect(planView({ action: "tab", pane: "signals", tab: "Signals" }, ctx({ file: EVERY, tab: 1 }))).toMatchObject({ kind: "tab", at: 3 })
+  expect(planView({ action: "tab", pane: "journal", tab: "Trade" }, ctx({ file: EVERY }))).toMatchObject({ kind: "refused", text: "Trade has no journal pane (Journal has one)." })
+  expect(planView({ action: "tab", pane: "chart" }, ctx({ file: EVERY }))).toMatchObject({ kind: "refused", code: "UNKNOWN_PANE" })
   expect(planView({ action: "tab", tab: "Perps" }, ctx())).toMatchObject({ kind: "refused", code: "UNKNOWN_TAB", text: expect.stringContaining("Perps is ticked off the tab bar. If they asked to see it, show_tab") })
   expect(planView({ action: "tab", pane: "final-stretch" }, ctx())).toMatchObject({ kind: "refused", text: expect.stringContaining("Trending has one but is ticked off: show_tab") })
 })
@@ -137,7 +154,7 @@ test("show_tab and hide_tab tick a tab on or off as settings does, with what was
   expect(shown.file.hidden.map((h) => h.tab.name)).not.toContain("Perps")
   // On the tab bar already: switched to.
   expect(planView({ action: "show_tab", tab: "Cockpit" }, ctx())).toMatchObject({ kind: "tab", at: 1 })
-  const hidden = planView({ action: "hide_tab", tab: "Journal" }, ctx({ file: EIGHT }))
+  const hidden = planView({ action: "hide_tab", tab: "Journal" }, ctx({ file: EVERY }))
   if (hidden.kind !== "tabs") throw new Error()
   expect(hidden.file.tabs.map((t) => t.name)).not.toContain("Journal")
   expect(hidden.file.hidden.map((h) => h.tab.name)).toEqual(["Journal"])
@@ -149,44 +166,44 @@ test("show_tab and hide_tab tick a tab on or off as settings does, with what was
 })
 
 test("signals sets a Signals pane's choice and pause where it is, else on the first tab with one", () => {
-  const kol = planView({ action: "signals", tab: "Signals", pattern: "kol_mention" }, ctx({ file: EIGHT }))
+  const kol = planView({ action: "signals", tab: "Signals", pattern: "kol_mention" }, ctx({ file: EVERY }))
   expect(kol).toMatchObject({ kind: "signals", tab: "Signals", at: 3, change: { pattern: "kol_mention" }, words: "set Signals on Signals to only mention signals (kol_mention) from Hacc's tape" })
   expect((kol as { text: string }).text).toContain("The screen shows the Signals tab")
   // The tab on screen, the Cockpit, has Signals: no switch. Filters left out stay as they are.
   const choices = [{ at: "Cockpit", pattern: "dormancy", chain: "solana" as const }]
-  const chain = planView({ action: "signals", chain: "both" }, ctx({ file: EIGHT, tab: 1, signals: choices }))
+  const chain = planView({ action: "signals", chain: "both" }, ctx({ file: EVERY, tab: 1, signals: choices }))
   expect(chain).toMatchObject({ kind: "signals", tab: "Cockpit", change: { chain: null }, words: "set Signals on Cockpit to only woke up signals (dormancy) from Hacc's tape" })
   expect((chain as { at?: number }).at).toBeUndefined()
-  expect(planView({ action: "signals", paused: "true" }, ctx({ file: EIGHT, tab: 3 }))).toMatchObject({ kind: "signals", change: {}, paused: true, words: "paused Signals on Signals" })
+  expect(planView({ action: "signals", paused: "true" }, ctx({ file: EVERY, tab: 3 }))).toMatchObject({ kind: "signals", change: {}, paused: true, words: "paused Signals on Signals" })
   // Off a tab with Signals, the tab named after it, not the Cockpit before it.
-  expect(planView({ action: "signals", mine: true }, ctx({ file: EIGHT, tab: 2 }))).toMatchObject({ kind: "signals", tab: "Signals", at: 3, words: "set Signals on Signals to your own rules' signals" })
-  expect(planView({ action: "signals", pattern: "all", chain: "both" }, ctx({ file: EIGHT, tab: 3 }))).toMatchObject({ change: { pattern: null, chain: null }, words: "set Signals on Signals to Hacc's whole tape" })
-  expect(planView({ action: "signals", mine: true, pattern: "deployer" }, ctx({ file: EIGHT }))).toMatchObject({ kind: "refused", code: "MCP_VALIDATION" })
-  expect(planView({ action: "signals", pattern: "whales" }, ctx({ file: EIGHT }))).toMatchObject({ kind: "refused", code: "MCP_VALIDATION" })
-  expect(planView({ action: "signals" }, ctx({ file: EIGHT }))).toMatchObject({ kind: "refused", text: "Say what Signals shows: mine, pattern, chain or paused." })
-  expect(planView({ action: "signals", pattern: "deployer" }, ctx({ file: EIGHT }))).toMatchObject({ kind: "signals", tab: "Signals", at: 3 })
+  expect(planView({ action: "signals", mine: true }, ctx({ file: EVERY, tab: 2 }))).toMatchObject({ kind: "signals", tab: "Signals", at: 3, words: "set Signals on Signals to your own rules' signals" })
+  expect(planView({ action: "signals", pattern: "all", chain: "both" }, ctx({ file: EVERY, tab: 3 }))).toMatchObject({ change: { pattern: null, chain: null }, words: "set Signals on Signals to Hacc's whole tape" })
+  expect(planView({ action: "signals", mine: true, pattern: "deployer" }, ctx({ file: EVERY }))).toMatchObject({ kind: "refused", code: "MCP_VALIDATION" })
+  expect(planView({ action: "signals", pattern: "whales" }, ctx({ file: EVERY }))).toMatchObject({ kind: "refused", code: "MCP_VALIDATION" })
+  expect(planView({ action: "signals" }, ctx({ file: EVERY }))).toMatchObject({ kind: "refused", text: "Say what Signals shows: mine, pattern, chain or paused." })
+  expect(planView({ action: "signals", pattern: "deployer" }, ctx({ file: EVERY }))).toMatchObject({ kind: "signals", tab: "Signals", at: 3 })
   const renamed = parseLayouts('tabs = [{ name = "Trade", layout = "Agent-first" }, { name = "Desk", layout = "Cockpit" }, { name = "Tape", layout = "Signals" }]\n')
   expect(planView({ action: "signals", pattern: "deployer" }, ctx({ file: renamed }))).toMatchObject({ kind: "signals", tab: "Desk", at: 1 })
-  expect(planView({ action: "signals", pattern: "deployer", tab: "Trade" }, ctx({ file: EIGHT }))).toMatchObject({ kind: "refused", text: "Trade has no signals pane (Cockpit and Signals have one)." })
+  expect(planView({ action: "signals", pattern: "deployer", tab: "Trade" }, ctx({ file: EVERY }))).toMatchObject({ kind: "refused", text: "Trade has no signals pane (Cockpit and Signals have one)." })
 })
 
 test("journal puts a search in the Journal, switching to its tab; the agent is told it doesn't see the rows", () => {
-  const found = planView({ action: "journal", search: "  JUP   sell " }, ctx({ file: EIGHT }))
+  const found = planView({ action: "journal", search: "  JUP   sell " }, ctx({ file: EVERY }))
   expect(found).toMatchObject({ kind: "journal", at: 6, search: { query: "JUP sell" }, words: 'searched the Journal for "JUP sell"' })
   expect((found as { text: string }).text).toContain("You don't see them")
-  expect(planView({ action: "journal", search: "JUP", kinds: ["trades"] }, ctx({ file: EIGHT, tab: 6 }))).toEqual(expect.objectContaining({ kind: "journal", search: { query: "JUP", kinds: ["trades"] }, words: 'searched the Journal for "JUP", trades only' }))
-  expect(planView({ action: "journal", search: "", kinds: ["trades"] }, ctx({ file: EIGHT })).kind).toBe("journal")
-  expect(planView({ action: "journal", kinds: ["coins"] }, ctx({ file: EIGHT }))).toMatchObject({ kind: "refused", code: "MCP_VALIDATION" })
-  expect(planView({ action: "journal", search: "x".repeat(101) }, ctx({ file: EIGHT }))).toMatchObject({ kind: "refused" })
+  expect(planView({ action: "journal", search: "JUP", kinds: ["trades"] }, ctx({ file: EVERY, tab: 6 }))).toEqual(expect.objectContaining({ kind: "journal", search: { query: "JUP", kinds: ["trades"] }, words: 'searched the Journal for "JUP", trades only' }))
+  expect(planView({ action: "journal", search: "", kinds: ["trades"] }, ctx({ file: EVERY })).kind).toBe("journal")
+  expect(planView({ action: "journal", kinds: ["coins"] }, ctx({ file: EVERY }))).toMatchObject({ kind: "refused", code: "MCP_VALIDATION" })
+  expect(planView({ action: "journal", search: "x".repeat(101) }, ctx({ file: EVERY }))).toMatchObject({ kind: "refused" })
   expect(planView({ action: "journal", search: "JUP" }, ctx())).toMatchObject({ kind: "refused", text: expect.stringContaining("Journal has one but is ticked off") })
 })
 
 test("read says the tabs ticked off, what Signals shows and the Journal's search", () => {
-  const text = (planView({ action: "read" }, ctx({ file: EIGHT, signals: [{ at: "Signals", pattern: "kol_mention" }], signalsPaused: true, journal: { query: "JUP" } })) as { text: string }).text
+  const text = (planView({ action: "read" }, ctx({ file: EVERY, signals: [{ at: "Signals", pattern: "kol_mention" }], signalsPaused: true, journal: { query: "JUP" } })) as { text: string }).text
   expect(text).toContain("Signals shows: Cockpit, Hacc's whole tape; Signals, only mention signals (kol_mention) from Hacc's tape (paused).")
   expect(text).toContain('The Journal\'s search: "JUP".')
   expect(text).not.toContain("Ticked off")
-  expect((planView({ action: "read" }, ctx()) as { text: string }).text).toContain("Ticked off the tab bar (show_tab shows one): Trending, Signals, P&L, Research, Journal, Perps.")
+  expect((planView({ action: "read" }, ctx()) as { text: string }).text).toContain("Ticked off the tab bar (show_tab shows one): Trending, Signals, P&L, Research, Journal, Perps, Bots, Build.")
 })
 
 test("while you were away: the agent opens the Away pane as a preview; no tab has it to switch to", () => {

@@ -5,6 +5,7 @@ import { testRender } from "@opentui/react/test-utils"
 import { act } from "react"
 import type { CoreEventParams } from "../core/client"
 import { App, type Session } from "./app"
+import { APPROVE_AFTER_BEHIND_MS } from "./keys"
 import type { StatusView, ViewCard } from "./store"
 
 const MOON = "MoonFake11111111111111111111111111111111111"
@@ -26,6 +27,13 @@ class FakeSession implements Session {
   }
   onEvent(listener: (e: CoreEventParams) => void): void {
     this.listeners.push(listener)
+  }
+  private lostListeners: (() => void)[] = []
+  onLost(listener: () => void): void {
+    this.lostListeners.push(listener)
+  }
+  lose(): void {
+    for (const l of this.lostListeners) l()
   }
   push(topic: string, data: unknown, snapshot = false): void {
     for (const l of this.listeners) l({ topic, seq: ++this.seq, data, ...(snapshot ? { snapshot } : {}) })
@@ -274,6 +282,53 @@ test("Enter on an empty line approves the card only after 300 ms; a click on app
   expect(session.requests.at(-1)?.params).toMatchObject({ how: "click" })
 })
 
+test("a card that arrives while another waits takes Enter only after 1.5 s, and the hint line says so meanwhile", async () => {
+  const session = await attached()
+  await input(() => session.push("cards", card("c1")))
+  clock += 5_000
+  await input(() => session.push("status", status(), true))
+  expect(frame()).not.toContain("approves in a moment")
+  // The person is reading c1 when c2 slides in under it: their Enter, 400 ms later, approves nothing.
+  await input(() => session.push("cards", card("c2")))
+  clock += 400
+  await input(() => setup!.mockInput.pressEnter())
+  expect(session.methods()).not.toContain("cards.approve")
+  expect(frame()).toContain("⏎ approves in a moment")
+  clock += APPROVE_AFTER_BEHIND_MS - 400
+  await input(() => setup!.mockInput.pressEnter())
+  expect(session.requests.at(-1)).toEqual({ method: "cards.approve", params: { cardId: "c2", cardHash: "hash-c2", how: "enter" } })
+})
+
+test("too small to draw, Enter approves nothing and typing goes nowhere; the kill switch still works, and the size says a card waits", async () => {
+  const session = await attached()
+  await input(() => session.push("cards", card("c1")))
+  clock += 5_000
+  await input(() => setup!.resize(40, 12))
+  expect(frame()).toContain("Too small: 40×12")
+  expect(frame()).toContain("1 card waits · ctrl-x ×2 still kills")
+  await input(() => setup!.mockInput.pressEnter())
+  await input(() => setup!.mockInput.typeText("live"))
+  await input(() => setup!.mockInput.pressEnter())
+  await input(() => setup!.mockInput.pressKey("n", { ctrl: true }))
+  expect(session.methods()).not.toContain("cards.approve")
+  expect(session.methods()).not.toContain("cards.reject")
+  // Back at a size that draws: nothing was typed meanwhile, and an Enter pressed as the window grew approves nothing.
+  await input(() => setup!.resize(120, 32))
+  expect(frame()).toContain("type a command or ask")
+  clock += 100
+  await input(() => setup!.mockInput.pressEnter())
+  expect(session.methods()).not.toContain("cards.approve")
+  clock += 250
+  await input(() => setup!.mockInput.pressEnter())
+  expect(session.methods()).toContain("cards.approve")
+  // The kill switch, from a window too small to draw.
+  await input(() => setup!.resize(40, 12))
+  await input(() => setup!.mockInput.pressKey("x", { ctrl: true }))
+  clock += 300
+  await input(() => setup!.mockInput.pressKey("x", { ctrl: true }))
+  expect(session.methods()).toContain("kill")
+})
+
 test("ctrl-o shows what the highlighted card is bound to", async () => {
   const session = await attached()
   await input(() => session.push("cards", card("c1")))
@@ -316,6 +371,41 @@ test("switching to live asks once, by click or by typing", async () => {
   expect(frame()).toContain("switch to live?")
   await input(() => setup!.mockInput.pressKey("y"))
   expect(session.requests.at(-1)).toEqual({ method: "mode.set", params: { mode: "live" } })
+})
+
+test("the question before live says what a live trade would find missing, with the fix as a chip, and y still switches", async () => {
+  const session = await attached({ mode: "paper", agents: [{ name: "momentum", candle: "ready" }] })
+  // The key was made without the wallet step: it isn't allowed the embedded wallet, and has no other.
+  await input(() => session.push("wallets", { agents: { momentum: { payable: { tee: [], readAt: clock, unreadable: [] }, embeddedWallet: "denied", prefix: "FakeKey1" } }, account: [], boundTo: {} }, true))
+  await input(() => setup!.mockInput.typeText("live"))
+  await input(() => setup!.mockInput.pressEnter())
+  const asked = frame().replace(/[│\s]+/g, " ")
+  expect(asked).toContain("Not ready for a live trade yet:")
+  expect(asked).toContain("momentum can't pay from a wallet yet")
+  expect(asked).toContain("candle keys update FakeKey1 --embedded-wallet allow")
+  expect(asked).toContain("momentum has no limits of its own set here")
+  expect(asked).toContain("y switches to live")
+  // The chip puts the command on the input line, where Enter runs it in the pane; nothing switched.
+  const chip = find(" allow the embedded wallet ")
+  await input(() => setup!.mockMouse.click(chip.x + 2, chip.y))
+  expect(frame()).not.toContain("switch to live?")
+  expect(frame()).toContain("› candle keys update FakeKey1 --embedded-wallet allow")
+  expect(session.methods()).not.toContain("mode.set")
+  // It doesn't block: y switches, as ever.
+  await input(() => setup!.mockInput.pressKey("u", { ctrl: true }))
+  await input(() => setup!.mockInput.typeText("live"))
+  await input(() => setup!.mockInput.pressEnter())
+  await input(() => setup!.mockInput.pressKey("y"))
+  expect(session.requests.at(-1)).toEqual({ method: "mode.set", params: { mode: "live" } })
+})
+
+test("with a wallet allowed and limits set, the question before live adds nothing", async () => {
+  const session = await attached({ mode: "paper" })
+  await input(() => session.push("wallets", { agents: { momentum: { payable: { embedded: { address: "WalletFake", chain: "solana" }, tee: [], readAt: clock, unreadable: [] }, embeddedWallet: "allowed", prefix: "FakeKey1" } }, account: [], boundTo: {} }, true))
+  await input(() => setup!.mockInput.typeText("live"))
+  await input(() => setup!.mockInput.pressEnter())
+  expect(frame()).toContain("switch to live?")
+  expect(frame()).not.toContain("Not ready for a live trade yet")
 })
 
 test("clicking the agent opens the picker; picking one asks the core, and its spend shows", async () => {
@@ -470,6 +560,41 @@ test("text selected with the mouse copies on ctrl-c, and ctrl-c without a select
   expect(frame()).toContain("ctrl-c again")
 })
 
+
+test("a press whose release was lost doesn't turn the next click into a selection: the click acts", async () => {
+  await attached()
+  const text = find("momentum here.")
+  // A press on text, a stray move with the button still down, and no release: the terminal lost it.
+  await input(() => setup!.mockMouse.pressDown(text.x, text.y))
+  await input(() => setup!.mockMouse.moveTo(text.x + 6, text.y))
+  const tab = find("Cockpit", 1)
+  await input(() => setup!.mockMouse.click(tab.x + 1, tab.y))
+  await input(() => setup!.mockMouse.moveTo(0, 20))
+  expect(frame()).not.toContain("Selected: ctrl-c or a right-click copies it.")
+  expect(setup!.renderer.hasSelection).toBe(false)
+  // The Cockpit, folded to one switched pane at this width.
+  expect(frame()).toContain("◂  token  ▸")
+})
+
+
+test("a click that carries ctrl, as one straight after a ctrl chord can, still clicks: it never stretches a selection", async () => {
+  await attached()
+  // A plain click on the agent's text, then a click on a tab with ctrl still flagged.
+  const text = find("momentum here.")
+  await input(() => setup!.mockMouse.click(text.x + 2, text.y))
+  const tab = find("Cockpit", 1)
+  await input(() => setup!.mockMouse.click(tab.x + 1, tab.y, 0, { modifiers: { ctrl: true } }))
+  await input(() => setup!.mockMouse.moveTo(0, 20))
+  expect(frame()).not.toContain("Selected:")
+  expect(setup!.renderer.hasSelection).toBe(false)
+  expect(frame()).toContain("◂  token  ▸")
+})
+test("a click on a chip's text selects nothing", async () => {
+  await attached()
+  const at = find("ctrl-x ×2 kill", 0)
+  await input(() => setup!.mockMouse.click(at.x + 3, 0))
+  expect(frame()).not.toContain("Selected:")
+})
 test("a plain click selects nothing, so the next ctrl-c still clears the line", async () => {
   await attached()
   await input(async () => {
@@ -496,4 +621,16 @@ test("the mouse pointer is a hand over a chip, and back to normal off it", async
   await input(() => setup!.mockMouse.moveTo(kill.x + 2, 0))
   await input(() => setup!.mockMouse.moveTo(kill.x - 20, 5))
   expect(shapes).toEqual(["pointer", "default"])
+})
+
+test("the core going away is said on the status bar, never left as live figures; the next attach brings them back", async () => {
+  const session = await attached()
+  await input(() => session.lose())
+  const top = frame().split("\n")[0]!
+  expect(top).toContain("the core stopped · reconnecting…")
+  expect(top).toContain("quit and run candle-harness to start it again")
+  expect(top).not.toContain("exposure")
+  await input(() => session.push("status", status(), true))
+  expect(frame().split("\n")[0]).toContain("exposure $140.00")
+  expect(frame().split("\n")[0]).not.toContain("the core stopped")
 })

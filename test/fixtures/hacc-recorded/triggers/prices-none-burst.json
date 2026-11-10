@@ -1,0 +1,12 @@
+{
+  "name": "prices-none-burst",
+  "host": "hacc",
+  "route": "/v1/market/prices",
+  "query": {},
+  "status": 400,
+  "ms": 146,
+  "bytes": 31,
+  "answer": {
+    "error": "addresses: Required"
+  }
+}

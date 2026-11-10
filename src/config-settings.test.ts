@@ -4,8 +4,10 @@
 import { describe, expect, test } from "bun:test"
 import { parseConfig } from "./config"
 import { keysIn, SETTINGS, type SettingsFile } from "./config-settings"
+import { parseBotsFile } from "./core/bots-file"
+import { parseTriggersFile } from "./core/triggers-file"
 import { parseWalletsFile } from "./core/wallets-file"
-import { parseAliases } from "./view/aliases"
+import { parseAliases } from "./shared/aliases"
 import { parseLayouts } from "./view/layouts-file"
 import { configTheme, KEYS as THEME_KEYS, parseTheme, REPLY_KEYS } from "./view/themes"
 
@@ -28,6 +30,10 @@ function readerSays(file: SettingsFile, source: string): string[] {
       return parseLayouts(source).problems
     case "wallets.toml":
       return parseWalletsFile(source).problems
+    case "triggers.toml":
+      return parseTriggersFile(source).problems
+    case "bots.toml":
+      return parseBotsFile(source).problems
     case "theme":
       return parseTheme(source, "mine.toml").problems
   }
@@ -107,10 +113,15 @@ describe("the settings table", () => {
   })
 
   test("each reader's tables are read from it", () => {
-    expect(keysIn("config.toml", "agents.<name>").sort()).toEqual(["limits", "preset", "tools", "wallet"])
+    expect(keysIn("config.toml", "agents.<name>").sort()).toEqual(["limits", "preset", "tools", "wake", "wallet"])
+    expect(keysIn("config.toml", "agents.<name>.wake")).toEqual(["perHour", "perDay"])
     expect(keysIn("config.toml", "aliases")).toEqual([])
     expect(keysIn("layouts.toml", "")).toEqual(["tabs", "layouts"])
     expect(keysIn("layouts.toml", "tabs[]")).toEqual(["name", "layout", "shown"])
     expect(keysIn("wallets.toml", "groups.<group>")).toEqual(["prefix", "wallets"])
+    expect(keysIn("triggers.toml", "")).toEqual(["triggers"])
+    expect(keysIn("triggers.toml", "triggers.<name>")).toEqual(["agent", "line", "expansion", "on", "again", "cooldown", "mode"])
+    expect(keysIn("bots.toml", "")).toEqual(["bots"])
+    expect(keysIn("bots.toml", "bots.<name>")).toEqual(["agent", "wallet", "mode", "state", "maxSlippageBps", "definition", "kind", "folder", "command", "perTradeUsd", "perDayUsd", "maxOpen"])
   })
 })

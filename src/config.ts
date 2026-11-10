@@ -7,8 +7,9 @@ import { DEFAULT_WINDOW, parseWindow, type PnlWindow } from "./core/pnl"
 import { existsSync, readFileSync } from "node:fs"
 import { ENGINE_IDS, type EngineId } from "./engine/engine"
 import { isPreset, type Preset, PRESETS } from "./engine/preset"
-import { shellEntryFault, type ToolSettings, toolNameFault } from "./engine/tools"
+import { runEntryFault, shellEntryFault, type ToolSettings, toolNameFault } from "./engine/tools"
 import { isAgentName, type Paths } from "./paths"
+import { DEFAULT_NOTIFY, NOTIFY_KINDS, NOTIFY_MODES, type NotifyKind, type NotifySettings } from "./shared/notify"
 
 /** Candle's cap on active agent keys per account. */
 export const MAX_AGENTS = 12
@@ -32,6 +33,8 @@ export interface AgentConfig {
   wallet?: string
   /** Shell access and tool permissions (engine/tools.ts); unset is the shell off and every research tool. */
   tools?: ToolSettings
+  /** How often triggers may wake this agent: woken turns an hour and a day. Unset, 4 and 24. */
+  wake?: { perHour?: number; perDay?: number }
   /**
    * Where the agent's preset starts: unset is Quant. The preset last picked in
    * the Candle Harness is kept in state (core/engine-state.ts), as the engine is.
@@ -90,6 +93,21 @@ export interface Config {
    * is kept in state (core/skill-folders.ts).
    */
   skills: { from: string[] }
+  /**
+   * The core's own settings. `keepAwake`: keep the Mac awake while a trigger or bot is on (core/keep-awake.ts), where a
+   * fresh install starts; the choice last made is kept in state. Unset is off.
+   */
+  core?: { keepAwake: boolean }
+  /**
+   * The Build tab's bots folder and harness (core/build-prefs.ts), where a fresh install starts; the choice last made
+   * in the Build pane is kept in state. Unset, the folder is ~/candle-bots and the pane asks for the harness.
+   */
+  build?: { folder?: string; harness?: string }
+  /**
+   * Notifications (shared/notify.ts): how they're sent, and which things send one. Unset is `auto` with
+   * every kind on.
+   */
+  notify?: NotifySettings
 }
 
 export type ConfigErrorCode = "missing" | "parse" | "no_agents" | "invalid"
@@ -116,6 +134,9 @@ const KNOWN: Readonly<Record<string, readonly string[]>> = {
   wallets: known("wallets"),
   pnl: known("pnl"),
   hacc: known("hacc"),
+  core: known("core"),
+  build: known("build"),
+  notify: known("notify"),
   pricing: known("pricing"),
   cards: known("cards"),
   trade: known("trade"),
@@ -130,6 +151,7 @@ const KNOWN: Readonly<Record<string, readonly string[]>> = {
   agent: known("agents.<name>"),
   "agent.tools": known("agents.<name>.tools"),
   "agent.limits": known("agents.<name>.limits"),
+  "agent.wake": known("agents.<name>.wake"),
 }
 
 function isTable(value: unknown): value is Table {
@@ -248,7 +270,22 @@ export function parseConfig(source: string, file: string, opts: { setup?: boolea
       if (isPreset(agent.preset)) preset = agent.preset
       else problems.push(`${prefix}.preset is ${show(agent.preset)}; use ${PRESETS.map((p) => `"${p}"`).join(", ").replace(/, ([^,]+)$/, " or $1")}`)
     }
-    agents[name] = { name, limits: { perTradeUsd, perDayUsd }, ...(wallet ? { wallet } : {}), ...(tools ? { tools } : {}), ...(preset ? { preset } : {}) }
+    let wake: AgentConfig["wake"]
+    if (agent.wake !== undefined) {
+      const w = table(agent, "wake", `${prefix}.`)
+      unknownKeys(w, KNOWN["agent.wake"]!, `${prefix}.wake.`)
+      const count = (value: unknown, key: string): number | undefined => {
+        if (value === undefined) return undefined
+        if (typeof value === "number" && Number.isInteger(value) && value >= 0 && value <= 1000) return value
+        problems.push(`${prefix}.wake.${key} is ${show(value)}; use a whole number from 0 (never woken) to 1000`)
+        return undefined
+      }
+      const perHour = count(w.perHour, "perHour")
+      const perDay = count(w.perDay, "perDay")
+      wake = { ...(perHour !== undefined ? { perHour } : {}), ...(perDay !== undefined ? { perDay } : {}) }
+      if (perHour !== undefined && perDay !== undefined && perHour > perDay) warnings.push(`${prefix}.wake: perHour (${perHour}) is above perDay (${perDay}), so the day's cap binds first`)
+    }
+    agents[name] = { name, limits: { perTradeUsd, perDayUsd }, ...(wallet ? { wallet } : {}), ...(tools ? { tools } : {}), ...(preset ? { preset } : {}), ...(wake ? { wake } : {}) }
   }
 
   // No agents only in setup: there's no active agent until the first is made.
@@ -346,6 +383,42 @@ export function parseConfig(source: string, file: string, opts: { setup?: boolea
     else problems.push(`pnl.window is ${show(pnlTable.window)}; ${parsed.message}`)
   }
 
+  const coreTable = table(raw, "core", "")
+  unknownKeys(coreTable, KNOWN.core!, "core.")
+  let keepAwake = false
+  if (coreTable.keepAwake !== undefined) {
+    if (typeof coreTable.keepAwake === "boolean") keepAwake = coreTable.keepAwake
+    else problems.push(`core.keepAwake is ${show(coreTable.keepAwake)}; it must be true or false`)
+  }
+
+  const buildTable = table(raw, "build", "")
+  unknownKeys(buildTable, KNOWN.build!, "build.")
+  const build: { folder?: string; harness?: string } = {}
+  if (buildTable.folder !== undefined) {
+    if (typeof buildTable.folder === "string" && /^(\/|~\/|~$)/.test(buildTable.folder.trim())) build.folder = buildTable.folder.trim()
+    else problems.push(`build.folder is ${show(buildTable.folder)}; it's a folder from / or ~/, such as "~/candle-bots"`)
+  }
+  if (buildTable.harness !== undefined) {
+    if (typeof buildTable.harness === "string" && buildTable.harness.trim() && buildTable.harness.length <= 200 && !/[\x00-\x1f\x7f]/.test(buildTable.harness)) build.harness = buildTable.harness.trim()
+    else problems.push(`build.harness is ${show(buildTable.harness)}; it's "claude-code", "codex", "grok", "opencode", "pi", or a command of your own`)
+  }
+
+  const notifyTable = table(raw, "notify", "")
+  unknownKeys(notifyTable, KNOWN.notify!, "notify.")
+  const notifyMode = oneOf(notifyTable.mode, "notify.mode", NOTIFY_MODES, DEFAULT_NOTIFY.mode)
+  let notifyOn: NotifyKind[] = [...DEFAULT_NOTIFY.on]
+  if (notifyTable.on !== undefined) {
+    const kinds = NOTIFY_KINDS as readonly string[]
+    if (!Array.isArray(notifyTable.on)) problems.push(`notify.on is ${show(notifyTable.on)}; it's a list of what notifies, from ${NOTIFY_KINDS.join(", ")}`)
+    else {
+      notifyOn = []
+      for (const k of notifyTable.on) {
+        if (typeof k === "string" && kinds.includes(k)) notifyOn.push(k as NotifyKind)
+        else problems.push(`notify.on has ${show(k)}; each is one of ${NOTIFY_KINDS.join(", ")}`)
+      }
+    }
+  }
+
   const skillsTable = table(raw, "skills", "")
   unknownKeys(skillsTable, KNOWN.skills!, "skills.")
   const skillsFrom: string[] = []
@@ -378,6 +451,9 @@ export function parseConfig(source: string, file: string, opts: { setup?: boolea
       hacc: { enabled: haccEnabled },
       pnl: { window: pnlWindow },
       skills: { from: skillsFrom },
+      core: { keepAwake },
+      ...(Object.keys(build).length ? { build } : {}),
+      notify: { mode: notifyMode, on: notifyOn },
     },
     warnings,
   }
@@ -408,7 +484,16 @@ function toolSettings(t: Table, prefix: string, problems: string[], warnings: st
   const allow = names("allow")
   const deny = names("deny") ?? []
   if (allow && allow.length === 0) warnings.push(`${prefix}.allow is empty, so the agent is offered no tools at all`)
-  return { shell, ...(allow ? { allow } : {}), deny }
+  // The code runner: off unless a list of programs is set.
+  let run: ToolSettings["run"] | undefined
+  if (t.run === "off") run = "off"
+  else if (Array.isArray(t.run)) {
+    const faults = t.run.map(runEntryFault).filter((f): f is string => f !== undefined)
+    if (faults.length) problems.push(...faults.map((f) => `${prefix}.run: ${f}`))
+    else if (t.run.length === 0) problems.push(`${prefix}.run is an empty list; use "off" to turn the code runner off`)
+    else run = [...new Set(t.run as string[])]
+  } else if (t.run !== undefined) problems.push(`${prefix}.run is ${show(t.run)}; use "off", or a list of programs, such as ["python3", "bun", "node"]`)
+  return { shell, ...(allow ? { allow } : {}), deny, ...(run && run !== "off" ? { run } : {}) }
 }
 
 /** The CLI's own rule (cli/src/solana-endpoint.ts:62-74): https, or plain http only on this machine. */

@@ -311,6 +311,17 @@ export function pageText(html: string): string {
     .trim()
 }
 
+// What a page can hide from a reader and still hand a model: controls (an escape sequence's start among
+// them), direction marks, and every other character that draws nothing, Unicode's tag characters included.
+// Line breaks, tabs, the joiners and an emoji's selector stay. The same characters the core's own cleaner
+// drops from text it draws; written out here because this file stands alone.
+const HIDDEN = /[\u0000-\u0008\u000b-\u001f\u007f-\u009f]|(?!\u200d)\p{Cf}|(?![\u200c\u200d\ufe0e\ufe0f])\p{Default_Ignorable_Code_Point}/gu
+
+/** A fetched page's text as the model gets it: what the person would see, with nothing hidden riding along. */
+export function shownText(text: string): string {
+  return text.replace(/\r\n?/g, "\n").replace(/[\u2028\u2029]/g, "\n").replace(HIDDEN, "")
+}
+
 /** Fetches a public page's text, following up to five redirects, each checked as the first was (by `check`, which tests replace). */
 export async function fetchText(raw: string, o: { signal?: AbortSignal; check?: (url: URL) => Promise<Checked> } = {}): Promise<string> {
   let url: URL
@@ -337,7 +348,7 @@ export async function fetchText(raw: string, o: { signal?: AbortSignal; check?: 
     const type = (res.header("content-type") ?? "").toLowerCase()
     if (type && !/^text\/|json|xml|javascript/.test(type)) throw new Error(`${url.href} isn't a text page (${type.split(";")[0]})`)
     const body = new TextDecoder().decode(await res.read(MAX_BYTES))
-    const text = /html/.test(type) || /^\s*<(!doctype|html)/i.test(body) ? pageText(body) : body.trim()
+    const text = shownText(/html/.test(type) || /^\s*<(!doctype|html)/i.test(body) ? pageText(body) : body.trim())
     return text.length > MAX_CHARS ? `${text.slice(0, MAX_CHARS)}\n\n[cut at ${MAX_CHARS} characters]` : text
   }
 }

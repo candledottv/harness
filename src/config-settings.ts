@@ -1,4 +1,4 @@
-// Every setting in the files you edit by hand: config.toml, layouts.toml, wallets.toml and a theme of your own.
+// Every setting in the files you edit by hand: config.toml, layouts.toml, wallets.toml, triggers.toml, bots.toml and a theme of your own.
 // Each reader takes its known keys from this table, so a setting can't be added to a reader
 // without words here; and the docs' configuration page (scripts/docs-pages.ts) is written from it. Each setting
 // carries a short example, which its own reader must take without a word (config-settings.test.ts).
@@ -7,7 +7,7 @@
 // list's entries (tabs[].shown), and "<address>" for a quoted key of yours.
 import { PANE_IDS } from "./shared/panes"
 
-export type SettingsFile = "config.toml" | "layouts.toml" | "wallets.toml" | "theme"
+export type SettingsFile = "config.toml" | "layouts.toml" | "wallets.toml" | "triggers.toml" | "bots.toml" | "theme"
 
 export interface SettingDef {
   file: SettingsFile
@@ -26,9 +26,20 @@ export interface SettingDef {
 const limits = (name: string, perTrade = 25, perDay = 100) => `[agents.${name}.limits]\nperTradeUsd = ${perTrade}\nperDayUsd = ${perDay}\n`
 const agent = (line: string) => `[agents.agent-a]\n${line}\n\n${limits("agent-a")}`
 const tools = (line: string) => `${limits("agent-a")}\n[agents.agent-a.tools]\n${line}\n`
+const wake = (line: string) => `${limits("agent-a")}\n[agents.agent-a.wake]\n${line}\n`
 const ROOT = `root = ["row", ["column", 60, "token 50", "activity 50"], "agent 40"]`
 const colour = (key: string, words: string): SettingDef => ({ file: "theme", key, type: `a colour, "#rrggbb"`, default: "the base theme's", words, example: `${key} = "#6cb6ff"` })
 const reply = (key: string, words: string): SettingDef => ({ file: "theme", key: `reply.${key}`, type: `a colour, "#rrggbb"`, default: "the base theme's", words, example: `[reply]\n${key} = "#9ecbff"` })
+/** A trigger as triggers.toml keeps it, with `extra` after its keys. */
+const MOON = "MoonFake11111111111111111111111111111111111"
+const trigger = (extra = "", again = "false") =>
+  `[triggers."MOON < $0.40"]\nagent = "agent-a"\nline = "when MOON < $0.40 sell 50% of MOON"\nexpansion = "when ${MOON} < $0.40 sell 50% of ${MOON}"\non = true\nagain = ${again}\n${extra}`
+/** A rules bot as bots.toml keeps it, with `extra` after its run settings. */
+const bot = (extra = "") =>
+  `[bots.confluence-small]\nagent = "agent-a"\nwallet = "embedded"\nmode = "paper"\nstate = "on"\n${extra}\n[bots.confluence-small.definition]\nchain = "solana"\n\n[bots.confluence-small.definition.entry]\nsource = "pattern"\npattern = "confluence"\n\n[bots.confluence-small.definition.entry.filters]\nmax_mcap_usd = 500000\n\n[bots.confluence-small.definition.exit]\ntake_profit_pct = 100\nstop_loss_pct = 40\n\n[bots.confluence-small.definition.sizing]\nusd_per_trade = 2\nmax_concurrent = 4\n`
+/** A code bot as bots.toml keeps it, with `extra` after its figures. */
+const codeBot = (extra = "") =>
+  `[bots.momentum]\nkind = "code"\nagent = "agent-a"\nwallet = "embedded"\nmode = "paper"\nstate = "on"\nfolder = "/home/you/candle-bots/momentum"\ncommand = ["bun", "run", "bot.ts"]\nperTradeUsd = 2\nperDayUsd = 10\nmaxOpen = 3\n${extra}`
 const engine = (key: string, name: string): SettingDef => ({
   file: "config.toml",
   key: `engine.${key}.path`,
@@ -99,6 +110,15 @@ export const SETTINGS: readonly SettingDef[] = [
   },
   {
     file: "config.toml",
+    key: "agents.<name>.tools.run",
+    type: `"off", or a list of programs`,
+    default: `"off"`,
+    words:
+      "The code runner for this agent: the programs it may run in its research folder with research_run, each by its name or full path. Each run is held to the folder by the system, with no network, for at most 60 seconds, and its output comes back to the agent. Offered only where the system can hold it (macOS, or Linux 6.12 or later); the model picker and the palette turn it on for the active agent.",
+    example: tools(`run = ["python3", "bun", "node"]`),
+  },
+  {
+    file: "config.toml",
     key: "agents.<name>.tools.allow",
     type: "a list of tool names, `*` matching any characters",
     default: "every tool",
@@ -112,6 +132,22 @@ export const SETTINGS: readonly SettingDef[] = [
     default: "[]",
     words: "These tools are hidden from the agent entirely, even where `allow` names them.",
     example: tools(`deny = ["candle_launch_token"]`),
+  },
+  {
+    file: "config.toml",
+    key: "agents.<name>.wake.perHour",
+    type: "a whole number from 0 to 1000",
+    default: "4",
+    words: "How many turns triggers may wake this agent for in an hour. A wake past it is skipped and said; wakes that come while the agent is busy join one turn, which counts once. 0 means triggers never wake it.",
+    example: wake(`perHour = 2`),
+  },
+  {
+    file: "config.toml",
+    key: "agents.<name>.wake.perDay",
+    type: "a whole number from 0 to 1000",
+    default: "24",
+    words: "How many turns triggers may wake this agent for in 24 hours. A wake past it is skipped and said.",
+    example: wake(`perDay = 10`),
   },
   {
     file: "config.toml",
@@ -249,6 +285,51 @@ export const SETTINGS: readonly SettingDef[] = [
   },
   {
     file: "config.toml",
+    key: "build.folder",
+    type: "a folder, from / or ~/",
+    default: `"~/candle-bots"`,
+    words:
+      "The Build tab's bots folder, where your coding harness writes bots: each bot in a folder of its own, beside the rules every bot runs under, the client, and Candle's bot-building skills. Where a fresh install starts: the folder you last picked in the Build pane is kept.",
+    example: `[build]\nfolder = "~/code/candle-bots"`,
+  },
+  {
+    file: "config.toml",
+    key: "build.harness",
+    type: `"claude-code", "codex", "grok", "opencode", "pi", or a command such as "aider --no-git"`,
+    default: "unset: the Build pane asks",
+    words:
+      "The coding harness the Build tab opens, unmodified and signed in as you: one of the five, by the binary its engine setting names, or a command of your own. Where a fresh install starts: the harness you last picked in the Build pane is kept.",
+    example: `[build]\nharness = "claude-code"`,
+  },
+  {
+    file: "config.toml",
+    key: "core.keepAwake",
+    type: "true or false",
+    default: "false",
+    words:
+      "macOS only: keep the Mac from sleeping while a trigger or bot is on, so a level, a schedule or a bot's exit isn't missed while it sleeps. A closed lid still sleeps a Mac on battery. Where a fresh install starts: the choice you last made in the palette is kept.",
+    example: `[core]\nkeepAwake = true`,
+  },
+  {
+    file: "config.toml",
+    key: "notify.mode",
+    type: `"auto", "native", "osc", "bell" or "off"`,
+    default: `"auto"`,
+    words:
+      "How a notification reaches you. Only while the Candle Harness's window isn't in front: `auto` is your computer's own notification here and the terminal's notification over SSH, and the bell where neither works. `native` is always the computer's, `osc` the terminal's, `bell` the bell alone, and `off` nothing. With no Candle Harness window open, the core sends the computer's own, on a Mac or a Linux desktop; over SSH or on a VPS with no window open, nothing reaches you. Read when the core starts.",
+    example: `[notify]\nmode = "bell"`,
+  },
+  {
+    file: "config.toml",
+    key: "notify.on",
+    type: `a list from "cards", "triggers", "bots", "wakes", "kill", "keys" and "core"`,
+    default: `["cards", "triggers", "bots", "wakes", "kill", "keys", "core"]`,
+    words:
+      "What notifies you: a card waiting that you didn't make (`cards`), a trigger firing (`triggers`), a rules bot's every buy and sell, a bot's trade that waits for you, was refused or failed, and a bot's sell held (`bots`, a bot's trades that come together as one notice), a wake skipped at its agent's cap (`wakes`), the kill switch going on (`kill`), Candle holding a key (`keys`), and the core stopping when nobody asked it to (`core`). Leave one out to stop it. Read when the core starts.",
+    example: `[notify]\non = ["cards", "triggers"]`,
+  },
+  {
+    file: "config.toml",
     key: "aliases.<name>",
     type: "the words it stands for",
     default: "none",
@@ -269,7 +350,7 @@ export const SETTINGS: readonly SettingDef[] = [
     file: "layouts.toml",
     key: "tabs[].name",
     type: "1 to 20 characters",
-    default: "the eight tabs: Trade, Cockpit, Trending, Signals, P&L, Research, Journal and Perps",
+    default: "the nine tabs: Trade, Cockpit, Trending, Signals, P&L, Research, Journal, Perps and Bots",
     words: "A tab's name, as the tab bar shows it. Each name is used once.",
     example: `tabs = [{ name = "Desk", layout = "Cockpit" }]`,
   },
@@ -294,7 +375,7 @@ export const SETTINGS: readonly SettingDef[] = [
     key: "layouts.<name>.root",
     type: "a row or column of panes",
     default: "none: every layout of yours has one",
-    words: `The layout's panes: \`["row", …]\` or \`["column", …]\`, then its children. A child is a pane and its weight (\`"token 50"\`), a pane with fixed rows inside a column (\`"agent 8 rows"\`), or another row or column with its weight after it (\`["column", 60, …]\`). The panes: ${PANE_IDS.map((p) => `\`${p}\``).join(", ")}.`,
+    words: `The layout's panes: \`["row", …]\` or \`["column", …]\`, then its children. A child is a pane and its weight (\`"token 50"\`), a pane with fixed rows inside a column (\`"agent 8 rows"\`), or another row or column with its weight after it (\`["column", 60, …]\`). The panes: ${PANE_IDS.map((p) => `\`${p}\``).join(", ")}; \`token:2\` and \`token:3\` are more token panes, each pinned on a token of its own while \`token\` follows the link.`,
     example: `[layouts."My desk"]\n${ROOT}`,
   },
   {
@@ -347,6 +428,162 @@ export const SETTINGS: readonly SettingDef[] = [
     default: "none",
     words: "These wallets are in the group, kept by address so a rename never drops one. A group organises wallets; it never pays.",
     example: `[groups.desk]\nwallets = ["main", "embedded"]`,
+  },
+
+  // triggers.toml: written by the Candle Harness when you approve a trigger's card, switch one or remove one.
+  {
+    file: "triggers.toml",
+    key: "triggers.<name>.agent",
+    type: "an agent's name",
+    default: "the agent that proposed it",
+    words: "The agent the trigger belongs to: its trades use this agent's key, limits and default wallet.",
+    example: trigger(),
+  },
+  {
+    file: "triggers.toml",
+    key: "triggers.<name>.line",
+    type: "a trigger's line",
+    default: "none",
+    words: "The trigger as it was written and approved, with token names and aliases as typed: `when MOON < $0.40 sell 50% of MOON`.",
+    example: trigger(),
+  },
+  {
+    file: "triggers.toml",
+    key: "triggers.<name>.expansion",
+    type: "a trigger's line",
+    default: "none",
+    words: "The same line with aliases expanded and token names as mints: what it does when it fires, whatever an alias or a name means later.",
+    example: trigger(),
+  },
+  {
+    file: "triggers.toml",
+    key: "triggers.<name>.on",
+    type: "true or false",
+    default: "true",
+    words: "Whether it's switched on. Set it to false to switch it off; it's switched back on in the Triggers overlay, as it was approved.",
+    example: trigger(),
+  },
+  {
+    file: "triggers.toml",
+    key: "triggers.<name>.again",
+    type: "true or false",
+    default: "false",
+    words: "For a level: whether it re-arms each time it's crossed back, rather than firing once and switching off.",
+    example: trigger(),
+  },
+  {
+    file: "triggers.toml",
+    key: "triggers.<name>.cooldown",
+    type: `a duration, such as "30m", "2h" or "1d"`,
+    default: `"30m"`,
+    words: "The least time between two firings: of the same token, for a tape trigger or one on your personal signals.",
+    example: trigger(`cooldown = "2h"\n`, "true"),
+  },
+  {
+    file: "triggers.toml",
+    key: "triggers.<name>.mode",
+    type: `"paper" or "live"`,
+    default: "the mode it was approved in",
+    words: "Whether the trigger's trades are paper or live, whatever mode the Candle Harness is in when it fires. It's set when its card is approved; taking one live is a new card.",
+    example: trigger(`mode = "live"\n`),
+  },
+
+  // bots.toml: written by the Candle Harness when you approve a bot's card, or narrow, pause, stop, resume or remove one.
+  {
+    file: "bots.toml",
+    key: "bots.<name>.agent",
+    type: "an agent's name",
+    default: "the agent that proposed it",
+    words: "The agent the bot belongs to: its trades use this agent's key and limits.",
+    example: bot(),
+  },
+  {
+    file: "bots.toml",
+    key: "bots.<name>.wallet",
+    type: `"embedded", or a wallet's address`,
+    default: "none",
+    words: "The wallet the bot pays from and sells from. A wallet of its own keeps its book exact and its risk to what that wallet holds.",
+    example: bot(),
+  },
+  {
+    file: "bots.toml",
+    key: "bots.<name>.mode",
+    type: `"paper" or "live"`,
+    default: "none",
+    words: "Whether the bot trades on paper or live, whatever mode the Candle Harness is in. Taking a bot live is a new card.",
+    example: bot(),
+  },
+  {
+    file: "bots.toml",
+    key: "bots.<name>.state",
+    type: `"on", "paused" or "stopped"`,
+    default: `"on"`,
+    words: "Paused takes no new entries while its exits still sell; stopped trades nothing, and leaves its positions to you. Setting either here is always taken; a bot goes back on from the Bots tab, as it was approved.",
+    example: bot(),
+  },
+  {
+    file: "bots.toml",
+    key: "bots.<name>.maxSlippageBps",
+    type: "a whole number of basis points, from 10 to 10000",
+    default: "the route's default",
+    words: "The bot's own slippage bound, approved on its card: shown in amber where it's looser than the default, or under it, where its sells may not fill. A card takes none under 10.",
+    example: bot("maxSlippageBps = 300\n"),
+  },
+  {
+    file: "bots.toml",
+    key: "bots.<name>.definition",
+    type: "Hacc's strategy definition, as tables",
+    default: "none",
+    words: "What the bot enters on, how it exits and how much it stakes, in the field names of Hacc's strategy lab, so the same definition backtests on Hacc.",
+    example: bot(),
+  },
+  {
+    file: "bots.toml",
+    key: "bots.<name>.kind",
+    type: `"code"`,
+    default: "a rules bot",
+    words: "A program of yours, the Candle Harness runs and holds to its figures, where a rules bot has a definition. Its agent, wallet, mode, state and maxSlippageBps are as a rules bot's.",
+    example: codeBot(),
+  },
+  {
+    file: "bots.toml",
+    key: "bots.<name>.folder",
+    type: "an absolute path",
+    default: "none",
+    words: "A code bot's folder: its command runs there. Your code is yours to change; the core holds it to its figures whatever it does.",
+    example: codeBot(),
+  },
+  {
+    file: "bots.toml",
+    key: "bots.<name>.command",
+    type: "a list of words",
+    default: "none",
+    words: "What runs a code bot, word by word, in its folder and with no shell. Changing it is a new card.",
+    example: codeBot(),
+  },
+  {
+    file: "bots.toml",
+    key: "bots.<name>.perTradeUsd",
+    type: "a dollar figure",
+    default: "none",
+    words: "The most one of a code bot's buys or swaps may spend. Raising it is a new card; lowering it is at once.",
+    example: codeBot(),
+  },
+  {
+    file: "bots.toml",
+    key: "bots.<name>.perDayUsd",
+    type: "a dollar figure, at least perTradeUsd",
+    default: "none",
+    words: "The most a code bot's buys and swaps may spend in a day. Raising it is a new card; lowering it is at once.",
+    example: codeBot(),
+  },
+  {
+    file: "bots.toml",
+    key: "bots.<name>.maxOpen",
+    type: "a whole number, from 1 to 100",
+    default: "none",
+    words: "The most positions a code bot may hold open at once. Raising it is a new card; lowering it is at once.",
+    example: codeBot(),
   },
 
   // A theme of yours: themes/<name>.toml.

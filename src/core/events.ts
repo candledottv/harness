@@ -15,6 +15,8 @@
 // | `signals:mine` | the account's own rules' signals, polled (Pro, Max) | both                         |
 // | `views`      | the linked token, who moved it, and the pins          | view                         |
 // | `feeds`      | Candle's four lists, each read while subscribed       | view                         |
+// | `notices`    | a notification for the main view to send, and the core's planned stop | view, one at a time |
+// | `bot`        | what happens to a code bot: its requests, its state, the kill switch, the core stopping | that bot's own connection |
 //
 // A topic with a filter (`signals`: pattern and chain; `feeds`: the buckets) takes one per subscription, as
 // `subscribe {topics, filters: {<topic>: …}}`; its events and snapshot are cut to it, and an event that
@@ -27,11 +29,13 @@ import type { Role } from "./tokens"
 export const REPLAY_BUFFER = 1000
 const REPLAYED = new Set(["cards", "operations", "agent"])
 const OWNED = new Set(["cards", "operations"])
-/** Sent to one view alone, whatever its role (the agent's change to the screen goes to the view last used). */
-const DIRECTED = new Set(["asks"])
+/** Sent to one view alone, whatever its role (the agent's change to the screen, and a notification, go to the view last used). */
+const DIRECTED = new Set(["asks", "notices", "bot"])
 // `status` and `hacc` carry every agent's limits, spend, wallets and plan; an agent reads its own through its tools.
-const VIEW_ONLY = new Set(["status", "hacc", "activity", "agent", "portfolio", "wallets", "engine", "memory", "skills", "views", "asks", "feeds", "pnl", "research", "autonomy", "away", "onboarding"])
-const TOPICS = new Set(["status", "cards", "operations", "activity", "agent", "market", "portfolio", "wallets", "engine", "hacc", "signals", "signals:mine", "memory", "skills", "views", "asks", "feeds", "pnl", "research", "autonomy", "away", "onboarding"])
+const VIEW_ONLY = new Set(["status", "hacc", "activity", "agent", "portfolio", "wallets", "engine", "memory", "skills", "views", "asks", "feeds", "pnl", "research", "autonomy", "away", "onboarding", "triggers", "bots", "notices"])
+const TOPICS = new Set(["status", "cards", "operations", "activity", "agent", "market", "portfolio", "wallets", "engine", "hacc", "signals", "signals:mine", "memory", "skills", "views", "asks", "feeds", "pnl", "research", "autonomy", "away", "onboarding", "triggers", "bots", "notices", "bot"])
+/** What a code bot may subscribe to: what's told to it, and Hacc's tape. */
+const BOT_TOPICS = new Set(["bot", "signals"])
 
 export interface CoreEvent {
   topic: string
@@ -60,7 +64,10 @@ export interface TopicFilter<F = unknown> {
 
 export function topicAllowed(topic: string, role: Role): { known: boolean; allowed: boolean } {
   if (!TOPICS.has(topic)) return { known: false, allowed: false }
-  return { known: true, allowed: role === "view" || !VIEW_ONLY.has(topic) }
+  // A code bot subscribes to what's told to it and to the tape; a pane and a Build pane to nothing here.
+  if (role === "bot") return { known: true, allowed: BOT_TOPICS.has(topic) }
+  if (topic === "bot") return { known: true, allowed: false }
+  return { known: true, allowed: role === "view" || (role === "harness" && !VIEW_ONLY.has(topic)) }
 }
 
 export class EventHub {
@@ -70,6 +77,7 @@ export class EventHub {
   private readonly snapshots = new Map<string, SnapshotProvider>()
   private readonly filters = new Map<string, TopicFilter>()
   private readonly changeListeners: (() => void)[] = []
+  private readonly failListeners: ((topic: string, subscriber: Subscriber, error: unknown) => void)[] = []
 
   provideSnapshot(topic: string, provider: SnapshotProvider): void {
     this.snapshots.set(topic, provider)
@@ -145,14 +153,32 @@ export class EventHub {
         for (const event of buffer ?? []) if (event.seq > since && this.visibleTo(event, subscriber)) this.deliver(subscriber, event)
         continue
       }
-      const provider = this.snapshots.get(topic)
-      subscriber.send({
-        jsonrpc: "2.0",
-        method: "event",
-        params: { topic, seq: this.seqs.get(topic) ?? 0, snapshot: true, data: provider ? provider(subscriber, entry.filters.get(topic)) : null },
-      })
+      // One topic's snapshot failing (its provider, or a send) never costs the topics after it theirs.
+      try {
+        const provider = this.snapshots.get(topic)
+        subscriber.send({
+          jsonrpc: "2.0",
+          method: "event",
+          params: { topic, seq: this.seqs.get(topic) ?? 0, snapshot: true, data: provider ? provider(subscriber, entry.filters.get(topic)) : null },
+        })
+      } catch (error) {
+        this.failed(topic, subscriber, error)
+      }
     }
     this.changed()
+  }
+
+  /** Hears a snapshot or an event that couldn't be made or sent: the core journals it. Never throws. */
+  onSendFailed(listener: (topic: string, subscriber: Subscriber, error: unknown) => void): void {
+    this.failListeners.push(listener)
+  }
+
+  private failed(topic: string, subscriber: Subscriber, error: unknown): void {
+    for (const listener of this.failListeners) {
+      try {
+        listener(topic, subscriber, error)
+      } catch {}
+    }
   }
 
   unsubscribe(clientId: string, topics?: string[]): void {
@@ -188,7 +214,12 @@ export class EventHub {
     return event.ownerClientId === subscriber.clientId
   }
 
+  /** A send that throws is one subscriber's loss: whatever published the event, and every other subscriber, carry on. */
   private deliver(subscriber: Subscriber, event: CoreEvent): void {
-    subscriber.send({ jsonrpc: "2.0", method: "event", params: { topic: event.topic, seq: event.seq, data: event.data } })
+    try {
+      subscriber.send({ jsonrpc: "2.0", method: "event", params: { topic: event.topic, seq: event.seq, data: event.data } })
+    } catch (error) {
+      this.failed(event.topic, subscriber, error)
+    }
   }
 }

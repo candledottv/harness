@@ -3,7 +3,7 @@
 // scenes' realistic data.
 import { afterEach, expect, test } from "bun:test"
 import { act } from "react"
-import { drawScene, status } from "../../test/frame-scenes"
+import { drawScene, everyTab, status } from "../../test/frame-scenes"
 import { layoutNamed, parseLayouts, treeOf } from "./layouts-file"
 import { panesOf } from "./layout"
 import { memoryStore } from "./layouts-store"
@@ -152,7 +152,7 @@ test("a theme the agent makes is written, checked and used at once, with an undo
 test("the layout menu adds, renames and removes tabs too, so the person can without the agent", async () => {
   const store = memoryStore(TWO_TABS)
   // Tall enough for the menu's every row: the newer tabs' panes make it long.
-  drawn = await drawScene("followed", 140, 60, "trade", store)
+  drawn = await drawScene("followed", 140, 66, "trade", store)
   const typed = async (row: string, name: string) => {
     await openLayoutMenu()
     await click(row)
@@ -205,7 +205,8 @@ test("tab with a pane shows it in a narrow tab's switched pane; show_tab ticks a
 })
 
 test("signals and journal set the pane where it is, switching to its tab, and leave focus alone", async () => {
-  drawn = await drawScene("followed", 140, 40, "trade")
+  // Every tab on, as a person who ticked Signals and the Journal on has them.
+  drawn = await drawScene("followed", 140, 40, "trade", everyTab())
   const kol = await ask({ action: "signals", tab: "Signals", pattern: "kol_mention" })
   expect(kol).toMatchObject({ ok: true, words: "set Signals on Signals to only mention signals (kol_mention) from Hacc's tape" })
   expect(drawn.session.requests.find((r) => r.method === "view.signals")?.params).toEqual({ at: "Signals", mine: false, pattern: "kol_mention", chain: null })

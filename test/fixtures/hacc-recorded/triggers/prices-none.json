@@ -1,0 +1,12 @@
+{
+  "name": "prices-none",
+  "host": "hacc",
+  "route": "/v1/market/prices",
+  "query": {},
+  "status": 400,
+  "ms": 167,
+  "bytes": 31,
+  "answer": {
+    "error": "addresses: Required"
+  }
+}

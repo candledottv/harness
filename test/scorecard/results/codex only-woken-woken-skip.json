@@ -1,0 +1,182 @@
+{
+  "engine": "codex",
+  "model": null,
+  "ran": {
+    "engine": "codex",
+    "engineVersion": "0.165.0",
+    "model": "gpt-6.1-sol",
+    "answeredModel": null
+  },
+  "at": "2026-11-04T20:53:44.811Z",
+  "results": [
+    {
+      "id": "woken",
+      "pass": true,
+      "checks": [
+        {
+          "name": "the turn ended with a reply",
+          "pass": true
+        },
+        {
+          "name": "bought MOON without a card",
+          "pass": true
+        },
+        {
+          "name": "said what woke it",
+          "pass": true
+        },
+        {
+          "name": "named no address it didn't read",
+          "pass": true
+        }
+      ],
+      "notes": {
+        "skillRead": true,
+        "tools": [
+          "mcp__candle__hacc_signals",
+          "mcp__candle__hacc_token",
+          "mcp__candle__skill_read",
+          "mcp__candle__candle_token_forensics",
+          "mcp__candle__candle_get_market",
+          "mcp__candle__skill_read",
+          "mcp__candle__candle_execution_status",
+          "mcp__candle__candle_trade"
+        ],
+        "figures": 0,
+        "marked": 0,
+        "ms": 39846
+      },
+      "turns": [
+        {
+          "user": "woken by the trigger \"conf\": a confluence signal on MOON at 20:52",
+          "reply": "The “conf” confluence trigger woke me for MOON; I bought from the embedded wallet under your saved rule. It ran without a card: 0.006667 SOL, about $1, with Candle reporting market cap below your threshold.",
+          "outcome": "done"
+        }
+      ],
+      "record": {
+        "turns": [
+          {
+            "user": "woken by the trigger \"conf\": a confluence signal on MOON at 20:52",
+            "reply": "The “conf” confluence trigger woke me for MOON; I bought from the embedded wallet under your saved rule. It ran without a card: 0.006667 SOL, about $1, with Candle reporting market cap below your threshold.",
+            "outcome": "done",
+            "tools": [
+              "mcp__candle__hacc_signals",
+              "mcp__candle__hacc_token",
+              "mcp__candle__skill_read",
+              "mcp__candle__candle_token_forensics",
+              "mcp__candle__candle_get_market",
+              "mcp__candle__skill_read",
+              "mcp__candle__candle_execution_status",
+              "mcp__candle__candle_trade"
+            ],
+            "reasked": false,
+            "figures": 0,
+            "marked": []
+          }
+        ],
+        "cards": [
+          {
+            "state": "created",
+            "tool": "candle_trade",
+            "kind": "trade",
+            "side": "buy",
+            "mint": "MoonFake11111111111111111111111111111111111",
+            "params": {
+              "mint": "MoonFake11111111111111111111111111111111111",
+              "side": "buy",
+              "amount": "0.006666666",
+              "clientTradeId": "dd0528d2-4589-4d9f-8b53-84304f919a6d"
+            },
+            "how": "inside-limits"
+          }
+        ],
+        "memory": "# Memory\n\n- confluence wakes: when a confluence signal wakes me, buy $1 of the token if its market cap is under $2M; otherwise don't trade (the person, 2026-11-04)\n",
+        "memoryFiles": {},
+        "memoryChanges": 0,
+        "hacc": [
+          "GET /v1/signals/stream",
+          "GET /v1/signals",
+          "GET /v1/market/token/MoonFake11111111111111111111111111111111111",
+          "GET /v1/market/token/MoonFake11111111111111111111111111111111111/history"
+        ]
+      },
+      "ran": {
+        "engine": "codex",
+        "engineVersion": "0.165.0",
+        "model": "gpt-6.1-sol",
+        "answeredModel": null
+      }
+    },
+    {
+      "id": "woken-skip",
+      "pass": true,
+      "checks": [
+        {
+          "name": "the turn ended with a reply",
+          "pass": true
+        },
+        {
+          "name": "proposed nothing",
+          "pass": true
+        },
+        {
+          "name": "said what woke it",
+          "pass": true
+        },
+        {
+          "name": "named no address it didn't read",
+          "pass": true
+        }
+      ],
+      "notes": {
+        "skillRead": false,
+        "tools": [
+          "mcp__candle__hacc_signals",
+          "mcp__candle__hacc_token"
+        ],
+        "figures": 1,
+        "marked": 0,
+        "ms": 12973
+      },
+      "turns": [
+        {
+          "user": "woken by the trigger \"conf\": a confluence signal on MOON at 20:53",
+          "reply": "The “conf” confluence trigger woke me for MOON; I skipped the buy. Hacc’s market read just now reports a $1 million market cap, above your remembered $500,000 cutoff. No trade submitted.",
+          "outcome": "done"
+        }
+      ],
+      "record": {
+        "turns": [
+          {
+            "user": "woken by the trigger \"conf\": a confluence signal on MOON at 20:53",
+            "reply": "The “conf” confluence trigger woke me for MOON; I skipped the buy. Hacc’s market read just now reports a $1 million market cap, above your remembered $500,000 cutoff. No trade submitted.",
+            "outcome": "done",
+            "tools": [
+              "mcp__candle__hacc_signals",
+              "mcp__candle__hacc_token"
+            ],
+            "reasked": false,
+            "figures": 1,
+            "marked": []
+          }
+        ],
+        "cards": [],
+        "memory": "# Memory\n\n- confluence wakes: when a confluence signal wakes me, buy $1 of the token if its market cap is under $500k; otherwise don't trade (the person, 2026-11-04)\n",
+        "memoryFiles": {},
+        "memoryChanges": 0,
+        "hacc": [
+          "GET /v1/signals/stream",
+          "GET /v1/signals",
+          "GET /v1/market/token/MoonFake11111111111111111111111111111111111",
+          "GET /v1/market/token/MoonFake11111111111111111111111111111111111/history"
+        ]
+      },
+      "ran": {
+        "engine": "codex",
+        "engineVersion": "0.165.0",
+        "model": "gpt-6.1-sol",
+        "answeredModel": null
+      }
+    }
+  ]
+}

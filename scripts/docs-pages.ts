@@ -10,7 +10,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
 import { dirname, join } from "node:path"
 import { SETTINGS, type SettingDef, type SettingsFile } from "../src/config-settings"
-import { parseCommand, TYPED_ROWS, type TypedRow } from "../src/view/commands"
+import { parseCommand, TYPED_ROWS, type TypedRow } from "../src/shared/commands"
 import { KEYMAP } from "../src/view/keymap"
 import { parityBody } from "./cli-parity"
 import { KINDS, loadMap, TYPED_CONTEXT } from "./docs-map"
@@ -23,7 +23,7 @@ export type Generated = (typeof GENERATED)[number]
 const DESCRIPTIONS: Record<Generated, string> = {
   "reference/keys": "Every key in the Candle Harness, where it works and what it does.",
   "reference/typed-commands": "What you can type on the Candle Harness's input line, with an example of each.",
-  "reference/config": "Every setting in config.toml, layouts.toml, wallets.toml and a theme of your own.",
+  "reference/config": "Every setting in config.toml, layouts.toml, wallets.toml, triggers.toml, bots.toml and a theme of your own.",
   "reference/cli-parity": "Every command of Candle's CLI, and how the Candle Harness and its agent run it.",
 }
 
@@ -90,6 +90,18 @@ const FILES: { file: SettingsFile; heading: string; about: string }[] = [
       "The Candle Harness's own names for wallets, and your wallet groups. The Candle Harness writes it whole when you name a wallet or change a group, so a comment of yours below its header won't survive that. A problem is named with its line and left out, and a file with a problem is never written over.",
   },
   {
+    file: "triggers.toml",
+    heading: "triggers.toml",
+    about:
+      "Your triggers: when something happens, what to do. The Candle Harness writes it whole when you approve a trigger's card, or switch or remove one. Set `on = false` to switch one off by hand; any other change holds that trigger until its card is approved again, so nothing adds or widens a trigger but your press. A problem is named with its line and left out, and a file with a problem is never written over.",
+  },
+  {
+    file: "bots.toml",
+    heading: "bots.toml",
+    about:
+      "Your rules bots: a Hacc strategy definition each, run by the Candle Harness, with the agent, wallet and mode it runs as. The Candle Harness writes it whole when you approve a bot's card, or narrow, pause, stop, resume or remove one. Set `state = \"paused\"` or `\"stopped\"` to pause or stop one by hand; any other change holds its entries until its card is approved again, while its exits still sell as it was approved. A problem is named with its line and left out, and a file with a problem is never written over.",
+  },
+  {
     file: "theme",
     heading: "A theme of your own",
     about:
@@ -109,7 +121,7 @@ function defaultText(s: SettingDef): string {
 
 function configPage(): string {
   const out: string[] = [
-    "Every setting in the files you can edit by hand. They live in `~/.config/candle/harness/`, or in the folder `CANDLE_HARNESS_HOME` names: config.toml, layouts.toml and wallets.toml side by side, and your themes in `themes/`.",
+    "Every setting in the files you can edit by hand. They live in `~/.config/candle/harness/`, or in the folder `CANDLE_HARNESS_HOME` names: config.toml, layouts.toml, wallets.toml, triggers.toml and bots.toml side by side, and your themes in `themes/`.",
     "",
     "A setting that says it's where a fresh install starts is only a starting point: once you pick something in the Candle Harness, your pick is kept across restarts.",
   ]

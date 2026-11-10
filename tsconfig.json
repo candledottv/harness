@@ -14,5 +14,6 @@
     "jsx": "react-jsx",
     "jsxImportSource": "@opentui/react"
   },
-  "include": ["src", "test", "scripts"]
+  "include": ["src", "test", "scripts", "client"],
+  "exclude": ["test/fixtures/raw"]
 }

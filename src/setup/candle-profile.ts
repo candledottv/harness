@@ -129,7 +129,8 @@ export async function recordProfile(p: Paths, profile: string): Promise<{ ok: tr
   } catch (error) {
     if (!(error instanceof ConfigError && error.code === "no_agents") || profileLine(next) !== profile) return { ok: false, why: `config.toml wouldn't hold the profile as it's written: ${(error as Error).message}` }
   }
-  await mkdir(p.configDir, { recursive: true })
+  // 0700, as everywhere else the config folder is made: it holds config.toml and the keys.
+  await mkdir(p.configDir, { recursive: true, mode: 0o700 })
   const temp = `${p.configFile}.tmp-${randomBytes(6).toString("base64url")}`
   const mode = existing === undefined ? 0o600 : statSync(p.configFile).mode & 0o777
   await writeFile(temp, next, { mode, flag: "wx" })

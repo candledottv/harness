@@ -9,7 +9,7 @@ import { createHash } from "node:crypto"
 import { chmodSync, copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
-import { commitDefine, versionDefine } from "./commit"
+import { commitDefine, NO_AUTOLOAD, versionDefine } from "./commit"
 import { testCopy } from "./install-switch"
 import { MIN_CANDLE_CLI } from "../src/setup/doctor"
 
@@ -98,7 +98,7 @@ const asCandlesRelease = SCRIPT.replace("REPOSITORY='candledottv/harness'", "REP
 test("the shipped script, with no candle and a yes: Candle's CLI from GitHub, pinned and self-verified; an unsigned Candle Harness refused, then installed by the testing switch", async () => {
   const s = scene()
   const bin = join(s.dir, "candle-harness-built")
-  await $`bun build --compile ${commitDefine("live")} ${versionDefine("0.0.1")} ${join(ROOT, "src", "main.ts")} --outfile ${bin}`.quiet()
+  await $`bun build --compile ${NO_AUTOLOAD} ${commitDefine("live")} ${versionDefine("0.0.1")} ${join(ROOT, "src", "main.ts")} --outfile ${bin}`.quiet()
   releaseOf(s.release, bin, undefined, "0.0.1", "v0.0.1")
   const first = run(s, ["--from", s.release, "--yes"])
   expect(first.code).toBe(1)

@@ -31,6 +31,8 @@
 //   - secret refusal: a message holding something shaped like a Candle key, a secret the core holds,
 //     or a wallet's keypair or recovery phrase (wallet-secret.ts), never reaches the engine;
 //   - the turn's harness token is revoked, its connections dropped and its files deleted when it ends;
+//   - a woken turn (a trigger's wake) never counts as the person's message: askedIn answers only for a
+//     turn the person sent, so funds out can't start from one;
 //   - the leftover check: processes the turn started that are still running 2 s after it ended are
 //     named in activity. They aren't killed: daemons are the user's. Each turn's engine
 //     carries CANDLE_HARNESS_TURN=<turnId> in its environment, which everything it starts inherits, even
@@ -42,6 +44,7 @@ import { mkdir, rm, writeFile } from "node:fs/promises"
 import { join } from "node:path"
 import type { Journal } from "../core/journal"
 import type { Redactor } from "../shared/redact"
+import { systemTool } from "../shared/exec-path"
 import { refused } from "../shared/rpc"
 import { mcpConfigFor, mcpServerFor } from "./claude"
 import { ENGINE_LABELS, type Engine, type EngineCapabilities, type EngineCheck, type EngineId, type EngineTurn, isEngineId } from "./engine"
@@ -53,9 +56,10 @@ import { presetPrompt } from "./quant-prompt"
 import { type Skill, SKILL_TOOL_NAME, skillsFor } from "./skills"
 import { removeAll } from "./home"
 import { harnessEnv } from "./spawn"
-import { walletSecretIn } from "./wallet-secret"
+import { terminalText } from "../shared/terminal-text"
+import { walletSecretIn } from "../shared/wallet-secret"
 import { DEFAULT_TOOLS, shellFor, shellOn, toolAllowed, type ToolSettings } from "./tools"
-import { type Exchange, type FigureMark, toolSummary, Transcript, type TurnOutcome } from "./transcript"
+import { type Exchange, fenced, type FigureMark, toolName, toolSummary, Transcript, type TurnOutcome } from "./transcript"
 
 export const MAX_MESSAGE_CHARS = 20_000
 export const LEFTOVER_DELAY_MS = 2_000
@@ -74,6 +78,18 @@ const DID_SHOWN = 8
  * A stopped turn's reply: why it stopped, what it did, then what the model had said, marked as said before
  * the stop, so a half-sentence doesn't read as the answer.
  */
+/**
+ * The address a tool call fetches, in full, when it's an engine's own web fetch: a call outside Candle's
+ * and the Candle Harness's tools whose input names an http(s) `url`. An address the agent composed can
+ * carry anything it read this turn, so Activity and the Journal show where each fetch went, never a cut of it.
+ */
+export function fetchAddress(name: string, input: unknown): string | undefined {
+  if (/candle|hacc_|harness_|research_|skill_read/i.test(name)) return undefined
+  const url = input && typeof input === "object" ? (input as Record<string, unknown>).url : undefined
+  if (typeof url !== "string" || !/^https?:\/\//i.test(url.trim())) return undefined
+  return terminalText(url.trim())
+}
+
 export function stoppedReply(why: string, did: readonly string[] | undefined, steps: number, spoken: string, answered = steps): string {
   const parts = [why]
   if (did !== undefined) {
@@ -91,6 +107,43 @@ export function stoppedReply(why: string, did: readonly string[] | undefined, st
   return parts.join("\n\n")
 }
 
+/**
+ * One trigger's wake: the trigger, its firing, and what fired it. `fired` is the Candle Harness's words from what the
+ * watcher read (a token's name is the token's own), so the prompt fences it as data; `asked` is the
+ * person's own words on the trigger, approved on its card.
+ */
+export interface Wake {
+  trigger: string
+  fireId: string
+  /** The trigger's line, as approved. */
+  line: string
+  fired: string
+  at: string
+  asked?: string
+  /** Addresses the firing names, by the source that showed them: shown, for the address gate. */
+  addresses?: SeenValue[]
+  /** The token that fired it, in full: `fired` names it short or by its symbol, which isn't enough to trade on. */
+  mint?: string
+}
+
+/**
+ * Who started a turn: the person's message, or one or more triggers' wakes, joined while the agent was busy.
+ * `outside`: the person sent it from a script or another terminal (`candle-harness ask`), not the input line.
+ */
+export type TurnOrigin = { source: "person"; outside?: true } | { source: "trigger"; wakes: Wake[] }
+
+/** Whether a turn's message came from outside the Candle Harness. */
+export const fromOutside = (origin: TurnOrigin | undefined): boolean => origin?.source === "person" && origin.outside === true
+
+/** A woken turn's line for the agent pane, the Journal and the conversation: which triggers, on what. */
+export function wokenWords(wakes: readonly Wake[]): string {
+  if (wakes.length === 1) return `woken by the trigger "${wakes[0]!.trigger}": ${wakes[0]!.fired}`
+  return `woken by ${wakes.length} triggers, joined while the agent was busy:\n${wakes.map((w) => `- "${w.trigger}": ${w.fired}`).join("\n")}`
+}
+
+/** The names a woken turn's triggers go by, oldest first, each once. */
+export const wokenBy = (origin: TurnOrigin | undefined): string[] => (origin?.source === "trigger" ? [...new Set(origin.wakes.map((w) => w.trigger))] : [])
+
 /** What a turn ran on: the engine, the model passed (null for the harness's own default) and the one that answered, where the stream names it. */
 export interface Ran {
   engine: EngineId
@@ -100,8 +153,9 @@ export interface Ran {
 
 /** What the views see on the `agent` topic. */
 export type AgentEvent = { agent: string; turnId: string } & (
-  | { type: "queued"; user: string }
-  | ({ type: "started"; user: string } & Omit<Ran, "answeredModel">)
+  /** `woken`: the triggers that woke it, for a turn no person sent; `outside`: the person sent it from outside the Candle Harness. */
+  | { type: "queued"; user: string; woken?: string[]; outside?: true }
+  | ({ type: "started"; user: string; woken?: string[]; outside?: true } & Omit<Ran, "answeredModel">)
   | { type: "text"; delta: string }
   | { type: "tool_call"; id: string; name: string; summary: string }
   | { type: "tool_result"; id: string; name: string; source: Source; summary: string }
@@ -122,7 +176,7 @@ export const TURN_MARKER = "CANDLE_HARNESS_TURN"
 
 /** Every process, from `ps` (the same flags on macOS and Linux). */
 export function listProcesses(): Proc[] {
-  const run = spawnSync("ps", ["-A", "-o", "pid=,ppid=,comm="], { encoding: "utf8", timeout: 5_000 })
+  const run = spawnSync(systemTool("ps"), ["-A", "-o", "pid=,ppid=,comm="], { encoding: "utf8", timeout: 5_000 })
   return (run.stdout ?? "")
     .split("\n")
     .map((line) => /^\s*(\d+)\s+(\d+)\s+(.+?)\s*$/.exec(line))
@@ -137,7 +191,7 @@ export function listProcesses(): Proc[] {
  */
 export function processesMarked(marker: string): Proc[] {
   const args = process.platform === "darwin" ? ["-A", "-E", "-ww", "-o", "pid=,command="] : ["-A", "e", "-ww", "-o", "pid=,args="]
-  const run = spawnSync("ps", args, { encoding: "utf8", timeout: 5_000, maxBuffer: 64 * 1024 * 1024 })
+  const run = spawnSync(systemTool("ps"), args, { encoding: "utf8", timeout: 5_000, maxBuffer: 64 * 1024 * 1024 })
   const marked = new Set<number>()
   for (const line of (run.stdout ?? "").split("\n")) {
     const m = /^\s*(\d+)\s/.exec(line)
@@ -194,7 +248,7 @@ export interface RunnerDeps {
   data?: (agent: string) => string | undefined
   /** The agent's memory (core/memory.ts's MemoryBook): read as each turn starts, its change noted after. Unset: no memory section. */
   memory?: { forTurn(agent: string): MemoryForPrompt; afterTurn(agent: string, turnId: string): Promise<unknown>; longChars: number }
-  /** Whether a core tool that depends on more than config is offered to the agent now: hacc_lab by the account's plan. */
+  /** Whether a core tool that depends on more than config is offered to the agent now: hacc_lab and harness_triggers by the account's plan. */
   offers?: (agent: string, tool: string) => boolean
   /** Seams for tests: `start` stands in for every engine's own; `version` for every engine's check. */
   start?: (turn: EngineTurn) => Turn
@@ -210,11 +264,23 @@ interface Running {
   turnId: string
   /** The user's message this turn: funds out from the agent must be asked for in it. */
   text: string
+  origin: TurnOrigin
   /** When the message was sent (performance.now()), for the time from a message to its card. */
   sentAt: number
   cancel: () => Promise<void>
   done: Promise<void>
+  /** The harness token minted for it, once it has one. */
+  tokenId?: string
+  /** Paper or live when it began: what its prompt told the agent. */
+  mode?: "paper" | "live"
+  /** Stopped (the person's Esc, the kill switch, the step cap) or over: nothing more of it may act. */
+  ended?: boolean
+  /** On its second run, asked only to correct its reply: what the first run already asked for isn't asked for again. */
+  correcting?: boolean
 }
+
+/** How many ended turns' tokens are remembered: enough for every call still in flight when its turn stops. */
+const ENDED_KEPT = 500
 
 /** Holds back the end of the stream until a word boundary, and shows an address no tool has shown as pending. */
 export class StreamMask {
@@ -248,12 +314,24 @@ export class StreamMask {
   }
 }
 
+interface Queued {
+  turnId: string
+  text: string
+  sentAt: number
+  origin: TurnOrigin
+}
+
 export class EngineRunner {
   private readonly transcripts = new Map<string, Transcript>()
   private readonly running = new Map<string, Running>()
-  private readonly queues = new Map<string, { turnId: string; text: string; sentAt: number }[]>()
+  private readonly queues = new Map<string, Queued[]>()
   /** The running turn each live harness token was minted for. */
   private readonly turnsByToken = new Map<string, Running>()
+  /**
+   * The turns that were stopped or are over, by their token, oldest first: a tool call still in the core when its
+   * turn stops is known by this, since its token says nothing else once the turn is gone.
+   */
+  private readonly endedByToken = new Map<string, Running>()
   /** Each engine's last check: a good one is kept, a bad one is checked again next time. */
   private readonly checks = new Map<EngineId, EngineCheck>()
   /** What each agent's last turn ran on, for the agent pane's chip; kept across restarts by the journal. */
@@ -274,46 +352,100 @@ export class EngineRunner {
     return this.ran.get(agent)
   }
 
-  /** Starts a turn as `agent`, or queues it behind the one running. */
-  async send(agent: string, text: unknown, by: string): Promise<{ turnId: string; queued: boolean }> {
+  /** Starts a turn as `agent`, or queues it behind the one running. `outside`: sent by `candle-harness ask`, under the same rules. */
+  async send(agent: string, text: unknown, by: string, opts: { outside?: boolean } = {}): Promise<{ turnId: string; queued: boolean }> {
     if (this.stopped) throw refused("CORE_STOPPING", "The core is stopping.")
     if (!this.deps.agents().has(agent)) throw refused("UNKNOWN_AGENT", `No agent named ${agent} has a key.`)
     if (typeof text !== "string" || text.trim().length === 0) throw refused("EMPTY_MESSAGE", "There's no message to send.")
     if (text.length > MAX_MESSAGE_CHARS) throw refused("MESSAGE_TOO_LONG", `Messages are limited to ${MAX_MESSAGE_CHARS} characters.`)
-    if (KEY_SHAPE.test(text) || this.deps.redactor.text(text) !== text) {
-      await this.deps.journal.append({ type: "agent.message_refused", mode: this.deps.mode(), agent, by, code: "SECRET_IN_MESSAGE" })
-      throw refused("SECRET_IN_MESSAGE", "That message holds something that looks like a key or secret, so it wasn't sent to the agent. Never paste a secret into the chat.")
-    }
-    // A wallet's keypair or recovery phrase, which the shared redactor leaves alone so signatures still show.
+    // A wallet's keypair or recovery phrase first, in its own words (the redactor catches a keypair's array too).
     if (walletSecretIn(text)) {
       await this.deps.journal.append({ type: "agent.message_refused", mode: this.deps.mode(), agent, by, code: "SECRET_IN_MESSAGE" })
       throw refused("SECRET_IN_MESSAGE", "That message holds a wallet's private key or recovery phrase, so it wasn't sent to the agent. Never paste one into the chat: the agent can't use it, and it would reach the model's provider.")
     }
+    if (KEY_SHAPE.test(text) || this.deps.redactor.text(text) !== text) {
+      await this.deps.journal.append({ type: "agent.message_refused", mode: this.deps.mode(), agent, by, code: "SECRET_IN_MESSAGE" })
+      throw refused("SECRET_IN_MESSAGE", "That message holds something that looks like a key or secret, so it wasn't sent to the agent. Never paste a secret into the chat.")
+    }
     const turnId = `t_${randomBytes(9).toString("base64url")}`
     const queue = this.queues.get(agent) ?? []
     this.queues.set(agent, queue)
-    queue.push({ turnId, text, sentAt: performance.now() })
+    queue.push({ turnId, text, sentAt: performance.now(), origin: opts.outside ? { source: "person", outside: true } : { source: "person" } })
     const queued = this.running.has(agent)
-    if (queued) this.deps.publish({ agent, turnId, type: "queued", user: text })
+    if (queued) this.deps.publish({ agent, turnId, type: "queued", user: text, ...(opts.outside ? { outside: true as const } : {}) })
     else this.next(agent)
     return { turnId, queued }
+  }
+
+  /**
+   * Wakes `agent` for a trigger: a turn of its own, or, while the agent is busy, the woken turn already
+   * waiting, which this wake joins as one more line. `joined` names that turn; nothing new was started.
+   */
+  wake(agent: string, wake: Wake): { turnId: string; queued: boolean; joined: boolean } {
+    if (this.stopped) throw refused("CORE_STOPPING", "The core is stopping.")
+    if (!this.deps.agents().has(agent)) throw refused("UNKNOWN_AGENT", `No agent named ${agent} has a key.`)
+    const queue = this.queues.get(agent) ?? []
+    this.queues.set(agent, queue)
+    const waiting = queue.find((q) => q.origin.source === "trigger")
+    if (waiting && waiting.origin.source === "trigger") {
+      waiting.origin.wakes.push(wake)
+      waiting.text = wokenWords(waiting.origin.wakes)
+      this.deps.publish({ agent, turnId: waiting.turnId, type: "queued", user: waiting.text, woken: wokenBy(waiting.origin) })
+      return { turnId: waiting.turnId, queued: true, joined: true }
+    }
+    const turnId = `t_${randomBytes(9).toString("base64url")}`
+    const origin: TurnOrigin = { source: "trigger", wakes: [wake] }
+    const text = wokenWords(origin.wakes)
+    queue.push({ turnId, text, sentAt: performance.now(), origin })
+    const queued = this.running.has(agent)
+    if (queued) this.deps.publish({ agent, turnId, type: "queued", user: text, woken: wokenBy(origin) })
+    else this.next(agent)
+    return { turnId, queued, joined: false }
+  }
+
+  /** Whether a woken turn waits in the agent's queue: a wake now joins it, rather than starting one. */
+  wakeWaiting(agent: string): boolean {
+    return this.queues.get(agent)?.some((q) => q.origin.source === "trigger") ?? false
   }
 
   /**
    * The turn a harness token was minted for, and the time since its message was sent: a card the
    * engine proposes carries both, so the time from a message to its card can be read.
    */
-  turnOf(tokenId: string): { turnId: string; msSinceStart: number } | undefined {
-    const running = this.turnsByToken.get(tokenId)
-    return running ? { turnId: running.turnId, msSinceStart: Math.round(performance.now() - running.sentAt) } : undefined
+  turnOf(tokenId: string): { turnId: string; msSinceStart: number; woken?: { trigger: string; fireId: string }; correcting?: true } | undefined {
+    // A stopped turn's call still in flight is still that turn's: a woken turn's is never read as the person's.
+    const running = this.turnsByToken.get(tokenId) ?? this.endedByToken.get(tokenId)
+    if (!running) return undefined
+    const first = running.origin.source === "trigger" ? running.origin.wakes[0] : undefined
+    return { turnId: running.turnId, msSinceStart: Math.round(performance.now() - running.sentAt), ...(first ? { woken: { trigger: first.trigger, fireId: first.fireId } } : {}), ...(running.correcting ? { correcting: true as const } : {}) }
+  }
+
+  /**
+   * Where the turn a harness token was minted for stands: whether it was stopped or is over, and the mode it began
+   * in. Undefined for a token no turn was started with (a harness registered on its own), which is never "ended".
+   */
+  turnState(tokenId: string): { ended: boolean; mode?: "paper" | "live" } | undefined {
+    const running = this.turnsByToken.get(tokenId) ?? this.endedByToken.get(tokenId)
+    if (!running) return undefined
+    return { ended: running.ended === true, ...(running.mode ? { mode: running.mode } : {}) }
+  }
+
+  /** The turn stops here: from now on nothing its harness asks for may act, whatever is already on its way in. */
+  private markEnded(running: Running): void {
+    running.ended = true
+    if (!running.tokenId || this.endedByToken.has(running.tokenId)) return
+    this.endedByToken.set(running.tokenId, running)
+    if (this.endedByToken.size > ENDED_KEPT) this.endedByToken.delete(this.endedByToken.keys().next().value!)
   }
 
   /**
    * The user's own message in the turn a harness token was minted for: what a funds-out card from the
-   * agent must have asked for. Never a message from an earlier turn.
+   * agent must have asked for. Never a message from an earlier turn, and never a woken turn's: a trigger
+   * isn't the person asking.
    */
   askedIn(tokenId: string): string | undefined {
-    return this.turnsByToken.get(tokenId)?.text
+    const running = this.turnsByToken.get(tokenId)
+    return running?.origin.source === "person" ? running.text : undefined
   }
 
   /** Ends the agent's turn, and drops the messages waiting behind it unless they're to run next (the person's Esc). */
@@ -385,14 +517,17 @@ export class EngineRunner {
     const running: Running = {
       turnId: item.turnId,
       text: item.text,
+      origin: item.origin,
       sentAt: item.sentAt,
       cancel: async () => {
         cancelled = true
+        // Before the engine is told: a call of its harness's already in the core finds the turn stopped.
+        this.markEnded(running)
         await cancelTurn()
       },
       done: Promise.resolve(),
     }
-    running.done = this.turn(agent, running, item.text, (fn) => (cancelTurn = fn), () => cancelled)
+    running.done = this.turn(agent, running, item.text, item.origin, (fn) => (cancelTurn = fn), () => cancelled)
       .catch(async (error) => {
         await this.deps.journal.append({ type: "agent.turn_failed", mode: this.deps.mode(), agent, turnId: item.turnId, error: String(error) }).catch(() => {})
       })
@@ -403,10 +538,11 @@ export class EngineRunner {
     this.running.set(agent, running)
   }
 
-  private async turn(agent: string, running: Running, user: string, onCancel: (fn: () => Promise<void>) => void, wasCancelled: () => boolean): Promise<void> {
+  private async turn(agent: string, running: Running, user: string, origin: TurnOrigin, onCancel: (fn: () => Promise<void>) => void, wasCancelled: () => boolean): Promise<void> {
     const deps = this.deps
     const { turnId } = running
     const mode = deps.mode()
+    running.mode = mode
     const env = { ...harnessEnv(deps.env), [TURN_MARKER]: turnId }
 
     const choice = deps.choice(agent)
@@ -419,7 +555,11 @@ export class EngineRunner {
     const can = engine?.capabilities(process.platform) ?? FULL
     // The shell this turn gets on this engine, journalled when it's on: what ran includes it.
     const shell = shellFor(settings, can)
-    deps.publish({ agent, turnId, type: "started", user, engine: choice.engine, model: model ?? null })
+    const woken = wokenBy(origin)
+    // A woken turn's rows name what woke it, so nothing it did reads as the person's.
+    const wokeFields = origin.source === "trigger" ? { woken, fireIds: origin.wakes.map((w) => w.fireId) } : fromOutside(origin) ? { outside: true as const } : {}
+    const outside = fromOutside(origin) ? { outside: true as const } : {}
+    deps.publish({ agent, turnId, type: "started", user, ...(woken.length ? { woken } : {}), ...outside, engine: choice.engine, model: model ?? null })
     let check: EngineCheck | undefined
     // The model the stream says answered (every engine but Codex names it), and whether the engine ran at all.
     let answeredModel: string | undefined
@@ -441,7 +581,7 @@ export class EngineRunner {
     const end = async (outcome: TurnOutcome, reply: string, extra: { labelled?: { address: string; source: Source }[]; steps?: number; tools?: string[]; reasked?: boolean; spoken?: string } = {}) => {
       const figures = extra.spoken ? checkFigures(extra.spoken, shownNumbers) : undefined
       const marked: FigureMark[] = (figures?.marked ?? []).map(({ at, text }) => ({ at, text }))
-      const exchange: Exchange = { turnId, user, reply, tools: extra.tools ?? [], outcome, ...(marked.length ? { marked } : {}) }
+      const exchange: Exchange = { turnId, user, reply, tools: extra.tools ?? [], outcome, ...(marked.length ? { marked } : {}), ...(woken.length ? { woken } : {}), ...outside }
       this.transcripts.get(agent)?.add(exchange)
       // A turn that never reached its engine (not in this build, a failed check) ran on nothing, and isn't what the chip shows.
       const what: Ran = { engine: choice.engine, model: model ?? null, answeredModel: answeredModel ?? null }
@@ -451,6 +591,7 @@ export class EngineRunner {
         mode,
         agent,
         ...exchange,
+        ...wokeFields,
         steps: extra.steps ?? 0,
         reasked: extra.reasked ?? false,
         // How many figures the gate checked; `marked` (in the exchange) are those no tool showed.
@@ -476,10 +617,14 @@ export class EngineRunner {
     const tokenFile = join(turnDir, "token")
     const mcpConfig = join(deps.turnsDir, `${turnId}.json`)
     const workDir = join(deps.homesDir, turnId)
-    await deps.journal.append({ type: "agent.turn_started", mode, agent, turnId, tokenId, ...ran() })
+    // A message from outside isn't on anyone's input line: Activity says it as its turn starts, so its words go here too.
+    await deps.journal.append({ type: "agent.turn_started", mode, agent, turnId, tokenId, ...wokeFields, ...(fromOutside(origin) ? { user: user.slice(0, 200) } : {}), ...ran() })
 
     try {
+      running.tokenId = tokenId
       this.turnsByToken.set(tokenId, running)
+      // Stopped while its token was being minted: it's known as stopped from its first call.
+      if (running.ended) this.markEnded(running)
       await mkdir(turnDir, { mode: 0o700 })
       await writeFile(tokenFile, `${token}\n`, { mode: 0o600, flag: "wx" })
       await writeFile(mcpConfig, mcpConfigFor(deps.shim, tokenFile, deps.configDir), { mode: 0o600, flag: "wx" })
@@ -512,6 +657,7 @@ export class EngineRunner {
           can,
           tools: settings,
           data: deps.data?.(agent),
+          triggers: deps.offers?.(agent, "harness_triggers") ?? false,
           skills,
           ...(memory ? { memory: memory.guide } : {}),
         }),
@@ -552,9 +698,13 @@ export class EngineRunner {
             afterTool = true
             steps += 1
             inputs.set(e.id, { name: e.name, input: e.input })
-            deps.publish({ agent, turnId, type: "tool_call", id: e.id, name: e.name, summary: toolSummary(e.name, e.input, undefined) })
+            const fetched = fetchAddress(e.name, e.input)
+            if (fetched) void deps.journal.append({ type: "agent.fetch", mode, agent, turnId, tool: toolName(e.name), url: fetched }).catch(() => {})
+            deps.publish({ agent, turnId, type: "tool_call", id: e.id, name: toolName(e.name), summary: toolSummary(e.name, e.input, undefined) })
             if (steps >= deps.stepCap && !capped) {
               capped = true
+              // The cap stops the turn as the person's stop does: the call that reached it doesn't act.
+              this.markEnded(running)
               void turn.cancel()
             }
           } else if (e.type === "tool_result") {
@@ -563,7 +713,7 @@ export class EngineRunner {
             const call = inputs.get(e.id)
             const summary = toolSummary(e.name, call?.input, e.output, e.failed)
             tools.push(summary)
-            deps.publish({ agent, turnId, type: "tool_result", id: e.id, name: e.name, source: e.source, summary })
+            deps.publish({ agent, turnId, type: "tool_result", id: e.id, name: toolName(e.name), source: e.source, summary })
           } else if (e.type === "model") answeredModel = e.model
           // The reply is checked, shown, journalled and kept as cleaned, so the gates read what's drawn.
           else if (e.type === "done") text = replyText(e.text)
@@ -585,7 +735,12 @@ export class EngineRunner {
       for (const n of numbersIn([session ?? "", deps.data?.(agent) ?? ""].join("\n"))) shownNumbers.push(n)
       // The picked token's mint is Candle's: the link moves only to a token Candle has a market for.
       for (const value of note?.addresses ?? []) seen.push({ value, source: "candle" })
-      const prompt = [session, memory?.notes, transcript.promptFor(user)].filter(Boolean).join("\n\n")
+      // What fired a woken turn named its token, as Candle or Hacc showed it.
+      if (origin.source === "trigger") for (const w of origin.wakes) seen.push(...(w.addresses ?? []))
+      // An address the person wrote this turn is theirs to name: the reply may say it back without a second
+      // run. A woken turn's words are the core's, and its addresses came in above.
+      if (origin.source === "person") seen.push(...seenFrom(user, "you"))
+      const prompt = [session, memory?.notes, transcript.promptFor(user, origin)].filter(Boolean).join("\n\n")
       let result = await run(prompt)
       let reasked = false
 
@@ -598,19 +753,25 @@ export class EngineRunner {
       const early = stoppedEarly()
       if (early) return await early
       const explain = (m: string | undefined) => (engine ? engine.explain(m) : (m ?? `${label} ended without a reply.`))
-      if (result.text === undefined) return await end("error", explain(result.error), { steps, tools })
+      // An engine's own error words (the tail of its stderr) are cleaned as a reply is.
+      if (result.text === undefined) return await end("error", replyText(explain(result.error)), { steps, tools })
 
       let gate = checkAddresses(result.text, seen)
       if (!gate.ok) {
         reasked = true
         deps.publish({ agent, turnId, type: "reask", unknown: gate.unknown })
         const first = result.text
+        // The second run starts with no memory of the first, so it's told what the first already did:
+        // a trade or card it made stands, and mustn't be made again.
+        const did = deps.didInTurn?.(agent, turnId) ?? []
+        running.correcting = true
+        const already = did.length ? ` Already done this turn, and standing:\n${did.map((d) => `- ${d}`).join("\n")}\nDon't do any of it again: only correct your reply.` : tools.length ? " The tool calls you made this turn stand: don't repeat a trade, a card or a change, only correct your reply." : ""
         result = await run(
-          `${prompt}\n\nYour reply was:\n<reply>\n${first}\n</reply>\nIt names ${gate.unknown.length === 1 ? "an address" : "addresses"} that no tool result in this turn showed: ${gate.unknown.join(", ")}. Look each one up with Candle's tools, or leave it out, and give your whole reply again.`,
+          `${prompt}\n\nYour reply was:\n<reply>\n${fenced(first, "reply")}\n</reply>\nIt names ${gate.unknown.length === 1 ? "an address" : "addresses"} that no tool result in this turn showed: ${gate.unknown.join(", ")}. Look each one up with Candle's tools, or leave it out, and give your whole reply again.${already}`,
         )
         const late = stoppedEarly()
         if (late) return await late
-        if (result.text === undefined) return await end("error", explain(result.error), { steps, tools, reasked })
+        if (result.text === undefined) return await end("error", replyText(explain(result.error)), { steps, tools, reasked })
         gate = checkAddresses(result.text, seen)
       }
       let reply = result.text
@@ -621,6 +782,7 @@ export class EngineRunner {
       // The fallback note names no figure, so the whole reply is the agent's to check.
       return await end("done", reply, { labelled: gate.labelled, steps, tools, reasked, spoken: reply })
     } finally {
+      this.markEnded(running)
       this.turnsByToken.delete(tokenId)
       // A revoked token is refused, so the redactor needn't carry one for every turn the core has run.
       deps.redactor.remove(token)

@@ -4,8 +4,8 @@
 │                                                                              │
 │  Connect your agent                                                          │
 │                                                                              │
-│  Your agent runs on a harness you already use, signed in as you. The Candle  │
-│  Harness keeps your own setup out of it and never stores a model key.        │
+│  Your agent runs on an engine: an AI coding tool you already use, as you.    │
+│  The Candle Harness keeps your setup out of it and stores no model key.      │
 │                                                                              │
 │  ▸ Claude Code 2.1.316 · signed in                                           │
 │       ● sonnet · Claude Sonnet 5.5 · default                                 │
@@ -30,8 +30,8 @@
 3: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
 4: 32fe9f/111419×1 ffffff/111419×2 b392f0/111419×18 ffffff/111419×58 32fe9f/111419×1
 5: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
-6: 32fe9f/111419×1 ffffff/111419×2 dde2ea/111419×74 ffffff/111419×2 32fe9f/111419×1
-7: 32fe9f/111419×1 ffffff/111419×2 dde2ea/111419×68 ffffff/111419×8 32fe9f/111419×1
+6: 32fe9f/111419×1 ffffff/111419×2 dde2ea/111419×72 ffffff/111419×4 32fe9f/111419×1
+7: 32fe9f/111419×1 ffffff/111419×2 dde2ea/111419×70 ffffff/111419×6 32fe9f/111419×1
 8: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
 9: 32fe9f/111419×1 ffffff/111419×2 32fe9f/1d2430×2 b392f0/1d2430×31 ffffff/1d2430×41 ffffff/111419×2 32fe9f/111419×1
 10: 32fe9f/111419×1 ffffff/111419×2 32fe9f/111419×7 f6f8fb/111419×36 ffffff/111419×33 32fe9f/111419×1

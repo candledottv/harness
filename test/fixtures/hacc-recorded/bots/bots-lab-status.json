@@ -1,0 +1,28 @@
+{
+  "name": "lab-status",
+  "host": "hacc",
+  "method": "GET",
+  "route": "/v1/strategy-lab/status",
+  "query": {},
+  "status": 200,
+  "ms": 667,
+  "bytes": 238,
+  "answer": {
+    "plan": "max",
+    "allowed": true,
+    "lab_pro_mode_applies": false,
+    "replays": {
+      "cap": 20,
+      "used": 12,
+      "resets_at": "2026-11-06T00:00:00.000Z"
+    },
+    "active_job_id": null,
+    "window_max_days": 14,
+    "reads": [
+      "runners",
+      "edges",
+      "first-signals"
+    ],
+    "saved_strategies": true
+  }
+}

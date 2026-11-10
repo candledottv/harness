@@ -1,0 +1,15 @@
+{
+  "name": "live-conviction",
+  "host": "hacc",
+  "method": "GET",
+  "route": "/v1/conviction",
+  "query": {},
+  "status": 404,
+  "ms": 134,
+  "bytes": 85,
+  "answer": {
+    "message": "Route GET:/v1/conviction not found",
+    "error": "Not Found",
+    "statusCode": 404
+  }
+}

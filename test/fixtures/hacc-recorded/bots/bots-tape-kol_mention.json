@@ -1,0 +1,17 @@
+{
+  "name": "tape-kol_mention",
+  "host": "hacc",
+  "method": "GET",
+  "route": "/v1/signals",
+  "query": {
+    "pattern": "kol_mention",
+    "since": "2026-11-05T11:46:34.543Z",
+    "limit": "200"
+  },
+  "status": 200,
+  "ms": 152,
+  "bytes": 14,
+  "answer": {
+    "signals": []
+  }
+}

@@ -2,7 +2,7 @@
 # Candle Harness installer. Puts `candle-harness` beside your `candle`, or in ~/.local/bin, checked twice: its
 # SHA-256 against the release's SHA256SUMS and latest.json, and its Sigstore signature against this
 # repository's release workflow at the exact tag, with your own `candle verify` (cosign or gh if there's
-# no candle to ask). A file that fails either check installs nothing. Usage:
+# no candle to ask). A file that fails either check is never installed. Usage:
 #   curl -fsSL https://github.com/candledottv/harness/releases/latest/download/install.sh | bash
 #   curl -fsSL https://github.com/candledottv/harness/releases/latest/download/install.sh | bash -s -- --to v1.0.0
 #   bash install.sh --from ./release-folder        # a release you downloaded yourself
@@ -33,18 +33,18 @@ UNSIGNED_OK=0
 # SHA-256 of each of its release files this script may install. scripts/pin-cli.ts writes this block
 # from Candle's own latest.json, and scripts/install.test.ts holds it to the doctor's minimum.
 # BEGIN CLI PINS
-CLI_TAG='cli-v0.13.11'
-CLI_IDENTITY='https://github.com/candledottv/cli/.github/workflows/release.yaml@refs/tags/cli-v0.13.11'
+CLI_TAG='cli-v0.13.18'
+CLI_IDENTITY='https://github.com/candledottv/cli/.github/workflows/release.yaml@refs/tags/cli-v0.13.18'
 cli_pin() {
   case "$1" in
-    candle-darwin-arm64) echo 'b97a6bade7c7e78de1679bbe21ba2e9c7739b6a711242b93ec375e06872df73b' ;;
-    candle-darwin-x64) echo '737c086bbb1b5dd348a54e6492133ed86e5bc20944d384e6208c88d346c6dfa6' ;;
-    candle-linux-arm64) echo '3fb15ca4e1b3f7bf2a0248fc620598f40fa01c55fba96b46f5d6dca23081dde1' ;;
-    candle-linux-x64) echo '87e3dcc6820d04407f4fd548fa1dae69702e7f9497b3095ef0240e37b387fbc3' ;;
-    candle-fido2-darwin-arm64) echo 'db30594a04589d83cadf3c2063bca1a5801f2b0768f5e606465d3af96c7ddf3a' ;;
-    candle-fido2-darwin-x64) echo 'e610de7655ea70b38c4145904e56ea0eb70bb71e92ac675b2596fe2e54a75be9' ;;
-    candle-fido2-linux-arm64) echo '07e36aa9c0acd57faeb388ff395bd866fe0a46ba07fdcbaa82a70af6edcd85ec' ;;
-    candle-fido2-linux-x64) echo '71a67b00209f990cc0e02ca2d546ddc80ceca5976e4845a9deedbbd1220ef35d' ;;
+    candle-darwin-arm64) echo '3a6be97b52976ec3b5bb47d6acfd25232f8bb1cbe0cc5bc9fab0f4da024a61a7' ;;
+    candle-darwin-x64) echo 'e84ff2037e4b9dbf18b5205c8c41a74bd7817cdedfee7e6fe3db5c7d53a1b659' ;;
+    candle-linux-arm64) echo '3d6d7078b88767e14e1032fe0496600d31c27d2028f90b15de86b6db9b6fc4d1' ;;
+    candle-linux-x64) echo 'db02c3db1b4a1f53d37e450553e03888ce3ebd65f70f6209f95b71401bcdb510' ;;
+    candle-fido2-darwin-arm64) echo 'ece9ec87a4503cf97bacd9bc45eb407debeb7cc3c9c7a6f8860b1955390422c7' ;;
+    candle-fido2-darwin-x64) echo '66b68740629eecdf498ca374a44ecfb167dd46fc69710efdd54b2c043cf3b900' ;;
+    candle-fido2-linux-arm64) echo '4ad38e3c78d064868763fe0a66306804859c4d0f91fe9f171139310fac44139a' ;;
+    candle-fido2-linux-x64) echo '484cb9e2cecc27504026d181cd1b5b5115a4431effd2898b5964a8e3f93d92a8' ;;
     *) echo '' ;;
   esac
 }
@@ -68,9 +68,24 @@ Candle Harness installer
 EOF
 }
 
-fail() { echo "install.sh: $*" >&2; exit 1; }
+# Set once this run has put the Candle CLI in place: a later refusal then says what stays installed.
+cli_installed_now=0
+fail() {
+  local message="$*"
+  if [ "$cli_installed_now" -eq 1 ]; then
+    message="${message%; nothing installed}"
+    message="${message}; candle-harness wasn't installed. The Candle CLI ${CLI_VERSION} this run installed stays at ${BIN_DIR}/candle"
+  fi
+  echo "install.sh: ${message}" >&2
+  exit 1
+}
 need_arg() { [ "$2" -ge 2 ] || { echo "install.sh: $1 needs a value" >&2; usage >&2; exit 2; }; }
 
+# Every step runs inside main, called on the script's last line: piped from curl, a download cut short
+# is a syntax error or a script that never reaches the call, so it does nothing rather than stopping
+# partway. The pins above stay at the top level, where the release workflow and scripts/pin-cli.ts read
+# and write them by line. The body isn't indented, so its lines stay as they were.
+main() {
 while [ $# -gt 0 ]; do
   case "$1" in
     --to) need_arg "$1" "$#"; VERSION_TAG="$2"; shift 2 ;;
@@ -287,6 +302,7 @@ install_cli() {
   created_top=""
   candle_path="$BIN_DIR/candle"
   candle_version="$CLI_VERSION"
+  cli_installed_now=1
   echo "Installed the Candle CLI ${CLI_VERSION} to ${BIN_DIR}/candle, checked against the SHA-256s this installer carries for Candle's release."
 }
 
@@ -360,7 +376,8 @@ elif command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
 fi
 if [ -z "$verified_by" ]; then
   if [ "$UNSIGNED_OK" != "1" ]; then
-    fail "nothing here can check ${asset}'s signature, so nothing was installed. The Candle CLI ${CLI_VERSION} checks it: install it first (or run this again and answer yes), then run this again"
+    if [ -z "$candle_path" ]; then why="The Candle CLI wasn't installed"; else why="The Candle CLI here is ${candle_version:-an unknown version}, older than ${CLI_VERSION}"; fi
+    fail "${why}, and nothing else here can check ${asset}'s signature, so nothing was installed. The Candle CLI ${CLI_VERSION} checks it: run this again and answer yes (or pass --yes)"
   fi
   echo "Warning: ${asset}'s signature wasn't checked (CANDLE_HARNESS_INSTALL_UNSIGNED_FOR_TESTING=1, for testing only); its checksum matched."
 fi
@@ -374,7 +391,15 @@ mv -f "$staged" "$BIN_DIR/candle-harness"
 staged=""
 created_top=""
 echo "Installed candle-harness ${version} to ${BIN_DIR}/candle-harness${verified_by:+, signature checked by ${verified_by}}."
-"$BIN_DIR/candle-harness" --version || fail "${BIN_DIR}/candle-harness is in place but didn't run"
+"$BIN_DIR/candle-harness" --version || { echo "install.sh: ${BIN_DIR}/candle-harness is in place but didn't run" >&2; exit 1; }
+
+# A core started by the version this replaced keeps running that version: one a trigger, a bot or the
+# login service holds open doesn't end when the window closes. It's said, never stopped from here, since
+# stopping it stops what it's watching.
+running_core="$("$BIN_DIR/candle-harness" version --core 2>/dev/null </dev/null | sed -n 's/^core \([0-9][0-9.]*\)$/\1/p' | head -1 || true)"
+if [ -n "$running_core" ] && [ "$running_core" != "$version" ]; then
+  echo "A core from ${running_core} is still running, with its triggers and bots. It carries on as ${running_core} until it's restarted: candle-harness stop, then open candle-harness again."
+fi
 
 # The Candle CLI's `candle tui` still runs a binary named candle-tui (the 0.2 name): a link to this one beside
 # it, so it opens Candle Harness. Deprecated: it goes once the CLI runs candle-harness itself. An old link is
@@ -435,3 +460,7 @@ esac
 
 if [ -n "$cli_note" ]; then echo "$cli_note"; fi
 echo "Next: candle-harness"
+}
+
+# In braces, so no part of this line alone runs anything either.
+{ main "$@"; }

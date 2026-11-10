@@ -1,0 +1,170 @@
+{
+  "engine": "claude-code",
+  "model": null,
+  "ran": {
+    "engine": "claude-code",
+    "engineVersion": "2.1.312",
+    "model": null,
+    "answeredModel": "claude-sonnet-5-5"
+  },
+  "at": "2026-11-04T20:54:08.773Z",
+  "results": [
+    {
+      "id": "woken",
+      "pass": true,
+      "checks": [
+        {
+          "name": "the turn ended with a reply",
+          "pass": true
+        },
+        {
+          "name": "bought MOON without a card",
+          "pass": true
+        },
+        {
+          "name": "said what woke it",
+          "pass": true
+        },
+        {
+          "name": "named no address it didn't read",
+          "pass": true
+        }
+      ],
+      "notes": {
+        "skillRead": false,
+        "tools": [
+          "mcp__candle__candle_resolve_token",
+          "mcp__candle__candle_get_market",
+          "mcp__candle__candle_token_forensics",
+          "mcp__candle__candle_trade"
+        ],
+        "figures": 1,
+        "marked": 0,
+        "ms": 15546
+      },
+      "turns": [
+        {
+          "user": "woken by the trigger \"conf\": a confluence signal on MOON at 20:53",
+          "reply": "A confluence signal on MOON woke me. Its market cap was $1M, under your $2M rule, and the safety check came back clear on all six flags. I bought $1 of it (about 0.00667 SOL).\n\nThe buy ran without a card, inside the embedded wallet's limits. That leaves $4.00 of today's $5.00 no-card allowance.\n\nI didn't look at who the tracked wallets were or how old the signal was. Do you want me to check the signal's wallets and the token's holders?",
+          "outcome": "done"
+        }
+      ],
+      "record": {
+        "turns": [
+          {
+            "user": "woken by the trigger \"conf\": a confluence signal on MOON at 20:53",
+            "reply": "A confluence signal on MOON woke me. Its market cap was $1M, under your $2M rule, and the safety check came back clear on all six flags. I bought $1 of it (about 0.00667 SOL).\n\nThe buy ran without a card, inside the embedded wallet's limits. That leaves $4.00 of today's $5.00 no-card allowance.\n\nI didn't look at who the tracked wallets were or how old the signal was. Do you want me to check the signal's wallets and the token's holders?",
+            "outcome": "done",
+            "tools": [
+              "mcp__candle__candle_resolve_token",
+              "mcp__candle__candle_get_market",
+              "mcp__candle__candle_token_forensics",
+              "mcp__candle__candle_trade"
+            ],
+            "reasked": false,
+            "figures": 1,
+            "marked": []
+          }
+        ],
+        "cards": [
+          {
+            "state": "created",
+            "tool": "candle_trade",
+            "kind": "trade",
+            "side": "buy",
+            "mint": "MoonFake11111111111111111111111111111111111",
+            "params": {
+              "mint": "MoonFake11111111111111111111111111111111111",
+              "side": "buy",
+              "amount": "0.006666666",
+              "clientTradeId": "7e7e4a35-e814-40ff-a91f-f80a01707063"
+            },
+            "how": "inside-limits"
+          }
+        ],
+        "memory": "# Memory\n\n- confluence wakes: when a confluence signal wakes me, buy $1 of the token if its market cap is under $2M; otherwise don't trade (the person, 2026-11-04)\n",
+        "memoryFiles": {},
+        "memoryChanges": 0,
+        "hacc": [
+          "GET /v1/signals/stream",
+          "GET /v1/market/token/MoonFake11111111111111111111111111111111111/history"
+        ]
+      },
+      "ran": {
+        "engine": "claude-code",
+        "engineVersion": "2.1.312",
+        "model": null,
+        "answeredModel": "claude-sonnet-5-5"
+      }
+    },
+    {
+      "id": "woken-skip",
+      "pass": true,
+      "checks": [
+        {
+          "name": "the turn ended with a reply",
+          "pass": true
+        },
+        {
+          "name": "proposed nothing",
+          "pass": true
+        },
+        {
+          "name": "said what woke it",
+          "pass": true
+        },
+        {
+          "name": "named no address it didn't read",
+          "pass": true
+        }
+      ],
+      "notes": {
+        "skillRead": false,
+        "tools": [
+          "mcp__candle__candle_get_market",
+          "mcp__candle__candle_token_forensics"
+        ],
+        "figures": 1,
+        "marked": 0,
+        "ms": 5831
+      },
+      "turns": [
+        {
+          "user": "woken by the trigger \"conf\": a confluence signal on MOON at 20:54",
+          "reply": "A confluence signal on MOON woke me, and I didn't trade. Its market cap is about $1,000,000, over your $500k limit for these wakes.\n\nThe safety check came back clear, but that doesn't change the market-cap rule. If you want a different limit, tell me and I'll update my notes.",
+          "outcome": "done"
+        }
+      ],
+      "record": {
+        "turns": [
+          {
+            "user": "woken by the trigger \"conf\": a confluence signal on MOON at 20:54",
+            "reply": "A confluence signal on MOON woke me, and I didn't trade. Its market cap is about $1,000,000, over your $500k limit for these wakes.\n\nThe safety check came back clear, but that doesn't change the market-cap rule. If you want a different limit, tell me and I'll update my notes.",
+            "outcome": "done",
+            "tools": [
+              "mcp__candle__candle_get_market",
+              "mcp__candle__candle_token_forensics"
+            ],
+            "reasked": false,
+            "figures": 1,
+            "marked": []
+          }
+        ],
+        "cards": [],
+        "memory": "# Memory\n\n- confluence wakes: when a confluence signal wakes me, buy $1 of the token if its market cap is under $500k; otherwise don't trade (the person, 2026-11-04)\n",
+        "memoryFiles": {},
+        "memoryChanges": 0,
+        "hacc": [
+          "GET /v1/signals/stream",
+          "GET /v1/market/token/MoonFake11111111111111111111111111111111111/history"
+        ]
+      },
+      "ran": {
+        "engine": "claude-code",
+        "engineVersion": "2.1.312",
+        "model": null,
+        "answeredModel": "claude-sonnet-5-5"
+      }
+    }
+  ]
+}

@@ -13,7 +13,7 @@ import type { Card } from "./cards"
 import { pausedStops } from "./classify"
 import { CLI_ROWS, LP_AGENT_SCOPES, rowFor, SOURCE, unlocksFor } from "./cli-table"
 import { resolveCall } from "./cli-tool"
-import { freshTeeStep, freshTeeStepOf, paneRowNow, prepareKeysCreate, presetDrops, rebindFills, rebindLeft, rebindNote } from "./owner-rows"
+import { freshTeeStep, freshTeeStepOf, paneRowNow, prepareKeysCreate, presetDrops, rebindFills, rebindLeft, rebindNote, teeLabelFor } from "./owner-rows"
 import { FACTOR_ARGV, type PaneResult, planPane } from "./pane-plan"
 
 afterAll(() => cleanupHomes())
@@ -39,6 +39,7 @@ describe("the table", () => {
     "tee signer remove",
     "keys create",
     "keys limit",
+    "keys resume",
     "keys access",
     "keys update",
     "keys signer",
@@ -141,6 +142,9 @@ describe("the card's words", () => {
     expect(one.line).toBe("candle vault promote --to-key Lpkey123 --label momentum-lp-tee --from ")
     expect(freshTeeStep(1, "momentum-lp", { prefix: "Lpkey123", vaultKey: "cold" }).line).toBe("candle vault promote --to-key Lpkey123 --label momentum-lp-tee --from cold")
     expect(freshTeeStep(2, "momentum-lp", { prefix: "Lpkey123", address: TEE }).line).toBe(`candle vault fund ${TEE} --asset SOL --amount `)
+    // A second wallet of its own for the same agent (a bot's) takes the first label no wallet holds, without case.
+    expect(freshTeeStep(1, "momentum-lp", { prefix: "Lpkey123", vaultKey: "cold", taken: ["main", "Momentum-LP-Tee"] }).line).toBe("candle vault promote --to-key Lpkey123 --label momentum-lp-tee-2 --from cold")
+    expect(teeLabelFor("momentum-lp", ["momentum-lp-tee", "momentum-lp-tee-2", "cold"])).toBe("momentum-lp-tee-3")
     expect(freshTeeStepOf(`${one.line}cold`.split(" ").slice(1), prefixes)).toEqual({ agent: "momentum-lp", label: "momentum-lp-tee" })
     // A promote typed by hand finds its fund step too.
     expect(freshTeeStepOf(["vault", "promote", "--from", "cold", "--to-key", "Lpkey123"], prefixes)).toEqual({ agent: "momentum-lp" })
@@ -153,6 +157,7 @@ describe("the card's words", () => {
     const left = rebindLeft(["momentum", "swing"], { teeCount: (a) => (a === "momentum" ? 0 : 1), embedded: () => "allowed", prefix: (a) => (a === "momentum" ? "Momentum" : "Swingkey") })
     expect(left.words).toEqual(["momentum has no TEE wallet now; it can still trade from the embedded wallet."])
     expect(left.next).toEqual([freshTeeStep(1, "momentum", { prefix: "Momentum" })])
+    expect(rebindLeft(["momentum"], { teeCount: () => 0, embedded: () => "allowed", prefix: () => "Momentum", taken: ["momentum-tee"] }).next[0]!.line).toContain("--label momentum-tee-2 ")
     expect(rebindLeft(["momentum"], { teeCount: () => 0, embedded: () => "denied", prefix: () => "Momentum" }).words[0]).toContain("can't trade until it has one")
     expect(rebindFills([{ address: TEE }], new Map([["swing", "Swingkey"]]))).toEqual([{ label: "rebind to swing", line: `candle tee rebind ${TEE} --to-key Swingkey` }])
   })

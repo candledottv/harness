@@ -16,6 +16,7 @@
 // kept or discarded with chips under the agent's reply; a tab change, and a theme the agent made (used at
 // once), have an undo there. Without the agent pane on the tab, the chips sit on the tab bar.
 // The person's click is told to the core, for Activity.
+import { runOn } from "../engine/tools"
 import type { OnboardingView } from "../setup/onboarding"
 import { agentNameOf, codeFrom, fieldTakes, fieldValue, fundWallet, HARNESS_SIGN_INS, keyArgv, type ObAction, type ObContext, type ObLocal, obPaneRect, OnboardingScreen, SCREEN_STEPS, stepRows, stepRect } from "./onboarding"
 import { parseFigure } from "./approvals"
@@ -28,16 +29,19 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import type { CoreEventParams } from "../core/client"
 import { PRESET_LABELS } from "../engine/preset"
 import { ENGINE_LABELS, type EngineId, type EngineModel } from "../engine/engine"
-import { type Aliases, NO_ALIASES, parseAliases } from "./aliases"
-import { doneWords, judge, requestOf, type RunningChain, startedFrom, stopWords } from "./chain"
-import { type Command, parseCommand } from "./commands"
-import { type Effect, focusedCard, INITIAL_UI, menuFocus, paletteFound, paletteInput, type PickRow, poppable, type ScrollReach, type SignalsChange, step, type UiAction, type UiContext, type UiState } from "./keys"
-import { signalsChoiceOf, signalsFilter, signalsParams } from "./panes/signals"
+import { type Aliases, NO_ALIASES, parseAliases } from "../shared/aliases"
+import { doneWords, judge, requestOf, type RunningChain, startedFrom, stopWords } from "../shared/chain"
+import type { Command } from "../shared/commands"
+import { PLAN_FIX, PLAN_WORDS } from "../shared/trigger-grammar"
+import { APPROVE_AFTER_BEHIND_MS, BUILD_TYPING_MS, type Effect, enterReadyAt, focusedCard, INITIAL_UI, KILL_WINDOW_MS, menuFocus, paletteFound, paletteInput, type PickRow, poppable, readLine, type ScrollReach, type SignalsChange, step, type UiAction, type UiContext, type UiState } from "./keys"
+import { type HaccTopic, signalsChoiceOf, signalsFilter, signalsParams } from "./panes/signals"
 import type { Here } from "./keymap"
 import { allRowCount } from "./palette-rows"
-import { activityTape, tokenShown } from "./panes/registry"
+import { activityTape, paneLines, tokenShown } from "./panes/registry"
 import { InputLine, MessageLine, messageRows } from "./input-line"
-import { AGENT_FIRST, type Gap, gapFor, type Layout, NO_GAP, onScreen as panesOnScreen, type PaneId, type PaneNav, panesOf, paneNav, place, type Rect, roomy } from "./layout"
+import { AGENT_FIRST, BUILD_ALONE, shownOf, type Gap, gapFor, type Layout, NO_GAP, onScreen as panesOnScreen, type PaneId, type PaneNav, panesOf, paneNav, place, type Rect, roomy } from "./layout"
+import { isTokenPane, type TokenPane } from "../shared/panes"
+import { type Pin, pinPane } from "../core/view-state"
 import { feedBuckets, feedPanesLeftOut } from "./panes/feed"
 import { researchParts } from "./panes/research"
 import { type PnlSpan, pnlWindowWords } from "./panes/pnl"
@@ -53,16 +57,29 @@ import type { Popper } from "./popout"
 import { CliPrompt, type Prompt, PromptChips, promptInner } from "./panes/cli-prompt"
 import { canRun, type ModelsRead, needsModel, pickerRows } from "./panes/engines"
 import type { Act } from "./panes/lines"
-import { helpMaxScroll, Overlays } from "./overlays"
+import { frameMaxScroll, helpMaxScroll, Overlays } from "./overlays"
+import type { BuildSpawner } from "./build-process"
+import { buildScreenLines, buildTitle, selectionHint, terminalRect, useBuild } from "./build-pane"
+import { foldWords } from "./build-view"
+import { EmbeddedTerminal } from "./embedded-terminal"
+import { BuildCardOverlay, buildCardRows, PaneOverlay } from "./pane-overlay"
+import { cardLines } from "./panes/card"
 import { journalContext, readJournalRows, useJournal } from "./journal-feed"
 import type { JournalKind } from "../core/journal-query"
 import { copiedMessage, makeCopier } from "./clipboard"
-import { StatusBar } from "./status-bar"
-import { applyEvent, type CoreView, EMPTY_VIEW, openCards, paneNext, paneWords, unanswered, type ViewOperation } from "./store"
+import { StatusBar, staleCoreVersion } from "./status-bar"
+import { VERSION } from "../version"
+import { applyEvent, type CoreView, EMPTY_VIEW, lostCore, openCards, paneNext, paneWords, unanswered, type ViewOperation } from "./store"
 import { settingsColumn, type TabOffer, Tabs } from "./tabs"
 import { type AgentPreview, planView, type ViewPlan } from "./view-tool"
 import { C, fit as fitText, money, type TerminalColours } from "./theme"
 import { walletWords } from "./approvals"
+import { paperRefusal } from "./format"
+import { runnableCards, type TriggersAct } from "./triggers-view"
+import { type BotLogHeld, botLogLines, parseBotRef } from "./bots-view"
+
+/** The Triggers overlay's chips that act on the picked trigger; any other chip there puts its line on the input line. */
+const TRIGGERS_ACTS: ReadonlySet<string> = new Set(["toggle", "remove", "removeYes", "removeNo", "ask", "keepAwake", "list", "planBuy"])
 import type { ThemeStore } from "./themes"
 import { useTheme } from "./use-theme"
 import { TourOverlay } from "./tour"
@@ -73,22 +90,30 @@ import { dirname, join as joinPath } from "node:path"
 import type { AwaySummary } from "../core/away"
 import { AWAY_ASK, awayMaxScroll } from "./panes/away"
 import { CardStrip, inlineCards, requotable, stripLines, stripRows, TabBody } from "./trade-tab"
+import { liveGaps } from "./live-gaps"
 import { MIN_COLS, MIN_ROWS, TooSmall } from "./too-small"
 import { useRepaintAfterResize } from "./repaint"
+import { guardMouse } from "./mouse-guard"
 
 /** What the frame needs from its connection to the core: ViewSession, or a stand-in in tests. */
 export interface Session {
   request<T = unknown>(method: string, params?: Record<string, unknown>): Promise<T>
   onEvent(listener: (event: CoreEventParams) => void): void
+  /** Called when the core goes away while this view is open (ViewSession); a stand-in may leave it out. */
+  onLost?(listener: () => void): void
   /** The topics wanted now beyond the session's own (the Signals pane's, Candle's lists with their buckets); a stand-in may leave it out. */
   want?(topics: readonly string[], filters?: Record<string, unknown>): void
   /** Every id the core gave this view (ViewSession): the Away note shows only in the view its summary names. */
   clientIds?(): readonly string[]
+  /** The attached core's own version (ViewSession): one that kept running through an update is an older one. */
+  coreVersion?(): string | undefined
 }
 
 export interface AppProps {
   session: Session
   onQuit: () => void
+  /** Stops the attached core and starts this binary's (attach.ts): the status bar's chip beside a core still on an older version. */
+  restartCore?: () => Promise<void>
   /** The clock, for tests. */
   now?: () => number
   /** How often the frame redraws its countdowns and clears its prompts. */
@@ -99,6 +124,8 @@ export interface AppProps {
   configText?: () => string | undefined
   /** Starts the prompt pane's launcher (pane-process.ts); without it, a pane card can't open. */
   spawnPane?: PaneSpawner
+  /** Starts the Build pane's harness (build-process.ts); without it, the Build tab can't open one. */
+  spawnBuild?: BuildSpawner
   /** Where layouts.toml and each tab's choice are kept; without it, in memory, the presets only. */
   layouts?: LayoutStore
   /** How long after a Ctrl-C typed into a pane the launcher is asked to stop `candle`. */
@@ -117,14 +144,20 @@ export interface AppProps {
   onPaste?: (text: string) => void
 }
 
+/** The Build pane's terminal: over its pane's frame, which mounts again on a tab switch, and under every overlay. */
+const TERMINAL_Z = 5
 /** ctrl-] as a raw byte, or as the kitty keyboard protocol sends it. */
 const CTRL_BRACKET = /^(\x1d|\x1b\[93;5(:\d+)?u)$/
+/** ctrl-x as a terminal sends it: the control byte, or the keyboard protocol's form. */
+const CTRL_X = /^(\x18|\x1b\[120;5(:\d+)?u)$/
 const ENTER = /^(\r|\n|\x1b\[13u|\x1bOM)$/
 const ESC = /^(\x1b|\x1b\[27u)$/
 /** How long after a setup pane's launcher ends setup looks at whether it worked, so the core's news has landed. */
 const SETUP_PANE_SETTLE_MS = 1_200
 /** How often onboarding's engine step asks the core to check again a harness that isn't installed yet. */
 const ENGINE_RECHECK_MS = 3_000
+/** The same change to the same bot again inside this is the same press, sent once. */
+const BOT_REPEAT_MS = 1_000
 
 /** What the core answers when a card that runs in the prompt pane is approved (or typed). */
 interface PaneOpened {
@@ -217,18 +250,31 @@ const message = (error: unknown): string => (error instanceof Error ? error.mess
 /** What the tab draws when every pane of its layout is popped out: nothing, and a line saying so. */
 const NOTHING: Layout = { name: "", root: { dir: "row", weight: 1, children: [] }, collapse: { below: 0, keep: "agent", weights: [60, 40] } }
 
+/**
+ * On Free, the words a typed trigger line is refused with: every plan read is Free. Before a plan is read,
+ * nothing is refused here, and the core says why if it must.
+ */
+export function triggersGated(hacc: HaccTopic | undefined): string | undefined {
+  const plans = Object.values(hacc?.agents ?? {}).flatMap((a) => (a.plan ? [a.plan] : []))
+  return plans.length > 0 && plans.every((p) => p === "free") ? `${PLAN_WORDS}. This account is on Free, so nothing was sent: ${PLAN_FIX} upgrades it.` : undefined
+}
+
 /** What the hint line says Enter and Esc do here: from the line, the card Enter would approve, and the agent at work. */
-export function hereOf(ui: UiState, ctx: UiContext): Here {
+export function hereOf(ui: UiState, ctx: UiContext, now?: number): Here {
+  const enters = ui.input === "" ? focusedCard(ui, ctx) : undefined
   const empty = ui.input.trim() === ""
   const pops = poppable(ui)
-  const parsed = empty ? undefined : parseCommand(ui.input, ctx.commands)
+  const parsed = empty ? undefined : readLine(ui.input, ctx)
   const sends = parsed === undefined ? undefined : parsed.kind === "agent" ? `to ${ctx.activeAgent ?? "the agent"}` : parsed.kind === "refused" ? "says why" : "runs it"
   return {
     empty: ui.input === "",
-    card: ui.input === "" && focusedCard(ui, ctx) !== undefined,
+    card: enters !== undefined,
+    // A card that slid in under another: Enter doesn't take it yet, and the hint says so.
+    ...(enters && now !== undefined && ctx.behind?.[enters.cardId] && now < enterReadyAt(enters, ui, ctx, now) ? { cardSoon: true as const } : {}),
     ...(ctx.working && ctx.activeAgent ? { working: ctx.activeAgent } : {}),
     ...(sends ? { sends } : {}),
     ...(pops && !ctx.popped?.includes(pops) ? { pops } : {}),
+    ...(ui.focus === "tabs" ? { tabs: true as const } : {}),
     ...(ui.focus === "journal" ? (ui.journal?.editing ? { searching: true } : { journal: true }) : {}),
   }
 }
@@ -243,7 +289,29 @@ export function setupPaneFailed(prompt: Pick<Prompt, "exited">, op: Pick<ViewOpe
   return prompt.exited !== 0
 }
 
-export function App({ session, onQuit, now = Date.now, tickMs = 250, configChangedAt, spawnPane, stopAfterMs = 1_000, layouts, configText, popOut, themes, terminal, readTerminal, onboarding, onPaste }: AppProps) {
+const restarting = new WeakSet<object>()
+
+/**
+ * The status bar's notice for a core that kept running through an update, read from the session's last hello on
+ * each draw, with its restart chip. The chip acts once: a second click while the first restart runs does nothing.
+ */
+function staleCoreProps(session: Session, restart: (() => Promise<void>) | undefined): { staleCore?: string; onRestartCore?: () => void } {
+  const staleCore = staleCoreVersion(session.coreVersion?.(), VERSION)
+  if (!staleCore) return {}
+  if (!restart) return { staleCore }
+  return {
+    staleCore,
+    onRestartCore: () => {
+      if (restarting.has(session)) return
+      restarting.add(session)
+      void restart()
+        .catch(() => {})
+        .finally(() => restarting.delete(session))
+    },
+  }
+}
+
+export function App({ session, onQuit, restartCore, now = Date.now, tickMs = 250, configChangedAt, spawnPane, spawnBuild, stopAfterMs = 1_000, layouts, configText, popOut, themes, terminal, readTerminal, onboarding, onPaste }: AppProps) {
   // The theme goes on before the first frame.
   const theme = useTheme({ store: themes, config: configText, terminal, readTerminal })
   const themeRef = useRef(theme)
@@ -256,6 +324,7 @@ export function App({ session, onQuit, now = Date.now, tickMs = 250, configChang
   sizeRef.current = { width, height }
   const renderer = useRenderer()
   useRepaintAfterResize(renderer, width, height)
+  useEffect(() => guardMouse(renderer), [renderer])
   const copier = useMemo(() => makeCopier(renderer), [renderer])
   useEffect(() => () => void copier.dispose(), [copier])
   const [view, setView] = useState<CoreView>(EMPTY_VIEW)
@@ -264,6 +333,7 @@ export function App({ session, onQuit, now = Date.now, tickMs = 250, configChang
   // The step always runs on the latest state, whatever React has drawn.
   const viewRef = useRef(view)
   const uiRef = useRef(ui)
+  const lastBotCall = useRef<{ key: string; at: number } | undefined>(undefined)
   // The step reads the panes as last drawn (where each is, collapsed or not) from here, never from a stale render.
   const navRef = useRef<PaneNav>(paneNav(place(AGENT_FIRST, bodyArea(width, height))))
   // How far each pane can scroll, filled in by the tab body as it draws.
@@ -395,11 +465,19 @@ export function App({ session, onQuit, now = Date.now, tickMs = 250, configChang
   }
   /** The address a ⧉ just showed in full, while it shows (as the panes read it), for the Away overlay. */
   const inFullOf = (u: UiState): string | undefined => (u.shownInFull && u.shownInFull.until > now() ? u.shownInFull.text : undefined)
-  /** The note on startup: only in the view whose attach made the summary, only when something happened. */
+  // The turns there were when the note first showed: any turn after them, from this view, another, a script or a
+  // trigger, is the next message, and the note has ended, even where something drew over it meanwhile.
+  const turnsAtNote = useRef<{ id: string; turns: Set<string> } | undefined>(undefined)
+  /** The note on startup: only in the view whose attach made the summary, only when something happened, until the next turn. */
   const awayNote = (): AwaySummary | undefined => {
     const s = view.away?.summary
     if (!s?.happened || s.forView === undefined || s.id === awayGone) return undefined
-    return (session.clientIds?.() ?? []).includes(s.forView) ? s : undefined
+    if (!(session.clientIds?.() ?? []).includes(s.forView)) return undefined
+    // A turn this view saw start (the attach's own copy of the conversation carries none it saw start).
+    const turns = Object.values(view.conversations).flatMap((list) => list.flatMap((e) => (e.seenAt !== undefined ? [e.turnId] : [])))
+    if (turnsAtNote.current?.id !== s.id) turnsAtNote.current = { id: s.id, turns: new Set(turns) }
+    const seen = turnsAtNote.current.turns
+    return turns.some((t) => !seen.has(t)) ? undefined : s
   }
   /** The tab, and what it draws: the agent's preview on it, else its layout. */
   const onScreen = (h: Held = heldRef.current, index: number = uiRef.current.tab) => {
@@ -463,6 +541,10 @@ export function App({ session, onQuit, now = Date.now, tickMs = 250, configChang
   // The agent's asks run one after another, so two changes in one turn build on each other.
   const asksRef = useRef<Promise<void>>(Promise.resolve())
   useEffect(() => {
+    session.onLost?.(() => {
+      viewRef.current = lostCore(viewRef.current)
+      setView(viewRef.current)
+    })
     session.onEvent((event) => {
       if (event.topic === "asks") {
         const ask = event.data as { id?: unknown; agent?: unknown; args?: unknown } | null
@@ -618,6 +700,7 @@ export function App({ session, onQuit, now = Date.now, tickMs = 250, configChang
       ...(expired ? { requotable: expired } : {}),
       cards: openCards(v),
       seenAt: v.seenAt,
+      ...(v.behind ? { behind: v.behind } : {}),
       mode: v.status?.mode,
       agents: v.status?.agents.map((a) => a.name) ?? [],
       activeAgent: v.status?.activeAgent,
@@ -632,9 +715,13 @@ export function App({ session, onQuit, now = Date.now, tickMs = 250, configChang
       working: (v.conversations[v.status?.activeAgent ?? ""] ?? []).some((e) => e.streaming || e.queued),
       queuedBehind: (v.conversations[v.status?.activeAgent ?? ""] ?? []).some((e) => e.streaming) && (v.conversations[v.status?.activeAgent ?? ""] ?? []).some((e) => e.queued),
       presets: Object.fromEntries(Object.entries(v.engine?.agents ?? {}).map(([a, e]) => [a, e.preset])),
+      ...(v.engine?.runner
+        ? { runner: { held: v.engine.runner, on: Object.fromEntries(Object.entries(v.engine.agents).map(([a, e]) => [a, runOn(e.tools?.run) ? e.tools!.run as readonly string[] : undefined])) } }
+        : {}),
       ...(v.market?.followed ? { linked: v.market.followed.mint } : {}),
       ...pinOf(v),
       paused: v.status?.paused === true,
+      ...(triggersGated(v.hacc) ? { triggersGated: triggersGated(v.hacc) } : {}),
       commands: {
         agents: v.status?.agents.map((a) => a.name) ?? [],
         knownTokens: v.knownTokens,
@@ -653,12 +740,18 @@ export function App({ session, onQuit, now = Date.now, tickMs = 250, configChang
       journal: journalContext(v, sizeRef.current),
       ...(v.wallets?.groups ? { walletGroups: v.wallets.groups } : {}),
       ...(v.skills ? { skillFolders: v.skills.folders } : {}),
+      ...(v.status?.keepAwake ? { keepAwake: v.status.keepAwake } : {}),
       ...(v.status?.walletsShown !== undefined ? { walletsShown: v.status.walletsShown } : {}),
       ...(v.portfolio ? { allWallets: v.portfolio.wallets } : {}),
       ...(v.wallets?.names ? { walletNames: v.wallets.names } : {}),
       ...(v.autonomy ? { autonomy: v.autonomy } : {}),
+      ...(v.triggers ? { triggers: v.triggers } : {}),
+      ...(v.bots ? { bots: v.bots } : {}),
+      botsTab: heldRef.current.file.tabs.findIndex((_, i) => panesOf(tabLayout(heldRef.current, i).layout.root).includes("bots")),
+      buildTab: heldRef.current.file.tabs.findIndex((_, i) => panesOf(tabLayout(heldRef.current, i).layout.root).includes("build")),
       limits: v.status?.agents ?? [],
       ...(v.away ? { away: v.away } : {}),
+      ...(uiRef.current.overlay?.kind === "botLog" ? { botLogMax: frameMaxScroll(botLogLines(v.botLog?.name === uiRef.current.overlay.name ? v.botLog : undefined, uiRef.current.overlay.only), sizeRef.current.width, sizeRef.current.height, 16, v.botLog?.lines?.length ? 1 : 0) } : {}),
       ...(uiRef.current.overlay?.kind === "away" ? { awayMax: awayMaxScroll(v.away, sizeRef.current.width, sizeRef.current.height, now(), inFullOf(uiRef.current)) } : {}),
       tourTab: heldRef.current.file.tabs.findIndex((_, i) => panesOf(tabLayout(heldRef.current, i).layout.root).includes("agent")),
     }
@@ -675,6 +768,42 @@ export function App({ session, onQuit, now = Date.now, tickMs = 250, configChang
   }, [])
 
   const say = (text: string, level: "info" | "error" = "info") => dispatch({ type: "message", text, level, now: now() })
+
+  // The Build pane: the person's own coding harness, held here for as long as the view lives, so a tab switch keeps it.
+  const buildRequest = useCallback(<T,>(method: string, params?: Record<string, unknown>) => session.request<T>(method, params), [session])
+  const build = useBuild({
+    shown: visible.includes("build"),
+    agent: view.status?.activeAgent,
+    connected: view.connected,
+    engine: view.engine,
+    request: buildRequest,
+    spawn: spawnBuild,
+    say,
+    now,
+    focus: () => dispatch({ type: "clickPane", pane: "build", now: now() }),
+  })
+  const buildRef = useRef(build)
+  buildRef.current = build
+  const buildTermRef = useRef<Rect | undefined>(undefined)
+  // A code bot's card the Build pane's harness proposed opens whole over the frame, once, with focus on it.
+  const buildCardsSeen = useRef(new Set<string>())
+  useEffect(() => {
+    for (const c of openCards(view)) {
+      if (c.origin?.role !== "build" || buildCardsSeen.current.has(c.cardId)) continue
+      buildCardsSeen.current.add(c.cardId)
+      // Typing in the harness a moment ago: the card opens without the keys, so an Enter meant for the harness isn't an approval.
+      dispatch({ type: "openBuildCard", cardId: c.cardId, typing: buildHasKeys() && now() - buildTypedAt.current < BUILD_TYPING_MS, now: now() })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view])
+  /** When a key last went to the Build pane's terminal. */
+  const buildTypedAt = useRef(Number.NEGATIVE_INFINITY)
+  /** A Build card that opened while the person was typing in the harness: on screen, the keys still the harness's. */
+  const buildCardWaits = () => uiRef.current.overlay?.kind === "card" && uiRef.current.overlay.waiting === true
+  /** The Build pane has the keys: focused, its harness running, nothing over it. Every key but ctrl-] and a second ctrl-x is the harness's. */
+  const buildHasKeys = () => uiRef.current.focus === "build" && buildRef.current.stage === "running" && (!uiRef.current.overlay || buildCardWaits()) && !obShownRef.current && !shownPrompt()
+  /** The window is too small to draw: nothing on screen but its size, so no key may act on what can't be seen. */
+  const tooSmall = () => sizeRef.current.width < MIN_COLS || sizeRef.current.height < MIN_ROWS
 
   /** The tab's token pane, for the palette's pin row: whether it's pinned, and the token it shows; none when the tab has no token pane. */
   function pinOf(v: CoreView): { pin?: { pinned: boolean; symbol?: string } } {
@@ -910,6 +1039,12 @@ export function App({ session, onQuit, now = Date.now, tickMs = 250, configChang
     if (keep(next, tab.name)) {
       remembered()
       settle(true)
+      // Another token pane opens pinned on the token shown, so the first can follow the link to the next one;
+      // closed, its pin goes, so it holds none of the three for a pane that isn't there.
+      const extra = (op.kind === "open" || op.kind === "close") && isTokenPane(op.pane) && op.pane !== "token" ? op.pane : undefined
+      const symbol = viewRef.current.market?.followed?.symbol
+      if (extra && op.kind === "open" && viewRef.current.market?.followed) void call("view.pin", { at: tab.name, pane: extra }, () => `${extra} opened on ${tab.name}, pinned on ${symbol ?? "this token"}: pick another token and the first token pane follows it.`)
+      if (extra && op.kind === "close" && viewRef.current.views?.pins.some((p) => p.at === tab.name && pinPane(p) === extra)) void session.request("view.unpin", { at: tab.name, pane: extra }).catch(() => {})
     }
   }
 
@@ -963,7 +1098,7 @@ export function App({ session, onQuit, now = Date.now, tickMs = 250, configChang
     const at = select ?? file.tabs.findIndex((t) => t.name === want)
     dispatch({ type: "showTab", tab: at >= 0 ? at : Math.min(uiRef.current.tab, file.tabs.length - 1), now: now() })
     if (renamed) void session.request("view.repin", { from: renamed.from, to: renamed.to }).catch(() => {})
-    if (removed && viewRef.current.views?.pins.some((p) => p.at === removed)) void session.request("view.unpin", { at: removed }).catch(() => {})
+    if (removed && viewRef.current.views?.pins.some((p) => p.at === removed)) void session.request("view.unpin", { at: removed, pane: "all" }).catch(() => {})
     return undefined
   }
 
@@ -1015,12 +1150,13 @@ export function App({ session, onQuit, now = Date.now, tickMs = 250, configChang
     }
   }
 
-  /** The token pane's pin chip: holds the tab's token pane on its token, or lets it follow the link again. */
-  const togglePin = (tabName: string) => {
-    const pinned = viewRef.current.views?.pins.find((p) => p.at === tabName)
-    if (pinned) return void call("view.unpin", { at: tabName }, () => `${tabName}'s token pane follows the link again.`)
+  /** A token pane's pin chip: holds that token pane on its token, or lets it follow the link again. */
+  const togglePin = (tabName: string, pane: TokenPane = "token") => {
+    const which = pane === "token" ? `${tabName}'s token pane` : `${tabName}'s ${pane}`
+    const pinned = viewRef.current.views?.pins.find((p) => p.at === tabName && pinPane(p) === pane)
+    if (pinned) return void call("view.unpin", { at: tabName, pane }, () => `${which} follows the link again.`)
     const symbol = viewRef.current.market?.followed?.symbol
-    return void call("view.pin", { at: tabName }, () => `${tabName}'s token pane stays on ${symbol ?? "this token"} while the link moves on.`)
+    return void call("view.pin", { at: tabName, pane }, () => `${which} stays on ${symbol ?? "this token"} while the link moves on.`)
   }
 
   /** A tab's Signals choice changed: the core keeps it, so every view of the tab shows the same. */
@@ -1129,15 +1265,16 @@ export function App({ session, onQuit, now = Date.now, tickMs = 250, configChang
       case "pin":
       case "unpin":
         try {
+          const which = plan.pane === "token" ? `${plan.tab}'s token pane` : `${plan.tab}'s ${plan.pane}`
           if (plan.kind === "unpin") {
-            await session.request("view.unpin", { at: plan.tab })
-            return reply({ ok: true, text: `${plan.tab}'s token pane follows the link again.`, words: `unpinned ${plan.tab}'s token pane` })
+            await session.request("view.unpin", { at: plan.tab, pane: plan.pane })
+            return reply({ ok: true, text: `${which} follows the link again.`, words: `unpinned ${which}` })
           }
-          const r = await session.request<{ pins: { at: string; symbol?: string; mint: string }[] }>("view.pin", { at: plan.tab, ...(plan.mint ? { mint: plan.mint } : {}) })
-          const pin = r?.pins?.find((p) => p.at === plan.tab)
+          const r = await session.request<{ pins: Pin[] }>("view.pin", { at: plan.tab, pane: plan.pane, ...(plan.mint ? { mint: plan.mint } : {}) })
+          const pin = r?.pins?.find((p) => p.at === plan.tab && pinPane(p) === plan.pane)
           const what = pin?.symbol ?? (pin ? `${pin.mint.slice(0, 4)}…` : "its token")
           // The mint in full, so the agent naming it after is naming one a tool showed (else the address gate re-asks its reply).
-          return reply({ ok: true, text: `${plan.tab}'s token pane stays on ${what}${pin ? ` (${pin.mint})` : ""} while the link moves on.`, words: `pinned ${plan.tab}'s token pane on ${what}` })
+          return reply({ ok: true, text: `${which} stays on ${what}${pin ? ` (${pin.mint})` : ""} while the link moves on.`, words: `pinned ${which} on ${what}` })
         } catch (error) {
           const e = error as { code?: unknown }
           const code = e.code === "NOT_WATCHED" ? "NOT_WATCHED" : e.code === "TOO_MANY_PINS" ? "TOO_MANY_PINS" : "PIN_REFUSED"
@@ -1417,7 +1554,10 @@ export function App({ session, onQuit, now = Date.now, tickMs = 250, configChang
           "cards.propose",
           { tool: c.tool, args: c.args, typed: true, ...(c.agent ? { agent: c.agent } : {}) },
           (r) => {
-            if (r.paper) return r.paper.isError ? `${c.echo} (paper): refused. ${(r.paper.content?.[0]?.text ?? "").slice(0, 160)}` : `${c.echo}: paper trade recorded at the quoted price.`
+            // A paper trade refused is an error, as any refused line is: it stays 20 s and the line comes back to fix
+            // (said as a passing note, it was gone in 6 s with the line cleared, and read as nothing having happened).
+            if (r.paper?.isError) throw new Error(`${c.echo} (paper): refused. ${paperRefusal(r.paper.content?.[0]?.text ?? "")}`)
+            if (r.paper) return `${c.echo}: paper trade recorded at the quoted price.`
             return r.instant ? `${c.echo}: ${r.instant.operation?.state ?? r.instant.kind}` : undefined
           },
           line,
@@ -1497,10 +1637,12 @@ export function App({ session, onQuit, now = Date.now, tickMs = 250, configChang
         return pickTheme(effect.name)
       case "reject":
         return call("cards.reject", { cardId: effect.cardId })
+      case "build":
+        return buildRef.current.act(effect.ref)
       case "kill":
-        return call("kill", {}, () => "Kill switch on: buys paused, the agent stopped. Sells still work.")
+        return call("kill", {}, () => "Kill switch on: buys paused, the agent's turn stopped. Sells still work.")
       case "mode":
-        return call("mode.set", { mode: effect.mode }, () => `Now in ${effect.mode} mode.`)
+        return call<{ said?: string }>("mode.set", { mode: effect.mode }, (r) => `Now in ${effect.mode} mode.${r?.said ? ` ${r.said}` : ""}`)
       case "setAgent":
         return call("agent.setActive", { agent: effect.agent })
       case "requote":
@@ -1521,7 +1663,7 @@ export function App({ session, onQuit, now = Date.now, tickMs = 250, configChang
         const whose = walletWords(effect.name)
         return call("autonomy.set", params, () =>
           effect.setting === "inside"
-            ? `${whose.charAt(0).toUpperCase()}${whose.slice(1)} trades inside limits now: ${money(effect.perTradeUsd!)} a trade, ${money(effect.perDayUsd!)} a day without a card. Over either, it's a card.`
+            ? `${whose.charAt(0).toUpperCase()}${whose.slice(1)} trades inside limits now: ${money(effect.perTradeUsd!)} a trade, ${money(effect.perDayUsd!)} a day without a card. Over either, a buy or swap is a card; sells always run.`
             : `${whose.charAt(0).toUpperCase()}${whose.slice(1)} asks every time now: every trade from it is a card.`,
         )
       }
@@ -1540,6 +1682,50 @@ export function App({ session, onQuit, now = Date.now, tickMs = 250, configChang
         return call("pnl.window", { window: effect.window }, () => `The P&L window is now ${pnlWindowWords(effect.window)}: every P&L figure counts from there.`)
       case "skillsFolder":
         return call("skills.set", { folder: effect.folder, on: effect.on }, () => (effect.on ? `The agents now use the skills in ${effect.folder}, from their next turn.` : `The agents no longer use the skills in ${effect.folder}.`))
+      case "triggerSet":
+        return call<{ said: string }>("triggers.set", { name: effect.name, on: effect.on }, (r) => r.said)
+      case "triggerRemove":
+        return call<{ said: string }>("triggers.remove", { name: effect.name }, (r) => r.said)
+      case "triggerRunNow":
+        return call<{ said: string }>("triggers.runNow", { cardId: effect.cardId }, (r) => r.said)
+      case "bot": {
+        // One press, one request: the same change to the same bot again within a second is the same press (a
+        // terminal's click reported twice), and its second answer ("paused already") would hide the first.
+        const key = `${effect.method}:${effect.name}:${effect.positions ?? ""}`
+        const last = lastBotCall.current
+        if (last && last.key === key && Date.now() - last.at < BOT_REPEAT_MS) return
+        lastBotCall.current = { key, at: Date.now() }
+        if (effect.method === "pauseFlatten") {
+          // Pause first, so its next buy is refused; then flatten. A pause the core refuses leaves the positions as they are.
+          return void (async () => {
+            try {
+              await session.request("bots.pause", { name: effect.name })
+            } catch (error) {
+              return dispatch({ type: "message", text: message(error), level: "error", now: now() })
+            }
+            await call<{ said?: string }>("bots.flatten", { name: effect.name }, (r) => `"${effect.name}" is paused. ${r.said ?? "Its open positions are selling."}`)
+          })()
+        }
+        return call<{ said?: string }>(`bots.${effect.method}`, { name: effect.name, ...(effect.positions ? { positions: effect.positions } : {}) }, (r) => r.said ?? `Done: "${effect.name}".`)
+      }
+      case "botControl":
+        return call<{ said?: string }>("bots.control", { name: effect.name, id: effect.id }, (r) => r.said ?? `Done: "${effect.name}".`)
+      case "botExitsRemove":
+        return call<{ said?: string }>("bots.exits.remove", { name: effect.name, position: effect.position }, (r) => r.said ?? `The core no longer holds exits on that position of "${effect.name}": its code sells it.`)
+      case "botLog": {
+        const name = effect.name
+        const held = (botLog: BotLogHeld) => {
+          viewRef.current = { ...viewRef.current, botLog }
+          setView(viewRef.current)
+        }
+        held({ name })
+        return void session
+          .request<{ lines: string[]; file: string }>("bots.logs", { name, lines: 2000 })
+          .then((r) => held({ name, lines: r.lines, file: r.file }))
+          .catch((error) => held({ name, error: message(error) }))
+      }
+      case "keepAwake":
+        return call("core.keepAwake", { on: effect.on }, () => (effect.on ? "The Mac is kept awake while a trigger or bot is on. A closed lid still sleeps it on battery." : "Keep-awake is off: the Mac may sleep while triggers or bots are on."))
       case "skillsRead":
         return void session.request("skills.read").catch(() => {})
       case "journalOlder":
@@ -1552,7 +1738,7 @@ export function App({ session, onQuit, now = Date.now, tickMs = 250, configChang
       case "pin": {
         // The palette's pin row, as the token pane's chip.
         const tabName = tabLayout(heldRef.current, uiRef.current.tab).tab.name
-        const pinned = viewRef.current.views?.pins.some((p) => p.at === tabName) === true
+        const pinned = viewRef.current.views?.pins.some((p) => p.at === tabName && pinPane(p) === "token") === true
         return pinned === effect.on ? undefined : togglePin(tabName)
       }
       case "link":
@@ -1571,6 +1757,10 @@ export function App({ session, onQuit, now = Date.now, tickMs = 250, configChang
         const label = PRESET_LABELS[effect.preset]
         return call("preset.choose", { agent: effect.agent, preset: effect.preset }, () => `${effect.agent} runs as ${label} from its next turn.`)
       }
+      case "setRunner":
+        return call<{ run: "off" | string[] }>("agent.run", { agent: effect.agent, on: effect.on }, (r) =>
+          r.run === "off" ? `${effect.agent}'s code runner is off.` : `${effect.agent}'s code runner is on for ${r.run.join(", ")} from its next turn, held to its research folder with no network.`,
+        )
       case "readMemory":
         return call("memory.read", {})
       case "stopTurn":
@@ -1579,6 +1769,8 @@ export function App({ session, onQuit, now = Date.now, tickMs = 250, configChang
         const { type: _type, agent, ...what } = effect
         return call("memory.delete", { agent, ...what }, () => (what.all ? `Cleared ${agent}'s memory.` : `Deleted from ${agent}'s memory.`))
       }
+      case "memoryPin":
+        return call("memory.pin", { agent: effect.agent, entry: effect.entry, pinned: effect.pinned }, () => (effect.pinned ? `Pinned in ${effect.agent}'s memory: it stays through the agent's merges.` : `Unpinned in ${effect.agent}'s memory.`))
       case "copy": {
         const what = effect.what ?? (effect.text === viewRef.current.portfolio?.deposit ? "the deposit address" : "the address")
         const m = copiedMessage(await copier.copy(effect.text), what, effect.what === undefined)
@@ -2016,13 +2208,32 @@ export function App({ session, onQuit, now = Date.now, tickMs = 250, configChang
     }, stopAfterMs)
   }
 
-  // ctrl-] and a finished pane's Enter or Esc, before anything else sees them.
+  // ctrl-], the kill switch's second press and a finished pane's Enter or Esc, before anything else sees them.
   useEffect(() => {
     const handler = (sequence: string): boolean => {
       const shown = shownPrompt()
+      // The kill switch works while a terminal pane has the keys too. The first ctrl-x goes on to the pane (an
+      // editor's own ctrl-x still works) and arms it; a second within the window pauses, and the pane never sees it.
+      if (shown || buildHasKeys()) {
+        if (CTRL_X.test(sequence)) {
+          const armed = uiRef.current.killArmedAt !== undefined && now() - uiRef.current.killArmedAt <= KILL_WINDOW_MS
+          dispatch({ type: "key", key: { name: "x", ctrl: true, sequence: "\x18" }, now: now() })
+          return armed
+        }
+        if (uiRef.current.killArmedAt !== undefined) dispatch({ type: "disarmKill" })
+      }
+      // Too small to draw: the panes aren't on screen, so ctrl-] moves nothing unseen.
+      if (tooSmall()) return false
       if (CTRL_BRACKET.test(sequence)) {
+        // A Build card that opened without the keys takes them.
+        if (buildCardWaits()) return dispatch({ type: "takeBuildCard", now: now() }), true
         if (shown) showPrompt(undefined)
         else if (promptsRef.current.length > 0) showPrompt(promptsRef.current.at(-1)!.ticketId)
+        // The Build pane's harness: out of it to the pane before it, or the tab bar; or back in, where it's on screen.
+        else if (buildHasKeys()) {
+          const back = uiRef.current.recent.find((p) => p !== "build")
+          dispatch(back ? { type: "clickPane", pane: back, now: now() } : { type: "focusTabs", now: now() })
+        } else if (buildRef.current.stage === "running" && navRef.current.order.includes("build") && !uiRef.current.overlay) dispatch({ type: "clickPane", pane: "build", now: now() })
         else return false
         return true
       }
@@ -2053,7 +2264,8 @@ export function App({ session, onQuit, now = Date.now, tickMs = 250, configChang
   }
   useEffect(() => {
     const onSelection = (selection: { getSelectedText(): string } | null) => {
-      if (selection?.getSelectedText().trim()) say("Selected: ctrl-c or a right-click copies it.")
+      // In the Build pane's harness, ctrl-c is the harness's own (it quits some): only a right-click copies there.
+      if (selection?.getSelectedText().trim()) say(selectionHint(buildHasKeys()))
     }
     renderer.on("selection", onSelection)
     return () => {
@@ -2063,10 +2275,21 @@ export function App({ session, onQuit, now = Date.now, tickMs = 250, configChang
 
   useKeyboard((key: KeyEvent) => {
     used()
+    // Too small to draw: only the kill switch and quitting work. Enter mustn't approve a card nobody can see.
+    if (tooSmall()) {
+      if (key.ctrl && key.name === "c") dispatch({ type: "key", key: { name: "c", ctrl: true, sequence: key.sequence }, now: now() })
+      // With a terminal pane holding the keys, the kill chord was taken before this.
+      else if (key.ctrl && key.name === "x" && !shownPrompt() && !buildHasKeys()) dispatch({ type: "key", key: { name: "x", ctrl: true, sequence: key.sequence }, now: now() })
+      return
+    }
     // A shown prompt pane has every key: none reaches the input line or the frame's step.
     if (shownPrompt()) return
+    // So does the Build pane's harness, focused: its terminal takes them.
+    if (buildHasKeys()) return
     // Onboarding's screen has its own keys; ctrl-c quits as anywhere.
     if (obShownRef.current && !(key.ctrl && key.name === "c")) return obKey(key)
+    // The Build pane's own screens, focused and with nothing over them: its form, and ⏎ to start.
+    if (uiRef.current.focus === "build" && !uiRef.current.overlay && buildRef.current.key({ name: key.name, ctrl: key.ctrl, meta: key.meta, sequence: key.sequence })) return
     if (key.ctrl && key.name === "c" && renderer.hasSelection) {
       // A plain click leaves an empty selection behind: ctrl-c then clears, closes or quits as ever.
       if ((renderer.getSelection()?.getSelectedText() ?? "").trim()) return void copySelection()
@@ -2075,9 +2298,16 @@ export function App({ session, onQuit, now = Date.now, tickMs = 250, configChang
     dispatch({ type: "key", key: { name: key.name, ctrl: key.ctrl, meta: key.meta, shift: key.shift, sequence: key.sequence }, now: now() })
   })
   usePaste((event: PasteEvent) => {
+    if (tooSmall()) return
     // The prompt pane and setup take passphrases, keys and secrets, so only the input line's pastes are logged.
     if (shownPrompt()) return
+    if (buildHasKeys()) return
     if (obShownRef.current) return void obType(new TextDecoder().decode(event.bytes).replace(/[\r\n]+/g, ""))
+    // Pasted into the Build pane's form: the folder or the command, one line.
+    if (uiRef.current.focus === "build" && buildRef.current.stage === "ask") {
+      for (const ch of new TextDecoder().decode(event.bytes).replace(/[\r\n]+/g, "")) buildRef.current.key({ name: ch, sequence: ch })
+      return
+    }
     onPaste?.(new TextDecoder().decode(event.bytes))
     dispatch({ type: "paste", text: new TextDecoder().decode(event.bytes), now: now() })
   })
@@ -2109,7 +2339,25 @@ export function App({ session, onQuit, now = Date.now, tickMs = 250, configChang
     return () => clearInterval(timer)
   }, [tickMs, now, dispatch])
 
-  if (width < MIN_COLS || height < MIN_ROWS) return <TooSmall width={width} height={height} />
+  // Back from a window too small to draw: Enter's wait on each card starts over, so a press made as the
+  // window grew doesn't approve a card that had only just come back into view.
+  const drawable = width >= MIN_COLS && height >= MIN_ROWS
+  const wasDrawable = useRef(drawable)
+  useEffect(() => {
+    if (drawable && !wasDrawable.current) dispatch({ type: "shown", now: now() })
+    wasDrawable.current = drawable
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [drawable])
+  // The hint line says when Enter doesn't yet take a card that arrived under another: drawn again once it does.
+  const behindCount = Object.keys(view.behind ?? {}).length
+  useEffect(() => {
+    if (!behindCount) return
+    const timer = setTimeout(() => setClock(now()), APPROVE_AFTER_BEHIND_MS + 20)
+    return () => clearTimeout(timer)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [behindCount])
+
+  if (width < MIN_COLS || height < MIN_ROWS) return <TooSmall width={width} height={height} cards={openCards(view).length} />
 
   const cards = openCards(view)
   const ctxNow = context()
@@ -2121,23 +2369,30 @@ export function App({ session, onQuit, now = Date.now, tickMs = 250, configChang
   // While a chain waits, the message line says on what, unless something newer is being said.
   const messageUi: UiState = !ui.message && chainWords ? { ...ui, message: { text: chainWords, level: "info", at: clock } } : ui
   const status = view.status
+  // The Build pane's first open fills the tab: the folder and the harness asked for, then the files written.
+  const buildFirst = (build.stage === "ask" || build.stage === "written") && panesOf(layout.root).includes("build")
+  const drawn = buildFirst ? BUILD_ALONE : layout
   // A layout without the agent pane: the cards, and the agent at work, in a strip above the input line.
   const activeAgent = status?.activeAgent ?? ""
-  const hasAgent = panesOf(layout.root).includes("agent")
+  const hasAgent = panesOf(drawn.root).includes("agent")
   // The message and input lines sit under the agent pane, where it reaches the bottom (not from the left while
   // the agent is on the right); else across the width.
   const whole: Rect = { x: 0, y: bodyTop, w: width, h: Math.max(1, height - bodyTop) }
-  const footAt = hasAgent ? place(layout, whole, {}, { gap, foot: 2 }).foot! : { x: 0, y: messageTop, w: width, h: 2 }
+  const footAt = hasAgent ? place(drawn, whole, {}, { gap, foot: 2 }).foot! : { x: 0, y: messageTop, w: width, h: 2 }
   const footRows = messageRows(messageUi, footAt.w, true) + 1
   const fullHeight = Math.max(1, height - bodyTop - footRows)
   const agentTab = held.file.tabs.findIndex((_, i) => panesOf(tabLayout(held, i).layout.root).includes("agent"))
+  // A terminal pane has the keys: the cards' heading says how to reach them, since ⏎ is the pane's.
+  const paneHasKeys = shownPrompt() !== undefined || buildHasKeys()
   const strip = hasAgent
     ? []
     : stripLines({
         cards: inlineCards(view, activeAgent, clock),
         operations: view.operations,
+        ...(view.triggers ? { runnable: runnableCards(view.triggers) } : {}),
         focusedCardId: focused?.cardId,
         cardsFocused: ui.focus === "cards",
+        ...(paneHasKeys ? { paneHasKeys: true } : {}),
         now: clock,
         width: width - 3,
         ...((view.conversations[activeAgent] ?? []).some((e) => e.streaming || e.queued) ? { answering: activeAgent } : {}),
@@ -2149,13 +2404,20 @@ export function App({ session, onQuit, now = Date.now, tickMs = 250, configChang
   const foot = hasAgent ? footRows : 0
   const body: Rect = { x: 0, y: bodyTop, w: width, h: bodyHeight }
   bodyRef.current = body
-  const placed = place(layout, body, {}, { gap, foot })
+  const placed = place(drawn, body, {}, { gap, foot })
   const lineAt = placed.foot ?? { x: 0, y: messageTop, w: width, h: footRows }
   const agentRect = placed.panes.find((p) => p.id === "agent")?.rect ?? body
   agentRectRef.current = agentRect
   // Onboarding's choices as drawn now, for ↑/↓ and ⏎ (the screen builds the same rows).
   obItemsRef.current = obShown && obView ? stepRows({ view: obView, ...(view.engine ? { engine: view.engine } : {}), local: ob, width: stepRect(width, height).w - 6, paneOpen: prompts.some((x) => !x.hidden), ctx: obCtx }).items.map((i) => i.action) : []
   navRef.current = paneNav(placed)
+  // The Build pane where it's drawn: its own place, or the switched pane showing it.
+  const buildRect = placed.panes.find((p) => p.id === "build")?.rect ?? (placed.switched && shownOf(placed.switched.group, ui.recent, placed.switched.first) === "build" ? placed.switched.rect : undefined)
+  const buildTerm = buildRect ? terminalRect(buildRect) : undefined
+  build.place(buildRect)
+  // Off screen, the harness's terminal keeps the size it was last drawn at: a change would resize the harness and lose its screen.
+  if (buildTerm) buildTermRef.current = buildTerm
+  const termAt = buildTerm ?? buildTermRef.current
   const act = (cardId: string, a: Act) => {
     const at = now()
     if (a === "focus") return dispatch({ type: "clickCard", cardId, now: at })
@@ -2187,6 +2449,14 @@ export function App({ session, onQuit, now = Date.now, tickMs = 250, configChang
       return dismissAway()
     }
     if (a === "undo") return void call<{ text: string }>("hacc.undo", { changeId: cardId }, (r) => r.text)
+    // A trigger's card that expired with nobody there: its line carries the card, proposed again at a fresh price.
+    if (a === "runNow") return void call<{ said: string }>("triggers.runNow", { cardId }, (r) => r.said)
+    // The Triggers pane's chip: the overlay, where a trigger is switched off, removed or run again.
+    if (a === "triggers") return dispatch({ type: "openTriggers", now: at })
+    // A bot's chip in its pane: its line carries what it does and to which bot.
+    if (a === "bot") return dispatch({ type: "botAct", ref: cardId, now: at })
+    // The Build tab's chips: the pane's own screens, the bots folder's and the test run's. Their line carries what each does.
+    if (a === "build") return build.act(cardId)
     // Signals' `clear filters`, under a filter that matches nothing.
     if (a === "signals") return dispatch({ type: "clearSignals", now: at })
     // A span chip on the P&L chart: its line carries the span.
@@ -2226,6 +2496,7 @@ export function App({ session, onQuit, now = Date.now, tickMs = 250, configChang
         width={width}
         now={clock}
         connected={view.connected}
+        lost={view.lost === true}
         status={status}
         cardsWaiting={cards.length}
         killArmed={ui.killArmedAt !== undefined}
@@ -2234,6 +2505,9 @@ export function App({ session, onQuit, now = Date.now, tickMs = 250, configChang
         onMode={() => dispatch({ type: "clickMode", now: now() })}
         onKill={() => dispatch({ type: "clickKill", now: now() })}
         onResume={() => dispatch({ type: "clickResume", now: now() })}
+        onTriggers={() => dispatch({ type: "openTriggers", now: now() })}
+        onBots={() => dispatch({ type: "openBots", now: now() })}
+        {...staleCoreProps(session, restartCore)}
       />
       <Tabs
         width={width}
@@ -2247,7 +2521,8 @@ export function App({ session, onQuit, now = Date.now, tickMs = 250, configChang
       />
       {/* Under onboarding's full screen the frame isn't drawn: a pane's border chips would show through it. */}
       {obShown ? null : <TabBody
-        layout={layout}
+        {...(paneHasKeys ? { paneHasKeys: true } : {})}
+        layout={drawn}
         top={bodyTop}
         width={width}
         height={bodyHeight}
@@ -2268,7 +2543,7 @@ export function App({ session, onQuit, now = Date.now, tickMs = 250, configChang
         tabName={shown.tab.name}
         onPick={(pane, pick) => dispatch({ type: "clickRow", pane, pick, now: now() })}
         onAskRow={(pane, id) => dispatch({ type: "clickAskRow", pane, id, now: now() })}
-        onTogglePin={() => togglePin(shown.tab.name)}
+        onTogglePin={(pane) => togglePin(shown.tab.name, pane)}
         onToggleOneAgent={() => dispatch({ type: "toggleOneAgent", now: now() })}
         onSignalsChip={(which, x, y) => dispatch({ type: "clickSignalsChip", which, x, y, now: now() })}
         onPauseSignals={(on) => dispatch({ type: "pauseSignals", on, now: now() })}
@@ -2280,7 +2555,23 @@ export function App({ session, onQuit, now = Date.now, tickMs = 250, configChang
         edges={edges}
         onAct={act}
         onPopOut={(pane) => dispatch({ type: "popOutPane", pane, now: now() })}
+        build={{
+          title: buildTitle(build.stage, build.prefs, build.ran, build.agent, build.ask.again),
+          ...(build.stage === "running" ? {} : { lines: buildScreenLines({ stage: build.stage, ask: build.ask, ...(build.write ? { write: build.write } : {}), ...(build.prefs ? { prefs: build.prefs } : {}), ...(view.engine ? { engine: view.engine } : {}), ...(build.exited !== undefined ? { exited: build.exited } : {}), ...(view.bots?.gate ? { gate: view.bots.gate } : {}), ...(build.ran ? { ran: build.ran } : {}), width: buildRect ? terminalRect(buildRect).w - 1 : width - 6, focused: ui.focus === "build" }) }),
+          onAct: build.act,
+          ...(build.stage === "running" || build.stage === "ready" || build.stage === "exited" ? { onHarness: () => (build.stage === "running" ? say(`Exit ${buildTitle("running", build.prefs, build.ran).split(" · ")[1]} first, by its own quit; then harness ▾ picks another.`) : build.act("harness")) } : {}),
+        }}
+        {...(build.folder ? { buildFolder: build.folder } : {})}
+        {...(build.daemons.length ? { daemons: build.daemons } : {})}
+        {...(foldWords({ folder: build.folder, topic: view.bots, now: clock }) ? { foldWords: foldWords({ folder: build.folder, topic: view.bots, now: clock })! } : {})}
+        onOpenFolded={(pane) => dispatch({ type: "openPane", pane, now: now() })}
       />}
+      {/* The Build pane's harness: mounted for as long as it runs, so a tab switch keeps its screen and scrollback; shown over its pane. */}
+      {build.proc ? (
+        <box position="absolute" zIndex={TERMINAL_Z} left={termAt?.x ?? 0} top={termAt?.y ?? 0} width={termAt?.w ?? 80} height={termAt?.h ?? 24} visible={buildTerm !== undefined && build.stage === "running" && !obShown}>
+          <EmbeddedTerminal proc={build.proc} width={termAt?.w ?? 80} height={termAt?.h ?? 24} focused={buildHasKeys()} maxScrollback={5000} selectable colours={{ fg: C.ink, bg: C.term }} onInput={() => { buildTypedAt.current = now() }} onClick={() => dispatch({ type: "clickPane", pane: "build", now: now() })} />
+        </box>
+      ) : null}
       {tiled === undefined && !obShown ? (
         <box position="absolute" left={2} top={bodyTop + 1} height={1}>
           <text fg={C.dim}>{fitText(`Every pane of ${shown.layout.name} is popped out. Close a popped view (ctrl-c twice there) and its pane comes back here.`, width - 4)}</text>
@@ -2328,7 +2619,19 @@ export function App({ session, onQuit, now = Date.now, tickMs = 250, configChang
       ))}
       {obShown ? null : <PromptChips prompts={prompts} rect={agentRect} onShow={showPrompt} />}
       <MessageLine left={lineAt.x} width={lineAt.w} top={messageTop} ui={messageUi} onAsk={() => dispatch({ type: "clickAsk", now: now() })} onCopy={(text) => dispatch({ type: "clickCopy", text, what: "the command", now: now() })} />
-      <InputLine left={lineAt.x} width={lineAt.w} top={inputTop} ui={ui} here={hereOf(ui, ctxNow)} onHelp={() => dispatch({ type: "clickHelp", now: now() })} onPalette={() => dispatch({ type: "clickPalette", now: now() })} />
+      <InputLine left={lineAt.x} width={lineAt.w} top={inputTop} ui={ui} here={{ ...hereOf(ui, ctxNow, now()), ...(ui.focus === "build" && ui.overlay?.kind === "card" && ui.overlay.waiting ? { build: "card" as const } : ui.focus === "build" && !ui.overlay ? (build.stage === "running" ? { build: "running" as const } : build.stage === "loading" || build.stage === "starting" ? {} : { build: "start" as const }) : {}) }} onHelp={() => dispatch({ type: "clickHelp", now: now() })} onPalette={() => dispatch({ type: "clickPalette", now: now() })} />
+      {ui.overlay?.kind === "pane" && ui.overlay.pane !== "agent" && !obShown ? (() => {
+        const o = ui.overlay
+        const drawnPane = paneLines(o.pane as Exclude<PaneId, "agent">, { view, rect: { x: 0, y: 0, w: Math.min(72, width - 4), h: height - 4 }, now: clock, only: undefined, ...(build.folder ? { buildFolder: build.folder } : {}), ...(build.daemons.length ? { daemons: build.daemons } : {}) })
+        return <PaneOverlay title={drawnPane.title} lines={[...(drawnPane.head ?? []), ...drawnPane.lines]} scroll={o.scroll ?? 0} width={width} height={height} onAct={act} onScroll={(delta) => dispatch({ type: "scrollAway", delta, now: now() })} />
+      })() : null}
+      {ui.overlay?.kind === "card" && ui.overlay.build && !obShown ? (() => {
+        const card = cards.find((c) => c.cardId === (ui.overlay as { cardId: string }).cardId)
+        if (!card) return null
+        const w = Math.min(84, Math.max(36, width - 4)) - 4
+        // Taller than the window: its middle folds under its headline, keeping its foot, as in a short pane.
+        return <BuildCardOverlay lines={cardLines(card, { now: clock, focused: true, width: w, op: view.operations[card.opId], fitRows: buildCardRows(height), ...(ui.overlay.waiting ? { keysElsewhere: true } : {}) })} width={width} height={height} onAct={act} {...(ui.overlay.waiting ? { waiting: true, onTake: () => dispatch({ type: "takeBuildCard", now: now() }) } : {})} />
+      })() : null}
       {ui.overlay?.kind === "tour" && !obShown ? (
         <TourOverlay
           step={ui.overlay.step}
@@ -2340,6 +2643,7 @@ export function App({ session, onQuit, now = Date.now, tickMs = 250, configChang
         />
       ) : null}
       <Overlays
+        {...(ui.overlay?.kind === "confirmLive" ? { liveGaps: liveGaps(view) } : {})}
         overlay={ui.overlay}
         width={width}
         height={height}
@@ -2363,9 +2667,11 @@ export function App({ session, onQuit, now = Date.now, tickMs = 250, configChang
         engineRows={(query, agent) => pickerRows(view.engine, lists, query, agent)}
         onPickEngine={(engine, model) => dispatch({ type: "pickEngine", engine, ...(model !== undefined ? { model } : {}), now: now() })}
         onPickPreset={(preset) => dispatch({ type: "pickPreset", preset, now: now() })}
+        onPickRunner={(on) => dispatch({ type: "pickRunner", on, now: now() })}
         onScrollEngines={(delta) => dispatch({ type: "scrollEngines", delta, now: now() })}
         {...(view.memory ? { memory: view.memory } : {})}
         onDeleteMemory={(row) => dispatch({ type: "deleteMemory", row, now: now() })}
+        onPinMemory={(row) => dispatch({ type: "pinMemory", row, now: now() })}
         onClearMemory={() => dispatch({ type: "clickMemoryClear", now: now() })}
         layoutInfo={layoutInfo()}
         {...(menuFocus(ui) ? { layoutFocus: menuFocus(ui)! } : {})}
@@ -2389,10 +2695,23 @@ export function App({ session, onQuit, now = Date.now, tickMs = 250, configChang
         {...(view.journalRows ? { journalRows: view.journalRows } : {})}
         onCopyJournalRows={(text) => dispatch({ type: "clickCopy", text, what: "the rows", now: now() })}
         onScrollJournalRows={(delta) => dispatch({ type: "scrollJournalRows", delta, now: now() })}
+        {...(view.botLog ? { botLog: view.botLog } : {})}
+        onCopyBotLog={(text) => dispatch({ type: "clickCopy", text, what: "the log", now: now() })}
+        onScrollBotLog={(delta) => dispatch({ type: "scrollBotLog", delta, now: now() })}
+        onBotLogOnly={() => dispatch({ type: "botLogOnly", now: now() })}
         {...(view.autonomy ? { autonomy: view.autonomy } : {})}
         limits={status?.agents ?? []}
         onPickApprovalsWallet={(wallet) => dispatch({ type: "pickApprovals", wallet, now: now() })}
         onPickApprovalsRow={(row) => dispatch({ type: "pickApprovals", row, now: now() })}
+        {...(view.triggers ? { triggers: view.triggers } : {})}
+        {...(status?.keepAwake ? { keepAwake: status.keepAwake } : {})}
+        onPickTriggers={(index) => dispatch({ type: "pickTriggers", index, now: now() })}
+        onTriggersAct={(ref, a) => dispatch({ type: "pickTriggers", act: a === "runNow" ? "runNow" : TRIGGERS_ACTS.has(ref) ? (ref as TriggersAct) : "fill", ref, now: now() })}
+        {...(view.bots ? { bots: view.bots } : {})}
+        {...(ui.botConfirm ? { botConfirm: ui.botConfirm } : {})}
+        killed={status?.paused === true}
+        onPickBots={(index) => dispatch({ type: "pickBots", index, now: now() })}
+        onBotsAct={(ref, a) => (ref === "list" ? dispatch({ type: "pickBots", index: -1, side: "list", now: now() }) : parseBotRef(ref) ? dispatch({ type: "botAct", ref, now: now() }) : a === "fill" ? dispatch({ type: "clickFill", text: ref, now: now() }) : undefined)}
         {...(view.away ? { away: view.away } : {})}
         now={clock}
         {...(inFullOf(ui) ? { shownInFull: inFullOf(ui)! } : {})}

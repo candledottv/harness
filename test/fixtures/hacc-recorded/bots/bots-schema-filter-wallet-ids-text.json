@@ -1,0 +1,36 @@
+{
+  "name": "schema-filter-wallet-ids-text",
+  "host": "hacc",
+  "method": "POST",
+  "route": "/v1/strategy-lab/replay",
+  "query": {},
+  "body": {
+    "definition": {
+      "chain": "solana",
+      "entry": {
+        "source": "pattern",
+        "pattern": "new_ticker",
+        "filters": {
+          "wallet_ids": [
+            "1"
+          ]
+        }
+      },
+      "exit": {
+        "take_profit_pct": 100
+      },
+      "sizing": {
+        "usd_per_trade": 5,
+        "max_concurrent": 2
+      }
+    },
+    "from": "2026-10-01T00:00:00Z",
+    "to": "2026-10-30T00:00:00Z"
+  },
+  "status": 400,
+  "ms": 130,
+  "bytes": 72,
+  "answer": {
+    "error": "entry.filters.wallet_ids.0: Expected number, received string"
+  }
+}

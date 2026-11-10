@@ -1,0 +1,101 @@
+{
+  "name": "trades-run-page",
+  "host": "hacc",
+  "method": "GET",
+  "route": "/v1/trades",
+  "query": {
+    "run_id": "392",
+    "limit": "3"
+  },
+  "status": 200,
+  "ms": 141,
+  "bytes": 1542,
+  "answer": {
+    "trades": [
+      {
+        "id": 90783,
+        "run_id": 392,
+        "mode": "backtest",
+        "side": "buy",
+        "asset_id": 51077943,
+        "qty": "352.8480786547",
+        "entry_price_usd": "0.02834080899101489",
+        "exit_price_usd": "0.0274125287581299",
+        "entry_usd": "10",
+        "exit_usd": "9.6724581034",
+        "tx_ref": null,
+        "reason_opened": {
+          "sizing": {
+            "usd": 10,
+            "applied": [],
+            "paid_usd": 10,
+            "fell_back": []
+          },
+          "pattern": "new_ticker",
+          "signal_id": 85131993
+        },
+        "reason_closed": "max_hold",
+        "lot_tier": null,
+        "pnl_usd": "-0.3275418966",
+        "opened_at": "2026-10-15T15:29:59.000Z",
+        "closed_at": "2026-10-15T16:30:00.000Z"
+      },
+      {
+        "id": 90768,
+        "run_id": 392,
+        "mode": "backtest",
+        "side": "buy",
+        "asset_id": 19355935,
+        "qty": "3135.2590932431",
+        "entry_price_usd": "0.0031895290636589513",
+        "exit_price_usd": "0.002819268744955213",
+        "entry_usd": "10",
+        "exit_usd": "8.8391379689",
+        "tx_ref": null,
+        "reason_opened": {
+          "sizing": {
+            "usd": 10,
+            "applied": [],
+            "paid_usd": 10,
+            "fell_back": []
+          },
+          "pattern": "new_ticker",
+          "signal_id": 85135430
+        },
+        "reason_closed": "stop_loss",
+        "lot_tier": null,
+        "pnl_usd": "-1.1608620311",
+        "opened_at": "2026-10-15T15:31:50.000Z",
+        "closed_at": "2026-10-15T15:33:50.000Z"
+      },
+      {
+        "id": 90769,
+        "run_id": 392,
+        "mode": "backtest",
+        "side": "buy",
+        "asset_id": 13836571,
+        "qty": "6331.7667490472",
+        "entry_price_usd": "0.001579338026231742",
+        "exit_price_usd": "0.0013561906248441076",
+        "entry_usd": "10",
+        "exit_usd": "8.5870827038",
+        "tx_ref": null,
+        "reason_opened": {
+          "sizing": {
+            "usd": 10,
+            "applied": [],
+            "paid_usd": 10,
+            "fell_back": []
+          },
+          "pattern": "new_ticker",
+          "signal_id": 85138472
+        },
+        "reason_closed": "stop_loss",
+        "lot_tier": null,
+        "pnl_usd": "-1.4129172962",
+        "opened_at": "2026-10-15T15:32:59.000Z",
+        "closed_at": "2026-10-15T15:34:57.000Z"
+      }
+    ]
+  }
+}

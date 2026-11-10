@@ -1,0 +1,53 @@
+{
+  "name": "prices-solana-10-1",
+  "host": "hacc",
+  "route": "/v1/market/prices",
+  "query": {
+    "addresses": "fake-addresses-4"
+  },
+  "status": 200,
+  "ms": 355,
+  "bytes": 1306,
+  "answer": {
+    "prices": [
+      {
+        "address": "HaccFake11111111111111111111111111111111113",
+        "symbol": "fake-symbol-4",
+        "price_usd": 0.2631,
+        "market_cap_usd": 873524965
+      },
+      {
+        "address": "HaccFake11111111111111111111111111111111116",
+        "symbol": "fake-symbol-5",
+        "price_usd": 0.00005856,
+        "market_cap_usd": 58511
+      },
+      {
+        "address": "HaccFake11111111111111111111111111111111117",
+        "symbol": null,
+        "price_usd": null,
+        "market_cap_usd": null
+      },
+      {
+        "address": "HaccFake11111111111111111111111111111111118",
+        "symbol": null,
+        "price_usd": null,
+        "market_cap_usd": null
+      },
+      {
+        "address": "HaccFake11111111111111111111111111111111119",
+        "symbol": "fake-symbol-6",
+        "price_usd": 0.000003957,
+        "market_cap_usd": 3769
+      }
+    ],
+    "research_credits": 0,
+    "provenance": {
+      "source": "provider_refresh",
+      "retrieved_at": "2026-11-04T16:48:52.269Z"
+    }
+  },
+  "truncated": {
+    "$.prices": 10
+  }
+}

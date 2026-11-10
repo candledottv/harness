@@ -22,7 +22,7 @@
  │                          │ │ │ctrl-] back to setup · Ctrl-C stops it                                             │ │ 
  │                          │ │ ╰───────────────────────────────────────────────────────────────────────────────────╯ │ 
  │                          │ │                                                                                       │ 
- │ about 3 minutes          │ │  ⠋ waiting for you to approve in your browser    ⧉ code   ⧉ link                      │ 
+ │ about 5 minutes          │ │  ⠋ waiting for you to approve in your browser    ⧉ code   ⧉ link                      │ 
  │ quit any time: it picks  │ │                                                                                       │ 
  │ up where you stopped     │ │                                                                                       │ 
  ╰──────────────────────────╯ ╰───────────────────────────────────────────────────────────────────────────────────────╯ 

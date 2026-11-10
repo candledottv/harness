@@ -26,7 +26,7 @@ describe("the catalogue", () => {
   })
 
   test("describes each row in the CLI's own words, one line", () => {
-    expect(entry("keys revoke").description).toBe("Revoke an API key")
+    expect(entry("keys revoke").description).toBe("Revoke an API key permanently")
     expect(entry("keys create").description).toBe("Create an API key")
     // The bare command is its summary.
     expect(SOURCE.help.swap!.summary).toStartWith("Quote, confirm and swap on Solana or Hood, bridge between them; ")
@@ -122,7 +122,7 @@ describe("the catalogue", () => {
   })
 
   test("every other row's request is plain English: the CLI's line, lower-cased where it starts a sentence", () => {
-    expect(entry("keys revoke").request).toBe("revoke an API key ")
+    expect(entry("keys revoke").request).toBe("revoke an API key permanently ")
     expect(entry("stake add").request).toBe("stake decimal CNDL in the selected wallet ")
     for (const e of CATALOGUE.filter((e) => e.availability !== "never")) expect(e.request).toMatch(/^(?:[^A-Z]|[A-Z][^a-z])/)
   })

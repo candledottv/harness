@@ -11,6 +11,7 @@ import type { JournalRow } from "./journal"
 import { pnlCall } from "./pnl-tool"
 import {
   bookFrom,
+  botSignatures,
   GAP_MS,
   journalSwaps,
   lastSessionEnd,
@@ -688,4 +689,17 @@ test("the last session's end after a core that died with the main view attached:
   const ranOn = [...rows.slice(0, 3), { seq: 4, at: "2026-10-30T12:00:00.000Z", type: "agent.turn" }, { seq: 5, at: "2026-10-30T15:00:00.000Z", type: "core.started" }] as unknown as JournalRow[]
   expect(lastSessionEnd(ranOn)).toBe(Date.parse("2026-10-30T09:00:00.000Z"))
   expect(lastSessionEnd(ranOn.slice(0, 4), { runEnded: true })).toBe(Date.parse("2026-10-30T09:00:00.000Z"))
+})
+
+test("a bot's live fills by signature, for Trades' by bot; a paper or unbot fill isn't one", () => {
+  const r = (seq: number, type: string, extra: Record<string, unknown>) => ({ seq, at: "2026-11-06T09:00:00.000Z", type, mode: "live", ...extra }) as unknown as JournalRow
+  const rows = [
+    r(1, "card.created", { opId: "a", bot: "conf" }),
+    r(2, "operation.succeeded", { opId: "a", result: { job: { signature: "sigA" } } }),
+    r(3, "card.created", { opId: "b" }),
+    r(4, "operation.succeeded", { opId: "b", result: { job: { signature: "sigB" } } }),
+    r(5, "card.created", { opId: "c", bot: "conf", mode: "paper" }),
+    r(6, "operation.succeeded", { opId: "c", result: { job: { signature: "sigC" } } }),
+  ]
+  expect(botSignatures(rows)).toEqual({ sigA: "conf" })
 })

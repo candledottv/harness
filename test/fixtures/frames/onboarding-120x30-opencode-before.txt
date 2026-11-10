@@ -12,7 +12,7 @@
  │ · Wallet and limits      │ │  ! A ChatGPT, Claude or Grok subscription signed in here won't be used: for those,    │ 
  │                          │ │  use Codex, Claude Code or Grok, each with its own sign-in.                           │ 
  │ · The tour               │ │                                                                                       │ 
- │                          │ │  The key goes into the harness's own store, by the harness. The Candle Harness never  │ 
+ │                          │ │  The key goes into OpenCode's own store, by OpenCode. The Candle Harness never        │ 
  │ · Where to start         │ │  stores a model key.                                                                  │ 
  │                          │ │                                                                                       │ 
  │                          │ │  ▸ Open OpenCode's sign-in                                                            │ 
@@ -22,7 +22,7 @@
  │                          │ │                                                                                       │ 
  │                          │ │                                                                                       │ 
  │                          │ │                                                                                       │ 
- │ about 3 minutes          │ │                                                                                       │ 
+ │ about 5 minutes          │ │                                                                                       │ 
  │ quit any time: it picks  │ │                                                                                       │ 
  │ up where you stopped     │ │                                                                                       │ 
  ╰──────────────────────────╯ ╰───────────────────────────────────────────────────────────────────────────────────────╯ 
@@ -44,7 +44,7 @@
 11: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 959dab/111419×1 dde2ea/111419×1 959dab/111419×17 ffffff/111419×6 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 f5a524/111419×81 ffffff/111419×4 32fe9f/111419×1 ffffff/0b0d10×1
 12: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×26 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 f5a524/111419×58 ffffff/111419×27 32fe9f/111419×1 ffffff/0b0d10×1
 13: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 959dab/111419×1 dde2ea/111419×1 959dab/111419×8 ffffff/111419×15 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×87 32fe9f/111419×1 ffffff/0b0d10×1
-14: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×26 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 959dab/111419×83 ffffff/111419×2 32fe9f/111419×1 ffffff/0b0d10×1
+14: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×26 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 959dab/111419×77 ffffff/111419×8 32fe9f/111419×1 ffffff/0b0d10×1
 15: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 959dab/111419×1 dde2ea/111419×1 959dab/111419×14 ffffff/111419×9 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 959dab/111419×19 ffffff/111419×66 32fe9f/111419×1 ffffff/0b0d10×1
 16: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×26 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×87 32fe9f/111419×1 ffffff/0b0d10×1
 17: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×26 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 32fe9f/1d2430×2 f6f8fb/1d2430×23 ffffff/1d2430×58 ffffff/111419×2 32fe9f/111419×1 ffffff/0b0d10×1

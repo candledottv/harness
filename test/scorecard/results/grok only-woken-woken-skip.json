@@ -1,0 +1,207 @@
+{
+  "engine": "grok",
+  "model": null,
+  "ran": {
+    "engine": "grok",
+    "engineVersion": "1.0.70",
+    "model": "grok-4.7",
+    "answeredModel": "grok-4.7"
+  },
+  "at": "2026-11-04T20:56:01.531Z",
+  "results": [
+    {
+      "id": "woken",
+      "pass": true,
+      "checks": [
+        {
+          "name": "the turn ended with a reply",
+          "pass": true
+        },
+        {
+          "name": "bought MOON without a card",
+          "pass": true
+        },
+        {
+          "name": "said what woke it",
+          "pass": true
+        },
+        {
+          "name": "named no address it didn't read",
+          "pass": true
+        }
+      ],
+      "notes": {
+        "skillRead": true,
+        "tools": [
+          "search_tool",
+          "search_tool",
+          "read_file",
+          "mcp__candle__skill_read",
+          "mcp__candle__hacc_token",
+          "mcp__candle__candle_execution_status",
+          "search_tool",
+          "mcp__candle__candle_token_forensics",
+          "mcp__candle__candle_resolve_token",
+          "mcp__candle__hacc_signals",
+          "mcp__candle__candle_trade",
+          "search_tool",
+          "mcp__candle__candle_get_portfolio"
+        ],
+        "figures": 2,
+        "marked": 0,
+        "ms": 69190
+      },
+      "turns": [
+        {
+          "user": "woken by the trigger \"conf\": a confluence signal on MOON at 20:54",
+          "reply": "A confluence signal on MOON (`MoonFake11111111111111111111111111111111111`) woke me at 20:54. Hacc's market read put the market cap at $1M, under the $2M rule, so I bought $1. It ran without a card and filled.\n\nThe embedded wallet now holds 12,345.678901 MOON, about $7,778 at $0.63.",
+          "outcome": "done"
+        }
+      ],
+      "record": {
+        "turns": [
+          {
+            "user": "woken by the trigger \"conf\": a confluence signal on MOON at 20:54",
+            "reply": "A confluence signal on MOON (`MoonFake11111111111111111111111111111111111`) woke me at 20:54. Hacc's market read put the market cap at $1M, under the $2M rule, so I bought $1. It ran without a card and filled.\n\nThe embedded wallet now holds 12,345.678901 MOON, about $7,778 at $0.63.",
+            "outcome": "done",
+            "tools": [
+              "search_tool",
+              "search_tool",
+              "read_file",
+              "mcp__candle__skill_read",
+              "mcp__candle__hacc_token",
+              "mcp__candle__candle_execution_status",
+              "search_tool",
+              "mcp__candle__candle_token_forensics",
+              "mcp__candle__candle_resolve_token",
+              "mcp__candle__hacc_signals",
+              "mcp__candle__candle_trade",
+              "search_tool",
+              "mcp__candle__candle_get_portfolio"
+            ],
+            "reasked": false,
+            "figures": 2,
+            "marked": []
+          }
+        ],
+        "cards": [
+          {
+            "state": "created",
+            "tool": "candle_trade",
+            "kind": "trade",
+            "side": "buy",
+            "mint": "MoonFake11111111111111111111111111111111111",
+            "params": {
+              "mint": "MoonFake11111111111111111111111111111111111",
+              "side": "buy",
+              "clientTradeId": "332d5b5f-5d39-4150-8e62-e5fbe012a1b8",
+              "amount": "0.006666666"
+            },
+            "how": "inside-limits"
+          }
+        ],
+        "memory": "# Memory\n\n- confluence wakes: when a confluence signal wakes me, buy $1 of the token if its market cap is under $2M; otherwise don't trade (the person, 2026-11-04)\n",
+        "memoryFiles": {},
+        "memoryChanges": 0,
+        "hacc": [
+          "GET /v1/signals/stream",
+          "GET /v1/market/token/MoonFake11111111111111111111111111111111111",
+          "GET /v1/market/token/MoonFake11111111111111111111111111111111111/history",
+          "GET /v1/signals"
+        ]
+      },
+      "ran": {
+        "engine": "grok",
+        "engineVersion": "1.0.70",
+        "model": "grok-4.7",
+        "answeredModel": "grok-4.7"
+      }
+    },
+    {
+      "id": "woken-skip",
+      "pass": true,
+      "checks": [
+        {
+          "name": "the turn ended with a reply",
+          "pass": true
+        },
+        {
+          "name": "proposed nothing",
+          "pass": true
+        },
+        {
+          "name": "said what woke it",
+          "pass": true
+        },
+        {
+          "name": "named no address it didn't read",
+          "pass": true
+        }
+      ],
+      "notes": {
+        "skillRead": true,
+        "tools": [
+          "todo_write",
+          "search_tool",
+          "search_tool",
+          "list_dir",
+          "mcp__candle__skill_read",
+          "mcp__candle__candle_execution_status",
+          "mcp__candle__hacc_token",
+          "mcp__candle__candle_get_market",
+          "search_tool",
+          "todo_write"
+        ],
+        "figures": 1,
+        "marked": 0,
+        "ms": 43445
+      },
+      "turns": [
+        {
+          "user": "woken by the trigger \"conf\": a confluence signal on MOON at 20:55",
+          "reply": "A confluence signal on **MOON** (`MoonFake11111111111111111111111111111111111`) woke me at 20:55. Hacc and Candle both put its market cap at $1,000,000 just now, above the $500k line, so I left it.",
+          "outcome": "done"
+        }
+      ],
+      "record": {
+        "turns": [
+          {
+            "user": "woken by the trigger \"conf\": a confluence signal on MOON at 20:55",
+            "reply": "A confluence signal on **MOON** (`MoonFake11111111111111111111111111111111111`) woke me at 20:55. Hacc and Candle both put its market cap at $1,000,000 just now, above the $500k line, so I left it.",
+            "outcome": "done",
+            "tools": [
+              "todo_write",
+              "search_tool",
+              "search_tool",
+              "list_dir",
+              "mcp__candle__skill_read",
+              "mcp__candle__candle_execution_status",
+              "mcp__candle__hacc_token",
+              "mcp__candle__candle_get_market",
+              "search_tool",
+              "todo_write"
+            ],
+            "reasked": false,
+            "figures": 1,
+            "marked": []
+          }
+        ],
+        "cards": [],
+        "memory": "# Memory\n\n- confluence wakes: when a confluence signal wakes me, buy $1 of the token if its market cap is under $500k; otherwise don't trade (the person, 2026-11-04)\n",
+        "memoryFiles": {},
+        "memoryChanges": 0,
+        "hacc": [
+          "GET /v1/signals/stream",
+          "GET /v1/market/token/MoonFake11111111111111111111111111111111111",
+          "GET /v1/market/token/MoonFake11111111111111111111111111111111111/history"
+        ]
+      },
+      "ran": {
+        "engine": "grok",
+        "engineVersion": "1.0.70",
+        "model": "grok-4.7",
+        "answeredModel": "grok-4.7"
+      }
+    }
+  ]
+}

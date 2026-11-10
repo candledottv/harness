@@ -53,7 +53,16 @@ test("a minimal config fills in the defaults", () => {
     hacc: { enabled: true },
     pnl: { window: "24h" },
     skills: { from: [] },
+    core: { keepAwake: false },
+    notify: { mode: "auto", on: ["cards", "triggers", "bots", "wakes", "kill", "keys", "core"] },
   })
+})
+
+test("[notify]: the mode and what notifies, each problem named", () => {
+  expect(loadConfig(withConfig(`${ONE_AGENT}\n[notify]\nmode = "bell"\non = ["cards", "kill"]\n`)).config.notify).toEqual({ mode: "bell", on: ["cards", "kill"] })
+  expect(loadConfig(withConfig(`${ONE_AGENT}\n[notify]\non = []\n`)).config.notify).toEqual({ mode: "auto", on: [] })
+  const e = configError(withConfig(`${ONE_AGENT}\n[notify]\nmode = "loud"\non = ["cards", "fills"]\n`))
+  expect(e.problems).toEqual(['notify.mode is "loud"; use "auto" or "native" or "osc" or "bell" or "off"', 'notify.on has "fills"; each is one of cards, triggers, bots, wakes, kill, keys, core'])
 })
 
 test("a full config is read as written", () => {
@@ -300,6 +309,19 @@ test("an agent's preset: unset is Quant's start, quant, trader or bare; anything
   expect(config.agents.swing!.preset).toBeUndefined()
   const error = configError(withConfig(`[agents.momentum]\npreset = "Quant"\n[agents.momentum.limits]\nperTradeUsd = 10\nperDayUsd = 50\n`))
   expect(error.problems).toContain('agents.momentum.preset is "Quant"; use "quant", "trader" or "bare"')
+})
+
+test("an agent's wake caps: unset is the default, whole numbers taken, anything else refused", () => {
+  const { config, warnings } = loadConfig(withConfig(`[agents.momentum.wake]\nperHour = 2\nperDay = 10\n[agents.momentum.limits]\nperTradeUsd = 10\nperDayUsd = 50\n[agents.swing.limits]\nperTradeUsd = 10\nperDayUsd = 50\n`))
+  expect(warnings).toEqual([])
+  expect(config.agents.momentum!.wake).toEqual({ perHour: 2, perDay: 10 })
+  expect(config.agents.swing!.wake).toBeUndefined()
+  for (const bad of ["perHour = -1", "perHour = 1.5", 'perDay = "4"', "perDay = 1001"]) {
+    const error = configError(withConfig(`[agents.momentum.wake]\n${bad}\n[agents.momentum.limits]\nperTradeUsd = 10\nperDayUsd = 50\n`))
+    expect(error.problems.join("\n")).toContain("use a whole number from 0 (never woken) to 1000")
+  }
+  const over = loadConfig(withConfig(`[agents.momentum.wake]\nperHour = 5\nperDay = 3\n[agents.momentum.limits]\nperTradeUsd = 10\nperDayUsd = 50\n`))
+  expect(over.warnings).toContain("agents.momentum.wake: perHour (5) is above perDay (3), so the day's cap binds first")
 })
 
 test("an agent's tools: the shell off by default, a list or everything, and allow and deny lists", () => {

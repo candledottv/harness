@@ -40,6 +40,29 @@ describe("pins", () => {
     expect((await s.pin({ at: "Mine", mint: BONK, chain: "solana" })).ok).toBe(true)
   })
 
+  test("a tab's other token panes are pinned apart from its first, within the same three, and go with a renamed tab", async () => {
+    const path = fresh()
+    const s = new ViewState({ path, now: () => 1 })
+    expect(await s.pin({ at: "Trade", mint: JUP, chain: "solana", symbol: "JUP" })).toEqual({ ok: true })
+    expect(await s.pin({ at: "Trade", pane: "token:2", mint: BONK, chain: "solana", symbol: "BONK" })).toEqual({ ok: true })
+    expect(s.pins()).toEqual([
+      { at: "Trade", mint: JUP, chain: "solana", symbol: "JUP" },
+      { at: "Trade", pane: "token:2", mint: BONK, chain: "solana", symbol: "BONK" },
+    ])
+    // Read back by a new core, each on its own pane.
+    expect(new ViewState({ path, now: () => 2 }).pins()).toEqual(s.pins())
+    // The three are shared with every place: a fourth names where each is.
+    expect((await s.pin({ at: "Trade", pane: "token:3", mint: JUP, chain: "solana", symbol: "JUP" })).ok).toBe(true)
+    expect(await s.pin({ at: "Cockpit", mint: BONK, chain: "solana" })).toEqual({ ok: false, message: "3 token panes are pinned already (Trade on JUP, Trade's token:2 on BONK, Trade's token:3 on JUP): unpin one first." })
+    // Unpinning one leaves the others; renamed, the tab takes all of them.
+    expect(await s.unpin("Trade", "token:3")).toBe(true)
+    expect(await s.move("Trade", "Desk")).toBe(true)
+    expect(s.pins().map((p) => [p.at, p.pane ?? "token"])).toEqual([["Desk", "token"], ["Desk", "token:2"]])
+    // A tab removed takes every pin on it.
+    expect(await s.unpin("Desk", "all")).toBe(true)
+    expect(s.pins()).toEqual([])
+  })
+
   test("a file that doesn't read, or rows that aren't pins, start with none of them", () => {
     const path = fresh()
     writeFileSync(path, "{not json")

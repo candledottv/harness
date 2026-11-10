@@ -112,7 +112,8 @@ export async function startTestCore(opts: Partial<CoreOptions> = {}, home: TestH
   home.before?.(p)
   // No test core reads the chain: a stopped wallet's balance is unread unless a test gives one.
   const chainBalance = async () => ({ error: "not read in tests", readAt: Date.now() })
-  const core = await startCore({ paths: p, config: testConfig(candle, home.config), env: process.env, headless: true, chainBalance, ...opts })
+  // No test core runs code bots' commands unless the test asks: most connect a bot themselves, with a token of their own.
+  const core = await startCore({ paths: p, config: testConfig(candle, home.config), env: process.env, headless: true, chainBalance, supervise: false, ...opts })
   await core.candleReady
   const clients: TestClient[] = []
   const connect = async () => {

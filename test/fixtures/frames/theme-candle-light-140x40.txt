@@ -1,5 +1,5 @@
  ▲ candle  agent-a ▾  LIVE  today $12.00 / $100.00  exposure $412.50  P&L 24h +$3.40  ● 1 card waiting                       ctrl-x ×2 kill 
- 1 Trade  2 Cockpit  3 Trending  4 Signals  5 P&L  6 Research  7 Journal  8 Perps   settings ▾                                              
+ 1 Trade  2 Cockpit  3 Research  4 Bots  5 Build   settings ▾                                                                               
                                                                                                                                             
 ╭─ agent-a ────────────────────────────────────────────── Claude Code · sonnet ▾ ─╮ ╭─ Token · JUPF · follows the agent ──────────── pin ──╮
 │ you › how's JUPF looking?                                                       │ │ JUPF  Jupiter Fake                                   │
@@ -16,7 +16,7 @@
 │                                                                                 │ ╰─ ⇱ ──────────────────────────────────────────────────╯
 │ 1 card waiting · ⏎ approves the highlighted one                                 │                                                         
 │ ▌ BUY 0.1 SOL of JUPF                                                      50s  │ ╭─ Positions ────────────────────────── all agents ▾ ──╮
-│ ▌ agent-a · pays from embedded · live                                           │ │ embedded wallet · agent-a, agent-b                   │
+│ ▌ agent-a · pays from embedded · live · JupF…1111                               │ │ embedded wallet · agent-a, agent-b                   │
 │ ▌ why  volume up 3× on the hour, holders rising                                 │ │ JUPF          120.5  ≈$51.20    agent-a              │
 │ ▌  ⏎ approve    ctrl-n reject    ctrl-o details                                 │ │ LUMEN        40,210  ≈$12.04    agent-b              │
 │                                                                                 │ │ QUILL           912  ≈$3.30     agent-a              │
@@ -41,7 +41,7 @@
 
 --- colours ---
 0: ffffff/eaecf0×1 0d1117/eaecf0×8 ffffff/eaecf0×1 0a5fc4/e2efff×11 f3f4f7/116329×6 ffffff/eaecf0×1 5c6470/eaecf0×6 0d1117/eaecf0×6 5c6470/eaecf0×10 ffffff/eaecf0×2 5c6470/eaecf0×9 0d1117/eaecf0×7 ffffff/eaecf0×2 5c6470/eaecf0×8 116329/eaecf0×6 ffffff/eaecf0×2 8a5a00/eaecf0×16 ffffff/eaecf0×22 c4161c/ffe9e8×16
-1: ffffff/f3f4f7×1 0d1117/f3f4f7+9×7 ffffff/f3f4f7×2 0a5fc4/f3f4f7×9 ffffff/f3f4f7×2 0a5fc4/f3f4f7×10 ffffff/f3f4f7×2 0a5fc4/f3f4f7×9 ffffff/f3f4f7×2 0a5fc4/f3f4f7×5 ffffff/f3f4f7×2 0a5fc4/f3f4f7×10 ffffff/f3f4f7×2 0a5fc4/f3f4f7×9 ffffff/f3f4f7×2 0a5fc4/f3f4f7×7 ffffff/f3f4f7×2 0a5fc4/e2efff×12 ffffff/f3f4f7×45
+1: ffffff/f3f4f7×1 0d1117/f3f4f7+9×7 ffffff/f3f4f7×2 0a5fc4/f3f4f7×9 ffffff/f3f4f7×2 0a5fc4/f3f4f7×10 ffffff/f3f4f7×2 0a5fc4/f3f4f7×6 ffffff/f3f4f7×2 0a5fc4/f3f4f7×7 ffffff/f3f4f7×2 0a5fc4/e2efff×12 ffffff/f3f4f7×78
 2: ffffff/f3f4f7×140
 3: e8590c/ffffff×2 6639ba/ffffff×9 e8590c/ffffff×46 0a5fc4/e2efff×24 e8590c/ffffff×2 ffffff/f3f4f7×1 cdd3dc/ffffff×2 6639ba/ffffff×34 cdd3dc/ffffff×12 0a5fc4/e2efff×5 cdd3dc/ffffff×3
 4: e8590c/ffffff×1 ffffff/ffffff×1 5c6470/ffffff×6 0d1117/ffffff×19 ffffff/ffffff×55 e8590c/ffffff×1 ffffff/f3f4f7×1 cdd3dc/ffffff×1 ffffff/ffffff×1 0d1117/ffffff+1×4 5c6470/ffffff×14 ffffff/ffffff×35 cdd3dc/ffffff×1
@@ -58,7 +58,7 @@
 15: e8590c/ffffff×1 ffffff/ffffff×81 e8590c/ffffff×1 ffffff/f3f4f7×1 cdd3dc/ffffff×2 0a5fc4/e2efff×3 cdd3dc/ffffff×51
 16: e8590c/ffffff×1 ffffff/ffffff×1 5c6470/ffffff×47 ffffff/ffffff×33 e8590c/ffffff×1 ffffff/f3f4f7×57
 17: e8590c/ffffff×1 ffffff/ffffff×1 8a5a00/ffffff×2 0d1117/ffffff×19 2e3640/ffffff×54 8a5a00/ffffff×3 ffffff/ffffff×2 e8590c/ffffff×1 ffffff/f3f4f7×1 cdd3dc/ffffff×2 6639ba/ffffff×11 cdd3dc/ffffff×26 0a5fc4/e2efff×14 cdd3dc/ffffff×3
-18: e8590c/ffffff×1 ffffff/ffffff×1 8a5a00/ffffff×2 5c6470/ffffff×35 ffffff/ffffff×43 e8590c/ffffff×1 ffffff/f3f4f7×1 cdd3dc/ffffff×1 ffffff/ffffff×1 5c6470/ffffff×34 ffffff/ffffff×19 cdd3dc/ffffff×1
+18: e8590c/ffffff×1 ffffff/ffffff×1 8a5a00/ffffff×2 5c6470/ffffff×47 ffffff/ffffff×31 e8590c/ffffff×1 ffffff/f3f4f7×1 cdd3dc/ffffff×1 ffffff/ffffff×1 5c6470/ffffff×34 ffffff/ffffff×19 cdd3dc/ffffff×1
 19: e8590c/ffffff×1 ffffff/ffffff×1 8a5a00/ffffff×2 5c6470/ffffff×5 2e3640/ffffff×40 ffffff/ffffff×33 e8590c/ffffff×1 ffffff/f3f4f7×1 cdd3dc/ffffff×1 ffffff/ffffff×1 0d1117/ffffff×9 2e3640/ffffff×10 0d1117/ffffff×12 5c6470/ffffff×8 ffffff/ffffff×14 cdd3dc/ffffff×1
 20: e8590c/ffffff×1 ffffff/ffffff×1 8a5a00/ffffff×2 f3f4f7/0a5fc4×11 2e3640/ffffff×2 0a5fc4/e2efff×15 2e3640/ffffff×2 0a5fc4/e2efff×16 ffffff/ffffff×32 e8590c/ffffff×1 ffffff/f3f4f7×1 cdd3dc/ffffff×1 ffffff/ffffff×1 0d1117/ffffff×9 2e3640/ffffff×10 0d1117/ffffff×12 5c6470/ffffff×8 ffffff/ffffff×14 cdd3dc/ffffff×1
 21: e8590c/ffffff×1 ffffff/ffffff×81 e8590c/ffffff×1 ffffff/f3f4f7×1 cdd3dc/ffffff×1 ffffff/ffffff×1 0d1117/ffffff×9 2e3640/ffffff×10 0d1117/ffffff×12 5c6470/ffffff×8 ffffff/ffffff×14 cdd3dc/ffffff×1

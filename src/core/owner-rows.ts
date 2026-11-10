@@ -181,8 +181,17 @@ export function presetDrops(current: readonly string[], to: string | undefined):
   return `This key's access isn't a preset: setting it to ${to ?? "a preset"} removes ${named} (${dropped.join(", ")}).`
 }
 
-/** The vault label a new agent's fresh TEE wallet gets. The CLI refuses a label the vault holds; edit the line then. */
-export const teeLabelFor = (agent: string) => `${agent}-tee`
+/**
+ * The vault label an agent's fresh TEE wallet gets: `<agent>-tee`, or the first `<agent>-tee-2`, `-3`… that no wallet the
+ * Candle Harness knows is named, compared without case as names are. The CLI refuses a label the vault holds, and a second wallet
+ * of its own for the same agent (a bot's) is the usual case.
+ */
+export function teeLabelFor(agent: string, taken: readonly string[] = []): string {
+  const held = new Set(taken.map((n) => n.normalize("NFKC").toLowerCase()))
+  const base = `${agent}-tee`
+  if (!held.has(base.toLowerCase())) return base
+  for (let n = 2; ; n++) if (!held.has(`${base}-${n}`.toLowerCase())) return `${base}-${n}`
+}
 
 /**
  * A fresh TEE wallet for an agent, never a rebind of another's, one step at a time, each typed by the user from a chip:
@@ -193,10 +202,10 @@ export const teeLabelFor = (agent: string) => `${agent}-tee`
  * The promotion never makes a new vault key, which would leave the funding nothing to send. The
  * vault key is filled in when the Candle Harness knows just one (from `candle vault list`); else the user types it.
  */
-export function freshTeeStep(step: 1 | 2, agent: string, ctx: { prefix: string; vaultKey?: string; address?: string }): Fill {
+export function freshTeeStep(step: 1 | 2, agent: string, ctx: { prefix: string; vaultKey?: string; address?: string; taken?: readonly string[] }): Fill {
   switch (step) {
     case 1:
-      return { label: `new TEE wallet for ${agent}`, line: `candle vault promote --to-key ${ctx.prefix} --label ${teeLabelFor(agent)} --from ${ctx.vaultKey ?? ""}` }
+      return { label: `new TEE wallet for ${agent}`, line: `candle vault promote --to-key ${ctx.prefix} --label ${teeLabelFor(agent, ctx.taken)} --from ${ctx.vaultKey ?? ""}` }
     case 2:
       return { label: `fund ${agent}'s TEE wallet`, line: `candle vault fund ${ctx.address ?? "<its address>"} --asset SOL --amount ` }
   }
@@ -223,11 +232,11 @@ export function rebindNote(moving: { name: string; from?: string }[], to: string
  * After a rebind the user asked for: each agent it left with no TEE wallet, what it can still trade
  * from, and a fresh TEE wallet offered.
  */
-export function rebindLeft(holders: readonly string[], ctx: { teeCount: (agent: string) => number; embedded: (agent: string) => "allowed" | "denied" | undefined; prefix: (agent: string) => string | undefined; vaultKey?: string }): { words: string[]; next: Fill[] } {
+export function rebindLeft(holders: readonly string[], ctx: { teeCount: (agent: string) => number; embedded: (agent: string) => "allowed" | "denied" | undefined; prefix: (agent: string) => string | undefined; vaultKey?: string; taken?: readonly string[] }): { words: string[]; next: Fill[] } {
   const left = holders.filter((a) => ctx.prefix(a) !== undefined && ctx.teeCount(a) === 0)
   return {
     words: left.map((a) => `${a} has no TEE wallet now${ctx.embedded(a) === "denied" ? ", and its key isn't allowed the embedded wallet, so it can't trade until it has one" : "; it can still trade from the embedded wallet"}.`),
-    next: left.map((a) => freshTeeStep(1, a, { prefix: ctx.prefix(a)!, ...(ctx.vaultKey ? { vaultKey: ctx.vaultKey } : {}) })),
+    next: left.map((a) => freshTeeStep(1, a, { prefix: ctx.prefix(a)!, ...(ctx.vaultKey ? { vaultKey: ctx.vaultKey } : {}), ...(ctx.taken ? { taken: ctx.taken } : {}) })),
   }
 }
 

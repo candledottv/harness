@@ -121,9 +121,24 @@ export class LineDecoder {
   }
 }
 
-/** One message as a line. Throws for a message over the limit, which is a bug on the sender's side. */
+/** A message too large for one line: the sender skips it, and says how large it was. */
+export class MessageTooLarge extends Error {
+  constructor(readonly bytes: number) {
+    super("An attach-interface message exceeds 1 MiB.")
+  }
+}
+
+/** One message as a line. Throws MessageTooLarge for a message over the limit, which is a bug on the sender's side. */
 export function encodeLine(message: unknown): string {
   const line = `${JSON.stringify(message)}\n`
-  if (Buffer.byteLength(line, "utf8") > MAX_MESSAGE_BYTES) throw new Error("An attach-interface message exceeds 1 MiB.")
+  const bytes = Buffer.byteLength(line, "utf8")
+  if (bytes > MAX_MESSAGE_BYTES) throw new MessageTooLarge(bytes)
   return line
 }
+
+/**
+ * How much one connection may leave unread before it's dropped: several whole messages. A client that stops
+ * reading (a view suspended in its terminal, a hung bot) would otherwise have every event since queued for it
+ * in the core's memory, without limit. It reattaches when it comes back, as after any disconnect.
+ */
+export const MAX_UNREAD_BYTES = 8 * MAX_MESSAGE_BYTES

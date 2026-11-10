@@ -1,7 +1,10 @@
 // Data honesty in one place: a value a source can't supply is "—", never zero; how old
 // a value is travels with it, and stale is marked; converted figures carry ≈. Every pane formats its
 // figures here.
+import { refusalMessage } from "../core/execute"
 import { short } from "../core/wallet-names"
+import { isTestName, shownBotName } from "../shared/bot-name"
+import { terminalText } from "../shared/terminal-text"
 
 const DASH = "—"
 
@@ -87,6 +90,12 @@ export function ago(at: number | null | undefined, now: number, staleMs: number)
 export const shortAddress = short
 
 /** Wraps text to `width` columns: whole words where they fit, long words broken, blank lines kept. */
+/** The cells a text takes on screen: one a character, two for ⚡, the triggers' mark, which terminals draw wide. */
+export const cellWidth = (text: string): number => text.length + (text.match(/\u26a1/g)?.length ?? 0)
+
+/** What leads a trigger's firing line ("⚡ jup stop") or a rules bot's ("bot conf"), drawn in the heading colour. */
+export const firingMark = (f: { name: string; bot?: true }): string => (f.bot ? (isTestName(f.name) ? shownBotName(f.name) : `bot ${f.name}`) : `⚡ ${f.name}`)
+
 export function wrap(text: string, width: number): string[] {
   const w = Math.max(1, width)
   const out: string[] = []
@@ -111,4 +120,26 @@ export function wrap(text: string, width: number): string[] {
     out.push(line)
   }
   return out
+}
+
+/**
+ * A paper trade Candle refused, in words: its plain message for a code a trader meets (a rate-limited key among
+ * them), else Candle's own message, never the answer's raw JSON.
+ */
+export function paperRefusal(text: string): string {
+  let error: Record<string, unknown> | undefined
+  try {
+    const body = JSON.parse(text) as Record<string, unknown> | null
+    const api = body && typeof body.api === "object" ? (body.api as Record<string, unknown>) : undefined
+    const found = api?.error ?? body?.error
+    if (found && typeof found === "object" && !Array.isArray(found)) error = found as Record<string, unknown>
+  } catch {}
+  const code = typeof error?.code === "string" ? error.code : undefined
+  if (code && error) {
+    const plain = refusalMessage(code, error)
+    if (plain) return plain
+    if (typeof error.message === "string" && error.message.length > 0) return `${terminalText(error.message, { maxLength: 160 })} (${code})`
+    return code
+  }
+  return terminalText(text, { maxLength: 160 })
 }

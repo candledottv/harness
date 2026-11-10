@@ -83,20 +83,22 @@ export function journalHead(s: JournalSearch | undefined, width: number): Line[]
     ...(editing ? { bg: C.sel } : {}),
   }
   const on = kindsOf(s)
-  const label = (k: JournalKind, short: boolean) => `${on.includes(k) ? "✓ " : ""}${short && k === "kill" ? "kill" : KIND_WORDS[k]}`
-  // Where every chip won't fit on one row, the kill switch's says "kill" (80 columns).
-  const short = JOURNAL_KINDS.reduce((n, k) => n + label(k, false).length + 3, 0) > width
+  // Where every chip won't fit on one row, the kill switch's says "kill", then the ticks lose their space (80 columns).
+  const label = (k: JournalKind, tier: number) => `${on.includes(k) ? (tier > 1 ? "✓" : "✓ ") : ""}${tier > 0 && k === "kill" ? "kill" : KIND_WORDS[k]}`
+  const cellsAt = (tier: number) => JOURNAL_KINDS.reduce((n, k) => n + label(k, tier).length + 3, -1)
+  const tier = [0, 1, 2].find((t) => cellsAt(t) <= width) ?? 2
   const rows: Line[] = [{ segs: [] }]
   let used = 0
   for (const k of JOURNAL_KINDS) {
-    const c = chip(label(k, short), "journalKind")
-    const cells = c.text.length + 1
-    if (used > 0 && used + cells > width) {
+    const c = chip(label(k, tier), "journalKind")
+    // A space between chips; the row's last needs none after it.
+    if (used > 0 && used + 1 + c.text.length > width) {
       rows.push({ segs: [] })
       used = 0
     }
-    rows.at(-1)!.segs.push({ ...c, ref: k }, { text: " ", fg: C.ink })
-    used += cells
+    if (used > 0) rows.at(-1)!.segs.push({ text: " ", fg: C.ink })
+    rows.at(-1)!.segs.push({ ...c, ref: k })
+    used += (used > 0 ? 1 : 0) + c.text.length
   }
   return [search, ...rows]
 }

@@ -39,3 +39,11 @@ export const PRODUCTION_DEFINE = [
 
 /** Marks a compiled build (src/version.ts SHIPPED): what only the tests use is off in it. */
 export const SHIPPED_DEFINE = ["--define", "CANDLE_HARNESS_SHIPPED=true"]
+
+/**
+ * The `bun build --compile` flags that stop a binary reading `bunfig.toml` and `.env` from the folder it is
+ * started in. Bun's default is to load both, and a bunfig's `preload` is code: the binary starts in folders
+ * an agent can write (its research folder, under the engine that runs it), so a file written there would run
+ * as the person, before any hold. A binary reads its settings from its own config folder and nothing else.
+ */
+export const NO_AUTOLOAD = ["--no-compile-autoload-bunfig", "--no-compile-autoload-dotenv"]

@@ -1,0 +1,15 @@
+{
+  "name": "live-signals-trade-signal",
+  "host": "hacc",
+  "method": "GET",
+  "route": "/v1/signals",
+  "query": {
+    "pattern": "trade_signal"
+  },
+  "status": 400,
+  "ms": 136,
+  "bytes": 191,
+  "answer": {
+    "error": "pattern: Invalid enum value. Expected 'confluence' | 'deployer' | 'large_move' | 'dormancy' | 'intra_book' | 'new_ticker' | 'distribution' | 'kol_mention', received 'trade_signal'"
+  }
+}

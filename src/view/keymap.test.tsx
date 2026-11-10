@@ -104,6 +104,20 @@ describe("what reads the table", () => {
     expect(hintsHere(hereOf(INITIAL_UI, { ...ctx, cards: [], working: false })).map((h) => h.words)).toEqual(["palette"])
   })
 
+  test("with the tab bar focused the hint line says a digit picks a tab there; anywhere else a digit types, and it says nothing of digits", () => {
+    const quiet = { ...ctx, cards: [], working: false }
+    expect(hintsHere(hereOf({ ...INITIAL_UI, focus: "tabs" }, quiet)).map((h) => `${h.chord} ${h.words}`)).toEqual(["ctrl-k palette", "1-9 a tab"])
+    expect(hintsHere(hereOf(INITIAL_UI, quiet)).map((h) => h.chord)).not.toContain("1-9")
+    // Help's row says how to get there.
+    expect(KEYMAP.find((d) => d.id === "tabDigit")!.words).toContain("press tab until the tab bar has the keys")
+  })
+
+  test("a card that slid in under another: the hint line says Enter takes it in a moment, then that it approves", () => {
+    const late = { ...ctx, seenAt: { c1: 1_000 }, behind: { c1: true as const } }
+    expect(hintsHere(hereOf(INITIAL_UI, late, 1_400))[0]).toMatchObject({ chord: "⏎", words: "approves in a moment" })
+    expect(hintsHere(hereOf(INITIAL_UI, late, 2_500))[0]).toMatchObject({ chord: "⏎", words: "approve" })
+  })
+
   test("short of room, the hint line keeps what Enter does, then the palette, then Esc, then help", () => {
     const here = hereOf(INITIAL_UI, ctx)
     const ids = (room: number) => hintParts(here, room, { palette: true, help: true }).map((p) => p.id)

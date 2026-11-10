@@ -10,9 +10,9 @@ const baseOf = (path: string) => {
 
 describe("the table and the source", () => {
   test("it was read from the pinned CLI source", () => {
-    // candledottv/cli at cli-v0.13.11.
-    expect(SOURCE.source).toMatchObject({ repo: "candledottv/cli", commit: "fabd576b91a0c3ca0a3ebacde56aec0e20f23f76", cliVersion: "0.13.11" })
-    expect(SOURCE.commands.length).toBe(157)
+    // candledottv/cli at cli-v0.13.18.
+    expect(SOURCE.source).toMatchObject({ repo: "candledottv/cli", commit: "750bf49a1c08265af41d53ced141d0dd87ca9d38", cliVersion: "0.13.18" })
+    expect(SOURCE.commands.length).toBe(163)
     expect((SOURCE as { unread?: string[] }).unread).toEqual([])
   })
 
@@ -58,11 +58,11 @@ describe("the table and the source", () => {
     expect(explicit).toContain("tee enable=agent")
     // 0.13.5: keyless reads run as the agent, so no profile of the person's is touched; the CLI's own spend limits are the person's.
     for (const p of ["scan=agent", "token clusters=agent", "token history=agent", "spend limit=owner", "spend max-per-call=owner", "spend pause=owner", "spend resume=owner"]) expect(explicit).toContain(p)
-    // 0.13.9: keyless reads as the agent; auto-renew is a flag in the person's own profile; a staging tool is never.
-    for (const p of ["agent positions=agent", "token comments=agent", "plan auto-renew=owner", "plan auto-renew on=owner", "plan auto-renew off=owner", "accounts create=owner"]) expect(explicit).toContain(p)
+    // 0.13.9: keyless reads as the agent; auto-renew is a flag in the person's own profile. (0.13.18 drops the staging tool accounts create.)
+    for (const p of ["agent positions=agent", "token comments=agent", "plan auto-renew=owner", "plan auto-renew on=owner", "plan auto-renew off=owner"]) expect(explicit).toContain(p)
     // 0.13.11: a signer's state reads by --key, as its siblings run.
     expect(explicit).toContain("tee signer status=agent")
-    expect(explicit.length).toBe(70)
+    expect(explicit.length).toBe(69)
   })
 
   test("the CLI route lets the agent read and narrow access only", () => {
@@ -83,12 +83,38 @@ describe("the table and the source", () => {
   })
 })
 
+// The rows 0.13.18 adds or changes (0.13.15 to 0.13.18).
+describe("the read at 0.13.18", () => {
+  test("every new row has its rule, from the source, and accounts create is gone", () => {
+    const paths = ["keys limits", "keys stop", "keys resume", "keys rotate", "quant ask", "wallets allowlist", "wallets authorize"]
+    expect(Object.fromEntries(paths.map((p) => [p, `${rowFor(p)!.rule} ${rowFor(p)!.route} ${rowFor(p)!.identity}`]))).toEqual({
+      "keys limits": "less-access cli agent",
+      "keys stop": "less-access cli owner",
+      "keys resume": "owner pane owner",
+      "keys rotate": "owner later owner",
+      "quant ask": "read cli agent",
+      "wallets allowlist": "read cli agent",
+      "wallets authorize": "ceremony pane agent",
+    })
+    expect(CLI_ROWS.some((r) => r.path === "accounts create")).toBe(false)
+    expect(rowFor("keys rotate")!.held).toContain("fresh one with candle keys create")
+    expect(rowFor("keys resume")!.pane!.factorFirst).toBe(true)
+    expect(rowFor("wallets authorize")!.pane!.factorFirst).toBe(false)
+  })
+
+  test("the changed flags: keys create --no-store, close-empty --preview, portfolio --no-vault, launch's allowlist", () => {
+    expect(sourceFor("keys", "create")!.flags!.boolean).toContain("--no-store")
+    expect(sourceFor("wallets", "close-empty")!.flags!.boolean).toContain("--preview")
+    expect(sourceFor("portfolio", null)!.flags!.boolean).toContain("--no-vault")
+    expect(sourceFor("launch", null)!.flags!.path).toContain("--allowlist")
+  })
+})
+
 // The rows 0.13.9 adds or changes.
 describe("the read at 0.13.9", () => {
   test("every new row has its rule, from the source", () => {
-    const paths = ["accounts create", "agent positions", "lab edges", "lab replay", "lab runners", "lab status", "plan auto-renew", "plan auto-renew off", "plan auto-renew on", "plan buy", "plan renew", "plan status", "tee signer remove", "token comment", "token comments", "token edit", "token post", "token post delete", "token update"]
+    const paths = ["agent positions", "lab edges", "lab replay", "lab runners", "lab status", "plan auto-renew", "plan auto-renew off", "plan auto-renew on", "plan buy", "plan renew", "plan status", "tee signer remove", "token comment", "token comments", "token edit", "token post", "token post delete", "token update"]
     expect(Object.fromEntries(paths.map((p) => [p, `${rowFor(p)!.rule} ${rowFor(p)!.route}`]))).toEqual({
-      "accounts create": "never later",
       "agent positions": "mcp cli",
       "lab edges": "mcp cli",
       "lab replay": "mcp cli",
@@ -181,8 +207,8 @@ describe("the read at 0.13.5", () => {
   test("the changed rows: launch's whole flag list, --check a read, and the new terminal needs of auth login and setup", () => {
     const launch = sourceFor("launch", null)!
     expect(launch.flags!.value).toContain("--staker-allocation-bps")
-    // 27 at 0.13.5, and 0.13.9's three --fee-wallet flags.
-    expect(launch.flags!.value.length).toBe(30)
+    // 27 at 0.13.5, 0.13.9's three --fee-wallet flags, and 0.13.18's six for an allowlisted launch's caps and window.
+    expect(launch.flags!.value.length).toBe(36)
     // 0.13.11 adds --require-fee-wallet.
     expect(launch.flags!.boolean).toEqual(["--check", "--dry-run", "--require-fee-wallet", "--yes"])
     expect(rowFor("launch")!.byFlags!(new Map([["--check", true]]))).toEqual({ rule: "read", route: "cli" })
@@ -240,7 +266,7 @@ describe("the read at 0.12.0: the vault, the terminal and the presets", () => {
   test("the factor step comes first for exactly the owner rows the CLI runs without unlocking, and never twice", () => {
     const first = CLI_ROWS.filter((r) => r.pane?.factorFirst).map((r) => r.path)
     expect(first.sort()).toEqual(
-      ["auth logout", "keys access", "keys create", "keys limit", "keys signer", "keys signer approve", "keys signer move", "keys update", "plan auto-renew", "plan auto-renew on", "profile add", "profile remove", "profile rename", "profile set", "profile use", "tee rebind", "tee rename", "tee signer", "tee signer new", "tee signer remove", "wallets allow-launch", "wallets trust"].sort(),
+      ["auth logout", "keys access", "keys create", "keys limit", "keys resume", "keys signer", "keys signer approve", "keys signer move", "keys update", "plan auto-renew", "plan auto-renew on", "profile add", "profile remove", "profile rename", "profile set", "profile use", "tee rebind", "tee rename", "tee signer", "tee signer new", "tee signer remove", "wallets allow-launch", "wallets trust"].sort(),
     )
     // tee rename unlocks only for a TEE wallet with a vault, where the core drops the step.
     for (const row of CLI_ROWS.filter((r) => r.pane?.factorFirst)) expect(`${row.path}: ${unlocksFor(row.path)}`).toBe(`${row.path}: ${row.path === "tee rename" ? "if-tee-and-vault" : "never"}`)

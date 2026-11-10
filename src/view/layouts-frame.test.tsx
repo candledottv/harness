@@ -67,7 +67,7 @@ test("the tabs come from layouts.toml, and a layout of yours shows on its tab", 
   expect(frame()).toContain("1 Trade  2 Watch   settings ▾")
   // The default tabs it doesn't name are there unticked, offered on the tab bar until settings ▾ is opened
   // (a 6 s message went by unseen, and counted as told).
-  expect(frame()).toContain("7 new tabs are ticked off")
+  expect(frame()).toContain("9 new tabs are ticked off")
   expect(frame()).toContain("show them")
   expect(store.told()).toEqual([])
   for (const a of ["up", "right", "down"] as const) await arrow(a)
@@ -76,7 +76,7 @@ test("the tabs come from layouts.toml, and a layout of yours shows on its tab", 
   expect(frame()).not.toContain("╭─ agent-a")
   await click("show them")
   expect(frame()).toContain("tabs: tick the ones to show")
-  expect(store.told()).toEqual(["Cockpit", "Trending", "Signals", "P&L", "Research", "Journal", "Perps"])
+  expect(store.told()).toEqual(["Cockpit", "Trending", "Signals", "P&L", "Research", "Journal", "Perps", "Bots", "Build"])
   await press("escape")
   expect(frame()).not.toContain("show them")
 })
@@ -284,14 +284,17 @@ test("tabs are a setting: settings ▾ ticks each off and on, written to layouts
   drawn = await drawScene("followed", 140, 40, "trade", store)
   await click(SETTINGS_CHIP)
   expect(frame()).toContain("tabs: tick the ones to show")
-  await click("[x] Signals")
-  expect(frame()).toContain("Signals is ticked off the tab bar; its layout is kept.")
-  expect(frame()).toContain("1 Trade  2 Cockpit  3 Trending  4 P&L  5 Research  6 Journal  7 Perps   settings ▾")
-  expect(store.written.at(-1)).toContain(`{ name = "Signals", layout = "Signals", shown = false },`)
+  await click("[x] Research")
+  expect(frame()).toContain("Research is ticked off the tab bar; its layout is kept.")
+  expect(frame()).toContain("1 Trade  2 Cockpit  3 Bots  4 Build   settings ▾")
+  expect(store.written.at(-1)).toContain(`{ name = "Research", layout = "Research", shown = false },`)
   // The menu stays open for another tick; ticked back on, it's in its place again.
+  await click("[ ] Research")
+  expect(frame()).toContain("1 Trade  2 Cockpit  3 Research  4 Bots  5 Build")
+  // One a fresh install has off comes on where it sits among the tabs.
   await click("[ ] Signals")
-  expect(frame()).toContain("1 Trade  2 Cockpit  3 Trending  4 Signals  5 P&L")
-  expect(parseLayouts(store.written.at(-1)!).hidden).toEqual([])
+  expect(frame()).toContain("1 Trade  2 Cockpit  3 Signals  4 Research  5 Bots  6 Build")
+  expect(parseLayouts(store.written.at(-1)!).hidden.map((h) => h.tab.name)).toEqual(["Trending", "P&L", "Journal", "Perps"])
 })
 
 test("ctrl-t on a highlighted Feed row picks its token at once and puts a question about it on the line", async () => {
@@ -352,6 +355,8 @@ const OLD_RESEARCH = `tabs = [
   { name = "Research", layout = "My Research" },
   { name = "Journal", layout = "Journal" },
   { name = "Perps", layout = "Perps" },
+  { name = "Bots", layout = "Bots" },
+  { name = "Build", layout = "Build" },
 ]
 
 [layouts."My Research"]
@@ -401,6 +406,8 @@ const UPGRADED = `tabs = [
   { name = "Research", layout = "Research" },
   { name = "Journal", layout = "Journal" },
   { name = "Perps", layout = "Perps" },
+  { name = "Bots", layout = "Bots" },
+  { name = "Build", layout = "Build" },
 ]
 
 [layouts."My Cockpit"]
@@ -414,10 +421,12 @@ ${OLD_RESEARCH.slice(OLD_RESEARCH.indexOf("[layouts."))}`
 
 test("upgraded with tabs on layouts chosen in state: Research is offered its list pane, and a copy with the agent taken out isn't offered it back", async () => {
   const store = memoryStore(UPGRADED, { Cockpit: "My Cockpit", watch: "My Cockpit 2", Research: "My Research" })
-  // The seventh tab, Research, here (the scene's names count the default tabs).
-  drawn = await drawScene("followed", 147, 40, "journal", store)
+  drawn = await drawScene("followed", 160, 40, "research", store)
   expect(frame().split("\n")[1]).toContain("Research has a new pane: lists")
   drawn.setup.renderer.destroy()
-  drawn = await drawScene("followed", 147, 40, "trending", store)
+  // The third tab, watch, on the Cockpit's copy with the agent taken out.
+  drawn = await drawScene("followed", 160, 40, "trade", store)
+  for (const a of ["up", "right", "right", "down"] as const) await arrow(a)
+  expect(frame().split("\n")[1]).toContain("3 watch")
   expect(frame().split("\n")[1]).not.toContain("new pane")
 })

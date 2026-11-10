@@ -22,7 +22,7 @@
  │ · Where to start         │ │ │ctrl-] back to setup · Ctrl-C stops it                                             │ │ 
  │                          │ │ ╰───────────────────────────────────────────────────────────────────────────────────╯ │ 
  │                          │ │                                                                                       │ 
- │ about 3 minutes          │ │  ⠋ type FakeKey1 at the CLI's prompt                                                  │ 
+ │ about 5 minutes          │ │  ⠋ type FakeKey1 at the CLI's prompt                                                  │ 
  │ quit any time: it picks  │ │                                                                                       │ 
  │ up where you stopped     │ │                                                                                       │ 
  ╰──────────────────────────╯ ╰───────────────────────────────────────────────────────────────────────────────────────╯ 

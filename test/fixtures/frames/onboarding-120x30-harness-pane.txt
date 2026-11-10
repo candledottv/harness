@@ -22,7 +22,7 @@
  │                          │ │ │ctrl-] back to setup · Ctrl-C stops it                                             │ │ 
  │                          │ │ ╰───────────────────────────────────────────────────────────────────────────────────╯ │ 
  │                          │ │                                                                                       │ 
- │ about 3 minutes          │ │  ⠋finish signing in in your browser; the pane says if it needs a    ⧉ code   ⧉ link   │ 
+ │ about 5 minutes          │ │  ⠋finish signing in in your browser; the pane says if it needs a    ⧉ code   ⧉ link   │ 
  │ quit any time: it picks  │ │                                                                                       │ 
  │ up where you stopped     │ │                                                                                       │ 
  ╰──────────────────────────╯ ╰───────────────────────────────────────────────────────────────────────────────────────╯ 

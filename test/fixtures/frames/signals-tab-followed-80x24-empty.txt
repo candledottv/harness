@@ -1,5 +1,5 @@
  agent-a ▾  LIVE  today $12.00 / $100.00  ● 1 card waiting       ctrl-x ×2 kill 
- 1 Tra  2 Coc  3 Tre  4 Signals  5 P&L  6 Res  7 Jou  8 Per   settings ▾        
+ 1 Trade  2 Cockpit  3 Signals  4 Research  5 Bots  6 Build   settings ▾        
 ╭─ Signals · Hacc's tape ──────────────────── deployer ▾ ── chain ▾ ── all ▾ ──╮
 │ ◂  signals  ▸   1/2 · ←/→                                                    │
 │No deployer signals on Hacc's tape, nor in what the core has heard since      │
@@ -17,7 +17,7 @@
 ╭─ agent-a ─────────────────────────────────────────── Claude Code · sonnet ▾ ─╮
 │1 card waiting · ⏎ approves the highlighted one                               │
 │▌ BUY 0.1 SOL of JUPF                                                     50s │
-│▌ agent-a · pays from embedded · live                                         │
+│▌ agent-a · pays from embedded · live · JupF…1111                             │
 │▌  ⏎ approve    ctrl-n reject    ctrl-o details                               │
 ╰──────────────────────────────────────────────────────────────────────────────╯
                                                                                 
@@ -25,7 +25,7 @@
 
 --- colours ---
 0: 6cb6ff/16263a×11 0b0d10/3ddc84×6 ffffff/0e1115×1 959dab/0e1115×6 f6f8fb/0e1115×6 959dab/0e1115×10 ffffff/0e1115×2 f5a524/0e1115×16 ffffff/0e1115×6 ff5c5c/3a1619×16
-1: ffffff/0b0d10×1 6cb6ff/0b0d10×5 ffffff/0b0d10×2 6cb6ff/0b0d10×5 ffffff/0b0d10×2 6cb6ff/0b0d10×5 ffffff/0b0d10×2 f6f8fb/0b0d10+9×9 ffffff/0b0d10×2 6cb6ff/0b0d10×5 ffffff/0b0d10×2 6cb6ff/0b0d10×5 ffffff/0b0d10×2 6cb6ff/0b0d10×5 ffffff/0b0d10×2 6cb6ff/0b0d10×5 ffffff/0b0d10×2 6cb6ff/16263a×12 ffffff/0b0d10×7
+1: ffffff/0b0d10×1 6cb6ff/0b0d10×7 ffffff/0b0d10×2 6cb6ff/0b0d10×9 ffffff/0b0d10×2 f6f8fb/0b0d10+9×9 ffffff/0b0d10×2 6cb6ff/0b0d10×10 ffffff/0b0d10×2 6cb6ff/0b0d10×6 ffffff/0b0d10×2 6cb6ff/0b0d10×7 ffffff/0b0d10×2 6cb6ff/16263a×12 ffffff/0b0d10×7
 2: 252a33/111419×2 b392f0/111419×23 252a33/111419×20 6cb6ff/16263a×12 252a33/111419×2 6cb6ff/16263a×9 252a33/111419×2 6cb6ff/16263a×7 252a33/111419×3
 3: 252a33/111419×1 6cb6ff/16263a×3 dde2ea/111419×9 6cb6ff/16263a×3 959dab/111419×11 ffffff/111419×52 252a33/111419×1
 4: 252a33/111419×1 959dab/111419×72 ffffff/111419×6 252a33/111419×1
@@ -43,7 +43,7 @@
 16: 32fe9f/111419×2 b392f0/111419×9 32fe9f/111419×43 6cb6ff/16263a×24 32fe9f/111419×2
 17: 32fe9f/111419×1 959dab/111419×47 ffffff/111419×31 32fe9f/111419×1
 18: 32fe9f/111419×1 f5a524/111419×2 f6f8fb/111419×19 dde2ea/111419×53 f5a524/111419×3 ffffff/111419×1 32fe9f/111419×1
-19: 32fe9f/111419×1 f5a524/111419×2 959dab/111419×35 ffffff/111419×41 32fe9f/111419×1
+19: 32fe9f/111419×1 f5a524/111419×2 959dab/111419×47 ffffff/111419×29 32fe9f/111419×1
 20: 32fe9f/111419×1 f5a524/111419×2 0b0d10/6cb6ff×11 dde2ea/111419×2 6cb6ff/16263a×15 dde2ea/111419×2 6cb6ff/16263a×16 ffffff/111419×30 32fe9f/111419×1
 21: 32fe9f/111419×80
 22: 959dab/0b0d10×1 ffffff/0b0d10×79

@@ -295,7 +295,7 @@ export function paneOutcome(report: PaneReport, opts: { fundsOut: boolean; revea
       if (opts.reveals) return { outcome: "didnt_finish", words: `didn't finish: it may have shown ${opts.reveals} before it stopped.`, ...base }
       // A send can fail after it was signed and sent, so its words never say nothing went out.
       if (opts.fundsOut) return { outcome: "didnt_finish", words: `didn't finish (exit ${report.exit ?? "?"}): refused, answered no, or failed partway. Check the wallet or the signature before sending again.`, ...base }
-      return { outcome: "didnt_finish", words: "didn't finish: refused, or answered no at the CLI's prompt.", ...base }
+      return { outcome: "didnt_finish", words: "didn't finish: the CLI's own line above says why (a wrong passphrase, a refusal, or no at its prompt).", ...base }
   }
 }
 

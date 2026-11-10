@@ -1,0 +1,64 @@
+{
+  "name": "sizing-start",
+  "host": "hacc",
+  "method": "POST",
+  "route": "/v1/strategy-lab/replay",
+  "query": {},
+  "body": {
+    "definition": {
+      "chain": "solana",
+      "entry": {
+        "source": "pattern",
+        "pattern": "new_ticker",
+        "filters": {
+          "min_mcap_usd": 100000
+        }
+      },
+      "exit": {
+        "take_profit_pct": 30,
+        "stop_loss_pct": 20,
+        "max_hold_hours": 1
+      },
+      "sizing": {
+        "usd_per_trade": 10,
+        "max_concurrent": 3,
+        "base_usd": 5,
+        "max_usd": 20,
+        "rules": [
+          {
+            "when": {
+              "mcap_at_entry": {
+                "lt": 300000
+              }
+            },
+            "mult": 2
+          },
+          {
+            "when": {
+              "mcap_at_entry": {
+                "gte": 2000000
+              }
+            },
+            "skip": true
+          },
+          {
+            "when": {
+              "tracked_buyers_at_trigger": {
+                "gte": 3
+              }
+            },
+            "add": 5
+          }
+        ]
+      }
+    },
+    "from": "2026-11-05T11:30:00.000Z",
+    "to": "2026-11-05T14:30:00.000Z"
+  },
+  "status": 202,
+  "ms": 133,
+  "bytes": 14,
+  "answer": {
+    "job_id": 223
+  }
+}

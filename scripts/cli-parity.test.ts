@@ -18,8 +18,8 @@ describe("the parity check", () => {
   })
 
   test("a subcommand the CLI adds is missing from both", () => {
-    const added = { ...SOURCE, commands: [...SOURCE.commands, { ...SOURCE.commands[0]!, command: "keys", subcommand: "rotate" }] }
-    expect(parityProblems(added, CLI_ROWS, doc)).toEqual(["keys rotate: no row in the table", "keys rotate: not in the docs page"])
+    const added = { ...SOURCE, commands: [...SOURCE.commands, { ...SOURCE.commands[0]!, command: "keys", subcommand: "audit" }] }
+    expect(parityProblems(added, CLI_ROWS, doc)).toEqual(["keys audit: no row in the table", "keys audit: not in the docs page"])
   })
 
   test("a subcommand the CLI removes leaves a row in both that names nothing", () => {

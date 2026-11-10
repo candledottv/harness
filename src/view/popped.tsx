@@ -19,7 +19,8 @@ import type { JournalKind } from "../core/journal-query"
 import type { KeyEvent } from "@opentui/core"
 import { useKeyboard, useRenderer, useTerminalDimensions } from "@opentui/react"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { POPPED_AT, type PaneId } from "../shared/panes"
+import { POPPED_AT, type PaneId, type TokenPane } from "../shared/panes"
+import { pinPane } from "../core/view-state"
 import type { Session } from "./app"
 import { Chip } from "./chip"
 import { copiedMessage, makeCopier } from "./clipboard"
@@ -29,12 +30,13 @@ import { type Layout, paneNav, place, type Rect, roomy } from "./layout"
 import type { Act } from "./panes/lines"
 import { activityTape, PANES } from "./panes/registry"
 import { setPanePadding } from "./panes/pane"
-import { applyEvent, type CoreView, EMPTY_VIEW, openCards } from "./store"
+import { applyEvent, type CoreView, EMPTY_VIEW, lostCore, openCards } from "./store"
 import { C, fit, type TerminalColours } from "./theme"
 import type { ThemeStore } from "./themes"
 import { useTheme } from "./use-theme"
 import { TabBody } from "./trade-tab"
 import { useRepaintAfterResize } from "./repaint"
+import { guardMouse } from "./mouse-guard"
 
 const CLOSE_HINT = "ctrl-c twice closes  "
 
@@ -74,6 +76,7 @@ export function PoppedApp({ session, pane, onQuit, now = Date.now, tickMs = 250,
   setPanePadding(roomy(width, height) ? 1 : 0)
   const renderer = useRenderer()
   useRepaintAfterResize(renderer, width, height)
+  useEffect(() => guardMouse(renderer), [renderer])
   const copier = useMemo(() => makeCopier(renderer), [renderer])
   useEffect(() => () => void copier.dispose(), [copier])
   const [view, setView] = useState<CoreView>(EMPTY_VIEW)
@@ -88,6 +91,10 @@ export function PoppedApp({ session, pane, onQuit, now = Date.now, tickMs = 250,
   const bodyRef = useRef<Rect>({ x: 0, y: 0, w: width, h: Math.max(1, height - 1) })
 
   useEffect(() => {
+    session.onLost?.(() => {
+      viewRef.current = lostCore(viewRef.current)
+      setView(viewRef.current)
+    })
     session.onEvent((event) => {
       viewRef.current = applyEvent(viewRef.current, event, now())
       setView(viewRef.current)
@@ -175,7 +182,7 @@ export function PoppedApp({ session, pane, onQuit, now = Date.now, tickMs = 250,
   const run = async (effect: Effect) => {
     switch (effect.type) {
       case "kill":
-        return call("kill", {}, () => "Kill switch on: buys paused, the agent stopped. Sells still work.")
+        return call("kill", {}, () => "Kill switch on: buys paused, the agent's turn stopped. Sells still work.")
       case "quit":
         return onQuit()
       case "link":
@@ -202,10 +209,10 @@ export function PoppedApp({ session, pane, onQuit, now = Date.now, tickMs = 250,
     }
   }
 
-  const togglePin = () => {
-    const pinned = viewRef.current.views?.pins.some((p) => p.at === POPPED_AT)
-    if (pinned) return void call("view.unpin", { at: POPPED_AT }, () => "The token pane follows the link again.")
-    return void call("view.pin", { at: POPPED_AT }, () => `The token pane stays on ${viewRef.current.market?.followed?.symbol ?? "this token"} while the link moves on.`)
+  const togglePin = (pane: TokenPane) => {
+    const pinned = viewRef.current.views?.pins.some((p) => p.at === POPPED_AT && pinPane(p) === pane)
+    if (pinned) return void call("view.unpin", { at: POPPED_AT, pane }, () => "The token pane follows the link again.")
+    return void call("view.pin", { at: POPPED_AT, pane }, () => `The token pane stays on ${viewRef.current.market?.followed?.symbol ?? "this token"} while the link moves on.`)
   }
 
   const act = (cardId: string, a: Act) => {

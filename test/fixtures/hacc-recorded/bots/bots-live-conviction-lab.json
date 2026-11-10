@@ -1,0 +1,15 @@
+{
+  "name": "live-conviction-lab",
+  "host": "hacc",
+  "method": "GET",
+  "route": "/v1/strategy-lab/conviction",
+  "query": {},
+  "status": 404,
+  "ms": 132,
+  "bytes": 98,
+  "answer": {
+    "message": "Route GET:/v1/strategy-lab/conviction not found",
+    "error": "Not Found",
+    "statusCode": 404
+  }
+}

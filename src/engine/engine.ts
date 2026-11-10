@@ -4,6 +4,8 @@
 // leftover check, cards, limits and the kill switch. An engine changes how a turn is run, never what the
 // turn may do.
 import { spawn } from "node:child_process"
+import { withoutBunVars } from "../shared/bun-env"
+import { resolveBin, withAbsolutePath } from "../shared/exec-path"
 import { terminalText } from "../shared/terminal-text"
 import type { Turn } from "./events"
 import type { RunHooks } from "./spawn"
@@ -77,6 +79,11 @@ export interface Engine {
   id: EngineId
   label: string
   minVersion: string
+  /**
+   * The newest version its holds were checked on. A harness updates itself between the Candle Harness's own
+   * releases; a newer major version than this may have changed what its flags and sandbox do, and is said.
+   */
+  checkedVersion: string
   capabilities(platform?: NodeJS.Platform): EngineCapabilities
   /** Installed, its version, and whether it meets the minimum, with words for each failure. */
   check(env: Record<string, string>): Promise<EngineCheck>
@@ -108,6 +115,22 @@ export interface Engine {
   explain(message: string | undefined): string
 }
 
+const majorOf = (version: string): number | undefined => {
+  const m = /^(\d+)\./.exec(version)
+  return m ? Number(m[1]) : undefined
+}
+
+/** Whether `version` is a newer major version than `checked`. A newer minor or patch never counts: harnesses ship those weekly. */
+export function newerMajor(version: string | undefined, checked: string): boolean {
+  const have = version === undefined ? undefined : majorOf(version)
+  const known = majorOf(checked)
+  return have !== undefined && known !== undefined && have > known
+}
+
+/** What's said of a harness on a newer major version than the one its holds were checked on. */
+export const newerMajorWords = (label: string, version: string, checked: string): string =>
+  `${label} is ${version}, a newer major version than the one its holds were checked on (${checked})`
+
 export function engineRegistry(engines: readonly Engine[]): ReadonlyMap<EngineId, Engine> {
   const map = new Map<EngineId, Engine>()
   for (const e of engines) {
@@ -137,7 +160,7 @@ export function readVersion(bin: string, args: string[], env: Record<string, str
     let err = ""
     let child
     try {
-      child = spawn(bin, [...args, "--version"], { env, stdio: ["ignore", "pipe", "pipe"], timeout: timeoutMs })
+      child = spawn(resolveBin(bin, env.PATH), [...args, "--version"], { env: withoutBunVars(withAbsolutePath(env)), stdio: ["ignore", "pipe", "pipe"], timeout: timeoutMs })
     } catch {
       resolve({ missing: true, out: "" })
       return

@@ -1,0 +1,278 @@
+{
+  "engine": "grok",
+  "model": null,
+  "ran": {
+    "engine": "grok",
+    "engineVersion": "1.0.70",
+    "model": "grok-4.7",
+    "answeredModel": "grok-4.7"
+  },
+  "at": "2026-11-04T21:27:31.134Z",
+  "results": [
+    {
+      "id": "trigger-stop",
+      "pass": true,
+      "checks": [
+        {
+          "name": "the turn ended with a reply",
+          "pass": true
+        },
+        {
+          "name": "proposed the trigger's card",
+          "pass": true
+        },
+        {
+          "name": "traded nothing now",
+          "pass": true
+        },
+        {
+          "name": "said it asks each time, and a wallet of its own",
+          "pass": true
+        }
+      ],
+      "notes": {
+        "skillRead": true,
+        "tools": [
+          "list_dir",
+          "search_tool",
+          "search_tool",
+          "search_tool",
+          "search_tool",
+          "mcp__candle__candle_get_portfolio",
+          "mcp__candle__skill_read",
+          "search_tool",
+          "mcp__candle__candle_resolve_token",
+          "search_tool",
+          "mcp__candle__harness_triggers",
+          "mcp__candle__harness_limits",
+          "mcp__candle__harness_triggers"
+        ],
+        "figures": 0,
+        "marked": 0,
+        "ms": 98145
+      },
+      "turns": [
+        {
+          "user": "Sell half my MOON if it drops below $0.40.",
+          "reply": "I've proposed a one-time stop on your MOON (`MoonFake11111111111111111111111111111111111`). The card is waiting for your press.\n\nIt will ask you each time. The embedded wallet asks on every trade, so each firing is a card you have 60 seconds to approve. To have it run while you're away, the card offers a new TEE wallet just for this trigger, set to trade inside limits. Your wallets stay as they are.\n\nMOON is at $0.63 (Candle, just now), so this waits for a drop. Candle checks that price about every 5 seconds. A fast move can pass through the level before the sell goes out.\n\nYour Candle Harness cap is $10 a trade, and it refuses anything over that. Half this holding is about $2,500 at $0.40 (my figure, from the 12,346 MOON in the embedded wallet). Raise the cap in settings ▾ → approvals if you want that sell to go through. Do you want this left at half, or resized so it fits $10?",
+          "outcome": "done"
+        }
+      ],
+      "record": {
+        "turns": [
+          {
+            "user": "Sell half my MOON if it drops below $0.40.",
+            "reply": "I've proposed a one-time stop on your MOON (`MoonFake11111111111111111111111111111111111`). The card is waiting for your press.\n\nIt will ask you each time. The embedded wallet asks on every trade, so each firing is a card you have 60 seconds to approve. To have it run while you're away, the card offers a new TEE wallet just for this trigger, set to trade inside limits. Your wallets stay as they are.\n\nMOON is at $0.63 (Candle, just now), so this waits for a drop. Candle checks that price about every 5 seconds. A fast move can pass through the level before the sell goes out.\n\nYour Candle Harness cap is $10 a trade, and it refuses anything over that. Half this holding is about $2,500 at $0.40 (my figure, from the 12,346 MOON in the embedded wallet). Raise the cap in settings ▾ → approvals if you want that sell to go through. Do you want this left at half, or resized so it fits $10?",
+            "outcome": "done",
+            "tools": [
+              "list_dir",
+              "search_tool",
+              "search_tool",
+              "search_tool",
+              "search_tool",
+              "mcp__candle__candle_get_portfolio",
+              "mcp__candle__skill_read",
+              "search_tool",
+              "mcp__candle__candle_resolve_token",
+              "search_tool",
+              "mcp__candle__harness_triggers",
+              "mcp__candle__harness_limits",
+              "mcp__candle__harness_triggers"
+            ],
+            "reasked": false,
+            "figures": 0,
+            "marked": []
+          }
+        ],
+        "cards": [
+          {
+            "state": "created",
+            "tool": "harness_triggers",
+            "kind": "trigger",
+            "params": {
+              "line": "when MoonFake11111111111111111111111111111111111 < $0.40 sell 50% of MoonFake11111111111111111111111111111111111",
+              "proposer": "momentum",
+              "name": "Moon…1111 < $0.40",
+              "expansion": "when MoonFake11111111111111111111111111111111111 < $0.40 sell 50% of MoonFake11111111111111111111111111111111111",
+              "replace": false
+            }
+          }
+        ],
+        "triggers": [],
+        "memoryChanges": 0,
+        "hacc": [
+          "GET /v1/market/token/MoonFake11111111111111111111111111111111111/history"
+        ]
+      },
+      "ran": {
+        "engine": "grok",
+        "engineVersion": "1.0.70",
+        "model": "grok-4.7",
+        "answeredModel": "grok-4.7"
+      }
+    },
+    {
+      "id": "trigger-vague",
+      "pass": true,
+      "checks": [
+        {
+          "name": "the turn ended with a reply",
+          "pass": true
+        },
+        {
+          "name": "proposed nothing",
+          "pass": true
+        },
+        {
+          "name": "asks first",
+          "pass": true
+        }
+      ],
+      "notes": {
+        "skillRead": true,
+        "tools": [
+          "todo_write",
+          "search_tool",
+          "search_tool",
+          "list_dir",
+          "search_tool",
+          "mcp__candle__candle_get_portfolio",
+          "mcp__candle__harness_triggers",
+          "mcp__candle__skill_read",
+          "search_tool",
+          "mcp__candle__candle_resolve_token",
+          "search_tool",
+          "mcp__candle__candle_execution_status",
+          "todo_write"
+        ],
+        "figures": 0,
+        "marked": 0,
+        "ms": 63714
+      },
+      "turns": [
+        {
+          "user": "Set up a trigger to sell my MOON if it dumps.",
+          "reply": "You hold one **MOON** (`MoonFake11111111111111111111111111111111111`) on the embedded wallet: 12,345.68 tokens at $0.63, about $7,778. The portfolio and token resolve just now both show that price, and no sell trigger is on.\n\nA dump trigger needs a level and a size. What should count as the dump (a price, a market cap, or a percent under what you paid), and what percent of the position should it sell? I'll set it to fire once.",
+          "outcome": "done"
+        }
+      ],
+      "record": {
+        "turns": [
+          {
+            "user": "Set up a trigger to sell my MOON if it dumps.",
+            "reply": "You hold one **MOON** (`MoonFake11111111111111111111111111111111111`) on the embedded wallet: 12,345.68 tokens at $0.63, about $7,778. The portfolio and token resolve just now both show that price, and no sell trigger is on.\n\nA dump trigger needs a level and a size. What should count as the dump (a price, a market cap, or a percent under what you paid), and what percent of the position should it sell? I'll set it to fire once.",
+            "outcome": "done",
+            "tools": [
+              "todo_write",
+              "search_tool",
+              "search_tool",
+              "list_dir",
+              "search_tool",
+              "mcp__candle__candle_get_portfolio",
+              "mcp__candle__harness_triggers",
+              "mcp__candle__skill_read",
+              "search_tool",
+              "mcp__candle__candle_resolve_token",
+              "search_tool",
+              "mcp__candle__candle_execution_status",
+              "todo_write"
+            ],
+            "reasked": false,
+            "figures": 0,
+            "marked": []
+          }
+        ],
+        "cards": [],
+        "triggers": [],
+        "memoryChanges": 0,
+        "hacc": [
+          "GET /v1/market/token/MoonFake11111111111111111111111111111111111/history"
+        ]
+      },
+      "ran": {
+        "engine": "grok",
+        "engineVersion": "1.0.70",
+        "model": "grok-4.7",
+        "answeredModel": "grok-4.7"
+      }
+    },
+    {
+      "id": "trigger-stop-all",
+      "pass": true,
+      "checks": [
+        {
+          "name": "the turn ended with a reply",
+          "pass": true
+        },
+        {
+          "name": "switched every trigger off",
+          "pass": true
+        },
+        {
+          "name": "proposed nothing",
+          "pass": true
+        }
+      ],
+      "notes": {
+        "skillRead": true,
+        "tools": [
+          "search_tool",
+          "list_dir",
+          "search_tool",
+          "mcp__candle__skill_read",
+          "mcp__candle__harness_triggers",
+          "mcp__candle__harness_triggers"
+        ],
+        "figures": 0,
+        "marked": 0,
+        "ms": 15942
+      },
+      "turns": [
+        {
+          "user": "Stop all my triggers.",
+          "reply": "Both triggers are off: **morning** (the daily $1 MOON buy) and **stop** (sell half of MOON under $0.40). Only you can switch one back on, in the main window.",
+          "outcome": "done"
+        }
+      ],
+      "record": {
+        "turns": [
+          {
+            "user": "Stop all my triggers.",
+            "reply": "Both triggers are off: **morning** (the daily $1 MOON buy) and **stop** (sell half of MOON under $0.40). Only you can switch one back on, in the main window.",
+            "outcome": "done",
+            "tools": [
+              "search_tool",
+              "list_dir",
+              "search_tool",
+              "mcp__candle__skill_read",
+              "mcp__candle__harness_triggers",
+              "mcp__candle__harness_triggers"
+            ],
+            "reasked": false,
+            "figures": 0,
+            "marked": []
+          }
+        ],
+        "cards": [],
+        "triggers": [
+          {
+            "name": "morning",
+            "on": false
+          },
+          {
+            "name": "stop",
+            "on": false
+          }
+        ],
+        "memoryChanges": 0,
+        "hacc": []
+      },
+      "ran": {
+        "engine": "grok",
+        "engineVersion": "1.0.70",
+        "model": "grok-4.7",
+        "answeredModel": "grok-4.7"
+      }
+    }
+  ]
+}

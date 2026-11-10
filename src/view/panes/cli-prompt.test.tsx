@@ -123,7 +123,7 @@ async function input(fn: () => unknown) {
 }
 
 async function approveAndOpen(session: FakeSession) {
-  clock += 1_000 // past the 300 ms before Enter approves
+  clock += 2_000 // past the wait before Enter approves: 300 ms, or 1.5 s for a card that arrived while another waited
   await input(() => setup!.mockInput.pressEnter())
   await input(() => Bun.sleep(10))
   expect(session.requests.find((r) => r.method === "cards.approve")).toBeDefined()
@@ -153,6 +153,19 @@ test("while it's shown, every key goes to the pane: none to the input line or th
   expect(pane.written.join("")).toContain("kill")
   expect(session.requests.map((r) => r.method)).not.toContain("kill")
   expect(session.requests.map((r) => r.method)).not.toContain("agent.send")
+})
+
+test("the kill switch works while a prompt pane has the keys: the first ctrl-x is the pane's too, the second pauses and stays out of it", async () => {
+  const session = new FakeSession((m) => (m === "cards.approve" ? opened("c1") : {}))
+  await start(session)
+  const pane = await approveAndOpen(session)
+  await input(() => setup!.mockInput.pressKey("x", { ctrl: true }))
+  expect(pane.written.join("")).toBe("\x18")
+  expect(session.requests.map((r) => r.method)).not.toContain("kill")
+  clock += 300
+  await input(() => setup!.mockInput.pressKey("x", { ctrl: true }))
+  expect(session.requests.map((r) => r.method)).toContain("kill")
+  expect(pane.written.join("")).toBe("\x18")
 })
 
 test("a passphrase pasted into the pane reaches the pane, and never the paste log", async () => {

@@ -300,4 +300,8 @@ test("the CLI profile recorded on a fresh home makes a config only the person ca
   const { p } = home()
   expect(await recordProfile(p, "candle-harness")).toEqual({ ok: true, wrote: true })
   expect(mode(p.configFile)).toBe(0o600)
+  // Its folder too, when this makes it, as every other path that makes it does: it holds config.toml and the keys.
+  const fresh = paths({ CANDLE_HARNESS_HOME: join(p.configDir, "harness") })
+  expect(await recordProfile(fresh, "candle-harness")).toEqual({ ok: true, wrote: true })
+  expect(mode(fresh.configDir)).toBe(0o700)
 })

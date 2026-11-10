@@ -1,0 +1,25 @@
+{
+  "name": "prices-refresh-refused",
+  "host": "hacc",
+  "route": "/v1/market/prices",
+  "query": {
+    "addresses": "HaccFake11111111111111111111111111111111115"
+  },
+  "status": 200,
+  "ms": 144,
+  "bytes": 297,
+  "answer": {
+    "source": "stored",
+    "observed_at": null,
+    "missing_fields": [
+      "snapshot"
+    ],
+    "refresh_available": false,
+    "required_tier": "pro",
+    "research_credits": 0,
+    "refresh_refused": "Request rate limit reached",
+    "remaining_daily_credits": 490,
+    "remaining_period_credits": 9934,
+    "next_daily_release_at": "2026-11-04T19:37:46.160Z"
+  }
+}

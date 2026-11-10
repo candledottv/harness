@@ -4,7 +4,7 @@ import { describe, expect, test } from "bun:test"
 import { pnlScene, pnlSeriesScene } from "../../../test/pnl-scene"
 import type { PnlView } from "../../core/pnl"
 import { bucketsOnTimeline, gappedChart } from "../chart"
-import { parseCommand } from "../commands"
+import { parseCommand } from "../../shared/commands"
 import { type Effect, INITIAL_UI, type Key, SETTINGS, step, type UiAction, type UiContext, type UiState } from "../keys"
 import { paletteRows, type PaletteInput } from "../palette-rows"
 import { applyEvent, EMPTY_VIEW } from "../store"
@@ -99,6 +99,27 @@ describe("the P&L pane", () => {
     expect(withPaper.indexOf("paper, at quoted prices · never added to live")).toBeLessThan(withPaper.findIndex((l) => l.startsWith("agents")))
     const live = (out: string[]) => out.filter((l) => /^(last 24h|together|agent-[ab] +[+-]\$|embedded)/.test(l) && !l.includes("≈"))
     expect(live(withPaper)).toEqual(live(texts(pnlLines(full, { width: 76, now: NOW }))))
+  })
+
+  test("each rules bot from its own fills, its own block, never added to Candle's; a paper bot's ≈", () => {
+    const p: PnlView = {
+      ...full,
+      bots: [
+        { name: "conf", agent: "agent-a", mode: "live", open: 2, closed: 5, realizedUsd: 1.2, unrealizedUsd: -0.3 },
+        { name: "dip", agent: "agent-b", mode: "paper", open: 1, closed: 1, realizedUsd: 0.05, unrealizedUsd: null, unpriced: 1 },
+      ],
+    }
+    const out = texts(pnlLines(p, { width: 76, now: NOW }))
+    const head = out.findIndex((l) => l.startsWith("bots"))
+    expect(out[head + 1]).toBe("counted here from each bot's own fills, apart from Candle's books")
+    expect(out[head + 2]).toMatch(/^conf +\+\$0\.90 +\+\$1\.20 +-\$0\.30$/)
+    expect(out[head + 3]).toBe("  2 open positions, 5 closed · agent-a")
+    expect(out[head + 4]).toMatch(/^dip ≈ +\+\$0\.05 +\+\$0\.05/)
+    expect(out[head + 5]).toStartWith("  paper, at quoted prices · 1 open position, 1 closed · 1 unpriced")
+    // Candle's figures are the same as without them.
+    const live = (o: string[]) => o.filter((l) => /^(last 24h|together|agent-[ab] |embedded)/.test(l))
+    expect(live(out)).toEqual(live(texts(pnlLines(full, { width: 76, now: NOW }))))
+    for (const width of WIDTHS) for (const l of texts(pnlLines(p, { width, now: NOW }))) expect(l.length).toBeLessThanOrEqual(width)
   })
 
   test("its title says whose and how old, live in paper mode; its chip is the window", () => {
@@ -223,6 +244,12 @@ describe("Trades", () => {
     expect(lines[2]!.pick).toBeUndefined()
     expect(tradesTitle(p)).toBe("Trades · live: Candle's fills and the Candle Harness's swaps")
     expect(tradesTitle({ ...p, swaps: [] })).toBe("Trades · live: Candle's fills, newest first")
+  })
+
+  test("a bot's fill says by which bot", () => {
+    const p = pnlScene(NOW, "full")
+    const sig = p.trades.find((t) => t.symbol === "LUMEN")!.signature!
+    expect(texts(tradeLines({ ...p, byBot: { [sig]: "conf" } }, { width: 76, now: NOW }))[3]).toMatch(/^Jan 14 23:10 sell LUMEN +\$3\.70 +by bot conf · agent-b$/)
   })
 
   test("a failed trade's error is amber, and no line is wider than the pane", () => {

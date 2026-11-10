@@ -10,9 +10,9 @@
 <rect class="c0" x="104" y="28" width="99" height="18"/>
 <rect class="c1" x="203" y="28" width="54" height="18"/>
 <rect class="c2" x="1130" y="28" width="144" height="18"/>
-<rect class="c5" x="14" y="46" width="747" height="18"/>
-<rect class="c0" x="761" y="46" width="108" height="18"/>
-<rect class="c5" x="869" y="46" width="405" height="18"/>
+<rect class="c5" x="14" y="46" width="450" height="18"/>
+<rect class="c0" x="464" y="46" width="108" height="18"/>
+<rect class="c5" x="572" y="46" width="702" height="18"/>
 <rect class="c5" x="14" y="64" width="1260" height="18"/>
 <rect class="c8" x="14" y="82" width="513" height="18"/>
 <rect class="c0" x="527" y="82" width="216" height="18"/>
@@ -749,19 +749,13 @@
 <text class="c4" x="104" y="58.96" textLength="9">2</text>
 <text class="c4" x="122" y="58.96" textLength="63">Cockpit</text>
 <text class="c4" x="203" y="58.96" textLength="9">3</text>
-<text class="c4" x="221" y="58.96" textLength="72">Trending</text>
+<text class="c4" x="221" y="58.96" textLength="72">Research</text>
 <text class="c4" x="311" y="58.96" textLength="9">4</text>
-<text class="c4" x="329" y="58.96" textLength="63">Signals</text>
-<text class="c4" x="410" y="58.96" textLength="9">5</text>
-<text class="c4" x="428" y="58.96" textLength="27">P&amp;L</text>
-<text class="c4" x="473" y="58.96" textLength="9">6</text>
-<text class="c4" x="491" y="58.96" textLength="72">Research</text>
-<text class="c4" x="581" y="58.96" textLength="9">7</text>
-<text class="c4" x="599" y="58.96" textLength="63">Journal</text>
-<text class="c4" x="680" y="58.96" textLength="9">8</text>
-<text class="c4" x="698" y="58.96" textLength="45">Perps</text>
-<text class="c4" x="770" y="58.96" textLength="72">settings</text>
-<text class="c4" x="851" y="58.96" textLength="9">▾</text>
+<text class="c4" x="329" y="58.96" textLength="36">Bots</text>
+<text class="c4" x="383" y="58.96" textLength="9">5</text>
+<text class="c4" x="401" y="58.96" textLength="45">Build</text>
+<text class="c4" x="473" y="58.96" textLength="72">settings</text>
+<text class="c4" x="554" y="58.96" textLength="9">▾</text>
 <text class="c10" x="41" y="94.96" textLength="63">agent-a</text>
 <text class="c4" x="536" y="94.96" textLength="54">Claude</text>
 <text class="c4" x="599" y="94.96" textLength="36">Code</text>
@@ -2856,6 +2850,8 @@
 <text class="c6" x="230" y="436.96" textLength="72">embedded</text>
 <text class="c6" x="311" y="436.96" textLength="9">·</text>
 <text class="c6" x="329" y="436.96" textLength="36">live</text>
+<text class="c6" x="374" y="436.96" textLength="9">·</text>
+<text class="c6" x="392" y="436.96" textLength="81">JupF…1111</text>
 <text class="c6" x="788" y="436.96" textLength="63">tee-one</text>
 <text class="c6" x="860" y="436.96" textLength="9">·</text>
 <text class="c6" x="878" y="436.96" textLength="27">TEE</text>
@@ -3310,9 +3306,9 @@
 <rect class="c14" x="14" y="46" width="1260" height="18"/>
 <rect class="c5" x="14" y="46" width="81" height="18"/>
 <rect class="c15" x="95" y="46" width="99" height="18"/>
-<rect class="c5" x="194" y="46" width="567" height="18"/>
-<rect class="c0" x="761" y="46" width="108" height="18"/>
-<rect class="c5" x="869" y="46" width="405" height="18"/>
+<rect class="c5" x="194" y="46" width="270" height="18"/>
+<rect class="c0" x="464" y="46" width="108" height="18"/>
+<rect class="c5" x="572" y="46" width="702" height="18"/>
 <rect class="c14" x="14" y="82" width="1260" height="18"/>
 <rect class="c8" x="14" y="82" width="324" height="18"/>
 <rect class="c5" x="338" y="82" width="9" height="18"/>
@@ -4142,19 +4138,13 @@
 <text class="c3" x="104" y="58.96" textLength="9" font-weight="700" text-decoration="underline">2</text>
 <text class="c3" x="122" y="58.96" textLength="63" font-weight="700" text-decoration="underline">Cockpit</text>
 <text class="c4" x="203" y="58.96" textLength="9">3</text>
-<text class="c4" x="221" y="58.96" textLength="72">Trending</text>
+<text class="c4" x="221" y="58.96" textLength="72">Research</text>
 <text class="c4" x="311" y="58.96" textLength="9">4</text>
-<text class="c4" x="329" y="58.96" textLength="63">Signals</text>
-<text class="c4" x="410" y="58.96" textLength="9">5</text>
-<text class="c4" x="428" y="58.96" textLength="27">P&amp;L</text>
-<text class="c4" x="473" y="58.96" textLength="9">6</text>
-<text class="c4" x="491" y="58.96" textLength="72">Research</text>
-<text class="c4" x="581" y="58.96" textLength="9">7</text>
-<text class="c4" x="599" y="58.96" textLength="63">Journal</text>
-<text class="c4" x="680" y="58.96" textLength="9">8</text>
-<text class="c4" x="698" y="58.96" textLength="45">Perps</text>
-<text class="c4" x="770" y="58.96" textLength="72">settings</text>
-<text class="c4" x="851" y="58.96" textLength="9">▾</text>
+<text class="c4" x="329" y="58.96" textLength="36">Bots</text>
+<text class="c4" x="383" y="58.96" textLength="9">5</text>
+<text class="c4" x="401" y="58.96" textLength="45">Build</text>
+<text class="c4" x="473" y="58.96" textLength="72">settings</text>
+<text class="c4" x="554" y="58.96" textLength="9">▾</text>
 <text class="c10" x="41" y="94.96" textLength="36">Feed</text>
 <text class="c10" x="86" y="94.96" textLength="9">·</text>
 <text class="c10" x="104" y="94.96" textLength="18">on</text>

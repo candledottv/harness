@@ -1,5 +1,5 @@
  agent-a ▾  PAPER  today $0.00 / $50.00  ● 0 cards waiting       ctrl-x ×2 kill 
- ╭─ 3 of 6 · A card ──────────────────────────╮Jou  8 Per   settings ▾          
+ ╭─ 3 of 6 · A card ──────────────────────────╮d   settings ▾                   
 ╭│                                            │╮╭─ Token · trending ───────────╮
 ││ A trade your agent proposes waits here, in │││ ◂  token  ▸   1/4 · ←/→      │
 ││ its pane, as a card like this one. ⏎       │││Waiting on Candle for its On  │
@@ -25,7 +25,7 @@
 
 --- colours ---
 0: ffffff/0e131a×1 213447/0e131a×7 ffffff/0e131a×1 213447/0e131a×1 ffffff/0e131a×1 ffffff/12151a×1 414346/12151a×5 ffffff/12151a×1 ffffff/0c0e11×1 2b2e34/0c0e11×5 ffffff/0c0e11×1 414346/0c0e11×5 ffffff/0c0e11×1 2b2e34/0c0e11×1 ffffff/0c0e11×1 2b2e34/0c0e11×6 ffffff/0c0e11×2 2b2e34/0c0e11×1 ffffff/0c0e11×1 2b2e34/0c0e11×1 ffffff/0c0e11×1 2b2e34/0c0e11×5 ffffff/0c0e11×1 2b2e34/0c0e11×7 ffffff/0c0e11×6 ffffff/160f12×1 431f22/160f12×6 ffffff/160f12×1 431f22/160f12×2 ffffff/160f12×1 431f22/160f12×4 ffffff/160f12×1
-1: ffffff/0b0d10×1 32fe9f/111419×2 b392f0/111419×17 32fe9f/111419×27 213447/0b0d10×3 ffffff/0b0d10×2 213447/0b0d10×1 ffffff/0b0d10×1 213447/0b0d10×3 ffffff/0b0d10×2 ffffff/0e131a×1 213447/0e131a×8 ffffff/0e131a×1 213447/0e131a×1 ffffff/0e131a×1 ffffff/0b0d10×9
+1: ffffff/0b0d10×1 32fe9f/111419×2 b392f0/111419×17 32fe9f/111419×27 213447/0b0d10×1 ffffff/0b0d10×2 ffffff/0e131a×1 213447/0e131a×8 ffffff/0e131a×1 213447/0e131a×1 ffffff/0e131a×1 ffffff/0b0d10×18
 2: 32fe9f/111419×2 ffffff/111419×44 32fe9f/111419×2 111418/0c0f12×2 ffffff/0c0f12×1 322c44/0c0f12×5 ffffff/0c0f12×1 322c44/0c0f12×1 ffffff/0c0f12×1 322c44/0c0f12×8 ffffff/0c0f12×1 111418/0c0f12×12
 3: 32fe9f/111419×2 ffffff/111419×1 dde2ea/111419×42 ffffff/111419×1 32fe9f/111419×2 111418/0c0f12×1 ffffff/0e131a×1 213447/0e131a×1 ffffff/0e131a×1 ffffff/0c0f12×1 3c3e42/0c0f12×5 ffffff/0c0f12×1 ffffff/0e131a×1 213447/0e131a×1 ffffff/0e131a×1 ffffff/0c0f12×2 2b2e34/0c0f12×3 ffffff/0c0f12×1 2b2e34/0c0f12×1 ffffff/0c0f12×1 2b2e34/0c0f12×3 ffffff/0c0f12×6 111418/0c0f12×1
 4: 32fe9f/111419×2 ffffff/111419×1 dde2ea/111419×36 ffffff/111419×7 32fe9f/111419×2 111418/0c0f12×1 2b2e34/0c0f12×7 ffffff/0c0f12×1 2b2e34/0c0f12×2 ffffff/0c0f12×1 2b2e34/0c0f12×6 ffffff/0c0f12×1 2b2e34/0c0f12×3 ffffff/0c0f12×1 2b2e34/0c0f12×3 ffffff/0c0f12×1 2b2e34/0c0f12×2 ffffff/0c0f12×2 111418/0c0f12×1

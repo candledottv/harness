@@ -3,8 +3,8 @@
   "source": {
     "repo": "candledottv/cli",
     "path": "packages/cli/src",
-    "commit": "fabd576b91a0c3ca0a3ebacde56aec0e20f23f76",
-    "cliVersion": "0.13.11"
+    "commit": "750bf49a1c08265af41d53ced141d0dd87ca9d38",
+    "cliVersion": "0.13.18"
   },
   "aliases": {
     "wallet": "wallets"
@@ -31,7 +31,6 @@
     "lab",
     "plan",
     "plans",
-    "accounts",
     "keys",
     "wallets",
     "profile",
@@ -413,8 +412,12 @@
     },
     "quant": {
       "group": "Account",
-      "summary": "Quant's terms, which per-use Quant answers need accepted first",
+      "summary": "Quant over an API key: ask a question, accept the terms per-use answers need",
       "rows": [
+        {
+          "invocation": "ask \"<text>\"",
+          "description": "Ask Quant one question and print the answer"
+        },
         {
           "invocation": "terms",
           "description": "Show Quant's terms and record acceptance"
@@ -470,16 +473,6 @@
       "summary": "The plans this API serves: prices, fees, limits and what each can do",
       "rows": []
     },
-    "accounts": {
-      "group": "Account",
-      "summary": "Create a staging test member from fleet keychain items, with no browser",
-      "rows": [
-        {
-          "invocation": "create --env staging --name <fleet-name>",
-          "description": "Create the test member, its TEE wallets and first key; store the key through the sibling"
-        }
-      ]
-    },
     "keys": {
       "group": "Account",
       "summary": "API keys, and the wallets each key may use",
@@ -489,8 +482,8 @@
           "description": "List live API keys: name and Read, Write or Withdraw access; --all includes revoked keys; --scopes adds the raw scopes"
         },
         {
-          "invocation": "create [--access read|write|withdraw|trade-perps | --scopes <a,b,c>] [--label <name>] [--expires-in <days>] [--tx-limit <usd> [--reset daily|weekly|monthly|never]] [--embedded-wallet deny|allow]",
-          "description": "Create an API key; --access mints one of the levels (write trades and launches; only withdraw can move funds; trade-perps is exactly account:read and perps:write, for Hyperliquid perps setup and orders, and it cannot fund its own Hyperliquid account: a Relay deposit needs swap:write and a withdrawal needs perps:withdraw, each a separate grant through --scopes). A trade-perps key trades from an EVM TEE wallet promoted onto it (candle vault new-key --chain evm, then candle vault promote --from <cold> --to-key <prefix>; candle tee new is Solana only) and a signer on the trading machine (candle tee signer new --key <prefix>). --embedded-wallet defaults to deny; allow lets the key spend the account's embedded wallet and is confirmed at a terminal"
+          "invocation": "create [--access read|write|withdraw|trade-perps | --scopes <a,b,c>] [--label <name>] [--expires-in <days>] [--tx-limit <usd> [--reset daily|weekly|monthly|never]] [--embedded-wallet deny|allow] [--no-store]",
+          "description": "Create an API key; --no-store prints it without saving it as the profile's working key (default: store only if no working key exists). --access mints one of the levels (write trades and launches; only withdraw can move funds; trade-perps is exactly account:read and perps:write, for Hyperliquid perps setup and orders, and it cannot fund its own Hyperliquid account: a Relay deposit needs swap:write and a withdrawal needs perps:withdraw, each a separate grant through --scopes). A trade-perps key trades from an EVM TEE wallet promoted onto it (candle vault new-key --chain evm, then candle vault promote --from <cold> --to-key <prefix>; candle tee new is Solana only) and a signer on the trading machine (candle tee signer new --key <prefix>). --embedded-wallet defaults to deny; allow lets the key spend the account's embedded wallet and is confirmed at a terminal"
         },
         {
           "invocation": "access <prefix|label|self> (--access read|write|withdraw [--yes] | --history)",
@@ -505,12 +498,28 @@
           "description": "Set or clear the USD transaction cap on an existing key, with the device token. --reset defaults to daily"
         },
         {
+          "invocation": "limits <prefix> <asset>=<raw> [<asset>=<raw> ...]",
+          "description": "Set a key's per-asset caps (sol, usdc, cndl, eth, usdg; a whole number of base units per transaction) with the profile's own API key. It can only lower a cap or add one; raising or removing one is refused (LOOSEN_REQUIRES_SESSION) and is the owner's, in the web key manager. The list replaces the key's caps"
+        },
+        {
           "invocation": "self embedded-wallet deny",
           "description": "The profile's own key gives up the embedded wallet, with no prompt. A key can never allow itself: the owner does that with keys update"
         },
         {
+          "invocation": "stop <prefix>",
+          "description": "Pause one key with the device token; reversible with keys resume"
+        },
+        {
+          "invocation": "resume <prefix>",
+          "description": "Resume a stopped key with the device token"
+        },
+        {
+          "invocation": "rotate <prefix|label> ([--grace <duration> | --now] [--force] [--yes] | --finish)",
+          "description": "Give a key a new secret, keeping its prefix, label, access, limits, wallets and history. The old secret works through --grace (default 1h, at most 24h) or stops at once with --now; --finish ends an open window early. The profile's own key is replaced in the keychain; update CANDLE_API_KEY and other copies yourself. --force rotates again while a window is open"
+        },
+        {
           "invocation": "revoke <prefix>",
-          "description": "Revoke an API key"
+          "description": "Revoke an API key permanently"
         },
         {
           "invocation": "signer approve <code> --key <prefix|label> [--reject]",
@@ -544,8 +553,16 @@
           "description": "Import a wallet you own (key via --key-file or hidden prompt). A fresh key, without solana-keygen: candle vault new-key --chain solana, candle vault export-key <label> --to <file>, import that file, then delete the file"
         },
         {
+          "invocation": "authorize [--no-browser] [--no-wait] [--timeout <seconds>]",
+          "description": "Give agents access to the account's embedded wallets: opens the Agents page's grant step in your browser (no key is created) and, with an API key, waits until it lands"
+        },
+        {
           "invocation": "revoke <wallet-id>",
           "description": "Revoke a linked wallet"
+        },
+        {
+          "invocation": "allowlist [--all]",
+          "description": "The account's withdrawal allowlist (the destinations candle transfer --to <label> resolves by). Any key reads it; approving an address is the owner's, in the agent console's Wallets tab (an API key cannot approve); an acting key can revoke one, a read-only key cannot. --all adds removed rows"
         },
         {
           "invocation": "trust <label|address|id|prefix*>...",
@@ -557,15 +574,15 @@
         },
         {
           "invocation": "allow-launch <label|address|id|prefix*>...",
-          "description": "Let TEE wallets pay for a launch (candle launch), after a screen of label, address and bound key (owner only; typed confirm)"
+          "description": "Deprecated: a key's launch:write decides TEE launches where the server has TEE_LAUNCH_BY_SCOPE_ENABLED on. Otherwise lets TEE wallets pay for a launch (candle launch), after a screen of label, address and bound key (owner only; typed confirm)"
         },
         {
           "invocation": "disallow-launch <label|address|id|prefix*>... [--yes]",
-          "description": "Stop TEE wallets paying for a launch; trading is unchanged (owner only)"
+          "description": "Deprecated: where the server has TEE_LAUNCH_BY_SCOPE_ENABLED on it saves the value but cannot stop a launch, and exits 1 with the server's message; pause the key (candle keys stop) instead. Otherwise stops TEE wallets paying for a launch; trading is unchanged (owner only)"
         },
         {
-          "invocation": "close-empty [--wallet embedded|<tee address|label>] [--keep <mint>]... [--client-trade-id <id>] [--yes]",
-          "description": "Close a wallet's empty token accounts and return their rent to it, after a preview: the embedded wallet (transfer:write), or a TEE wallet bound to this key, signed by its key signer (swap:write)"
+          "invocation": "close-empty [--wallet embedded|<tee address|label>] [--keep <mint>]... [--client-trade-id <id>] [--preview] [--yes]",
+          "description": "Close a wallet's empty token accounts and return their rent to it, after a preview: the embedded wallet (transfer:write), or a TEE wallet bound to this key, signed by its key signer (swap:write). --preview prints what would close (one JSON document on stdout under --json) and closes nothing"
         }
       ]
     },
@@ -809,12 +826,12 @@
     },
     "tui": {
       "group": "Start here",
-      "summary": "The Candle TUI: holdings, the feed, your agents and approval cards, in the terminal (preview)",
+      "summary": "Candle Harness: holdings, the feed, your agents and approval cards, in the terminal",
       "rows": []
     },
     "core": {
       "group": "Maintain",
-      "summary": "Run the local Candle core the Candle TUI attaches to (preview)",
+      "summary": "Run the local Candle core for Candle Harness (preview)",
       "rows": [
         {
           "invocation": "serve",
@@ -1065,13 +1082,17 @@
       "file": "commands/launch.ts",
       "flags": {
         "value": [
+          "--allowlist",
+          "--allowlist-window",
           "--banner",
           "--buy",
+          "--cap-window",
           "--client-trade-id",
           "--creator-fee-bps",
           "--curve-g",
           "--curve-v",
           "--description",
+          "--dev-buy-max",
           "--dex-version",
           "--discord",
           "--exp-pool-shape",
@@ -1080,8 +1101,10 @@
           "--fee-wallet-multisig-vault-index",
           "--image",
           "--image-url",
+          "--max-buy-per-wallet",
           "--mode",
           "--name",
+          "--open-in",
           "--pool-fee",
           "--pool-fee-from",
           "--pool-fee-minutes",
@@ -1103,6 +1126,7 @@
           "--yes"
         ],
         "path": [
+          "--allowlist",
           "--banner",
           "--image"
         ],
@@ -1184,7 +1208,8 @@
           "--rpc-url"
         ],
         "boolean": [
-          "--no-perps"
+          "--no-perps",
+          "--no-vault"
         ],
         "path": [
           "--keystore"
@@ -1332,35 +1357,6 @@
       "json": true,
       "unlocks": "never",
       "tty": []
-    },
-    {
-      "command": "accounts",
-      "subcommand": "create",
-      "handler": "accountsCreate",
-      "file": "commands/accounts.ts",
-      "flags": {
-        "value": [
-          "--env",
-          "--key-item",
-          "--name",
-          "--scopes",
-          "--signer-item",
-          "--username"
-        ],
-        "boolean": [
-          "--use",
-          "--yes"
-        ],
-        "path": [],
-        "pathPositionals": []
-      },
-      "identity": "none",
-      "json": true,
-      "unlocks": "never",
-      "tty": [
-        "stdin",
-        "stdout"
-      ]
     },
     {
       "command": "token",
@@ -1821,6 +1817,24 @@
         "pathPositionals": []
       },
       "identity": "none",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
+    },
+    {
+      "command": "quant",
+      "subcommand": "ask",
+      "handler": "quantAsk",
+      "file": "commands/quant-ask.ts",
+      "flags": {
+        "value": [
+          "--timeout"
+        ],
+        "boolean": [],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "agent",
       "json": true,
       "unlocks": "never",
       "tty": []
@@ -2828,7 +2842,9 @@
           "--scopes",
           "--tx-limit"
         ],
-        "boolean": [],
+        "boolean": [
+          "--no-store"
+        ],
         "path": [],
         "pathPositionals": []
       },
@@ -2910,6 +2926,22 @@
     },
     {
       "command": "keys",
+      "subcommand": "limits",
+      "handler": "keysLimits",
+      "file": "commands/keys-limits.ts",
+      "flags": {
+        "value": [],
+        "boolean": [],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "agent",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
+    },
+    {
+      "command": "keys",
       "subcommand": "self",
       "handler": "keysSelf",
       "file": "commands/keys-embedded-wallet.ts",
@@ -2926,9 +2958,67 @@
     },
     {
       "command": "keys",
+      "subcommand": "rotate",
+      "handler": "keysRotate",
+      "file": "commands/keys-rotate.ts",
+      "flags": {
+        "value": [
+          "--grace",
+          "--idempotency-key"
+        ],
+        "boolean": [
+          "--finish",
+          "--force",
+          "--now",
+          "--yes"
+        ],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "owner",
+      "json": true,
+      "unlocks": "never",
+      "tty": [
+        "stdin"
+      ]
+    },
+    {
+      "command": "keys",
       "subcommand": "revoke",
       "handler": "keysRevoke",
       "file": "commands/keys.ts",
+      "flags": {
+        "value": [],
+        "boolean": [],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "owner",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
+    },
+    {
+      "command": "keys",
+      "subcommand": "stop",
+      "handler": "keysStop",
+      "file": "commands/keys-stop.ts",
+      "flags": {
+        "value": [],
+        "boolean": [],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "owner",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
+    },
+    {
+      "command": "keys",
+      "subcommand": "resume",
+      "handler": "keysResume",
+      "file": "commands/keys-stop.ts",
       "flags": {
         "value": [],
         "boolean": [],
@@ -3147,6 +3237,7 @@
           "--wallet"
         ],
         "boolean": [
+          "--preview",
           "--yes"
         ],
         "path": [],
@@ -3158,6 +3249,45 @@
       "tty": [
         "stdin"
       ]
+    },
+    {
+      "command": "wallets",
+      "subcommand": "authorize",
+      "handler": "walletsAuthorize",
+      "file": "commands/wallets-authorize.ts",
+      "flags": {
+        "value": [
+          "--timeout"
+        ],
+        "boolean": [
+          "--no-browser",
+          "--no-wait"
+        ],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "agent",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
+    },
+    {
+      "command": "wallets",
+      "subcommand": "allowlist",
+      "handler": "walletsAllowlist",
+      "file": "commands/wallets-allowlist.ts",
+      "flags": {
+        "value": [],
+        "boolean": [
+          "--all"
+        ],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "agent",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
     },
     {
       "command": "wallets",
@@ -3314,7 +3444,7 @@
       "unlocks": "always",
       "tty": [
         "stdin",
-        "stdout"
+        "stderr"
       ]
     },
     {
@@ -3982,7 +4112,7 @@
       "unlocks": "if-tee-and-vault",
       "tty": [
         "stdin",
-        "stdout"
+        "stderr"
       ]
     },
     {
@@ -4173,7 +4303,7 @@
       "unlocks": "always",
       "tty": [
         "stdin",
-        "stdout"
+        "stderr"
       ]
     },
     {
@@ -4231,7 +4361,7 @@
       "unlocks": "always",
       "tty": [
         "stdin",
-        "stdout"
+        "stderr"
       ]
     },
     {
@@ -4262,7 +4392,7 @@
       "unlocks": "always",
       "tty": [
         "stdin",
-        "stdout"
+        "stderr"
       ]
     },
     {

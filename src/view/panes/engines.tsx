@@ -9,17 +9,22 @@ import type { MouseEvent } from "@opentui/core"
 import { ENGINE_IDS, ENGINE_LABELS, type EngineCapabilities, type EngineId, type EngineModel } from "../../engine/engine"
 import { gapsOf } from "../../engine/gaps"
 import { type Preset, PRESET_DESCRIPTIONS, PRESET_LABELS, PRESETS } from "../../engine/preset"
-import { SHELL_ON_NOTE, shellFor, type ToolSettings } from "../../engine/tools"
+import { RUN_EXAMPLE, runOn, runWords, SHELL_ON_NOTE, shellFor, type ToolSettings } from "../../engine/tools"
 import { usePointer } from "../chip"
 import { wrap } from "../format"
 import { C, fit, OVERLAY_Z } from "../theme"
 
 export { gapsOf }
 
+/** The code runner's hold, in words, where it's turned on. */
+const RUN_HOLD = "held to the research folder, no network, 60 s a run"
+
 /** What the `engine` topic says (docs.candle.tv/harness/developers/attach-protocol). */
 export interface EngineTopic {
   agents: Record<string, AgentEngine>
   engines: Partial<Record<EngineId, EngineInfo>>
+  /** Whether this machine can hold the code runner, and if not, why and what fixes it. */
+  runner?: { ok: true; how: string } | { ok: false; why: string; fix: string }
 }
 
 export interface AgentEngine {
@@ -59,6 +64,10 @@ export type PickerRow =
   /** The preset section's heading. */
   | { kind: "presets"; text: string }
   | { kind: "preset"; preset: Preset; text: string; current: boolean }
+  /** The code runner for the agent: Enter turns it on, or off. */
+  | { kind: "runner"; on: boolean; text: string; current: boolean }
+  /** Why the code runner can't be turned on here. */
+  | { kind: "runnerInfo"; text: string }
   | { kind: "engine"; engine: EngineId; text: string; can: boolean }
   /** A line under a heading: its gaps, a held-back sign-in, what to do, "reading…". */
   | { kind: "info"; engine: EngineId; text: string; tone: "dim" | "look" }
@@ -94,6 +103,14 @@ export function pickerRows(topic: EngineTopic | undefined, lists: Partial<Record
   if (presets.length && choice) {
     out.push({ kind: "presets", text: "preset" })
     for (const p of presets) out.push({ kind: "preset", preset: p, text: `${PRESET_LABELS[p]} · ${PRESET_DESCRIPTIONS[p]}`, current: (choice.preset ?? "quant") === p })
+  }
+  // The code runner, under its own heading; search finds it by "code", "run" or a runtime's name.
+  if (choice && topic.runner && matches(`code runner run script python node bun ${runWords(choice.tools?.run)}`)) {
+    const run = choice.tools?.run
+    out.push({ kind: "presets", text: "code runner" })
+    if (runOn(run)) out.push({ kind: "runner", on: false, text: `on for ${run.join(", ")}: ${RUN_HOLD} · ⏎ turns it off`, current: true })
+    else if (topic.runner.ok) out.push({ kind: "runner", on: true, text: `off · ⏎ turns it on for ${RUN_EXAMPLE.join(", ")}: ${RUN_HOLD}`, current: false })
+    else out.push({ kind: "runnerInfo", text: `can't be held here: ${topic.runner.why}. It needs ${topic.runner.fix}.` })
   }
   for (const id of ENGINE_IDS) {
     const info = topic.engines[id]
@@ -134,10 +151,10 @@ export function pickerRows(topic: EngineTopic | undefined, lists: Partial<Record
   return out
 }
 
-export type PickableRow = Extract<PickerRow, { kind: "model" | "preset" }>
+export type PickableRow = Extract<PickerRow, { kind: "model" | "preset" | "runner" }>
 
-/** The rows Enter and the arrows move through: the presets, and models of engines that can run. */
-export const pickable = (rows: readonly PickerRow[]): PickableRow[] => rows.filter((r): r is PickableRow => r.kind === "model" || r.kind === "preset")
+/** The rows Enter and the arrows move through: the presets, the code runner, and models of engines that can run. */
+export const pickable = (rows: readonly PickerRow[]): PickableRow[] => rows.filter((r): r is PickableRow => r.kind === "model" || r.kind === "preset" || r.kind === "runner")
 
 /** Where the picker opens: on the agent's model now, else the first model, else the first row. */
 export function startIndex(rows: readonly PickerRow[]): number {
@@ -171,6 +188,7 @@ export interface EnginePickerProps {
   height: number
   onPick: (engine: EngineId, model: string | undefined) => void
   onPickPreset: (preset: Preset) => void
+  onPickRunner: (on: boolean) => void
   onScroll: (delta: number) => void
 }
 
@@ -236,6 +254,13 @@ export function EnginePicker(props: EnginePickerProps) {
             </text>
           )
         }
+        if (row.kind === "runnerInfo") {
+          return (
+            <text key={`ri-${i}`} fg={C.look}>
+              {fit(`   ${row.text}`, inner)}
+            </text>
+          )
+        }
         if (row.kind === "info") {
           return (
             <text key={`i-${row.engine}-${i}`} fg={row.tone === "look" ? C.look : C.dim}>
@@ -245,9 +270,10 @@ export function EnginePicker(props: EnginePickerProps) {
         }
         // A preset or a model: a click picks it, as Enter does.
         const on = row === selected
-        const key = row.kind === "preset" ? `p-${row.preset}` : `m-${row.engine}-${row.model ?? ""}-${i}`
+        const key = row.kind === "preset" ? `p-${row.preset}` : row.kind === "runner" ? "runner" : `m-${row.engine}-${row.model ?? ""}-${i}`
+        const pick = () => (row.kind === "preset" ? props.onPickPreset(row.preset) : row.kind === "runner" ? props.onPickRunner(row.on) : props.onPick(row.engine, row.model))
         return (
-          <box key={key} flexDirection="row" height={1} backgroundColor={on ? C.sel : C.term} onMouseDown={() => (row.kind === "preset" ? props.onPickPreset(row.preset) : props.onPick(row.engine, row.model))} {...pointer}>
+          <box key={key} flexDirection="row" height={1} backgroundColor={on ? C.sel : C.term} onMouseDown={pick} {...pointer}>
             <text fg={on ? C.hi : C.dim}>{on ? "▸ " : "  "}</text>
             <text fg={row.current ? C.good : C.dim}>{row.current ? "● " : "  "}</text>
             <text fg={C.ctl}>{fit(row.text, inner - 4)}</text>

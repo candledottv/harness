@@ -7,6 +7,7 @@
 // Two rules stay as they were, whatever the table says: ctrl-x twice is the kill switch from anywhere,
 // overlays included; and Enter approves the focused card only with the line empty, 300 ms
 // after it showed. The palette never approves: its approve row says why.
+import { TYPED_ROWS } from "../shared/commands"
 import type { Key } from "./keys"
 
 export type KeyId =
@@ -30,6 +31,7 @@ export type KeyId =
   | "scroll"
   | "tabDigit"
   | "promptPane"
+  | "buildPane"
   | "edit"
   | "clearLine"
   | "lineEnds"
@@ -47,6 +49,10 @@ export interface Here {
   empty: boolean
   /** A card Enter would approve, with the line empty. */
   card: boolean
+  /** That card arrived under another a moment ago, and Enter doesn't take it yet. */
+  cardSoon?: true
+  /** The tab bar has the keys: there, a digit picks a tab. */
+  tabs?: true
   /** The active agent, while it has a turn running or waiting. */
   working?: string
   /** What Enter does with the text on the line: "to agent-a", "runs it", "says why". */
@@ -57,6 +63,9 @@ export interface Here {
   searching?: boolean
   /** The Journal has focus, its search line not yet: ↑ from its first row types into it. */
   journal?: boolean
+  /** The Build pane has focus: its harness running (every key is the harness's but ctrl-]), or its own screen, where ⏎ goes on or starts it. */
+  /** `card`: a bot's card opened over the harness while the person typed there; the keys are still the harness's, and ctrl-] moves to the card. */
+  build?: "running" | "start" | "card"
 }
 
 export interface KeyDef {
@@ -88,8 +97,9 @@ export const KEYMAP: readonly KeyDef[] = [
     chord: "⏎",
     keys: [{ name: "return" }, { name: "enter" }],
     where: "with the line empty",
-    words: "approve the highlighted card, once it has shown for 300 ms",
-    hint: (h) => (h.empty && h.card && !h.searching ? "approve" : undefined),
+    words: "approve the highlighted card, once it has shown for 300 ms (1.5 s when it arrived while another card was waiting)",
+    // Not while the Build pane has the keys: ⏎ is its harness's, or its own screen's.
+    hint: (h) => (h.empty && h.card && !h.searching && !h.build ? (h.cardSoon ? "approves in a moment" : "approve") : undefined),
     palette: { label: "approve", why: "only ⏎ with the line empty, or a click on the card, approves: a pick in the palette never trades" },
   },
   {
@@ -156,8 +166,31 @@ export const KEYMAP: readonly KeyDef[] = [
     words: "move between panes; ↑/↓ in a list picks a row's token",
   },
   { id: "scroll", chord: "PgUp/PgDn · wheel", keys: [{ name: "pageup" }, { name: "pagedown" }], words: "scroll the focused pane, or the one under the mouse" },
-  { id: "tabDigit", chord: "1-9", keys: [], where: "on the tab bar", words: "pick a tab (on the line, a digit types)" },
-  { id: "promptPane", chord: "ctrl-]", keys: [], words: "leave the CLI prompt pane, or come back to it", frame: true },
+  {
+    id: "tabDigit",
+    chord: "1-9",
+    keys: [],
+    where: "on the tab bar",
+    words: "pick a tab: press tab until the tab bar has the keys, then its digit; or click it, or find it in the palette (on the line, a digit types)",
+    hint: (h) => (h.tabs && h.empty ? "a tab" : undefined),
+  },
+  {
+    id: "promptPane",
+    chord: "ctrl-]",
+    keys: [],
+    words: "leave the CLI prompt pane or the Build pane's harness, or come back to it",
+    hint: (h) => (h.build === "running" ? "leaves the pane" : h.build === "card" ? "to the bot's card" : undefined),
+    frame: true,
+  },
+  {
+    id: "buildPane",
+    chord: "⏎",
+    keys: [],
+    where: "in the Build pane, before its harness runs",
+    words: "go on through the first open, or start your coding harness in the bots folder",
+    hint: (h) => (h.build === "start" ? "start" : undefined),
+    frame: true,
+  },
   {
     id: "edit",
     chord: "←/→ · home/end · ⌫",
@@ -189,8 +222,11 @@ const matches = (c: Chord, key: Key): boolean =>
 /** Whether `key` makes the action `id`. */
 export const pressed = (key: Key, id: KeyId): boolean => keyDef(id).keys.some((c) => matches(c, key))
 
-/** Help's label column: the typed commands' and the keys' (commands.ts's HELP_LINES are laid out to it). */
+/** Help's label column: the typed commands' and the keys'. */
 export const HELP_COLUMN = 23
+
+/** What `?` shows of the typed commands: each row's form, then its words, laid out to help's column. */
+export const HELP_LINES: readonly string[] = TYPED_ROWS.map((r) => `${r.form.padEnd(HELP_COLUMN - 1)} ${r.help}`)
 
 /** Help's key lines: the chord, then where and what it does. */
 export function keyLines(): string[] {

@@ -1,5 +1,5 @@
  ▲ candle  agent-a ▾  LIVE  today $12.00 / $100.00  exposure $412.50  P&L 24h +$3.40  ● 0 cards waiting  ctrl-x ×2 kill 
- 1 Trade  2 Cockpit  3 Trending  4 Signals  5 P&L  6 Research  7 Journal  8 Perps   settings ▾                          
+ 1 Trade  2 Cockpit  3 Research  4 Bots  5 Build   settings ▾                                                           
                                                                                                                         
 ╭─ agent-a╭─ While you were away · 9h 40m ───────────────────────────────────────────────────────────────────╮── pin ──╮
 │ ╭───────│ From yesterday 22:19 to 07:59.                                                                   │         │
@@ -31,7 +31,7 @@
 
 --- colours ---
 0: ffffff/0e1115×1 f6f8fb/0e1115×8 ffffff/0e1115×1 6cb6ff/16263a×11 0b0d10/3ddc84×6 ffffff/0e1115×1 959dab/0e1115×6 f6f8fb/0e1115×6 959dab/0e1115×10 ffffff/0e1115×2 959dab/0e1115×9 f6f8fb/0e1115×7 ffffff/0e1115×2 959dab/0e1115×8 3ddc84/0e1115×6 ffffff/0e1115×2 959dab/0e1115×17 ffffff/0e1115×1 ff5c5c/3a1619×16
-1: ffffff/0b0d10×1 f6f8fb/0b0d10+9×7 ffffff/0b0d10×2 6cb6ff/0b0d10×9 ffffff/0b0d10×2 6cb6ff/0b0d10×10 ffffff/0b0d10×2 6cb6ff/0b0d10×9 ffffff/0b0d10×2 6cb6ff/0b0d10×5 ffffff/0b0d10×2 6cb6ff/0b0d10×10 ffffff/0b0d10×2 6cb6ff/0b0d10×9 ffffff/0b0d10×2 6cb6ff/0b0d10×7 ffffff/0b0d10×2 6cb6ff/16263a×12 ffffff/0b0d10×25
+1: ffffff/0b0d10×1 f6f8fb/0b0d10+9×7 ffffff/0b0d10×2 6cb6ff/0b0d10×9 ffffff/0b0d10×2 6cb6ff/0b0d10×10 ffffff/0b0d10×2 6cb6ff/0b0d10×6 ffffff/0b0d10×2 6cb6ff/0b0d10×7 ffffff/0b0d10×2 6cb6ff/16263a×12 ffffff/0b0d10×58
 2: ffffff/0b0d10×120
 3: 32fe9f/111419×2 b392f0/111419×8 32fe9f/111419×2 b392f0/111419×30 32fe9f/111419×68 252a33/111419×2 6cb6ff/16263a×5 252a33/111419×3
 4: 32fe9f/111419×1 ffffff/111419×1 b392f0/111419×8 32fe9f/111419×1 ffffff/111419×1 959dab/111419×30 ffffff/111419×67 32fe9f/111419×1 ffffff/111419×9 252a33/111419×1

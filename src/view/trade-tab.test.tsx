@@ -355,7 +355,9 @@ for (const [width, height] of [
     const f = frame()
     expect(f).toContain("BUY 0.04 SOL of MOON")
     // Cut to the pane when narrow, never run off it.
-    expect(f).toContain(width >= 100 ? "momentum · pays from tee-one (TEE · TeeF…1111) · live" : "momentum · pays from tee-one")
+    expect(f).toContain(width >= 100 ? "momentum · pays from tee-one (TEE · TeeF…1111) · live · Moon…1111" : "momentum · tee-one (TEE)")
+    // The token's short address ends the line at every width.
+    expect(f).toContain("· Moon…1111")
     expect(f).toContain("⏎ approve")
     for (const row of f.split("\n")) expect(row.length).toBeLessThanOrEqual(width)
   })

@@ -16,6 +16,9 @@
 //   - some MCP tools make several of Candle's requests (requestsOf), and a call is counted as that many;
 //   - a read through the user's own CLI makes several of Candle's calls (an empty-accounts preview makes
 //     four), so it asks for room for, and is counted as, that many.
+//   - triggers' level checks read Candle's market read, which Candle doesn't count toward a key's limit
+//     (measured on a Free key: 40 market reads, then a P&L read, all answered). So they're no part of the
+//     plan above and count nothing here; `uncountedKey` only picks the key, skipping one Candle just rate-limited.
 // Nothing here is on the trade path: a card's call and a turn's are counted, never asked, never queued.
 import type { ToolOutcome } from "./candle-mcp"
 
@@ -27,13 +30,21 @@ const ANY_KEY: ReadonlySet<ReadKind> = new Set(["linked", "pins", "lists"])
 
 /**
  * How many of Candle's requests one MCP tool call makes, where it's more than one: what the key's limit counts.
- * Measured on a Free key, by calls until RATE_LIMITED: the status read 10, so 3 each; the portfolio 22 of 30,
- * so 2 here. The profile wallets and P&L reads took 30, and a token's market read never met the limit. A trade is
+ * Measured on a Free key, by calls until RATE_LIMITED: the status read 10, so 3 each, and a fourth since CLI 0.13.18
+ * (its MCP server's executionStatus also reads the key's risk settings); the portfolio 22 of 30, so 2 here. The profile wallets and P&L reads took 30, and a token's market read never met the limit. A trade is
  * from the MCP server's source (orchestrate.ts executeTrade): a market read or two reads for a percent sell, then the
  * trade, so 3 at most.
  */
-const TOOL_REQUESTS: Readonly<Record<string, number>> = { candle_execution_status: 3, candle_get_portfolio: 2, candle_trade: 3 }
+const TOOL_REQUESTS: Readonly<Record<string, number>> = { candle_execution_status: 4, candle_get_portfolio: 2, candle_trade: 3 }
 export const requestsOf = (tool: string): number => TOOL_REQUESTS[tool] ?? 1
+/**
+ * What Candle's MCP server asks of the key by itself: whether the key may edit its profile, once as it starts and
+ * again on every tools/list (CLI 0.13.18, packages/mcp/src/server.ts runStdioServer).
+ */
+export const MCP_START_REQUESTS = 2
+export const MCP_LIST_REQUESTS = 1
+/** What one of a bot's own trades makes against the key: the holding read before an exit, then the trade. */
+export const CORE_TRADE_REQUESTS = requestsOf("candle_trade") + requestsOf("candle_get_portfolio")
 
 export const WINDOW_MS = 60_000
 export const FREE_LIMIT = 30
@@ -108,6 +119,11 @@ export class KeyBudget {
       now: () => number
       /** When what the panes are told (`pace()`) changes. */
       onChange?: () => void
+      /**
+       * Calls to keep free on a key for the core's own trades still to come: a key with bots on keeps room for the
+       * trades its pace still allows, so a burst of entries and exits never meets Candle's limit behind the reads.
+       */
+      coreReserve?: (agent: string) => number
     },
   ) {}
 
@@ -192,6 +208,17 @@ export class KeyBudget {
     return best
   }
 
+  /**
+   * The key for a read Candle doesn't count (triggers' level checks): the active agent's, else the first up,
+   * passing over a key Candle rate-limited in the last two minutes. Undefined when every key is.
+   */
+  uncountedKey(): string | undefined {
+    const up = this.deps.agents()
+    const preferred = this.deps.preferred()
+    const order = preferred !== undefined && up.includes(preferred) ? [preferred, ...up.filter((a) => a !== preferred)] : up
+    return order.find((a) => !this.lowered(a))
+  }
+
   /** What each slowed read's pane says: how often it reads now, and why. */
   pace(): Partial<Record<ReadKind, Pace>> {
     const now = this.deps.now()
@@ -246,9 +273,15 @@ export class KeyBudget {
     return Math.min(this.allowance(agent) - count(this.background, agent, now), this.reserveRoom(agent, now))
   }
 
-  /** Calls left before the key's calls in the last minute reach the reserve kept for a card. */
+  /** Calls left before the key's calls in the last minute reach the reserve kept for a card and for its bots' trades. */
   private reserveRoom(agent: string, now: number): number {
-    return this.limit(agent) - CARD_RESERVE - count(this.calls, agent, now)
+    return this.limit(agent) - CARD_RESERVE - this.coreReserve(agent) - count(this.calls, agent, now)
+  }
+
+  /** Room kept for the key's bots' trades still to come, at most the half of the limit background reads don't get. */
+  private coreReserve(agent: string): number {
+    const most = Math.max(0, Math.floor(this.limit(agent) * (1 - BACKGROUND_SHARE)) - CARD_RESERVE)
+    return Math.min(most, Math.max(0, this.deps.coreReserve?.(agent) ?? 0))
   }
 
   /** The candidate with most room; the active agent first among equals. */

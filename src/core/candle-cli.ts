@@ -3,12 +3,19 @@
 // that agent's key as CANDLE_API_KEY (which takes precedence over any stored key, docs.candle.tv/developers/cli)
 // and the CLI's normal config; a run with no agent is the user's own profile, with no key passed.
 // `--rpc-url` is only ever the one in config, and only for a command the caller says takes it.
-// It stays in the arguments a card binds, but reaches the CLI as CANDLE_SOLANA_RPC_URL, never on its
-// command line: another local user can read a process's arguments, and an RPC address often holds a paid key.
+// The arguments a card binds carry a marker in its place, never the address: an RPC address often holds a
+// paid key, and a card's arguments go to views, harnesses and the journal, whose copy is redacted (a re-send
+// rebuilt from it after a restart once ran against "…api-key=[redacted]"). The address is put in where the
+// command runs, and reaches the CLI as CANDLE_SOLANA_RPC_URL, never on its command line: another local user
+// can read a process's arguments.
 import { allowEnv, type ChildResult, runChild } from "../shared/child"
+import { REDACTED } from "../shared/redact"
 
 /** The CLI's own variable for the Solana RPC, which it reads right after --rpc-url (solana-endpoint.ts). */
 export const RPC_URL_ENV = "CANDLE_SOLANA_RPC_URL"
+
+/** What stands for the configured RPC in saved arguments: `--rpc-url @config`. No address is shaped like it. */
+export const RPC_FROM_CONFIG = "@config"
 
 /** The arguments with `--rpc-url <url>` taken out, and the URL, for the child's environment. */
 export function rpcToEnv(argv: readonly string[]): { argv: string[]; rpcUrl?: string } {
@@ -61,8 +68,21 @@ export class CandleCli {
     }
     const args = [...input.args]
     if (input.json && !args.includes("--json")) args.push("--json")
-    if (input.withRpcUrl && this.deps.rpcUrl) args.push("--rpc-url", this.deps.rpcUrl)
+    if (input.withRpcUrl && this.deps.rpcUrl) args.push("--rpc-url", RPC_FROM_CONFIG)
     return args
+  }
+
+  /**
+   * Saved arguments as they run: the configured RPC in place of the marker. Arguments saved by an older version
+   * carry an address, which the journal's copy has redacted, so the configured one replaces that too; with none
+   * configured now, the flag goes, and the CLI uses its own profile's.
+   */
+  realArgs(argv: readonly string[]): string[] {
+    const at = argv.indexOf("--rpc-url")
+    if (at < 0 || argv[at + 1] === undefined) return [...argv]
+    const saved = argv[at + 1]!
+    const url = this.deps.rpcUrl ?? (saved === RPC_FROM_CONFIG || saved.includes(REDACTED) ? undefined : saved)
+    return url === undefined ? argv.filter((_, i) => i !== at && i !== at + 1) : argv.map((a, i) => (i === at + 1 ? url : a))
   }
 
   async run(input: { agent?: string; args: string[]; json?: boolean; withRpcUrl?: boolean; stdin?: string; timeoutMs?: number; calls?: number }): Promise<CliResult> {
@@ -87,7 +107,7 @@ export class CandleCli {
       extra.CANDLE_API_KEY = key
       this.deps.onRun?.(input.agent, input.calls ?? 1)
     }
-    const moved = rpcToEnv(input.argv)
+    const moved = rpcToEnv(this.realArgs(input.argv))
     if (moved.rpcUrl !== undefined) extra[RPC_URL_ENV] = moved.rpcUrl
     const result = await runChild({
       cmd: this.deps.cliPath,

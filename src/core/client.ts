@@ -104,17 +104,47 @@ export async function connectCore(input: { socketPath: string; token: string; cl
 export const DOCTOR_CLIENT = "candle-harness doctor"
 /** The resource sampler's name as a view: it only reads `core.usage`. */
 export const SAMPLER_CLIENT = "candle-harness sampler"
+/** `candle-harness stop` and `candle-harness service` as a view: they read the status, and stop the core. */
+export const STOP_CLIENT = "candle-harness stop"
+/** `candle-harness ask` as a view: the person's message from a script or another terminal. */
+export const ASK_CLIENT = "candle-harness ask"
+/** `candle-harness trigger <name>` as a view: fires an `on call` trigger from outside. */
+export const TRIGGER_CLIENT = "candle-harness trigger"
+/** `candle-harness bots …` as a view: lists code bots, starts and stops their processes, writes a token file, reads a log. */
+export const BOTS_CLIENT = "candle-harness bots"
+/** `candle-harness cards` as a view: it lists cards and how each ended, and never approves one. */
+export const CARDS_CLIENT = "candle-harness cards"
+/** Views that only read: the doctor, the sampler, `stop` and `cards`. They fire no trigger. */
+export const READ_ONLY_CLIENTS: ReadonlySet<string> = new Set([DOCTOR_CLIENT, SAMPLER_CLIENT, STOP_CLIENT, CARDS_CLIENT])
 /**
- * Views that only read. One is never the person's view: it doesn't open or close a session (the away gap,
- * "since last session") and doesn't keep an idle core running, so checking or measuring changes nothing.
+ * Views that are never the person's open Candle Harness: the ones that only read, and `ask`, `trigger` and `bots` from outside.
+ * One doesn't open or close a session (the away gap, "since last session"), isn't sent notifications, isn't
+ * the main view for what only that may do, and doesn't keep an idle core running, so checking, measuring or
+ * scripting changes nothing.
  */
-export const OBSERVER_CLIENTS: ReadonlySet<string> = new Set([DOCTOR_CLIENT, SAMPLER_CLIENT])
+export const OBSERVER_CLIENTS: ReadonlySet<string> = new Set([...READ_ONLY_CLIENTS, ASK_CLIENT, TRIGGER_CLIENT, BOTS_CLIENT])
+
+/** A Build pane's token variables (setup/build.ts's BUILD_TOKEN_ENV and BUILD_TOKEN_FILE_ENV). */
+const BUILD_PANE_ENV = ["CANDLE_HARNESS_BUILD_TOKEN", "CANDLE_HARNESS_BUILD_TOKEN_FILE"] as const
+
+/**
+ * Why nothing attaches as the person from here: this is a Build pane's environment, whose harness reads untrusted
+ * text (bot logs, token names, agent replies). It works through its own token, never the view's, so text injected
+ * into what it reads can't send `ask`, fire a trigger, or act as a view. Undefined elsewhere.
+ */
+export function buildPaneRefusal(env: Record<string, string | undefined> = process.env): CoreClientError | undefined {
+  if (!BUILD_PANE_ENV.some((name) => env[name])) return undefined
+  return new CoreClientError("BUILD_PANE", "This runs in a Build pane, whose harness can't act as you: ask, trigger and attaching as a view are the person's own, from a terminal of their own")
+}
 
 /**
  * Attaches as a view with the token the core published. Two views starting together can race for
  * one token (each hello rotates it), so an UNAUTHENTICATED is retried with the file's newer token.
+ * Refused in a Build pane's environment (buildPaneRefusal).
  */
-export async function connectView(input: { socketPath: string; viewTokenPath: string; clientName: string }): Promise<{ connection: CoreConnection; hello: Record<string, unknown> }> {
+export async function connectView(input: { socketPath: string; viewTokenPath: string; clientName: string; env?: Record<string, string | undefined> }): Promise<{ connection: CoreConnection; hello: Record<string, unknown> }> {
+  const pane = buildPaneRefusal(input.env)
+  if (pane) throw pane
   let lastToken: string | undefined
   for (let attempt = 0; attempt < 5; attempt++) {
     const token = await readViewToken(input.viewTokenPath)
@@ -135,6 +165,7 @@ export class ViewSession {
   private connection: CoreConnection | undefined
   private lastSeq: Record<string, number> = {}
   private coreId: unknown
+  private helloVersion: string | undefined
   private readonly listeners: ((params: CoreEventParams) => void)[] = []
   /** Events that arrived before anyone listened, such as the snapshots that answer the first subscribe. */
   private early: CoreEventParams[] | undefined = []
@@ -148,6 +179,21 @@ export class ViewSession {
   private wantedFilters: Record<string, unknown> = {}
 
   constructor(private readonly input: { socketPath: string; viewTokenPath: string; clientName: string; topics: string[]; retryMs?: number }) {}
+
+  /** Events from now on, past `onEvent`'s replay of early ones, which only its first listener gets: the notifier's. */
+  private readonly live: ((params: CoreEventParams) => void)[] = []
+  /** Called when the core goes away while the view is still open (not when it closes itself). */
+  private readonly lostListeners: (() => void)[] = []
+
+  /** Also given the early events held now, without taking them from `onEvent`'s first listener. */
+  onLiveEvent(listener: (params: CoreEventParams) => void): void {
+    this.live.push(listener)
+    for (const params of this.early ?? []) listener(params)
+  }
+
+  onLost(listener: () => void): void {
+    this.lostListeners.push(listener)
+  }
 
   /** The first listener also gets every event that arrived before it, in order. */
   onEvent(listener: (params: CoreEventParams) => void): void {
@@ -165,6 +211,11 @@ export class ViewSession {
   /** Every id the core has given this view, the first attach's and each reconnect's. */
   clientIds(): readonly string[] {
     return this.ids
+  }
+
+  /** The version the attached core said it is in its last hello: a core keeps the one it started as. */
+  coreVersion(): string | undefined {
+    return this.helloVersion
   }
 
   async start(): Promise<Record<string, unknown>> {
@@ -209,16 +260,20 @@ export class ViewSession {
     // A different core (a restart) numbers its events from the start again: what was seen means nothing.
     if (hello.coreId !== this.coreId) this.lastSeq = {}
     this.coreId = hello.coreId
+    this.helloVersion = typeof hello.coreVersion === "string" ? hello.coreVersion : undefined
     if (typeof hello.clientId === "string") this.ids.push(hello.clientId)
     this.connection = connection
     connection.onEvent((params) => {
       if (typeof params.seq === "number") this.lastSeq[params.topic] = params.seq
       if (this.early) this.early.push(params)
       for (const listener of this.listeners) listener(params)
+      for (const listener of this.live) listener(params)
     })
     connection.onClose(() => {
       this.connection = undefined
-      if (!this.stopped) void this.reconnect()
+      if (this.stopped) return
+      for (const listener of this.lostListeners) listener()
+      void this.reconnect()
     })
     await connection.request("subscribe", { topics: [...this.input.topics, ...this.wanted], sinceSeq: { ...this.lastSeq }, ...(Object.keys(this.wantedFilters).length ? { filters: { ...this.wantedFilters } } : {}) })
     for (const listener of this.helloListeners) listener(hello)

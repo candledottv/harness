@@ -1,0 +1,42 @@
+{
+  "name": "schema-rule-skip-false",
+  "host": "hacc",
+  "method": "POST",
+  "route": "/v1/strategy-lab/replay",
+  "query": {},
+  "body": {
+    "definition": {
+      "chain": "solana",
+      "entry": {
+        "source": "pattern",
+        "pattern": "confluence",
+        "filters": {}
+      },
+      "exit": {
+        "take_profit_pct": 100
+      },
+      "sizing": {
+        "usd_per_trade": 5,
+        "max_concurrent": 2,
+        "rules": [
+          {
+            "when": {
+              "mcap_at_entry": {
+                "lt": 1
+              }
+            },
+            "skip": false
+          }
+        ]
+      }
+    },
+    "from": "2026-10-01T00:00:00Z",
+    "to": "2026-10-30T00:00:00Z"
+  },
+  "status": 400,
+  "ms": 148,
+  "bytes": 89,
+  "answer": {
+    "error": "sizing.rules.0.skip: skip must be true (write no rule instead of skip: false)"
+  }
+}

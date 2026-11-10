@@ -1,10 +1,12 @@
 // The P&L tab's panes, drawn from the core's `pnl` topic (core/pnl.ts):
 //   - `pnl`: the P&L window's figure, then Candle's books for the Candle Harness's agents, each agent and each wallet,
-//     with fees and the swaps Candle's fills leave out on a dim line, and paper apart, ≈;
+//     with fees and the swaps Candle's fills leave out on a dim line, each rules bot from its own fills, and
+//     paper apart, ≈;
 //   - `pnl-chart`: the Candle Harness's agents' total over time from the Candle Harness's own samples (`pnl.series`), gaps as gaps;
 //   - `pnl-positions`: each open position as Candle books it, which can differ from what the wallets hold;
-//   - `trades`: Candle's recent fills, newest first, with the Candle Harness's own swaps marked "from the Candle Harness".
-// Every figure says whose it is: Candle's, the Candle Harness's samples, or paper at quoted prices, never summed.
+//   - `trades`: Candle's recent fills, newest first, with the Candle Harness's own swaps marked "from the Candle Harness" and a bot's
+//     fills "by bot".
+// Every figure says whose it is: Candle's, the Candle Harness's samples, a bot's own fills, or paper at quoted prices, never summed.
 import type { JournalSwap, PnlPosition, PnlTrade, PnlView, PnlWindow } from "../../core/pnl"
 import { windowLabel } from "../../core/pnl"
 import { askAbout } from "../ask"
@@ -227,10 +229,36 @@ export function pnlLines(pnl: PnlView | undefined, opts: { width: number; now: n
     }
   }
 
+  out.push(...botsBlock(pnl, cols, w))
+
   // Hyperliquid, where Candle read it: the account's perps, in or out of the total.
   const hl = booked.map((a) => a.book!.hyperliquid).find((h) => h.read && h.netUsd !== null)
   if (hl && (hl.netUsd !== 0 || (hl.unrealizedUsd ?? 0) !== 0)) out.push(...say(`Hyperliquid perps: ${signed(hl.netUsd)} net, ${signed(hl.unrealizedUsd)} unrealised; ${hl.inTotal ? "in" : "not in"} the totals above.`))
   if (opts.mode !== "paper") out.push(...paperBlock(pnl, w))
+  return out
+}
+
+/**
+ * Each bot's figures, rules and code, its own block: the Candle Harness's count from the bot's own fills, which a shared wallet's
+ * Candle books mix with everyone's; a paper bot's at quoted prices. Never added to Candle's figures.
+ */
+function botsBlock(pnl: PnlView, cols: Cols, w: number): Line[] {
+  const bots = pnl.bots ?? []
+  if (bots.length === 0) return []
+  const out: Line[] = [line(""), tableHead("bots", "", cols), line(fit("counted here from each bot's own fills, apart from Candle's books", w), C.dim)]
+  for (const b of bots) {
+    const total = b.unrealizedUsd === null ? b.realizedUsd : b.realizedUsd + b.unrealizedUsd
+    out.push(tableRow(`${b.name}${b.mode === "paper" ? " ≈" : ""}`, [null, total, b.realizedUsd, b.unrealizedUsd], cols, { skipFirst: true }))
+    const notes = [
+      b.kind === "code" ? "code bot" : "",
+      b.mode === "paper" ? "paper, at quoted prices" : "",
+      `${plural(b.open, "open position")}, ${b.closed} closed`,
+      b.unpriced ? `${b.unpriced} unpriced` : "",
+      b.unvalued ? "some closed ones couldn't be valued" : "",
+      pnl.agents.length > 1 ? b.agent : "",
+    ].filter(Boolean)
+    out.push(line(fit(`  ${notes.join(" · ")}`, w), C.dim))
+  }
   return out
 }
 
@@ -430,9 +458,10 @@ export function tradeLines(pnl: PnlView | undefined, opts: { width: number; now:
       { text: fit(t.symbol ?? shortAddress(t.mint), 9).padEnd(10), fg: C.hi },
       { text: (failed ? "failed" : usd(t.usd)).padStart(9), fg: failed ? C.look : C.ink },
     ]
-    // How it was approved, where the core ran it without a card: matched by its signature.
+    // How it was approved, where the core ran it without a card, and a bot's: matched by its signature.
     const alone = t.signature !== undefined && noCard.has(t.signature) ? "without a card" : ""
-    const rest = [status && !failed ? status : "", alone, many ? t.agent : ""].filter(Boolean).join(" · ")
+    const bot = t.signature !== undefined ? pnl.byBot?.[t.signature] : undefined
+    const rest = [status && !failed ? status : "", bot ? `by bot ${bot}` : "", alone, many ? t.agent : ""].filter(Boolean).join(" · ")
     if (rest) segs.push({ text: `  ${rest}`, fg: C.dim })
     const ask = failed ? `My ${t.side.toLowerCase()} of it failed on ${clockWords(t.at, opts.now)}.` : `I ${t.side.toLowerCase() === "sell" ? "sold" : "bought"} ${usd(t.usd)} of it on ${clockWords(t.at, opts.now)}.`
     out.push({ segs: clipped(segs, w), pick: { id: `${t.agent}:${t.signature ?? `${t.at}:${t.mint}`}`, mint: t.mint, ask: askAbout(t.symbol, t.mint, ask) } })

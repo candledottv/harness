@@ -267,7 +267,14 @@ test("limits, each with who holds it: the Candle Harness's two typed, Candle's c
 
 test("approvals, as the approvals menu: on ask every time; trade inside limits takes its two figures and sets them as the menu does", async () => {
   const view = () => onboardingProgress(state(["limits"], { vaultChoice: "later", agent: { name: "agent-a", askedAt: new Date(CLOCK).toISOString() } }), facts(PAYABLE))
-  await each("approvals", view, { agents: [AGENT] }, (f) => expect(f).toContain("● ask every time"))
+  await each("approvals", view, { agents: [AGENT] }, (f) => {
+    expect(f).toContain("● ask every time")
+    // The kill switch holds buys and swaps, not everything: sells still go.
+    const flat = f.replace(/[│\s]+/g, " ")
+    expect(flat).toContain("the kill switch still holds buys and")
+    expect(flat).toContain("sells still go.")
+    expect(flat).not.toContain("stops it all")
+  })
   let d = await draw(120, 30, view(), { agents: [AGENT] })
   // Continue is first, with ⏎ on it.
   await press(d.s, "enter")
@@ -278,6 +285,11 @@ test("approvals, as the approvals menu: on ask every time; trade inside limits t
   d = await draw(120, 30, view(), { agents: [AGENT] })
   // To trade inside limits, its two figures, then ↓ round to Turn it on and continue, first.
   await press(d.s, "down", "down", "enter", "down", "1", ".", "5", "0", "down", "3", "down")
+  // Sells are named apart: they run without a card whatever the figures say.
+  const picked = d.s.captureCharFrame().replace(/[│\s]+/g, " ")
+  expect(picked).toContain("buys and swaps inside two figures of its own run without a card; every sell")
+  expect(picked).toContain("runs without one, whatever its size, unless slippage is looser:")
+  expect(picked).not.toContain("buys, sells and swaps inside two figures")
   await compare("onboarding-120x30-approvals-inside", d.s)
   await press(d.s, "enter")
   expect(d.session.requests.filter((r) => r.method === "autonomy.set").map((r) => r.params)).toEqual([{ wallet: EMBEDDED, setting: "inside", perTradeUsd: 1.5, perDayUsd: 3 }])

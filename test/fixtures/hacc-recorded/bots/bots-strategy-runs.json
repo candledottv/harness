@@ -1,0 +1,53 @@
+{
+  "name": "strategy-runs",
+  "host": "hacc",
+  "method": "GET",
+  "route": "/v1/strategy-runs",
+  "query": {},
+  "status": 200,
+  "ms": 161,
+  "bytes": 788,
+  "answer": {
+    "runs": [
+      {
+        "id": 392,
+        "strategy_id": 175,
+        "strategy_version": 1,
+        "mode": "backtest",
+        "status": "completed",
+        "trade_count": 1802,
+        "pnl_usd": "-678.4309868957",
+        "max_drawdown_pct": "2265.157621046456",
+        "max_drawdown_usd": "679.5472863139368",
+        "started_at": "2026-10-29T15:54:31.182Z",
+        "ended_at": "2026-10-29T15:54:31.182Z"
+      },
+      {
+        "id": 391,
+        "strategy_id": 174,
+        "strategy_version": 2,
+        "mode": "backtest",
+        "status": "completed",
+        "trade_count": 0,
+        "pnl_usd": "0",
+        "max_drawdown_pct": "0",
+        "max_drawdown_usd": "0",
+        "started_at": "2026-10-29T02:55:22.197Z",
+        "ended_at": "2026-10-29T02:55:22.197Z"
+      },
+      {
+        "id": 390,
+        "strategy_id": 173,
+        "strategy_version": 1,
+        "mode": "backtest",
+        "status": "completed",
+        "trade_count": 0,
+        "pnl_usd": "0",
+        "max_drawdown_pct": "0",
+        "max_drawdown_usd": "0",
+        "started_at": "2026-10-29T02:54:55.472Z",
+        "ended_at": "2026-10-29T02:54:55.472Z"
+      }
+    ]
+  }
+}

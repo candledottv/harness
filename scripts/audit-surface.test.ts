@@ -9,6 +9,8 @@ import { LIMITS_TOOL } from "../src/core/limits-tool"
 import { PNL_TOOL } from "../src/core/pnl-tool"
 import { RESEARCH_TOOLS } from "../src/core/research-tools"
 import { METHOD_ROLES } from "../src/core/server"
+import { TRIGGERS_TOOL } from "../src/core/triggers-tool"
+import { BOTS_TOOL } from "../src/core/bots-tool"
 import { GROUP_WALLETS_TOOL, NAME_WALLETS_TOOL, SHOW_WALLETS_TOOL, VIEW_TOOL } from "../src/core/tool-face"
 import { CLAUDE_TOOLS } from "../src/engine/claude"
 import { GROK_TOOLS } from "../src/engine/grok"
@@ -37,9 +39,12 @@ describe("the audit's surface table", () => {
       GROUP_WALLETS_TOOL.name,
       VIEW_TOOL.name,
       ...RESEARCH_TOOLS.map((t) => t.name),
+      "research_run",
       HISTORY_TOOL.name,
       PNL_TOOL.name,
       LIMITS_TOOL.name,
+      TRIGGERS_TOOL.name,
+      BOTS_TOOL.name,
       SKILL_TOOL_NAME,
       ...HACC_TOOLS.map((t) => t.name),
     ]
@@ -56,9 +61,12 @@ describe("the audit's surface table", () => {
       "GROUP_WALLETS_TOOL,",
       "VIEW_TOOL,",
       "...RESEARCH_TOOLS,",
+      "...[runPrograms(call.agent)].flatMap((p) => (p ? [runTool(p)] : [])),",
       "HISTORY_TOOL,",
       "PNL_TOOL,",
       "LIMITS_TOOL,",
+      "...(triggers.gate(call.agent).state === \"ok\" ? [TRIGGERS_TOOL] : []),",
+      "...(bots.gate(call.agent).state === \"ok\" ? [BOTS_TOOL] : []),",
       "...[skillTool(skillsOf(call.agent))].filter((t) => t !== undefined),",
       "...(haccOffered(call.agent) ? haccOffer(call.agent) : []),",
     ])

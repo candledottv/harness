@@ -609,7 +609,9 @@ const afterSteps: Step[] = [
     title: "a paper buy, no card",
     async run(c) {
       c.line(`buy $1 ${JUP}`)
-      await c.expect(["JUP"], { timeout: 30_000, what: "the paper buy naming its token" })
+      // Recorded in Activity, not just echoed on the message line: a refusal names the token too, and Activity says
+      // "paper candle_trade refused" for it.
+      await c.expect(["paper buy JUP"], { absent: ["(paper): refused"], timeout: 30_000, what: "the paper buy in Activity, naming its token" })
       await Bun.sleep(1_500)
     },
   },
@@ -930,8 +932,18 @@ export async function main(): Promise<number> {
     if (!dir) throw new Error("resume takes --run <folder>")
     const state = JSON.parse(readFileSync(join(dir, "state.json"), "utf8")) as RunState
     // `--at <n>` runs again from step n (1-based), after a fix.
+    // `--at` takes a step's number or its id; anything else is refused, never read as "nothing left to run".
     const at = flag("--at")
-    if (at) state.next = Number(at) - 1
+    if (at) {
+      const steps = ROUTES[state.route]
+      const byId = steps.findIndex((s) => s.id === at)
+      const index = byId >= 0 ? byId : /^\d+$/.test(at) ? Number(at) - 1 : -1
+      if (index < 0 || index >= steps.length) {
+        console.error(`--at ${at}: not a step of the ${state.route} route (1 to ${steps.length}, or an id: ${steps.map((s) => s.id).join(", ")})`)
+        return 2
+      }
+      state.next = index
+    }
     return go(dir, state)
   }
   if (cmd !== "start") {

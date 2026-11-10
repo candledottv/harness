@@ -137,6 +137,24 @@ describe("step 3, through a core", () => {
     expect(statusReads() - before).toBe(0)
   })
 
+  test("a new agent's key is read once as the core loads it and once after the allow, with no second read of either", async () => {
+    // Candle allows a Free key 30 requests a minute, and a status read with its wallets costs 5 of them: setup's end
+    // read the key three times in ten seconds, and the first paper trade after it was rate-limited.
+    const s = await setupCore()
+    await s.set({ vaultChoice: "later" })
+    await s.set({ agent: "agent-a" })
+    await s.pane(["keys", "create", "--label", "agent-a", "--tx-limit", "50", "--reset", "daily"], { captured: { prefix: "Agentaaa", agent: "agent-a", stored: true } }, async () => {
+      await storeNewAgentKey(s.t.p, "agent-a", prefixedKey("Agentaaa"))
+    })
+    await until(() => s.view.frames.some((f) => f.includes('"topic":"onboarding"') && f.includes('"kind":"embedded"')))
+    const log = join(s.t.p.stateDir, "candle", "agent-a", "fake-candle-calls.jsonl")
+    const statusReads = () => readFileSync(log, "utf8").trim().split("\n").filter((l) => l.includes("candle_execution_status")).length
+    expect(statusReads()).toBe(1)
+    await s.pane(["keys", "update", "Agentaaa", "--embedded-wallet", "allow"], {})
+    await Bun.sleep(200)
+    expect(statusReads()).toBe(2)
+  })
+
   test("no vault for now; the key with Candle's cap on the create, on the engine step 2 tested; the embedded wallet allowed; limits written; paper", async () => {
     const s = await setupCore()
     let v = await s.get()

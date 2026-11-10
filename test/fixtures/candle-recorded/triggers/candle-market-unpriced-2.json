@@ -1,0 +1,56 @@
+{
+  "name": "candle-market-unpriced-2",
+  "host": "candle",
+  "route": "/api/v1/markets/solana/TokenFake4zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz",
+  "query": {},
+  "status": 200,
+  "ms": 317,
+  "bytes": 990,
+  "answer": {
+    "success": true,
+    "market": {
+      "chain": "solana",
+      "mint": "TokenFake4zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz",
+      "lifecycle": "fake-lifecycle-1",
+      "buysOpen": true,
+      "sellsOpen": true,
+      "curveAddress": null,
+      "poolAddress": null,
+      "quoteMint": "So11111111111111111111111111111111111111112",
+      "feeBps": 0,
+      "graduationVenue": "fake-graduationVenue-2",
+      "tier": null,
+      "crossingModel": "fake-crossingModel-1",
+      "metadata": {
+        "name": "fake-name-5",
+        "symbol": "fake-symbol-5",
+        "description": "fake-description-1",
+        "image": "https://candle.example/image-5",
+        "socials": {},
+        "onChain": false,
+        "version": null
+      },
+      "decimals": 6,
+      "quoteDecimals": 9,
+      "migration": {
+        "status": "not_started"
+      },
+      "external": true,
+      "jupiterOk": true,
+      "externalTradeable": true,
+      "paperDiscoveryOk": true,
+      "organic0LiveOk": true,
+      "venue": "jupiter",
+      "candleLaunched": false,
+      "launchpad": "pump.fun",
+      "trade": {
+        "endpoint": "fake-endpoint-1",
+        "routable": true
+      },
+      "organicScore": 0,
+      "priceUsd": 0.000015739057648429944,
+      "marketCap": 15739.057648429944,
+      "liquidityUsd": 7014.474605008387
+    }
+  }
+}

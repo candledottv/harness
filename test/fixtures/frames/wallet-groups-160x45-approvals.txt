@@ -1,5 +1,5 @@
  ▲ candle  agent-a ▾  LIVE  today $12.00 / $100.00  exposure $412.50  P&L 24h +$3.40  ● 1 card waiting                                           ctrl-x ×2 kill 
- 1 Trade  2 Cockpit  3 Trending  4 Signals  5 P&L  6 Research  7 Journal  8 Perps   settings ▾                                                                  
+ 1 Trade  2 Cockpit  3 Research  4 Bots  5 Build   settings ▾                                                                                                   
                        ╭─ approvals ────────────────────────────────────────────────────────────────────────────────────────────────────╮                       
 ╭─ agent-a ────────────│ wallets                 13 of 50 inside │                                                                      │─────────────── pin ──╮
 │ you › how's JUPF look│ ⌕ type to find a wallet                 │  bot-03 · TEE · agent-a                                              │                      │
@@ -9,7 +9,7 @@
 │   Volume is up and th│ ▾ bots · bot-*          12 of 24 inside │                                                                      │                      │
 │                      │   bot-01                inside limits   │    without a card  a trade   $1.50      Harness · this core          │                      │
 │                  Now │   bot-02                inside limits   │                    a day     $5.00      Harness · this core   $3.90… │ ┃ ┃ ┃ │     $0.424   │
-│   Price      $0.4249 │   bot-03                inside limits   │    Inside both figures, trades run with no card. Sells always fit.   │ ╵ ╵ ┃ ╽ ╻   ◂$0.418  │
+│   Price      $0.4249 │   bot-03                inside limits   │    No card inside both figures or for sells; looser slippage asks.   │ ╵ ╵ ┃ ╽ ╻   ◂$0.418  │
 │   Liquidity   $18.4M │   bot-04                inside limits   │                                                                      │     ╿                │
 │                      │   bot-05                inside limits   │  limits on its agents, and who holds them                            │             $0.412   │
 │   Mint JupF…1111. Wan│   bot-06                inside limits   │  agent    limit                           who      used today        │         now          │
@@ -46,7 +46,7 @@
 
 --- colours ---
 0: ffffff/0e1115×1 f6f8fb/0e1115×8 ffffff/0e1115×1 6cb6ff/16263a×11 0b0d10/3ddc84×6 ffffff/0e1115×1 959dab/0e1115×6 f6f8fb/0e1115×6 959dab/0e1115×10 ffffff/0e1115×2 959dab/0e1115×9 f6f8fb/0e1115×7 ffffff/0e1115×2 959dab/0e1115×8 3ddc84/0e1115×6 ffffff/0e1115×2 f5a524/0e1115×16 ffffff/0e1115×42 ff5c5c/3a1619×16
-1: ffffff/0b0d10×1 f6f8fb/0b0d10+9×7 ffffff/0b0d10×2 6cb6ff/0b0d10×9 ffffff/0b0d10×2 6cb6ff/0b0d10×10 ffffff/0b0d10×2 6cb6ff/0b0d10×9 ffffff/0b0d10×2 6cb6ff/0b0d10×5 ffffff/0b0d10×2 6cb6ff/0b0d10×10 ffffff/0b0d10×2 6cb6ff/0b0d10×9 ffffff/0b0d10×2 6cb6ff/0b0d10×7 ffffff/0b0d10×2 6cb6ff/16263a×12 ffffff/0b0d10×65
+1: ffffff/0b0d10×1 f6f8fb/0b0d10+9×7 ffffff/0b0d10×2 6cb6ff/0b0d10×9 ffffff/0b0d10×2 6cb6ff/0b0d10×10 ffffff/0b0d10×2 6cb6ff/0b0d10×6 ffffff/0b0d10×2 6cb6ff/0b0d10×7 ffffff/0b0d10×2 6cb6ff/16263a×12 ffffff/0b0d10×98
 2: ffffff/0b0d10×23 32fe9f/111419×2 b392f0/111419×11 32fe9f/111419×101 ffffff/0b0d10×23
 3: 32fe9f/111419×2 b392f0/111419×9 32fe9f/111419×13 ffffff/111419×1 b392f0/111419×7 dde2ea/111419×17 959dab/111419×15 ffffff/111419×1 252a33/111419×1 ffffff/111419×70 32fe9f/111419×1 252a33/111419×15 6cb6ff/16263a×5 252a33/111419×3
 4: 32fe9f/111419×1 ffffff/111419×1 959dab/111419×6 f6f8fb/111419×15 32fe9f/111419×1 ffffff/111419×1 959dab/111419×23 dde2ea/111419×16 ffffff/111419×1 252a33/111419×1 ffffff/111419×2 f6f8fb/111419+1×6 959dab/111419×16 ffffff/111419×46 32fe9f/111419×1 ffffff/111419×22 252a33/111419×1

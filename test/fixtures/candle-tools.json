@@ -1,8 +1,8 @@
 {
-  "about": "Candle's MCP server tools/list at 0.10.29 (CLI 0.13.11), listed through `candle mcp` run from the CLI's source with a Read key on 2026-11-04, scrubbed by scripts/scrub-recordings.ts. A Read key may not edit its public profile, so the four marked listedAfterKeyCheck are as recorded at 0.10.25 through a key that may: they are listed only to such a key, so the fake server leaves them out unless asked. All 87 together are what a key that may edit sees.",
+  "about": "Candle's MCP server tools/list at 0.10.30 (CLI 0.13.18), listed through the released `candle mcp` (linux-arm64, checked against Candle's latest.json) with a Read key on 2026-11-08, scrubbed by scripts/scrub-recordings.ts. A Read key may not edit its public profile, so the four marked listedAfterKeyCheck are as recorded at 0.10.25 through a key that may (their definitions are unchanged since): they are listed only to such a key, so the fake server leaves them out unless asked. All 92 together are what a key that may edit sees.",
   "serverInfo": {
     "name": "candle-mcp",
-    "version": "0.10.29"
+    "version": "0.10.30"
   },
   "tools": [
     {
@@ -773,7 +773,7 @@
     {
       "name": "candle_launch_token",
       "title": "Launch a token on Candle",
-      "description": "Launch a new token via the Candle headless launch API, from the account's embedded wallet. Works on every plan, Free included. Set dryRun: true to validate without spending anything. An idempotency key of at most 128 characters; reuse it to recover the same launch. The token's name, at most 32 UTF-8 bytes. The token's ticker, at most 10 UTF-8 bytes. The roughly square token image at an https URL; --image <path> uploads a local file instead. A wide banner at an https URL or a local file; uploads are public and permanent. The token's description, safe for on-chain JSON. The token's website link as an absolute http(s) URL. The token's X link as an absolute http(s) URL. The token's telegram link as an absolute http(s) URL. The token's discord link as an absolute http(s) URL. The launch chain, inferred from the wallet, quote asset and dex version on the CLI. The quote asset: sol, usdc or cndl on Solana; eth or usdg on Hood (defaults sol and eth). The curve mode: open or exclusive; test-open or test-exclusive need ENABLE_TEST_CURVES; exp-a, exp-b, exp-c and exp-custom are Solana sol/cndl only. exp-custom's virtual quote, in whole quote units: 1 to 100 SOL or 66000 to 6600000 CNDL; requires --curve-g and EXP_CUSTOM_CURVES. exp-custom's graduation threshold, in whole quote units: 1 to 250 SOL or 66000 to 16500000 CNDL; requires --curve-v and EXP_CUSTOM_CURVES. An exp- mode's extra creator fee: 0, 100 or 200 bps on the curve and pool, paid to the creator in full. The staker allocation, 50 to 1000 bps; defaults to 50, or 500 on exp- curves. Solana's graduated pool fee: 25, 50 or 100 bps (default 50), or the ending rate with --pool-fee-from. The falling pool fee's starting rate, at most 2500 bps; requires --pool-fee and --pool-fee-minutes. The pool fee's fall time, at most 30 minutes; requires --pool-fee and --pool-fee-from. The falling fee's ending rate, taken from --pool-fee. Solana preset pools: curve_price opens at the curve's last price and burns the rest; omitted uses curve_price when allocations fit graduation.maxStakerCarveBps, otherwise legacy; explicit curve_price above that limit is refused. Solana exp- pools: floor by default, or full_range to open across the whole price range. Hood only, required there: the Uniswap version the curve graduates to. The token's visibility: production, test, local or hidden; test keys require test or hidden. Print the launch preview without building, signing or recording a launch; local image uploads still become public and permanent.",
+      "description": "Launch a new token via the Candle headless launch API, from the account's embedded wallet. Works on every plan, Free included. Set dryRun: true to validate without spending anything. An idempotency key of at most 128 characters; reuse it to recover the same launch. The token's name, at most 32 UTF-8 bytes. The token's ticker, at most 10 UTF-8 bytes. The roughly square token image at an https URL; --image <path> uploads a local file instead. A wide banner at an https URL or a local file; uploads are public and permanent. The token's description, safe for on-chain JSON. The token's website link as an absolute http(s) URL. The token's X link as an absolute http(s) URL. The token's telegram link as an absolute http(s) URL. The token's discord link as an absolute http(s) URL. The launch chain, inferred from the wallet, quote asset and dex version on the CLI. The quote asset: sol, usdc or cndl on Solana; eth or usdg on Hood (defaults sol and eth). The curve mode: open or exclusive; test-open or test-exclusive need ENABLE_TEST_CURVES; exp-a, exp-b, exp-c and exp-custom are Solana sol/cndl only. exp-custom's virtual quote, in whole quote units: 1 to 100 SOL or 66000 to 6600000 CNDL; requires --curve-g and EXP_CUSTOM_CURVES. exp-custom's graduation threshold, in whole quote units: 1 to 250 SOL or 66000 to 16500000 CNDL; requires --curve-v and EXP_CUSTOM_CURVES. An exp- mode's extra creator fee: 0, 100 or 200 bps on the curve and pool, paid to the creator in full. The staker allocation, 50 to 1000 bps; defaults to 50, or 500 on exp- curves. Solana's graduated pool fee: 25, 50 or 100 bps (default 50), or the ending rate with --pool-fee-from. The falling pool fee's starting rate, at most 2500 bps; requires --pool-fee and --pool-fee-minutes. The pool fee's fall time, at most 30 minutes; requires --pool-fee and --pool-fee-from. The falling fee's ending rate, taken from --pool-fee. Solana preset pools: curve_price opens at the curve's last price and burns the rest; omitted uses curve_price when allocations fit graduation.maxStakerCarveBps, otherwise legacy; explicit curve_price above that limit is refused. Solana exp- pools: floor by default, or full_range to open across the whole price range. Hood only, required there: the Uniswap version the curve graduates to. The token's visibility: production, test, local or hidden; test keys require test or hidden. Launch rules, Solana only, where the server has CURVE_LAUNCH_RULES_ENABLED on: how long after the launch buys open, at most 7 days (604800 seconds); before then only the launching wallet may buy. The CLI takes a duration (90m, 6h, 2d, or seconds); the request field is whole seconds. The most quote one wallet may spend on the curve during --cap-window, curve fee included and Candle's fee not; needs --cap-window. The CLI takes whole quote units; the request field is raw units as a decimal string. How long the per-wallet cap holds, counted from the open: 1 second to 24 hours (86400 seconds); needs --max-buy-per-wallet. Only these wallets may buy during --allowlist-window: 1 to 4,096 distinct Solana addresses; needs --allowlist-window. The CLI reads a file, one address per line or comma separated; the request field is the list. How long the allowlist phase holds, counted from the open: 1 second to 24 hours (86400 seconds); needs --allowlist. The most the launching wallet may buy before the open, only with --open-in: at least the launch's own buy, at most the dev-buy ceiling, and the buy by default. That spend counts toward the per-wallet cap after the open. The CLI takes whole quote units; the request field is raw units as a decimal string. Print the launch preview without building, signing or recording a launch; local image uploads still become public and permanent.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -981,6 +981,40 @@
             ],
             "description": "Solana's graduated pool fee: 25, 50 or 100 bps (default 50), or the ending rate with --pool-fee-from. The falling pool fee's starting rate, at most 2500 bps; requires --pool-fee and --pool-fee-minutes. The falling fee's ending rate, taken from --pool-fee. The pool fee's fall time, at most 30 minutes; requires --pool-fee and --pool-fee-from."
           },
+          "launchRules": {
+            "type": "object",
+            "properties": {
+              "openDelaySecs": {
+                "type": "integer",
+                "description": "Launch rules, Solana only, where the server has CURVE_LAUNCH_RULES_ENABLED on: how long after the launch buys open, at most 7 days (604800 seconds); before then only the launching wallet may buy. The CLI takes a duration (90m, 6h, 2d, or seconds); the request field is whole seconds."
+              },
+              "maxBuyPerWalletRaw": {
+                "type": "string",
+                "description": "The most quote one wallet may spend on the curve during --cap-window, curve fee included and Candle's fee not; needs --cap-window. The CLI takes whole quote units; the request field is raw units as a decimal string."
+              },
+              "capWindowSecs": {
+                "type": "integer",
+                "description": "How long the per-wallet cap holds, counted from the open: 1 second to 24 hours (86400 seconds); needs --max-buy-per-wallet."
+              },
+              "allowlist": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Only these wallets may buy during --allowlist-window: 1 to 4,096 distinct Solana addresses; needs --allowlist-window. The CLI reads a file, one address per line or comma separated; the request field is the list."
+              },
+              "allowlistWindowSecs": {
+                "type": "integer",
+                "description": "How long the allowlist phase holds, counted from the open: 1 second to 24 hours (86400 seconds); needs --allowlist."
+              },
+              "devBuyMaxRaw": {
+                "type": "string",
+                "description": "The most the launching wallet may buy before the open, only with --open-in: at least the launch's own buy, at most the dev-buy ceiling, and the buy by default. That spend counts toward the per-wallet cap after the open. The CLI takes whole quote units; the request field is raw units as a decimal string."
+              }
+            },
+            "additionalProperties": true,
+            "description": "Launch rules, Solana only, where the server has CURVE_LAUNCH_RULES_ENABLED on: how long after the launch buys open, at most 7 days (604800 seconds); before then only the launching wallet may buy. The CLI takes a duration (90m, 6h, 2d, or seconds); the request field is whole seconds. The most quote one wallet may spend on the curve during --cap-window, curve fee included and Candle's fee not; needs --cap-window. The CLI takes whole quote units; the request field is raw units as a decimal string. How long the per-wallet cap holds, counted from the open: 1 second to 24 hours (86400 seconds); needs --max-buy-per-wallet. Only these wallets may buy during --allowlist-window: 1 to 4,096 distinct Solana addresses; needs --allowlist-window. The CLI reads a file, one address per line or comma separated; the request field is the list. How long the allowlist phase holds, counted from the open: 1 second to 24 hours (86400 seconds); needs --allowlist. The most the launching wallet may buy before the open, only with --open-in: at least the launch's own buy, at most the dev-buy ceiling, and the buy by default. That spend counts toward the per-wallet cap after the open. The CLI takes whole quote units; the request field is raw units as a decimal string."
+          },
           "buyAmount": {
             "type": [
               "string",
@@ -1032,7 +1066,7 @@
     {
       "name": "candle_token_forensics",
       "title": "Token forensics",
-      "description": "Gate a buy before making it: who launched it (resolved on-chain; pump.fun's shared updateAuthority is never the developer; when no developer is on chain, deployer.attribution names the launchpad or issuer instead, e.g. launched via stonk.fun or issued by xStocks), their went-to-zero rate and last coins, who bought in the deploy window (the creator's own wallets are marked disclosed; strangers in the same slot are the bundle signal), same-funder insider share, same-funder deployer cluster, and safety.summary with six sourced flags (mintAuthority, freezeAuthority, tokenExtensions, lpLock, sellability, liquidityDrain). Refuse an unprompted buy when flagged; incomplete or unknown is not clearance. launch.deployerLaunches is an inclusive informational count, never a warning. Every measurement carries a coverage note -- 'unavailable' is not 'clean'. No key needed.\n\nMARKET_NOT_FOUND means Candle has no market for that token and this could not run. That is also not 'clean': report that you could not check it, rather than reporting the token as safe. That refusal now carries error.coverage -- covered:false, a reason ('external_launchpad' when the token launched somewhere else, 'unknown_mint' when nobody has indexed it), the launchpad when known, and every check that consequently did not run. Read it instead of guessing. Most of the feed, and any Solana mint Jupiter's index knows, now answers with a partial report instead. On Hood, a token Candle did not launch names its launch account (deployer.method cvc_launch_account) for pons.family and pools.trade launches, with no record of earlier coins; other Hood launchpads return no developer.",
+      "description": "Gate a buy before making it: who launched it (resolved on-chain; pump.fun's shared updateAuthority is never the developer; when no developer is on chain, deployer.attribution names the launchpad or issuer instead, e.g. launched via stonk.fun or issued by xStocks), their went-to-zero rate and last coins, who bought in the deploy window (the creator's own wallets are marked disclosed; strangers in the same slot are the bundle signal), same-funder insider share, same-funder deployer cluster, and safety.summary with six sourced flags (mintAuthority, freezeAuthority, tokenExtensions, lpLock, sellability, liquidityDrain). Refuse an unprompted buy when flagged; incomplete or unknown is not clearance. deployer.priorLaunches is counted (pump.fun curves for a curve creator; record.count says the source); deployer.launcher is the wallet that sent the launch, often a launch tool's signer, never the developer; launch.deployerLaunches is that wallet's inclusive informational count, never a warning. Every measurement carries a coverage note -- 'unavailable' is not 'clean'. No key needed.\n\nMARKET_NOT_FOUND means Candle has no market for that token and this could not run. That is also not 'clean': report that you could not check it, rather than reporting the token as safe. That refusal now carries error.coverage -- covered:false, a reason ('external_launchpad' when the token launched somewhere else, 'unknown_mint' when nobody has indexed it), the launchpad when known, and every check that consequently did not run. Read it instead of guessing. Most of the feed, and any Solana mint Jupiter's index knows, now answers with a partial report instead. On Hood, a token Candle did not launch names its launch account (deployer.method cvc_launch_account) for pons.family and pools.trade launches, with no record of earlier coins; other Hood launchpads return no developer.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -1248,6 +1282,55 @@
         "destructiveHint": false,
         "idempotentHint": true,
         "openWorldHint": true
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "candle_get_price_history",
+      "title": "Get price history",
+      "description": "One Solana token's price history: OHLC bars in USD per token, oldest first, the same bars as the token's chart on Candle. interval 1m, 5m, 15m, 1h, 4h or 1d (default 1h); limit 1-500 (default 100); to is unix seconds (default now). The answer is up to limit bars at or before to (limit is a maximum). Coverage is bounded by source: Candle's own bars come from the latest 1,500 active minutes and a bar whose start cannot be established is left out; the indexer is searched only (limit + 1) x interval seconds back from to. A quiet token can therefore return fewer bars than limit, and a minute with no trades has no bar, so read each bar's time rather than assuming a gapless series. source says which answered: candle (Candle's own curve bars, volumeUnit usd) or birdeye (the indexer's, volumeUnit token). An empty candles list means no bars in the searched coverage, not no history and not a zero price; page back with to. No key needed and none is sent. Hood is refused (400 VALIDATION_FAILED naming GET /api/v1/hood/token/:address/candles). For the current price and 5m/1h/24h change, read candle_get_market.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "chain": {
+            "type": "string",
+            "description": "\"solana\" (the default). Hood is refused with the REST route that serves it"
+          },
+          "mint": {
+            "type": "string",
+            "description": "Token mint"
+          },
+          "interval": {
+            "type": "string",
+            "enum": [
+              "1m",
+              "5m",
+              "15m",
+              "1h",
+              "4h",
+              "1d"
+            ],
+            "description": "Bar length. Default 1h"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 500,
+            "description": "How many bars, 1-500. Default 100"
+          },
+          "to": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "description": "Unix seconds: the newest bar opens at or before this. Default now; page back with the oldest bar's time"
+          }
+        },
+        "required": [
+          "mint"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "execution": {
         "taskSupport": "forbidden"
@@ -1555,18 +1638,19 @@
     {
       "name": "candle_get_operation",
       "title": "What happened to a write",
-      "description": "Look up a trade or launch by the id its write used, and find out whether it landed. Reads only; moves nothing.\n\nCall this after a timeout, after a restart, or any time you hold an id and do not know the outcome. Do NOT re-send the write to find out.\n\nFour answers, four different next moves:\n- `confirmed`/`failed`: it is over. `signature` proves the first, `errorCode` explains the second.\n- `built`/`submitted`: still in flight. Wait and ask again.\n- 404 (`JOB_NOT_FOUND`): unknown, not an outcome. No record exists under this id in the ledger `kind` asked. That does not prove the write did not run: a write that is still starting has no record yet. If a write was sent with this id, send the SAME request again with the SAME id. It returns the stored outcome, or reports the one still running. It never executes a second time. A refusal of that resend (a conflict or a limit) is an answer about the resend, not about the write: read candle_get_operation again before reporting an outcome. Never send it under a new id: a new id is a second trade or launch. Check `kind`: a swap id is not read here, so replay the swap with its `clientSwapId`. The result says the same in `outcome: \"unknown\"` and `next`.\n\nAmounts come back RAW, deliberately: the answer you need after a timeout is the outcome, and you already know what you asked for.",
+      "description": "Look up a trade, swap or launch by the id its write used, and find out whether it landed. Reads only; moves nothing.\n\nCall this after a timeout, after a restart, or any time you hold an id and do not know the outcome. Do NOT re-send the write to find out.\n\nThe answers, and the next move for each:\n- `confirmed`/`failed`: it is over. `signature` proves the first, `errorCode` explains the second.\n- `built`/`submitted`: still in flight. Wait and ask again.\n- kind `swap` (candle_swap's `clientSwapId`) answers `job.outcome` instead: `in_flight` (ask again), `confirmed` (`job.hashes`), `failed` (refused before any broadcast; the SAME request with the SAME id starts over), `partial` (`hashes[0]` landed, a later leg did not) or `indeterminate` (broadcast, outcome unknown; check `error.message`). `partial` and `indeterminate` are final for that id.\n- 404 (`JOB_NOT_FOUND`): unknown, not an outcome. No record exists under this id in the ledger `kind` asked. That does not prove the write did not run: a write that is still starting has no record yet. If a write was sent with this id, send the SAME request again with the SAME id. It returns the stored outcome, or reports the one still running. It never executes a second time. A refusal of that resend (a conflict or a limit) is an answer about the resend, not about the write: read candle_get_operation again before reporting an outcome. Never send it under a new id: a new id is a second trade, swap or launch. Check `kind`: an id read under the wrong kind has no record there. A swap sent without a `clientSwapId` has no record at all. The result says the same in `outcome: \"unknown\"` and `next`.\n\nAmounts come back RAW, deliberately: the answer you need after a timeout is the outcome, and you already know what you asked for.",
       "inputSchema": {
         "type": "object",
         "properties": {
           "clientId": {
             "type": "string",
-            "description": "The clientTradeId or clientLaunchId the write used, or that the tool echoed back to you"
+            "description": "The clientTradeId, clientSwapId or clientLaunchId the write used, or that the tool echoed back to you"
           },
           "kind": {
             "type": "string",
             "enum": [
               "trade",
+              "swap",
               "launch"
             ],
             "description": "Which rail the id belongs to. Required: ids are caller-chosen strings with no shape to dispatch on"
@@ -1867,13 +1951,18 @@
     {
       "name": "candle_get_profile_pnl",
       "title": "Read an agent profile's P&L",
-      "description": "Optional `board` beside `pnl` carries profileId, creatorFeesUsd, feeClaimsUnvalued, feeClaimsPartial and totalPnlUsd (absent before a board entry exists): the all-time public board total, including fee claims at their value when claimed, credited to the agent that launched the token when the claiming account is the launching account. `feesUsd` is fees paid; `creatorFeesUsd` is fees earned. Check feeClaimsPartial and feeClaimsUnvalued. `board` is absent on an older backend or a failed board read; it does not change ledger pnl.totalUsd. Staking rewards are held at zero cost; claim value is informational, never added again. This profile's share of the account's P&L: realized profit on the sales it made and on positions its buy opened that closed through a sale made by hand in the web app or an exit outside Candle (the fee and trade count stay under Manual), the Candle fees charged against it, and the positions that belong to it (the wallet's bound key, else the key whose buy opened them) with their cost basis, each MARKED at Candle's current price where one exists: `markPriceUsd`, `marketValueUsd` and `unrealizedUsd` per position, and `unrealizedUsd` overall. A position with no price is counted in `unmarkedPositions` and left out of unrealized, never valued at zero; `oldestMarkAt` says how old the marks are. Deposits and withdrawals are excluded: funding a wallet is not profit. Check `unvalued` and `truncated` before quoting the number; they mean the total is partial. The figures come from the account's one P&L read, the same as the console's, to the cent: `pnl.totalUsd` (realized net plus unrealized) is the console's P&L, plus the Hyperliquid net when `perpsInTotal` is true. Positions live in wallets: each wallet is its own average-cost pool, the total is the sum of `pnl.byWallet` (one row per wallet, main or linked, with the linked wallet's label; `unknown:solana` or `unknown:hood` is the row for fills no record places in a wallet), and one token held in two wallets is two positions, each with its `wallet`. A recorded move between the account's wallets carries its cost and realizes nothing. Moved-in positions and `closedPositions` carry additive `transferredIn`, `basisSource` and `basisComplete`; `basisSource` says whether cost comes from Candle history, on-chain trades or the arrival price; `zero-cost` (with `zeroCostQuantity`) is Solana CNDL with no purchase found, carried at $0. Public `realizedFromTransfersUsd` and `unrealizedFromTransfersUsd` are shares already included in total P&L and rank; do not add them again. Moved-in closes count toward W/L and eligibility. Each position carries `agent` (the key it belongs to) and `dust` when it is worth under one cent; dust stays listed and counted, and `openPositionsExDust` leaves it out. `closed` gives the closed positions as `madeUsd` + `lostUsd` + `partialSellsUsd` = `realizedNetUsd`, with `wins` and `losses`. `lookback` and `truncated` are the account's activity bound, and `tradesConsidered` counts this key's ledger fills. Since 2026-10-02 the total is the sum of wallets rather than one pool across them, so realized figures can differ from earlier reads; a server that predates it omits `totalUsd`, `closed`, `openPositionsExDust`, `wallet`, `agent` and `dust`. Every open position and every `byWallet` row (and its positions) carries `chain` ('solana' or 'hood'), and `pnl.byChain` has the total's figures over each chain's fills alone, both chains always present, with `openPositions` there a count (the positions are in `pnl.openPositions`, by `chain`). The two chains sum to the total. A server that predates per-chain P&L omits `chain` and `byChain`. While Hyperliquid is enabled, `hyperliquid` reports the profile's main perps over every EVM TEE wallet bound to it, per binding period (`coverage: 'profile'`): realized gross, funding (positive received, negative paid), fees (builder fees included), realizedNetUsd = gross + funding - fees, `unrealizedUsd` at each wallet's cutoff, and `netUsd` = realized net + unrealized, with `markedAt` (the oldest wallet cutoff) and open `positions` (each `fundingNetUsd` positive when earned). Facts and unrealized stop at the same cutoff; each `byWallet` period is `live` (reconciled on this read, not yet settled) or `settled` (a stored snapshot). When `read` is true, `pnl.totalUsd` includes `netUsd` and `perpsInTotal` is true. When `read` is false, `pnl.totalUsd` is spot only, `perpsInTotal` is false and `reason` says why; that is never a zero. Check `historyPartial` and `partialReasons`. Reads only.",
+      "description": "Optional `board` beside `pnl` carries profileId, creatorFeesUsd, feeClaimsUnvalued, feeClaimsPartial and totalPnlUsd (absent before a board entry exists): the all-time public board total, including fee claims at their value when claimed, credited to the agent that launched the token when the claiming account is the launching account. `feesUsd` is fees paid; `creatorFeesUsd` is fees earned. Check feeClaimsPartial and feeClaimsUnvalued. `board` is absent on an older backend or a failed board read; it does not change ledger pnl.totalUsd. Staking rewards are held at zero cost; claim value is informational, never added again. This profile's share of the account's P&L: realized profit on the sales it made and on positions its buy opened that closed through a sale made by hand in the web app or an exit outside Candle (the fee and trade count stay under Manual), the Candle fees charged against it, and the positions that belong to it (the wallet's bound key, else the key whose buy opened them) with their cost basis, each MARKED at Candle's current price where one exists: `markPriceUsd`, `marketValueUsd` and `unrealizedUsd` per position, and `unrealizedUsd` overall. A position with no price is counted in `unmarkedPositions` and left out of unrealized, never valued at zero; `oldestMarkAt` says how old the marks are. Deposits and withdrawals are excluded: funding a wallet is not profit. Check `unvalued` and `truncated` before quoting the number; they mean the total is partial. The figures come from the account's one P&L read, the same as the console's, to the cent: `pnl.totalUsd` (realized net plus unrealized) is the console's P&L, plus the Hyperliquid net when `perpsInTotal` is true. Positions live in wallets: each wallet is its own average-cost pool, the total is the sum of `pnl.byWallet` (one row per wallet, main or linked, with the linked wallet's label; `unknown:solana` or `unknown:hood` is the row for fills no record places in a wallet), and one token held in two wallets is two positions, each with its `wallet`. A recorded move between the account's wallets carries its cost and realizes nothing. Moved-in positions and `closedPositions` carry additive `transferredIn`, `basisSource` and `basisComplete`; `basisSource` says whether cost comes from Candle history, on-chain trades or the arrival price; `zero-cost` (with `zeroCostQuantity`) is Solana CNDL with no purchase found, carried at $0. Public `realizedFromTransfersUsd` and `unrealizedFromTransfersUsd` are shares already included in total P&L and rank; do not add them again. Moved-in closes count toward W/L and eligibility. Each position carries `agent` (the key it belongs to) and `dust` when it is worth under one cent; dust stays listed and counted, and `openPositionsExDust` leaves it out. `closed` gives the closed positions as `madeUsd` + `lostUsd` + `partialSellsUsd` = `realizedNetUsd`, with `wins` and `losses`. `lookback` and `truncated` are the account's activity bound, and `tradesConsidered` counts this key's ledger fills. Since 2026-10-02 the total is the sum of wallets rather than one pool across them, so realized figures can differ from earlier reads; a server that predates it omits `totalUsd`, `closed`, `openPositionsExDust`, `wallet`, `agent` and `dust`. Every open position and every `byWallet` row (and its positions) carries `chain` ('solana' or 'hood'), and `pnl.byChain` has the total's figures over each chain's fills alone, both chains always present, with `openPositions` there a count (the positions are in `pnl.openPositions`, by `chain`). The two chains sum to the total. A server that predates per-chain P&L omits `chain` and `byChain`. While Hyperliquid is enabled, `hyperliquid` reports the profile's main perps over every EVM TEE wallet bound to it, per binding period (`coverage: 'profile'`): realized gross, funding (positive received, negative paid), fees (builder fees included), realizedNetUsd = gross + funding - fees, `unrealizedUsd` at each wallet's cutoff, and `netUsd` = realized net + unrealized, with `markedAt` (the oldest wallet cutoff) and open `positions` (each `fundingNetUsd` positive when earned). Facts and unrealized stop at the same cutoff; each `byWallet` period is `live` (reconciled on this read, not yet settled) or `settled` (a stored snapshot). When `read` is true, `pnl.totalUsd` includes `netUsd` and `perpsInTotal` is true. When `read` is false, `pnl.totalUsd` is spot only, `perpsInTotal` is false and `reason` says why; that is never a zero. Check `historyPartial` and `partialReasons`. Pass `sinceMs` for a `window` block beside all-time `pnl`: existing holdings start at the last completed historical minute candle's close, returned in `boundary.marks` with its timestamp. Sales and open positions use that window basis, with later buys at trade cost. `feesUsd` includes both buy and sell fees once, separately from basis. `windowedUsd` is realizedNetUsd plus unrealizedUsd. Missing boundary/current marks or incomplete history return complete:false, incompleteReasons and windowedUsd:null; component sums are partial then. This is spot trading P&L; LP, perps and fee income remain separate. Reads only.",
       "inputSchema": {
         "type": "object",
         "properties": {
           "keyPrefix": {
             "type": "string",
             "description": "The profile's API key prefix"
+          },
+          "sinceMs": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Unix time in milliseconds. Adds a `window` block: realized and open mark changes since then, including older holdings. Buy and sell fees are charged once. Read complete and incompleteReasons; windowedUsd is null when incomplete. The all-time `pnl` is unchanged."
           }
         },
         "required": [
@@ -1889,7 +1978,7 @@
     {
       "name": "candle_get_profile_trades",
       "title": "Read an agent profile's trade history",
-      "description": "Orders, actual fills, fees, timestamps and transaction hashes for this profile. Includes FAILED trades, with an errorCode saying why each did not go through, so this answers 'what happened to my order' as well as 'what did I trade'. Reads only; moves nothing.",
+      "description": "Orders, actual fills, fees, timestamps and transaction hashes for this profile. Page by time with `since`, `until` and `cursor` (continue with the response's `nextCursor`). Includes FAILED trades, with an errorCode saying why each did not go through, so this answers 'what happened to my order' as well as 'what did I trade'. The profile's swaps are listed among the trades by time, each with kind 'swap', rail ('swap' for candle_swap, 'build' for the CLI's build and submit), fromAsset, toAsset and amountRaw; a candle_swap made without a clientSwapId is not recorded, so it is not listed. Reads only; moves nothing.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -1900,6 +1989,18 @@
           "limit": {
             "type": "number",
             "description": "How many of the most recent trades to return. Default 200, max 1000."
+          },
+          "since": {
+            "type": "string",
+            "description": "Inclusive lower bound on the trade's createdAt: an ISO 8601 time or epoch milliseconds."
+          },
+          "until": {
+            "type": "string",
+            "description": "Exclusive upper bound on createdAt, in the same forms as `since`."
+          },
+          "cursor": {
+            "type": "string",
+            "description": "The `nextCursor` of the previous page, to continue the same window."
           }
         },
         "required": [
@@ -1907,6 +2008,59 @@
         ],
         "additionalProperties": false,
         "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "candle_get_paper_inventory",
+      "title": "Read this key's paper inventory",
+      "description": "This key's PAPER book in raw units: the positions that paper buys have credited and a paper percent sell sizes itself from. Derived from admitted quotes; no money moved and the live wallet is untouched. Never mix it with live holdings (candle_get_portfolio). Fails retryably when the book cannot be read completely. Needs swap:write on the key. Reads only.",
+      "inputSchema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {}
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "candle_get_profile_paper",
+      "title": "Read an agent profile's paper P&L",
+      "description": "One profile's PAPER results: the same accounting as candle_get_profile_pnl, from trades that never happened. `pnl` is the paper P&L and `trades` its 50 most recent paper trades. Carries `basis: \"quote\"`: the figures come from quotes at admission and are optimistic by the slippage and fees real execution pays. Never add them to live P&L. Reads only.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "keyPrefix": {
+            "type": "string",
+            "description": "The profile's API key prefix"
+          },
+          "sinceMs": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Unix time in milliseconds. Adds a `window` block: realized and open mark changes since then, including older holdings. Buy and sell fees are charged once. Read complete and incompleteReasons; windowedUsd is null when incomplete. The all-time `pnl` is unchanged."
+          }
+        },
+        "required": [
+          "keyPrefix"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "candle_get_account_pnl",
+      "title": "Read P&L across all of an account's agent keys",
+      "description": "The account's P&L split by agent profile in one read, as `candle pnl` without `--profile` does: one row per profile with its ledger figures and, where it has a board entry, `board` (all-time public total with creator-fee claims credited to the launching agent, so a profile's board total can differ from its per-key ledger P&L). A wallet shared by several keys books a round to its bound key, else the key whose buy opened it. Use candle_get_profile_pnl for one profile's positions. Reads only.",
+      "inputSchema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {}
       },
       "execution": {
         "taskSupport": "forbidden"
@@ -1950,7 +2104,7 @@
     {
       "name": "candle_execution_status",
       "title": "Can this key execute right now",
-      "description": "One call before trading: the embedded wallets to spend from, the tier that decides what may be traded, and this key's own spend limits. Reads only; moves nothing. Call it when a run starts, or after an authorization error, rather than inferring readiness from a failed trade. If a read could not be completed the tool says which one and does NOT claim the account is unready: an unreachable endpoint and a missing tier are different problems with different fixes.",
+      "description": "One call before trading: the embedded wallets to spend from, the tier that decides what may be traded, this key's own spend limits, and its loss limits and stop state (risk: lossLimits, state, stopped, tripped). A stopped key reports ready: false and a top-level stopped naming the bound that broke; every trade answers RISK_LIMIT_REACHED until an account owner resumes it, so stop trading and say why rather than retrying. Any scope can read its own. Reads only; moves nothing. Call it when a run starts, or after an authorization error, rather than inferring readiness from a failed trade. If a read could not be completed the tool says which one and does NOT claim the account is unready: an unreachable endpoint and a missing tier are different problems with different fixes.",
       "inputSchema": {
         "$schema": "http://json-schema.org/draft-07/schema#",
         "type": "object",
@@ -2115,7 +2269,7 @@
     {
       "name": "candle_trade",
       "title": "Buy or sell a token",
-      "description": "Buy or sell a token. MOVES REAL FUNDS: the payer is the account's embedded (main) wallet, executed server-side via delegation.\n\nBefore the first trade of a run, once:\n1. candle_execution_status  -- confirms the wallets, the tier and this key's spend limits. Call it at the start, or after an auth error; do not infer readiness from a failed trade.\n2. candle_resolve_token  -- if a human handed you a bare address. It returns the chain, so you never have to guess it.\n3. candle_token_forensics  -- before you quote or buy anything. It returns safety.summary and sourced flags with timestamps and details. Unknown is not clean. MARKET_NOT_FOUND there means Candle has no market for the token, NOT that the token is clean.\n\nArguments: `mint` and `side` are required. Amounts are DECIMAL, never raw base units (amount: \"0.5\", not lamports). Omitting the amount on a sell sells the whole position.\n\nPlans: every plan can buy and sell Candle-launched tokens and base assets, and SELL a token it holds that Candle did not launch. BUYING such a token needs Pro or Max (TIER_REQUIRED otherwise). Each trade pays the plan's agent fee on top (feeBps in candle_get_plans).\n\nPass `paper: true` to rehearse: every admission rule runs and the quote is recorded, but nothing broadcasts and no funds move. A paper buy credits this key's paper inventory, including for external Solana mints routed through Jupiter. A later sell by amount or percent closes that book without reading the live wallet and without MARKET_NOT_FOUND -- including when `paper` is omitted on the exit, as long as the paper position exists. Do this before the first live trade of a new strategy, and whenever you are unsure a trade would be admitted at all.\n\nAfter the call:\n- A timeout is not a failure. Retry with the SAME clientTradeId from the result -- it coalesces the duplicate. A NEW id is a SECOND trade, and that is how you double-spend.\n- If you no longer hold the result, do not re-send to find out what happened. Ask candle_get_operation with the clientTradeId. A 404 there is unknown, not an outcome. No record exists under this id in the ledger `kind` asked. That does not prove the write did not run: a write that is still starting has no record yet. If a write was sent with this id, send the SAME request again with the SAME id. It returns the stored outcome, or reports the one still running. It never executes a second time. A refusal of that resend (a conflict or a limit) is an answer about the resend, not about the write: read candle_get_operation again before reporting an outcome. Never send it under a new id: a new id is a second trade or launch. Check `kind`: a swap id is not read here, so replay the swap with its `clientSwapId`.",
+      "description": "Buy or sell a token. MOVES REAL FUNDS: the payer is the account's embedded (main) wallet, executed server-side via delegation.\n\nBefore the first trade of a run, once:\n1. candle_execution_status  -- confirms the wallets, the tier and this key's spend limits. Call it at the start, or after an auth error; do not infer readiness from a failed trade.\n2. candle_resolve_token  -- if a human handed you a bare address. It returns the chain, so you never have to guess it.\n3. candle_token_forensics  -- before you quote or buy anything. It returns safety.summary and sourced flags with timestamps and details. Unknown is not clean. MARKET_NOT_FOUND there means Candle has no market for the token, NOT that the token is clean.\n\nArguments: `mint` and `side` are required. Amounts are DECIMAL, never raw base units (amount: \"0.5\", not lamports). Omitting the amount on a sell sells the whole position.\n\nPlans: every plan can buy and sell Candle-launched tokens, base assets, and a token Candle did not launch. Each trade pays the plan's agent fee on top (feeBps in candle_get_plans).\n\nPass `paper: true` to rehearse: every admission rule runs and the quote is recorded, but nothing broadcasts and no funds move. A paper buy credits this key's paper inventory, including for external Solana mints routed through Jupiter. A later sell by amount or percent closes that book without reading the live wallet and without MARKET_NOT_FOUND -- including when `paper` is omitted on the exit, as long as the paper position exists. Do this before the first live trade of a new strategy, and whenever you are unsure a trade would be admitted at all.\n\nAfter the call:\n- A timeout is not a failure. Retry with the SAME clientTradeId from the result -- it coalesces the duplicate. A NEW id is a SECOND trade, and that is how you double-spend.\n- If you no longer hold the result, do not re-send to find out what happened. Ask candle_get_operation with the clientTradeId. A 404 there is unknown, not an outcome. No record exists under this id in the ledger `kind` asked. That does not prove the write did not run: a write that is still starting has no record yet. If a write was sent with this id, send the SAME request again with the SAME id. It returns the stored outcome, or reports the one still running. It never executes a second time. A refusal of that resend (a conflict or a limit) is an answer about the resend, not about the write: read candle_get_operation again before reporting an outcome. Never send it under a new id: a new id is a second trade, swap or launch. Check `kind`: an id read under the wrong kind has no record there. A swap sent without a `clientSwapId` has no record at all.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -2140,7 +2294,7 @@
           },
           "quoteAsset": {
             "type": "string",
-            "description": "What the wallet spends on a buy or receives on a sell: \"sol\", \"usdc\" or \"cndl\" on Solana, \"eth\" or \"usdg\" on Hood. Echoing the `quoteAsset` a quote (POST /api/v1/trade/agent/quote) returned is safe. On Solana it applies only to an arbitrary mint Candle never launched (a buy needs Pro or Max; a sell works on any plan) and is ignored for a Candle token, whose quote comes from the token itself. On Hood it is the settlement asset of a DEX trade; a USDG buy adds an approval transaction an ETH buy does not. It is not the route: the cheapest path to the asset is chosen separately. Defaults to sol / ETH settlement."
+            "description": "What the wallet spends on a buy or receives on a sell: \"sol\", \"usdc\" or \"cndl\" on Solana, \"eth\" or \"usdg\" on Hood. Echoing the `quoteAsset` a quote (POST /api/v1/trade/agent/quote) returned is safe. On Solana it applies only to an arbitrary mint Candle never launched (a buy or sell works on any plan) and is ignored for a Candle token, whose quote comes from the token itself. On Hood it is the settlement asset of a DEX trade; a USDG buy adds an approval transaction an ETH buy does not. It is not the route: the cheapest path to the asset is chosen separately. Defaults to sol / ETH settlement."
           },
           "maxSlippageBps": {
             "type": "integer",
@@ -2155,11 +2309,38 @@
           "paper": {
             "type": "boolean",
             "description": "Rehearse instead of trading. The request passes every admission rule a live trade passes -- the same planner, spend gate, key cap and loss limits -- and records the quote, but nothing is ever broadcast and no funds move. Use it to check that a strategy is admitted before risking anything on it. A paper fill is optimistic by construction: it books the quoted price, so the gap between a paper arm and a live one IS the execution cost. A sell of a mint this key already paper-bought also closes that paper book when the live wallet is empty, even if this flag is omitted."
+          },
+          "deferExecution": {
+            "type": "boolean",
+            "description": "Quote first, spend later. The trade is built and the result carries the quote with status \"built\"; NOTHING is signed or spent until candle_trade_execute is called with the same clientTradeId. The build holds for 30 minutes; executing after that is QUOTE_EXPIRED and you build again for a fresh quote. Rebuilding with the same clientTradeId re-quotes it, until it has been sent to candle_trade_execute. There is no cancel: let an unwanted build expire. Cannot be combined with `paper`."
           }
         },
         "required": [
           "mint",
           "side"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "candle_trade_execute",
+      "title": "Execute a deferred trade",
+      "description": "Execute a trade you built with candle_trade and deferExecution: true. MOVES REAL FUNDS: Candle signs the plan it kept back from the build with the account's own delegation and broadcasts it. Takes the clientTradeId and nothing else, so nothing you send can change what gets signed; to change the trade, build a new one.\n\nExactly one execution per build. Calling again never broadcasts a second time: it returns the stored result once the first has confirmed, and a 409 IDEMPOTENCY_CONFLICT while the outcome is still unknown (read candle_get_operation with the clientTradeId, kind trade, before doing anything else). More than 30 minutes after the build it is 409 QUOTE_EXPIRED: build again for a fresh quote. A trade built without deferExecution has already executed and is refused here.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "clientTradeId": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The clientTradeId of a candle_trade built with deferExecution: true. Nothing else is accepted."
+          }
+        },
+        "required": [
+          "clientTradeId"
         ],
         "additionalProperties": false,
         "$schema": "http://json-schema.org/draft-07/schema#"
@@ -2371,6 +2552,40 @@
             ],
             "description": "Solana's graduated pool fee: 25, 50 or 100 bps (default 50), or the ending rate with --pool-fee-from. The falling pool fee's starting rate, at most 2500 bps; requires --pool-fee and --pool-fee-minutes. The falling fee's ending rate, taken from --pool-fee. The pool fee's fall time, at most 30 minutes; requires --pool-fee and --pool-fee-from."
           },
+          "launchRules": {
+            "type": "object",
+            "properties": {
+              "openDelaySecs": {
+                "type": "integer",
+                "description": "Launch rules, Solana only, where the server has CURVE_LAUNCH_RULES_ENABLED on: how long after the launch buys open, at most 7 days (604800 seconds); before then only the launching wallet may buy. The CLI takes a duration (90m, 6h, 2d, or seconds); the request field is whole seconds."
+              },
+              "maxBuyPerWalletRaw": {
+                "type": "string",
+                "description": "The most quote one wallet may spend on the curve during --cap-window, curve fee included and Candle's fee not; needs --cap-window. The CLI takes whole quote units; the request field is raw units as a decimal string."
+              },
+              "capWindowSecs": {
+                "type": "integer",
+                "description": "How long the per-wallet cap holds, counted from the open: 1 second to 24 hours (86400 seconds); needs --max-buy-per-wallet."
+              },
+              "allowlist": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Only these wallets may buy during --allowlist-window: 1 to 4,096 distinct Solana addresses; needs --allowlist-window. The CLI reads a file, one address per line or comma separated; the request field is the list."
+              },
+              "allowlistWindowSecs": {
+                "type": "integer",
+                "description": "How long the allowlist phase holds, counted from the open: 1 second to 24 hours (86400 seconds); needs --allowlist."
+              },
+              "devBuyMaxRaw": {
+                "type": "string",
+                "description": "The most the launching wallet may buy before the open, only with --open-in: at least the launch's own buy, at most the dev-buy ceiling, and the buy by default. That spend counts toward the per-wallet cap after the open. The CLI takes whole quote units; the request field is raw units as a decimal string."
+              }
+            },
+            "additionalProperties": true,
+            "description": "Launch rules, Solana only, where the server has CURVE_LAUNCH_RULES_ENABLED on: how long after the launch buys open, at most 7 days (604800 seconds); before then only the launching wallet may buy. The CLI takes a duration (90m, 6h, 2d, or seconds); the request field is whole seconds. The most quote one wallet may spend on the curve during --cap-window, curve fee included and Candle's fee not; needs --cap-window. The CLI takes whole quote units; the request field is raw units as a decimal string. How long the per-wallet cap holds, counted from the open: 1 second to 24 hours (86400 seconds); needs --max-buy-per-wallet. Only these wallets may buy during --allowlist-window: 1 to 4,096 distinct Solana addresses; needs --allowlist-window. The CLI reads a file, one address per line or comma separated; the request field is the list. How long the allowlist phase holds, counted from the open: 1 second to 24 hours (86400 seconds); needs --allowlist. The most the launching wallet may buy before the open, only with --open-in: at least the launch's own buy, at most the dev-buy ceiling, and the buy by default. That spend counts toward the per-wallet cap after the open. The CLI takes whole quote units; the request field is raw units as a decimal string."
+          },
           "payer": {
             "anyOf": [
               {
@@ -2454,7 +2669,7 @@
     {
       "name": "candle_launch_and_seed",
       "title": "Launch a token and seed it",
-      "description": "Launch a new token from the account's embedded wallet, with an optional dev-buy seed, then return the fresh market state and token links in one result. On solana a seed makes this the atomic launch: the launch and the seed are two transactions Candle signs and sends as one Jito bundle, so both land or neither does. That needs Pro or Max (TIER_REQUIRED otherwise) and swap:write on the key, and the result carries bundleId. On hood the seed is a best-effort follow-up. A launch with no seed works on every plan, Free included. MOVES REAL FUNDS unless dryRun; dry-run first, which spends nothing. Seeds above the platform dev-buy ceiling are rejected (DEV_BUY_TOO_HIGH): at most 0.5 SOL / 500 USDC / 2,000,000 CNDL, or on an exp- curve 10% of the threshold when that is lower; the server holds the creator's own seed to the effective ceiling, so launch with the largest devBuy it allows and top up with candle_trade. An idempotency key of at most 128 characters; reuse it to recover the same launch. The token's name, at most 32 UTF-8 bytes. The token's ticker, at most 10 UTF-8 bytes. The roughly square token image at an https URL; --image <path> uploads a local file instead. A wide banner at an https URL or a local file; uploads are public and permanent. The token's description, safe for on-chain JSON. The token's website link as an absolute http(s) URL. The token's X link as an absolute http(s) URL. The token's telegram link as an absolute http(s) URL. The token's discord link as an absolute http(s) URL. The launch chain, inferred from the wallet, quote asset and dex version on the CLI. The quote asset: sol, usdc or cndl on Solana; eth or usdg on Hood (defaults sol and eth). The curve mode: open or exclusive; test-open or test-exclusive need ENABLE_TEST_CURVES; exp-a, exp-b, exp-c and exp-custom are Solana sol/cndl only. exp-custom's virtual quote, in whole quote units: 1 to 100 SOL or 66000 to 6600000 CNDL; requires --curve-g and EXP_CUSTOM_CURVES. exp-custom's graduation threshold, in whole quote units: 1 to 250 SOL or 66000 to 16500000 CNDL; requires --curve-v and EXP_CUSTOM_CURVES. An exp- mode's extra creator fee: 0, 100 or 200 bps on the curve and pool, paid to the creator in full. The staker allocation, 50 to 1000 bps; defaults to 50, or 500 on exp- curves. Solana's graduated pool fee: 25, 50 or 100 bps (default 50), or the ending rate with --pool-fee-from. The falling pool fee's starting rate, at most 2500 bps; requires --pool-fee and --pool-fee-minutes. The pool fee's fall time, at most 30 minutes; requires --pool-fee and --pool-fee-from. The falling fee's ending rate, taken from --pool-fee. Solana preset pools: curve_price opens at the curve's last price and burns the rest; omitted uses curve_price when allocations fit graduation.maxStakerCarveBps, otherwise legacy; explicit curve_price above that limit is refused. Solana exp- pools: floor by default, or full_range to open across the whole price range. Hood only, required there: the Uniswap version the curve graduates to. The token's visibility: production, test, local or hidden; test keys require test or hidden. Print the launch preview without building, signing or recording a launch; local image uploads still become public and permanent.",
+      "description": "Launch a new token from the account's embedded wallet, with an optional dev-buy seed, then return the fresh market state and token links in one result. On solana a seed makes this the atomic launch: the launch and the seed are two transactions Candle signs and sends as one Jito bundle, so both land or neither does. That needs Pro or Max (TIER_REQUIRED otherwise) and swap:write on the key, and the result carries bundleId. On hood the seed is a best-effort follow-up. A launch with no seed works on every plan, Free included. MOVES REAL FUNDS unless dryRun; dry-run first, which spends nothing. Seeds above the platform dev-buy ceiling are rejected (DEV_BUY_TOO_HIGH): at most 0.5 SOL / 500 USDC / 2,000,000 CNDL, or on an exp- curve 10% of the threshold when that is lower; the server holds the creator's own seed to the effective ceiling, so launch with the largest devBuy it allows and top up with candle_trade. An idempotency key of at most 128 characters; reuse it to recover the same launch. The token's name, at most 32 UTF-8 bytes. The token's ticker, at most 10 UTF-8 bytes. The roughly square token image at an https URL; --image <path> uploads a local file instead. A wide banner at an https URL or a local file; uploads are public and permanent. The token's description, safe for on-chain JSON. The token's website link as an absolute http(s) URL. The token's X link as an absolute http(s) URL. The token's telegram link as an absolute http(s) URL. The token's discord link as an absolute http(s) URL. The launch chain, inferred from the wallet, quote asset and dex version on the CLI. The quote asset: sol, usdc or cndl on Solana; eth or usdg on Hood (defaults sol and eth). The curve mode: open or exclusive; test-open or test-exclusive need ENABLE_TEST_CURVES; exp-a, exp-b, exp-c and exp-custom are Solana sol/cndl only. exp-custom's virtual quote, in whole quote units: 1 to 100 SOL or 66000 to 6600000 CNDL; requires --curve-g and EXP_CUSTOM_CURVES. exp-custom's graduation threshold, in whole quote units: 1 to 250 SOL or 66000 to 16500000 CNDL; requires --curve-v and EXP_CUSTOM_CURVES. An exp- mode's extra creator fee: 0, 100 or 200 bps on the curve and pool, paid to the creator in full. The staker allocation, 50 to 1000 bps; defaults to 50, or 500 on exp- curves. Solana's graduated pool fee: 25, 50 or 100 bps (default 50), or the ending rate with --pool-fee-from. The falling pool fee's starting rate, at most 2500 bps; requires --pool-fee and --pool-fee-minutes. The pool fee's fall time, at most 30 minutes; requires --pool-fee and --pool-fee-from. The falling fee's ending rate, taken from --pool-fee. Solana preset pools: curve_price opens at the curve's last price and burns the rest; omitted uses curve_price when allocations fit graduation.maxStakerCarveBps, otherwise legacy; explicit curve_price above that limit is refused. Solana exp- pools: floor by default, or full_range to open across the whole price range. Hood only, required there: the Uniswap version the curve graduates to. The token's visibility: production, test, local or hidden; test keys require test or hidden. Launch rules, Solana only, where the server has CURVE_LAUNCH_RULES_ENABLED on: how long after the launch buys open, at most 7 days (604800 seconds); before then only the launching wallet may buy. The CLI takes a duration (90m, 6h, 2d, or seconds); the request field is whole seconds. The most quote one wallet may spend on the curve during --cap-window, curve fee included and Candle's fee not; needs --cap-window. The CLI takes whole quote units; the request field is raw units as a decimal string. How long the per-wallet cap holds, counted from the open: 1 second to 24 hours (86400 seconds); needs --max-buy-per-wallet. Only these wallets may buy during --allowlist-window: 1 to 4,096 distinct Solana addresses; needs --allowlist-window. The CLI reads a file, one address per line or comma separated; the request field is the list. How long the allowlist phase holds, counted from the open: 1 second to 24 hours (86400 seconds); needs --allowlist. The most the launching wallet may buy before the open, only with --open-in: at least the launch's own buy, at most the dev-buy ceiling, and the buy by default. That spend counts toward the per-wallet cap after the open. The CLI takes whole quote units; the request field is raw units as a decimal string. Print the launch preview without building, signing or recording a launch; local image uploads still become public and permanent.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -2661,6 +2876,40 @@
               }
             ],
             "description": "Solana's graduated pool fee: 25, 50 or 100 bps (default 50), or the ending rate with --pool-fee-from. The falling pool fee's starting rate, at most 2500 bps; requires --pool-fee and --pool-fee-minutes. The falling fee's ending rate, taken from --pool-fee. The pool fee's fall time, at most 30 minutes; requires --pool-fee and --pool-fee-from."
+          },
+          "launchRules": {
+            "type": "object",
+            "properties": {
+              "openDelaySecs": {
+                "type": "integer",
+                "description": "Launch rules, Solana only, where the server has CURVE_LAUNCH_RULES_ENABLED on: how long after the launch buys open, at most 7 days (604800 seconds); before then only the launching wallet may buy. The CLI takes a duration (90m, 6h, 2d, or seconds); the request field is whole seconds."
+              },
+              "maxBuyPerWalletRaw": {
+                "type": "string",
+                "description": "The most quote one wallet may spend on the curve during --cap-window, curve fee included and Candle's fee not; needs --cap-window. The CLI takes whole quote units; the request field is raw units as a decimal string."
+              },
+              "capWindowSecs": {
+                "type": "integer",
+                "description": "How long the per-wallet cap holds, counted from the open: 1 second to 24 hours (86400 seconds); needs --max-buy-per-wallet."
+              },
+              "allowlist": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Only these wallets may buy during --allowlist-window: 1 to 4,096 distinct Solana addresses; needs --allowlist-window. The CLI reads a file, one address per line or comma separated; the request field is the list."
+              },
+              "allowlistWindowSecs": {
+                "type": "integer",
+                "description": "How long the allowlist phase holds, counted from the open: 1 second to 24 hours (86400 seconds); needs --allowlist."
+              },
+              "devBuyMaxRaw": {
+                "type": "string",
+                "description": "The most the launching wallet may buy before the open, only with --open-in: at least the launch's own buy, at most the dev-buy ceiling, and the buy by default. That spend counts toward the per-wallet cap after the open. The CLI takes whole quote units; the request field is raw units as a decimal string."
+              }
+            },
+            "additionalProperties": true,
+            "description": "Launch rules, Solana only, where the server has CURVE_LAUNCH_RULES_ENABLED on: how long after the launch buys open, at most 7 days (604800 seconds); before then only the launching wallet may buy. The CLI takes a duration (90m, 6h, 2d, or seconds); the request field is whole seconds. The most quote one wallet may spend on the curve during --cap-window, curve fee included and Candle's fee not; needs --cap-window. The CLI takes whole quote units; the request field is raw units as a decimal string. How long the per-wallet cap holds, counted from the open: 1 second to 24 hours (86400 seconds); needs --max-buy-per-wallet. Only these wallets may buy during --allowlist-window: 1 to 4,096 distinct Solana addresses; needs --allowlist-window. The CLI reads a file, one address per line or comma separated; the request field is the list. How long the allowlist phase holds, counted from the open: 1 second to 24 hours (86400 seconds); needs --allowlist. The most the launching wallet may buy before the open, only with --open-in: at least the launch's own buy, at most the dev-buy ceiling, and the buy by default. That spend counts toward the per-wallet cap after the open. The CLI takes whole quote units; the request field is raw units as a decimal string."
           },
           "devBuy": {
             "type": "string",

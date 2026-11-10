@@ -1,5 +1,5 @@
  agent-a ▾  PAPER  today $0.00 / $100.00  live exposure $0.00  live P&L 24h —  ● 0 cards waiting         ctrl-x ×2 kill 
- 1 Trade  2 Cockpit  3 Trending  4 Signals  5 P&L  6 Research  7 Journal  8 Perps   settings ▾                          
+ 1 Trade  2 Cockpit  3 Research  4 Perps  5 Bots  6 Build   settings ▾  4 new tabs are ticked off: Trendin…  show them  
                                                                                                                         
 ╭─ Perps · Hyperliquid ────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ Perps on Hyperliquid come to the Candle Harness in a later update.                                                   │
@@ -31,7 +31,7 @@
 
 --- colours ---
 0: 6cb6ff/16263a×11 f6f8fb/2a2f3a×7 ffffff/0e1115×1 959dab/0e1115×6 f6f8fb/0e1115×5 959dab/0e1115×10 ffffff/0e1115×2 959dab/0e1115×14 f6f8fb/0e1115×5 ffffff/0e1115×2 959dab/0e1115×14 ffffff/0e1115×2 959dab/0e1115×17 ffffff/0e1115×8 ff5c5c/3a1619×16
-1: ffffff/0b0d10×1 6cb6ff/0b0d10×7 ffffff/0b0d10×2 6cb6ff/0b0d10×9 ffffff/0b0d10×2 6cb6ff/0b0d10×10 ffffff/0b0d10×2 6cb6ff/0b0d10×9 ffffff/0b0d10×2 6cb6ff/0b0d10×5 ffffff/0b0d10×2 6cb6ff/0b0d10×10 ffffff/0b0d10×2 6cb6ff/0b0d10×9 ffffff/0b0d10×2 f6f8fb/0b0d10+9×7 ffffff/0b0d10×2 6cb6ff/16263a×12 ffffff/0b0d10×25
+1: ffffff/0b0d10×1 6cb6ff/0b0d10×7 ffffff/0b0d10×2 6cb6ff/0b0d10×9 ffffff/0b0d10×2 6cb6ff/0b0d10×10 ffffff/0b0d10×2 f6f8fb/0b0d10+9×7 ffffff/0b0d10×2 6cb6ff/0b0d10×6 ffffff/0b0d10×2 6cb6ff/0b0d10×7 ffffff/0b0d10×2 6cb6ff/16263a×12 ffffff/0b0d10×1 f5a524/0b0d10×36 6cb6ff/16263a×11 ffffff/0b0d10×1
 2: ffffff/0b0d10×120
 3: 252a33/111419×2 b392f0/111419×21 252a33/111419×97
 4: 252a33/111419×1 ffffff/111419×1 dde2ea/111419×66 ffffff/111419×51 252a33/111419×1

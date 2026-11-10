@@ -47,6 +47,8 @@ export type Behaviour =
 export interface FakeScript {
   version?: string
   initializeDelayMs?: number
+  /** A sell's answer comes this late, as a real fill takes seconds. */
+  sellDelayMs?: number
   tools?: Record<string, Behaviour>
   /** This key's embedded-wallet permission (docs.candle.tv/developers/agent-wallets); `allowed` when unset. */
   embeddedWalletPermission?: "allowed" | "denied"
@@ -66,8 +68,12 @@ export interface FakeScript {
   tier?: "free" | "pro" | "max"
   /** A second token called MOON, held in the embedded wallet too: a ticker the wallet holds two of (the scorecard's sell-twin case). */
   heldTwin?: boolean
+  /** The token check comes back clear on all six flags, sellability measured (the scorecard's woken cases); unset, sellability is unknown. */
+  forensicsClear?: boolean
   /** Real tokens Candle answers the market read and check for, beside the fake two: a run in tmux against the real Hacc. */
   markets?: { mint: string; symbol: string; priceUsd: number }[]
+  /** Any other Solana mint answers too, at this price, named by its first four characters: a bot in tmux entering on the real tape. `markets` wins for a mint it names. */
+  anyMint?: { priceUsd: number }
   /** Final Stretch where its source is off (refused as an unknown bucket) or behind (`stale`, `feed.ok` false), as the docs say it can be. */
   finalStretch?: "on" | "off" | "stale"
   /** candle_get_profile_pnl's answer by key prefix: the recorded shape (fixtures/candle-recorded/feeds-pnl). A prefix not here answers an empty book, as Candle does for any prefix. */
@@ -82,6 +88,13 @@ export interface FakeScript {
   rateLimitPerMin?: number
   /** This key has no Candle cap: no `txLimit` and no per-asset caps, as every key starts (docs.candle.tv/developers/agent-wallets). $100 a UTC day when unset. */
   uncapped?: boolean
+  /**
+   * Candle's circuit breaker, enforced on this key (docs.candle.tv/developers/agent-trading, "RISK_LIMIT_REACHED"): the
+   * trade that would make 30 inside a rolling minute, live or paper, and a third failed sell of one token in a row, stop
+   * the key; every trade after answers RISK_LIMIT_REACHED. Stricter than Candle by one, so a run that never trips here
+   * never trips there. `failSells`: mints whose sells land and revert (TRADE_REVERTED, stage reverted).
+   */
+  breaker?: { failSells?: string[] }
 }
 
 export interface FakeTeeWallet {
@@ -128,6 +141,25 @@ function remember(id: string, entry: Ledger[string]): void {
   writeFileSync(ledgerPath, JSON.stringify({ ...ledger(), [id]: entry }))
 }
 
+/** Under `anyMint`, what the ledger's live trades of a token net to (raw): the embedded wallet holds what it bought. */
+function heldRaw(mint: string): bigint {
+  let n = 0n
+  for (const e of Object.values(ledger())) {
+    const body = e.body as Record<string, unknown>
+    if (e.kind !== "trade" || body.mint !== mint) continue
+    const amounts = ((e.result as { api?: { amounts?: { actualOutRaw?: string; amountRaw?: string } } }).api?.amounts ?? {}) as { actualOutRaw?: string; amountRaw?: string }
+    if (body.side === "buy") n += BigInt(amounts.actualOutRaw ?? "0")
+    else n -= BigInt(amounts.amountRaw ?? "0")
+  }
+  return n > 0n ? n : 0n
+}
+const anyHeld = () =>
+  script().anyMint
+    ? [...new Set(Object.values(ledger()).filter((e) => e.kind === "trade").map((e) => String((e.body as Record<string, unknown>).mint)))]
+        .filter((m) => m !== FAKE_MINTS.MOON && heldRaw(m) > 0n)
+        .map((mint) => ({ chain: "solana", mint, amountRaw: heldRaw(mint).toString(), decimals: 6 }))
+    : []
+
 const text = (value: unknown, isError = false) => ({
   content: [{ type: "text" as const, text: typeof value === "string" ? value : JSON.stringify(value) }],
   ...(isError ? { isError: true } : {}),
@@ -152,8 +184,14 @@ const tokens = [
 ]
 const twin = { symbol: "MOON", mint: MOON_TWIN, decimals: 6, quoteDecimals: 9, candleLaunched: false, quoteMint: SOL_MINT }
 const marketTokens = () => (script().markets ?? []).map((m) => ({ symbol: m.symbol, mint: m.mint, decimals: 6, quoteDecimals: 9, candleLaunched: false, quoteMint: SOL_MINT }))
-const token = (mint: unknown) => [...tokens, ...(script().heldTwin ? [twin] : []), ...marketTokens()].find((t) => t.mint === mint)
-const prices = (): Record<string, number> => ({
+const SOLANA_MINT = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/
+const anyToken = (mint: unknown) =>
+  script().anyMint && typeof mint === "string" && SOLANA_MINT.test(mint) && !(mint in FAKE_PRICES_USD)
+    ? { symbol: mint.slice(0, 4).toUpperCase(), mint, decimals: 6, quoteDecimals: 9, candleLaunched: false, quoteMint: SOL_MINT }
+    : undefined
+const token = (mint: unknown) => [...tokens, ...(script().heldTwin ? [twin] : []), ...marketTokens()].find((t) => t.mint === mint) ?? anyToken(mint)
+const prices = (): Record<string, number> => new Proxy(knownPrices(), { get: (o, k) => (typeof k === "string" && !(k in o) && anyToken(k) ? script().anyMint!.priceUsd : o[k as string]) })
+const knownPrices = (): Record<string, number> => ({
   ...FAKE_PRICES_USD,
   ...(script().heldTwin ? { [MOON_TWIN]: 0.0021 } : {}),
   ...Object.fromEntries((script().markets ?? []).map((m) => [m.mint, m.priceUsd])),
@@ -254,6 +292,7 @@ function answer(name: string, args: Record<string, unknown>, behaviour: Behaviou
       // docs.candle.tv/developers/agent-trading, "Token forensics": six flags, each with a status; the summary is
       // clear only if all six are. Under `forensics`, as recorded.
       if (name === "candle_token_forensics") {
+        const clear = script().forensicsClear === true
         const flag = (status: string) => ({ status, value: null, source: "candle", checkedAt: "2026-10-26T00:00:00.000Z", detail: null })
         return text({
           success: true,
@@ -261,8 +300,8 @@ function answer(name: string, args: Record<string, unknown>, behaviour: Behaviou
             chain: "solana",
             mint: t.mint,
             safety: {
-              summary: "incomplete",
-              flags: { mintAuthority: flag("clear"), freezeAuthority: flag("clear"), tokenExtensions: flag("clear"), lpLock: flag("clear"), sellability: flag("unknown"), liquidityDrain: flag("clear") },
+              summary: clear ? "clear" : "incomplete",
+              flags: { mintAuthority: flag("clear"), freezeAuthority: flag("clear"), tokenExtensions: flag("clear"), lpLock: flag("clear"), sellability: flag(clear ? "clear" : "unknown"), liquidityDrain: flag("clear") },
             },
           },
         })
@@ -312,6 +351,7 @@ function answer(name: string, args: Record<string, unknown>, behaviour: Behaviou
             tokens: [
               { chain: "solana", mint: FAKE_MINTS.MOON, amountRaw: FAKE_HOLDINGS.moonRaw, decimals: 6 },
               ...(script().heldTwin ? [{ chain: "solana", mint: MOON_TWIN, amountRaw: "5000000000", decimals: 6 }] : []),
+              ...anyHeld(),
             ],
           },
         ],
@@ -389,6 +429,29 @@ function answer(name: string, args: Record<string, unknown>, behaviour: Behaviou
     }
     case "candle_trade": {
       const id = String(args.clientTradeId ?? crypto.randomUUID())
+      /**
+       * A live fill's amounts and fee, in the shape the passes recorded (api.amounts, api.fee): what was sent, what
+       * the quote said and what the chain delivered, at the fake's prices, with no slippage. A token it doesn't know
+       * gets the old empty answer.
+       */
+      const liveAmounts = (a: Record<string, unknown>) => {
+        const t = token(a.mint)
+        const tokenUsd = prices()[String(a.mint)]
+        const solUsd = FAKE_PRICES_USD[SOL_MINT]!
+        const bps = script().feeBps ?? 50
+        if (!t || !tokenUsd) return { fee: { bps }, amounts: {} }
+        const raw = (n: number, d: number) => BigInt(Math.max(0, Math.floor(n * 10 ** d))).toString()
+        if (a.side === "buy") {
+          const sol = Number(a.amount ?? 0)
+          const out = raw((sol * solUsd) / tokenUsd, t.decimals)
+          return { fee: { bps, feeRaw: raw((sol * bps) / 10_000, 9) }, amounts: { quoteAsset: "sol", amountRaw: raw(sol, 9), expectedOutRaw: out, minOutRaw: out, actualOutRaw: out } }
+        }
+        const balance = script().anyMint && a.mint !== FAKE_MINTS.MOON ? heldRaw(String(a.mint)) : BigInt(FAKE_HOLDINGS.moonRaw)
+        const tokensRaw = a.percent !== undefined ? ((balance * BigInt(Number(a.percent))) / 100n).toString() : raw(Number(a.amount ?? 0), t.decimals)
+        const sol = ((Number(tokensRaw) / 10 ** t.decimals) * tokenUsd) / solUsd
+        const out = raw(sol, 9)
+        return { fee: { bps, feeRaw: raw((sol * bps) / 10_000, 9) }, amounts: { quoteAsset: "sol", amountRaw: tokensRaw, expectedOutRaw: out, minOutRaw: out, actualOutRaw: out } }
+      }
       const stored = ledger()[id]
       if (stored) return text(stored.result)
       const paper = args.paper === true || behaviour === "sell-to-paper"
@@ -418,7 +481,7 @@ function answer(name: string, args: Record<string, unknown>, behaviour: Behaviou
             replay: false,
             note: "Recorded from the quote. No order was placed, and no money moved.",
           }
-        : { success: true, status: "executed", clientTradeId: id, chain: "solana", signature: `SigFake${id.slice(0, 8)}`, fee: { bps: 50 }, amounts: {} }
+        : { success: true, status: "executed", clientTradeId: id, chain: "solana", signature: `SigFake${id.slice(0, 8)}`, ...liveAmounts(args) }
       const resolved =
         behaviour === "sell-to-paper"
           ? { percent: args.percent }
@@ -540,15 +603,53 @@ function overLimit(limit: number | undefined, requests: number): boolean {
   return true
 }
 
+/** The breaker's state for this key: each trade's time over the last minute, a stop, and failed sells of each token in a row. */
+const breakerTrades: number[] = []
+let breakerStopped: string | undefined
+const failedRun = new Map<string, number>()
+/** A trade the breaker refuses, with why, or what it does to a sell of a token set to fail. */
+function breakerAnswer(args: Record<string, unknown>): { stop: string } | { fail: true } | undefined {
+  const breaker = script().breaker
+  if (!breaker) return undefined
+  if (breakerStopped) return { stop: breakerStopped }
+  const now = Date.now()
+  while (breakerTrades.length && now - breakerTrades[0]! >= 60_000) breakerTrades.shift()
+  breakerTrades.push(now)
+  if (breakerTrades.length >= 30) {
+    breakerStopped = "Circuit breaker: 30 trades inside a minute. This profile is stopped until an account owner resumes it."
+    appendFileSync(join(dir!, "fake-candle-calls.jsonl"), `${JSON.stringify({ name: "breaker", args: { why: "pace" }, at: now })}\n`)
+    return { stop: breakerStopped }
+  }
+  const mint = String(args.mint)
+  if (args.side === "sell" && breaker.failSells?.includes(mint)) {
+    const run = (failedRun.get(mint) ?? 0) + 1
+    failedRun.set(mint, run)
+    if (run >= 3) {
+      breakerStopped = `Circuit breaker: three failed sells of ${mint} in a row. This profile is stopped until an account owner resumes it.`
+      appendFileSync(join(dir!, "fake-candle-calls.jsonl"), `${JSON.stringify({ name: "breaker", args: { why: "failed_sells", mint }, at: now })}\n`)
+    }
+    return { fail: true }
+  }
+  if (args.side === "sell") failedRun.delete(mint)
+  return undefined
+}
+
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
   const name = request.params.name
   const args = (request.params.arguments ?? {}) as Record<string, unknown>
-  // As Candle counts it: some tools make several requests against the key (requestsOf, measured against Candle's real server).
-  const limited = overLimit(script().rateLimitPerMin, requestsOf(name))
+  // As Candle counts it: some tools make several requests against the key (requestsOf, measured against Candle's real server),
+  // and a token's market read makes none (40 in a minute on a Free key, all answered).
+  const limited = overLimit(script().rateLimitPerMin, name === "candle_get_market" ? 0 : requestsOf(name))
   appendFileSync(join(dir, "fake-candle-calls.jsonl"), `${JSON.stringify({ name, args, at: Date.now(), ...(limited ? { limited } : {}) })}\n`)
   if (limited) {
     const error = envelopeError("RATE_LIMITED", "Rate limit exceeded for this key. Try again shortly.", true)
     return name === "candle_trade" ? text({ clientTradeId: args.clientTradeId, resolved: {}, api: error }, true) : text(error, true)
+  }
+  if (name === "candle_trade" && args.side === "sell" && (script().sellDelayMs ?? 0) > 0) await Bun.sleep(script().sellDelayMs!)
+  if (name === "candle_trade") {
+    const b = breakerAnswer(args)
+    if (b && "stop" in b) return text({ clientTradeId: args.clientTradeId, resolved: {}, api: envelopeError("RISK_LIMIT_REACHED", b.stop, false) }, true)
+    if (b) return text({ clientTradeId: args.clientTradeId, resolved: {}, api: envelopeError("TRADE_REVERTED", "The trade landed and reverted on chain.", false, { stage: "reverted" }) }, true)
   }
   const behaviour = script().tools?.[name] ?? "ok"
   if (behaviour === "die") process.exit(1)

@@ -1,0 +1,14 @@
+{
+  "name": "prices-solana-21",
+  "host": "hacc",
+  "route": "/v1/market/prices",
+  "query": {
+    "addresses": "fake-addresses-6"
+  },
+  "status": 400,
+  "ms": 138,
+  "bytes": 44,
+  "answer": {
+    "error": "At most 20 addresses per request"
+  }
+}

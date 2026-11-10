@@ -1,5 +1,7 @@
 // The one way the app starts a process: no shell, an environment built from an allowlist, no secret
 // in the arguments, and its own process group, so a timeout takes the child's own children with it.
+// Its program is found over PATH's absolute entries only (exec-path.ts), never through the folder it starts in.
+import { absolutePath, resolveBin, withAbsolutePath } from "./exec-path"
 
 const ALLOW = new Set([
   "PATH",
@@ -25,6 +27,7 @@ export function allowEnv(parent: Record<string, string | undefined>, extra: Reco
   for (const [key, value] of Object.entries(parent)) {
     if (value !== undefined && (ALLOW.has(key) || key.startsWith("LC_"))) env[key] = value
   }
+  if (env.PATH !== undefined) env.PATH = absolutePath(env.PATH)
   return { ...env, ...extra }
 }
 
@@ -50,9 +53,9 @@ export interface LongChild {
 
 /** A long-running child on pipes (an MCP server), under the same rules as runChild. Throws if it can't start. */
 export function spawnChild(spec: LaunchSpec): LongChild {
-  const proc = Bun.spawn([spec.cmd, ...spec.args], {
+  const proc = Bun.spawn([resolveBin(spec.cmd, spec.env.PATH), ...spec.args], {
     cwd: spec.cwd,
-    env: spec.env,
+    env: withAbsolutePath(spec.env),
     detached: true,
     stdin: "pipe",
     stdout: "pipe",
@@ -83,9 +86,9 @@ export async function runChild(opts: {
 }): Promise<ChildResult> {
   let proc
   try {
-    proc = Bun.spawn([opts.cmd, ...opts.args], {
+    proc = Bun.spawn([resolveBin(opts.cmd, opts.env.PATH), ...opts.args], {
       cwd: opts.cwd,
-      env: opts.env,
+      env: withAbsolutePath(opts.env),
       detached: true, // setsid: the child leads its own process group
       stdin: opts.stdin === undefined ? "ignore" : new TextEncoder().encode(opts.stdin),
       stdout: "pipe",

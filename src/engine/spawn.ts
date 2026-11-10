@@ -5,6 +5,8 @@
 //     for engine turns (Claude Code, Codex, Grok), and optionally stderr lines too (Codex's
 //     retry notices, which its JSON stream leaves out).
 import { spawn } from "node:child_process"
+import { BUN_VAR, withoutBunVars } from "../shared/bun-env"
+import { absolutePath, resolveBin, withAbsolutePath } from "../shared/exec-path"
 import type { EngineEvent, Turn } from "./events"
 
 
@@ -36,8 +38,10 @@ export function harnessEnv(parent: Record<string, string | undefined>): Record<s
   const env: Record<string, string> = {}
   for (const [k, v] of Object.entries(parent)) {
     if (v === undefined) continue
-    if (KEEP.has(k) || k.startsWith("LC_")) env[k] = v
+    if ((KEEP.has(k) || k.startsWith("LC_")) && !BUN_VAR.test(k)) env[k] = v
   }
+  // A harness starts in its agent's folder: a PATH entry that isn't absolute would be looked up there.
+  if (env.PATH !== undefined) env.PATH = absolutePath(env.PATH)
   return env
 }
 
@@ -58,7 +62,7 @@ export function spawnHarness(
   const early: Uint8Array[] = [] // output that arrives before anyone listens
   const proc = Bun.spawn(cmd, {
     cwd: opts.cwd,
-    env: opts.env,
+    env: withoutBunVars(opts.env),
     terminal: {
       cols: opts.cols,
       rows: opts.rows,
@@ -193,9 +197,12 @@ export function runLines(
     }
   }
 
-  const child = spawn(cmd[0]!, cmd.slice(1), {
+  // The harness by its full path, found over PATH's absolute entries: never a file of its name in `cwd`.
+  // Bun's own variables never reach it, nor the MCP shim it starts, whatever environment a caller handed in.
+  const env = withoutBunVars(withAbsolutePath(opts.env ?? harnessEnv(process.env)))
+  const child = spawn(resolveBin(cmd[0]!, env.PATH), cmd.slice(1), {
     cwd: opts.cwd,
-    env: opts.env ?? harnessEnv(process.env),
+    env,
     detached: true, // its own process group, so cancel reaches everything it started
     stdio: [opts.stdin === undefined ? "ignore" : "pipe", "pipe", "pipe"],
   })

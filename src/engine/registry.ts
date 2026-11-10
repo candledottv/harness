@@ -9,9 +9,14 @@ import { grokEngine } from "./grok"
 import { opencodeEngine } from "./opencode"
 import { piEngine } from "./pi"
 
-/** This program, as an engine's MCP config runs it: the compiled binary itself, or Bun running main.ts. */
+/**
+ * This program, as an engine's MCP config runs it: the compiled binary itself, or Bun running main.ts. A run from
+ * source starts where the engine does, in an agent's research folder, so it reads this checkout's own bunfig.toml
+ * and no .env: Bun would otherwise load both from that folder, and a bunfig's preload is code (the built binary
+ * is built with the same autoloads off).
+ */
 export function selfCommand(): string[] {
-  return Bun.main.startsWith("/$bunfs/") ? [process.execPath] : [process.execPath, join(import.meta.dir, "../main.ts")]
+  return Bun.main.startsWith("/$bunfs/") ? [process.execPath] : [process.execPath, `--config=${join(import.meta.dir, "../../bunfig.toml")}`, "--no-env-file", join(import.meta.dir, "../main.ts")]
 }
 
 export function buildEngines(

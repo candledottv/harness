@@ -1,0 +1,297 @@
+{
+  "name": "exit-signal-result",
+  "host": "hacc",
+  "method": "GET",
+  "route": "/v1/strategy-lab/replay/222",
+  "query": {},
+  "status": 200,
+  "ms": 136,
+  "bytes": 8524,
+  "answer": {
+    "job_id": 222,
+    "status": "done",
+    "error": null,
+    "result": {
+      "lead_card": {
+        "regime": {
+          "note": "context only; no regime gate has paid in desk research",
+          "label": "fake-label-1",
+          "ratio": 0.82,
+          "measure": "fake-measure-1",
+          "busiest_day_share_of_entries": 1
+        },
+        "trades": 10,
+        "control": {
+          "arms": 10,
+          "seed": 222,
+          "basis": "universe_random_entry",
+          "simplified": false,
+          "entries_per_arm": 10,
+          "p25_net_pnl_usd": "-3.99",
+          "p75_net_pnl_usd": "2.40",
+          "median_net_pnl_usd": "-0.32",
+          "strategy_beats_arms": 0
+        },
+        "summary": "fake-summary-1",
+        "version": 1,
+        "strategy": {
+          "win_rate": 0.4,
+          "turnover_usd": "183.29",
+          "gross_pnl_usd": "-16.71",
+          "net_pnl_usd_at_assumed_cost": "-19.00"
+        },
+        "break_even": {
+          "assumed": {
+            "fee_source": "fake-fee_source-1",
+            "fee_bps_per_side": 50,
+            "slippage_bps_per_side": 75
+          },
+          "round_trip_pct": -18.24,
+          "cost_bps_per_side": -912
+        },
+        "insufficient": false,
+        "evidence_limitations": [
+          "Control arms are priced without tick marks outside the strategy's holding spans.",
+          "Control arms do not apply max_concurrent: every drawn entry is held."
+        ]
+      },
+      "to": "2026-11-05T14:28:00.000Z",
+      "from": "2026-11-05T11:28:00.000Z",
+      "skips": {
+        "other": 0,
+        "filled": 10,
+        "displaced": 0,
+        "no_budget": 0,
+        "candidates": 275,
+        "entry_gate": 0,
+        "slots_full": 0,
+        "zero_price": 0,
+        "sizing_skip": 0,
+        "sizing_zero": 0,
+        "unpriceable": 0,
+        "already_open": 93,
+        "exited_today": 0,
+        "claimed_today": 0,
+        "mcap_at_entry": 0,
+        "max_concurrent": 172
+      },
+      "trades": [
+        {
+          "qty": 63395.45877107787,
+          "pnl_usd": -9.804528545624542,
+          "asset_id": 141396963,
+          "exit_usd": 0.1954714543754577,
+          "lot_tier": null,
+          "closed_at": "2026-11-05T14:28:00.000Z",
+          "entry_usd": 10,
+          "opened_at": "2026-11-05T11:28:50.000Z",
+          "reason_closed": "aborted",
+          "reason_opened": {
+            "sizing": {
+              "usd": 10,
+              "applied": [],
+              "paid_usd": 10,
+              "fell_back": []
+            },
+            "pattern": "new_ticker",
+            "signal_id": 127879875
+          },
+          "exit_price_usd": "0.000003083366824133391",
+          "entry_price_usd": "0.00015774000525984325"
+        },
+        {
+          "qty": 1079466.799837518,
+          "pnl_usd": 2.6222253366905015,
+          "asset_id": 141004644,
+          "exit_usd": 12.622225336690502,
+          "lot_tier": null,
+          "closed_at": "2026-11-05T14:28:00.000Z",
+          "entry_usd": 10,
+          "opened_at": "2026-11-05T11:29:09.000Z",
+          "reason_closed": "aborted",
+          "reason_opened": {
+            "sizing": {
+              "usd": 10,
+              "applied": [],
+              "paid_usd": 10,
+              "fell_back": []
+            },
+            "pattern": "new_ticker",
+            "signal_id": 127880107
+          },
+          "exit_price_usd": "0.000011693018570455716",
+          "entry_price_usd": "0.00000926383284924113"
+        },
+        {
+          "qty": 82342.78021134803,
+          "pnl_usd": -5.064884781692875,
+          "asset_id": 141375543,
+          "exit_usd": 4.935115218307125,
+          "lot_tier": null,
+          "closed_at": "2026-11-05T14:28:00.000Z",
+          "entry_usd": 10,
+          "opened_at": "2026-11-05T11:29:16.000Z",
+          "reason_closed": "aborted",
+          "reason_opened": {
+            "sizing": {
+              "usd": 10,
+              "applied": [],
+              "paid_usd": 10,
+              "fell_back": []
+            },
+            "pattern": "new_ticker",
+            "signal_id": 127880148
+          },
+          "exit_price_usd": "0.000059933793899601594",
+          "entry_price_usd": "0.00012144355551674528"
+        },
+        {
+          "qty": 1106760.1197610747,
+          "pnl_usd": 2.8594841967077116,
+          "asset_id": 141005581,
+          "exit_usd": 12.859484196707712,
+          "lot_tier": null,
+          "closed_at": "2026-11-05T14:28:00.000Z",
+          "entry_usd": 10,
+          "opened_at": "2026-11-05T11:29:47.000Z",
+          "reason_closed": "aborted",
+          "reason_opened": {
+            "sizing": {
+              "usd": 10,
+              "applied": [],
+              "paid_usd": 10,
+              "fell_back": []
+            },
+            "pattern": "new_ticker",
+            "signal_id": 127880563
+          },
+          "exit_price_usd": "0.00001161903466442556",
+          "entry_price_usd": "0.000009035381580390502"
+        },
+        {
+          "qty": 2693.5267365117948,
+          "pnl_usd": -1.821076705986938,
+          "asset_id": 137830849,
+          "exit_usd": 8.178923294013062,
+          "lot_tier": null,
+          "closed_at": "2026-11-05T14:28:00.000Z",
+          "entry_usd": 10,
+          "opened_at": "2026-11-05T11:31:46.000Z",
+          "reason_closed": "aborted",
+          "reason_opened": {
+            "sizing": {
+              "usd": 10,
+              "applied": [],
+              "paid_usd": 10,
+              "fell_back": []
+            },
+            "pattern": "new_ticker",
+            "signal_id": 127882736
+          },
+          "exit_price_usd": "0.0030365108996857535",
+          "entry_price_usd": "0.003712604691999578"
+        }
+      ],
+      "pnl_usd": "-16.7066273936",
+      "verdict": "fail",
+      "leftover": 0,
+      "universe": {
+        "assets_kept": 68,
+        "ohlcv_budget": 5000,
+        "ohlcv_failed": 0,
+        "assets_dropped": 0,
+        "empty_universe": false,
+        "candidate_assets": 68,
+        "contains_asset_id": null,
+        "dropped_asset_ids": [],
+        "overlay_asset_ids": [],
+        "ohlcv_skipped_by_cap": 0,
+        "refused_before_marks": false,
+        "ohlcv_skipped_asset_ids": []
+      },
+      "final_usd": 83.29337260642014,
+      "trade_count": 10,
+      "unpriceable": 0,
+      "evidence_kind": "legacy_mark_replay",
+      "caught_by_tier": {
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "missed": 0
+      },
+      "skip_asset_ids": {
+        "max_concurrent": [
+          140946496,
+          110718807,
+          138200244,
+          7987,
+          12416
+        ]
+      },
+      "max_drawdown_pct": 17.77574687673765,
+      "trades_truncated": false,
+      "promotion_eligible": false,
+      "required_start_usd": 100,
+      "measurement_quality": {
+        "mode": "both",
+        "excluded_assets": 67,
+        "with_exclusions": {
+          "trades": 1,
+          "pnl_usd": 2.049785503879674
+        },
+        "without_exclusions": {
+          "trades": 10,
+          "pnl_usd": -16.70662739357987
+        },
+        "excluded_asset_sample": [
+          141396963,
+          141004644,
+          141375543,
+          141005581,
+          137830849
+        ],
+        "replayed_without_excluded_candidates": true
+      },
+      "evidence_limitations": [
+        "Mutable historical inputs, indicative marks and retrospective capital requirement; use frozen execution research for validation.",
+        "Tick outlier annotations use retrospective neighbours. Quality comparisons use current asset flags and stored peak-time exit evidence.",
+        "Control arms are priced without tick marks outside the strategy's holding spans."
+      ],
+      "peak_capital_at_risk_usd": 0,
+      "peak_multiple_by_entry_bucket": {}
+    },
+    "requested_by": "HaccFake11111111111111111111111111111111112",
+    "created_at": "2026-11-05T15:00:14.272Z",
+    "started_at": "2026-11-05T15:00:14.805Z",
+    "finished_at": "2026-11-05T15:00:28.591Z"
+  },
+  "polls": 5,
+  "seconds": 16,
+  "truncated": {
+    "$.result.trades": 10,
+    "$.result.skip_asset_ids.max_concurrent": 58,
+    "$.result.measurement_quality.excluded_asset_sample": 67
+  },
+  "request": {
+    "definition": {
+      "chain": "solana",
+      "entry": {
+        "source": "pattern",
+        "pattern": "new_ticker",
+        "filters": {
+          "min_mcap_usd": 100000
+        }
+      },
+      "exit": {
+        "exit_on_signal": true
+      },
+      "sizing": {
+        "usd_per_trade": 10,
+        "max_concurrent": 10
+      }
+    },
+    "from": "2026-11-05T11:28:00.000Z",
+    "to": "2026-11-05T14:28:00.000Z"
+  }
+}

@@ -6,10 +6,11 @@ import { closeSync, existsSync, openSync, readFileSync } from "node:fs"
 import { join } from "node:path"
 import { CoreClientError, ViewSession } from "../core/client"
 import { ensureStateDir, type Paths } from "../paths"
+import { answers } from "../shared/socket-path"
 
 // `signals` and `signals:mine` aren't here: the view asks for them while a layout on screen shows the
 // Signals pane (Session.want), since the core opens Hacc's stream while anyone subscribes.
-export const VIEW_TOPICS = ["status", "cards", "operations", "agent", "activity", "portfolio", "market", "wallets", "autonomy", "away", "onboarding", "engine", "memory", "skills", "hacc", "views"]
+export const VIEW_TOPICS = ["status", "cards", "operations", "agent", "activity", "portfolio", "market", "wallets", "autonomy", "triggers", "bots", "away", "onboarding", "engine", "memory", "skills", "hacc", "views", "notices"]
 const START_TIMEOUT_MS = 15_000
 
 export function coreLogPath(p: Paths): string {
@@ -18,6 +19,39 @@ export function coreLogPath(p: Paths): string {
 
 function notRunning(error: unknown): boolean {
   return error instanceof CoreClientError && (error.code === "CORE_NOT_RUNNING" || error.code === "NO_VIEW_TOKEN")
+}
+
+/** Starts a core of this binary in its own process group, its output in the core's log. It isn't waited for. */
+export async function startCoreProcess(input: { paths: Paths; self: string[]; env: Record<string, string | undefined> }): Promise<void> {
+  const { paths } = input
+  // A fresh machine has no state folder yet (onboarding): it's made private before the log goes in it.
+  await ensureStateDir(paths)
+  const log = openSync(coreLogPath(paths), "a", 0o600)
+  try {
+    const child = spawn(input.self[0]!, [...input.self.slice(1), "core", "--exit-when-idle"], {
+      env: input.env as NodeJS.ProcessEnv,
+      detached: true,
+      stdio: ["ignore", log, log],
+    })
+    child.unref()
+  } finally {
+    closeSync(log)
+  }
+}
+
+/**
+ * The person's own restart of a core that still runs an older version than this binary: the core is asked to
+ * stop, as `candle-harness stop` asks it, and once its socket is quiet a core of this binary is started. The
+ * view's session finds it by itself. Throws when the old core doesn't go, having started nothing.
+ */
+export async function restartCore(input: { paths: Paths; self: string[]; env: Record<string, string | undefined>; request: (method: string, params?: Record<string, unknown>) => Promise<unknown>; waitMs?: number }): Promise<void> {
+  await input.request("core.stop", {}).catch(() => {})
+  const until = Date.now() + (input.waitMs ?? START_TIMEOUT_MS)
+  while (await answers(input.paths.socket)) {
+    if (Date.now() > until) throw new CoreClientError("CORE_DIDNT_STOP", "The core was asked to stop and is still running: `candle-harness stop` in another terminal says more.")
+    await Bun.sleep(100)
+  }
+  await startCoreProcess(input)
 }
 
 /** Attaches a view session, starting the core first when none is running. */
@@ -32,19 +66,7 @@ export async function attachView(input: { paths: Paths; self: string[]; env: Rec
     if (!notRunning(error)) throw error
   }
 
-  // A fresh machine has no state folder yet (onboarding): it's made private before the log goes in it.
-  await ensureStateDir(paths)
-  const log = openSync(coreLogPath(paths), "a", 0o600)
-  try {
-    const child = spawn(input.self[0]!, [...input.self.slice(1), "core", "--exit-when-idle"], {
-      env: input.env as NodeJS.ProcessEnv,
-      detached: true,
-      stdio: ["ignore", log, log],
-    })
-    child.unref()
-  } finally {
-    closeSync(log)
-  }
+  await startCoreProcess(input)
 
   const deadline = Date.now() + (input.timeoutMs ?? START_TIMEOUT_MS)
   for (;;) {

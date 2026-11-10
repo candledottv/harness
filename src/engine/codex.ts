@@ -43,6 +43,8 @@ import { DEFAULT_TOOLS, shellFor, type ToolSettings, toolAllowed } from "./tools
 
 /** The version the read checks passed on. */
 export const MIN_CODEX = "0.165.0"
+/** The newest version its holds were checked on; a newer major version is said, never blocked. */
+export const CHECKED_CODEX = "0.165.0"
 
 /** Codex's retry warnings, the only place a rate limit's wait shows. */
 export const CODEX_RETRY_LOG = "codex_core::responses_retry=warn"
@@ -264,6 +266,7 @@ export function codexEngine(bin: string, o: { homesDir: string; codexHome?: stri
     id: "codex",
     label: "Codex",
     minVersion: MIN_CODEX,
+    checkedVersion: CHECKED_CODEX,
     capabilities: () => ({ webSearch: true, webFetch: false, files: "write", shellList: false, deltas: false }),
     // Whether its sign-in file is there; the Candle Harness never reads it.
     signedIn: async (env) => existsSync(realAuth(env)),

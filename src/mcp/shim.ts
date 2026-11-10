@@ -16,7 +16,7 @@ export const SHIM_INSTRUCTIONS = `These are Candle's tools, run through the user
 
 LIVE TRADES AND SWAPS WAIT FOR ONE KEY PRESS. A live candle_trade or candle_swap doesn't run when you call it. It becomes an approval card in the Candle Harness, and the answer comes back at once:
   success: false, error.code: "APPROVAL_REQUIRED", cardId, the id field (clientTradeId or clientSwapId), kind, next
-That isn't a refusal and isn't a failure. Don't retry it, and never send it again under a new id: a new id is a second trade. Read its state with candle_get_operation {clientId: <that id>, kind: <that kind>}: awaiting_approval, then the outcome once the user approves. Rejected and expired are final: don't propose it again unless the user asks. A card lives 60 seconds.
+That isn't a refusal and isn't a failure. Don't retry it, and never send it again under a new id: a new id is a second trade. No turn of yours sees the press: say what you proposed and end your turn, without waiting or reading it again to see. When a later message asks how it went, read candle_get_operation {clientId: <that id>, kind: <that kind>}. Rejected and expired are final: don't propose it again unless the user asks. A card lives 60 seconds.
 
 Pass "reason" with a trade or swap: one or two sentences on why. The user reads it on the card.
 

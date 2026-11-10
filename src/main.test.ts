@@ -231,3 +231,13 @@ test("an old CANDLE_TUI_ variable is read under its new name, and said once at t
     else process.env.CANDLE_HARNESS_PASTE_LOG = saved.now
   }
 })
+
+test("the usage text names --version beside version, since both print it", async () => {
+  const { io, out } = capture()
+  expect(await main(["help"], io)).toBe(0)
+  expect(out.join("")).toMatch(/^  version +print the version and the commit it was built from \(also --version\)/m)
+  // An unknown command still ends with the usage, and there's no status command.
+  const unknown = capture()
+  expect(await main(["status"], unknown.io)).toBe(2)
+  expect(unknown.err.join("")).toContain('unknown command "status"')
+})

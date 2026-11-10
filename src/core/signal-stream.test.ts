@@ -363,3 +363,48 @@ describe("a filter read back from Hacc's tape", () => {
     expect(got.hood.length).toBe(2)
   })
 })
+
+describe("carried on by the next core within the hour", () => {
+  test("the tape: its first open reads back what came in while no core ran; a cursor over an hour old isn't followed", async () => {
+    const h = make()
+    h.stream.poke()
+    await until(() => h.published.length === 1)
+    const last = hacc.push()
+    await until(() => h.stream.cursor()?.id === last.id)
+    await h.stream.stop()
+    const unheard = Array.from({ length: 3 }, () => hacc.pushUnheard())
+    const next = make()
+    next.stream.poke()
+    await until(() => ids(next).includes(unheard.at(-1)!.id as number))
+    expect(next.journal.find((e) => e.event === "opened")).toMatchObject({ refill: true })
+    expect(hacc.calls.find((c) => c.path === "/v1/signals")!.query).toMatchObject({ since: new Date(Date.parse(last.created_at as string) - 1).toISOString(), order: "asc" })
+
+    // Kept over an hour ago: a new core starts from now.
+    await next.stream.stop()
+    const path = join(dir, "signals.json")
+    const saved = JSON.parse(await Bun.file(path).text())
+    await Bun.write(path, JSON.stringify({ ...saved, savedAt: new Date(Date.now() - 61 * 60_000).toISOString() }))
+    const late = make()
+    late.stream.poke()
+    await until(() => late.journal.some((e) => e.event === "opened"))
+    expect(late.journal.find((e) => e.event === "opened")).toMatchObject({ refill: false })
+  })
+
+  test("personal signals: Hacc's cursor is kept with the tape's, and the next core polls from it", async () => {
+    const h = make()
+    h.want = { signals: false, mine: true }
+    hacc.pushMine()
+    const b = hacc.pushMine()
+    h.stream.poke()
+    await until(() => ids(h, "signals:mine").length === 2)
+    await h.stream.stop()
+    expect(JSON.parse(await Bun.file(join(dir, "signals.json")).text())).toMatchObject({ mineAfter: String(b.id) })
+    const c = hacc.pushMine()
+    const next = make()
+    next.want = { signals: false, mine: true }
+    next.stream.poke()
+    await until(() => ids(next, "signals:mine").length >= 1)
+    expect(ids(next, "signals:mine")).toEqual([c.id as number])
+    expect(hacc.calls.filter((x) => x.path === "/v1/me/signals").at(-1)!.query.after).toBe(String(b.id))
+  })
+})

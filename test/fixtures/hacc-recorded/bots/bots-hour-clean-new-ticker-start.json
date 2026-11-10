@@ -1,0 +1,32 @@
+{
+  "name": "hour-clean-new-ticker-start",
+  "host": "hacc",
+  "method": "POST",
+  "route": "/v1/strategy-lab/replay",
+  "query": {},
+  "body": {
+    "definition": {
+      "chain": "solana",
+      "entry": {
+        "source": "pattern",
+        "pattern": "new_ticker",
+        "filters": {}
+      },
+      "exit": {
+        "max_hold_hours": 1
+      },
+      "sizing": {
+        "usd_per_trade": 10,
+        "max_concurrent": 1000
+      }
+    },
+    "from": "2026-11-05T14:46:20.937Z",
+    "to": "2026-11-05T15:46:21.219Z"
+  },
+  "status": 202,
+  "ms": 692,
+  "bytes": 14,
+  "answer": {
+    "job_id": 232
+  }
+}

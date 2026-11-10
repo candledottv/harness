@@ -23,6 +23,8 @@ import { join } from "node:path"
 import type { Preset } from "./preset"
 import { SKILL_FILES } from "./skill-files"
 import HARNESS_MEMORY from "../../skills-harness/harness-memory/SKILL.md" with { type: "text" }
+import HARNESS_TRIGGERS from "../../skills-harness/harness-triggers/SKILL.md" with { type: "text" }
+import HARNESS_BOTS from "../../skills-harness/harness-bots/SKILL.md" with { type: "text" }
 import HARNESS_VIEW from "../../skills-harness/harness-view/SKILL.md" with { type: "text" }
 
 export const SKILL_SOURCE = { repo: "candledottv/agentic", commit: "26daf47", licence: "MIT" } as const
@@ -99,6 +101,10 @@ export const HARNESS_SKILLS: readonly Skill[] = [
   { name: "harness-memory", origin: "harness", description: frontmatter(HARNESS_MEMORY, "description") ?? "", files: { "SKILL.md": HARNESS_MEMORY } },
   // harness-view: changing the screen for someone who won't edit layouts.toml or a theme by hand.
   { name: "harness-view", origin: "harness", description: frontmatter(HARNESS_VIEW, "description") ?? "", files: { "SKILL.md": HARNESS_VIEW } },
+  // harness-triggers: "when X, do Y" set up for the person, named by harness_triggers' description.
+  { name: "harness-triggers", origin: "harness", description: frontmatter(HARNESS_TRIGGERS, "description") ?? "", files: { "SKILL.md": HARNESS_TRIGGERS } },
+  // harness-bots: a Hacc strategy run live by the core, set up for the person, named by harness_bots' description.
+  { name: "harness-bots", origin: "harness", description: frontmatter(HARNESS_BOTS, "description") ?? "", files: { "SKILL.md": HARNESS_BOTS } },
 ]
 export const MEMORY_SKILL = "harness-memory"
 
@@ -339,7 +345,7 @@ export function skillRead(skills: readonly Skill[], args: Record<string, unknown
 export function skillsSection(skills: readonly Skill[]): string {
   if (skills.length === 0) return ""
   const line = (s: Skill) => `- ${s.name}: ${s.description.length > LIST_DESCRIPTION_MAX ? `${s.description.slice(0, LIST_DESCRIPTION_MAX - 1)}…` : s.description}`
-  // The Candle Harness's own are named where they apply (harness-memory by the memory section, harness-view by harness_view's description), so they aren't listed here.
+  // The Candle Harness's own are named where they apply (harness-memory by the memory section, harness-view and harness-triggers by their tools' descriptions), so they aren't listed here.
   const candle = skills.filter((s) => s.origin === "candle")
   const own = skills.filter((s) => s.origin === "own")
   if (candle.length + own.length === 0) return ""

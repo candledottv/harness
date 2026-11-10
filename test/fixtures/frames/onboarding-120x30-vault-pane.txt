@@ -22,7 +22,7 @@
  │ · Where to start         │ │ │ctrl-] back to setup · Ctrl-C stops it                                             │ │ 
  │                          │ │ ╰───────────────────────────────────────────────────────────────────────────────────╯ │ 
  │                          │ │                                                                                       │ 
- │ about 3 minutes          │ │  ⠋ answer the CLI in the pane; write the words down                                   │ 
+ │ about 5 minutes          │ │  ⠋ answer the CLI in the pane; write the words down                                   │ 
  │ quit any time: it picks  │ │                                                                                       │ 
  │ up where you stopped     │ │                                                                                       │ 
  ╰──────────────────────────╯ ╰───────────────────────────────────────────────────────────────────────────────────────╯ 

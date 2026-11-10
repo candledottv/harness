@@ -5,7 +5,8 @@
 // layout for every adjustment, and only a save writes layouts.toml.
 import { presetOf } from "./new-panes"
 import type { Direction, Layout, PaneId } from "./layout"
-import { panesOf, PANE_IDS } from "./layout"
+import { panesOf } from "./layout"
+import { isTokenPane, openable } from "../shared/panes"
 import type { LayoutOp } from "./layout-edit"
 
 /** What the menu needs to know: the tab, the layout it shows, every layout, and the file. */
@@ -81,8 +82,8 @@ export function layoutMenuRows(info: LayoutInfo, focus: PaneId | undefined): Men
   }
   // After the rows that keep the menu open, so it appearing after an edit doesn't move the one highlighted.
   if (info.undo) rows.push({ group: "Undo", label: `undo: ${info.undo}`, op: { kind: "undo" } })
-  for (const pane of PANE_IDS.filter((p) => !on.includes(p))) {
-    rows.push({ group: `Open a pane${focus && on.includes(focus) ? ` beside ${focus}` : ""}${copy}`, label: pane, op: { kind: "open", pane, ...(focus && on.includes(focus) ? { near: focus } : {}) } })
+  for (const pane of openable(on)) {
+    rows.push({ group: `Open a pane${focus && on.includes(focus) ? ` beside ${focus}` : ""}${copy}`, label: pane, ...(isTokenPane(pane) && pane !== "token" ? { hint: "another token pane, pinned on the token shown" } : {}), op: { kind: "open", pane, ...(focus && on.includes(focus) ? { near: focus } : {}) } })
   }
   const shows = `${info.tab} shows`
   for (const name of info.names) rows.push({ group: shows, label: name, hint: name === info.current.name ? "✓ showing" : undefined, op: { kind: "show", name } })

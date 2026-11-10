@@ -48,6 +48,7 @@ interface Fixture {
   teeStatus?: (agent: string, address: string) => "bound" | "not_on_key" | "unreadable"
   noPrefix?: boolean
   pins?: WalletDeps["pins"]
+  imported?: WalletDeps["imported"]
 }
 
 function wallets(f: Fixture = {}) {
@@ -81,6 +82,7 @@ function wallets(f: Fixture = {}) {
     },
     defaultWallet: (agent) => f.defaults?.[agent],
     ...(f.pins ? { pins: f.pins } : {}),
+    ...(f.imported ? { imported: f.imported } : {}),
     now: () => clock,
   }
   const book = new AgentWallets(deps)
@@ -128,9 +130,28 @@ test("a row that isn't spendCapable stays listed and isn't payable; one the port
     profiles: { momentum: { keyPrefix: "Momentum", walletScope: "selected", wallets: [profileRow(T1, "solana", false), profileRow({ id: "imported", address: "Imp1111111111111111111111111111111111111111" })] } },
   })
   await w.book.refresh("momentum")
-  expect(w.book.payable("momentum").tee).toEqual([{ id: T1.id, address: T1.address, label: "Bot Wallet", chain: "solana", active: false }])
-  expect(w.book.payer("momentum", "Bot Wallet")).toMatchObject({ ok: false, code: "TEE_WALLET_INACTIVE" })
+  expect(w.book.payable("momentum").tee).toEqual([{ id: T1.id, address: T1.address, label: "Bot Wallet", chain: "solana", active: false, cantSign: true }])
+  const refused = w.book.payer("momentum", "Bot Wallet")
+  expect(refused).toMatchObject({ ok: false, code: "TEE_WALLET_CANT_SIGN" })
+  // Not a stopped wallet: nothing points the agent at an enable or a rebind.
+  expect(refused.ok === false && refused.message).toContain("Candle doesn't list Bot Wallet as able to sign for momentum's key yet")
+  expect(refused.ok === false && refused.message).not.toContain("is stopped")
   expect(w.book.boundTo(T1.address)).toBe("momentum")
+})
+
+test("a fresh TEE wallet the portfolio doesn't list yet stays listed as unable to sign, across portfolio reads; an imported one doesn't", async () => {
+  const FRESH = { id: "fresh", address: "Frsh111111111111111111111111111111111111111" }
+  const IMPORTED = { id: "imp", address: "Imp2222222222222222222222222222222222222222" }
+  const known = new Map<string, boolean>([[IMPORTED.address, true]])
+  const w = wallets({
+    profiles: { momentum: { keyPrefix: "Momentum", walletScope: "selected", wallets: [profileRow({ ...FRESH, label: "momentum-tee" }, "solana", false), profileRow(IMPORTED, "solana", false)] } },
+    imported: (address) => known.get(address),
+  })
+  await w.book.refresh("momentum")
+  expect(w.book.payable("momentum").tee).toEqual([{ id: FRESH.id, address: FRESH.address, label: "momentum-tee", chain: "solana", active: false, cantSign: true }])
+  await w.book.refresh("momentum")
+  expect(w.book.payable("momentum").tee.map((t) => t.address)).toEqual([FRESH.address])
+  expect(w.book.payer("momentum", "momentum-tee")).toMatchObject({ ok: false, code: "TEE_WALLET_CANT_SIGN" })
 })
 
 test("the default wallet with nothing set: the embedded wallet when allowed, else the agent's only TEE wallet", async () => {
@@ -176,7 +197,12 @@ test("two TEE wallets and no embedded wallet: with no default, the trade has to 
   })
   await w.book.refresh("momentum")
   expect(w.book.payer("momentum")).toMatchObject({ ok: false, code: "WALLET_NOT_NAMED", canPayFrom: ["Bot Wallet", "spare"] })
-  expect(w.book.payer("momentum", "embedded")).toMatchObject({ ok: false, code: "EMBEDDED_WALLET_NOT_PERMITTED", message: expect.stringContaining("candle keys update Momentum --embedded-wallet allow") })
+  const denied = w.book.payer("momentum", "embedded") as { ok: false; code: string; message: string }
+  expect(denied.code).toBe("EMBEDDED_WALLET_NOT_PERMITTED")
+  expect(denied.message).toContain("candle keys update Momentum --embedded-wallet allow")
+  // The same line typed in the Candle Harness runs in its prompt pane: the refusal doesn't send the owner elsewhere.
+  expect(denied.message).toContain("by typing this in the Candle Harness")
+  expect(denied.message).not.toContain("own terminal")
 })
 
 test("the same label on two of its wallets is refused, asking for the address", async () => {

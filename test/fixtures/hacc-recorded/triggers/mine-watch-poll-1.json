@@ -1,0 +1,68 @@
+{
+  "fresh": {
+    "name": "",
+    "host": "hacc",
+    "route": "/v1/me/signals",
+    "query": {
+      "limit": "200"
+    },
+    "status": 200,
+    "ms": 194,
+    "bytes": 1288,
+    "answer": {
+      "signals": [
+        {
+          "id": 15,
+          "user_address": "HaccFake11111111111111111111111111111111112",
+          "rule_id": 7,
+          "pattern": "distribution",
+          "wallet_id": 467615,
+          "asset_id": 138827595,
+          "summary": "fake-summary-6",
+          "created_at": "2026-11-04T16:29:07.555Z"
+        },
+        {
+          "id": 31,
+          "user_address": "HaccFake11111111111111111111111111111111112",
+          "rule_id": 3,
+          "pattern": "new_ticker",
+          "wallet_id": 467615,
+          "asset_id": 138196321,
+          "summary": "fake-summary-7",
+          "created_at": "2026-11-04T16:29:35.992Z"
+        },
+        {
+          "id": 34,
+          "user_address": "HaccFake11111111111111111111111111111111112",
+          "rule_id": 4,
+          "pattern": "confluence",
+          "wallet_id": null,
+          "asset_id": 138196321,
+          "summary": "fake-summary-8",
+          "created_at": "2026-11-04T16:29:38.630Z"
+        },
+        {
+          "id": 45,
+          "user_address": "HaccFake11111111111111111111111111111111112",
+          "rule_id": 7,
+          "pattern": "distribution",
+          "wallet_id": 301255,
+          "asset_id": 138196321,
+          "summary": "fake-summary-9",
+          "created_at": "2026-11-04T16:29:48.817Z"
+        },
+        {
+          "id": 106,
+          "user_address": "HaccFake11111111111111111111111111111111112",
+          "rule_id": 7,
+          "pattern": "distribution",
+          "wallet_id": 301255,
+          "asset_id": 131961055,
+          "summary": "fake-summary-10",
+          "created_at": "2026-11-04T16:33:26.191Z"
+        }
+      ],
+      "next_after": 106
+    }
+  }
+}

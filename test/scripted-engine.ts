@@ -44,6 +44,7 @@ export function scriptedEngine(
     id,
     label: ENGINE_LABELS[id],
     minVersion: "1.0.0",
+    checkedVersion: "1.2.3",
     capabilities: () => ({ webSearch: true, webFetch: true, files: "own", shellList: true, deltas: true, ...o.capabilities }),
     check: async () => o.check ?? { ok: true, version: "1.2.3" },
     models: async () => o.models ?? [{ id: `${id}-model`, label: `${ENGINE_LABELS[id]} model`, isDefault: true }],

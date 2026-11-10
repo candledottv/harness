@@ -53,11 +53,33 @@ describe("the memory overlay", () => {
     expect(memoryRows({ ...view, entries: [], files: [] })).toEqual([])
   })
 
-  test("⌫ deletes the highlighted line or file; a ✕ deletes its row; Enter does nothing on a line", () => {
+  test("⌫ deletes the highlighted line or file; a ✕ deletes its row", () => {
     expect(after([...open, key("backspace")]).effects).toEqual([{ type: "memoryDelete", agent: "momentum", entry: "a1" }])
     expect(after([...open, key("down"), key("down"), key("delete")]).effects).toEqual([{ type: "memoryDelete", agent: "momentum", file: "sizing.md" }])
-    expect(after([...open, key("return")]).effects).toEqual([])
     expect(after([...open, { type: "deleteMemory", row: { kind: "entry", id: "b2", text: "x" }, now: 0 }]).effects).toEqual([{ type: "memoryDelete", agent: "momentum", entry: "b2" }])
+  })
+
+  test("⏎ or a line's chip pins it, and unpins a pinned one; on a file ⏎ does nothing", () => {
+    const pinned: MemoryView = { ...view, entries: [{ id: "b2", text: "- risk: skill:candle-risk-gate first", pinned: true }, { id: "a1", text: "- sizing: a quarter → memory/sizing.md" }] }
+    expect(after([...open, key("return")]).effects).toEqual([{ type: "memoryPin", agent: "momentum", entry: "a1", pinned: true }])
+    expect(after([...open, key("return")], ctx(pinned)).effects).toEqual([{ type: "memoryPin", agent: "momentum", entry: "b2", pinned: false }])
+    expect(after([...open, { type: "pinMemory", row: { kind: "entry", id: "a1", text: "x" }, now: 0 }]).effects).toEqual([{ type: "memoryPin", agent: "momentum", entry: "a1", pinned: true }])
+    expect(after([...open, key("down"), key("down"), key("return")]).effects).toEqual([])
+  })
+
+  test("a pinned line's delete asks once: ⌫ or its ✕ asks, the second deletes, Esc or moving takes the question back", () => {
+    const pinned: MemoryView = { ...view, entries: [{ id: "b2", text: "- risk first", pinned: true }, { id: "a1", text: "- sizing" }] }
+    const c = ctx(pinned)
+    const asked = after([...open, key("backspace")], c)
+    expect(asked.effects).toEqual([])
+    expect(asked.state.overlay).toMatchObject({ kind: "memory", confirmPinned: "b2" })
+    expect(after([...open, key("backspace"), key("backspace")], c).effects).toEqual([{ type: "memoryDelete", agent: "momentum", entry: "b2" }])
+    const row = { kind: "entry" as const, id: "b2", text: "- risk first", pinned: true as const }
+    expect(after([...open, { type: "deleteMemory", row, now: 0 }, { type: "deleteMemory", row, now: 0 }], c).effects).toEqual([{ type: "memoryDelete", agent: "momentum", entry: "b2" }])
+    expect(after([...open, key("backspace"), key("escape")], c).state.overlay).toEqual({ kind: "memory", agent: "momentum", index: 0 })
+    expect(after([...open, key("backspace"), key("down"), key("up"), key("backspace")], c).effects).toEqual([])
+    // A line that isn't pinned goes at once, as before.
+    expect(after([...open, key("down"), key("backspace")], c).effects).toEqual([{ type: "memoryDelete", agent: "momentum", entry: "a1" }])
   })
 
   test("clear all asks once: Enter or a click asks, the second clears, Esc only takes the question back", () => {

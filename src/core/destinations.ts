@@ -15,6 +15,7 @@
 // Addresses and labels only, never a secret. The withdrawal allowlist has no CLI read yet, so an
 // allowlisted address counts as new.
 import { readFile, rename, writeFile } from "node:fs/promises"
+import { addressKey as keyOf } from "../shared/address-key"
 import { terminalText } from "../shared/terminal-text"
 import { type Fill, positionals } from "./owner-rows"
 import { short } from "./wallet-names"
@@ -48,8 +49,6 @@ const RANK: Record<DestinationKind, number> = { "vault-key": 0, tee: 1, trusted:
 const SOLANA = /^[0-9A-Za-z]{32,44}$/
 const EVM = /^0x[0-9a-fA-F]{40}$/
 const isAddress = (word: string) => SOLANA.test(word) || EVM.test(word)
-/** The key two spellings of one address share: EVM ignores case (checksums are mixed case); Solana doesn't. */
-const keyOf = (address: string) => (address.startsWith("0x") ? address.toLowerCase() : address)
 const str = (v: unknown): string | undefined => (typeof v === "string" && v.length > 0 && v.length <= 200 ? v : undefined)
 
 /** How a destination is named on a card: "cold, a vault key on this machine (Vaul…1111)". */

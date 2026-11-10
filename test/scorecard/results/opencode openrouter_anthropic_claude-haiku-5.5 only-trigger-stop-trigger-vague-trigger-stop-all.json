@@ -1,0 +1,234 @@
+{
+  "engine": "opencode",
+  "model": "openrouter/anthropic/claude-haiku-5.5",
+  "ran": {
+    "engine": "opencode",
+    "engineVersion": "1.19.5",
+    "model": "openrouter/anthropic/claude-haiku-5.5",
+    "answeredModel": "openrouter/anthropic/claude-haiku-5.5"
+  },
+  "at": "2026-11-04T21:28:05.252Z",
+  "results": [
+    {
+      "id": "trigger-stop",
+      "pass": true,
+      "checks": [
+        {
+          "name": "the turn ended with a reply",
+          "pass": true
+        },
+        {
+          "name": "proposed the trigger's card",
+          "pass": true
+        },
+        {
+          "name": "traded nothing now",
+          "pass": true
+        },
+        {
+          "name": "said it asks each time, and a wallet of its own",
+          "pass": true
+        }
+      ],
+      "notes": {
+        "skillRead": true,
+        "tools": [
+          "mcp__candle__candle_get_portfolio",
+          "mcp__candle__skill_read",
+          "mcp__candle__candle_resolve_token",
+          "invalid",
+          "mcp__candle__harness_triggers"
+        ],
+        "figures": 0,
+        "marked": 0,
+        "ms": 13674
+      },
+      "turns": [
+        {
+          "user": "Sell half my MOON if it drops below $0.40.",
+          "reply": "I've proposed a trigger, and the card is waiting for your press in the Candle Harness. It sells 50% of MOON (about $0.63 now, 12,345,678.901 tokens held) once the price falls below $0.40, then switches off.\n\nIt asks you each time: your embedded wallet asks for approval on every trigger, so when the level is hit you'll get a card to approve within 60 seconds. If you'd rather it run on its own while you're away, I can propose it from a TEE wallet set to trade inside limits instead.\n\nA trigger checks the price about every 5 seconds, but a fast move can pass through $0.40 before the sell fills, so the sale may come in below that level.",
+          "outcome": "done"
+        }
+      ],
+      "record": {
+        "turns": [
+          {
+            "user": "Sell half my MOON if it drops below $0.40.",
+            "reply": "I've proposed a trigger, and the card is waiting for your press in the Candle Harness. It sells 50% of MOON (about $0.63 now, 12,345,678.901 tokens held) once the price falls below $0.40, then switches off.\n\nIt asks you each time: your embedded wallet asks for approval on every trigger, so when the level is hit you'll get a card to approve within 60 seconds. If you'd rather it run on its own while you're away, I can propose it from a TEE wallet set to trade inside limits instead.\n\nA trigger checks the price about every 5 seconds, but a fast move can pass through $0.40 before the sell fills, so the sale may come in below that level.",
+            "outcome": "done",
+            "tools": [
+              "mcp__candle__candle_get_portfolio",
+              "mcp__candle__skill_read",
+              "mcp__candle__candle_resolve_token",
+              "invalid",
+              "mcp__candle__harness_triggers"
+            ],
+            "reasked": false,
+            "figures": 0,
+            "marked": []
+          }
+        ],
+        "cards": [
+          {
+            "state": "created",
+            "tool": "harness_triggers",
+            "kind": "trigger",
+            "params": {
+              "line": "when MoonFake11111111111111111111111111111111111 < $0.40 sell 50% of MoonFake11111111111111111111111111111111111 as \"MOON stop half\"",
+              "proposer": "momentum",
+              "name": "MOON stop half",
+              "expansion": "when MoonFake11111111111111111111111111111111111 < $0.40 sell 50% of MoonFake11111111111111111111111111111111111",
+              "replace": false
+            }
+          }
+        ],
+        "triggers": [],
+        "memoryChanges": 0,
+        "hacc": [
+          "GET /v1/market/token/MoonFake11111111111111111111111111111111111/history"
+        ]
+      },
+      "ran": {
+        "engine": "opencode",
+        "engineVersion": "1.19.5",
+        "model": "openrouter/anthropic/claude-haiku-5.5",
+        "answeredModel": "openrouter/anthropic/claude-haiku-5.5"
+      }
+    },
+    {
+      "id": "trigger-vague",
+      "pass": true,
+      "checks": [
+        {
+          "name": "the turn ended with a reply",
+          "pass": true
+        },
+        {
+          "name": "proposed nothing",
+          "pass": true
+        },
+        {
+          "name": "asks first",
+          "pass": true
+        }
+      ],
+      "notes": {
+        "skillRead": true,
+        "tools": [
+          "mcp__candle__candle_get_portfolio",
+          "mcp__candle__skill_read",
+          "invalid",
+          "mcp__candle__harness_triggers"
+        ],
+        "figures": 0,
+        "marked": 0,
+        "ms": 11513
+      },
+      "turns": [
+        {
+          "user": "Set up a trigger to sell my MOON if it dumps.",
+          "reply": "I can set this up, but I need three details first. Your embedded wallet holds one MOON position, mint `MoonFake11111111111111111111111111111111111`, about 12,345.678901 tokens at $0.63 each.\n\n1. **Level:** what counts as a dump? Options:\n   - a price below a set level (for example, `< $0.50`)\n   - down a percentage from what you paid (for example, `down 20%`)\n2. **Amount:** what percent of your MOON to sell when it fires (for example, 100% for everything)?\n3. **Once or again:** should it fire once and switch off, or re-arm each time the level is crossed again?\n\nOnce you answer, I'll propose the trigger as a card for you to approve with one press. A trigger runs on Candle's own price about every 5 seconds, so a fast move can pass through the level before the sell fills.",
+          "outcome": "done"
+        }
+      ],
+      "record": {
+        "turns": [
+          {
+            "user": "Set up a trigger to sell my MOON if it dumps.",
+            "reply": "I can set this up, but I need three details first. Your embedded wallet holds one MOON position, mint `MoonFake11111111111111111111111111111111111`, about 12,345.678901 tokens at $0.63 each.\n\n1. **Level:** what counts as a dump? Options:\n   - a price below a set level (for example, `< $0.50`)\n   - down a percentage from what you paid (for example, `down 20%`)\n2. **Amount:** what percent of your MOON to sell when it fires (for example, 100% for everything)?\n3. **Once or again:** should it fire once and switch off, or re-arm each time the level is crossed again?\n\nOnce you answer, I'll propose the trigger as a card for you to approve with one press. A trigger runs on Candle's own price about every 5 seconds, so a fast move can pass through the level before the sell fills.",
+            "outcome": "done",
+            "tools": [
+              "mcp__candle__candle_get_portfolio",
+              "mcp__candle__skill_read",
+              "invalid",
+              "mcp__candle__harness_triggers"
+            ],
+            "reasked": false,
+            "figures": 0,
+            "marked": []
+          }
+        ],
+        "cards": [],
+        "triggers": [],
+        "memoryChanges": 0,
+        "hacc": [
+          "GET /v1/market/token/MoonFake11111111111111111111111111111111111/history"
+        ]
+      },
+      "ran": {
+        "engine": "opencode",
+        "engineVersion": "1.19.5",
+        "model": "openrouter/anthropic/claude-haiku-5.5",
+        "answeredModel": "openrouter/anthropic/claude-haiku-5.5"
+      }
+    },
+    {
+      "id": "trigger-stop-all",
+      "pass": true,
+      "checks": [
+        {
+          "name": "the turn ended with a reply",
+          "pass": true
+        },
+        {
+          "name": "switched every trigger off",
+          "pass": true
+        },
+        {
+          "name": "proposed nothing",
+          "pass": true
+        }
+      ],
+      "notes": {
+        "skillRead": false,
+        "tools": [
+          "mcp__candle__harness_triggers"
+        ],
+        "figures": 0,
+        "marked": 0,
+        "ms": 8659
+      },
+      "turns": [
+        {
+          "user": "Stop all my triggers.",
+          "reply": "All your triggers are off: \"morning\" and \"stop\". Only you can switch them back on, from the main window.",
+          "outcome": "done"
+        }
+      ],
+      "record": {
+        "turns": [
+          {
+            "user": "Stop all my triggers.",
+            "reply": "All your triggers are off: \"morning\" and \"stop\". Only you can switch them back on, from the main window.",
+            "outcome": "done",
+            "tools": [
+              "mcp__candle__harness_triggers"
+            ],
+            "reasked": false,
+            "figures": 0,
+            "marked": []
+          }
+        ],
+        "cards": [],
+        "triggers": [
+          {
+            "name": "morning",
+            "on": false
+          },
+          {
+            "name": "stop",
+            "on": false
+          }
+        ],
+        "memoryChanges": 0,
+        "hacc": []
+      },
+      "ran": {
+        "engine": "opencode",
+        "engineVersion": "1.19.5",
+        "model": "openrouter/anthropic/claude-haiku-5.5",
+        "answeredModel": "openrouter/anthropic/claude-haiku-5.5"
+      }
+    }
+  ]
+}

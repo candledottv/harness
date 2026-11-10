@@ -30,7 +30,7 @@
 // expiry. The owner's key list does (docs.candle.tv/developers/agent-access, "List and revoke"), so the doctor
 // reads it through the user's own CLI when it's signed in, and says so when it isn't.
 import { newKeyFix } from "../shared/fix-words"
-import { parseAliases } from "../view/aliases"
+import { parseAliases } from "../shared/aliases"
 import { EMPTY_FILE, parseLayouts, tabShows } from "../view/layouts-file"
 import { fileStore } from "../view/layouts-store"
 import { CANDLE_DARK, TERMINAL } from "../view/theme"
@@ -67,26 +67,40 @@ import { CANDLE_SKILLS, loadPersonSkills, SKILL_SOURCE, SKILL_TOOL_NAME, skillsF
 import { SkillFolders } from "../core/skill-folders"
 import { EngineState } from "../core/engine-state"
 import { startingMode } from "../core/mode-state"
-import { claudeParser, claudeVersion } from "../engine/claude"
-import { ENGINE_LABELS, type Engine, type EngineId, type EngineModel } from "../engine/engine"
+import { CHECKED_CLAUDE_CODE, claudeParser, claudeVersion } from "../engine/claude"
+import { ENGINE_LABELS, type Engine, type EngineCheck, type EngineId, type EngineModel, newerMajor, newerMajorWords } from "../engine/engine"
 import { gapsOf } from "../engine/gaps"
 import { recoverHomes, removeAll } from "../engine/home"
 import { buildEngines, selfCommand } from "../engine/registry"
 import { GROK_UNLISTABLE } from "../engine/grok"
-import { DEFAULT_TOOLS, SHELL_ON_NOTE, shellWords, toolAllowed } from "../engine/tools"
+import { DEFAULT_TOOLS, runOn, SHELL_ON_NOTE, shellWords, toolAllowed } from "../engine/tools"
+import { type HoldSupport, holdSupport } from "../core/hold"
 import { harnessEnv, runLines } from "../engine/spawn"
 import { configProblem, ensureStateDir, paths, PathsError, type Paths, SOCKET_PATH_MAX_BYTES, UnsafeStateDir } from "../paths"
 import { apiKeyPrefix } from "../shared/api-key"
+import { isTestName, sharedWithWords } from "../shared/bot-name"
 import { Redactor } from "../shared/redact"
 import { terminalText } from "../shared/terminal-text"
 import { answers } from "../shared/socket-path"
 import { COMMIT, VERSION } from "../version"
+import { relativeEntries } from "../shared/exec-path"
+import { runningCoreVersion, staleCoreWords } from "./core-version"
 import { buildNames, renameCommand, short, walletName } from "../core/wallet-names"
 import { resolveGroups } from "../core/wallet-groups"
 import { WalletsFileStore } from "../core/wallets-file"
 import { type EmptyState, isCounted, previewArgv, readPreview } from "../core/empty-accounts"
 import { ONBOARDING_STEPS, OnboardingStore, signInFrom } from "./onboarding"
+import { defaultServiceDeps, oldServiceFile, type ServiceDeps, serviceState, type ServiceState } from "./service"
+import { TriggersFileStore } from "../core/triggers-file"
+import type { TriggersTopic } from "../core/triggers"
+import { BotsFileStore, type CodeBotEntry } from "../core/bots-file"
+import { type BuildPrefs, commandArgv, isEngineHarness, readBuildPrefs } from "../core/build-prefs"
+import { botsFolderPath, DEFAULT_BOTS_FOLDER, type FolderLook, lookAtBotsFolder } from "../build/folder"
+import type { CodeBotView } from "../core/code-bots"
+import type { BotsTopic } from "../core/bots"
+import type { KeepAwakeView } from "../core/keep-awake"
 import { actingProfile } from "./candle-profile"
+import { canNotifyNative, DEFAULT_NOTIFY, fallbacks, isRemote, NOTIFY_KINDS, type Notifier, type NotifySettings } from "../shared/notify"
 
 export { MIN_CANDLE_CLI }
 const CLAUDE_TURN_TIMEOUT_MS = 60_000
@@ -119,6 +133,13 @@ export interface DoctorOptions {
   mcp?: Pick<ChildOptions, "connectTimeoutMs">
   /** Tests only: the fake Hacc's address. The host is otherwise fixed, as the core's is. */
   haccHost?: string
+  /** Tests only: how the login service is looked at (launchctl, systemctl, loginctl). */
+  service?: ServiceDeps
+  /** Tests only: the user id and system the doctor runs as. */
+  uid?: number
+  platform?: NodeJS.Platform
+  /** Tests only: this binary's own version, to compare with the running core's. */
+  version?: string
 }
 
 /** The CLI's message when the login keychain is locked, as recorded over SSH. It gives no hint itself. */
@@ -162,6 +183,8 @@ export async function runDoctor(opts: DoctorOptions): Promise<Check[]> {
     return checks
   }
   add({ area: "paths", state: "ok", text: `the core's socket path is ${Buffer.byteLength(p.socket)} bytes, under the ${SOCKET_PATH_MAX_BYTES}-byte limit` })
+  for (const check of pathChecks(env.PATH)) add(check)
+  for (const check of rootChecks(opts.uid ?? process.getuid?.(), opts.platform ?? process.platform)) add(check)
   if (losesNextReply(env)) {
     add({ area: "debug", state: "warn", text: `${LOSE_NEXT_REPLY_NOTE}, in a core started from this shell`, fix: "Unless you're testing that, run `unset CANDLE_HARNESS_DEBUG_LOSE_NEXT_REPLY`." })
   }
@@ -190,6 +213,7 @@ export async function runDoctor(opts: DoctorOptions): Promise<Check[]> {
   for (const check of themeChecks(p)) add(check)
 
   if (config) for (const check of toolChecks(config, EngineState.open(p.engineState, { engine: config.engine.default, ...(config.engine.model ? { model: config.engine.model } : {}) }))) add(check)
+  if (config) for (const check of runnerChecks(config, await holdSupport(), env.PATH)) add(check)
   if (config) for (const check of skillChecks(p, config, EngineState.open(p.engineState, { engine: config.engine.default }), env.HOME)) add(check)
   if (config) for (const check of memoryChecks(p, config)) add(check)
   if (config) for (const check of pnlChecks(p, config, now())) add(check)
@@ -209,6 +233,14 @@ export async function runDoctor(opts: DoctorOptions): Promise<Check[]> {
       ? { area: "core", state: "ok", text: `a core is running at ${p.socket}` }
       : { area: "core", state: "ok", text: "no core is running; candle-harness starts one" },
   )
+  // A core keeps the version it started as: one that ran through an update is still the old one.
+  if (coreUp) for (const check of coreVersionChecks(await runningCoreVersion(env), opts.version ?? VERSION)) add(check)
+
+  // Triggers keeping the core up, what holds it, the login service and keep-awake.
+  if (stateOk) for (const check of await keptRunningChecks(p, config, coreUp, opts.service ?? defaultServiceDeps(env, selfCommand(), env.USER), Boolean(env.CANDLE_KEYRING_PASSPHRASE))) add(check)
+  if (stateOk) for (const check of await botChecks(p, coreUp)) add(check)
+  for (const check of await buildFolderChecks(p, config, env.HOME)) add(check)
+  if (stateOk) for (const check of await notifyChecks(p, config, env, coreUp)) add(check)
 
   // Each agent's key file: there, private, and a Candle agent key.
   const keys = new Map<string, string>()
@@ -233,11 +265,14 @@ export async function runDoctor(opts: DoctorOptions): Promise<Check[]> {
   const choices = config ? EngineState.open(p.engineState, { engine: config.engine.default, ...(config.engine.model ? { model: config.engine.model } : {}) }) : undefined
   const onEngine = (id: EngineId) => Object.keys(config?.agents ?? {}).filter((agent) => choices?.get(agent).engine === id)
   const claudeChecks: Check[] = []
-  const [, engineRows] = await Promise.all([
+  // Each engine's own check runs once: the engines' lines and the Build tab's harnesses read the same answer.
+  const checked = new Map<EngineId, Promise<EngineCheck>>()
+  const [, engineRows, buildRows] = await Promise.all([
     checkClaude(p, config, env, online, opts.claudeTurnTimeoutMs ?? CLAUDE_TURN_TIMEOUT_MS, onEngine("claude-code").length > 0, (c) => void claudeChecks.push(c)),
-    config ? engineChecks({ p, config, env, online, stateOk, choices: choices!, timeoutMs: opts.engineTurnTimeoutMs ?? CLAUDE_TURN_TIMEOUT_MS, ...(opts.shim ? { shim: opts.shim } : {}) }) : Promise.resolve([]),
+    config ? engineChecks({ p, config, env, online, stateOk, choices: choices!, timeoutMs: opts.engineTurnTimeoutMs ?? CLAUDE_TURN_TIMEOUT_MS, checked, ...(opts.shim ? { shim: opts.shim } : {}) }) : Promise.resolve([]),
+    config ? buildHarnessChecks(p, config, env, checked) : Promise.resolve([]),
   ])
-  for (const check of [...claudeChecks, ...engineRows]) add(check)
+  for (const check of [...claudeChecks, ...engineRows, ...buildRows]) add(check)
   if (online && cliOk) add(await checkVault(p, config, env, redactor))
 
   if (!online) {
@@ -316,6 +351,26 @@ export function toolChecks(config: Config, choices: Pick<EngineState, "get">): C
     if (hides.length) out.push({ area: "tools", state: "ok", text: `${agent} ${hides.join(", and ")} (${setting})` })
   }
   return out
+}
+
+/**
+ * The code runner: whether this machine can hold it, and each agent it's on for, with any program on its list that
+ * isn't installed. Off for every agent until the person turns it on, so a machine that can't hold it only says why.
+ */
+export function runnerChecks(config: Config, support: HoldSupport, path: string | undefined): Check[] {
+  const on = Object.entries(config.agents).flatMap(([agent, a]) => (runOn(a.tools?.run) ? [[agent, a.tools!.run as readonly string[]] as const] : []))
+  if (!support.ok) {
+    if (on.length === 0) return [{ area: "tools", state: "ok", text: `the code runner can't be held here (${support.why}), so it isn't offered; it needs ${support.fix}` }]
+    return on.map(([agent]) => ({ area: "tools", state: "warn", text: `${agent}'s code runner is set, but it can't be held here (${support.why}), so it isn't offered`, fix: `It needs ${support.fix}. Or set agents.${agent}.tools.run = "off".` }))
+  }
+  if (on.length === 0) return [{ area: "tools", state: "ok", text: `the code runner can be held here (${support.how}); it's off for every agent: ctrl-g or the palette turns it on` }]
+  return on.flatMap(([agent, programs]): Check[] => {
+    const missing = programs.filter((prog) => !(prog.startsWith("/") ? existsSync(prog) : Bun.which(prog, { PATH: path ?? "/usr/bin:/bin" })))
+    return [
+      { area: "tools", state: "ok", text: `${agent}'s code runner is on for ${programs.join(", ")}, held to its research folder by ${support.how}, with no network` },
+      ...(missing.length ? [{ area: "tools" as const, state: "warn" as const, text: `${agent}'s code runner lists ${missing.join(", ")}, which ${missing.length === 1 ? "isn't" : "aren't"} installed here`, fix: `Install ${missing.length === 1 ? "it" : "them"}, or take ${missing.length === 1 ? "it" : "them"} off agents.${agent}.tools.run in config.toml.` }] : []),
+    ]
+  })
 }
 
 /**
@@ -516,6 +571,7 @@ async function checkClaude(p: Paths, config: Config | undefined, env: Record<str
     return
   }
   add({ area: "claude", state: "ok", text: `Claude Code is ${version.version}` })
+  for (const check of newerMajorChecks("claude", "Claude Code", version.version, CHECKED_CLAUDE_CODE)) add(check)
   if (!online) {
     add({ area: "claude", state: "skip", text: "Claude Code's sign-in wasn't checked (--offline)" })
     return
@@ -579,6 +635,8 @@ async function engineChecks(input: {
   choices: Pick<EngineState, "get">
   timeoutMs: number
   shim?: string[]
+  /** Each engine's own check, shared so it runs once. */
+  checked?: Map<EngineId, Promise<EngineCheck>>
 }): Promise<Check[]> {
   const { p, config, online, choices } = input
   const env = harnessEnv(input.env)
@@ -620,6 +678,7 @@ async function checkEngine(input: {
   timeoutMs: number
   homesDir: string
   shim?: string[]
+  checked?: Map<EngineId, Promise<EngineCheck>>
 }): Promise<Check[]> {
   const { engine, users, env } = input
   const out: Check[] = []
@@ -628,7 +687,7 @@ async function checkEngine(input: {
   const onIt = users.length ? `${users.join(", ")} ${users.length === 1 ? "is" : "are"} on it` : "no agent is on it"
   const other = users.length ? ` Or pick another engine for ${users.join(", ")} with ctrl-g.` : ""
 
-  const version = await engine.check(env)
+  const version = await checkOnce(input.checked, engine, env)
   if (!version.ok) {
     if (!version.version && /isn't installed/.test(version.message) && !users.length) return [{ area: "engine", state: "skip", text: `${label} isn't installed; no agent is on it` }]
     // The check's own words say how to install or update it.
@@ -640,6 +699,7 @@ async function checkEngine(input: {
   }
   const gaps = gapsOf(engine.id, engine.capabilities(process.platform), process.platform)
   out.push({ area: "engine", state: "ok", text: `${label} is ${version.version} (needs ${engine.minVersion}+; ${onIt})${gaps.length ? `: ${gaps.join(", ")}` : ""}` })
+  out.push(...newerMajorChecks("engine", label, version.version, engine.checkedVersion))
   if (!input.online) return out
   // Codex's and Grok's model reads make private homes too.
   if (!input.stateOk) {
@@ -947,11 +1007,16 @@ async function checkAgent(input: {
   return done()
 }
 
-/** Midnight UTC in local time, such as "20:00 here": the Candle Harness's own day limit runs to local midnight, Candle's cap to UTC's. */
-const utcMidnightHere = (): string => {
-  const d = new Date()
+/**
+ * The next midnight UTC in local time, such as "20:00 here": the Candle Harness's own day limit runs to local midnight,
+ * Candle's cap to UTC's. West of UTC, just after its midnight, the next one is tomorrow's evening here, and a
+ * bare "19:00 here" read at 19:02 looks already past, so it says "tomorrow" then.
+ */
+export const utcMidnightHere = (now = new Date()): string => {
+  const d = new Date(now)
   d.setUTCHours(24, 0, 0, 0)
-  return `${d.toTimeString().slice(0, 5)} here`
+  const tomorrow = d.getDate() !== now.getDate()
+  return `${d.toTimeString().slice(0, 5)} here${tomorrow ? " tomorrow" : ""}`
 }
 const CAP_WINDOW = { daily: "today (UTC)", weekly: "this week (UTC)", monthly: "this month (UTC)", never: "in all" } as const
 /** The window's words, with when Candle's day ends locally where that isn't midnight. */
@@ -1584,6 +1649,56 @@ function streamState(view: StreamView): Check {
   }
 }
 
+/**
+ * PATH entries that aren't full paths. The Candle Harness never finds a program through one (an engine starts
+ * in its agent's folder, where such an entry would be looked up), so they're named: a program the person meant
+ * to be found through one isn't.
+ */
+export function pathChecks(path: string | undefined): Check[] {
+  const relative = relativeEntries(path)
+  if (relative.length === 0) return []
+  return [
+    {
+      area: "paths",
+      state: "warn",
+      text: `PATH has ${relative.length === 1 ? "an entry that isn't a full path" : "entries that aren't full paths"} (${relative.join(", ")}): the Candle Harness leaves ${relative.length === 1 ? "it" : "them"} out when it looks for an engine or the candle CLI, since ${relative.length === 1 ? "it" : "they"} would be looked up in whatever folder a program starts in`,
+      fix: "Take them out of PATH in your shell's startup file, or give each engine's full path in config.toml ([engine.<name>] path).",
+    },
+  ]
+}
+
+/** Running as root on Linux: everything an agent's engine runs then runs as root too. Said once; nothing is refused. */
+export function rootChecks(uid: number | undefined, platform: NodeJS.Platform): Check[] {
+  if (platform !== "linux" || uid !== 0) return []
+  return [
+    {
+      area: "state",
+      state: "warn",
+      text: "the Candle Harness is running as root: each agent's engine, every code bot and the Build tab's harness run as root too, and what holds them back is weaker for root",
+      fix: "Make an unprivileged user (`adduser <name>`), install as it, and run the Candle Harness there.",
+    },
+  ]
+}
+
+/** The running core's version against this binary's: a warning when they differ, with how to restart it. */
+export function coreVersionChecks(running: string | undefined, ours: string): Check[] {
+  const words = staleCoreWords(running, ours)
+  return words ? [{ area: "core", state: "warn", text: words[0]!.toLowerCase() + words.slice(1).replace(/\.$/, ""), fix: `Run \`candle-harness stop\`, then open candle-harness again (or \`candle-harness service install\` for the login service's core).` }] : []
+}
+
+/** A harness on a newer major version than the one its holds were checked on: said, and nothing is blocked. */
+export function newerMajorChecks(area: "engine" | "claude", label: string, version: string | undefined, checked: string): Check[] {
+  if (version === undefined || !newerMajor(version, checked)) return []
+  return [
+    {
+      area,
+      state: "warn",
+      text: newerMajorWords(label, version, checked),
+      fix: "Nothing is blocked. A new major version can change what a harness's own flags and sandbox do: update the Candle Harness when a newer one is out, and keep that engine's shell off meanwhile.",
+    },
+  ]
+}
+
 const LABEL: Record<CheckState, string> = { ok: "ok", warn: "warn", fail: "FAIL", skip: "skip" }
 
 export function formatReport(checks: Check[], opts: { only?: CheckState[] } = {}): string {
@@ -1602,6 +1717,16 @@ export function summary(checks: Check[]): string {
   const warnText = warns ? ` and ${warns} warning${warns === 1 ? "" : "s"}` : ""
   if (fails === 0) return warns ? `Nothing blocking${warnText}.` : "All checks passed."
   return `${fails} problem${fails === 1 ? "" : "s"} to fix${warnText}. Fix the first, then run candle-harness doctor again.`
+}
+
+/**
+ * The whole report as the command prints it: every check in order, the summary, and under it the checks that
+ * aren't ok once more, failures first, so they aren't lost among the lines that passed.
+ */
+export function doctorReport(checks: Check[]): string {
+  const toLookAt = [...checks.filter((c) => c.state === "fail"), ...checks.filter((c) => c.state === "warn")]
+  const again = toLookAt.length ? `\nTo look at:\n${formatReport(toLookAt)}\n` : ""
+  return `${formatReport(checks)}\n\n${summary(checks)}\n${again}`
 }
 
 const USAGE = `Usage: candle-harness doctor [--offline]
@@ -1625,7 +1750,7 @@ export async function doctorCommand(args: string[], io: { out(text: string): voi
   const online = !args.includes("--offline")
   io.out(`candle-harness doctor ${VERSION} (${COMMIT})${online ? " (it asks Candle about each key, and sends each engine an agent is on one word)" : ""}\n\n`)
   const checks = await runDoctor({ env, online })
-  io.out(`${formatReport(checks)}\n\n${summary(checks)}\n`)
+  io.out(doctorReport(checks))
   return checks.some((c) => c.state === "fail") ? 1 : 0
 }
 
@@ -1767,7 +1892,7 @@ export function approvalsChecks(input: { p: Paths; config: Config; rows: readonl
       continue
     }
     const by = payer ? `, paid from by ${payer.agents.join(" and ")}` : ""
-    out.push({ area: "wallet", state: "ok", text: `${label(entry.wallet, name)} trades inside limits${by}: up to ${usd(v.perTradeUsd)} a trade and ${usd(v.perDayUsd)} a day run without a card, ${usd(used)} of it used today; every sell from it runs without one` })
+    out.push({ area: "wallet", state: "ok", text: `${label(entry.wallet, name)} trades inside limits${by}: up to ${usd(v.perTradeUsd)} a trade and ${usd(v.perDayUsd)} a day run without a card, ${usd(used)} of it used today; every sell from it runs without one, unless its slippage is looser than the default` })
     for (const agent of payer?.agents ?? []) {
       const own = config.agents[agent]?.limits
       const lower = `Lower the wallet's figure in the view's settings ▾ → approvals, or raise ${agent}'s limits in ${p.configFile}.`
@@ -1897,7 +2022,7 @@ export function layoutsChecks(p: Paths): Check[] {
   const names = (tabs: readonly { name: string }[]) => tabs.map((t) => t.name).join(", ")
   const hidden = file.hidden.map((h) => h.tab)
   const off = hidden.length ? `, ${hidden.length} ticked off (${names(hidden)})` : ""
-  if (source === undefined) checks.push({ area: "layouts", state: "ok", text: `no ${p.layoutsFile}: ${file.tabs.length} tabs (${names(file.tabs)}), each on its preset` })
+  if (source === undefined) checks.push({ area: "layouts", state: "ok", text: `no ${p.layoutsFile}: ${file.tabs.length} tabs (${names(file.tabs)}), each on its preset${off}` })
   else if (file.problems.length === 0) checks.push({ area: "layouts", state: "ok", text: `${p.layoutsFile}: ${file.tabs.length} ${file.tabs.length === 1 ? "tab" : "tabs"} shown (${names(file.tabs)})${off}, ${file.own.length} ${file.own.length === 1 ? "layout" : "layouts"} of yours` })
   if (file.added.length) checks.push({ area: "layouts", state: "ok", text: `new since ${p.layoutsFile} listed its tabs, ticked off: ${file.added.join(", ")}. Tick them on in the view's settings ▾.` })
   for (const problem of file.problems) checks.push({ area: "layouts", state: "warn", text: problem, fix: `Edit ${p.layoutsFile}; until then the view uses the presets in place of what it can't read, and won't write the file.` })
@@ -1943,4 +2068,485 @@ export function themeChecks(p: Paths): Check[] {
     for (const problem of leftOut) checks.push({ area: "theme", state: "warn", text: problem, fix: `Fix ${store.dir}/${name}.toml; ${meanwhile}.` })
   }
   return checks
+}
+
+/** A level read slower than this is named: it aims for about every 5 s. */
+const SLOW_LEVEL_MS = 30_000
+
+/** What the doctor reads for keeping the core up, gathered: the triggers.toml and state, the running core, the service. */
+export interface KeptRead {
+  platform: NodeJS.Platform
+  /** The triggers switched on, as triggers.toml and the core's state both say, by name. */
+  on: string[]
+  /** config.toml's `[core] keepAwake`, and the choice last made, if any. */
+  keepAwake: boolean
+  core?: { pid?: number; headless?: boolean; holds?: string[]; triggersOn?: number; keepAwake?: KeepAwakeView; triggers?: TriggersTopic; notify?: { native: boolean } }
+  /** triggers.toml's problems, each naming its line. */
+  problems?: string[]
+  service?: ServiceState
+  /** The Candle TUI 0.2's login service file, when it's still installed. */
+  oldService?: string
+  /** Linux: whether lingering is on, by loginctl; undefined when it can't say. */
+  linger?: boolean
+  /** Whether this shell has CANDLE_KEYRING_PASSPHRASE, which the login service never carries. */
+  keyringPassphrase?: boolean
+}
+
+/**
+ * Keeping the core up, in words: how many triggers are on and whether a core watches them, what holds a running
+ * core, each level's pace, the login service, and keep-awake.
+ */
+export function keptRunningWords(r: KeptRead): Check[] {
+  const out: Check[] = []
+  const n = (count: number, one: string) => `${count} ${one}${count === 1 ? "" : "s"}`
+  for (const problem of r.problems ?? []) out.push({ area: "trigger", state: "warn", text: problem, fix: "Fix that line in triggers.toml, or ask the agent to propose the trigger again: the Candle Harness won't write the file until it reads cleanly." })
+  if (r.core) {
+    const who = `the running core${r.core.pid ? ` (pid ${r.core.pid})` : ""}`
+    const holds = r.core.holds ?? []
+    if (r.core.headless) out.push({ area: "core", state: "ok", text: `${who} is headless: it runs until \`candle-harness stop\`${holds.length ? `; now ${holds.join(", ")}` : ""}` })
+    else out.push({ area: "core", state: "ok", text: holds.length ? `${who} was started by a view, and is held up by: ${holds.join(", ")}` : `${who} was started by a view, and nothing holds it: it exits within a minute` })
+    const on = r.core.triggersOn ?? 0
+    if (on) out.push({ area: "trigger", state: "ok", text: `${n(on, "trigger")} on ${on === 1 ? "keeps" : "keep"} the core running after the view quits; \`candle-harness stop\` ends it` })
+    for (const t of r.core.triggers?.triggers ?? []) {
+      if (!t.on) continue
+      if (t.held) out.push({ area: "trigger", state: "warn", text: `trigger "${t.name}" is on and held: ${t.held.words}` })
+      else if (t.class === "level" && t.paceMs !== undefined && t.paceMs > SLOW_LEVEL_MS) out.push({ area: "trigger", state: "warn", text: `trigger "${t.name}": ${t.watching ?? `checked about every ${Math.round(t.paceMs / 1000)} s`}, slower than the 5 s it aims for`, fix: "Candle's market read is slow or the key is rate-limited; candle-harness doctor's candle lines say which." })
+      else if (t.watching) out.push({ area: "trigger", state: "ok", text: `trigger "${t.name}": ${t.watching}` })
+      // Nothing to watch (an on call trigger, a fill, a card expiring): what it waits for, in its own words.
+      else out.push({ area: "trigger", state: "ok", text: /^on call\b/.test(t.line) ? `trigger "${t.name}": waits for \`candle-harness trigger "${t.name}"\`` : `trigger "${t.name}": ${t.words}` })
+      if (t.readsNow) out.push({ area: "trigger", state: "warn", text: `trigger "${t.name}": ${t.readsNow}`, fix: "Ask the agent to propose it again if you want it to follow the new reading." })
+    }
+  }
+  if (!r.on.length && !(r.core?.triggersOn ?? 0) && !(r.core?.triggers?.triggers ?? []).some((t) => t.on)) out.push({ area: "trigger", state: "ok", text: "no trigger is on" })
+  else if (!r.core && r.on.length) {
+    out.push({ area: "trigger", state: "warn", text: `${n(r.on.length, "trigger")} on in triggers.toml, and no core is running, so none is watched`, fix: "Open the Candle Harness (candle-harness), run `candle-harness core` in tmux, or `candle-harness service install` to start the core at login." })
+  }
+  if (r.oldService) out.push({ area: "core", state: "warn", text: `${r.oldService} is the Candle TUI 0.2's login service: it runs \`candle-tui core\` on the old home at login`, fix: "Run `candle-harness service install` to replace it with this one, or `candle-harness service uninstall` to remove it." })
+  if (r.service) {
+    const s = r.service
+    if (!s.installed) out.push({ area: "core", state: "ok", text: `the login service isn't installed${r.on.length ? "; `candle-harness service install` starts the core at login, so triggers run with no terminal open" : ""}` })
+    else {
+      out.push({ area: "core", state: "ok", text: `the login service is installed (${s.file}): ${s.words}` })
+      if (r.platform === "linux" && r.linger === false) out.push({ area: "core", state: "warn", text: "lingering is off for your user, so the service's core stops when you log out", fix: "On a VPS, run `loginctl enable-linger $USER` (it may need sudo); the Candle Harness never runs it." })
+      // With no keychain, the CLI signs for a TEE wallet from its file store, which only the passphrase opens.
+      if (r.platform === "linux" && r.keyringPassphrase)
+        out.push({
+          area: "core",
+          state: "warn",
+          text: "this shell opens the CLI's store with CANDLE_KEYRING_PASSPHRASE, which the login service doesn't carry, so a TEE wallet's trades from the service's core are refused",
+          fix: "Trade from the embedded wallet on this machine, or uninstall the service and run `candle-harness core` in tmux from a shell that has the passphrase.",
+        })
+    }
+  }
+  const awake = r.core?.keepAwake
+  if (r.platform === "darwin") {
+    const on = awake?.on ?? r.keepAwake
+    if (awake?.failed) out.push({ area: "core", state: "warn", text: `keep-awake is on, and ${awake.failed}`, fix: "Switch it off and on in ctrl-k's palette to try again; `which caffeinate` should name /usr/bin/caffeinate." })
+    else out.push({ area: "core", state: "ok", text: on ? `keep-awake is on: the Mac is kept from sleeping while a trigger or bot is on${awake?.active ? " (now)" : ""}; a closed lid still sleeps it on battery` : `keep-awake is off: the Mac may sleep while triggers or bots are on, and they wait for it${r.on.length ? " (ctrl-k's palette: keep the Mac awake)" : ""}` })
+  } else if (r.keepAwake) {
+    out.push({ area: "core", state: "warn", text: "config.toml sets [core] keepAwake, which is macOS only: it does nothing here", fix: "Remove keepAwake from config.toml's [core]." })
+  }
+  return out
+}
+
+/** The triggers switched on, as triggers.toml and the core's state both say. */
+function triggersOn(p: Paths): string[] {
+  const file = new TriggersFileStore(p.triggersFile).read()
+  let state: Record<string, { on?: unknown }> = {}
+  try {
+    state = (JSON.parse(readFileSync(p.triggersState, "utf8")) as { triggers?: Record<string, { on?: unknown }> }).triggers ?? {}
+  } catch {}
+  return file.triggers.filter((t) => t.on && state[t.name]?.on === true).map((t) => t.name)
+}
+
+async function keptRunningChecks(p: Paths, config: Config | undefined, coreUp: boolean, service: ServiceDeps, keyringPassphrase: boolean): Promise<Check[]> {
+  let keepAwake = config?.core?.keepAwake ?? false
+  try {
+    const kept = (JSON.parse(readFileSync(join(p.stateDir, "keep-awake.json"), "utf8")) as { on?: unknown }).on
+    if (typeof kept === "boolean") keepAwake = kept
+  } catch {}
+  let core: KeptRead["core"]
+  if (coreUp) {
+    core = await (async () => {
+      const { connection } = await connectView({ socketPath: p.socket, viewTokenPath: p.viewToken, clientName: DOCTOR_CLIENT })
+      try {
+        const status = record(await connection.request("core.status", {}))
+        const triggers = (await connection.request("triggers.list", {}).catch(() => undefined)) as TriggersTopic | undefined
+        return {
+          ...(typeof status?.pid === "number" ? { pid: status.pid } : {}),
+          ...(typeof status?.headless === "boolean" ? { headless: status.headless } : {}),
+          ...(Array.isArray(status?.holds) ? { holds: status.holds.filter((h): h is string => typeof h === "string") } : {}),
+          ...(typeof status?.triggersOn === "number" ? { triggersOn: status.triggersOn } : {}),
+          ...(record(status?.keepAwake) ? { keepAwake: status!.keepAwake as KeepAwakeView } : {}),
+          ...(triggers && Array.isArray(triggers.triggers) ? { triggers } : {}),
+        }
+      } finally {
+        connection.close()
+      }
+    })().catch(() => undefined)
+  }
+  const state = serviceState(service)
+  let linger: boolean | undefined
+  if (service.platform === "linux" && state?.installed && service.user) {
+    const r = service.run("loginctl", ["show-user", service.user, "--property=Linger", "--value"])
+    if (r.code === 0 && /^(yes|no)$/.test(r.stdout.trim())) linger = r.stdout.trim() === "yes"
+  }
+  const problems = new TriggersFileStore(p.triggersFile).read().problems
+  const oldService = oldServiceFile(service)
+  return keptRunningWords({ platform: service.platform, on: triggersOn(p), keepAwake, problems, ...(core ? { core } : {}), ...(state ? { service: state } : {}), ...(oldService ? { oldService } : {}), ...(linger !== undefined ? { linger } : {}), keyringPassphrase })
+}
+
+/** What the doctor reads for rules bots: bots.toml, the core's state file, and a running core's own list. */
+export interface BotsRead {
+  /** bots.toml's problems, each naming its line. */
+  problems: string[]
+  /** The bots in bots.toml that the core's state says go on (approved, and neither paused nor stopped), by name. */
+  on: string[]
+  /** How many bots bots.toml holds. */
+  saved: number
+  /** The running core's list, and how many bots it says keep it up. */
+  core?: { topic: BotsTopic; botsOn?: number }
+  /**
+   * Code bots, as bots.toml and the state hold them with no core: how many, the ones that go on, the ones whose
+   * process was given up on after crashing (a core won't start those by itself), and any whose folder is gone.
+   */
+  code?: { saved: number; on: string[]; gaveUp?: { name: string; crashes: number }[]; noFolder?: { name: string; folder: string }[] }
+}
+
+const HELD_FIX: Record<string, string> = {
+  NOT_APPROVED: "Ask the agent to propose it, and approve its card; or take it out of bots.toml.",
+  CHANGED_OUTSIDE: "Ask the agent to propose the change, and approve its card; or put bots.toml back as it was approved.",
+  AGENT_GONE: "Add the agent back with `candle-harness key add --agent <name>`, or flatten and remove the bot on the Bots tab.",
+}
+
+const CODE_HELD_FIX: Record<string, string> = {
+  NOT_APPROVED: "Propose it from its Build pane (`candle-harness build propose`) and approve its card; or take it out of bots.toml.",
+  CHANGED_OUTSIDE: "Propose the change from its Build pane and approve its card; or put bots.toml back as it was approved.",
+  AGENT_GONE: "Add the agent back with `candle-harness key add --agent <name>`, or flatten and remove the bot on the Bots tab.",
+}
+
+const NO_CORE_FIX = "Open the Candle Harness (candle-harness), run `candle-harness core` in tmux, or `candle-harness service install` to start the core at login."
+const logsFix = (name: string) => `Read why with \`candle-harness bots logs ${name}\`.`
+const gaveUpFix = (name: string) => `Read why with \`candle-harness bots logs ${name}\`, fix its code, then \`candle-harness bots start ${name}\`.`
+
+/**
+ * Rules bots, in words: bots.toml's problems; with a core, each bot's state, mode, wallet and open positions,
+ * what holds it (a hand edit, the plan, Candle's stop on its key) and any sell its exits hold; a live bot on a
+ * shared wallet as a note; without a core, the bots that would trade and don't.
+ */
+export function botWords(r: BotsRead): Check[] {
+  const out: Check[] = []
+  const n = (count: number, one: string) => `${count} ${one}${count === 1 ? "" : "s"}`
+  for (const problem of r.problems) out.push({ area: "bot", state: "warn", text: problem, fix: "Fix that line in bots.toml, or ask the agent to propose the bot again: the Candle Harness won't write the file until it reads cleanly." })
+  const c = r.code ?? { saved: 0, on: [] }
+  if (!r.saved && !c.saved) {
+    if (!r.problems.length) out.push({ area: "bot", state: "ok", text: "no bot is saved, rules or code" })
+    return out
+  }
+  if (!r.core) {
+    if (r.on.length) out.push({ area: "bot", state: "warn", text: `${n(r.on.length, "bot")} on in bots.toml, and no core is running, so none enters, and their exits don't sell what they hold`, fix: NO_CORE_FIX })
+    else if (r.saved) out.push({ area: "bot", state: "ok", text: `${n(r.saved, "bot")} in bots.toml, none on` })
+    if (c.on.length) out.push({ area: "bot", state: "warn", text: `${n(c.on.length, "code bot")} on in bots.toml, and no core is running, so none runs, and the exits the core holds for them don't sell`, fix: NO_CORE_FIX })
+    else if (c.saved) out.push({ area: "bot", state: "ok", text: `${n(c.saved, "code bot")} in bots.toml, none on` })
+  }
+  for (const g of c.gaveUp ?? []) if (!r.core) out.push({ area: "bot", state: "warn", text: `code bot "${g.name}" crashed ${g.crashes} times in a row and was given up on: a core won't start it again by itself`, fix: gaveUpFix(g.name) })
+  for (const f of c.noFolder ?? []) out.push({ area: "bot", state: "warn", text: `code bot "${f.name}": its folder ${f.folder} isn't there`, fix: "Put its code back there, or propose the bot again from its Build pane with the folder it's in now, and approve its card." })
+  if (!r.core) return out
+  const t = r.core.topic
+  if (t.gate && (t.bots.length || t.code?.length)) out.push({ area: "bot", state: "warn", text: `${t.gate.words}: no bot enters on this plan, and each bot's exits still sell what it holds`, ...(t.gate.fix ? { fix: t.gate.fix } : {}) })
+  const on = r.core.botsOn ?? 0
+  if (on) out.push({ area: "bot", state: "ok", text: `${n(on, "bot")} ${on === 1 ? "keeps" : "keep"} the core running after the view quits; \`candle-harness stop\` ends it` })
+  for (const b of t.bots) {
+    const open = t.books?.[b.name]?.open.length ?? b.open ?? 0
+    const pays = b.paysFrom ?? (b.wallet === "embedded" ? "embedded" : short(b.wallet))
+    const does = b.state === "on" && !b.held ? (b.entries ? "enters and sells" : "sells") : (b.stateWords ?? b.state)
+    const head = `bot "${b.name}": ${b.mode} · ${does} · ${b.agent}, pays from ${pays}${open ? ` · ${n(open, "open position")}` : ""}`
+    if (b.byCandle) out.push({ area: "bot", state: "warn", text: head, fix: "Resume the key in Candle's Agent Console, then put the bot back on from the Bots tab." })
+    else out.push({ area: "bot", state: "ok", text: head })
+    if (b.held) out.push({ area: "bot", state: b.held.code === "PLAN_FREE" || b.held.code === "PLAN_UNKNOWN" ? "ok" : "warn", text: `bot "${b.name}" is held: ${b.held.words}`, ...(HELD_FIX[b.held.code] ? { fix: HELD_FIX[b.held.code] } : {}) })
+    for (const h of b.sellsHeld ?? []) {
+      if (h.why === "failed_sells") out.push({ area: "bot", state: "warn", text: `bot "${b.name}": ${h.words}`, fix: "Check why the sells failed (on a young token, often slippage), then use the bot's `retry its sells` chip on the Bots tab." })
+      else out.push({ area: "bot", state: "ok", text: `bot "${b.name}": ${h.words}` })
+    }
+    // A note, not a warning: a shared wallet is the person's pick, and the book is still the bot's own fills.
+    if (b.mode === "live" && b.sharedWith?.length) out.push({ area: "bot", state: "ok", text: `bot "${b.name}" trades live from ${pays}, shared with ${sharedWithWords(b.sharedWith)}: its book is the Candle Harness's count from its own fills, and a wallet of its own would fence what it can lose` })
+  }
+  for (const b of t.code ?? []) if (!isTestName(b.name)) out.push(...codeBotLines(b, t.books?.[b.name]?.open.length ?? 0))
+  return out
+}
+
+/**
+ * One code bot with a core running: its state and wallet, what holds it, its process as the supervisor runs it (or,
+ * run outside, its token and whether it's connected), a memory or CPU warning, and the exits the core holds for it.
+ */
+function codeBotLines(b: CodeBotView, open: number): Check[] {
+  const out: Check[] = []
+  const n = (count: number, one: string) => `${count} ${one}${count === 1 ? "" : "s"}`
+  const who = `code bot "${b.name}"`
+  const pays = b.paysFrom ?? (b.wallet === "embedded" ? "embedded" : short(b.wallet))
+  const does = b.state === "on" && !b.held ? (b.buys ? "buys and sells" : "sells") : (b.stateWords ?? b.state)
+  const head = `${who}: ${b.mode} · ${does} · ${b.agent}, pays from ${pays}${open ? ` · ${n(open, "open position")}` : ""}`
+  if (b.byCandle) out.push({ area: "bot", state: "warn", text: head, fix: "Resume the key in Candle's Agent Console, then put the bot back on from the Bots tab." })
+  else out.push({ area: "bot", state: "ok", text: head })
+  if (b.held) out.push({ area: "bot", state: b.held.code === "PLAN_FREE" || b.held.code === "PLAN_UNKNOWN" ? "ok" : "warn", text: `${who} is held: ${b.held.words}`, ...(CODE_HELD_FIX[b.held.code] ? { fix: CODE_HELD_FIX[b.held.code] } : {}) })
+  const p = b.process
+  if (p?.runs === "outside") {
+    if (!b.token) out.push({ area: "bot", state: "warn", text: `${who} runs outside the Candle Harness and has no token yet, so it can't connect`, fix: `Run \`candle-harness bots token ${b.name}\`: it writes the bot's token to .harness-bot.json in its folder, where the client reads it.` })
+    else if (!b.connected) out.push({ area: "bot", state: b.state === "on" ? "warn" : "ok", text: `${who} runs outside the Candle Harness and isn't connected: its buys don't run, and the exits the core holds still sell`, fix: `Start it where you run it: its folder's .harness-bot.json holds its token. Or \`candle-harness bots start ${b.name}\` runs it here instead.` })
+    else out.push({ area: "bot", state: "ok", text: `${who} runs outside the Candle Harness, connected` })
+  } else if (p) {
+    if (p.state === "restarting") out.push({ area: "bot", state: "warn", text: `${who} crashed: ${p.words}`, fix: logsFix(b.name) })
+    else if (p.state === "gave_up") out.push({ area: "bot", state: "warn", text: `${who}'s process: ${p.words}`, fix: gaveUpFix(b.name) })
+    else {
+      const extra = p.state === "running" ? [p.crashes ? `${p.crashes} ${p.crashes === 1 ? "crash" : "crashes"} in 10 minutes` : undefined, p.memoryMb !== undefined ? `${p.memoryMb} MB` : undefined, p.cpuPct !== undefined ? `${p.cpuPct}% CPU` : undefined].filter(Boolean) : []
+      out.push({ area: "bot", state: "ok", text: `${who}'s process: ${[p.words, ...extra].join(" · ")}` })
+    }
+    if (p.warning) out.push({ area: "bot", state: "warn", text: `${who}: ${p.warning}`, fix: `Check its log with \`candle-harness bots logs ${b.name}\`: the Candle Harness only says so, it doesn't stop it.` })
+  }
+  const exits = b.heldExits ?? []
+  let quiet = 0
+  for (const h of exits) {
+    const token = h.symbol ?? short(h.mint)
+    if (h.waits) out.push({ area: "bot", state: "warn", text: `${who}: the exits the core holds on ${token} wait: ${h.waits}`, fix: "Check why the sells failed (on a young token, often slippage), then use the bot's `retry its sells` chip on the Bots tab." })
+    else if (h.selling) out.push({ area: "bot", state: "ok", text: `${who}: the core is selling its ${token} position (${h.words})` })
+    else quiet++
+  }
+  if (quiet) out.push({ area: "bot", state: "ok", text: `${who}: the core holds exits on ${quiet < exits.length ? `${quiet} more` : quiet} open position${quiet === 1 ? "" : "s"}` })
+  return out
+}
+
+export async function botChecks(p: Paths, coreUp: boolean): Promise<Check[]> {
+  const file = new BotsFileStore(p.botsFile).read()
+  let state: Record<string, { run?: unknown }> = {}
+  try {
+    state = (JSON.parse(readFileSync(p.botsState, "utf8")) as { bots?: Record<string, { run?: unknown }> }).bots ?? {}
+  } catch {}
+  const on = file.bots.filter((b) => b.state === "on" && state[b.name]?.run === "on").map((b) => b.name)
+  const code = codeBotsRead(p, file.code)
+  let core: BotsRead["core"]
+  if (coreUp) {
+    core = await (async () => {
+      const { connection } = await connectView({ socketPath: p.socket, viewTokenPath: p.viewToken, clientName: DOCTOR_CLIENT })
+      try {
+        const topic = (await connection.request("bots.list", {})) as BotsTopic | undefined
+        if (!topic || !Array.isArray(topic.bots)) return undefined
+        const status = record(await connection.request("core.status", {}).catch(() => undefined))
+        return { topic, ...(typeof status?.botsOn === "number" ? { botsOn: status.botsOn } : {}) }
+      } finally {
+        connection.close()
+      }
+    })().catch(() => undefined)
+  }
+  return botWords({ problems: file.problems, on, saved: file.bots.length, ...(code.saved ? { code } : {}), ...(core ? { core } : {}) })
+}
+
+/** Code bots with no core needed: which go on, which the supervisor gave up on, and any whose folder is gone. */
+function codeBotsRead(p: Paths, entries: readonly CodeBotEntry[]): NonNullable<BotsRead["code"]> {
+  const read = <T>(path: string): Record<string, T> => {
+    try {
+      return (JSON.parse(readFileSync(path, "utf8")) as { bots?: Record<string, T> }).bots ?? {}
+    } catch {
+      return {}
+    }
+  }
+  const state = read<{ run?: unknown }>(p.codeBotsState)
+  const sup = read<{ gaveUp?: { crashes?: unknown } }>(p.supervisorState)
+  const named = entries.filter((b) => !isTestName(b.name))
+  return {
+    saved: named.length,
+    on: named.filter((b) => b.state === "on" && state[b.name]?.run === "on").map((b) => b.name),
+    gaveUp: named.flatMap((b) => (typeof sup[b.name]?.gaveUp?.crashes === "number" ? [{ name: b.name, crashes: sup[b.name]!.gaveUp!.crashes as number }] : [])),
+    noFolder: named.filter((b) => !existsSync(b.folder)).map((b) => ({ name: b.name, folder: b.folder })),
+  }
+}
+
+/** What the doctor reads for the bots folder: the Build tab's choices, and the folder against what's written there. */
+export interface BuildFolderRead {
+  prefs: Pick<BuildPrefs, "folder" | "opened">
+  look: FolderLook
+  /** The folder with the home as `~`. */
+  shown: string
+}
+
+const listed = (items: readonly string[]) => {
+  const head = items.slice(0, 4)
+  const more = items.length - head.length
+  if (more) return `${head.join(", ")} and ${more} more`
+  return head.length > 1 ? `${head.slice(0, -1).join(", ")} and ${head.at(-1)}` : (head[0] ?? "")
+}
+
+/**
+ * The bots folder, in words: not asked for yet, gone, missing files or older ones (fixed by `bots init`, which keeps
+ * what the person changed), up to date, and the person's own files named as kept.
+ */
+export function buildFolderWords(r: BuildFolderRead): Check[] {
+  const { look, shown } = r
+  const init = `candle-harness bots init${r.prefs.folder === DEFAULT_BOTS_FOLDER ? "" : ` ${r.prefs.folder}`}`
+  if (!look.exists) {
+    if (!r.prefs.opened) return [{ area: "build", state: "ok", text: `the Build tab hasn't been opened here yet: its first open asks where your bots live (${shown} unless you pick another)` }]
+    return [{ area: "build", state: "warn", text: `the bots folder ${shown} isn't there`, fix: `Run \`${init}\` to write it again, or pick another folder in the Build tab.` }]
+  }
+  const out: Check[] = []
+  if (look.missing.length || look.older.length) {
+    const parts = [
+      ...(look.missing.length ? [`is missing ${look.missing.length} of the Candle Harness's files`] : []),
+      ...(look.older.length ? [`${look.missing.length ? "and " : "has "}${look.older.length} ${look.older.length === 1 ? (look.missing.length ? "is" : "file") : look.missing.length ? "are" : "files"} from an older Candle Harness`] : []),
+    ]
+    out.push({ area: "build", state: "warn", text: `the bots folder ${shown} ${parts.join(", ")}`, fix: `Run \`${init}\`: it adds what's missing, updates what you haven't changed, and keeps what you have.` })
+  } else out.push({ area: "build", state: "ok", text: `the bots folder is ${shown}: AGENTS.md, the client and Candle's skills are up to date` })
+  if (look.kept.length) {
+    const one = look.kept.length === 1
+    out.push({ area: "build", state: "ok", text: `in the bots folder, ${listed(look.kept)} ${one ? "is" : "are"} yours (changed by you, or there before): kept as ${one ? "it is" : "they are"}, never written over` })
+  }
+  return out
+}
+
+/** What the doctor reads for the Build tab's harnesses: each engine's own check, and the one picked. */
+export interface BuildHarnessRead {
+  engines: Record<EngineId, { ok: boolean; version?: string; message?: string }>
+  harness?: string
+  from?: "saved" | "config"
+  /** A command of the person's own: its program, and whether it's found. */
+  command?: { word: string; found: boolean }
+}
+
+/**
+ * The harnesses the Build tab can open, in words: each engine installed here with its version (an engine older than an
+ * agent needs still opens, since the Build tab runs it as the person's own), and the one it opens, warned when it can't.
+ */
+export function buildHarnessWords(r: BuildHarnessRead): Check[] {
+  const ids = Object.keys(ENGINE_LABELS) as EngineId[]
+  const here = ids.filter((id) => r.engines[id]?.version)
+  const gone = ids.filter((id) => !r.engines[id]?.version)
+  const out: Check[] = [
+    here.length
+      ? { area: "build", state: "ok", text: `the Build tab can open ${here.map((id) => `${ENGINE_LABELS[id]} ${r.engines[id]!.version}`).join(", ")}${gone.length ? `; not installed here: ${gone.map((id) => ENGINE_LABELS[id]).join(", ")}` : ""}` }
+      : { area: "build", state: "ok", text: "none of the five harnesses is installed here; the Build tab can still run a command of your own" },
+  ]
+  if (!r.harness) {
+    out.push({ area: "build", state: "ok", text: "no harness is picked for the Build tab yet: its first open asks" })
+    return out
+  }
+  const from = r.from === "config" ? "config.toml's [build] harness" : "picked in the Build tab"
+  if (isEngineHarness(r.harness)) {
+    const label = ENGINE_LABELS[r.harness]
+    if (r.engines[r.harness]?.version) out.push({ area: "build", state: "ok", text: `the Build tab opens ${label} (${from})` })
+    else out.push({ area: "build", state: "warn", text: `the Build tab opens ${label} (${from}), which isn't installed here`, fix: `Install ${label}, or pick another harness with the Build pane's harness ▾.` })
+    return out
+  }
+  if (r.command && !r.command.found) {
+    out.push({ area: "build", state: "warn", text: `the Build tab opens your own command, ${r.harness} (${from}), and ${r.command.word} isn't found on your PATH`, fix: "Install it, give its full path, or pick another harness with the Build pane's harness ▾." })
+  } else out.push({ area: "build", state: "ok", text: `the Build tab opens your own command, ${r.harness} (${from})` })
+  return out
+}
+
+async function buildFolderChecks(p: Paths, config: Config | undefined, home: string | undefined): Promise<Check[]> {
+  const prefs = readBuildPrefs(p.buildPrefs, config?.build)
+  const folder = botsFolderPath(prefs.folder, home)
+  const h = home ?? ""
+  const shown = h && folder === h ? "~" : h && folder.startsWith(`${h}/`) ? `~${folder.slice(h.length)}` : folder
+  return buildFolderWords({ prefs, look: await lookAtBotsFolder(folder), shown })
+}
+
+/** An engine's own check, run once per doctor run when a cache is given. */
+function checkOnce(cache: Map<EngineId, Promise<EngineCheck>> | undefined, engine: Engine, env: Record<string, string>): Promise<EngineCheck> {
+  const run = () => engine.check(env).catch((error: Error): EngineCheck => ({ ok: false, message: error.message }))
+  if (!cache) return run()
+  let p = cache.get(engine.id)
+  if (!p) cache.set(engine.id, (p = run()))
+  return p
+}
+
+async function buildHarnessChecks(p: Paths, config: Config, env: Record<string, string | undefined>, checked?: Map<EngineId, Promise<EngineCheck>>): Promise<Check[]> {
+  const prefs = readBuildPrefs(p.buildPrefs, config.build)
+  const homesDir = join(p.stateDir, "doctor-homes")
+  const engines = buildEngines(config, { homesDir, stateDir: p.stateDir }, env)
+  const clean = harnessEnv(env)
+  const ids = Object.keys(ENGINE_LABELS) as EngineId[]
+  const checks = await Promise.all(ids.map((id) => checkOnce(checked, engines.get(id)!, clean)))
+  const read: BuildHarnessRead = { engines: Object.fromEntries(ids.map((id, i) => [id, checks[i]!])) as BuildHarnessRead["engines"] }
+  if (prefs.harness) {
+    read.harness = prefs.harness
+    if (prefs.from.harness) read.from = prefs.from.harness
+    if (!isEngineHarness(prefs.harness)) {
+      const word = commandArgv(prefs.harness)[0] ?? prefs.harness
+      const found = word.includes("/") ? existsSync(botsFolderPath(word, env.HOME)) : Bun.which(word, { PATH: env.PATH ?? "" }) !== null
+      read.command = { word, found }
+    }
+  }
+  return buildHarnessWords(read)
+}
+
+/** What the doctor reads for notifications: the settings, this machine, and a running core's own judgement. */
+export interface NotifyRead {
+  settings: NotifySettings
+  /** This shell is over SSH, or in a VPS's container. */
+  remote: boolean
+  /** A core started from this shell could show the computer's own notification. */
+  native: boolean
+  /** The running core's own answer, when one runs: it may have been started elsewhere. */
+  core?: { native: boolean }
+  /** Triggers switched on: they act with nobody watching, so how they reach you matters. */
+  triggersOn: number
+  /** This machine's platform: on a Mac, the computer's own notification is filed under Script Editor. */
+  platform?: string
+}
+
+/** macOS files `osascript`'s notifications under Script Editor, which may be set to show no banner. */
+export const MAC_BANNER_WORDS =
+  "on a Mac, the computer's own notifications are filed under Script Editor: if they reach Notification Center with no banner, set Script Editor to Banners or Alerts in System Settings → Notifications"
+
+
+const NOTIFIER_WORDS: Record<Notifier, string> = { native: "your computer's own notification", osc: "the terminal's own notification", bell: "the terminal's bell" }
+
+/**
+ * Notifications, in words: what the main view sends while its window isn't in front, and what reaches you with no
+ * Candle Harness window open (the computer's own on a Mac or a Linux desktop; nothing on a VPS, over SSH or in a container).
+ */
+export function notifyWords(r: NotifyRead): Check[] {
+  const { mode, on } = r.settings
+  if (mode === "off") return [{ area: "notify", state: "ok", text: 'notifications are off (config.toml\'s [notify] mode = "off"): nothing is sent, with a Candle Harness window open or not' }]
+  if (!on.length) return [{ area: "notify", state: "ok", text: "nothing notifies: config.toml's [notify] on is an empty list" }]
+  const out: Check[] = []
+  const first: Notifier = mode === "auto" ? (r.remote ? "osc" : "native") : mode
+  const chain = fallbacks(first).filter((k) => k !== "native" || r.native)
+  const some = on.length < NOTIFY_KINDS.length ? ` (only ${on.join(", ")}, by [notify] on)` : ""
+  const [lead, ...rest] = chain.map((k) => NOTIFIER_WORDS[k])
+  out.push({ area: "notify", state: "ok", text: `with a Candle Harness window open, the main view tells you while its window isn't in front: ${lead}${rest.length ? `, else ${rest.join(", else ")}` : ""}${some}` })
+  const native = r.core?.native ?? r.native
+  const who = r.core ? "the running core" : "a core started here"
+  if (native) out.push({ area: "notify", state: "ok", text: `with no Candle Harness window open, ${who} shows your computer's own notification` })
+  if (r.platform === "darwin" && (native || chain.includes("native"))) out.push({ area: "notify", state: "ok", text: MAC_BANNER_WORDS })
+  if (!native) {
+    out.push({
+      area: "notify",
+      state: r.triggersOn ? "warn" : "ok",
+      text: `with no Candle Harness window open, nothing reaches you: ${who} ${r.core ? "has" : "would have"} no screen to show a notification on (over SSH, on a VPS or in a container)${r.triggersOn ? `, and ${r.triggersOn === 1 ? "a trigger is" : `${r.triggersOn} triggers are`} on` : ""}`,
+      ...(r.triggersOn ? { fix: "Keep the Candle Harness open in tmux and reattach over SSH to be told: its main view sends the terminal's notification. A trigger's card still waits only 60 s." } : {}),
+    })
+  }
+  return out
+}
+
+async function notifyChecks(p: Paths, config: Config | undefined, env: Record<string, string | undefined>, coreUp: boolean): Promise<Check[]> {
+  let core: NotifyRead["core"]
+  if (coreUp) {
+    core = await (async () => {
+      const { connection } = await connectView({ socketPath: p.socket, viewTokenPath: p.viewToken, clientName: DOCTOR_CLIENT })
+      try {
+        const n = record(record(await connection.request("core.status", {}))?.notify)
+        return typeof n?.native === "boolean" ? { native: n.native } : undefined
+      } finally {
+        connection.close()
+      }
+    })().catch(() => undefined)
+  }
+  return notifyWords({
+    settings: config?.notify ?? DEFAULT_NOTIFY,
+    remote: isRemote(env),
+    native: canNotifyNative(process.platform, env),
+    triggersOn: triggersOn(p).length,
+    platform: process.platform,
+    ...(core ? { core } : {}),
+  })
 }

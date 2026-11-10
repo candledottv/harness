@@ -3,7 +3,7 @@
 // your own is a table there, started as a copy of one. The tabs are a list there too, each naming the
 // layout it starts on. Edits in the Candle Harness write the file whole, and its first line says so; a hand edit is
 // read when the view starts or from the layout menu's "reload". The file is never needed: without it,
-// the tabs are the eight defaults, each on its preset. A file that doesn't parse, or a
+// the tabs are the five a fresh install shows, each on its preset, and the other five ticked off. A file that doesn't parse, or a
 // layout or tab that doesn't hold together, is named with its line, and the presets stand in: it never
 // stops the Candle Harness opening.
 //
@@ -32,11 +32,11 @@
 // pane added to a preset later reaches a layout saved from it). When the preset
 // gains a pane, the tab bar offers it once.
 import { keysIn } from "../config-settings"
-import { AGENT_FIRST, COCKPIT, GAP, JOURNAL, type Layout, type LayoutNode, leafOf, PANE_IDS, type PaneId, panesOf, PERPS, place, PNL, RESEARCH, SIGNALS, type Split, stackedWith, TRENDING } from "./layout"
+import { AGENT_FIRST, BOTS, BUILD, COCKPIT, GAP, JOURNAL, type Layout, type LayoutNode, leafOf, PANE_IDS, type PaneId, panesOf, PERPS, place, PNL, RESEARCH, SIGNALS, type Split, stackedWith, TRENDING } from "./layout"
 import { PANES } from "./panes/registry"
 import { MIN_COLS } from "./too-small"
 
-export const PRESETS: readonly Layout[] = [AGENT_FIRST, COCKPIT, TRENDING, SIGNALS, PNL, RESEARCH, JOURNAL, PERPS]
+export const PRESETS: readonly Layout[] = [AGENT_FIRST, COCKPIT, TRENDING, SIGNALS, PNL, RESEARCH, JOURNAL, PERPS, BOTS, BUILD]
 export const isPreset = (name: string): boolean => PRESETS.some((p) => p.name === name)
 
 /** A layout of yours' settings in layouts.toml. */
@@ -51,17 +51,32 @@ export interface Tab {
   layout: string
 }
 
-/** A fresh install's tabs, each named for its preset. */
-export const DEFAULT_TABS: readonly Tab[] = [
-  { name: "Trade", layout: AGENT_FIRST.name },
-  { name: "Cockpit", layout: COCKPIT.name },
-  { name: "Trending", layout: TRENDING.name },
-  { name: "Signals", layout: SIGNALS.name },
-  { name: "P&L", layout: PNL.name },
-  { name: "Research", layout: RESEARCH.name },
-  { name: "Journal", layout: JOURNAL.name },
-  { name: "Perps", layout: PERPS.name },
+/**
+ * Every tab the Candle Harness knows, in order, each named for its preset, and whether a fresh install shows it. Five
+ * show: Trade, Cockpit, Research, Bots and Build. The rest are a tick away in `settings ▾`: ten tabs at 80 columns
+ * shrank every other to a digit, and P&L is on every tab's status bar already.
+ */
+export const KNOWN_TABS: readonly { tab: Tab; shown: boolean }[] = [
+  { tab: { name: "Trade", layout: AGENT_FIRST.name }, shown: true },
+  { tab: { name: "Cockpit", layout: COCKPIT.name }, shown: true },
+  { tab: { name: "Trending", layout: TRENDING.name }, shown: false },
+  { tab: { name: "Signals", layout: SIGNALS.name }, shown: false },
+  { tab: { name: "P&L", layout: PNL.name }, shown: false },
+  { tab: { name: "Research", layout: RESEARCH.name }, shown: true },
+  { tab: { name: "Journal", layout: JOURNAL.name }, shown: false },
+  { tab: { name: "Perps", layout: PERPS.name }, shown: false },
+  { tab: { name: "Bots", layout: BOTS.name }, shown: true },
+  { tab: { name: "Build", layout: BUILD.name }, shown: true },
 ]
+
+/** Every tab the Candle Harness knows, shown or not: the ones a file that lists tabs gets unticked when it doesn't name them. */
+export const DEFAULT_TABS: readonly Tab[] = KNOWN_TABS.map((k) => k.tab)
+
+/** A fresh install's tabs on the tab bar: the five shown. */
+export const FRESH_TABS: readonly Tab[] = KNOWN_TABS.filter((k) => k.shown).map((k) => k.tab)
+
+/** A fresh install's tabs ticked off, each going back where it sits among the known tabs. */
+const FRESH_HIDDEN: readonly HiddenTab[] = KNOWN_TABS.flatMap((k, i) => (k.shown ? [] : [{ tab: k.tab, at: KNOWN_TABS.slice(0, i).filter((x) => x.shown).length }]))
 
 /** A tab ticked off, and where it goes back: after `at` of the tabs shown. */
 export interface HiddenTab {
@@ -82,7 +97,7 @@ export interface LayoutsFile {
   problems: string[]
 }
 
-export const EMPTY_FILE: LayoutsFile = { tabs: [...DEFAULT_TABS], hidden: [], added: [], own: [], problems: [] }
+export const EMPTY_FILE: LayoutsFile = { tabs: [...FRESH_TABS], hidden: FRESH_HIDDEN.map((h) => ({ ...h, tab: { ...h.tab } })), added: [], own: [], problems: [] }
 
 /** Every tab in order, shown or ticked off: the settings menu's ticks, and the file as written. */
 export function allTabs(file: Pick<LayoutsFile, "tabs" | "hidden">): { tab: Tab; shown: boolean }[] {
@@ -148,12 +163,15 @@ export function neededWidth(root: LayoutNode): number {
 /** A layout from a tree: the agent kept when it collapses, else its first pane, and the collapse at least what its panes need. */
 export function layoutOf(name: string, root: LayoutNode, collapse?: number): Layout {
   const panes = panesOf(root)
-  const keep = panes.includes("agent") ? "agent" : panes[0]!
+  const keep = panes.includes("agent") ? "agent" : panes.includes("build") ? "build" : panes[0]!
+  const below = Math.max(collapse ?? 0, neededWidth(root))
+  // The Build pane, kept, keeps its width and height, and the others fold into a strip under it, as Build's own tab does.
+  if (keep === "build") return { name, root, collapse: { below, keep, weights: [70, 30], fold: true } }
   // A kept pane at fixed rows (the short agent pane) stays across the foot when the layout collapses, with
   // the token pane over it when there are panes enough to switch (Trending, and a copy of it).
   const stack = leafOf(root, keep)?.rows !== undefined
   const also = stack ? stackedWith(root, keep) : undefined
-  return { name, root, collapse: { below: Math.max(collapse ?? 0, neededWidth(root)), keep, weights: also ? [55, 45] : [60, 40], ...(stack ? { stack: true as const } : {}), ...(also ? { with: also } : {}) } }
+  return { name, root, collapse: { below, keep, weights: also ? [55, 45] : [60, 40], ...(stack ? { stack: true as const } : {}), ...(also ? { with: also } : {}) } }
 }
 
 // ---------------------------------------------------------------------------------------------------------
@@ -189,7 +207,7 @@ const ROWS_MAX = 60
 /** A tree from the file's arrays, or the first problem with it: the file's own, and the agent's `build`. `parent`: the split it's in. */
 export function treeOf(raw: unknown, root: boolean, seen: Set<PaneId>, parent?: Split["dir"]): LayoutNode | string {
   if (typeof raw === "string") {
-    const m = /^\s*([a-z][a-z-]*)(?:\s+(\d+(?:\.\d+)?))?(?:\s+(rows))?\s*$/.exec(raw)
+    const m = /^\s*([a-z][a-z-]*(?::\d+)?)(?:\s+(\d+(?:\.\d+)?))?(?:\s+(rows))?\s*$/.exec(raw)
     if (!m) return `${quote(raw)} isn't a pane: write its id and weight, such as "token 60", or its rows in a column, such as "agent 8 rows"`
     const id = m[1] as PaneId
     if (!(PANE_IDS as readonly string[]).includes(id)) {
@@ -237,7 +255,7 @@ export function parseLayouts(source: string, file = "layouts.toml"): LayoutsFile
     const words = ((error as Error).message ?? "").replace(/^TOML Parse error: /, "")
     const token = /"([^"]+)"/.exec(words)?.[1]
     const line = token && source.includes(token) ? ` line ${lineOf(source, token)}` : ""
-    return { ...EMPTY_FILE, tabs: [...DEFAULT_TABS], problems: [`${file}${line} isn't valid TOML (${words}): the presets are used.`] }
+    return { ...EMPTY_FILE, problems: [`${file}${line} isn't valid TOML (${words}): the presets are used.`] }
   }
   const problems: string[] = []
   const at = (line: number, text: string) => problems.push(`${file} line ${line}: ${text}`)
@@ -292,8 +310,8 @@ export function parseLayouts(source: string, file = "layouts.toml"): LayoutsFile
   }
 
   // The tabs.
-  let tabs: Tab[] = [...DEFAULT_TABS]
-  let hidden: HiddenTab[] = []
+  let tabs: Tab[] = [...FRESH_TABS]
+  let hidden: HiddenTab[] = EMPTY_FILE.hidden.map((h) => ({ ...h }))
   let added: string[] = []
   if (top.tabs !== undefined) {
     const line = lineOf(source, "tabs")
@@ -326,6 +344,7 @@ export function parseLayouts(source: string, file = "layouts.toml"): LayoutsFile
       }
       if (read.length) {
         tabs = read.filter((r) => r.shown).map((r) => r.tab)
+        hidden = []
         let before = 0
         for (const r of read) {
           if (r.shown) before++

@@ -68,6 +68,14 @@ describe("turning a wallet on: its figures, then one click", () => {
     expect(r.state.overlay).toMatchObject({ kind: "approvals", wallet: 1, draft: { perTrade: 2, perDay: 10 }, row: 2 })
   })
 
+  test("↓ and ↑ keep a figure that reads, as ⏎ does; nothing is sent until the turn-on chip", () => {
+    const r = run([...toTee, ...type("2"), key("down"), ...type("6"), key("up")])
+    expect(r.effects).toEqual([])
+    expect(r.state.overlay).toMatchObject({ kind: "approvals", draft: { perTrade: 2, perDay: 6 }, row: 0 })
+    // One that doesn't read is left out, as before.
+    expect(run([...toTee, ...type("."), key("down")]).state.overlay).toMatchObject({ draft: {}, row: 1 })
+  })
+
   test("the turn-on chip sends the wallet and both figures", () => {
     const r = run([...toTee, ...type("$2"), key("return"), ...type("10.50"), key("return"), key("return")])
     expect(r.effects).toEqual([{ type: "autonomy", wallet: TEE, name: "tee-one", setting: "inside", perTradeUsd: 2, perDayUsd: 10.5 }])

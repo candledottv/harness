@@ -10,19 +10,19 @@
  │ ✓ Connect your agent     │ │                                                                                       │ 
  │                          │ │    ○ ask every time                               every trade is a card you approve   │ 
  │ ▸ Wallet and limits      │ │    ● trade inside limits                                                              │ 
- │   – a vault, or not      │ │      buys, sells and swaps inside two figures of its own run without a card, with     │ 
- │   ✓ its key              │ │      a receipt:                                                                       │ 
+ │   – a vault, or not      │ │      buys and swaps inside two figures of its own run without a card; every sell      │ 
+ │   ✓ its key              │ │      runs without one, whatever its size, unless slippage is looser:                  │ 
  │   ✓ its wallet           │ │        per trade     $1.50                                                            │ 
  │   ✓ limits               │ │        per day       $3         without a card                                        │ 
  │   ▸ approvals            │ │                                                                                       │ 
- │   · fund it, or paper    │ │  Every limit on the last step still holds, and the kill switch still stops it all.    │ 
- │                          │ │  Change it any time in settings ▾ → approvals.                                        │ 
+ │   · fund it, or paper    │ │  Every limit on the last step still holds, and the kill switch still holds buys and   │ 
+ │                          │ │  swaps; sells still go. Change it any time in settings ▾ → approvals.                 │ 
  │ · The tour               │ │                                                                                       │ 
  │                          │ │                                                                                       │ 
  │ · Where to start         │ │                                                                                       │ 
  │                          │ │                                                                                       │ 
  │                          │ │                                                                                       │ 
- │ about 3 minutes          │ │                                                                                       │ 
+ │ about 5 minutes          │ │                                                                                       │ 
  │ quit any time: it picks  │ │                                                                                       │ 
  │ up where you stopped     │ │                                                                                       │ 
  ╰──────────────────────────╯ ╰───────────────────────────────────────────────────────────────────────────────────────╯ 
@@ -42,13 +42,13 @@
 9: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 3ddc84/111419×1 dde2ea/111419×19 ffffff/111419×5 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×87 32fe9f/111419×1 ffffff/0b0d10×1
 10: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×26 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 32fe9f/111419×4 6cb6ff/111419×14 ffffff/111419×31 959dab/111419×34 ffffff/111419×2 32fe9f/111419×1 ffffff/0b0d10×1
 11: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 32fe9f/111419×1 dde2ea/111419×1 f6f8fb/111419×17 ffffff/111419×6 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 32fe9f/111419×4 6cb6ff/111419×19 ffffff/111419×62 32fe9f/111419×1 ffffff/0b0d10×1
-12: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 dde2ea/111419×2 959dab/111419×1 dde2ea/111419×1 959dab/111419×15 ffffff/111419×6 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 959dab/111419×80 ffffff/111419×5 32fe9f/111419×1 ffffff/0b0d10×1
-13: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 dde2ea/111419×2 3ddc84/111419×1 dde2ea/111419×1 959dab/111419×7 ffffff/111419×14 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 959dab/111419×14 ffffff/111419×71 32fe9f/111419×1 ffffff/0b0d10×1
+12: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 dde2ea/111419×2 959dab/111419×1 dde2ea/111419×1 959dab/111419×15 ffffff/111419×6 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 959dab/111419×79 ffffff/111419×6 32fe9f/111419×1 ffffff/0b0d10×1
+13: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 dde2ea/111419×2 3ddc84/111419×1 dde2ea/111419×1 959dab/111419×7 ffffff/111419×14 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 959dab/111419×67 ffffff/111419×18 32fe9f/111419×1 ffffff/0b0d10×1
 14: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 dde2ea/111419×2 3ddc84/111419×1 dde2ea/111419×1 959dab/111419×10 ffffff/111419×11 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 32fe9f/111419×2 dde2ea/111419×17 f6f8fb/1d2430×10 ffffff/111419×56 32fe9f/111419×1 ffffff/0b0d10×1
 15: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 dde2ea/111419×2 3ddc84/111419×1 dde2ea/111419×1 959dab/111419×6 ffffff/111419×15 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 32fe9f/111419×2 dde2ea/111419×17 f6f8fb/1d2430×10 959dab/111419×16 ffffff/111419×40 32fe9f/111419×1 ffffff/0b0d10×1
 16: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 dde2ea/111419×2 32fe9f/111419×1 dde2ea/111419×1 f6f8fb/111419×9 ffffff/111419×12 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×87 32fe9f/111419×1 ffffff/0b0d10×1
-17: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 dde2ea/111419×2 959dab/111419×1 dde2ea/111419×1 959dab/111419×17 ffffff/111419×4 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 959dab/111419×81 ffffff/111419×4 32fe9f/111419×1 ffffff/0b0d10×1
-18: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×26 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 959dab/111419×45 ffffff/111419×40 32fe9f/111419×1 ffffff/0b0d10×1
+17: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 dde2ea/111419×2 959dab/111419×1 dde2ea/111419×1 959dab/111419×17 ffffff/111419×4 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 959dab/111419×82 ffffff/111419×3 32fe9f/111419×1 ffffff/0b0d10×1
+18: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×26 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 959dab/111419×68 ffffff/111419×17 32fe9f/111419×1 ffffff/0b0d10×1
 19: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 959dab/111419×1 dde2ea/111419×1 959dab/111419×8 ffffff/111419×15 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×87 32fe9f/111419×1 ffffff/0b0d10×1
 20: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×26 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×87 32fe9f/111419×1 ffffff/0b0d10×1
 21: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 959dab/111419×1 dde2ea/111419×1 959dab/111419×14 ffffff/111419×9 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×87 32fe9f/111419×1 ffffff/0b0d10×1

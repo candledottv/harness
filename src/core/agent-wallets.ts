@@ -35,6 +35,11 @@ export interface TeeWallet {
   chain: string
   /** Candle's active flag from the portfolio, and the profile read's spendCapable: both, to pay from it. */
   active: boolean
+  /**
+   * Bound to the key and not stopped, but Candle doesn't list it as able to sign (spendCapable false): a
+   * fresh wallet whose signing policy Candle hasn't recorded. Nothing pays from it, and no owner step here changes that.
+   */
+  cantSign?: true
 }
 
 export interface Payable {
@@ -77,6 +82,8 @@ export interface WalletDeps {
   names?: () => WalletNameEntry[]
   /** The person's wallet groups: never a payer, so `from <group>` is refused by name. */
   groups?: () => WalletGroup[]
+  /** Whether Candle's own wallets read names this address as an imported (not TEE) wallet; undefined when it doesn't say. */
+  imported?: (address: string) => boolean | undefined
 }
 
 interface ProfileRow {
@@ -131,17 +138,25 @@ export function portfolioTee(portfolio: unknown): TeeWallet[] {
 /**
  * The key's rows, joined to the portfolio. A row that isn't spendCapable stays listed, as not active:
  * what spendCapable says for a stopped wallet was never recorded, and dropping it would have the
- * wallet named as another key's. Once the portfolio is read, a row it doesn't list as a TEE wallet (an
- * imported linked wallet, which the Candle Harness doesn't pay from) is left out.
+ * wallet named as another key's. Once the portfolio is read, a row it doesn't list as a TEE wallet is
+ * left out when it's an imported linked wallet, which the Candle Harness doesn't pay from. One Candle can't
+ * sign for yet (a fresh TEE wallet whose signing policy Candle hasn't recorded) is missing from the
+ * portfolio's TEE list too; it stays, marked, so it doesn't vanish from the panes and the approvals menu
+ * after each portfolio read, and a refusal can say why.
  */
-export function joinTee(rows: readonly ProfileRow[], portfolio: unknown): TeeWallet[] {
+export function joinTee(rows: readonly ProfileRow[], portfolio: unknown, imported?: (address: string) => boolean | undefined): TeeWallet[] {
   const account = portfolio === undefined ? undefined : new Map(portfolioTee(portfolio).map((w) => [w.id, w]))
   const out: TeeWallet[] = []
   for (const row of rows) {
     const known = account?.get(row.id)
-    if (account && !known) continue
+    if (account && !known) {
+      if (row.spendCapable || imported?.(row.address) === true) continue
+      out.push({ id: row.id, address: row.address, ...(row.label ? { label: row.label } : {}), chain: row.chain, active: false, cantSign: true })
+      continue
+    }
     const l = known?.label ?? row.label
-    out.push({ id: row.id, address: row.address, ...(l ? { label: l } : {}), chain: known?.chain ?? row.chain, active: (known?.active ?? true) && row.spendCapable })
+    const stopped = known?.active === false
+    out.push({ id: row.id, address: row.address, ...(l ? { label: l } : {}), chain: known?.chain ?? row.chain, active: !stopped && row.spendCapable, ...(!stopped && !row.spendCapable ? { cantSign: true as const } : {}) })
   }
   return out
 }
@@ -226,7 +241,7 @@ export function resolvePayer(ctx: PayerContext, word?: string): PayerResult {
     if (ctx.embeddedWallet === "denied") {
       return {
         code: "EMBEDDED_WALLET_NOT_PERMITTED",
-        sentence: `${agent}'s key isn't allowed to trade from the account's embedded wallet. The owner allows it in their own terminal: ${allow}.`,
+        sentence: `${agent}'s key isn't allowed to trade from the account's embedded wallet. The owner allows it by typing this in the Candle Harness, where it runs in the prompt pane as them: ${allow}.`,
         clause: `its key isn't allowed the embedded wallet (the owner allows it with ${allow})`,
       }
     }
@@ -241,6 +256,7 @@ export function resolvePayer(ctx: PayerContext, word?: string): PayerResult {
     const name = walletName(names, { ...t, kind: "tee" })
     if (free) return { code: "TEE_TIER_REQUIRED", sentence: `${name} is a TEE wallet, and TEE wallets are a Pro or Max feature: this account is on Free.`, clause: "TEE wallets are a Pro or Max feature, and this account is on Free" }
     if (t.chain !== "solana") return { code: "HOOD_TEE_LATER", sentence: `${name} is a Hood TEE wallet: trades from Hood TEE wallets come in a later release.`, clause: "it's a Hood TEE wallet, and trades from those come in a later release" }
+    if (t.cantSign) return { code: "TEE_WALLET_CANT_SIGN", sentence: `Candle doesn't list ${name} as able to sign for ${agent}'s key yet, so nothing can trade from it. That's on Candle's side: no owner step here changes it, so it isn't a stopped wallet and needs no enable or rebind.`, clause: "Candle doesn't list it as able to sign yet (on Candle's side; no owner step changes it)" }
     if (!t.active) return { code: "TEE_WALLET_INACTIVE", sentence: `${name} is stopped on Candle's side (inactive), so nothing can trade from it.`, clause: "it's stopped on Candle's side (inactive)" }
     // `label` is what the wallet is called (its name in the book, Candle's label or the Candle Harness's stand-in): what the card says.
     const called = names.find((e) => e.address === t.address)?.name ?? t.label
@@ -400,7 +416,7 @@ export class AgentWallets {
     const read = this.reads.get(agent) ?? { rows: [], readAt: undefined, unreadable: [] }
     return {
       ...(status?.embeddedWallet === "allowed" && status.wallets.solana ? { embedded: { address: status.wallets.solana, chain: "solana" as const } } : {}),
-      tee: joinTee(read.rows, this.deps.portfolio()),
+      tee: joinTee(read.rows, this.deps.portfolio(), this.deps.imported),
       readAt: read.readAt,
       unreadable: [...read.unreadable],
       ...(status?.tier ? { tier: status.tier } : {}),
@@ -475,8 +491,13 @@ export class AgentWallets {
     return agent ? this.payable(agent).tee : []
   }
 
-  async refreshAll(): Promise<void> {
-    for (const agent of this.deps.agents()) await this.refresh(agent)
+  /** `readSince`: an agent whose status was read at or after this time is left as read, so one step doesn't read a key twice. */
+  async refreshAll(opts: { readSince?: number } = {}): Promise<void> {
+    for (const agent of this.deps.agents()) {
+      const readAt = this.deps.status.get(agent)?.readAt
+      if (opts.readSince !== undefined && readAt !== undefined && readAt >= opts.readSince) continue
+      await this.refresh(agent)
+    }
   }
 
   async refresh(agent: string): Promise<Payable> {

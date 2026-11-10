@@ -51,6 +51,8 @@ import { DEFAULT_TOOLS, RESEARCH_NAMES, type ResearchName, shellFor, type ToolSe
 
 /** The version the read checks passed on: the `strict` profile, and a custom profile's fail-closed `deny`. */
 export const MIN_GROK = "1.0.70"
+/** The newest version its holds were checked on; a newer major version is said, never blocked. */
+export const CHECKED_GROK = "1.0.77"
 
 /** Our sandbox profile's name in the private home's sandbox.toml. */
 export const GROK_PROFILE = "candle"
@@ -420,6 +422,7 @@ export function grokEngine(bin: string, o: { homesDir: string; grokHome?: string
     id: "grok",
     label: "Grok",
     minVersion: MIN_GROK,
+    checkedVersion: CHECKED_GROK,
     capabilities: () => ({ webSearch: true, webFetch: true, files: "own", shellList: true, deltas: true }),
     // Whether its sign-in file is there; the Candle Harness never reads it.
     signedIn: async (env) => existsSync(realAuth(env)),

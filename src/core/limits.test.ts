@@ -101,6 +101,24 @@ describe("per day", () => {
     expect(limits.check({ usd: 9, side: "buy", agent: "momentum", now: NOON }).ok).toBe(false)
   })
 
+  test("a swap that failed at its second leg spent its first: it still counts, now and after a restart", () => {
+    const { spend } = setup()
+    spend.record("swap", "momentum", 40, NOON)
+    // The core settles it under its own word, since "failed" alone means nothing left the wallet.
+    spend.settle("swap", "partial")
+    expect(spend.spent("momentum", NOON)).toBe(40)
+    const at = new Date(NOON).toISOString()
+    const row = (type: string, extra: Record<string, unknown>) => ({ seq: 0, at, type, account: "a", mode: "live", ...extra }) as JournalRow
+    const rebuilt = new DaySpend()
+    rebuilt.rebuild([
+      row("card.approved", { opId: "s1", agent: "momentum", usd: 40, side: "swap" }),
+      row("operation.failed", { opId: "s1", partial: { leg1: "LEG1HASH" } }),
+      row("card.approved", { opId: "s2", agent: "momentum", usd: 7, side: "swap" }),
+      row("operation.failed", { opId: "s2" }),
+    ])
+    expect(rebuilt.spent("momentum", NOON)).toBe(40)
+  })
+
   test("the day is rebuilt from the journal", () => {
     const at = new Date(NOON).toISOString()
     const row = (type: string, extra: Record<string, unknown>) => ({ seq: 0, at, type, account: "a", mode: "live", ...extra }) as JournalRow

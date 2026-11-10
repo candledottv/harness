@@ -20,6 +20,10 @@ export interface Paths {
   layoutsFile: string
   /** The Candle Harness's own names for wallets Candle holds no label for: beside config.toml, the core's to write. */
   walletsFile: string
+  /** Triggers: beside config.toml, written whole by the core when one is saved, switched or removed. */
+  triggersFile: string
+  /** Rules bots: beside config.toml, written whole by the core when one is saved, narrowed, paused, stopped, resumed or removed. */
+  botsFile: string
   /** `--pairs-from` files the core writes for a batch rename, 0600, one per card. */
   renamesDir: string
   /** Themes of your own: `themes/<name>.toml` beside config.toml, read by the view only. */
@@ -53,6 +57,20 @@ export interface Paths {
   walletsShown: string
   /** Each wallet's autonomy, ask every time or trade inside limits with its figures (0600). No config key sets it. */
   autonomyState: string
+  /** Each trigger's state: switched on, armed or fired, last fired, cooldowns, and the line it was approved as. */
+  triggersState: string
+  /** Each bot's state: on, paused or stopped and by whom, the hash it was approved as, its approved versions. */
+  botsState: string
+  /** Each code bot's state, as botsState for rules bots: its approved run settings by hash and its versions (0600). */
+  codeBotsState: string
+  /** The supervisor's record of each code bot's process: run outside, stopped, given up, and the pid it started. */
+  supervisorState: string
+  /** Each supervised code bot's log, the last 5 MB, redacted. */
+  botLogsDir: string
+  /** Each open bot position's highest price since its entry (0600), for a trailing exit: a price isn't a journal row. */
+  botPeaks: string
+  /** Where the rules bots' full tape was last heard (0600): a restart reads on from it. */
+  botSignalsCursor: string
   /** That this machine has had a vault (0600): with it and no vault, owner steps are refused, never run without the factor. */
   vaultSeen: string
   /** Onboarding's progress (0600): the step reached, and what each step did, read back on resume. */
@@ -75,6 +93,8 @@ export interface Paths {
   pnlSamples: string
   /** The P&L window last picked, and when the main view was last closed (0600); config.toml's [pnl] window is where a fresh install starts. */
   pnlWindow: string
+  /** The Build pane's bots folder and harness, as last chosen. */
+  buildPrefs: string
   /** The last "while you were away" summary, and what the wallets held at the main view's last close (0600). */
   awayState: string
   /** Image uploads' files, copied in when a card is made, so the upload is the file the card showed. */
@@ -142,6 +162,8 @@ export function paths(env: Record<string, string | undefined> = process.env): Pa
     configFile: join(configDir, "config.toml"),
     layoutsFile: join(configDir, "layouts.toml"),
     walletsFile: join(configDir, "wallets.toml"),
+    triggersFile: join(configDir, "triggers.toml"),
+    botsFile: join(configDir, "bots.toml"),
     themesDir: join(configDir, "themes"),
     skillsDir: join(configDir, "skills"),
     stateDir,
@@ -163,6 +185,13 @@ export function paths(env: Record<string, string | undefined> = process.env): Pa
     activeState: join(stateDir, "active.json"),
     walletsShown: join(stateDir, "wallets-shown.json"),
     autonomyState: join(stateDir, "autonomy.json"),
+    triggersState: join(stateDir, "triggers.json"),
+    botsState: join(stateDir, "bots.json"),
+    codeBotsState: join(stateDir, "code-bots.json"),
+    supervisorState: join(stateDir, "supervisor.json"),
+    botLogsDir: join(stateDir, "bot-logs"),
+    botPeaks: join(stateDir, "bot-peaks.json"),
+    botSignalsCursor: join(stateDir, "bot-signals.json"),
     vaultSeen: join(stateDir, "vault-seen.json"),
     onboarding: join(stateDir, "onboarding.json"),
     symbols: join(stateDir, "symbols.json"),
@@ -171,6 +200,7 @@ export function paths(env: Record<string, string | undefined> = process.env): Pa
     signalsFilters: join(stateDir, "signals-filters.json"),
     pnlSamples: join(stateDir, "pnl.jsonl"),
     pnlWindow: join(stateDir, "pnl-window.json"),
+    buildPrefs: join(stateDir, "build.json"),
     awayState: join(stateDir, "away.json"),
     layoutChoice: join(stateDir, "layout.json"),
     themeChoice: join(stateDir, "theme.json"),
@@ -215,7 +245,7 @@ export async function ensureStateDir(p: Paths): Promise<void> {
  */
 export function configProblem(p: Paths): { path: string; why: string; fix: string } | undefined {
   const uid = typeof process.getuid === "function" ? process.getuid() : undefined
-  for (const path of [p.configDir, p.configFile, p.layoutsFile, p.walletsFile]) {
+  for (const path of [p.configDir, p.configFile, p.layoutsFile, p.walletsFile, p.triggersFile, p.botsFile]) {
     let info
     try {
       info = statSync(path)

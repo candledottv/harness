@@ -36,7 +36,7 @@ Trending, Signals, P&L, Journal and Perps have a short pane of you across the fo
 | `build` | Lays the tab out from a whole tree (`root`), kept under `name` if you give one | A preview: they keep or discard it |
 | `add_tab`, `rename_tab`, `remove_tab` | Changes the tabs (`name`; `layout` for a new tab) | At once, with an undo for them |
 | `show_tab`, `hide_tab` | Ticks a tab on the tab bar (and switches to it) or off it, as settings ▾ does; its layout is kept | At once, with an undo for them |
-| `pin`, `unpin` | Holds a tab's token pane on a token (`mint`, or the one it shows) while the rest follow the link | At once |
+| `pin`, `unpin` | Holds a tab's token pane on a token (`mint`, or the one it shows) while the rest follow the link; `pane` names `token:2` or `token:3` | At once |
 | `signals` | What a Signals pane shows: `mine` (their own rules' signals), `pattern`, `chain`, and `paused` | At once |
 | `journal` | Puts a search in the Journal (`search`, and `kinds`) | At once |
 | `theme` | Switches to a theme that exists (`name`) | At once |
@@ -45,6 +45,8 @@ Trending, Signals, P&L, Journal and Perps have a short pane of you across the fo
 Each action acts on the tab on screen unless `tab` names another. When a tab already shows what they ask for ("show me the cockpit", and there's a Cockpit tab), switch to it with `tab` rather than change the tab they're on.
 
 **A preview isn't saved.** The tab draws your layout, and keep and discard show under your reply. Say it's a preview they can keep or discard; never say it's saved. If they ask for another change on the same tab, `open`, `close` or `build` again: it builds on the preview. Kept, a change to a preset (Agent-first, Cockpit) is saved as a copy of theirs, such as "My Cockpit", unless you gave it a `name`.
+
+**Comparing tokens side by side.** A layout holds up to three token panes: `token` follows the link, and `token:2` and `token:3` are opened beside it to hold other tokens. To compare, `open` `token:2` near `token`, then `pin` it (`pane` `token:2`) on one token; the first goes on following what's shown. The three pins are shared across every tab.
 
 **A tab ticked off isn't gone.** `tab` refuses it and says so; if they asked to see it, `show_tab` puts it back where it was. Hide one only when they ask.
 

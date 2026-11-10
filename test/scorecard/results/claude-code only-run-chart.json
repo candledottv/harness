@@ -1,0 +1,97 @@
+{
+  "engine": "claude-code",
+  "model": null,
+  "ran": {
+    "engine": "claude-code",
+    "engineVersion": "2.1.319",
+    "model": null,
+    "answeredModel": "claude-opus-5-5"
+  },
+  "at": "2026-11-09T02:36:45.786Z",
+  "results": [
+    {
+      "id": "run-chart",
+      "pass": true,
+      "checks": [
+        {
+          "name": "the turn ended with a reply",
+          "pass": true
+        },
+        {
+          "name": "ran a script with research_run",
+          "pass": true
+        },
+        {
+          "name": "a run exited cleanly",
+          "pass": true
+        },
+        {
+          "name": "gave the high the script computed",
+          "pass": true
+        },
+        {
+          "name": "gave the low the script computed",
+          "pass": true
+        },
+        {
+          "name": "proposed nothing",
+          "pass": true
+        }
+      ],
+      "notes": {
+        "skillRead": false,
+        "tools": [
+          "mcp__candle__research_list",
+          "mcp__candle__research_list",
+          "mcp__candle__research_read",
+          "mcp__candle__research_run"
+        ],
+        "figures": 5,
+        "marked": 0,
+        "ms": 16495
+      },
+      "turns": [
+        {
+          "user": "Chart the last hour of MOON's prices from my notes, with the hour's high, low and change.",
+          "reply": "MOON finished the hour up **4.41%**, from $0.6034 at 01:36 to $0.6300 at 02:36 (UTC). This is worked out from the 61 one-minute prices in `notes/moon-prices.csv`. I didn't check them against a live read.\n\n| | Price | Time |\n|---|---|---|\n| Open | $0.6034 | 01:36 |\n| **Low** | **$0.5873** | 01:48 |\n| **High** | **$0.6512** | 02:13 |\n| Close | $0.6300 | 02:36 |\n| Change | +$0.0266 (+4.41%) | |\n\n```\n$0.6512 │                                     ••••\n$0.6454 │                                  •••    ••••••\n$0.6396 │                                ••             ••••••\n$0.6338 │                             •••                     •••••••\n$0.6280 │                           ••                               •\n$0.6222 │                         ••\n$0.6163 │                       ••\n$0.6105 │                     ••\n$0.6047 │••                •••\n$0.5989 │  ••••          ••\n$0.5931 │      ••••    ••\n$0.5873 │          ••••\n        └─────────────────────────────────────────────────────────────\n         01:36       01:48       02:00       02:12       02:24     02:36\n```\n\nThe price fell for 12 minutes to the low, then climbed steadily for 25 minutes to the high, about 10.9% above the low. Since 02:13 it has been easing back slowly, by about 0.0010 a minute. It now sits 3.3% below the high. I couldn't save a PNG of the chart because matplotlib isn't installed in the research sandbox.\n\nDo you want me to pull MOON's live price and the last hour of 1-minute bars from Candle to compare with your notes?",
+          "outcome": "done"
+        }
+      ],
+      "record": {
+        "turns": [
+          {
+            "user": "Chart the last hour of MOON's prices from my notes, with the hour's high, low and change.",
+            "reply": "MOON finished the hour up **4.41%**, from $0.6034 at 01:36 to $0.6300 at 02:36 (UTC). This is worked out from the 61 one-minute prices in `notes/moon-prices.csv`. I didn't check them against a live read.\n\n| | Price | Time |\n|---|---|---|\n| Open | $0.6034 | 01:36 |\n| **Low** | **$0.5873** | 01:48 |\n| **High** | **$0.6512** | 02:13 |\n| Close | $0.6300 | 02:36 |\n| Change | +$0.0266 (+4.41%) | |\n\n```\n$0.6512 │                                     ••••\n$0.6454 │                                  •••    ••••••\n$0.6396 │                                ••             ••••••\n$0.6338 │                             •••                     •••••••\n$0.6280 │                           ••                               •\n$0.6222 │                         ••\n$0.6163 │                       ••\n$0.6105 │                     ••\n$0.6047 │••                •••\n$0.5989 │  ••••          ••\n$0.5931 │      ••••    ••\n$0.5873 │          ••••\n        └─────────────────────────────────────────────────────────────\n         01:36       01:48       02:00       02:12       02:24     02:36\n```\n\nThe price fell for 12 minutes to the low, then climbed steadily for 25 minutes to the high, about 10.9% above the low. Since 02:13 it has been easing back slowly, by about 0.0010 a minute. It now sits 3.3% below the high. I couldn't save a PNG of the chart because matplotlib isn't installed in the research sandbox.\n\nDo you want me to pull MOON's live price and the last hour of 1-minute bars from Candle to compare with your notes?",
+            "outcome": "done",
+            "tools": [
+              "mcp__candle__research_list",
+              "mcp__candle__research_list",
+              "mcp__candle__research_read",
+              "mcp__candle__research_run"
+            ],
+            "reasked": false,
+            "figures": 5,
+            "marked": []
+          }
+        ],
+        "cards": [],
+        "triggers": [],
+        "bots": [],
+        "memoryChanges": 0,
+        "runs": [
+          {
+            "program": "python3",
+            "exitCode": 0
+          }
+        ],
+        "hacc": []
+      },
+      "ran": {
+        "engine": "claude-code",
+        "engineVersion": "2.1.319",
+        "model": null,
+        "answeredModel": "claude-opus-5-5"
+      }
+    }
+  ]
+}

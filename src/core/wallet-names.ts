@@ -14,6 +14,7 @@
 // address only; the doctor names it with the rename that fixes it.
 //
 // Cards, hashes and the CLI's argv keep passing wallets by address: a name is only ever looked up.
+import { addressKey } from "../shared/address-key"
 import { terminalText } from "../shared/terminal-text"
 
 /** An address as the screen shortens it: its first and last four characters. The one copy (a test refuses another). */
@@ -47,8 +48,7 @@ const EVM = /^0x[0-9a-fA-F]{40}$/
 const SHORT = /^(0x)?[0-9A-Za-z]{2,6}\s*(…|\.{2,3})\s*[0-9A-Za-z]{2,6}$/
 
 export const isAddressShaped = (word: string): boolean => SOLANA.test(word) || EVM.test(word)
-/** The key two spellings of one address share: EVM ignores case; Solana doesn't. */
-export const addressKey = (address: string): string => (address.startsWith("0x") ? address.toLowerCase() : address)
+export { addressKey }
 
 /** A name as compared: as the screen draws it, any case. "Hot" and "hot", or a name with an invisible character in it, are one. */
 export const fold = (name: string): string => terminalText(name).normalize("NFKC").toLowerCase()

@@ -543,6 +543,7 @@ describe("the CLI route through Operations", () => {
     const s = await opsSetup({ runs: [], swaps: [{ found: true, state: "succeeded", job: { status: "submitted", settlement: { state: "settled" } } }] })
     await s.journal.append({ type: "operation.submitting", mode: "live", agent: "momentum", opId: "op-9", cardId: "card-9", kind: "swap", tool: "candle_swap", params: teeCard("swap", "op-9").params, cardExpiresAt: T0 + 60_000, route: "cli", wallet: TEE_A })
     const turned = await s.ops.rebuild(s.journal.rows())
+    s.ops.readBack()
     expect(turned).toEqual(["op-9"])
     expect(s.ops.get("op-9")).toMatchObject({ state: "unknown", route: "cli", reason: "core_restarted" })
     await s.tick()
