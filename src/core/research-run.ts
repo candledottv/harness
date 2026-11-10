@@ -284,7 +284,8 @@ export function parsePs(out: string): PsRow[] {
     .map(([pid, ppid, pgid, rssKb]) => ({ pid: pid!, ppid: ppid!, pgid: pgid!, rssKb: rssKb! }))
 }
 
-async function psRows(): Promise<PsRow[]> {
+/** Every process's pid, parent, group and memory, by `ps` at its full path. */
+export async function psRows(): Promise<PsRow[]> {
   try {
     const ps = Bun.spawn(["/bin/ps", "-A", "-o", "pid=,ppid=,pgid=,rss="], { stdout: "pipe", stderr: "ignore" })
     return parsePs(await new Response(ps.stdout).text())
@@ -323,7 +324,8 @@ export function parseStrayPs(out: string): StrayRow[] {
   return rows
 }
 
-async function strayRows(): Promise<StrayRow[]> {
+/** Every process's pid, parent, owner, age and program, by `ps` at its full path. */
+export async function strayRows(): Promise<StrayRow[]> {
   try {
     const ps = Bun.spawn(["/bin/ps", "-A", "-o", "pid=,ppid=,uid=,etime=,comm="], { stdout: "pipe", stderr: "ignore" })
     return parseStrayPs(await new Response(ps.stdout).text())
