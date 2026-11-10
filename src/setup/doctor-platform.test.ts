@@ -19,6 +19,7 @@ test("a core on another version warns with how to restart it; the same version, 
   const [check] = coreVersionChecks("0.5.0", "0.5.1")
   expect(check).toMatchObject({ area: "core", state: "warn" })
   expect(check!.text).toBe("the core that's running is still 0.5.0, and this is 0.5.1. It carries on as 0.5.0, with its triggers and bots, until it's restarted")
+  expect(check!.fix).toContain("choose `restart it` in its status bar")
   expect(check!.fix).toContain("`candle-harness stop`, then open candle-harness again")
 })
 

@@ -442,7 +442,7 @@ describe("a core the old version left running", () => {
   test("is named with its version and how to restart it, and is never stopped from here", () => {
     const r = install("core 1.2.2\n")
     expect(r.code).toBe(0)
-    expect(r.out).toContain("A core from 1.2.2 is still running, with its triggers and bots. It carries on as 1.2.2 until it's restarted: candle-harness stop, then open candle-harness again.")
+    expect(r.out).toContain("A core from 1.2.2 is still running, with its triggers and bots. It carries on as 1.2.2 until it's restarted: open candle-harness and choose restart it in its status bar.")
   })
 
   test("nothing is said with no core running, with one already on this version, or when the answer isn't a version", () => {

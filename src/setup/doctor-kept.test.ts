@@ -61,6 +61,14 @@ test("a headless core runs until it's stopped; keep-awake on macOS, and set wher
   expect(texts(keptRunningWords({ platform: "linux", on: [], keepAwake: false }))).toEqual(["ok trigger: no trigger is on"])
 })
 
+test("the login service's own core is called the service's, not headless; another core beside a loaded service is still headless", () => {
+  const service = (running?: number) => ({ installed: true as const, file: "/h/Library/LaunchAgents/tv.candle.harness.core.plist", loaded: true, ...(running ? { running } : {}), words: running ? `loaded, its core running (pid ${running})` : "loaded, its core not running now" })
+  const words = texts(keptRunningWords({ platform: "linux", on: [], keepAwake: false, core: { pid: 450, headless: true, holds: [] }, service: service(450) }))
+  expect(words[0]).toBe("ok core: the running core (pid 450) is the login service's: it runs until `candle-harness stop`, and starts again at your next login")
+  expect(words.join("\n")).not.toContain("headless")
+  expect(texts(keptRunningWords({ platform: "linux", on: [], keepAwake: false, core: { pid: 9, headless: true, holds: [] }, service: service() }))[0]).toBe("ok core: the running core (pid 9) is headless: it runs until `candle-harness stop`")
+})
+
 test("triggers.toml's problems and a line that reads differently now are named", () => {
   const checks = keptRunningWords({
     platform: "linux",

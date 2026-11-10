@@ -15,6 +15,7 @@ import { App } from "./app"
 import { quitNote } from "./status-bar"
 import type { StatusView } from "./store"
 import { attachView, restartCore } from "./attach"
+import { defaultServiceDeps, startServiceCore } from "../setup/service"
 import { makePaneSpawner } from "./pane-process"
 import { makeBuildSpawner } from "./build-process"
 import { PoppedApp } from "./popped"
@@ -180,7 +181,9 @@ export async function runView(paths: Paths, err: (text: string) => void, options
     const popOut = makePopper({ self: selfCommand(), env: process.env })
     const onPaste = pasteLogger(process.env)
     // A core that kept running through an update: the status bar's chip stops it and starts this binary's.
-    const restart = () => restartCore({ paths, self: selfCommand(), env: process.env, request: (method, params) => session.request(method, params) })
+    // With the login service loaded, the service starts the new core, so triggers and bots outlive the view.
+    const startService = () => startServiceCore(defaultServiceDeps(process.env, selfCommand(), process.env.USER)) === "started"
+    const restart = () => restartCore({ paths, self: selfCommand(), env: process.env, request: (method, params) => session.request(method, params), startService })
     createRoot(renderer).render(<App session={session} onQuit={() => renderer.destroy()} restartCore={restart} spawnPane={spawnPane} spawnBuild={spawnBuild} popOut={popOut} layouts={fileStore(paths)} {...theme} {...(configChangedAt !== undefined ? { configChangedAt } : {})} {...(options.onboarding ? { onboarding: options.onboarding } : {})} {...(onPaste ? { onPaste } : {})} />)
   })
   const note = await quit
