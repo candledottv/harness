@@ -2,6 +2,21 @@
 
 What changed in each version of Candle Harness (called the Candle TUI before 0.3.0). Versions follow [semantic versioning](https://semver.org), and each release is listed on [GitHub](https://github.com/candledottv/harness/releases).
 
+## 0.5.6 (2026-11-10)
+
+Fixes from Candle's review of 0.5.5. None of them changes what can pay, beyond the second below, which narrows it.
+
+### Safety and correctness
+
+- **The confirm link is shown only on Candle's site.** For an owner step whose answer the Harness reads (making a key), the prompt pane shows the browser confirm's link only when it's on `candle.tv` over https, or on this machine. Any other link is withheld: the pane names its host and says not to approve, and the step ends unapproved when its code expires. Other owner steps print the CLI's own words as they are.
+- **Candle's trading-wallets read is read to its last page, and decides.** Where the agent's MCP server has it, every page is read (up to ten). A complete read is the whole list of what may trade, so a wallet it leaves out can't pay, whatever the key's own list says. A read cut short leaves the wallets it didn't reach as the key's list says.
+- **A Solana wallet is never taken for a Hood one** when the key's list and the portfolio are matched by address.
+
+### Tests
+
+- The wallet join by address has tests that fail if it's reverted to ids: another id with no trading read, a Hood address in another letter case, and a Solana address in another case, which is another wallet.
+- The trade-path bench is held to 50 ms again, and isn't part of the release gate: on a shared CI runner it measured the runner rather than the code.
+
 ## 0.5.5 (2026-11-10)
 
 The first release since 0.3.0, and it carries everything in 0.5.2, 0.5.3 and 0.5.4 below. **Update from 0.3.0:** see the first line under 0.5.2's "Safety and correctness".

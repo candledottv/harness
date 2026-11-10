@@ -136,11 +136,11 @@ export interface TradingRow {
 }
 
 /**
- * candle_get_trading_wallets' answer (`page` of the key's wallets, each with `id`, `address`, `chain`, `label`, `active`
- * and `walletKind`), or undefined for any other shape. Only TEE wallets: the embedded wallet is read from the status.
- * `complete` is false while Candle says more pages follow, so a wallet missing from it says nothing.
+ * One page of candle_get_trading_wallets' answer (`page` of the key's wallets, each with `id`, `address`, `chain`,
+ * `label`, `active` and `walletKind`), or undefined for any other shape. Only TEE wallets: the embedded wallet is read
+ * from the status. `complete` is false while Candle says more pages follow, with the `cursor` that reads the next.
  */
-export function parseTradingWallets(result: unknown): { rows: TradingRow[]; complete: boolean } | undefined {
+export function parseTradingWallets(result: unknown): { rows: TradingRow[]; complete: boolean; cursor?: string } | undefined {
   const body = record(result)
   if (!body || !Array.isArray(body.page)) return undefined
   const rows: TradingRow[] = []
@@ -152,18 +152,25 @@ export function parseTradingWallets(result: unknown): { rows: TradingRow[]; comp
     const l = label(w.label)
     rows.push({ id: w.id, address: w.address, ...(l ? { label: l } : {}), chain, active: w.active === true })
   }
-  return { rows, complete: body.isDone !== false }
+  const complete = body.isDone !== false
+  return { rows, complete, ...(!complete && typeof body.continueCursor === "string" && body.continueCursor !== "" ? { cursor: body.continueCursor } : {}) }
 }
+
+/** Pages of the trading read followed before it's taken as cut short. */
+export const TRADING_PAGES_MAX = 10
 
 /**
  * The key's rows with the trading read laid over them: a wallet both name takes the trading read's id and `active` as its
- * `spendCapable`; one only the trading read names is bound to the key too. Without a trading read, the rows as they are.
+ * `spendCapable`; one only the trading read names is bound to the key too. A complete read is the whole list of what may
+ * trade, so a row it leaves out can't pay; one cut short says nothing of the rows it didn't reach. Without a trading
+ * read, the rows as they are.
  */
 export function withTrading(rows: readonly ProfileRow[], trading: { rows: TradingRow[]; complete: boolean } | undefined): ProfileRow[] {
   if (!trading) return [...rows]
   const out: ProfileRow[] = rows.map((row) => {
     const t = trading.rows.find((w) => sameAddress(w.address, row.address))
-    return t ? { ...row, id: t.id, spendCapable: t.active, ...(row.label === undefined && t.label ? { label: t.label } : {}) } : row
+    if (!t) return trading.complete ? { ...row, spendCapable: false } : row
+    return { ...row, id: t.id, spendCapable: t.active, ...(row.label === undefined && t.label ? { label: t.label } : {}) }
   })
   for (const t of trading.rows) {
     if (!out.some((row) => sameAddress(row.address, t.address))) out.push({ id: t.id, address: t.address, ...(t.label ? { label: t.label } : {}), chain: t.chain, spendCapable: t.active })
@@ -200,7 +207,9 @@ export function joinTee(rows: readonly ProfileRow[], portfolio: unknown, importe
   const account = portfolio === undefined ? undefined : new Map(portfolioTee(portfolio).map((w) => [addressKey(w.address), w]))
   const out: TeeWallet[] = []
   for (const row of rows) {
-    const known = account?.get(addressKey(row.address))
+    // A Solana row and an entry on an EVM chain are never one wallet, whatever their addresses read as.
+    const entry = account?.get(addressKey(row.address))
+    const known = entry && (entry.chain === "solana") === (row.chain === "solana") ? entry : undefined
     if (account && !known) {
       if (row.spendCapable || imported?.(row.address) === true) continue
       out.push({ id: row.id, address: row.address, ...(row.label ? { label: row.label } : {}), chain: row.chain, active: false, cantSign: true })
@@ -609,7 +618,18 @@ export class AgentWallets {
     const client = this.deps.pool.for(agent)
     const listed = client.tools?.()
     if (listed && listed.length > 0 && !listed.some((t) => t.name === "candle_get_trading_wallets")) return undefined
-    const outcome = await client.call("candle_get_trading_wallets", {}).catch(() => undefined)
-    return outcome?.kind === "ok" ? parseTradingWallets(outcome.result) : undefined
+    // Every page, by its cursor: a page that fails or a cursor past the last allowed leaves the read cut short.
+    const rows: TradingRow[] = []
+    let cursor: string | undefined
+    for (let page = 0; page < TRADING_PAGES_MAX; page++) {
+      const outcome = await client.call("candle_get_trading_wallets", cursor === undefined ? {} : { cursor }).catch(() => undefined)
+      const read = outcome?.kind === "ok" ? parseTradingWallets(outcome.result) : undefined
+      if (!read) return page === 0 ? undefined : { rows, complete: false }
+      rows.push(...read.rows)
+      if (read.complete) return { rows, complete: true }
+      if (read.cursor === undefined) return { rows, complete: false }
+      cursor = read.cursor
+    }
+    return { rows, complete: false }
   }
 }
