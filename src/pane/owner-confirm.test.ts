@@ -25,14 +25,36 @@ describe("the pending line", () => {
     expect(words).not.toContain("secret-confirm-id")
   })
 
-  test("anything else is not the pending line: another code, no pending, a bad code, a link that isn't https", () => {
+  test("anything else is not the pending line: another code, no pending, a bad code", () => {
     expect(parsePendingLine(line({}, { code: "FORBIDDEN" }))).toBeUndefined()
     expect(parsePendingLine(line({}, { pending: false }))).toBeUndefined()
     expect(parsePendingLine(line({ userCode: "wdjb mjht\u001b[2J" }))).toBeUndefined()
-    expect(parsePendingLine(line({ verificationUriComplete: "javascript:alert(1)" }))).toBeUndefined()
-    expect(parsePendingLine(line({ verificationUriComplete: "http://candle.tv/dev/agent/confirm" }))).toBeUndefined()
     expect(parsePendingLine("{not json")).toBeUndefined()
     expect(parsePendingLine(JSON.stringify({ ok: true, key: "x" }))).toBeUndefined()
+  })
+
+  test("a link is shown only on Candle's site over https, or on this machine; any other is withheld, its host said, with a warning not to approve", () => {
+    for (const url of [URL_OK, "https://app.candle.tv/dev/agent/confirm?code=WDJB-MJHT", "http://localhost:3000/dev/agent/confirm?code=WDJB-MJHT", "http://127.0.0.1:3000/dev/agent/confirm"]) {
+      expect(parsePendingLine(line({ verificationUriComplete: url }))).toMatchObject({ url })
+      expect(pendingWords(parsePendingLine(line({ verificationUriComplete: url }))!)).toContain(`Open ${url}`)
+    }
+    const withheld: [string, string][] = [
+      ["https://evil.example/dev/agent/confirm?code=WDJB-MJHT", "evil.example"],
+      ["https://candle.tv.evil.example/confirm", "candle.tv.evil.example"],
+      ["https://evilcandle.tv/confirm", "evilcandle.tv"],
+      ["http://candle.tv/dev/agent/confirm", "candle.tv"],
+      ["javascript:alert(1)", "an address that isn't a web page"],
+    ]
+    for (const [url, host] of withheld) {
+      const p = parsePendingLine(line({ verificationUriComplete: url }))!
+      expect(p).toMatchObject({ withheld: host })
+      const words = pendingWords(p)
+      expect(words).not.toContain(url)
+      expect(words).toContain(`isn't on Candle's site (${host})`)
+      expect(words).toContain("Don't approve it")
+      // Through the relay too: the link never reaches the pane, not even as the raw line.
+      expect(relayed([`${line({ verificationUriComplete: url })}\n`])).not.toContain(url)
+    }
   })
 
   test("a summary is cleaned of terminal controls; a missing expiry reads as five minutes", () => {
