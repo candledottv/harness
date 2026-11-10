@@ -469,3 +469,60 @@ test("a click on the approve chip of a bot's card that opened without the keys s
   await s.settle(() => s.setup.mockMouse.click(x, y))
   expect(s.session.requests.some((r) => r.method === "cards.approve")).toBe(true)
 })
+
+test("while a card's approval is on its way, another click or ⏎ on it sends nothing more; once answered, it can be sent again", async () => {
+  const s = await running()
+  await s.settle(() => s.setup.mockInput.typeText("add a stop at"))
+  advanceClock(500)
+  await s.settle(() => s.session.push("cards", [buildCard()], true))
+  await s.settle(() => s.setup.mockInput.pressKey("]", { ctrl: true }))
+  advanceClock(400)
+  // The core's answer waits until it's let go, as a real approval takes a moment.
+  let answer!: () => void
+  const asked = s.session.request.bind(s.session)
+  s.session.request = (async (method: string, params?: Record<string, unknown>) => {
+    if (method !== "cards.approve") return asked(method, params)
+    s.session.requests.push({ method, params: params ?? {} })
+    await new Promise<void>((r) => (answer = r))
+    return { kind: "approved" }
+  }) as typeof s.session.request
+  const approvals = () => s.session.requests.filter((r) => r.method === "cards.approve").length
+  const lines = s.frame().split("\n")
+  const y = lines.findIndex((l, i) => lines[i + 1]?.includes("⏎ approve · ctrl-n reject"))
+  const x = lines[y]!.indexOf("⏎ approve") + 2
+  await s.settle(() => s.setup.mockMouse.click(x, y))
+  await s.settle(() => s.setup.mockMouse.click(x, y))
+  await s.settle(() => s.setup.mockInput.pressEnter())
+  await s.settle(() => s.setup.mockMouse.moveTo(0, 0))
+  expect(approvals()).toBe(1)
+  expect(s.frame()).not.toContain("being approved")
+  await s.settle(() => answer())
+  // The card is still waiting here (the scene's core never moves it on): its chip in the strip sends again.
+  const after = s.frame().split("\n")
+  const row = after.findLastIndex((l) => /▌ +(⏎ )?approve /.test(l))
+  await s.settle(() => s.setup.mockMouse.click(after[row]!.search(/(⏎ )?approve /) + 2, row))
+  expect(approvals()).toBe(2)
+})
+
+test("a click on the Build card's approve closes it, as ⏎ does: the keys go back to the harness, and the next bot's card opens over the frame", async () => {
+  const s = await running()
+  await s.settle(() => s.setup.mockInput.typeText("go"))
+  advanceClock(2_500)
+  await s.settle(() => s.session.push("cards", [buildCard()], true))
+  expect(s.frame()).toContain("your harness proposed a bot")
+  advanceClock(400)
+  const lines = s.frame().split("\n")
+  const y = lines.findIndex((l, i) => lines[i + 1]?.includes("⏎ approve · ctrl-n reject"))
+  await s.settle(() => s.setup.mockMouse.click(lines[y]!.indexOf("⏎ approve") + 2, y))
+  await s.settle(() => s.setup.mockMouse.moveTo(0, 0))
+  expect(s.session.requests.filter((r) => r.method === "cards.approve")).toHaveLength(1)
+  // The core moves the card on; the harness has the keys again.
+  await s.settle(() => s.session.push("cards", [], true))
+  expect(s.frame()).not.toContain("your harness proposed a bot")
+  await s.settle(() => s.setup.mockInput.typeText(" on"))
+  expect(s.harness.written.join("")).toBe("go on")
+  // Its next bot opens whole over the frame, not in the strip.
+  advanceClock(2_500)
+  await s.settle(() => s.session.push("cards", [{ ...buildCard(), cardId: "cb2", opId: "op-cb2", cardHash: "hash-cb2" }], true))
+  expect(s.frame()).toContain("your harness proposed a bot")
+})
