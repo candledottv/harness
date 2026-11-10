@@ -9,6 +9,8 @@ import { advanceClock, card as tradeCard, CLOCK, drawScene, EMBEDDED, engineTopi
 import type { ViewCard } from "./store"
 import type { BuildSpawner } from "./build-process"
 import type { PaneProcess } from "./pane-process"
+import { memoryStore, type LayoutStore } from "./layouts-store"
+import { KNOWN_TABS, layoutsText } from "./layouts-file"
 
 const DIR = join(import.meta.dir, "../../test/fixtures/frames")
 const UPDATE = process.env.UPDATE_FRAMES === "1"
@@ -110,14 +112,14 @@ const ENGINES = {
   },
 }
 
-async function scene(width: number, height: number, prefs = { folder: "~/candle-bots", opened: false, bins: {} as Record<string, string> }) {
+async function scene(width: number, height: number, prefs = { folder: "~/candle-bots", opened: false, bins: {} as Record<string, string> }, layouts?: LayoutStore) {
   const harnesses: FakeHarness[] = []
   const spawnBuild: BuildSpawner = (input) => {
     const h = new FakeHarness(input)
     harnesses.push(h)
     return h
   }
-  const drawn = await drawScene("followed", width, height, "build", undefined, { spawnBuild, buildPrefs: { ...prefs } })
+  const drawn = await drawScene("followed", width, height, "build", layouts, { spawnBuild, buildPrefs: { ...prefs } })
   setup = drawn.setup
   const settle = async (fn: () => unknown = () => {}) => {
     await act(async () => {
@@ -358,6 +360,31 @@ test("while the harness has the keys, the cards' heading says how to reach them 
   await s.settle(() => s.setup.mockInput.pressKey("]", { ctrl: true }))
   expect(s.frame()).toContain("1 card waiting · ⏎ approves the highlighted one")
   expect(s.frame()).toMatch(/⏎ approve(?!s)/)
+})
+
+test("an agent pane beside the harness draws its waiting card without the ⏎ mark while the harness has the keys", async () => {
+  // The Build tab laid out as the Build pane with the agent pane beside it, so the agent pane draws the card.
+  const own = { name: "Build with agent", root: { dir: "row" as const, weight: 1, children: [{ pane: "build" as const, weight: 60 }, { pane: "agent" as const, weight: 40 }] }, collapse: { below: 100, keep: "build" as const, weights: [60, 40] as [number, number] } }
+  const tabs = KNOWN_TABS.filter((k) => k.shown).map((k) => (k.tab.name === "Build" ? { ...k.tab, layout: own.name } : k.tab))
+  const s = await scene(160, 45, { folder: "~/candle-bots", opened: true, bins: {}, harness: "claude-code" } as never, memoryStore(layoutsText({ tabs, own: [own] })))
+  // With the agent pane in the tab, the keys start on its input line: a click on the Build pane's chip starts the harness.
+  const rows = s.frame().split("\n")
+  const y = rows.findIndex((l) => l.includes("⏎ start Claude Code"))
+  await s.settle(() => s.setup.mockMouse.click(rows[y]!.indexOf("⏎ start Claude Code") + 4, y))
+  await s.settle(() => Bun.sleep(10))
+  await s.settle(() => s.harnesses.at(-1)!.emit(SESSION))
+  // The agent pane's columns only, so the message line's own hints don't count.
+  const agentPane = () => {
+    const lines = s.frame().split("\n")
+    const x = lines.find((l) => l.includes("╭─ agent-a"))!.indexOf("╭─ agent-a")
+    return lines.map((l) => l.slice(x)).join("\n")
+  }
+  expect(agentPane()).toContain("1 card waiting · ctrl-] then ⏎, or click")
+  expect(agentPane()).toMatch(/ approve /)
+  expect(agentPane()).not.toMatch(/⏎ approve(?!s)/)
+  await s.settle(() => s.setup.mockInput.pressKey("]", { ctrl: true }))
+  expect(agentPane()).toContain("1 card waiting · ⏎ approves the highlighted one")
+  expect(agentPane()).toMatch(/⏎ approve(?!s)/)
 })
 
 test("a bot proposed while the person is typing in the harness opens without the keys: their Enter is the harness's, and ctrl-] takes the card", async () => {

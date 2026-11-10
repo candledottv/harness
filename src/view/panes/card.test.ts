@@ -660,3 +660,13 @@ describe("a rules bot's card", () => {
     expect(cardDetails(bot(botCard())).some((l) => l.includes(differs))).toBe(true)
   })
 })
+
+test("a card whose keys are in another pane offers approve without the ⏎ mark, since ⏎ goes to that pane; with the keys here it has it", () => {
+  const chipText = (keysElsewhere: boolean) => {
+    const lines = cardLines(card(), { now: NOW, focused: false, width: 80, ...(keysElsewhere ? { keysElsewhere: true } : {}) })
+    return lines.flatMap((l) => l.segs).find((s) => s.act === "approve")!.text
+  }
+  expect(chipText(true)).toContain("approve")
+  expect(chipText(true)).not.toContain("⏎")
+  expect(chipText(false)).toContain("⏎ approve")
+})
