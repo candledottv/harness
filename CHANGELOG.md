@@ -14,7 +14,7 @@ Fixes from Candle's review of 0.5.5. None of them changes what can pay, beyond t
 
 ### The README
 
-- **It leads with what the Harness does**: your agent, the market reads, one key to trade, triggers, bots, paper and the VPS, then why to trust it in three lines. "Which wallet pays" moved to the docs' Wallets page, error codes included, and the guide's contents to the docs site.
+- **It leads with what the Harness does**: your agent, the market reads, one key to trade, triggers, bots and the VPS, then why to trust it in three lines. "Which wallet pays" moved to the docs' Wallets page, error codes included, and the guide's contents to the docs site.
 
 ### Tests
 
