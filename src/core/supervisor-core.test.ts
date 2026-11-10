@@ -263,6 +263,11 @@ test("the Bots tab's stop ends the bot's process with its trades, and putting it
   expect(processRows(c, "stopped").at(-1)).toMatchObject({ why: "stopped" })
   await view.request("bots.resume", { name: "sup-bot" })
   await until(() => c.core.codeBots.views()[0]?.connected === true, 10_000)
+  // The supervisor's state names the new process once it has written it: until then it can still name the stopped one.
+  await until(() => {
+    const p = runningPid(c)
+    return p !== undefined && p !== pid && pidIsAlive(p)
+  }, 10_000)
   // Paused, it runs on: its sells of its own still run.
   const again = runningPid(c)!
   await view.request("bots.pause", { name: "sup-bot" })
