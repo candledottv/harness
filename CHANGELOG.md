@@ -2,6 +2,12 @@
 
 What changed in each version of Candle Harness (called the Candle TUI before 0.3.0). Versions follow [semantic versioning](https://semver.org), and each release is listed on [GitHub](https://github.com/candledottv/harness/releases).
 
+## 0.5.3 (2026-11-10)
+
+### Safety and correctness
+
+- **A trade pays from a wallet on its own chain.** A Solana TEE wallet, named or set as the agent's default, was taken to pay for a Hood token: the card could be approved, checked against that wallet's figures, and Candle's CLI refused it only after the press. Now it's refused before any card, saying the wallet's chain and the trade's. The embedded wallet's Solana address named for a Hood trade, or its Hood address for a Solana trade, is refused too, never swapped for the other. `from embedded` still takes the embedded wallet on the trade's chain, and on paper either address is the embedded wallet.
+
 ## 0.5.2 (2026-11-10)
 
 Triggers, rules bots, code bots with the Build tab, and the code runner, each through independent code and security reviews. **Update from any earlier version:** see the first line under "Safety and correctness".
