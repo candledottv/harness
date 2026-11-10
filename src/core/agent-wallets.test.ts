@@ -379,3 +379,86 @@ function ctxOf(book: AgentWallets, agent: string) {
   const a = view.agents[agent]!
   return { agent, payable: a.payable, embeddedWallet: a.embeddedWallet, account: view.account, boundTo: (x: string) => view.boundTo[x] }
 }
+
+/** A Pro account with the Solana embedded wallet, the EVM one, one Solana TEE wallet and one Hood TEE wallet, all on the key. */
+function twoChains(chain?: "solana" | "hood", defaultWallet?: string) {
+  const EVM = "0x" + "a1".repeat(20)
+  const tee = [
+    { ...T1, chain: "solana", active: true },
+    { ...HOOD, chain: "hood", active: true },
+  ]
+  return {
+    evm: EVM,
+    ctx: {
+      agent: "momentum",
+      payable: { embedded: { address: EMBEDDED, chain: "solana" as const }, tee, readAt: 1, unreadable: [], tier: "pro" },
+      embeddedWallet: "allowed" as const,
+      evm: EVM,
+      account: tee,
+      boundTo: () => "momentum",
+      ...(chain ? { chain } : {}),
+      ...(defaultWallet ? { defaultWallet } : {}),
+    },
+  }
+}
+
+test("a Solana TEE wallet never pays for a Hood trade, named by address or by name", () => {
+  const { ctx } = twoChains("hood")
+  for (const word of [T1.address, "Bot Wallet"]) {
+    const r = resolvePayer(ctx, word)
+    expect(r.ok).toBe(false)
+    expect(r.ok === false && r.code).toBe("WRONG_CHAIN")
+    expect(r.ok === false && r.message).toContain("is a Solana wallet, and this trade is on Hood")
+  }
+})
+
+test("a Solana TEE wallet set as the default is refused for a Hood trade, not used", () => {
+  const { ctx } = twoChains("hood", "Bot Wallet")
+  const r = resolvePayer(ctx)
+  expect(r.ok).toBe(false)
+  expect(r.ok === false && r.code).toBe("DEFAULT_WALLET_NOT_PAYABLE")
+  expect(r.ok === false && r.message).toContain("can't pay: it's a Solana wallet, and this trade is on Hood")
+})
+
+test("the EVM embedded address named for a Solana trade is refused, never swapped for the Solana embedded wallet", () => {
+  const { ctx, evm } = twoChains("solana")
+  const r = resolvePayer(ctx, evm)
+  expect(r.ok === false && r.code).toBe("WRONG_CHAIN")
+  expect(r.ok === false && r.message).toContain("is a Hood wallet, and this trade is on Solana")
+})
+
+test("the Solana embedded address named for a Hood trade is refused, never swapped for the EVM embedded wallet", () => {
+  const { ctx } = twoChains("hood")
+  const r = resolvePayer(ctx, EMBEDDED)
+  expect(r.ok === false && r.code).toBe("WRONG_CHAIN")
+  expect(r.ok === false && r.message).toContain("is a Solana wallet, and this trade is on Hood")
+})
+
+test("a wallet on the trade's own chain still pays: embedded on either chain, the Solana TEE wallet for a Solana trade", () => {
+  const hood = twoChains("hood")
+  expect(resolvePayer(hood.ctx, "embedded")).toMatchObject({ ok: true, kind: "embedded", address: hood.evm, chain: "hood" })
+  expect(resolvePayer(hood.ctx, hood.evm.toUpperCase().replace("0X", "0x"))).toMatchObject({ ok: true, kind: "embedded", chain: "hood" })
+  expect(resolvePayer(hood.ctx)).toMatchObject({ ok: true, kind: "embedded", chain: "hood" })
+  const sol = twoChains("solana")
+  expect(resolvePayer(sol.ctx, EMBEDDED)).toMatchObject({ ok: true, kind: "embedded", address: EMBEDDED, chain: "solana" })
+  expect(resolvePayer(sol.ctx, "Bot Wallet")).toMatchObject({ ok: true, kind: "tee", address: T1.address })
+  expect(resolvePayer(twoChains(undefined, "Bot Wallet").ctx)).toMatchObject({ ok: true, kind: "tee", address: T1.address })
+  // A Hood TEE wallet is still refused as before, whichever chain the trade is on.
+  expect(resolvePayer(hood.ctx, "hood-bot")).toMatchObject({ ok: false, code: "HOOD_TEE_LATER" })
+})
+
+test("a default of embedded, pinned to the Solana address, still pays for a Hood trade", async () => {
+  const pins = memoryPins()
+  const w = wallets({ defaults: { momentum: "embedded" }, pins, statuses: { momentum: status({ wallets: { solana: EMBEDDED, evm: "0x" + "a1".repeat(20) } }) } })
+  await w.book.refreshAll()
+  // The pin lands on the Solana embedded address, as the startup pass keeps it.
+  expect(pins.kept.momentum).toEqual({ setting: "embedded", address: EMBEDDED })
+  expect(w.book.payer("momentum", undefined, { chain: "hood" })).toMatchObject({ ok: true, kind: "embedded", chain: "hood" })
+  expect(w.book.payer("momentum", undefined, { chain: "solana" })).toMatchObject({ ok: true, kind: "embedded", chain: "solana" })
+})
+
+test("a default that is a name for the Solana embedded wallet pays for a Hood trade as the embedded wallet", () => {
+  const { ctx } = twoChains("hood")
+  expect(resolvePayer({ ...ctx, defaultWallet: "embedded", defaultPin: EMBEDDED })).toMatchObject({ ok: true, kind: "embedded", chain: "hood" })
+  expect(resolvePayer({ ...ctx, chain: "solana", defaultWallet: "embedded", defaultPin: ctx.evm })).toMatchObject({ ok: true, kind: "embedded", chain: "solana" })
+})

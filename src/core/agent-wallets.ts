@@ -237,6 +237,13 @@ export function resolvePayer(ctx: PayerContext, word?: string): PayerResult {
     return { ok: false, code: "WALLETS_UNKNOWN", message: `Couldn't read ${agent}'s wallets from Candle yet, so no card was made. Try again in a moment.`, canPayFrom }
   }
   const allow = `candle keys update ${ctx.prefix ?? "<prefix>"} --embedded-wallet allow`
+  const tradeChain = ctx.chain ?? "solana"
+  const chainWord = (chain: string): string => (chain === "hood" ? "Hood" : chain === "solana" ? "Solana" : chain)
+  const wrongChain = (name: string, chain: string): Fail => ({
+    code: "WRONG_CHAIN",
+    sentence: `${name} is a ${chainWord(chain)} wallet, and this trade is on ${chainWord(tradeChain)}: a trade pays from a wallet on its own chain.`,
+    clause: `it's a ${chainWord(chain)} wallet, and this trade is on ${chainWord(tradeChain)}`,
+  })
   const embedded = (): PayerResult | Fail => {
     if (ctx.embeddedWallet === "denied") {
       return {
@@ -256,13 +263,15 @@ export function resolvePayer(ctx: PayerContext, word?: string): PayerResult {
     const name = walletName(names, { ...t, kind: "tee" })
     if (free) return { code: "TEE_TIER_REQUIRED", sentence: `${name} is a TEE wallet, and TEE wallets are a Pro or Max feature: this account is on Free.`, clause: "TEE wallets are a Pro or Max feature, and this account is on Free" }
     if (t.chain !== "solana") return { code: "HOOD_TEE_LATER", sentence: `${name} is a Hood TEE wallet: trades from Hood TEE wallets come in a later release.`, clause: "it's a Hood TEE wallet, and trades from those come in a later release" }
+    // A trade pays from a wallet on its own chain: a Solana wallet never pays for a Hood token, named or as the default.
+    if (tradeChain !== t.chain) return wrongChain(name, t.chain)
     if (t.cantSign) return { code: "TEE_WALLET_CANT_SIGN", sentence: `Candle doesn't list ${name} as able to sign for ${agent}'s key yet, so nothing can trade from it. That's on Candle's side: no owner step here changes it, so it isn't a stopped wallet and needs no enable or rebind.`, clause: "Candle doesn't list it as able to sign yet (on Candle's side; no owner step changes it)" }
     if (!t.active) return { code: "TEE_WALLET_INACTIVE", sentence: `${name} is stopped on Candle's side (inactive), so nothing can trade from it.`, clause: "it's stopped on Candle's side (inactive)" }
     // `label` is what the wallet is called (its name in the book, Candle's label or the Candle Harness's stand-in): what the card says.
     const called = names.find((e) => e.address === t.address)?.name ?? t.label
     return { ok: true, kind: "tee", address: t.address, id: t.id, ...(called ? { label: terminalText(called, { maxLength: 64 }) } : {}), chain: t.chain }
   }
-  const named = (raw: string): PayerResult | Fail => {
+  const named = (raw: string, asDefault = false): PayerResult | Fail => {
     const w = raw.trim()
     const shown = terminalText(w, { maxLength: 64 })
     if (w.toLowerCase() === "embedded") return embedded()
@@ -281,7 +290,13 @@ export function resolvePayer(ctx: PayerContext, word?: string): PayerResult {
       return { code: "WALLET_IS_GROUP", sentence: `${shown} is a group, and a group never pays: name one wallet in it${such}.`, clause: "it's a group, and a group never pays" }
     }
     const address = look.kind === "found" ? look.entry.address : w
-    if ((payable.embedded && address === payable.embedded.address) || (ctx.evm && address.toLowerCase() === ctx.evm.toLowerCase())) return embedded()
+    // Each embedded address is on one chain: named for a trade on the other, it's refused, never swapped for its twin.
+    const solanaEmbedded = payable.embedded !== undefined && address === payable.embedded.address
+    const evmEmbedded = ctx.evm !== undefined && address.toLowerCase() === ctx.evm.toLowerCase()
+    // A default that lands on either embedded address (its pin is whichever one it first resolved to) is the embedded wallet on the trade's chain.
+    if (!asDefault && solanaEmbedded && tradeChain !== "solana") return wrongChain(`${shown} (the embedded wallet)`, "solana")
+    if (!asDefault && evmEmbedded && tradeChain !== "hood") return wrongChain(`${shown} (the embedded wallet)`, "hood")
+    if (solanaEmbedded || evmEmbedded) return embedded()
     const byKey = payable.tee.find((t) => t.address === address || t.id === w)
     if (byKey) return tee(byKey)
     // Not this agent's: say whose, where that's known.
@@ -301,7 +316,7 @@ export function resolvePayer(ctx: PayerContext, word?: string): PayerResult {
   // The agent's default when it's set, never quietly swapped for another wallet. Once found, by
   // its address (default-pins.ts): a rename leaves the line's name on no wallet, or on another one.
   if (ctx.defaultWallet !== undefined) {
-    const picked = named(ctx.defaultPin ?? ctx.defaultWallet)
+    const picked = named(ctx.defaultPin ?? ctx.defaultWallet, true)
     if ("ok" in picked) return picked
     const setting = `agents.${agent}.wallet = "${terminalText(ctx.defaultWallet, { maxLength: 64 })}"`
     return {

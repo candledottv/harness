@@ -179,6 +179,15 @@ describe("from <wallet>", () => {
     expect(at("buy 0.1 sol MOON from embedded", { ...ctx, mode: "paper" })).toMatchObject({ kind: "trade", args: { wallet: "embedded" } })
   })
 
+  test("in paper mode either embedded address is the embedded wallet, whichever chain the token is on", () => {
+    const evm = "0x" + "a1".repeat(20)
+    const hoodMint = "0x" + "b2".repeat(20)
+    const t = topic()
+    const paper: CommandContext = { ...ctx, activeAgent: "momentum", mode: "paper", wallets: { ...t, agents: { ...t.agents, momentum: { ...t.agents.momentum!, evm } } } }
+    expect(at(`buy $25 ${hoodMint} from ${EMBEDDED}`, paper)).toMatchObject({ kind: "trade", args: { wallet: "embedded" } })
+    expect(at(`buy 0.1 sol MOON from ${evm}`, paper)).toMatchObject({ kind: "trade", args: { wallet: "embedded" } })
+  })
+
   test("a trade's own mistake comes first; a line that isn't trade-shaped still goes to the agent whole", () => {
     expect(at("buy 0.1 MOON from tee-one")).toMatchObject({ kind: "refused", message: expect.stringContaining("say what pays") })
     expect(at("buy moon from tee-one")).toEqual({ kind: "agent", text: "buy moon from tee-one" })
