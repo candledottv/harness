@@ -427,6 +427,8 @@ test("a code bot scrolled to what it says: headed as its own words, its offer as
   const d = await scene(120, 30, "bots", BOTS_CODE)
   await pickMomentum(d.setup)
   for (let i = 0; i < 3; i++) await act(async () => d.setup.mockMouse.scroll(80, 10, "down"))
+  // The pointer on a blank row, so no chip's hover colour is in the frame however the timing falls.
+  await act(async () => d.setup.mockMouse.moveTo(0, 2))
   await d.setup.renderOnce()
   const frame = d.setup.captureCharFrame()
   expect(frame).toContain("the bot says · 12s ago · its own words, not the core's count")

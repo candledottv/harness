@@ -977,6 +977,8 @@ describe("engines behind the seam", () => {
     expect(seen!.workDir.startsWith(`${c.p.homesDir}/`)).toBe(true)
     expect(seen!.workMode).toBe(0o700)
     expect(seen!.mcp).toEqual(seen!.mcpFile) // one description, in two shapes
+    // They go as the turn's last steps, after its end is said: waited for, and failing if they stay.
+    await until(() => readdir(c.p.turnsDir).length === 0 && readdir(c.p.homesDir).length === 0).catch(() => {})
     expect(readdir(c.p.turnsDir)).toEqual([])
     expect(readdir(c.p.homesDir)).toEqual([])
   })

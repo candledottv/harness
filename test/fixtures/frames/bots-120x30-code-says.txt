@@ -30,7 +30,7 @@
 › type a command or ask the agent                           ⏎ approve  ctrl-p pop out bots   ctrl-k palette    ? help   
 
 --- colours ---
-0: 6cb6ff/1f3654×11 0b0d10/3ddc84×6 ffffff/0e1115×1 959dab/0e1115×6 f6f8fb/0e1115×6 959dab/0e1115×10 ffffff/0e1115×2 959dab/0e1115×8 3ddc84/0e1115×6 ffffff/0e1115×2 f5a524/0e1115×16 ffffff/0e1115×1 6cb6ff/16263a×23 ffffff/0e1115×6 ff5c5c/3a1619×16
+0: 6cb6ff/16263a×11 0b0d10/3ddc84×6 ffffff/0e1115×1 959dab/0e1115×6 f6f8fb/0e1115×6 959dab/0e1115×10 ffffff/0e1115×2 959dab/0e1115×8 3ddc84/0e1115×6 ffffff/0e1115×2 f5a524/0e1115×16 ffffff/0e1115×1 6cb6ff/16263a×23 ffffff/0e1115×6 ff5c5c/3a1619×16
 1: ffffff/0b0d10×1 6cb6ff/0b0d10×7 ffffff/0b0d10×2 6cb6ff/0b0d10×9 ffffff/0b0d10×2 6cb6ff/0b0d10×10 ffffff/0b0d10×2 f6f8fb/0b0d10+9×6 ffffff/0b0d10×2 6cb6ff/0b0d10×7 ffffff/0b0d10×2 6cb6ff/16263a×12 ffffff/0b0d10×58
 2: ffffff/0b0d10×120
 3: 32fe9f/111419×2 b392f0/111419×22 32fe9f/111419×18 ffffff/0b0d10×1 252a33/111419×2 b392f0/111419×33 252a33/111419×42

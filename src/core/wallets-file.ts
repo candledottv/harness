@@ -10,8 +10,9 @@
 //
 //   [groups.bots]
 //   prefix = "bot-"
-import { readFileSync, renameSync, statSync, writeFileSync } from "node:fs"
+import { readFileSync, renameSync, writeFileSync } from "node:fs"
 import { keysIn } from "../config-settings"
+import { fileStamp } from "../shared/file-stamp"
 import { bareprefix, type GroupDef, groupNameProblem, prefixProblem } from "./wallet-groups"
 import { candleLabelProblem, isAddressShaped } from "./wallet-names"
 import { terminalText } from "../shared/terminal-text"
@@ -154,17 +155,14 @@ export class WalletsFileStore {
 
   /** The names and problems now, read again when the file changed since the last look. */
   read(): WalletsFile {
-    let stamp: string
-    try {
-      const s = statSync(this.path)
-      stamp = `${s.mtimeMs}:${s.size}:${s.ino}`
-    } catch {
+    const at = fileStamp(this.path)
+    if (!at) {
       this.seen = undefined
       this.held = EMPTY
       return this.held
     }
-    if (stamp !== this.seen) {
-      this.seen = stamp
+    if (at.stamp !== this.seen || at.recent) {
+      this.seen = at.stamp
       try {
         this.held = parseWalletsFile(readFileSync(this.path, "utf8"))
       } catch (error) {

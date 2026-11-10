@@ -413,7 +413,8 @@ describe("pages, over memory and the file", () => {
     expect(page.more).toBeDefined()
     const next = await queryJournal({ limit: 100, before: page.more! }, deps(t.j))
     expect(page.entries.length + next.entries.length).toBe(60)
-  })
+    // 12,000 rows appended one at a time first: on a shared runner's disk that takes more than the default 5 s.
+  }, 30_000)
 
   test("a newer query from the same view stops this one at its next slice", async () => {
     const t = await busy(10)
