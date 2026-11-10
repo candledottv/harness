@@ -2,6 +2,15 @@
 
 What changed in each version of Candle Harness (called the Candle TUI before 0.3.0). Versions follow [semantic versioning](https://semver.org), and each release is listed on [GitHub](https://github.com/candledottv/harness/releases).
 
+## 0.5.7 (2026-11-10)
+
+The Harness starts live, and doesn't lead with paper trading.
+
+### Setup
+
+- **Setup ends in live.** Funded at the deposit step, or going on with **Fund it later**, the Harness opens live; so does Straight in. A trade from an unfunded wallet, or from a key not yet allowed a wallet, is refused saying what to do. Paper is still there, from the status bar or by typing `paper`. A fresh `config.toml` says `mode = "live"`; an install that already picked a mode keeps it.
+- **The agent's greeting doesn't suggest paper.** Its examples and its first lines are about trading; paper is still in help and the status bar.
+
 ## 0.5.6 (2026-11-10)
 
 Fixes from Candle's review of 0.5.5. None of them changes what can pay, beyond the second below, which narrows it.
@@ -11,11 +20,6 @@ Fixes from Candle's review of 0.5.5. None of them changes what can pay, beyond t
 - **The confirm link is shown only on Candle's site.** For an owner step whose answer the Harness reads (making a key), the prompt pane shows the browser confirm's link only when it's on `candle.tv` over https, or on this machine. Any other link is withheld: the pane names its host and says not to approve, and the step ends unapproved when its code expires. Other owner steps print the CLI's own words as they are.
 - **Candle's trading-wallets read is read to its last page, and decides.** Where the agent's MCP server has it, every page is read (up to ten). A complete read is the whole list of what may trade, so a wallet it leaves out can't pay, whatever the key's own list says. A read cut short leaves the wallets it didn't reach as the key's list says.
 - **A Solana wallet is never taken for a Hood one** when the key's list and the portfolio are matched by address.
-
-### Setup
-
-- **Setup ends in live.** Funded at the deposit step, or going on with **Fund it later**, the Harness opens live; so does Straight in. A trade from an unfunded wallet, or from a key not yet allowed a wallet, is refused saying what to do. Paper is still there, from the status bar or by typing `paper`. A fresh `config.toml` says `mode = "live"`; an install that already picked a mode keeps it.
-- **The agent's greeting doesn't suggest paper.** Its examples and its first lines are about trading; paper is still in help and the status bar.
 
 ### The README
 
