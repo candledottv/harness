@@ -140,12 +140,12 @@ test("the macOS sweep: a sandboxed process of the person's, started during the r
       // Its parent alive and not a stray: the tree's business, not the sweep's.
       "350   999 501       00:02 /usr/bin/python3",
       // A path with a space, under the folder.
-      "360     1 501       00:01 /Users/me/research folder/link to python",
+      "360     1 501       00:01 /srv/agent/research folder/link to python",
       "header line",
     ].join("\n"),
   )
   const sandboxed = new Set([300, 301, 310, 320, 340, 350, 360])
-  const strays = await sandboxStrays(rows, { uid: 501, ranSeconds: 5, roots: ["/usr/bin", "/bin", "/usr/libexec", "/Users/me/research folder", "/opt/py"], self: 50 }, async (pid) => sandboxed.has(pid))
+  const strays = await sandboxStrays(rows, { uid: 501, ranSeconds: 5, roots: ["/usr/bin", "/bin", "/usr/libexec", "/srv/agent/research folder", "/opt/py"], self: 50 }, async (pid) => sandboxed.has(pid))
   expect(strays.sort()).toEqual([300, 301, 360])
   // A root names a folder, not a prefix of one.
   expect(await sandboxStrays(rows, { uid: 501, ranSeconds: 5, roots: ["/opt/p"], self: 50 }, async (pid) => sandboxed.has(pid))).toEqual([])
