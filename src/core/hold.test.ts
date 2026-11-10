@@ -2,7 +2,8 @@ import { afterAll, describe, expect, test } from "bun:test"
 import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { dirname, join } from "node:path"
-import { appleShimWithoutTools, CLONE_NAMESPACES, HOLD_PROC_HEADROOM, heldCommand, installReads, OTHER_ABI_BIT, RuntimePlaceRefused, SECCOMP, seatbeltProfile, seccompFilter, userTasks } from "./hold"
+import { FFIType } from "bun:ffi"
+import { appleShimWithoutTools, CLONE_NAMESPACES, HOLD_PROC_HEADROOM, heldByMark, heldCommand, holdMark, installReads, OTHER_ABI_BIT, RuntimePlaceRefused, SECCOMP, sandboxCheckArgs, seatbeltProfile, seccompFilter, userTasks } from "./hold"
 
 const profile = seatbeltProfile("/opt/person/research", ["/opt/person/.bun"], "/opt/person/.bun/bin/bun")
 
@@ -30,6 +31,46 @@ test("the held command on macOS runs the program's real path, never the link tha
   expect(cmd.slice(0, 2)).toEqual(["/usr/bin/sandbox-exec", "-p"])
   expect(cmd.slice(3)).toEqual(["/opt/person/.bun/bin/bun", "x.ts"])
   expect(heldCommand("linux", "/r", ["/a", "/b"], "/opt/bun/bin/bun", ["x.ts"], ["self"])).toEqual(["self", "run-held", "/r", "/a,/b", "--", "/opt/bun/bin/bun", "x.ts"])
+})
+
+test("each run's hold carries a mark of its own: one path its profile allows and a sibling it doesn't, named nowhere else", () => {
+  const a = holdMark()
+  const b = holdMark()
+  expect(a.allowed).not.toBe(b.allowed)
+  // Siblings in a folder with no link on its path, so a check of either path is of the same name the profile holds.
+  expect(dirname(a.allowed)).toBe("/private/var/empty")
+  expect(dirname(a.denied)).toBe(dirname(a.allowed))
+  expect(a.denied).not.toBe(a.allowed)
+  const marked = seatbeltProfile("/opt/person/research", ["/opt/person/.bun"], "/opt/person/.bun/bin/bun", a)
+  expect(marked).toContain(`(allow file-read-metadata (literal "${a.allowed}"))`)
+  // The other is refused by the profile's default, so no rule names it.
+  expect(marked).not.toContain(a.denied)
+  expect(marked.replace(`\n(allow file-read-metadata (literal "${a.allowed}"))`, "")).toBe(profile)
+  const cmd = heldCommand("darwin", "/r", [], "/usr/bin/python3", ["x.py"], ["self"], a)
+  expect(cmd[2]).toContain(a.allowed)
+})
+
+test("a process is the run's own only where macOS allows the mark's one path and refuses the other", () => {
+  const mark = { allowed: "/private/var/empty/a-in", denied: "/private/var/empty/a-out" }
+  // sandbox_check: 0 allowed, 1 refused, -1 couldn't ask.
+  const ask = (answers: Record<string, number>) => (_pid: number, path: string) => answers[path] ?? -1
+  expect(heldByMark(7, mark, ask({ [mark.allowed]: 0, [mark.denied]: 1 }))).toBe(true)
+  // Outside any sandbox, both are allowed.
+  expect(heldByMark(7, mark, ask({ [mark.allowed]: 0, [mark.denied]: 0 }))).toBe(false)
+  // Another sandbox that refuses by default refuses both.
+  expect(heldByMark(7, mark, ask({ [mark.allowed]: 1, [mark.denied]: 1 }))).toBe(false)
+  // Where macOS can't be asked, nothing is the run's.
+  expect(heldByMark(7, mark, ask({}))).toBe(false)
+  expect(heldByMark(7, mark, ask({ [mark.allowed]: 0 }))).toBe(false)
+})
+
+test("the path reaches sandbox_check as its first variadic argument: on the stack on Apple silicon, in a register on Intel", () => {
+  // Apple's arm64 calls pass every variadic argument on the stack, after the eight argument registers.
+  const arm = sandboxCheckArgs("arm64")
+  expect(arm).toHaveLength(9)
+  expect(arm[8]).toBe(FFIType.ptr)
+  expect(arm.slice(3, 8).every((t) => t === FFIType.i64)).toBe(true)
+  expect(sandboxCheckArgs("x64")).toEqual([FFIType.i32, FFIType.ptr, FFIType.i32, FFIType.ptr])
 })
 
 test("Apple's python3 shim counts as no runtime on a Mac with no Command Line Tools", () => {
