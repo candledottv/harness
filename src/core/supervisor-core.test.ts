@@ -158,6 +158,7 @@ test("a code bot runs once approved, ends with its core, starts again with the n
   procs.push(fourth)
   await until(() => !pidIsAlive(orphan), 15_000)
   await until(() => runningPid(c) !== undefined && runningPid(c) !== orphan, 15_000)
+  await until(() => processRows(c, "stopped").some((r) => r.why === "leftover"), 15_000)
   expect(processRows(c, "stopped").find((r) => r.why === "leftover")).toMatchObject({ name: "sup-bot", pid: orphan })
   await until(() => readFileSync(join(c.p.botLogsDir, "sup-bot.log"), "utf8").split("bought filled").length === 5, 15_000)
   expect(trades(c).length).toBe(1)
@@ -260,6 +261,8 @@ test("the Bots tab's stop ends the bot's process with its trades, and putting it
   const pid = runningPid(c)!
   await view.request("bots.stop", { name: "sup-bot" })
   await until(() => !pidIsAlive(pid), 10_000)
+  // The journal's row follows the process's end.
+  await until(() => processRows(c, "stopped").length > 0, 10_000)
   expect(processRows(c, "stopped").at(-1)).toMatchObject({ why: "stopped" })
   await view.request("bots.resume", { name: "sup-bot" })
   await until(() => c.core.codeBots.views()[0]?.connected === true, 10_000)
