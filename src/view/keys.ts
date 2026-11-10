@@ -1929,11 +1929,14 @@ function onOverlayKey(state: UiState, key: Key, ctx: UiContext, now: number): St
   // the card waits in the strip; ctrl-n rejects it. Any other key leaves it open, so a stray letter never closes it.
   if (overlay.kind === "card" && overlay.build) {
     const card = ctx.cards.find((c) => c.cardId === overlay.cardId)
+    // ⏎ and ctrl-n close it over what was hidden: the close starts the 300 ms again (as a click's close does), so a
+    // click meant for the card that was beneath approves and rejects nothing. Esc is a deliberate return to the
+    // harness, so it doesn't.
     if (key.name === "return" || key.name === "enter" || key.name === "kpenter") {
       const step = approve({ ...closed, focusedCardId: overlay.cardId }, card, ctx, now, "enter")
-      return step.effects.length ? step : done(state)
+      return step.effects.length ? { ...step, state: { ...step.state, shownSince: now } } : done(state)
     }
-    if (pressed(key, "reject")) return done(closed, { type: "reject", cardId: overlay.cardId })
+    if (pressed(key, "reject")) return done({ ...closed, shownSince: now }, { type: "reject", cardId: overlay.cardId })
     if (key.name === "escape") return done(focusPane(closed, "build"))
     return done(state)
   }

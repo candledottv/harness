@@ -152,6 +152,17 @@ describe("Enter and cards", () => {
     expect(shut.state.overlay).toBeUndefined()
     expect(run([{ type: "clickReject", cardId: "c1", now: 5_120 }], both, shut.state).effects).toEqual([])
     expect(run([{ type: "clickApprove", cardId: "c1", now: 5_120 }], both, shut.state).effects).toEqual([])
+    // ⏎ and ctrl-n close it the same way: the click that follows within 300 ms acts on nothing beneath.
+    const entered = run([enter(5_000)], both, open.state)
+    expect(entered.effects).toEqual([{ type: "approve", cardId: "cb", how: "enter" }])
+    expect(entered.state.overlay).toBeUndefined()
+    expect(entered.state.shownSince).toBe(5_000)
+    expect(run([{ type: "clickApprove", cardId: "c1", now: 5_120 }], both, entered.state).effects).toEqual([])
+    const denied = run([ctrl("n", 5_000)], both, open.state)
+    expect(denied.effects).toEqual([{ type: "reject", cardId: "cb" }])
+    expect(denied.state.overlay).toBeUndefined()
+    expect(denied.state.shownSince).toBe(5_000)
+    expect(run([{ type: "clickReject", cardId: "c1", now: 5_120 }], both, denied.state).effects).toEqual([])
   })
 })
 

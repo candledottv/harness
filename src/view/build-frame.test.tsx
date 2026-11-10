@@ -500,6 +500,7 @@ test("while a card's approval is on its way, another click or ⏎ on it sends no
   expect(s.frame()).not.toContain("being approved")
   await s.settle(() => answer())
   // The card is still waiting here (the scene's core never moves it on): its chip in the strip sends again.
+  advanceClock(400)
   const after = s.frame().split("\n")
   const row = after.findLastIndex((l) => /▌ +(⏎ )?approve /.test(l))
   await s.settle(() => s.setup.mockMouse.click(after[row]!.search(/(⏎ )?approve /) + 2, row))
@@ -566,6 +567,39 @@ test("at 74×40, a double click on the Build card's ctrl-n reject chip rejects o
   const x = lines[y]!.indexOf("ctrl-n reject") + 4
   advanceClock(400)
   await s.settle(() => s.setup.mockMouse.click(x, y))
+  await s.settle(() => s.setup.mockMouse.moveTo(0, 0))
+  const beneath = s.frame().split("\n")[y]!
+  expect(beneath).toMatch(/reject/)
+  advanceClock(120)
+  await s.settle(() => s.setup.mockMouse.click(x, y))
+  const rejects = s.session.requests.filter((r) => r.method === "cards.reject")
+  expect(rejects.map((r) => r.params.cardId)).toEqual(["cb1"])
+  expect(s.session.requests.some((r) => r.method === "cards.approve")).toBe(false)
+})
+
+test("at 74×40, ⏎ on the Build card then a click 120 ms later approves only it, not the live trade card beneath", async () => {
+  const { s, y } = await overLiveCard()
+  const lines = s.frame().split("\n")
+  const x = lines[y]!.indexOf("⏎ approve") + 2
+  advanceClock(400)
+  await s.settle(() => s.setup.mockInput.pressEnter())
+  await s.settle(() => s.setup.mockMouse.moveTo(0, 0))
+  // The click, 120 ms later, lands where the overlay's approve chip was: on the live card's chip beneath.
+  const beneath = s.frame().split("\n")[y]!
+  expect(beneath).toMatch(/approve/)
+  advanceClock(120)
+  await s.settle(() => s.setup.mockMouse.click(x, y))
+  const approves = s.session.requests.filter((r) => r.method === "cards.approve")
+  expect(approves.map((r) => r.params.cardId)).toEqual(["cb1"])
+  expect(s.session.requests.some((r) => r.method === "cards.reject")).toBe(false)
+})
+
+test("at 74×40, ctrl-n on the Build card then a click 120 ms later rejects only it, not the live trade card beneath", async () => {
+  const { s, y } = await overLiveCard()
+  const lines = s.frame().split("\n")
+  const x = lines[y]!.indexOf("ctrl-n reject") + 4
+  advanceClock(400)
+  await s.settle(() => s.setup.mockInput.pressKey("n", { ctrl: true }))
   await s.settle(() => s.setup.mockMouse.moveTo(0, 0))
   const beneath = s.frame().split("\n")[y]!
   expect(beneath).toMatch(/reject/)
