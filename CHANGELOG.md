@@ -12,6 +12,10 @@ Fixes from Candle's review of 0.5.5. None of them changes what can pay, beyond t
 - **Candle's trading-wallets read is read to its last page, and decides.** Where the agent's MCP server has it, every page is read (up to ten). A complete read is the whole list of what may trade, so a wallet it leaves out can't pay, whatever the key's own list says. A read cut short leaves the wallets it didn't reach as the key's list says.
 - **A Solana wallet is never taken for a Hood one** when the key's list and the portfolio are matched by address.
 
+### The README
+
+- **It leads with what the Harness does**: your agent, the market reads, one key to trade, triggers, bots, paper and the VPS, then why to trust it in three lines. "Which wallet pays" moved to the docs' Wallets page, error codes included, and the guide's contents to the docs site.
+
 ### Tests
 
 - The wallet join by address has tests that fail if it's reverted to ids: another id with no trading read, a Hood address in another letter case, and a Solana address in another case, which is another wallet.
