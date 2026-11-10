@@ -446,3 +446,19 @@ test("a wallet on the trade's own chain still pays: embedded on either chain, th
   // A Hood TEE wallet is still refused as before, whichever chain the trade is on.
   expect(resolvePayer(hood.ctx, "hood-bot")).toMatchObject({ ok: false, code: "HOOD_TEE_LATER" })
 })
+
+test("a default of embedded, pinned to the Solana address, still pays for a Hood trade", async () => {
+  const pins = memoryPins()
+  const w = wallets({ defaults: { momentum: "embedded" }, pins, statuses: { momentum: status({ wallets: { solana: EMBEDDED, evm: "0x" + "a1".repeat(20) } }) } })
+  await w.book.refreshAll()
+  // The pin lands on the Solana embedded address, as the startup pass keeps it.
+  expect(pins.kept.momentum).toEqual({ setting: "embedded", address: EMBEDDED })
+  expect(w.book.payer("momentum", undefined, { chain: "hood" })).toMatchObject({ ok: true, kind: "embedded", chain: "hood" })
+  expect(w.book.payer("momentum", undefined, { chain: "solana" })).toMatchObject({ ok: true, kind: "embedded", chain: "solana" })
+})
+
+test("a default that is a name for the Solana embedded wallet pays for a Hood trade as the embedded wallet", () => {
+  const { ctx } = twoChains("hood")
+  expect(resolvePayer({ ...ctx, defaultWallet: "embedded", defaultPin: EMBEDDED })).toMatchObject({ ok: true, kind: "embedded", chain: "hood" })
+  expect(resolvePayer({ ...ctx, chain: "solana", defaultWallet: "embedded", defaultPin: ctx.evm })).toMatchObject({ ok: true, kind: "embedded", chain: "solana" })
+})
