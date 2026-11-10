@@ -271,7 +271,7 @@ export function resolvePayer(ctx: PayerContext, word?: string): PayerResult {
     const called = names.find((e) => e.address === t.address)?.name ?? t.label
     return { ok: true, kind: "tee", address: t.address, id: t.id, ...(called ? { label: terminalText(called, { maxLength: 64 }) } : {}), chain: t.chain }
   }
-  const named = (raw: string): PayerResult | Fail => {
+  const named = (raw: string, asDefault = false): PayerResult | Fail => {
     const w = raw.trim()
     const shown = terminalText(w, { maxLength: 64 })
     if (w.toLowerCase() === "embedded") return embedded()
@@ -293,8 +293,9 @@ export function resolvePayer(ctx: PayerContext, word?: string): PayerResult {
     // Each embedded address is on one chain: named for a trade on the other, it's refused, never swapped for its twin.
     const solanaEmbedded = payable.embedded !== undefined && address === payable.embedded.address
     const evmEmbedded = ctx.evm !== undefined && address.toLowerCase() === ctx.evm.toLowerCase()
-    if (solanaEmbedded && tradeChain !== "solana") return wrongChain(`${shown} (the embedded wallet)`, "solana")
-    if (evmEmbedded && tradeChain !== "hood") return wrongChain(`${shown} (the embedded wallet)`, "hood")
+    // A default that lands on either embedded address (its pin is whichever one it first resolved to) is the embedded wallet on the trade's chain.
+    if (!asDefault && solanaEmbedded && tradeChain !== "solana") return wrongChain(`${shown} (the embedded wallet)`, "solana")
+    if (!asDefault && evmEmbedded && tradeChain !== "hood") return wrongChain(`${shown} (the embedded wallet)`, "hood")
     if (solanaEmbedded || evmEmbedded) return embedded()
     const byKey = payable.tee.find((t) => t.address === address || t.id === w)
     if (byKey) return tee(byKey)
@@ -315,7 +316,7 @@ export function resolvePayer(ctx: PayerContext, word?: string): PayerResult {
   // The agent's default when it's set, never quietly swapped for another wallet. Once found, by
   // its address (default-pins.ts): a rename leaves the line's name on no wallet, or on another one.
   if (ctx.defaultWallet !== undefined) {
-    const picked = named(ctx.defaultPin ?? ctx.defaultWallet)
+    const picked = named(ctx.defaultPin ?? ctx.defaultWallet, true)
     if ("ok" in picked) return picked
     const setting = `agents.${agent}.wallet = "${terminalText(ctx.defaultWallet, { maxLength: 64 })}"`
     return {

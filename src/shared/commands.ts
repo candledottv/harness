@@ -153,6 +153,12 @@ function payFrom(command: Command, word: string, agent: string | undefined, ctx:
   const mint = typeof command.args.mint === "string" ? command.args.mint : undefined
   const payer = ctx.wallets && payerContextFrom(ctx.wallets, agent, mint?.startsWith("0x") ? "hood" : undefined)
   if (!payer) return notTrade(`${agent}'s wallets haven't been read from Candle yet. Try again in a moment.`)
+  // On paper either embedded address is the embedded wallet, whichever chain the token is on: the core takes it the same way.
+  if (paper && (["solana", "hood"] as const).some((chain) => {
+    const other = payerContextFrom(ctx.wallets!, agent, chain === "hood" ? "hood" : undefined)
+    const e = other && resolvePayer(other, word)
+    return e && e.ok && e.kind === "embedded"
+  })) return pays("embedded")
   const r = resolvePayer(payer, word)
   if (!r.ok) return paper && TEE_CODES.has(r.code) ? noPaper(word) : notTrade(r.message)
   if (r.kind === "embedded") return pays("embedded")

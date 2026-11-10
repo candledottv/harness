@@ -31,6 +31,12 @@ To have your own agent install it, point it at [Installing it with an agent](htt
 - **The agent acts when you message it.** For anything later (a stop, a buy every morning, a signal to watch for), it sets up a trigger with you, which the core runs itself, with the Candle Harness's window open or closed. For a strategy that keeps buying on Hacc's signals and selling by its own exits, it sets up a rules bot. Pro and Max.
 - **Build your own bots.** The Build tab runs your own coding harness in a folder of your bots. It writes a code bot, tests it on paper and proposes it; your press starts it. The core runs it, with a token of its own and never a key, and holds every trade it makes to the figures you approved. Pro and Max.
 
+## Which wallet pays
+
+A trade pays from a wallet on its own chain. A wallet you name with `from` is refused before any card is made if it's on the other chain, with `WRONG_CHAIN` and words naming both chains. This includes naming the embedded wallet's Solana address for a Hood token (a `0x` address), or its Hood address for a Solana token. `from embedded` takes the embedded wallet on the trade's chain.
+
+A default in `config.toml` that resolves to either embedded address takes the embedded wallet on the trade's chain, whether set as `embedded`, a name for it, or either of its addresses. This also holds when the default is pinned to either embedded address. A TEE default on the other chain is refused before any card is made, with `DEFAULT_WALLET_NOT_PAYABLE` and words naming both chains. On paper, either embedded address is the embedded wallet.
+
 ## The guide
 
 The user guide is on Candle's docs site, at [docs.candle.tv/harness](https://docs.candle.tv/harness):
