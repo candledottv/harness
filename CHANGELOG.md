@@ -15,6 +15,7 @@ Fixes from Candle's review of 0.5.5. None of them changes what can pay, beyond t
 ### Setup
 
 - **Setup ends in live.** Funded at the deposit step, or going on with **Fund it later**, the Harness opens live; so does Straight in. A trade from an unfunded wallet, or from a key not yet allowed a wallet, is refused saying what to do. Paper is still there, from the status bar or by typing `paper`. A fresh `config.toml` says `mode = "live"`; an install that already picked a mode keeps it.
+- **The agent's greeting doesn't suggest paper.** Its examples and its first lines are about trading; paper is still in help and the status bar.
 
 ### The README
 
