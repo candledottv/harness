@@ -19,7 +19,10 @@
 //
 // Where neither holds (an older kernel, Landlock off, another system), the runner isn't offered and the doctor says
 // why. A held script's data is capped (1 GB): on Linux by RLIMIT_DATA, on macOS by the runner's watchdog.
-import { closeSync, existsSync, openSync, readdirSync, readFileSync, realpathSync } from "node:fs"
+import { FFIType } from "bun:ffi"
+import { randomBytes } from "node:crypto"
+import { closeSync, existsSync, mkdtempSync, openSync, readdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs"
+import { tmpdir } from "node:os"
 import { dirname, isAbsolute, join, relative, sep } from "node:path"
 
 export const MIN_LANDLOCK_ABI = 6
@@ -371,25 +374,77 @@ export async function runHeldStage(argv: string[], err: (text: string) => void):
 // ---------------------------------------------------------------------------------------------------------
 // macOS: the Seatbelt profile.
 
-type Sandbox = { symbols: { sandbox_check: (pid: number, operation: null, type: number) => number } }
-let sandboxLib: Sandbox | null | undefined
+/**
+ * A run's own mark: two empty files in a folder of their own, of which the run's profile allows only `allowed`. No
+ * other profile tells two files it has never heard of apart, and a process in no sandbox is allowed both, so a
+ * process that macOS allows `allowed` and refuses `denied` is held by this run's profile and no other. They have to
+ * exist: macOS refuses a path check of a path that doesn't, to every process, held or not. At their real paths, so
+ * the path checked is the path the profile holds. `remove` deletes them once the run's strays are stopped.
+ */
+export interface HoldMark {
+  allowed: string
+  denied: string
+  remove(): void
+}
+
+export function holdMark(): HoldMark {
+  const dir = realpathSync(mkdtempSync(join(tmpdir(), "candle-harness-mark-")))
+  const allowed = join(dir, "in")
+  const denied = join(dir, "out")
+  writeFileSync(allowed, "", { mode: 0o600, flag: "wx" })
+  writeFileSync(denied, "", { mode: 0o600, flag: "wx" })
+  return { allowed, denied, remove: () => rmSync(dir, { recursive: true, force: true }) }
+}
+
+/** sandbox_check's answer for `pid` reading `path`'s metadata: 0 allowed, 1 refused, -1 couldn't ask. */
+export type MarkCheck = (pid: number, path: string) => number
+
+/** Whether `pid` is held by the profile that carries `mark`. */
+export function heldByMark(pid: number, mark: Pick<HoldMark, "allowed" | "denied">, check: MarkCheck): boolean {
+  return check(pid, mark.allowed) === 0 && check(pid, mark.denied) === 1
+}
 
 /**
- * Whether macOS holds process `pid` in a sandbox, any sandbox (libsystem_sandbox's sandbox_check with no operation);
- * false where it can't be asked. The runner sweeps for its own hold's strays with it: a sandboxed process of the
- * person's, started during the run, running a program only the hold's profile would have let it run.
+ * sandbox_check(pid, operation, SANDBOX_FILTER_PATH, path) as bun:ffi has to declare it. The path is its first
+ * variadic argument: Apple's arm64 calls pass those on the stack, after the eight argument registers, so five unused
+ * registers come first; Intel passes it in the fourth register, as any argument.
  */
-export async function inSandbox(pid: number): Promise<boolean> {
-  if (process.platform !== "darwin") return false
-  if (sandboxLib === undefined) {
+export function sandboxCheckArgs(arch: string): FFIType[] {
+  return arch === "arm64"
+    ? [FFIType.i32, FFIType.ptr, FFIType.i32, FFIType.i64, FFIType.i64, FFIType.i64, FFIType.i64, FFIType.i64, FFIType.ptr]
+    : [FFIType.i32, FFIType.ptr, FFIType.i32, FFIType.ptr]
+}
+
+type PathCheck = { symbols: { sandbox_check: (...args: unknown[]) => number } }
+let pathCheckLib: PathCheck | null | undefined
+const SANDBOX_FILTER_PATH = 1
+const cString = (s: string) => Buffer.from(`${s}\0`)
+
+/** Asks macOS whether `pid` may read `path`'s metadata; -1 where it can't be asked. */
+export async function markCheck(): Promise<MarkCheck> {
+  if (process.platform !== "darwin") return () => -1
+  if (pathCheckLib === undefined) {
     try {
-      const { dlopen, FFIType } = await import("bun:ffi")
-      sandboxLib = dlopen("/usr/lib/libSystem.B.dylib", { sandbox_check: { args: [FFIType.i32, FFIType.ptr, FFIType.i32], returns: FFIType.i32 } }) as unknown as Sandbox
+      const { dlopen } = await import("bun:ffi")
+      pathCheckLib = dlopen("/usr/lib/libSystem.B.dylib", { sandbox_check: { args: sandboxCheckArgs(process.arch), returns: FFIType.i32 } }) as unknown as PathCheck
     } catch {
-      sandboxLib = null
+      pathCheckLib = null
     }
   }
-  return sandboxLib ? sandboxLib.symbols.sandbox_check(pid, null, 0 /* SANDBOX_FILTER_NONE */) === 1 : false
+  const lib = pathCheckLib
+  if (!lib) return () => -1
+  const { ptr } = await import("bun:ffi")
+  const operation = cString("file-read-metadata")
+  return (pid, path) => {
+    const p = cString(path)
+    const answer = process.arch === "arm64" ? lib.symbols.sandbox_check(pid, ptr(operation), SANDBOX_FILTER_PATH, 0, 0, 0, 0, 0, ptr(p)) : lib.symbols.sandbox_check(pid, ptr(operation), SANDBOX_FILTER_PATH, ptr(p))
+    return answer === 0 || answer === 1 ? answer : -1
+  }
+}
+
+/** Whether `pid` is held by this run's profile, the one carrying `mark`; false wherever macOS can't say. */
+export async function inThisHold(pid: number, mark: HoldMark): Promise<boolean> {
+  return heldByMark(pid, mark, await markCheck())
 }
 
 /** The folders a program held by the Seatbelt profile can have been started from: what `(allow process-exec …)` names, and the folder. */
@@ -419,9 +474,9 @@ function commandLineTools(): boolean {
  * The command that runs `bin` (the program's real path, never a link to it: Seatbelt refuses to start a link outside
  * the paths it allows) held to `folder`.
  */
-export function heldCommand(platform: NodeJS.Platform, folder: string, reads: readonly string[], bin: string, argv: readonly string[], self: readonly string[]): string[] {
+export function heldCommand(platform: NodeJS.Platform, folder: string, reads: readonly string[], bin: string, argv: readonly string[], self: readonly string[], mark?: HoldMark): string[] {
   return platform === "darwin"
-    ? ["/usr/bin/sandbox-exec", "-p", seatbeltProfile(folder, reads, bin), bin, ...argv]
+    ? ["/usr/bin/sandbox-exec", "-p", seatbeltProfile(folder, reads, bin, mark), bin, ...argv]
     : [...self, "run-held", folder, reads.join(","), "--", bin, ...argv]
 }
 
@@ -436,7 +491,7 @@ const sbString = (s: string) => `"${s.replace(/\\/g, "\\\\").replace(/"/g, '\\"'
  * profile, nothing in the person's home is readable but the folder, and no kern.proc sysctl, which can show
  * another process's arguments and environment.
  */
-export function seatbeltProfile(folder: string, reads: readonly string[], program: string): string {
+export function seatbeltProfile(folder: string, reads: readonly string[], program: string, mark?: HoldMark): string {
   // Apple's /usr/bin shims (python3, git) run the Command Line Tools' or Xcode's copy.
   const shim = program.startsWith("/usr/bin/") ? ["/Library/Developer/CommandLineTools", "/Applications/Xcode.app"] : []
   // Homebrew, only for a runtime that is Homebrew's: its kegs and the links to them, which its libraries load
@@ -480,5 +535,7 @@ export function seatbeltProfile(folder: string, reads: readonly string[], progra
     '  (sysctl-name "kern.usrstack64") (sysctl-name "kern.version") (sysctl-name "sysctl.proc_cputype") (sysctl-name "vm.loadavg"))',
     '(allow mach-lookup (global-name "com.apple.system.opendirectoryd.libinfo"))',
     "(deny network*)",
+    // The run's mark: the runner asks macOS about it to tell this run's processes from any other sandbox's.
+    ...(mark ? [`(allow file-read-metadata (literal ${sbString(mark.allowed)}))`] : []),
   ].join("\n")
 }

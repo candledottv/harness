@@ -117,7 +117,7 @@ test("ps's rows are read as numbers, and anything else is left out", () => {
   expect(parsePs(" 12  1 12 340\nheader line\n 13 12 12 x\n\n")).toEqual([{ pid: 12, ppid: 1, pgid: 12, rssKb: 340 }])
 })
 
-test("the macOS sweep: a sandboxed process of the person's, started during the run, from a folder the hold runs, its parent gone, and its children", async () => {
+test("the macOS sweep: a process of the person's in this run's sandbox, started during the run, from a folder the hold runs, its parent gone, and its children", async () => {
   expect(elapsed("05")).toBeNaN()
   expect(elapsed("00:07")).toBe(7)
   expect(elapsed("01:02:03")).toBe(3723)
@@ -141,12 +141,17 @@ test("the macOS sweep: a sandboxed process of the person's, started during the r
       "350   999 501       00:02 /usr/bin/python3",
       // A path with a space, under the folder.
       "360     1 501       00:01 /Users/you/research folder/link to python",
+      // In another sandbox (a decoy started by hand with sandbox-exec, another run's), though it fits every other rule.
+      "370     1 501       00:02 /bin/sleep",
+      // What that one started.
+      "371   370 501       00:01 /bin/sleep",
       "header line",
     ].join("\n"),
   )
-  const sandboxed = new Set([300, 301, 310, 320, 340, 350, 360])
-  const strays = await sandboxStrays(rows, { uid: 501, ranSeconds: 5, roots: ["/usr/bin", "/bin", "/usr/libexec", "/Users/you/research folder", "/opt/py"], self: 50 }, async (pid) => sandboxed.has(pid))
+  // The processes macOS says are held by this run's profile; 370 and 371 are in a sandbox, but another's.
+  const ours = new Set([300, 301, 310, 320, 340, 350, 360])
+  const strays = await sandboxStrays(rows, { uid: 501, ranSeconds: 5, roots: ["/usr/bin", "/bin", "/usr/libexec", "/Users/you/research folder", "/opt/py"], self: 50 }, async (pid) => ours.has(pid))
   expect(strays.sort()).toEqual([300, 301, 360])
   // A root names a folder, not a prefix of one.
-  expect(await sandboxStrays(rows, { uid: 501, ranSeconds: 5, roots: ["/opt/p"], self: 50 }, async (pid) => sandboxed.has(pid))).toEqual([])
+  expect(await sandboxStrays(rows, { uid: 501, ranSeconds: 5, roots: ["/opt/p"], self: 50 }, async (pid) => ours.has(pid))).toEqual([])
 })

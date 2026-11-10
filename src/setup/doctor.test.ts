@@ -145,7 +145,7 @@ test("all set: every check passes, each agent checked with Candle under its own 
   expect(checks.filter((c) => c.state === "warn")).toEqual([])
   expect(find(checks, "config", /2 agents \(momentum, swing\); the core starts in paper mode \(config\.toml's mode/)).toBeDefined()
   expect(find(checks, "key", new RegExp(`^momentum: key ${LIVE}Momentum…, private \\(0600\\)`))).toBeDefined()
-  expect(find(checks, "candle", /the candle CLI is 0\.13\.18/)).toBeDefined()
+  expect(find(checks, "candle", /the candle CLI is 0\.13\.20/)).toBeDefined()
   expect(find(checks, "claude", /signed in/)).toBeDefined()
   expect(find(checks, "vault", /^a vault is on this machine/)).toMatchObject({ state: "ok" })
   expect(find(checks, "access", /^no agent key is Withdraw/)).toMatchObject({ state: "ok" })
@@ -204,20 +204,20 @@ test("the candle CLI missing, or too old", async () => {
   const checks = await runDoctor({ env: missing.env, online: false })
   expect(find(checks, "candle", /isn't installed/)).toMatchObject({ state: "fail", fix: expect.stringContaining("install.sh") })
   const old = await setup({ cliVersion: "0.11.30" })
-  expect(find(await runDoctor({ env: old.env, online: false }), "candle", /0\.11\.30; the Candle Harness needs 0\.13\.18/)).toMatchObject({ state: "fail", fix: "Run `candle update`." })
+  expect(find(await runDoctor({ env: old.env, online: false }), "candle", /0\.11\.30; the Candle Harness needs 0\.13\.20/)).toMatchObject({ state: "fail", fix: "Run `candle update`." })
 })
 
 test("the CLI's version against the one the Candle Harness was checked against", async () => {
-  const same = await setup({ cliVersion: "0.13.18" })
-  expect(find(await runDoctor({ env: same.env, online: false }), "candle", /^the candle CLI is 0\.13\.18, the version the Candle Harness was checked against$/)).toMatchObject({ state: "ok" })
+  const same = await setup({ cliVersion: "0.13.20" })
+  expect(find(await runDoctor({ env: same.env, online: false }), "candle", /^the candle CLI is 0\.13\.20, the version the Candle Harness was checked against$/)).toMatchObject({ state: "ok" })
   // Older than the one checked against: only that one is supported.
   const older = await setup({ cliVersion: "0.13.5" })
-  expect(find(await runDoctor({ env: older.env, online: false }), "candle", /0\.13\.5; the Candle Harness needs 0\.13\.18 or later/)).toMatchObject({ state: "fail", fix: "Run `candle update`." })
+  expect(find(await runDoctor({ env: older.env, online: false }), "candle", /0\.13\.5; the Candle Harness needs 0\.13\.20 or later/)).toMatchObject({ state: "fail", fix: "Run `candle update`." })
   // Newer: it runs, and what the table doesn't hold is refused.
   const newer = await setup({ cliVersion: "0.14.0" })
   const check = find(await runDoctor({ env: newer.env, online: false }), "candle", /0\.14\.0/)
   expect(check).toMatchObject({ state: "warn" })
-  expect(check!.text).toBe("the candle CLI is 0.14.0; the Candle Harness was checked against 0.13.18, so commands newer than that are refused")
+  expect(check!.text).toBe("the candle CLI is 0.14.0; the Candle Harness was checked against 0.13.20, so commands newer than that are refused")
 })
 
 test("no config: before setup, says where to start as a warning, with no key in it, and still checks the tools", async () => {
@@ -267,7 +267,7 @@ test("while config.toml isn't safe, the doctor runs none of the programs it name
   const dir = tempDir("chrn-dr-ran-")
   const ran = join(dir, "ran.log")
   const program = join(dir, "logs-its-calls")
-  writeFileSync(program, `#!/bin/sh\necho "$@" >> '${ran}'\necho 0.13.18\n`, { mode: 0o755 })
+  writeFileSync(program, `#!/bin/sh\necho "$@" >> '${ran}'\necho 0.13.20\n`, { mode: 0o755 })
   const open = await setup({ cliPath: program, engines: { codex: program, grok: program, opencode: program, pi: program } })
   chmodSync(open.p.configFile, 0o666)
   const checks = await runDoctor({ env: open.env, online: false })

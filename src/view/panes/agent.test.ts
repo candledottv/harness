@@ -4,7 +4,7 @@ import { expect, test } from "bun:test"
 import { C } from "../theme"
 import type { KillReport } from "../../core/kill"
 import type { Exchange } from "../store"
-import { addressLines, conversationLines, greetingLines, highlightedCard, killReportLines, operationTitle, paperFiringLines, replyRows, resendsUnderId, resentWords, unansweredLines, withPrompt } from "./agent"
+import { addressLines, conversationLines, greetingLines, highlightedCard, killReportLines, operationTitle, paperFiringLines, replyRows, resendsUnderId, resentWords, unansweredLines, waitingWords, withPrompt } from "./agent"
 import { textOf } from "./lines"
 import { activityLines } from "./activity"
 
@@ -476,4 +476,11 @@ test("a pause that couldn't be saved says so in amber, whole; a saved one says n
   expect(said).toContain("The pause couldn't be saved")
   expect(said).toContain("Press the kill switch again once it can.")
   expect(texts(killReportLines(report(), {}, NOW, 60))).not.toContain("couldn't be saved")
+})
+
+test("the cards' heading says how to reach them while another pane has the keys, and that ⏎ approves only when this one does", () => {
+  expect(waitingWords(1, true)).toBe("1 card waiting · ctrl-] then ⏎, or click")
+  expect(waitingWords(2, true)).toBe("2 cards waiting · ctrl-] then ⏎, or click")
+  expect(waitingWords(1, true)).not.toContain("⏎ approves")
+  expect(waitingWords(1)).toBe("1 card waiting · ⏎ approves the highlighted one")
 })

@@ -2,6 +2,22 @@
 
 What changed in each version of Candle Harness (called the Candle TUI before 0.3.0). Versions follow [semantic versioning](https://semver.org), and each release is listed on [GitHub](https://github.com/candledottv/harness/releases).
 
+## 0.5.5 (2026-11-10)
+
+The first release since 0.3.0, and it carries everything in 0.5.2, 0.5.3 and 0.5.4 below. **Update from 0.3.0:** see the first line under 0.5.2's "Safety and correctness".
+
+### Candle CLI 0.13.20
+
+- **Owner steps wait for your approval in the browser.** Candle is turning on a browser confirm for owner steps that widen a key's reach: making a key, allowing the embedded wallet, rebinding or promoting a wallet to a key, raising a cap. An older CLI can't finish those steps once it's on. The Harness now needs CLI 0.13.20, and its installer installs it. The prompt pane shows what you're approving, the link and the code, and waits up to 5 minutes. A card for such a step says so before you start. Denied or expired, nothing changes, and the card says which, in plain words.
+
+### Safety and correctness
+
+- **`restart it` starts the login service's core only for the service's own home.** With the service installed for one Harness home and a view open on another (`CANDLE_HARNESS_HOME`), `restart it` stopped the view's core and started the service's, for the other home: the view's home was left with no core, and the other home's triggers and bots started. Now a view on another home restarts a core of its own.
+- **On a Mac, the code runner stops only its own run's processes.** At the end of a run, it stops anything the script left behind in its sandbox, a double fork included. It used to take a process in any sandbox that started during the run, so another app's sandboxed helper could be stopped. Now each run's sandbox carries a mark of its own, and only processes macOS says are held by that mark are stopped.
+- **A default of `embedded` pays on either chain.** Set as an agent's default, `embedded` was pinned to the Solana embedded address, so every Hood trade that named no wallet was refused. Now it pays from the embedded wallet on the trade's chain. On paper, the input line takes either embedded address too.
+- **A click right after a Build card closes approves nothing.** After a Build card closes, by a click, ⏎ or ctrl-n, clicks on cards wait 300 ms, so the second half of a double click can't approve or reject the card beneath.
+- **A TEE wallet made by `vault promote --to-key` can trade.** Such a wallet signs and trades, but the key's wallet list says it can't (`spendCapable: false`) and gives it another id than the portfolio does. The Harness took the list at its word and refused every trade from it with "Candle doesn't list it as able to sign yet". Now, where your agent's Candle MCP server has `candle_get_trading_wallets` (CLI 0.13.19 and later), that read decides whether a wallet can trade, and the wallets are matched to the portfolio by address, not id. With an older CLI, the key's list decides as before.
+
 ## 0.5.4 (2026-11-10)
 
 ### Safety and correctness

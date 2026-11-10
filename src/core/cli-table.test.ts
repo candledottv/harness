@@ -10,9 +10,9 @@ const baseOf = (path: string) => {
 
 describe("the table and the source", () => {
   test("it was read from the pinned CLI source", () => {
-    // candledottv/cli at cli-v0.13.18.
-    expect(SOURCE.source).toMatchObject({ repo: "candledottv/cli", commit: "750bf49a1c08265af41d53ced141d0dd87ca9d38", cliVersion: "0.13.18" })
-    expect(SOURCE.commands.length).toBe(163)
+    // candledottv/cli at cli-v0.13.20.
+    expect(SOURCE.source).toMatchObject({ repo: "candledottv/cli", commit: "3121617d06ad6714ad94fa011b256c375189fed3", cliVersion: "0.13.20" })
+    expect(SOURCE.commands.length).toBe(164)
     expect((SOURCE as { unread?: string[] }).unread).toEqual([])
   })
 
@@ -80,6 +80,15 @@ describe("the table and the source", () => {
         expect(entry.flags?.path ?? []).not.toContain(flag)
       }
     }
+  })
+})
+
+// The rows 0.13.19 and 0.13.20 add or change.
+describe("the read at 0.13.20", () => {
+  test("tee check is a read as the agent's key; transfer takes a --client-id", () => {
+    expect(`${rowFor("tee check")!.rule} ${rowFor("tee check")!.route} ${rowFor("tee check")!.identity}`).toBe("read cli agent")
+    expect(sourceFor("tee", "check")!.flags!.boolean).toContain("--sign")
+    expect(sourceFor("transfer", null)!.flags!.value).toContain("--client-id")
   })
 })
 

@@ -159,8 +159,8 @@ describe("starting the children", () => {
     const { pool } = setup()
     await pool.start()
     const tools = pool.for("momentum").tools()
-    // 0.10.30's 92, less the four listed only to a key that may edit its profile (the fake leaves them out).
-    expect(tools).toHaveLength(88)
+    // 0.10.31's 95, less the four listed only to a key that may edit its profile (the fake leaves them out).
+    expect(tools).toHaveLength(91)
     expect(tools.find((t) => t.name === "candle_trade")!.inputSchema).toEqual(
       fixture.tools.find((t) => t.name === "candle_trade")!.inputSchema as never,
     )

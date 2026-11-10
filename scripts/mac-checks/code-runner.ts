@@ -5,12 +5,15 @@
 // Homebrew's settings folder and the key by the data volume's path (macOS), and a session of its own or a socket
 // by another calling convention's number (Linux). Every route must be held, and the controls (a read and a write
 // inside) must work. Then each runtime starts a child that tries to leave its process group and keeps running:
-// nothing of it may be left once the run has ended, nor of a double fork whose middle process ends at once.
+// nothing of it may be left once the run has ended, nor of a double fork whose middle process ends at once. On
+// macOS, two processes in sandboxes of their own (one that allows by default, one that refuses by default), started
+// from outside during that run and fitting every other rule of the sweep, must still be running after it, and macOS's
+// answers for a held process's mark are printed.
 // Exit 0 when every runtime found was held; 1 otherwise.
 //   mac-checks code-runner [--out <file.json>]
 import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, writeFileSync, existsSync } from "node:fs"
 import { join } from "node:path"
-import { holdSupport } from "../../src/core/hold"
+import { holdMark, holdSupport, markCheck, seatbeltProfile } from "../../src/core/hold"
 import { researchRun } from "../../src/core/research-run"
 
 const PY = `import ctypes, os, signal, socket, sys
@@ -172,6 +175,49 @@ function runningAs(marker: string): number[] {
     .filter((pid) => pid > 0 && pid !== process.pid)
 }
 
+/** Profiles of sandboxes that aren't a run's: one that allows by default, one that refuses by default. */
+export const OTHER_SANDBOXES = [
+  "(version 1)(allow default)",
+  "(version 1)(deny default)(allow process-exec)(allow process-fork)(allow file-read*)(allow file-map-executable)(allow sysctl-read)(allow mach-lookup)",
+]
+
+function alive(pid: number): boolean {
+  try {
+    process.kill(pid, 0)
+    return true
+  } catch {
+    return false
+  }
+}
+
+/** A /bin/sleep in a sandbox of `profile`'s, its parent gone at once, as a double fork leaves one; its pid. */
+function otherSandbox(profile: string): number | undefined {
+  const out = Bun.spawnSync(["/bin/sh", "-c", '/usr/bin/sandbox-exec -p "$1" /bin/sleep 120 >/dev/null 2>&1 & echo $!', "sh", profile]).stdout.toString()
+  const pid = Number(out.trim())
+  return pid > 0 ? pid : undefined
+}
+
+/** macOS's answers (0 allowed, 1 refused, -1 couldn't ask) for a mark: for a process held with it, one in another sandbox, and this one. */
+export interface MarkAnswers {
+  held: [number, number]
+  other: [number, number]
+  self: [number, number]
+}
+
+async function markAnswers(folder: string): Promise<MarkAnswers> {
+  const mark = holdMark()
+  const check = await markCheck()
+  const held = Bun.spawn(["/usr/bin/sandbox-exec", "-p", seatbeltProfile(folder, [], "/bin/sleep", mark), "/bin/sleep", "30"], { stdout: "ignore", stderr: "ignore" })
+  const other = Bun.spawn(["/usr/bin/sandbox-exec", "-p", OTHER_SANDBOXES[0]!, "/bin/sleep", "30"], { stdout: "ignore", stderr: "ignore" })
+  await Bun.sleep(300)
+  const ask = (pid: number): [number, number] => [check(pid, mark.allowed), check(pid, mark.denied)]
+  const answers = { held: ask(held.pid), other: ask(other.pid), self: ask(process.pid) }
+  held.kill("SIGKILL")
+  other.kill("SIGKILL")
+  mark.remove()
+  return answers
+}
+
 const SHIM_SKIPPED = "not installed (Apple's shim; no Command Line Tools), skipped"
 
 export interface RuntimeResult {
@@ -182,6 +228,10 @@ export interface RuntimeResult {
   controls: boolean
   /** Processes the runtime started that were still running after its run ended (the escape run); empty when held. */
   leftRunning?: number[]
+  /** macOS: processes in other sandboxes, started during the double fork's run, that its sweep stopped; empty when bound to its own. */
+  othersStopped?: number[]
+  /** macOS: how many of those were running when the run began. */
+  othersStarted?: number
   note?: string
 }
 
@@ -190,6 +240,8 @@ export interface CodeRunnerResult {
   runtimes: RuntimeResult[]
   /** Files a probe wrote outside the folder, or the process outside it a signal stopped. */
   outside: string[]
+  /** macOS: the mark's answers; held must be [0, 1] and the others anything else. */
+  mark?: MarkAnswers
   pass: boolean
 }
 
@@ -248,9 +300,20 @@ export async function codeRunnerCheck(o: { self: string[]; runtimes?: string[]; 
       const escape = await researchRun({ root: research, programs: [program], args: { program, code: program === "python3" ? PY_ESCAPE : JS_ESCAPE, args: [marker] }, path: o.path ?? process.env.PATH, home, self: o.self })
       // A double fork too: its sleeper's parent is gone before the runner can have seen either.
       const doubleMarker = `chrn-code-run-double-${process.pid}-${program}`
+      // On macOS, during it: processes in other sandboxes that fit the sweep's every other rule. Started first, so they
+      // count as started during the run (the sweep allows a second either side).
+      const others = process.platform === "darwin" ? OTHER_SANDBOXES.map(otherSandbox).filter((pid): pid is number => pid !== undefined) : []
+      await Bun.sleep(others.length ? 200 : 0)
+      const othersStarted = others.filter(alive)
       const double = await researchRun({ root: research, programs: [program], args: { program, code: program === "python3" ? PY_DOUBLE_FORK : JS_DOUBLE_FORK, args: [doubleMarker] }, path: o.path ?? process.env.PATH, home, self: o.self })
       await Bun.sleep(500)
       const leftRunning = [...runningAs(marker), ...runningAs(doubleMarker)]
+      const othersStopped = othersStarted.filter((pid) => !alive(pid))
+      for (const pid of others) {
+        try {
+          process.kill(pid, "SIGKILL")
+        } catch {}
+      }
       for (const pid of leftRunning) {
         try {
           process.kill(pid, "SIGKILL")
@@ -263,6 +326,7 @@ export async function codeRunnerCheck(o: { self: string[]; runtimes?: string[]; 
         leaked: lines.filter((l) => l.startsWith("LEAK ")),
         controls: lines.includes("control inside write ok") && existsSync(join(research, "written.txt")),
         leftRunning: escape.ok && double.ok ? leftRunning : [-1],
+        ...(process.platform === "darwin" ? { othersStopped, othersStarted: othersStarted.length } : {}),
         ...(r.body.stderr ? { note: String(r.body.stderr).slice(0, 400) } : {}),
       })
     }
@@ -270,8 +334,14 @@ export async function codeRunnerCheck(o: { self: string[]; runtimes?: string[]; 
     const killed = other.exitCode !== null || other.signalCode !== null ? ["the process outside was stopped"] : []
     const out = [...wrote, ...killed]
     const ranAny = runtimes.some((r) => r.ran)
-    const pass = ranAny && out.length === 0 && runtimes.every((r) => r.note === "not installed, skipped" || r.note === SHIM_SKIPPED || (r.ran && r.leaked.length === 0 && r.controls && (r.leftRunning ?? []).length === 0))
-    return { support, runtimes, outside: out, pass }
+    const mark = process.platform === "darwin" ? await markAnswers(research) : undefined
+    const markOk = !mark || (mark.held[0] === 0 && mark.held[1] === 1 && !(mark.other[0] === 0 && mark.other[1] === 1) && !(mark.self[0] === 0 && mark.self[1] === 1))
+    const pass =
+      ranAny &&
+      markOk &&
+      out.length === 0 &&
+      runtimes.every((r) => r.note === "not installed, skipped" || r.note === SHIM_SKIPPED || (r.ran && r.leaked.length === 0 && r.controls && (r.leftRunning ?? []).length === 0 && (r.othersStopped ?? []).length === 0))
+    return { support, runtimes, outside: out, ...(mark ? { mark } : {}), pass }
   } finally {
     other.kill()
     listener.stop(true)
@@ -291,8 +361,10 @@ export async function main(): Promise<void> {
       console.log(`== ${r.program}${r.ran ? "" : `: ${r.note}`}`)
       for (const l of [...r.held, ...r.leaked]) console.log(`   ${l}`)
       if (r.ran) console.log(`   controls ${r.controls ? "ok" : "FAILED"} · ${(r.leftRunning ?? []).length === 0 ? "nothing it started was left running" : `LEFT RUNNING after its run: ${(r.leftRunning ?? []).join(", ")}`}${r.note ? ` · stderr: ${r.note}` : ""}`)
+      if (r.ran && r.othersStarted !== undefined) console.log(`   other sandboxes: ${r.othersStarted} started during the run · ${(r.othersStopped ?? []).length === 0 ? "none stopped by it" : `STOPPED BY THE RUN: ${(r.othersStopped ?? []).join(", ")}`}`)
     }
     for (const o of result.outside) console.log(`FAIL: ${o}`)
+    if (result.mark) console.log(`mark answers (allowed, refused): held ${result.mark.held.join(",")} (want 0,1) · other sandbox ${result.mark.other.join(",")} · this process ${result.mark.self.join(",")}`)
   }
   console.log(result.pass ? "PASS: every runtime found was held" : "FAIL")
   if (at >= 0) writeFileSync(process.argv[at + 1]!, `${JSON.stringify(result, null, 2)}\n`)

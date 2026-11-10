@@ -6,7 +6,8 @@
 │                                                                              │
 │  ▸ The embedded wallet                      every plan · fills in 3 to 6 s   │
 │      A new key can't pay from any wallet until you allow one. In the         │
-│      pane, you type the key's prefix, FakeKey1, back to allow this one.      │
+│      pane, you type the key's prefix, FakeKey1, back to allow this one,      │
+│      then approve it in your browser if Candle asks.                         │
 │    ⧉ FakeKey1                                                   1 is a one   │
 │                                                                              │
 │    A wallet of its own  needs a vault first (Pro or Max)                     │
@@ -14,7 +15,6 @@
 │    optional  its name                      the Candle Harness's name for t…  │
 │                                                                              │
 │  no vault: approved by you in the pane                                       │
-│                                                                              │
 │                                                                              │
 │                                                                              │
 │                                                                              │
@@ -33,14 +33,14 @@
 6: 32fe9f/111419×1 ffffff/111419×2 32fe9f/1d2430×2 f6f8fb/1d2430×19 ffffff/1d2430×22 959dab/1d2430×31 ffffff/111419×2 32fe9f/111419×1
 7: 32fe9f/111419×1 ffffff/111419×2 959dab/111419×67 ffffff/111419×9 32fe9f/111419×1
 8: 32fe9f/111419×1 ffffff/111419×2 959dab/111419×70 ffffff/111419×6 32fe9f/111419×1
-9: 32fe9f/111419×1 ffffff/111419×2 32fe9f/111419×2 6cb6ff/111419×10 ffffff/111419×51 959dab/111419×11 ffffff/111419×2 32fe9f/111419×1
-10: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
-11: 32fe9f/111419×1 ffffff/111419×2 959dab/111419×55 ffffff/111419×21 32fe9f/111419×1
-12: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
-13: 32fe9f/111419×1 ffffff/111419×2 32fe9f/111419×2 dde2ea/111419×10 959dab/111419×10 f6f8fb/1d2430×18 959dab/111419×34 ffffff/111419×2 32fe9f/111419×1
-14: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
-15: 32fe9f/111419×1 ffffff/111419×2 f5a524/111419×37 ffffff/111419×39 32fe9f/111419×1
-16: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
+9: 32fe9f/111419×1 ffffff/111419×2 959dab/111419×51 ffffff/111419×25 32fe9f/111419×1
+10: 32fe9f/111419×1 ffffff/111419×2 32fe9f/111419×2 6cb6ff/111419×10 ffffff/111419×51 959dab/111419×11 ffffff/111419×2 32fe9f/111419×1
+11: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
+12: 32fe9f/111419×1 ffffff/111419×2 959dab/111419×55 ffffff/111419×21 32fe9f/111419×1
+13: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
+14: 32fe9f/111419×1 ffffff/111419×2 32fe9f/111419×2 dde2ea/111419×10 959dab/111419×10 f6f8fb/1d2430×18 959dab/111419×34 ffffff/111419×2 32fe9f/111419×1
+15: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
+16: 32fe9f/111419×1 ffffff/111419×2 f5a524/111419×37 ffffff/111419×39 32fe9f/111419×1
 17: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
 18: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
 19: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1

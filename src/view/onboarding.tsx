@@ -464,7 +464,8 @@ function stepThree(input: { view: OnboardingView; local: ObLocal; width: number;
         rows.push(itemRow(items, { kind: "makeKey" }, [["Try again", C.ctl]], [`candle keys create --label ${agent}`, C.dim]))
         return
       }
-      if (f.keyRefused && !revoke.length) rows.push(...para(`Candle refused the last try (${f.keyRefused}): the pane said why. Fix it, then make the key again.`, width, C.look), gap())
+      if (f.keyRefused?.startsWith("OWNER_CONFIRM_") && !revoke.length) rows.push(...para("The last try wasn't approved in your browser, so no key was made. Make the key again, and approve it in your browser while the pane waits.", width, C.look), gap())
+      else if (f.keyRefused && !revoke.length) rows.push(...para(`Candle refused the last try (${f.keyRefused}): the pane said why. Fix it, then make the key again.`, width, C.look), gap())
       if (revoke.length) {
         // A key made but not stored is revoked before another is made, so nothing live is left unheld.
         rows.push(...para(`A key labelled ${view.state.agent?.name ?? agent} was made but not stored: it's live on your account and nothing holds it. Revoke it, then make the key again.`, width, C.look), gap())
@@ -485,6 +486,7 @@ function stepThree(input: { view: OnboardingView; local: ObLocal; width: number;
         rows.push(text("It runs, in the pane:"))
         rows.push(...wrap(`candle ${made.argv.join(" ")}`, width - 2).map((l) => text(`  ${l}`, C.ink)))
         rows.push({ kind: "text", runs: [["  ", C.ink], factorRun()] })
+        rows.push(text("  then your approval in the browser, if Candle asks", C.dim))
       }
       rows.push(gap(), itemRow(items, { kind: "makeKey" }, [["Make the key", C.ctl]]))
       if (f.vault === "present") rows.push(itemRow(items, { kind: "securityKey" }, [["Add a security key to your vault", C.ctl]], ["optional: candle vault enroll security-key", C.dim]))
@@ -493,7 +495,7 @@ function stepThree(input: { view: OnboardingView; local: ObLocal; width: number;
     case "wallet": {
       const prefix = f.key.state === "stored" ? f.key.prefix : undefined
       rows.push(itemRow(items, { kind: "allowEmbedded" }, [["The embedded wallet", C.ctl]], ["every plan · fills in 3 to 6 s", C.dim]))
-      rows.push(...under(`A new key can't pay from any wallet until you allow one. In the pane, you type the key's prefix${prefix ? `, ${prefix},` : ""} back to allow this one.`, false))
+      rows.push(...under(`A new key can't pay from any wallet until you allow one. In the pane, you type the key's prefix${prefix ? `, ${prefix},` : ""} back to allow this one, then approve it in your browser if Candle asks.`, false))
       // The prefix exactly, since Candle checks it exactly: its look-alike characters named, and a copy.
       if (prefix) rows.push(itemRow(items, { kind: "copy", text: prefix, what: "the key's prefix" }, [[`⧉ ${prefix}`, C.ctl]], [lookAlikes(prefix) ?? "", C.dim]))
       rows.push(gap())

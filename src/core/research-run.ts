@@ -10,7 +10,7 @@ import { mkdir, readdir, rm, writeFile } from "node:fs/promises"
 import { realpathSync } from "node:fs"
 import { basename, isAbsolute, join } from "node:path"
 export { RUN_EXAMPLE, runEntryFault, runOn, type RunSetting, runWords } from "../engine/tools"
-import { HOLD_DATA_LIMIT, RuntimePlaceRefused, appleShimWithoutTools, heldCommand, heldEnv, holdSupport, inSandbox, installReads, seatbeltExecRoots } from "./hold"
+import { HOLD_DATA_LIMIT, RuntimePlaceRefused, appleShimWithoutTools, heldCommand, heldEnv, holdMark, holdSupport, inThisHold, installReads, seatbeltExecRoots } from "./hold"
 
 export const RUN_TIMEOUT_MS = 60_000
 export const RUN_OUTPUT_BYTES = 16 * 1024
@@ -141,12 +141,20 @@ async function runOnce(o: RunOptions): Promise<RunAnswer> {
     return refuse("RUNTIME_PLACE", `${program} is installed in a folder that holds your own files (${bin}), and a script it ran could read them, so it ran nothing. Install ${program} in a folder of its own.`)
   }
 
-  const command = heldCommand(platform, folder, reads, bin, argv, o.self)
+  // macOS: the run's mark, which tells its own processes from any other sandbox's when the run's strays are swept.
+  const mark = platform === "darwin" ? holdMark() : undefined
+  const command = heldCommand(platform, folder, reads, bin, argv, o.self, mark)
   // The stage holds itself before it runs anything; on macOS sandbox-exec takes the held program's environment.
   const env = platform === "darwin" ? heldEnv(folder, bin) : { PATH: "/usr/bin:/bin", LANG: "C.UTF-8", ...(o.home ? { HOME: o.home } : {}) }
   const started = now()
   // Linux's stage is this binary, and it moves into the folder itself once it has started.
-  const child = Bun.spawn(command, { cwd: platform === "darwin" ? folder : "/", env, stdin: "ignore", stdout: "pipe", stderr: "pipe", detached: true })
+  let child: ReturnType<typeof Bun.spawn<"ignore", "pipe", "pipe">>
+  try {
+    child = Bun.spawn(command, { cwd: platform === "darwin" ? folder : "/", env, stdin: "ignore", stdout: "pipe", stderr: "pipe", detached: true })
+  } catch (error) {
+    mark?.remove()
+    throw error
+  }
   const group = child.pid
   // What the program started, where it can leave its group (macOS): followed while it runs, stopped with it.
   const tree = platform === "darwin" ? new ProcessTree(group) : undefined
@@ -161,9 +169,9 @@ async function runOnce(o: RunOptions): Promise<RunAnswer> {
   const uid = process.getuid?.() ?? -1
   const killAll = async () => {
     killGroup()
-    if (!tree) return
+    if (!tree || !mark) return
     for (const pid of tree.alive(await psRows())) killPid(pid)
-    for (const pid of await sandboxStrays(await strayRows(), { uid, ranSeconds: (now() - started) / 1000, roots, self: process.pid }, inSandbox)) killPid(pid)
+    for (const pid of await sandboxStrays(await strayRows(), { uid, ranSeconds: (now() - started) / 1000, roots, self: process.pid }, (pid) => inThisHold(pid, mark))) killPid(pid)
   }
   let timedOut = false
   let overMemory = false
@@ -194,6 +202,8 @@ async function runOnce(o: RunOptions): Promise<RunAnswer> {
   if (tree) tree.see(await psRows())
   await killAll()
   clearTimeout(timer)
+  // Its strays are stopped: the mark has done its work.
+  mark?.remove()
   if (watch) clearInterval(watch)
   if (early) clearInterval(early)
   if (settle) clearTimeout(settle)
@@ -284,7 +294,8 @@ export function parsePs(out: string): PsRow[] {
     .map(([pid, ppid, pgid, rssKb]) => ({ pid: pid!, ppid: ppid!, pgid: pgid!, rssKb: rssKb! }))
 }
 
-async function psRows(): Promise<PsRow[]> {
+/** Every process's pid, parent, group and memory, by `ps` at its full path. */
+export async function psRows(): Promise<PsRow[]> {
   try {
     const ps = Bun.spawn(["/bin/ps", "-A", "-o", "pid=,ppid=,pgid=,rss="], { stdout: "pipe", stderr: "ignore" })
     return parsePs(await new Response(ps.stdout).text())
@@ -323,7 +334,8 @@ export function parseStrayPs(out: string): StrayRow[] {
   return rows
 }
 
-async function strayRows(): Promise<StrayRow[]> {
+/** Every process's pid, parent, owner, age and program, by `ps` at its full path. */
+export async function strayRows(): Promise<StrayRow[]> {
   try {
     const ps = Bun.spawn(["/bin/ps", "-A", "-o", "pid=,ppid=,uid=,etime=,comm="], { stdout: "pipe", stderr: "ignore" })
     return parseStrayPs(await new Response(ps.stdout).text())
@@ -333,26 +345,27 @@ async function strayRows(): Promise<StrayRow[]> {
 }
 
 /**
- * The macOS hold's strays: the person's processes in a sandbox, started since the run began, running a program from
- * a folder the hold's profile lets run, that were handed to the system's first process (their parent gone), and
- * whatever those started under them. A double fork whose middle process ends at once is found here, whatever group
- * or session it moved to; `sandboxed` asks the system which processes are in a sandbox at all.
+ * The macOS hold's strays: the person's processes held by this run's own profile, started since the run began,
+ * running a program from a folder the hold's profile lets run, that were handed to the system's first process (their
+ * parent gone), and whatever those started under them. A double fork whose middle process ends at once is found here,
+ * whatever group or session it moved to. `ours` asks the system whether a process is in this run's sandbox (by the
+ * run's mark): a process in any other sandbox, an app's or another run's, is never taken.
  */
 export async function sandboxStrays(
   rows: readonly StrayRow[],
   o: { uid: number; ranSeconds: number; roots: readonly string[]; self: number },
-  sandboxed: (pid: number) => Promise<boolean>,
+  ours: (pid: number) => Promise<boolean>,
 ): Promise<number[]> {
   const fits = (r: StrayRow) =>
     r.uid === o.uid && r.pid !== o.self && r.ageS <= o.ranSeconds + 1 && o.roots.some((root) => r.command === root || r.command.startsWith(root.endsWith("/") ? root : `${root}/`))
   const found = new Set<number>()
   const asked = new Map<number, boolean>()
-  const isSandboxed = async (pid: number) => asked.get(pid) ?? (asked.set(pid, await sandboxed(pid)), asked.get(pid)!)
+  const isOurs = async (pid: number) => asked.get(pid) ?? (asked.set(pid, await ours(pid)), asked.get(pid)!)
   for (let grew = true; grew; ) {
     grew = false
     for (const r of rows) {
       if (found.has(r.pid) || !fits(r) || !(r.ppid === 1 || found.has(r.ppid))) continue
-      if (!(await isSandboxed(r.pid))) continue
+      if (!(await isOurs(r.pid))) continue
       found.add(r.pid)
       grew = true
     }

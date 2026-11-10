@@ -3,8 +3,8 @@
   "source": {
     "repo": "candledottv/cli",
     "path": "packages/cli/src",
-    "commit": "750bf49a1c08265af41d53ced141d0dd87ca9d38",
-    "cliVersion": "0.13.18"
+    "commit": "3121617d06ad6714ad94fa011b256c375189fed3",
+    "cliVersion": "0.13.20"
   },
   "aliases": {
     "wallet": "wallets"
@@ -711,6 +711,10 @@
       "summary": "Dedicated TEE wallet keys for agents: seal, delegate, fund, sweep",
       "rows": [
         {
+          "invocation": "check <address|id|label>... [--label-prefix <p>] [--sign] [--max <n>] [--rpc-url <url>]",
+          "description": "Check payable membership, record parity and this machine's signer without spending. --sign builds a tiny SOL/USDC quote, checks spend, signs and simulates; never broadcasts (default cap 10). Needs swap:write"
+        },
+        {
           "invocation": "new [--label <name>]",
           "description": "Add a Solana key to an existing tee-wallets.enc. With no store, refuses: candle vault new-key --chain solana, then candle vault promote --from <label> --to-key <prefix>. --factor does not apply"
         },
@@ -1056,6 +1060,7 @@
         "value": [
           "--amount",
           "--asset",
+          "--client-id",
           "--mint",
           "--rpc-url",
           "--to",
@@ -3922,6 +3927,28 @@
         "pathPositionals": []
       },
       "identity": "none",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
+    },
+    {
+      "command": "tee",
+      "subcommand": "check",
+      "handler": "teeCheck",
+      "file": "trading-checks.ts",
+      "flags": {
+        "value": [
+          "--label-prefix",
+          "--max",
+          "--rpc-url"
+        ],
+        "boolean": [
+          "--sign"
+        ],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "agent",
       "json": true,
       "unlocks": "never",
       "tty": []

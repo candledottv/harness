@@ -102,6 +102,11 @@ export const TOOL_CLASSES: Readonly<Record<string, ToolClass>> = {
   candle_get_paper_inventory: READ,
   candle_get_profile_paper: READ,
   candle_get_account_pnl: READ,
+  // New in server 0.10.31 (CLI 0.13.19): a price before a trade, which moves nothing; the key's own TEE wallets
+  // with whether each may pay; and each wallet the key may spend from with its balances. Reads only.
+  candle_quote: READ,
+  candle_get_trading_wallets: READ,
+  candle_get_spendable_balances: READ,
   candle_get_staking: READ,
   candle_perps_markets: READ,
   candle_perps_market: READ,

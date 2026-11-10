@@ -427,7 +427,7 @@ const groupAlive = (pid: number): boolean => {
  * One bot's log: line by line, each redacted, timestamped and tagged, the last `logBytes` kept as two files
  * (`<name>.log` and `<name>.log.1`), and at most `perMinute` bytes a minute; past it, lines are counted and said.
  */
-class BotLog {
+export class BotLog {
   private handle: FileHandle | undefined
   private size = 0
   private chain: Promise<void> = Promise.resolve()
