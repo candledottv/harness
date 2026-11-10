@@ -1683,7 +1683,7 @@ export function rootChecks(uid: number | undefined, platform: NodeJS.Platform): 
 /** The running core's version against this binary's: a warning when they differ, with how to restart it. */
 export function coreVersionChecks(running: string | undefined, ours: string): Check[] {
   const words = staleCoreWords(running, ours)
-  return words ? [{ area: "core", state: "warn", text: words[0]!.toLowerCase() + words.slice(1).replace(/\.$/, ""), fix: `Run \`candle-harness stop\`, then open candle-harness again (or \`candle-harness service install\` for the login service's core).` }] : []
+  return words ? [{ area: "core", state: "warn", text: words[0]!.toLowerCase() + words.slice(1).replace(/\.$/, ""), fix: `Open candle-harness and choose \`restart it\` in its status bar. Or run \`candle-harness stop\`, then open candle-harness again (with the login service, \`candle-harness service install\` instead, so its core runs on after the view quits).` }] : []
 }
 
 /** A harness on a newer major version than the one its holds were checked on: said, and nothing is blocked. */
@@ -2103,7 +2103,9 @@ export function keptRunningWords(r: KeptRead): Check[] {
   if (r.core) {
     const who = `the running core${r.core.pid ? ` (pid ${r.core.pid})` : ""}`
     const holds = r.core.holds ?? []
-    if (r.core.headless) out.push({ area: "core", state: "ok", text: `${who} is headless: it runs until \`candle-harness stop\`${holds.length ? `; now ${holds.join(", ")}` : ""}` })
+    const services = r.service?.installed && r.core.pid !== undefined && r.service.running === r.core.pid
+    if (services) out.push({ area: "core", state: "ok", text: `${who} is the login service's: it runs until \`candle-harness stop\`, and starts again at your next login${holds.length ? `; now ${holds.join(", ")}` : ""}` })
+    else if (r.core.headless) out.push({ area: "core", state: "ok", text: `${who} is headless: it runs until \`candle-harness stop\`${holds.length ? `; now ${holds.join(", ")}` : ""}` })
     else out.push({ area: "core", state: "ok", text: holds.length ? `${who} was started by a view, and is held up by: ${holds.join(", ")}` : `${who} was started by a view, and nothing holds it: it exits within a minute` })
     const on = r.core.triggersOn ?? 0
     if (on) out.push({ area: "trigger", state: "ok", text: `${n(on, "trigger")} on ${on === 1 ? "keeps" : "keep"} the core running after the view quits; \`candle-harness stop\` ends it` })

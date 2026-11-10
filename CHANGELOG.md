@@ -2,6 +2,24 @@
 
 What changed in each version of Candle Harness (called the Candle TUI before 0.3.0). Versions follow [semantic versioning](https://semver.org), and each release is listed on [GitHub](https://github.com/candledottv/harness/releases).
 
+## 0.5.4 (2026-11-10)
+
+### Safety and correctness
+
+- **`restart it` keeps the login service's core.** After an update, the status bar's `restart it` stopped the old core and started one of the view's own, which exits a minute after the view quits. With the login service installed, that left no core, and no triggers or bots, until the next login. Now, with the service loaded, the new core is the service's (`launchctl kickstart` on macOS, `systemctl --user start` on Linux), and it runs on after you quit. The installer and `candle-harness doctor` now point to `restart it`.
+- **One click approves once.** One click on a card's `approve` could reach the core twice; the second was refused, and its red "This card is being approved." stayed on the message line. Now, while a card's approval is on its way, another click or ⏎ on it sends nothing.
+- **A click on a bot's card closes it, as ⏎ does.** A code bot's card from the Build tab, approved or rejected by a click, stayed open but drew nothing. It held the keys from your harness, and your harness's next bot card went to the strip instead of opening over the frame.
+
+### Bots
+
+- **A bot that crashed and isn't started again no longer shows as on.** Its dot is red, and the Bots heading counts it as crashed ("1 on · 1 crashed"), not on.
+- **The bots folder's AGENTS.md says never to write a mint from memory.** A harness should look a token up through the client and check it before the code uses it. Existing folders get the new file unless you've changed yours.
+
+### Words
+
+- **"Too small" says when the kill switch is on.** With the window too small to draw, the first ctrl-x says "ctrl-x again to kill", and once the switch is on, the screen says so.
+- **The doctor names the login service's core** as the service's, not as "headless".
+
 ## 0.5.3 (2026-11-10)
 
 ### Safety and correctness

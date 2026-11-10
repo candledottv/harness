@@ -12,6 +12,7 @@ import { VERSION } from "../version"
 import { App } from "./app"
 import { attachView, restartCore } from "./attach"
 import { staleCoreVersion } from "./status-bar"
+import { answers } from "../shared/socket-path"
 
 type Setup = Awaited<ReturnType<typeof testRender>>
 let setup: Setup | undefined
@@ -120,5 +121,25 @@ test("the restart stops the running core and starts this binary's, and the view'
       process.kill(second, "SIGTERM")
       await until(() => !pidIsAlive(second!), 10_000)
     }
+  }
+}, 60_000)
+
+test("with the login service loaded, the restart leaves the new core to the service and starts none of the view's own", async () => {
+  const MAIN = join(import.meta.dir, "../main.ts")
+  const { home, p } = await testHome()
+  const env = { ...process.env, CANDLE_HARNESS_HOME: home }
+  const self = [process.execPath, MAIN]
+  const { session } = await attachView({ paths: p, self, env, timeoutMs: 20_000 })
+  let asked = 0
+  try {
+    const first = (await session.request<{ pid?: number }>("core.status")).pid!
+    await restartCore({ paths: p, self, env, request: (m, params) => session.request(m, params), startService: () => (asked++, true) })
+    expect(asked).toBe(1)
+    await until(() => !pidIsAlive(first), 15_000)
+    // Nothing of the view's own answers: the service would start the core, and this fake one starts none.
+    await Bun.sleep(1_500)
+    expect(await answers(p.socket)).toBe(false)
+  } finally {
+    session.close()
   }
 }, 60_000)

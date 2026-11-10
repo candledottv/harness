@@ -324,9 +324,16 @@ test("too small to draw, Enter approves nothing and typing goes nowhere; the kil
   // The kill switch, from a window too small to draw.
   await input(() => setup!.resize(40, 12))
   await input(() => setup!.mockInput.pressKey("x", { ctrl: true }))
+  // The first press is said here, where the status bar isn't drawn.
+  expect(frame()).toContain("ctrl-x again to kill")
   clock += 300
   await input(() => setup!.mockInput.pressKey("x", { ctrl: true }))
   expect(session.methods()).toContain("kill")
+  // And once the core says the switch is on, so is that.
+  await input(() => session.push("status", { ...status(), paused: true }, true))
+  // At 40 columns it wraps.
+  expect(frame().replace(/\s+/g, " ")).toContain("Kill switch on: buys paused. Sells still work.")
+  expect(frame()).not.toContain("still kills")
 })
 
 test("ctrl-o shows what the highlighted card is bound to", async () => {

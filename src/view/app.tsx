@@ -386,6 +386,9 @@ export function App({ session, onQuit, restartCore, now = Date.now, tickMs = 250
     return true
   })
   void aliasesRead
+  // The cards with an approval sent and not yet answered: a second press or click meanwhile (a terminal's click
+  // reported twice) sends nothing, so the core's "being approved" never shows as a refusal.
+  const approvingRef = useRef(new Set<string>())
   // The chain running, if one is, and what it says while it waits.
   const chainRef = useRef<RunningChain | undefined>(undefined)
   const [chainWords, setChainWords] = useState<string | undefined>(undefined)
@@ -788,6 +791,9 @@ export function App({ session, onQuit, restartCore, now = Date.now, tickMs = 250
   // A code bot's card the Build pane's harness proposed opens whole over the frame, once, with focus on it.
   const buildCardsSeen = useRef(new Set<string>())
   useEffect(() => {
+    // One that's no longer waiting (approved in another view, expired) closes: drawn as nothing, it would hold the keys.
+    const o = uiRef.current.overlay
+    if (o?.kind === "card" && o.build && !openCards(view).some((c) => c.cardId === o.cardId)) dispatch({ type: "closeOverlay", now: now() })
     for (const c of openCards(view)) {
       if (c.origin?.role !== "build" || buildCardsSeen.current.has(c.cardId)) continue
       buildCardsSeen.current.add(c.cardId)
@@ -1616,15 +1622,20 @@ export function App({ session, onQuit, restartCore, now = Date.now, tickMs = 250
         return command(effect.command, effect.line)
       case "approve": {
         const card = viewRef.current.cards.find((c) => c.cardId === effect.cardId)
-        if (!card) return
+        if (!card || approvingRef.current.has(card.cardId)) return
         // A chain's card approved after it expired comes back as a fresh one, which the chain then waits on.
         const chain = chainRef.current?.wait?.cardId === card.cardId ? chainRef.current : undefined
         if (chain) chain.approving = card.cardId
-        await call<{ kind: string; fresh?: { cardId?: string; opId?: string } }>("cards.approve", { cardId: card.cardId, cardHash: card.cardHash, how: effect.how }, (r) => {
-          if (chain && chainRef.current === chain && r.kind === "reproposed" && r.fresh?.cardId) chain.wait = { cardId: r.fresh.cardId, ...(r.fresh.opId ? { opId: r.fresh.opId } : {}) }
-          if (r.kind === "pane") return openPrompt(r as unknown as PaneOpened)
-          return r.kind === "reproposed" ? "That card had expired, so here's a fresh one at the current price." : undefined
-        })
+        approvingRef.current.add(card.cardId)
+        try {
+          await call<{ kind: string; fresh?: { cardId?: string; opId?: string } }>("cards.approve", { cardId: card.cardId, cardHash: card.cardHash, how: effect.how }, (r) => {
+            if (chain && chainRef.current === chain && r.kind === "reproposed" && r.fresh?.cardId) chain.wait = { cardId: r.fresh.cardId, ...(r.fresh.opId ? { opId: r.fresh.opId } : {}) }
+            if (r.kind === "pane") return openPrompt(r as unknown as PaneOpened)
+            return r.kind === "reproposed" ? "That card had expired, so here's a fresh one at the current price." : undefined
+          })
+        } finally {
+          approvingRef.current.delete(card.cardId)
+        }
         if (chain) {
           chain.approving = undefined
           checkChain()
@@ -2357,7 +2368,7 @@ export function App({ session, onQuit, restartCore, now = Date.now, tickMs = 250
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [behindCount])
 
-  if (width < MIN_COLS || height < MIN_ROWS) return <TooSmall width={width} height={height} cards={openCards(view).length} />
+  if (width < MIN_COLS || height < MIN_ROWS) return <TooSmall width={width} height={height} cards={openCards(view).length} killArmed={ui.killArmedAt !== undefined} paused={view.status?.paused === true} />
 
   const cards = openCards(view)
   const ctxNow = context()

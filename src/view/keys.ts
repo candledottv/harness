@@ -575,12 +575,21 @@ export function enterReadyAt(card: ViewCard, state: Pick<UiState, "shownSince">,
   return Math.max(seen + (ctx.behind?.[card.cardId] ? APPROVE_AFTER_BEHIND_MS : APPROVE_AFTER_MS), shown + APPROVE_AFTER_MS)
 }
 
+/**
+ * When a click may approve a card: 300 ms after it showed, counted as Enter's is but without the newcomer's longer
+ * wait, for a click was aimed at it. A Build card's click closing over the frame counts as shown too: what the overlay
+ * hid is only then on screen, so the second half of a double click can't approve the card beneath.
+ */
+function clickReadyAt(card: ViewCard, state: Pick<UiState, "shownSince">, ctx: Pick<UiContext, "seenAt">, now: number): number {
+  return Math.max(ctx.seenAt[card.cardId] ?? now, state.shownSince ?? Number.NEGATIVE_INFINITY) + APPROVE_AFTER_MS
+}
+
 function approve(state: UiState, card: ViewCard | undefined, ctx: UiContext, now: number, how: "enter" | "click"): Step {
   if (!card) return done(state)
   // Funds out to a new address: a click on "yes, a new address", never Enter.
   if (card.display.newAddress && how === "enter") return done(say(state, "This sends to a new address: check it in full on the card, then click yes, a new address.", now, "error"))
   // A card that's only just appeared can't be approved by a key meant for something else. A click was aimed at it.
-  if (now < (how === "enter" ? enterReadyAt(card, state, ctx, now) : (ctx.seenAt[card.cardId] ?? now) + APPROVE_AFTER_MS)) return done(state)
+  if (now < (how === "enter" ? enterReadyAt(card, state, ctx, now) : clickReadyAt(card, state, ctx, now))) return done(state)
   return done(state, { type: "approve", cardId: card.cardId, how })
 }
 
@@ -1920,11 +1929,14 @@ function onOverlayKey(state: UiState, key: Key, ctx: UiContext, now: number): St
   // the card waits in the strip; ctrl-n rejects it. Any other key leaves it open, so a stray letter never closes it.
   if (overlay.kind === "card" && overlay.build) {
     const card = ctx.cards.find((c) => c.cardId === overlay.cardId)
+    // ⏎ and ctrl-n close it over what was hidden: the close starts the 300 ms again (as a click's close does), so a
+    // click meant for the card that was beneath approves and rejects nothing. Esc is a deliberate return to the
+    // harness, so it doesn't.
     if (key.name === "return" || key.name === "enter" || key.name === "kpenter") {
       const step = approve({ ...closed, focusedCardId: overlay.cardId }, card, ctx, now, "enter")
-      return step.effects.length ? step : done(state)
+      return step.effects.length ? { ...step, state: { ...step.state, shownSince: now } } : done(state)
     }
-    if (pressed(key, "reject")) return done(closed, { type: "reject", cardId: overlay.cardId })
+    if (pressed(key, "reject")) return done({ ...closed, shownSince: now }, { type: "reject", cardId: overlay.cardId })
     if (key.name === "escape") return done(focusPane(closed, "build"))
     return done(state)
   }
@@ -2092,6 +2104,12 @@ export function joinWrappedAddresses(text: string): string {
   return text.replace(WRAPPED, (all, left: string, right: string) => (left.length + right.length >= 32 && left.length + right.length <= 44 ? left + right : all))
 }
 
+/** Whether a Build card is open over the frame for this card. */
+const buildCardOpen = (state: UiState, cardId: string): boolean => state.overlay?.kind === "card" && state.overlay.build === true && state.overlay.cardId === cardId
+
+/** A card overlay whose card isn't waiting any more (approved, rejected or expired elsewhere): nothing is drawn for it. */
+const staleCardOverlay = (state: UiState, ctx: UiContext): boolean => state.overlay?.kind === "card" && !ctx.cards.some((c) => c.cardId === (state.overlay as { cardId: string }).cardId)
+
 export function step(state: UiState, action: UiAction, ctx: UiContext): Step {
   const next = stepOnce(state, action, ctx)
   // The Journal's search takes keys only while the Journal has focus: a click or a key elsewhere gives them back.
@@ -2148,10 +2166,19 @@ function stepOnce(state: UiState, action: UiAction, ctx: UiContext): Step {
       const mint = card?.display.mint
       return done({ ...state, focus: "cards", focusedCardId: action.cardId }, ...(mint ? [{ type: "link" as const, mint, from: "a card" }] : []))
     }
-    case "clickApprove":
-      return approve({ ...state, focusedCardId: action.cardId }, ctx.cards.find((c) => c.cardId === action.cardId), ctx, action.now, "click")
-    case "clickReject":
+    case "clickApprove": {
+      // A Build card open over the frame closes once it's approved, as ⏎ closes it: left open, it would hold the
+      // keys from the harness and keep the next bot's card in the strip. What it hid is only then shown, so the
+      // close starts the 300 ms again: a double click's second half can't approve the card beneath.
+      const step = approve({ ...state, focusedCardId: action.cardId }, ctx.cards.find((c) => c.cardId === action.cardId), ctx, action.now, "click")
+      return step.effects.length && buildCardOpen(state, action.cardId) ? { ...step, state: { ...step.state, shownSince: action.now, overlay: undefined } } : step
+    }
+    case "clickReject": {
+      // The close on a Build card's reject starts the same 300 ms: within it, a click rejects nothing.
+      if (buildCardOpen(state, action.cardId)) return done({ ...state, shownSince: action.now, overlay: undefined }, { type: "reject", cardId: action.cardId })
+      if (state.shownSince !== undefined && action.now < state.shownSince + APPROVE_AFTER_MS) return done(state)
       return done(state, { type: "reject", cardId: action.cardId })
+    }
     case "clickDetails":
       return done({ ...state, focus: "cards", focusedCardId: action.cardId, overlay: { kind: "card", cardId: action.cardId } })
     case "closeOverlay":
@@ -2305,7 +2332,7 @@ function stepOnce(state: UiState, action: UiAction, ctx: UiContext): Step {
       // Not over another overlay the person is using: the card waits in the strip, as any card does.
       // Mid-sentence in the harness's terminal, the card shows but the keys stay where the person is typing:
       // their Enter is the harness's send key, not an approval.
-      return state.overlay ? done(state) : done({ ...state, focusedCardId: action.cardId, overlay: { kind: "card", cardId: action.cardId, build: true, ...(action.typing ? { waiting: true as const } : {}) } })
+      return state.overlay && !staleCardOverlay(state, ctx) ? done(state) : done({ ...state, focusedCardId: action.cardId, overlay: { kind: "card", cardId: action.cardId, build: true, ...(action.typing ? { waiting: true as const } : {}) } })
     case "takeBuildCard":
       return state.overlay?.kind === "card" && state.overlay.waiting ? done({ ...state, shownSince: action.now, overlay: { kind: "card", cardId: state.overlay.cardId, build: true } }) : done(state)
     case "shown":

@@ -5,7 +5,7 @@ import { afterAll, expect, test } from "bun:test"
 import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs"
 import { dirname, join } from "node:path"
 import { paths } from "../paths"
-import { launchAgentText, oldServiceFile, onePath, type Ran, serviceCommand, type ServiceDeps, serviceFile, shownText, systemdUnitText, UnitWordRefused } from "./service"
+import { launchAgentText, oldServiceFile, onePath, type Ran, serviceCommand, type ServiceDeps, serviceFile, shownText, startServiceCore, systemdUnitText, UnitWordRefused } from "./service"
 
 const dirs: string[] = []
 afterAll(() => {
@@ -432,4 +432,34 @@ test("the service's PATH carries no entry that isn't a full path, and install sa
   const clean = io()
   await serviceCommand(["install"], clean.io, deps("darwin", home()))
   expect(clean.text()).not.toContain("Left out of its PATH")
+})
+
+test("a restart's new core is the service's when it's loaded: kickstart on macOS, start on Linux; otherwise not loaded, and nothing run", () => {
+  const h = home()
+  const mac = deps("darwin", h, {}, { loaded: true, lag: 0, unloading: 0 })
+  expect(startServiceCore(mac)).toBe("not loaded") // no file: not installed
+  mkdirSync(dirname(serviceFile(mac)!), { recursive: true })
+  writeFileSync(serviceFile(mac)!, "x")
+  expect(startServiceCore(mac)).toBe("started")
+  expect(mac.ran).toEqual(["launchctl print gui/501/tv.candle.harness.core", "launchctl kickstart gui/501/tv.candle.harness.core"])
+  expect(mac.launchd.pid).toBe(4243)
+
+  const unloaded = deps("darwin", h)
+  expect(startServiceCore(unloaded)).toBe("not loaded")
+  expect(unloaded.ran).toEqual(["launchctl print gui/501/tv.candle.harness.core"])
+
+  const failing = deps("darwin", h, { "launchctl kickstart gui/501/tv.candle.harness.core": { code: 37, stdout: "", stderr: "Operation not permitted" } }, { loaded: true, lag: 0, unloading: 0 })
+  expect(startServiceCore(failing)).toEqual({ failed: "Operation not permitted" })
+
+  const l = home()
+  const enabled = deps("linux", l, { "systemctl --user is-enabled candle-harness-core.service": { code: 0, stdout: "enabled\n", stderr: "" } })
+  mkdirSync(dirname(serviceFile(enabled)!), { recursive: true })
+  writeFileSync(serviceFile(enabled)!, "x")
+  expect(startServiceCore(enabled)).toBe("started")
+  expect(enabled.ran).toEqual(["systemctl --user is-enabled candle-harness-core.service", "systemctl --user start candle-harness-core.service"])
+  const disabled = deps("linux", l, { "systemctl --user is-enabled candle-harness-core.service": { code: 1, stdout: "disabled\n", stderr: "" } })
+  expect(startServiceCore(disabled)).toBe("not loaded")
+  expect(disabled.ran).toEqual(["systemctl --user is-enabled candle-harness-core.service"])
+
+  expect(startServiceCore(deps("win32", h))).toBe("not loaded")
 })

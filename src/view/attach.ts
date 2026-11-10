@@ -42,15 +42,18 @@ export async function startCoreProcess(input: { paths: Paths; self: string[]; en
 /**
  * The person's own restart of a core that still runs an older version than this binary: the core is asked to
  * stop, as `candle-harness stop` asks it, and once its socket is quiet a core of this binary is started. The
- * view's session finds it by itself. Throws when the old core doesn't go, having started nothing.
+ * view's session finds it by itself. With the login service loaded, the new core is the service's (`startService`),
+ * so it keeps running after the view quits; a core of the view's own is started only when that can't be done.
+ * Throws when the old core doesn't go, having started nothing.
  */
-export async function restartCore(input: { paths: Paths; self: string[]; env: Record<string, string | undefined>; request: (method: string, params?: Record<string, unknown>) => Promise<unknown>; waitMs?: number }): Promise<void> {
+export async function restartCore(input: { paths: Paths; self: string[]; env: Record<string, string | undefined>; request: (method: string, params?: Record<string, unknown>) => Promise<unknown>; waitMs?: number; startService?: () => boolean }): Promise<void> {
   await input.request("core.stop", {}).catch(() => {})
   const until = Date.now() + (input.waitMs ?? START_TIMEOUT_MS)
   while (await answers(input.paths.socket)) {
     if (Date.now() > until) throw new CoreClientError("CORE_DIDNT_STOP", "The core was asked to stop and is still running: `candle-harness stop` in another terminal says more.")
     await Bun.sleep(100)
   }
+  if (input.startService?.()) return
   await startCoreProcess(input)
 }
 

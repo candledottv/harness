@@ -398,7 +398,7 @@ echo "Installed candle-harness ${version} to ${BIN_DIR}/candle-harness${verified
 # stopping it stops what it's watching.
 running_core="$("$BIN_DIR/candle-harness" version --core 2>/dev/null </dev/null | sed -n 's/^core \([0-9][0-9.]*\)$/\1/p' | head -1 || true)"
 if [ -n "$running_core" ] && [ "$running_core" != "$version" ]; then
-  echo "A core from ${running_core} is still running, with its triggers and bots. It carries on as ${running_core} until it's restarted: candle-harness stop, then open candle-harness again."
+  echo "A core from ${running_core} is still running, with its triggers and bots. It carries on as ${running_core} until it's restarted: open candle-harness and choose restart it in its status bar."
 fi
 
 # The Candle CLI's `candle tui` still runs a binary named candle-tui (the 0.2 name): a link to this one beside

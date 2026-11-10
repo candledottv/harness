@@ -426,6 +426,26 @@ function coreWords(io: Io, core: Core, servicePid: number | undefined): void {
 const lastLine = (r: Ran) => (r.stderr || r.stdout).trim().split("\n").at(-1)?.slice(0, 200) ?? ""
 
 /**
+ * Starts the login service's core, for a restart once the running core has stopped: a core that stops cleanly
+ * isn't started again by launchd or systemd, so it's asked for. "not loaded" when the service isn't installed
+ * and loaded (enabled, on Linux), and the caller starts a core of its own instead.
+ */
+export function startServiceCore(d: ServiceDeps): "started" | "not loaded" | { failed: string } {
+  const file = serviceFile(d)
+  if (!file || !existsSync(file)) return "not loaded"
+  const r =
+    d.platform === "darwin"
+      ? launchd(d).loaded
+        ? d.run("launchctl", ["kickstart", `gui/${d.uid}/${SERVICE_LABEL}`])
+        : undefined
+      : d.run("systemctl", ["--user", "is-enabled", SYSTEMD_UNIT]).stdout.trim() === "enabled"
+        ? d.run("systemctl", ["--user", "start", SYSTEMD_UNIT])
+        : undefined
+  if (!r) return "not loaded"
+  return r.code === 0 ? "started" : { failed: lastLine(r) || `exit ${r.code}` }
+}
+
+/**
  * 0.2's home, copied when it's due. A 0.2 core just stopped with its service is waited for, up to 10 s; one
  * running in a view isn't: it's said, for the person to quit.
  */
