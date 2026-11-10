@@ -1595,10 +1595,12 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
         return haccTools.call(client.agent, name, args, client)
       },
       view: (client, args) => askView(client, args),
-      isEmbedded: (agent, word) => {
-        const r = wallets.payer(agent, word)
-        return r.ok && r.kind === "embedded"
-      },
+      // Whether a named wallet is the account's embedded one, on either chain: a paper trade has no wallet behind it.
+      isEmbedded: (agent, word) =>
+        (["solana", "hood"] as const).some((chain) => {
+          const r = wallets.payer(agent, word, { chain })
+          return r.ok && r.kind === "embedded"
+        }),
       nameWallets: async (client, asks, reason) => {
         const named = await nameWallets(client, asks, { typed: false, ...(reason !== undefined ? { reason } : {}) })
         if (!named.ok) return { content: [{ type: "text", text: JSON.stringify({ success: false, error: { code: named.code, message: named.message } }) }], isError: true }

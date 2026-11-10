@@ -70,6 +70,15 @@ describe("wallet names through a running core", () => {
     expect((await s.tool("candle_trade", { side: "buy", mint: "MoonFake11111111111111111111111111111111111", amount: "0.01", wallet: "tee-one" })).error.code).toBe("NO_PAPER_TEE")
   }, 30_000)
 
+  const FAKE_EVM_WALLET = "0x00000000000000000000000000000000000Fa4e1"
+  test("in paper mode the EVM embedded address is the embedded wallet too, for a Hood token's paper trade", async () => {
+    const s = await setup()
+    expect((await s.view.request("mode.set", { mode: "paper" })).error).toBeUndefined()
+    const hoodToken = "0x" + "b2".repeat(20)
+    const paper = await s.tool("candle_trade", { side: "buy", mint: hoodToken, amount: "0.01", wallet: FAKE_EVM_WALLET })
+    expect(paper.error?.code).not.toBe("NO_PAPER_TEE")
+  }, 30_000)
+
   test("a name the Candle Harness's rules refuse says why, and nothing is written", async () => {
     const s = await setup()
     for (const [name, why] of [["tee-one", "already names"], ["embedded", "embedded wallet"], ["momentum", "agent's name"], [" main", "space"], [TEE, "address"]] as const) {
