@@ -2,6 +2,12 @@
 
 What changed in each version of Candle Harness (called the Candle TUI before 0.3.0). Versions follow [semantic versioning](https://semver.org), and each release is listed on [GitHub](https://github.com/candledottv/harness/releases).
 
+## 0.5.5 (2026-11-10)
+
+### Safety and correctness
+
+- **A TEE wallet made by `vault promote --to-key` can trade.** Such a wallet signs and trades, but the key's wallet list says it can't (`spendCapable: false`) and gives it another id than the portfolio does. The Harness took the list at its word and refused every trade from it with "Candle doesn't list it as able to sign yet". Now, where your agent's Candle MCP server has `candle_get_trading_wallets` (CLI 0.13.19 and later), that read decides whether a wallet can trade, and the wallets are matched to the portfolio by address, not id. With an older CLI, the key's list decides as before.
+
 ## 0.5.4 (2026-11-10)
 
 ### Safety and correctness
