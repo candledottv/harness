@@ -33,7 +33,9 @@ To have your own agent install it, point it at [Installing it with an agent](htt
 
 ## Which wallet pays
 
-A trade pays from a wallet on its own chain. A Solana wallet (a TEE wallet, or the embedded wallet's Solana address) can't pay for a Hood token (a `0x` address), and the embedded wallet's Hood address can't pay for a Solana token. Named with `from`, or set as the agent's default in `config.toml`, a wallet on the other chain is refused before any card is made, with words naming both chains: `WRONG_CHAIN` for a named wallet, `DEFAULT_WALLET_NOT_PAYABLE` for a default. The Candle Harness never swaps an embedded address for its twin on the other chain. `from embedded`, and a default of `embedded`, take the embedded wallet on the trade's chain. On paper, either embedded address is the embedded wallet.
+A trade pays from a wallet on its own chain. A wallet you name with `from` is refused before any card is made if it's on the other chain, with `WRONG_CHAIN` and words naming both chains. This includes naming the embedded wallet's Solana address for a Hood token (a `0x` address), or its Hood address for a Solana token. `from embedded` takes the embedded wallet on the trade's chain.
+
+A default in `config.toml` that resolves to either embedded address takes the embedded wallet on the trade's chain, whether set as `embedded`, a name for it, or either of its addresses. This also holds when the default is pinned to either embedded address. A TEE default on the other chain is refused before any card is made, with `DEFAULT_WALLET_NOT_PAYABLE` and words naming both chains. On paper, either embedded address is the embedded wallet.
 
 ## The guide
 
