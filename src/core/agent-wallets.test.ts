@@ -49,6 +49,10 @@ interface Fixture {
   noPrefix?: boolean
   pins?: WalletDeps["pins"]
   imported?: WalletDeps["imported"]
+  /** Each agent's candle_get_trading_wallets answer; the tool answers as unknown for an agent not here. */
+  trading?: Record<string, unknown>
+  /** The tools each agent's MCP server lists; unset, the client has no tool list. */
+  tools?: Record<string, string[]>
 }
 
 function wallets(f: Fixture = {}) {
@@ -64,8 +68,13 @@ function wallets(f: Fixture = {}) {
   const deps: WalletDeps = {
     pool: {
       for: (agent) => ({
+        ...(f.tools ? { tools: () => (f.tools![agent] ?? []).map((name) => ({ name })) } : {}),
         call: async (tool, args): Promise<ToolOutcome> => {
           calls.push({ agent, tool, args })
+          if (tool === "candle_get_trading_wallets") {
+            const t = f.trading?.[agent]
+            return t === undefined ? { kind: "error", code: "UNKNOWN_TOOL", retryable: false, body: {} } : { kind: "ok", result: t }
+          }
           const answer = profiles[agent]
           if (answer && typeof answer === "object" && "kind" in answer) return answer as ToolOutcome
           return { kind: "ok", result: answer }
@@ -137,6 +146,60 @@ test("a row that isn't spendCapable stays listed and isn't payable; one the port
   expect(refused.ok === false && refused.message).toContain("Candle doesn't list Bot Wallet as able to sign for momentum's key yet")
   expect(refused.ok === false && refused.message).not.toContain("is stopped")
   expect(w.book.boundTo(T1.address)).toBe("momentum")
+})
+
+test("a promoted wallet the key's list calls unable to sign, under another id, pays when the trading read says it's active", async () => {
+  // As read live: the key's list says spendCapable false, under a linkedWalletId that isn't the portfolio's id for it; the
+  // trading read lists it active under the portfolio's id.
+  const profiles = { momentum: { keyPrefix: "Momentum", walletScope: "selected", wallets: [{ ...profileRow({ ...T1, id: "otherrow1" }, "solana", false) }, { ...profileRow({ ...HOOD, id: "otherrow4" }, "evm", false) }] } }
+  const trading = {
+    momentum: {
+      success: true,
+      keyPrefix: "Momentum",
+      page: [
+        { id: T1.id, address: T1.address, chain: "solana", label: T1.label, active: true, walletKind: "tee" },
+        { id: HOOD.id, address: HOOD.address.toLowerCase(), chain: "evm", label: HOOD.label, active: true, walletKind: "tee" },
+      ],
+      isDone: true,
+      continueCursor: null,
+    },
+  }
+  const w = wallets({ profiles, trading })
+  await w.book.refresh("momentum")
+  expect(w.book.payable("momentum").tee).toEqual([
+    { id: T1.id, address: T1.address, label: "Bot Wallet", chain: "solana", active: true },
+    { id: HOOD.id, address: HOOD.address, label: "hood-bot", chain: "hood", active: true },
+  ])
+  expect(w.book.payer("momentum", "Bot Wallet")).toMatchObject({ ok: true, kind: "tee", address: T1.address, id: T1.id })
+  expect(w.calls.filter((c) => c.agent === "momentum").map((c) => c.tool)).toEqual(["candle_get_profile_wallets", "candle_get_trading_wallets"])
+
+  // Without the trading read (an older CLI's MCP server), the key's list stands: unable to sign, said so.
+  const old = wallets({ profiles, tools: { momentum: ["candle_get_profile_wallets"] } })
+  await old.book.refresh("momentum")
+  expect(old.book.payable("momentum").tee.map((t) => ({ address: t.address, active: t.active, cantSign: t.cantSign }))).toEqual([
+    { address: T1.address, active: false, cantSign: true },
+    { address: HOOD.address, active: false, cantSign: true },
+  ])
+  // Its server doesn't list the tool, so it isn't called.
+  expect(old.calls.some((c) => c.tool === "candle_get_trading_wallets")).toBe(false)
+})
+
+test("the trading read says what may trade: inactive there is unable to sign; a wallet only it names is bound too; a failed read changes nothing", async () => {
+  const trading = (page: unknown[], isDone = true) => ({ momentum: { success: true, page, isDone } })
+  const off = wallets({ trading: trading([{ id: T1.id, address: T1.address, chain: "solana", active: false, walletKind: "tee" }]) })
+  await off.book.refresh("momentum")
+  expect(off.book.payable("momentum").tee).toMatchObject([{ address: T1.address, active: false, cantSign: true }])
+  const more = wallets({ trading: trading([{ id: T2.id, address: T2.address, chain: "solana", active: true, walletKind: "tee" }, { id: "emb", address: EMBEDDED, chain: "solana", active: true, walletKind: "embedded" }]) })
+  await more.book.refresh("momentum")
+  expect(more.book.payable("momentum").tee.map((t) => [t.address, t.active])).toEqual([[T1.address, true], [T2.address, true]])
+  expect(more.book.boundTo(T2.address)).toBe("momentum")
+  // A page that says more follow: a wallet it doesn't name keeps the key's list's answer.
+  const partial = wallets({ profiles: { momentum: { keyPrefix: "Momentum", walletScope: "selected", wallets: [profileRow(T1, "solana", false)] } }, trading: trading([], false) })
+  await partial.book.refresh("momentum")
+  expect(partial.book.payable("momentum").tee).toMatchObject([{ address: T1.address, active: false, cantSign: true }])
+  const failed = wallets({ trading: { momentum: "not a page" } })
+  await failed.book.refresh("momentum")
+  expect(failed.book.payable("momentum").tee).toMatchObject([{ address: T1.address, active: true }])
 })
 
 test("a fresh TEE wallet the portfolio doesn't list yet stays listed as unable to sign, across portfolio reads; an imported one doesn't", async () => {

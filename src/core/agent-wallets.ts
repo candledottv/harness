@@ -4,7 +4,11 @@
 //             allowed this key on the account's embedded wallet;
 //   TEE       candle_get_profile_wallets { keyPrefix } on the agent's own MCP child (as recorded: the TEE
 //             wallet bound to the key, under walletScope "selected", spendCapable, and none for any
-//             other key), joined by linkedWalletId to
+//             other key), corrected by
+//   trading   candle_get_trading_wallets, where the agent's MCP server has it: the key's wallets as its trades
+//             see them, each with Candle's `active`. A wallet made by `vault promote --to-key` signs and trades
+//             while the profile read still says `spendCapable: false`, under another id than the one the portfolio
+//             and `tee status` give it; the trading read's flag and id win. Then all of it is joined by address to
 //   portfolio candle_get_portfolio's `tee` (Solana) and `hood.tee` arrays, which list every TEE wallet
 //             on the account, whichever key holds it, with its label and active flag.
 // Under walletScope "all" an empty list means every wallet (mcp/src/tools.ts:1639-1651), which says
@@ -23,6 +27,7 @@ import type { ToolOutcome } from "./candle-mcp"
 import type { EmptyState } from "./empty-accounts"
 import { groupLookup, type WalletGroup } from "./wallet-groups"
 import { buildNames, lookupWallet, markedWords, short, type WalletNameEntry, walletName } from "./wallet-names"
+import { addressKey, sameAddress } from "../shared/address-key"
 
 /** How often the reads are repeated while a view is attached. */
 export const WALLETS_REFRESH_MS = 5 * 60_000
@@ -61,7 +66,8 @@ export type PayerResult =
   | { ok: false; code: string; message: string; canPayFrom: string[] }
 
 export interface WalletDeps {
-  pool: { for(agent: string): { call(name: string, args: Record<string, unknown>): Promise<ToolOutcome> } }
+  /** `tools`, where the client has it, says whether the agent's MCP server lists a tool, so a missing one isn't called. */
+  pool: { for(agent: string): { call(name: string, args: Record<string, unknown>): Promise<ToolOutcome>; tools?(): readonly { name: string }[] } }
   status: { get(agent: string): AgentStatus | undefined; refresh(agent: string): Promise<AgentStatus | undefined> }
   agents: () => string[]
   keyPrefix: (agent: string) => string | undefined
@@ -120,6 +126,51 @@ export function parseProfileWallets(result: unknown): { scope: "all" | "selected
   return { scope: body.walletScope, rows }
 }
 
+/** One of the key's wallets as `candle_get_trading_wallets` reports it: Candle's own id, and whether its trades may run. */
+export interface TradingRow {
+  id: string
+  address: string
+  label?: string
+  chain: string
+  active: boolean
+}
+
+/**
+ * candle_get_trading_wallets' answer (`page` of the key's wallets, each with `id`, `address`, `chain`, `label`, `active`
+ * and `walletKind`), or undefined for any other shape. Only TEE wallets: the embedded wallet is read from the status.
+ * `complete` is false while Candle says more pages follow, so a wallet missing from it says nothing.
+ */
+export function parseTradingWallets(result: unknown): { rows: TradingRow[]; complete: boolean } | undefined {
+  const body = record(result)
+  if (!body || !Array.isArray(body.page)) return undefined
+  const rows: TradingRow[] = []
+  for (const entry of body.page) {
+    const w = record(entry)
+    if (typeof w?.id !== "string" || typeof w.address !== "string") continue
+    if (w.walletKind !== undefined && w.walletKind !== "tee") continue
+    const chain = typeof w.chain === "string" ? w.chain : "solana"
+    const l = label(w.label)
+    rows.push({ id: w.id, address: w.address, ...(l ? { label: l } : {}), chain, active: w.active === true })
+  }
+  return { rows, complete: body.isDone !== false }
+}
+
+/**
+ * The key's rows with the trading read laid over them: a wallet both name takes the trading read's id and `active` as its
+ * `spendCapable`; one only the trading read names is bound to the key too. Without a trading read, the rows as they are.
+ */
+export function withTrading(rows: readonly ProfileRow[], trading: { rows: TradingRow[]; complete: boolean } | undefined): ProfileRow[] {
+  if (!trading) return [...rows]
+  const out: ProfileRow[] = rows.map((row) => {
+    const t = trading.rows.find((w) => sameAddress(w.address, row.address))
+    return t ? { ...row, id: t.id, spendCapable: t.active, ...(row.label === undefined && t.label ? { label: t.label } : {}) } : row
+  })
+  for (const t of trading.rows) {
+    if (!out.some((row) => sameAddress(row.address, t.address))) out.push({ id: t.id, address: t.address, ...(t.label ? { label: t.label } : {}), chain: t.chain, spendCapable: t.active })
+  }
+  return out
+}
+
 /** Every TEE wallet the portfolio lists, Solana's then Hood's, as Candle reports them. */
 export function portfolioTee(portfolio: unknown): TeeWallet[] {
   const body = record(portfolio)
@@ -145,10 +196,11 @@ export function portfolioTee(portfolio: unknown): TeeWallet[] {
  * after each portfolio read, and a refusal can say why.
  */
 export function joinTee(rows: readonly ProfileRow[], portfolio: unknown, imported?: (address: string) => boolean | undefined): TeeWallet[] {
-  const account = portfolio === undefined ? undefined : new Map(portfolioTee(portfolio).map((w) => [w.id, w]))
+  // By address: the key's list can give a wallet another id than the portfolio does.
+  const account = portfolio === undefined ? undefined : new Map(portfolioTee(portfolio).map((w) => [addressKey(w.address), w]))
   const out: TeeWallet[] = []
   for (const row of rows) {
-    const known = account?.get(row.id)
+    const known = account?.get(addressKey(row.address))
     if (account && !known) {
       if (row.spendCapable || imported?.(row.address) === true) continue
       out.push({ id: row.id, address: row.address, ...(row.label ? { label: row.label } : {}), chain: row.chain, active: false, cantSign: true })
@@ -156,7 +208,7 @@ export function joinTee(rows: readonly ProfileRow[], portfolio: unknown, importe
     }
     const l = known?.label ?? row.label
     const stopped = known?.active === false
-    out.push({ id: row.id, address: row.address, ...(l ? { label: l } : {}), chain: known?.chain ?? row.chain, active: !stopped && row.spendCapable, ...(!stopped && !row.spendCapable ? { cantSign: true as const } : {}) })
+    out.push({ id: known?.id ?? row.id, address: row.address, ...(l ? { label: l } : {}), chain: known?.chain ?? row.chain, active: !stopped && row.spendCapable, ...(!stopped && !row.spendCapable ? { cantSign: true as const } : {}) })
   }
   return out
 }
@@ -534,7 +586,7 @@ export class AgentWallets {
     if (outcome.kind !== "ok") return undefined
     const parsed = parseProfileWallets(outcome.result)
     if (!parsed) return undefined
-    if (parsed.scope === "selected" || parsed.rows.length > 0) return parsed.rows
+    if (parsed.scope === "selected" || parsed.rows.length > 0) return withTrading(parsed.rows, await this.readTrading(agent))
     // walletScope "all" with an empty list: ask the CLI about each of the account's Solana TEE wallets.
     if (!this.deps.teeStatus) return undefined
     if (this.deps.portfolio() === undefined) await this.deps.readPortfolio?.()
@@ -547,5 +599,17 @@ export class AgentWallets {
       if (answer === "bound") bound.push({ id: w.id, address: w.address, ...(w.label ? { label: w.label } : {}), chain: w.chain, spendCapable: true })
     }
     return bound
+  }
+
+  /**
+   * The key's wallets as its trades see them, where the agent's MCP server lists `candle_get_trading_wallets` (CLI
+   * 0.13.19 on); undefined where it doesn't, or the read fails, and the profile read stands alone.
+   */
+  private async readTrading(agent: string): Promise<{ rows: TradingRow[]; complete: boolean } | undefined> {
+    const client = this.deps.pool.for(agent)
+    const listed = client.tools?.()
+    if (listed && listed.length > 0 && !listed.some((t) => t.name === "candle_get_trading_wallets")) return undefined
+    const outcome = await client.call("candle_get_trading_wallets", {}).catch(() => undefined)
+    return outcome?.kind === "ok" ? parseTradingWallets(outcome.result) : undefined
   }
 }
