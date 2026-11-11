@@ -152,14 +152,42 @@ check passes.
 4. Phase 3: money in: `deposit` (card).
 5. Phase 4: money out: `withdraw` (owner pane), `thresholds set`, `reduce-only off`.
 
-Each phase: dogfood by Andrew on a small live account, update README/CHANGELOG and the docs site, release behind a
-setting, then flip the default after one release with no issues. Rollback is the setting plus the kill switch; the
-catalogue falls back to the existing "coming" text.
+Each phase: dogfood by Andrew on a small live account, update README/CHANGELOG and the docs site, release behind the
+`perps_writes` setting (see Activation, section 10). Rollback is the setting plus the kill switch; the catalogue falls
+back to the existing "coming" text. The default flips only inside Activation's bounds — never "after one release"
+unbounded.
 
 Estimate: larger than a day. Roughly 1 to 2 days for phase 1, 3 to 4 for phase 2, 1 to 2 for each of phases 3 and 4,
 plus review time. Not started.
 
-## 10. Decisions for Andrew
+## 10. Activation (the `perps_writes` setting)
+
+Where it lives: `config.toml`, as `perps.writes` (`[perps]\nwrites = false`), declared in the Harness's settings
+registry — a `SettingDef` in `src/config-settings.ts` (`SETTINGS`, the same table `hacc.enabled` sits in) and read by
+`src/config.ts`'s config reader, whose `KNOWN` table gains the `perps` key so a typo is refused. Until Andrew's go
+there is no entry and no reader: the setting exists only from Phase 1's PR on.
+
+Every step below has a named owner; no step waits on nobody.
+
+- Turn-on after each phase's merge: same day as the merge, set by the phase's implementing engineer seat (named in the
+  phase PR's title, walked from the roster review table; for this spec's phases that start is GLM Engineer unless the
+  dispatch names another). They set `perps.writes = true` on their own dogfood install only — production installs stay
+  `false` until the production gate below.
+- Functional check with the switch ON, one per gate (phase): run by that same engineer seat, in the same session as
+  the turn-on, on paper mode plus the CLI's `--no-submit` dry runs; the checklist is section 8's tests 3 to 6 for the
+  rows that phase ships. The check's evidence (commands, output) is posted on the phase's card. Gate owner: Andrew —
+  perps writes move money, so his bundled go/no-go (section 11, decision 1) is the exception that applies: production
+  waits for that decision, not for a timer.
+- Production/dogfood turn-on: at the next safe window after a passing check — for Andrew's dogfood account, the next
+  session he is at the desk; named watcher for the turn-on: Andrew for dogfood, and for any wider production default
+  flip, Andrew again (no agent turns the default on). The setting stays the kill switch after turn-on: `false` pauses
+  every opening action exactly as the in-app kill switch does, and the catalogue falls back to "coming".
+- Bounded dark period: the default flips to `true` only in the next release after the section 11 go lands and Phase 4's
+  production check passes — and at the latest one release after that check. If that window is missed, the last phase's
+  engineer seat posts why and the new date on the card; an unbounded "after one release with no issues" wait is not
+  allowed. Until the flip, every install that wants perps writes sets `perps.writes = true` by hand.
+
+## 11. Decisions for Andrew
 
 1. Go or no-go, and whether to ship in the phase order above.
 2. Deposit as a card with a `Write + perps:write` key (recommended) or as an owner pane row.
