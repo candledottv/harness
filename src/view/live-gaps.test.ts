@@ -31,3 +31,8 @@ test("a key not allowed any wallet gets the command that allows it; before its w
   // No limits of its own here.
   expect(liveGaps(view({ agent: { limits: undefined } })).map((g) => g.words)).toEqual(["agent-a has no limits of its own set here: only Candle's caps on its key would hold a live trade."])
 })
+
+test("a key denied the embedded wallet that holds an active Hood TEE wallet can pay, and its SOL isn't asked of that wallet", () => {
+  const hood = { id: "h1", address: "0x00000000000000000000000000000000000Ho0d1", label: "hood-bot", chain: "hood", active: true }
+  expect(liveGaps(view({ wallets: { payable: { tee: [hood], readAt: 1, unreadable: [] }, embeddedWallet: "denied", prefix: "FakeKey1" }, sol: 0 }))).toEqual([])
+})

@@ -2,6 +2,17 @@
 
 What changed in each version of Candle Harness (called the Candle TUI before 0.3.0). Versions follow [semantic versioning](https://semver.org), and each release is listed on [GitHub](https://github.com/candledottv/harness/releases).
 
+## 0.5.6 (unreleased)
+
+### Hood TEE wallets trade
+
+- **An agent trades from its Hood TEE wallet.** A Hood TEE wallet bound to an agent's key was listed and refused every trade with "trades from Hood TEE wallets come in a later release". Now a buy or sell of a Hood token, against ETH or USDG, and a swap between ETH and USDG, pays from it, through your own `candle swap` with the agent's key, as a Solana TEE wallet's trades do. The CLI signs it one leg at a time; the card binds the same words, and an unclear answer is read back under the same id, never sent twice.
+- **Which wallet a Hood trade pays from.** Named, a Hood TEE wallet pays only for a Hood trade: named for a Solana token it's refused as the wrong chain, as a Solana wallet is for a Hood token. Naming no wallet, a Hood trade pays from the EVM embedded wallet where the key is allowed it, else from the key's one Hood TEE wallet, as `candle swap` picks. With more than one, name it or set `agents.<name>.wallet`. As a default, a Hood TEE wallet is kept by address, so a rename doesn't lose it.
+- **Candle's RPC setting stays on Solana trades.** `candle.rpcUrl` is a Solana endpoint, so a Hood TEE card runs without `--rpc-url` and the CLI reads Hood over its own.
+- **A busy Hood TEE wallet is refused, nothing sent.** A Hood TEE wallet runs one operation at a time: while another is open on Candle (`WALLET_BUSY`), or when Candle answers without a sequenced leg, the card is refused and says so.
+- **Percent sells see a Hood wallet's holding.** The card's estimate reads the wallet under the portfolio's `hood`, its address and token in any case.
+- **The doctor checks a Hood TEE wallet's signer**, as it does a Solana one's, instead of saying it comes later. The kill switch lists Hood TEE wallets with `candle tee disable <address>`, and autonomy and the agent's wallet note count them.
+
 ## 0.5.5 (2026-11-10)
 
 The first release since 0.3.0, and it carries everything in 0.5.2, 0.5.3 and 0.5.4 below. **Update from 0.3.0:** see the first line under 0.5.2's "Safety and correctness".

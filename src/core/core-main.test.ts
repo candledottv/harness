@@ -313,6 +313,16 @@ describe("holdingFrom", () => {
     expect(holdingFrom({ embedded: [], tee: [{ address: tee, tokens: null }] }, tee, mint)).toBe("unreadable")
     expect(holdingFrom({ embedded: [] }, tee, mint)).toBe("none")
   })
+
+  test("finds a token in a Hood wallet under `hood`, its address and contract in any case", () => {
+    const hoodTee = "0x00000000000000000000000000000000000Ho0d1"
+    const token = "0x00000000000000000000000000000000000T0ke1"
+    const result = { embedded: [{ address: wallet, tokens: [] }], tee: [], hood: { embedded: [], tee: [{ id: "teeid4", address: hoodTee, chain: "hood", tokens: [{ chain: "hood", mint: token, amountRaw: "5000", decimals: 18 }] }] } }
+    expect(holdingFrom(result, hoodTee.toLowerCase(), token.toLowerCase())).toEqual({ amountRaw: 5000n, decimals: 18 })
+    expect(holdingFrom({ ...result, hood: { embedded: [], tee: [{ address: hoodTee, tokens: null }] } }, hoodTee, token)).toBe("unreadable")
+    // A Solana address never matches in another case.
+    expect(holdingFrom({ embedded: [{ address: wallet, tokens: [{ mint, amountRaw: "1", decimals: 6 }] }] }, wallet.toLowerCase(), mint)).toBe("none")
+  })
 })
 
 describe("typed trades and the status bar's figures", () => {

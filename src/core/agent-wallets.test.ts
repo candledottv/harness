@@ -4,7 +4,7 @@
 // another's wallet.
 import { expect, test } from "bun:test"
 import type { AgentStatus } from "./agent-status"
-import { AgentWallets, resolvePayer, type WalletDeps, walletsNote } from "./agent-wallets"
+import { AgentWallets, parseProfileWallets, parseTradingWallets, portfolioTee, resolvePayer, type WalletDeps, walletsNote } from "./agent-wallets"
 import type { ToolOutcome } from "./candle-mcp"
 
 const EMBEDDED = "WalletFake111111111111111111111111111111111"
@@ -288,7 +288,7 @@ test("on Free, TEE wallets are a Pro or Max feature: shown, never payable", asyn
   expect(w.book.payer("swing")).toMatchObject({ ok: false, code: "TEE_TIER_REQUIRED", canPayFrom: [] })
 })
 
-test("a Hood TEE wallet is listed and not payable; an inactive one is refused, never picked by default", async () => {
+test("a Hood TEE wallet pays for a Hood trade, never a Solana one; an inactive one is refused, never picked by default", async () => {
   const w = wallets({
     statuses: { momentum: status({ embeddedWallet: "denied" }) },
     profiles: { momentum: { keyPrefix: "Momentum", walletScope: "selected", wallets: [profileRow(T1), profileRow(HOOD, "hood")] } },
@@ -299,9 +299,81 @@ test("a Hood TEE wallet is listed and not payable; an inactive one is refused, n
     { id: T1.id, address: T1.address, label: "Bot Wallet", chain: "solana", active: false },
     { id: HOOD.id, address: HOOD.address, label: "hood-bot", chain: "hood", active: true },
   ])
-  expect(w.book.payer("momentum", "hood-bot")).toMatchObject({ ok: false, code: "HOOD_TEE_LATER", message: expect.stringContaining("come in a later release") })
+  expect(w.book.payer("momentum", "hood-bot", { chain: "hood" })).toMatchObject({ ok: true, kind: "tee", address: HOOD.address, id: HOOD.id, chain: "hood", label: "hood-bot" })
+  // Named for a Solana trade, it's the wrong chain, said as such.
+  expect(w.book.payer("momentum", "hood-bot")).toMatchObject({ ok: false, code: "WRONG_CHAIN", message: expect.stringContaining("is a Hood wallet, and this trade is on Solana") })
   expect(w.book.payer("momentum", "Bot Wallet")).toMatchObject({ ok: false, code: "TEE_WALLET_INACTIVE" })
-  expect(w.book.payer("momentum")).toMatchObject({ ok: false, code: "NO_PAYABLE_WALLET", canPayFrom: [] })
+  // Nothing named: the one Hood TEE wallet pays a Hood trade; a Solana trade has nothing, and says it's Solana it lacks.
+  expect(w.book.payer("momentum", undefined, { chain: "hood" })).toMatchObject({ ok: true, kind: "tee", address: HOOD.address })
+  const solana = w.book.payer("momentum")
+  expect(solana).toMatchObject({ ok: false, code: "NO_PAYABLE_WALLET", canPayFrom: ["hood-bot"] })
+  expect(solana.ok === false && solana.message).toContain("momentum has no Solana wallet it can pay from. It can pay from: hood-bot.")
+})
+
+test("a Hood TEE wallet Candle's key reads call evm is a Hood wallet, in each read and once joined", async () => {
+  // Before the portfolio is read, the key's own reads are all there is: their "evm" is Hood.
+  expect(parseProfileWallets({ walletScope: "selected", wallets: [profileRow(HOOD, "evm")] })?.rows.map((r) => r.chain)).toEqual(["hood"])
+  expect(parseTradingWallets({ page: [{ id: HOOD.id, address: HOOD.address, chain: "evm", active: true, walletKind: "tee" }] })?.rows.map((r) => r.chain)).toEqual(["hood"])
+  expect(portfolioTee({ hood: { tee: [{ ...HOOD, chain: "evm", active: true }] } }).map((t) => t.chain)).toEqual(["hood"])
+  const w = wallets({ profiles: { momentum: { keyPrefix: "Momentum", walletScope: "selected", wallets: [profileRow(HOOD, "evm")] } }, statuses: { momentum: status({ embeddedWallet: "denied" }) } })
+  await w.book.refresh("momentum")
+  expect(w.book.payable("momentum").tee).toEqual([{ id: HOOD.id, address: HOOD.address, label: "hood-bot", chain: "hood", active: true }])
+  expect(w.book.payer("momentum", "hood-bot", { chain: "hood" })).toMatchObject({ ok: true, kind: "tee", chain: "hood" })
+})
+
+test("the agent is told a Hood TEE wallet pays for Hood tokens", async () => {
+  const w = wallets({ profiles: { momentum: { keyPrefix: "Momentum", walletScope: "selected", wallets: [profileRow(T1), profileRow(HOOD, "evm")] } } })
+  await w.book.refreshAll()
+  expect(walletsNote(w.book.view(), "momentum")).toContain("You can also pay from Bot Wallet, a TEE wallet (TeeO…1111) bound to your key alone and hood-bot, a Hood TEE wallet (0x00…o0d1) bound to your key alone, for Hood tokens, by passing wallet.")
+})
+
+test("a Hood trade naming no wallet: the EVM embedded wallet where the key is allowed it, else the one Hood TEE wallet, else why", () => {
+  const EVM = "0x" + "a1".repeat(20)
+  const hoodTee = { ...HOOD, chain: "hood", active: true }
+  const ctx = (embeddedWallet: "allowed" | "denied", tee: (typeof hoodTee)[], evm: string | null = EVM) => ({
+    agent: "momentum",
+    payable: { embedded: { address: EMBEDDED, chain: "solana" as const }, tee, readAt: 1, unreadable: [], tier: "pro" },
+    embeddedWallet,
+    ...(evm ? { evm } : {}),
+    account: tee,
+    boundTo: () => "momentum",
+    chain: "hood" as const,
+  })
+  expect(resolvePayer(ctx("allowed", [hoodTee]))).toMatchObject({ ok: true, kind: "embedded", address: EVM, chain: "hood" })
+  expect(resolvePayer(ctx("denied", [hoodTee]))).toMatchObject({ ok: true, kind: "tee", address: HOOD.address })
+  expect(resolvePayer(ctx("allowed", [hoodTee], null))).toMatchObject({ ok: true, kind: "tee", address: HOOD.address })
+  const two = [hoodTee, { ...hoodTee, id: "teeid5", address: "0x00000000000000000000000000000000000Ho0d2", label: "hood-two" }]
+  expect(resolvePayer(ctx("denied", two))).toMatchObject({ ok: false, code: "WALLET_NOT_NAMED", message: expect.stringContaining("more than one Hood TEE wallet") })
+  expect(resolvePayer(ctx("denied", []))).toMatchObject({ ok: false, code: "EMBEDDED_WALLET_NOT_PERMITTED" })
+  // Stopped on Candle's side, it isn't picked: the embedded wallet says why instead.
+  expect(resolvePayer(ctx("denied", [{ ...hoodTee, active: false }]))).toMatchObject({ ok: false, code: "EMBEDDED_WALLET_NOT_PERMITTED" })
+  expect(resolvePayer(ctx("denied", [{ ...hoodTee, active: false }]), "hood-bot")).toMatchObject({ ok: false, code: "TEE_WALLET_INACTIVE" })
+})
+
+test("a Hood TEE wallet as the default pays its Hood trades, is kept by address, and is the wrong chain for a Solana one", async () => {
+  const pins = memoryPins()
+  const w = wallets({
+    defaults: { momentum: "hood-bot" },
+    pins,
+    statuses: { momentum: status({ embeddedWallet: "denied" }) },
+    profiles: { momentum: { keyPrefix: "Momentum", walletScope: "selected", wallets: [profileRow(HOOD, "evm")] } },
+  })
+  await w.book.refresh("momentum")
+  expect(w.book.payer("momentum", undefined, { chain: "hood" })).toMatchObject({ ok: true, kind: "tee", address: HOOD.address })
+  expect(pins.get("momentum", "hood-bot")).toBe(HOOD.address)
+  expect(w.book.payer("momentum")).toMatchObject({ ok: false, code: "DEFAULT_WALLET_NOT_PAYABLE", message: expect.stringContaining("it's a Hood wallet, and this trade is on Solana") })
+})
+
+test("on Free, a Hood TEE wallet is a Pro or Max feature too", () => {
+  const ctx = {
+    agent: "momentum",
+    payable: { tee: [{ ...HOOD, chain: "hood", active: true }], readAt: 1, unreadable: [], tier: "free" },
+    embeddedWallet: "denied" as const,
+    account: [],
+    boundTo: () => "momentum",
+    chain: "hood" as const,
+  }
+  expect(resolvePayer(ctx, "hood-bot")).toMatchObject({ ok: false, code: "TEE_TIER_REQUIRED", canPayFrom: [] })
 })
 
 test("a failed read keeps the last answer, marked with its age; never read is unknown, not empty", async () => {
@@ -506,8 +578,9 @@ test("a wallet on the trade's own chain still pays: embedded on either chain, th
   expect(resolvePayer(sol.ctx, EMBEDDED)).toMatchObject({ ok: true, kind: "embedded", address: EMBEDDED, chain: "solana" })
   expect(resolvePayer(sol.ctx, "Bot Wallet")).toMatchObject({ ok: true, kind: "tee", address: T1.address })
   expect(resolvePayer(twoChains(undefined, "Bot Wallet").ctx)).toMatchObject({ ok: true, kind: "tee", address: T1.address })
-  // A Hood TEE wallet is still refused as before, whichever chain the trade is on.
-  expect(resolvePayer(hood.ctx, "hood-bot")).toMatchObject({ ok: false, code: "HOOD_TEE_LATER" })
+  // The Hood TEE wallet pays for a Hood trade, and is the wrong chain for a Solana one.
+  expect(resolvePayer(hood.ctx, "hood-bot")).toMatchObject({ ok: true, kind: "tee", address: HOOD.address, chain: "hood" })
+  expect(resolvePayer(sol.ctx, "hood-bot")).toMatchObject({ ok: false, code: "WRONG_CHAIN" })
 })
 
 test("a default of embedded, pinned to the Solana address, still pays for a Hood trade", async () => {

@@ -30,6 +30,8 @@ const RIFT = "RiftFake11111111111111111111111111111111111"
 const EMBEDDED = "WalletFake111111111111111111111111111111111"
 const TEE_A = "TeeFakeA11111111111111111111111111111111111"
 const TEE_B = "TeeFakeB11111111111111111111111111111111111"
+const TEE_HOOD = "0x00000000000000000000000000000000000Ho0d1"
+const HOODTOKEN = "0x00000000000000000000000000000000000T0ke1"
 const SOL = BASE_ASSETS.SOL.priceKey!
 const T0 = Date.parse("2026-10-27T12:00:00Z")
 const HARNESS: FaceClient = { clientId: "h1", role: "harness", agent: "momentum" }
@@ -55,11 +57,14 @@ async function openJournal(now: () => number) {
 
 const teeA: TeeWallet = { id: "teeA", address: TEE_A, label: "tee-one", chain: "solana", active: true }
 const teeB: TeeWallet = { id: "teeB", address: TEE_B, label: "swing-tee", chain: "solana", active: true }
+const teeHood: TeeWallet = { id: "teeH", address: TEE_HOOD, label: "hood-tee", chain: "hood", active: true }
 
 const markets: Record<string, MarketInfo> = {
   [MOON]: { chain: "solana", mint: MOON, symbol: "MOON", candleLaunched: true, quoteMint: SOL, decimals: 6 },
   // A token Candle didn't launch: its market read reports no decimals (docs.candle.tv/developers/market-state).
   [RIFT]: { chain: "solana", mint: RIFT, symbol: "RIFT", candleLaunched: false },
+  // A Hood token Candle didn't launch: it trades against ETH, or USDG when asked.
+  [HOODTOKEN]: { chain: "hood", mint: HOODTOKEN, symbol: "HTK", candleLaunched: false },
 }
 
 async function cardSetup(opts: { tee?: Record<string, TeeWallet[]>; embedded?: Record<string, "allowed" | "denied">; tier?: string; defaults?: Record<string, string>; holdings?: Record<string, bigint> } = {}) {
@@ -90,8 +95,8 @@ async function cardSetup(opts: { tee?: Record<string, TeeWallet[]>; embedded?: R
     status: { get: (agent) => statusOf(agent) },
     markets: { resolve: async (_agent, mint) => (markets[mint] ? { ok: true, market: markets[mint]! } : { ok: false, code: "MARKET_NOT_FOUND", message: "no market" }) },
     pricing: {
-      asset: async (_a, asset) => (asset === "SOL" ? { usd: 150, at: now, source: "test" } : asset === "USDC" ? { usd: 1, at: now, source: "test" } : undefined),
-      token: async (_a, _c, mint) => (mint === MOON ? { usd: 0.5, at: now, source: "test" } : mint === RIFT ? { usd: 0.01, at: now, source: "test" } : undefined),
+      asset: async (_a, asset) => (asset === "SOL" ? { usd: 150, at: now, source: "test" } : asset === "USDC" || asset === "USDG" ? { usd: 1, at: now, source: "test" } : asset === "ETH" ? { usd: 3000, at: now, source: "test" } : undefined),
+      token: async (_a, _c, mint) => (mint === MOON ? { usd: 0.5, at: now, source: "test" } : mint === RIFT ? { usd: 0.01, at: now, source: "test" } : mint === HOODTOKEN ? { usd: 0.002, at: now, source: "test" } : undefined),
       // Candle's quote is for the embedded payer: a TEE card never asks for one.
       quote: async (_a, trade) => (quotes.push(trade.mint), undefined),
     },
@@ -111,7 +116,7 @@ async function cardSetup(opts: { tee?: Record<string, TeeWallet[]>; embedded?: R
           word,
         ),
     },
-    cliArgs: (args) => [...args, "--json", "--rpc-url", RPC],
+    cliArgs: (args, o) => [...args, "--json", ...(o?.rpcUrl === false ? [] : ["--rpc-url", RPC])],
     execute: async () => ({ state: "submitting" as const }),
   }
   const book = new CardBook(deps)
@@ -188,6 +193,49 @@ describe("a TEE card's argv", () => {
   })
 })
 
+describe("a Hood TEE card's argv", () => {
+  test("a buy: swap ETH <0x token> --amount, the Hood TEE wallet by address, as the CLI's own Hood trade takes it", async () => {
+    const s = await cardSetup({ tee: { momentum: [teeA, teeHood] } })
+    const card = await s.propose({ mint: HOODTOKEN, side: "buy", amount: "0.001", wallet: "hood-tee" })
+    expect(card.route).toBe("cli")
+    // No --rpc-url: candle.rpcUrl is a Solana endpoint, and the CLI reads Hood over its own.
+    expect(card.params).toEqual({ argv: ["swap", "ETH", HOODTOKEN, "--amount", "0.001", "--wallet", TEE_HOOD, "--client-trade-id", card.opId, "--yes", "--json"], identity: "agent", agent: "momentum", json: true })
+    expect(card.wallet).toBe(TEE_HOOD)
+    expect(card.display.walletLabel).toBe("hood-tee")
+    expect(card.value.usd).toBeCloseTo(3 * 1.0025)
+    // Candle's quote is for the embedded payer: a TEE card is valued by the market read.
+    expect(s.quotes).toEqual([])
+  })
+
+  test("a sell against USDG, by amount or by percent of the wallet's own holding", async () => {
+    const s = await cardSetup({ tee: { momentum: [teeHood] }, holdings: { [HOODTOKEN]: 40_000_000n } })
+    const byAmount = await s.propose({ mint: HOODTOKEN, side: "sell", amount: "1000", quoteAsset: "usdg", wallet: TEE_HOOD })
+    expect(argvOf(byAmount).slice(0, 7)).toEqual(["swap", HOODTOKEN, "USDG", "--amount", "1000", "--wallet", TEE_HOOD])
+    const byPercent = await s.propose({ mint: HOODTOKEN, side: "sell", percent: 25, wallet: "hood-tee" })
+    expect(argvOf(byPercent).slice(0, 5)).toEqual(["swap", HOODTOKEN, "ETH", "--percent", "25"])
+    expect(s.holdingsRead).toContain(`${TEE_HOOD}:${HOODTOKEN}`)
+  })
+
+  test("a swap between Hood's base assets from a Hood TEE wallet", async () => {
+    const s = await cardSetup({ tee: { momentum: [teeHood] } })
+    const card = await s.propose({ from: "ETH", to: "USDG", amount: "0.002", wallet: "hood-tee" }, "candle_swap")
+    expect(argvOf(card)).toEqual(["swap", "ETH", "USDG", "--amount", "0.002", "--wallet", TEE_HOOD, "--client-trade-id", card.opId, "--yes", "--json"])
+  })
+
+  test("naming no wallet, a Hood trade pays from the one Hood TEE wallet when there's no EVM embedded wallet; a Solana trade never does", async () => {
+    const s = await cardSetup({ tee: { momentum: [teeHood] }, embedded: { momentum: "denied" } })
+    expect((await s.propose({ mint: HOODTOKEN, side: "buy", amount: "0.001" })).wallet).toBe(TEE_HOOD)
+    const solana = await refusal(s.propose({ mint: MOON, side: "buy", amount: "0.01" }))
+    expect(solana.code).toBe("EMBEDDED_WALLET_NOT_PERMITTED")
+  })
+
+  test("paper mode refuses a Hood TEE card as it does a Solana one", async () => {
+    const s = await cardSetup({ tee: { momentum: [teeHood] } })
+    s.setMode("paper")
+    expect((await refusal(s.propose({ mint: HOODTOKEN, side: "buy", amount: "0.001", wallet: "hood-tee" }))).code).toBe("NO_PAPER_TEE")
+  })
+})
+
 describe("the hash binds what runs", () => {
   test("changing the argv, the wallet, the agent or the mode after proposal refuses the press", async () => {
     const changes: [string, (c: Card) => void][] = [
@@ -232,8 +280,9 @@ describe("refused when proposed, nothing sent", () => {
     expect((await refusal(free.propose({ mint: MOON, side: "buy", amount: "0.04", wallet: "tee-one" }))).code).toBe("TEE_TIER_REQUIRED")
     const inactive = await cardSetup({ tee: { momentum: [{ ...teeA, active: false }] } })
     expect((await refusal(inactive.propose({ mint: MOON, side: "buy", amount: "0.04", wallet: "tee-one" }))).code).toBe("TEE_WALLET_INACTIVE")
-    const hood = await cardSetup({ tee: { momentum: [{ ...teeA, chain: "hood" }] } })
-    expect((await refusal(hood.propose({ mint: MOON, side: "buy", amount: "0.04", wallet: "tee-one" }))).code).toBe("HOOD_TEE_LATER")
+    // A Hood TEE wallet named for a Solana token: the wrong chain, nothing sent.
+    const hood = await cardSetup({ tee: { momentum: [teeHood] } })
+    expect((await refusal(hood.propose({ mint: MOON, side: "buy", amount: "0.04", wallet: "hood-tee" }))).code).toBe("WRONG_CHAIN")
   })
 
   test("paper mode, whatever the agent's paper says", async () => {
@@ -420,6 +469,21 @@ describe("outcome rules (mapCliTrade)", () => {
     // So does a read that failed, and something under the id decides as ever.
     expect(mapCliTrade("trade", run(1, { ok: false, code: "SWAP_FAILED" }), { found: false, detail: "unreadable" }).state).toBe("unknown")
     expect(mapCliTrade("trade", run(1, { ok: false, code: "SWAP_FAILED" }), found({ status: "confirmed", signature: "S" })).state).toBe("succeeded")
+  })
+
+  test("a Hood TEE trade's answers: its executed trade is a fill; a busy wallet or no sequenced rail is refused, nothing signed", () => {
+    // swap.ts hoodSwap prints the trade route's executed answer with the Hood fields beside it.
+    const executed = { success: true, status: "executed", signature: "0x" + "ab".repeat(32), kind: "trade", chain: "hood", operationId: "op1", landedLegs: [{ kind: "trade", hash: "0x" + "ab".repeat(32) }] }
+    expect(mapCliTrade("trade", run(0, executed)).state).toBe("succeeded")
+    for (const code of ["WALLET_BUSY", "SEQUENCED_RAIL_REQUIRED"]) {
+      expect(PRE_BUILD_CODES.has(code)).toBe(true)
+      expect(`${code} ${mapCliTrade("trade", run(1, { ok: false, code, message: "x" }), none).state}`).toBe(`${code} refused`)
+    }
+    expect(mapCliTrade("trade", run(1, { ok: false, code: "WALLET_BUSY", message: "x" }), none).error!.message).toContain("a Hood TEE wallet runs one at a time")
+    // A leg posted and its receipt unseen: exit 3, may have landed, read back.
+    expect(mapCliTrade("trade", run(3, { ok: false, code: "LEG_UNCONFIRMED", details: { hash: "0x1" } })).state).toBe("unknown")
+    // A later leg failing after the trade leg landed is exit 3 too, never refused.
+    expect(mapCliTrade("trade", run(3, { ok: false, code: "REQUEST_FAILED", details: { stage: "executed", landedLegs: [{ kind: "trade", hash: "0x1" }] } })).state).toBe("unknown")
   })
 
   test("exit 1 REQUEST_FAILED (after signing) is unknown, and a job found settles it", () => {

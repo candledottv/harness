@@ -1153,10 +1153,11 @@ async function teeChecks(input: {
     add("warn", `its key holds TEE wallet ${held.map((t) => teeName(t)).join(", ")}, but the plan is Free: TEE wallets need Pro or Max, so its TEE cards are refused`, "Move the account to Pro or Max in the Candle app, or trade from the embedded wallet.")
   }
   // The signer: `candle wallets --json` with this agent's key says, per wallet id, whether it's here.
-  const solana = held.filter((t) => t.chain === "solana" && t.active)
+  // Solana's and Hood's alike: `candle wallets` lists every linked wallet's signer by id.
+  const active = held.filter((t) => t.active)
   let signers: Record<string, unknown> | undefined
   let signerError: string | undefined
-  if (solana.length > 0 && input.cliOk && !free) {
+  if (active.length > 0 && input.cliOk && !free) {
     const cli = new CandleCli({ cliPath: config.candle.cliPath, rpcUrl: undefined, keyFor: () => input.key, parentEnv: input.env, profile: () => config.candle.profile })
     const run = await cli.run({ agent, args: ["wallets"], json: true, timeoutMs: 30_000 }).catch((error: Error) => ({ exitCode: -1, stdout: "", stderr: error.message, json: undefined }))
     signers = record(record(run.json)?.signers)
@@ -1166,8 +1167,8 @@ async function teeChecks(input: {
     }
   }
   for (const t of held) {
-    const name = `TEE wallet ${teeName(t)} (${short(t.address)})`
-    if (t.chain !== "solana") add("ok", `${name} is a Hood TEE wallet: trades from Hood TEE wallets come in a later release`)
+    const name = `${t.chain === "hood" ? "Hood " : ""}TEE wallet ${teeName(t)} (${short(t.address)})`
+    if (t.chain !== "solana" && t.chain !== "hood") add("ok", `${name} is on ${terminalText(t.chain, { maxLength: 16 })}, a chain the Candle Harness doesn't trade on`)
     else if (!t.active) add("warn", `${name} is stopped on Candle's side (inactive), so its cards are refused`, "Turning it back on is the owner's step, in their own terminal.")
     else if (free || !input.cliOk) continue
     else if (signerError !== undefined) add("warn", `couldn't read whether ${name}'s signer is on this machine: ${signerError}`, "Run `candle wallets` with this agent's key to see it.")
@@ -1873,7 +1874,7 @@ export function approvalsChecks(input: { p: Paths; config: Config; rows: readonl
   }
   for (const [agent, read] of reads ?? []) {
     if (read.status.wallets.solana && read.status.embeddedWallet !== "denied") pays(read.status.wallets.solana, "embedded", agent)
-    for (const t of read.tee ?? []) if (t.chain === "solana") pays(t.address, teeName(t), agent)
+    for (const t of read.tee ?? []) if (t.chain === "solana" || t.chain === "hood") pays(t.address, teeName(t), agent)
   }
   const label = (address: string, name: string) => `${name === "embedded" ? "the embedded wallet" : `TEE wallet ${name}`} (${short(address)})`
   const inside = autonomy.all().filter((e) => e.value.setting === "inside")

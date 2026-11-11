@@ -420,6 +420,11 @@ interface Planned {
   /** A TEE wallet pays: the card runs `cli` through `candle swap`. */
   tee?: { address: string; label?: string }
   cli?: string[]
+  /**
+   * Whether `cli` takes candle.rpcUrl, a Solana endpoint: a Hood TEE wallet's trade reads Hood's chain, and given a
+   * Solana URL as `--rpc-url` its reads fail (swap.ts hoodSwap), so it runs on the CLI's own Hood endpoint.
+   */
+  cliRpcUrl?: boolean
   /** One of the CLI's card rows: what runs. */
   cliRow?: { row: string; argv: string[]; rpcUrl: boolean; file?: CliRowParams["file"] }
   /** A row that runs in the prompt pane: what the launcher runs, and what the user will be asked. */
@@ -672,7 +677,7 @@ export class CardBook implements CardDesk {
           ...(planned.cliRow.file ? { file: planned.cliRow.file } : {}),
         } satisfies CliRowParams)
       : planned.tee
-        ? ({ argv: this.cliArgs(planned.cli!), identity: "agent", agent, json: true } satisfies CliTradeParams)
+        ? ({ argv: this.cliArgs(planned.cli!, { rpcUrl: planned.cliRpcUrl !== false }), identity: "agent", agent, json: true } satisfies CliTradeParams)
         : idKey === "coreOpId"
           ? planned.params
           : { ...planned.params, [idKey]: opId }
@@ -1236,7 +1241,7 @@ export class CardBook implements CardDesk {
       if (over) return this.refuse(client, agent, tool, "SPEND_LIMIT_EXCEEDED", `Over ${agent}'s Candle cap of ${capText(over)} a buy: this buy spends ${grouped(amount)} ${asset}. Nothing was sent; a smaller amount can go.`)
     }
     // A TEE wallet's trade runs through `candle swap`: the argv is what the card binds.
-    let via: Pick<Planned, "tee" | "cli"> = {}
+    let via: Pick<Planned, "tee" | "cli" | "cliRpcUrl"> = {}
     if (tee) {
       if (modeFor(client, this.deps.mode()) === "paper") return this.refuse(client, agent, tool, "NO_PAPER_TEE", "TEE wallets have no paper form; switch to live to trade from one.")
       if (asset === undefined) return this.refuse(client, agent, tool, "PAIR_UNKNOWN", `${label} trades against an asset the Candle Harness doesn't know, so it can't be traded from a TEE wallet yet. Nothing was sent.`)
@@ -1244,7 +1249,7 @@ export class CardBook implements CardDesk {
       if (slippage === null) return invalid("maxSlippageBps is a whole number of basis points, from 0 to 10000.")
       const sizing = side === "buy" ? { amount: amount! } : percent !== undefined ? { percent: percent as number } : { amount: amount! }
       const [from, to] = side === "buy" ? [asset, mint] : [mint, asset]
-      via = { tee: { address: tee.address, ...(tee.label ? { label: tee.label } : {}) }, cli: teeSwapArgs({ from, to, sizing, wallet: tee.address, opId, ...(slippage !== undefined ? { slippageBps: slippage } : {}) }) }
+      via = { tee: { address: tee.address, ...(tee.label ? { label: tee.label } : {}) }, cli: teeSwapArgs({ from, to, sizing, wallet: tee.address, opId, ...(slippage !== undefined ? { slippageBps: slippage } : {}) }), cliRpcUrl: market.chain === "solana" }
     }
     // Both prices read now, together: a sized buy's asset read is shared, not repeated.
     const [assetPoint, tokenPoint] = await Promise.all([asset ? this.deps.pricing.asset(agent, asset) : undefined, this.deps.pricing.token(agent, market.chain, mint)])
@@ -1433,7 +1438,7 @@ export class CardBook implements CardDesk {
     const payer = await this.paying(client, agent, "candle_swap", status, BASE_ASSETS[from].chain, word)
     const wallet = payer.address
     const decimal = amount ?? fromRaw(BigInt(amountRaw!), BASE_ASSETS[from].decimals)
-    let via: Pick<Planned, "tee" | "cli"> = {}
+    let via: Pick<Planned, "tee" | "cli" | "cliRpcUrl"> = {}
     if (payer.kind === "tee") {
       const refuse = (code: string, message: string) => this.refuse(client, agent, "candle_swap", code, message)
       if (modeFor(client, this.deps.mode()) === "paper") return refuse("NO_PAPER_TEE", "TEE wallets have no paper form; switch to live to swap from one.")
@@ -1441,7 +1446,7 @@ export class CardBook implements CardDesk {
       if (BASE_ASSETS[to].chain !== BASE_ASSETS[from].chain) return refuse("BRIDGE_LATER", `${from} to ${to} is a bridge between chains, which the Candle Harness doesn't run from a TEE wallet yet. Nothing was sent.`)
       const slippage = slippageBps(args.maxSlippageBps)
       if (slippage === null) return invalid("maxSlippageBps is a whole number of basis points, from 0 to 10000.")
-      via = { tee: { address: payer.address, ...(payer.label ? { label: payer.label } : {}) }, cli: teeSwapArgs({ from, to, sizing: { amount: decimal }, wallet: payer.address, opId, ...(slippage !== undefined ? { slippageBps: slippage } : {}) }) }
+      via = { tee: { address: payer.address, ...(payer.label ? { label: payer.label } : {}) }, cli: teeSwapArgs({ from, to, sizing: { amount: decimal }, wallet: payer.address, opId, ...(slippage !== undefined ? { slippageBps: slippage } : {}) }), cliRpcUrl: BASE_ASSETS[from].chain === "solana" }
     }
     const [fromPoint, toPoint] = await Promise.all([this.deps.pricing.asset(agent, from), this.deps.pricing.asset(agent, to)])
     const price = fromPoint?.usd

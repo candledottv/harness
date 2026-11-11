@@ -139,7 +139,7 @@ function tradeTail(words: string[], ctx: CommandContext): { words: string[]; age
 }
 
 /** TEE-wallet answers: in paper mode they all mean the same thing, that a TEE wallet has no paper form. */
-const TEE_CODES = new Set(["TEE_TIER_REQUIRED", "HOOD_TEE_LATER", "TEE_WALLET_INACTIVE"])
+const TEE_CODES = new Set(["TEE_TIER_REQUIRED", "TEE_WALLET_INACTIVE"])
 
 /** `from <wallet>` on a parsed trade: the wallet it pays from (`embedded`, or the address the core hashes), or why not. */
 function payFrom(command: Command, word: string, agent: string | undefined, ctx: CommandContext): Command {

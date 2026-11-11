@@ -2,6 +2,8 @@
 // the agent's key. The CLI signs with the key's own signer from its own store (docs.candle.tv/developers/cli-custody);
 // the Candle Harness never holds one. Read from the CLI's source at agentic 8737c8e (cli/src/commands/swap.ts,
 // cli/src/trading.ts) and docs.candle.tv/developers/cli:
+//   - a Hood TEE wallet's trade is the same argv, ETH or USDG against a 0x token: `candle swap` signs
+//     it one leg at a time (approval, trade, fee) and prints the trade's own answer (swap.ts hoodSwap);
 //   - `candle swap` looks the id up on Candle first and prints what it finds instead of trading
 //     (swap.ts:492-493), then claims the id in a local file (trading.ts:1186). A rerun under the same id
 //     is a read, or OPERATION_ALREADY_STARTED: it never sends twice. So "re-send" runs the same argv;
@@ -50,6 +52,10 @@ export const PRE_BUILD_CODES: ReadonlySet<string> = new Set([
   "QUOTE_EXPIRED",
   "TOKEN_NOT_TRADABLE",
   "USAGE",
+  // Hood TEE wallets (swap.ts hoodSwap): another operation holds the wallet, or the deployment answered
+  // without a sequenced leg. Either way nothing was signed.
+  "WALLET_BUSY",
+  "SEQUENCED_RAIL_REQUIRED",
 ])
 
 /** The words a TEE trade runs, before `--json` and `--rpc-url` (CandleCli.finalArgs adds those). */
@@ -109,6 +115,7 @@ function cliMessage(code: string, body: Record<string, unknown>): string {
   // user's own terminal: the swap was placed with the agent's key, and a refused attempt isn't stored.
   if (code === "TEE_WALLET_REQUIRED") return "The candle CLI says this key can't pay from that TEE wallet (it isn't bound to this agent's key, or no longer is). Nothing was sent. The Wallets pane lists what each agent can pay from."
   if (code === "SIGNER_UNAVAILABLE") return "This machine doesn't hold the TEE wallet's signer, so the candle CLI couldn't sign. Nothing was sent. candle-harness doctor shows which wallets have one."
+  if (code === "WALLET_BUSY") return "Another Hood trade from this TEE wallet is still open on Candle, and a Hood TEE wallet runs one at a time. Nothing was sent. Ask again once it finishes or its window closes."
   if (code === "USAGE") return "The Candle Harness built a command the candle CLI didn't accept. Nothing was sent. This is a bug in the Candle Harness."
   const plain = refusalMessage(code, body)
   if (plain) return plain

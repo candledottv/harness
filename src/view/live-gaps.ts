@@ -20,9 +20,10 @@ export function liveGaps(view: Pick<CoreView, "status" | "wallets" | "portfolio"
     const w = view.wallets?.agents[a.name]
     // Its wallets not read yet: nothing is known to be missing.
     if (w) {
-      const tee = w.payable.tier === "free" ? [] : w.payable.tee.filter((t) => t.chain === "solana" && t.active)
-      const pays = [...(w.payable.embedded ? [w.payable.embedded.address] : []), ...tee.map((t) => t.address)]
-      if (pays.length === 0 && w.embeddedWallet === "denied") {
+      const tee = w.payable.tier === "free" ? [] : w.payable.tee.filter((t) => (t.chain === "solana" || t.chain === "hood") && t.active)
+      // Its SOL is asked of the Solana wallets only: a Hood TEE wallet spends ETH or USDG.
+      const pays = [...(w.payable.embedded ? [w.payable.embedded.address] : []), ...tee.filter((t) => t.chain === "solana").map((t) => t.address)]
+      if (pays.length === 0 && tee.length === 0 && w.embeddedWallet === "denied") {
         const line = `candle keys update ${w.prefix ?? "<prefix>"} --embedded-wallet allow`
         out.push({ words: `${a.name} can't pay from a wallet yet: its key isn't allowed the embedded wallet. Allow it here, in the pane, as you: ${line}`, ...(w.prefix ? { fill: { label: "allow the embedded wallet", line } } : {}) })
       } else if (pays.length > 0) {
