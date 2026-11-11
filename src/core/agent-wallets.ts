@@ -36,7 +36,7 @@ export interface TeeWallet {
   id: string
   address: string
   label?: string
-  /** "solana", or Hood's: a Hood TEE wallet is listed, and trading from one comes later. */
+  /** "solana" or "hood" (Candle's key reads say "evm" for Hood, taken as "hood"): a trade pays from a wallet on its own chain. */
   chain: string
   /** Candle's active flag from the portfolio, and the profile read's spendCapable: both, to pay from it. */
   active: boolean
@@ -109,6 +109,11 @@ interface Read {
 const record = (value: unknown): Record<string, unknown> | undefined =>
   typeof value === "object" && value !== null && !Array.isArray(value) ? (value as Record<string, unknown>) : undefined
 const asArray = (value: unknown): unknown[] => (Array.isArray(value) ? value : [])
+/**
+ * A wallet's chain as the Candle Harness names it: Candle's key reads call a Hood wallet "evm" (cli/src/trading.ts
+ * rowChain), the portfolio calls it "hood", and one wallet must be on one chain whichever read named it.
+ */
+export const walletChain = (value: unknown, fallback: string): string => (value === "evm" ? "hood" : typeof value === "string" ? value : fallback)
 // Up to Candle's 64: a name is never cut where it's read.
 const label = (value: unknown): string | undefined => (typeof value === "string" && value.trim() !== "" ? terminalText(value, { maxLength: 64 }) : undefined)
 
@@ -121,7 +126,7 @@ export function parseProfileWallets(result: unknown): { scope: "all" | "selected
     const w = record(entry)
     if (typeof w?.linkedWalletId !== "string" || typeof w.address !== "string") continue
     const l = label(w.label)
-    rows.push({ id: w.linkedWalletId, address: w.address, ...(l ? { label: l } : {}), chain: typeof w.chain === "string" ? w.chain : "solana", spendCapable: w.spendCapable === true })
+    rows.push({ id: w.linkedWalletId, address: w.address, ...(l ? { label: l } : {}), chain: walletChain(w.chain, "solana"), spendCapable: w.spendCapable === true })
   }
   return { scope: body.walletScope, rows }
 }
@@ -148,7 +153,7 @@ export function parseTradingWallets(result: unknown): { rows: TradingRow[]; comp
     const w = record(entry)
     if (typeof w?.id !== "string" || typeof w.address !== "string") continue
     if (w.walletKind !== undefined && w.walletKind !== "tee") continue
-    const chain = typeof w.chain === "string" ? w.chain : "solana"
+    const chain = walletChain(w.chain, "solana")
     const l = label(w.label)
     rows.push({ id: w.id, address: w.address, ...(l ? { label: l } : {}), chain, active: w.active === true })
   }
@@ -180,7 +185,7 @@ export function portfolioTee(portfolio: unknown): TeeWallet[] {
       const w = record(entry)
       if (typeof w?.id !== "string" || typeof w.address !== "string") continue
       const l = label(w.label)
-      out.push({ id: w.id, address: w.address, ...(l ? { label: l } : {}), chain: typeof w.chain === "string" ? w.chain : chain, active: w.active !== false })
+      out.push({ id: w.id, address: w.address, ...(l ? { label: l } : {}), chain: walletChain(w.chain, chain), active: w.active !== false })
     }
   }
   return out
@@ -255,14 +260,21 @@ export interface PayableWallet {
   word: string
   kind: "embedded" | "tee"
   address: string
+  /** The chain its trades are on: the embedded wallet here is the Solana one. */
+  chain: string
 }
 
-/** What the agent can pay from now: the embedded wallet when its key is allowed it, then its active Solana TEE wallets (none on Free). */
+/** The chains a TEE wallet trades on: `candle swap` runs a Solana TEE wallet's trades, and a Hood one's one leg at a time. */
+const TRADING_CHAINS: ReadonlySet<string> = new Set(["solana", "hood"])
+
+/** Its key's TEE wallets that pay now: active, on a chain a trade runs on, and none on Free. */
+const payingTee = (payable: Payable): TeeWallet[] => (payable.tier === "free" ? [] : payable.tee.filter((t) => TRADING_CHAINS.has(t.chain) && t.active))
+
+/** What the agent can pay from now: the embedded wallet when its key is allowed it, then its active TEE wallets, Solana's and Hood's (none on Free). */
 export function payableWallets(payable: Payable, names?: readonly WalletNameEntry[]): PayableWallet[] {
-  const tee = payable.tier === "free" ? [] : payable.tee.filter((t) => t.chain === "solana" && t.active)
   return [
-    ...(payable.embedded ? [{ name: "embedded", word: "embedded", kind: "embedded" as const, address: payable.embedded.address }] : []),
-    ...tee.map((t) => ({ name: walletName(names, { ...t, kind: "tee" as const }), word: t.address, kind: "tee" as const, address: t.address })),
+    ...(payable.embedded ? [{ name: "embedded", word: "embedded", kind: "embedded" as const, address: payable.embedded.address, chain: "solana" }] : []),
+    ...payingTee(payable).map((t) => ({ name: walletName(names, { ...t, kind: "tee" as const }), word: t.address, kind: "tee" as const, address: t.address, chain: t.chain })),
   ]
 }
 
@@ -270,7 +282,6 @@ export function payableWallets(payable: Payable, names?: readonly WalletNameEntr
 export function resolvePayer(ctx: PayerContext, word?: string): PayerResult {
   const { agent, payable } = ctx
   const free = payable.tier === "free"
-  const payableTee = free ? [] : payable.tee.filter((t) => t.chain === "solana" && t.active)
   const names = ctx.names ?? namesOf(ctx)
   const wallets = payableWallets(payable, names)
   const canPayFrom = wallets.map((w) => w.name)
@@ -314,8 +325,8 @@ export function resolvePayer(ctx: PayerContext, word?: string): PayerResult {
   const tee = (t: TeeWallet): PayerResult | Fail => {
     const name = walletName(names, { ...t, kind: "tee" })
     if (free) return { code: "TEE_TIER_REQUIRED", sentence: `${name} is a TEE wallet, and TEE wallets are a Pro or Max feature: this account is on Free.`, clause: "TEE wallets are a Pro or Max feature, and this account is on Free" }
-    if (t.chain !== "solana") return { code: "HOOD_TEE_LATER", sentence: `${name} is a Hood TEE wallet: trades from Hood TEE wallets come in a later release.`, clause: "it's a Hood TEE wallet, and trades from those come in a later release" }
-    // A trade pays from a wallet on its own chain: a Solana wallet never pays for a Hood token, named or as the default.
+    // A trade pays from a wallet on its own chain: a Solana wallet never pays for a Hood token, nor a Hood
+    // wallet for a Solana one, named or as the default.
     if (tradeChain !== t.chain) return wrongChain(name, t.chain)
     if (t.cantSign) return { code: "TEE_WALLET_CANT_SIGN", sentence: `Candle doesn't list ${name} as able to sign for ${agent}'s key yet, so nothing can trade from it. That's on Candle's side: no owner step here changes it, so it isn't a stopped wallet and needs no enable or rebind.`, clause: "Candle doesn't list it as able to sign yet (on Candle's side; no owner step changes it)" }
     if (!t.active) return { code: "TEE_WALLET_INACTIVE", sentence: `${name} is stopped on Candle's side (inactive), so nothing can trade from it.`, clause: "it's stopped on Candle's side (inactive)" }
@@ -378,15 +389,23 @@ export function resolvePayer(ctx: PayerContext, word?: string): PayerResult {
       canPayFrom,
     }
   }
-  if (ctx.chain === "hood" || (ctx.embeddedWallet !== "denied" && payable.embedded)) return done(embedded())
-  if (payableTee.length === 1) return done(tee(payableTee[0]!))
-  if (payableTee.length > 1) {
-    return no({ code: "WALLET_NOT_NAMED", sentence: `${agent} can pay from more than one TEE wallet and has no default: name one, or set agents.${agent}.wallet in config.toml.`, clause: "" })
+  // No wallet named and no default: the embedded wallet on the trade's chain where the key is allowed it, as
+  // `candle swap` picks (cli/src/trading.ts tradingPayer), else the one TEE wallet on that chain.
+  const embeddedHere = ctx.embeddedWallet !== "denied" && (tradeChain === "hood" ? ctx.evm !== undefined : payable.embedded !== undefined)
+  if (embeddedHere) return done(embedded())
+  const onChain = payingTee(payable).filter((t) => t.chain === tradeChain)
+  if (onChain.length === 1) return done(tee(onChain[0]!))
+  if (onChain.length > 1) {
+    return no({ code: "WALLET_NOT_NAMED", sentence: `${agent} can pay from more than one ${chainWord(tradeChain)} TEE wallet and has no default: name one, or set agents.${agent}.wallet in config.toml.`, clause: "" })
   }
+  // A Hood trade with neither: the embedded wallet says why (denied, or none on the account).
+  if (tradeChain === "hood") return done(embedded())
   // Nothing payable: say why from the wallets it does have.
   if (free && payable.tee.length > 0) return done(tee(payable.tee[0]!))
-  if (ctx.embeddedWallet === "denied" && payable.tee.length === 0) return done(embedded())
-  return no({ code: "NO_PAYABLE_WALLET", sentence: `${agent} has no wallet it can pay from.`, clause: "" })
+  // Denied the embedded wallet with no TEE wallet on this chain: the denial and its fix are the reason.
+  if (ctx.embeddedWallet === "denied" && !payable.tee.some((t) => t.chain === tradeChain)) return done(embedded())
+  // It can pay on the other chain only: said for this one, so the list after it doesn't contradict it.
+  return no({ code: "NO_PAYABLE_WALLET", sentence: `${agent} has no ${wallets.length > 0 ? `${chainWord(tradeChain)} ` : ""}wallet it can pay from.`, clause: "" })
 }
 
 /**
@@ -456,7 +475,9 @@ export function walletsNote(topic: WalletsTopic, agent: string): string | undefi
   // Named as the panes name it: the embedded wallet's own name, where the person gave it one.
   const own = (w: PayableWallet) => topic.names?.find((e) => e.address === w.address && e.marked === undefined)?.name
   const named = (w: PayableWallet) =>
-    w.kind === "embedded" ? `the embedded wallet${own(w) ? ` (named ${terminalText(own(w)!, { maxLength: 64 })})` : ""}` : `${w.name}, a TEE wallet (${short(w.address)}) bound to your key alone`
+    w.kind === "embedded"
+      ? `the embedded wallet${own(w) ? ` (named ${terminalText(own(w)!, { maxLength: 64 })})` : ""}`
+      : `${w.name}, a ${w.chain === "hood" ? "Hood " : ""}TEE wallet (${short(w.address)}) bound to your key alone${w.chain === "hood" ? ", for Hood tokens" : ""}`
   const paying = picked.ok ? all.find((w) => w.address === picked.address) : undefined
   const head = paying
     ? `A trade or swap that names no wallet pays from ${named(paying)}${ctx.defaultWallet !== undefined ? ", the user's default for you" : ""}.`
@@ -515,7 +536,8 @@ export class AgentWallets {
     )
     // The default found by its line for the first time (or after an edit): kept by address from now on.
     const unnamed = word === undefined || word.trim() === ""
-    if (unnamed && picked.ok && defaultWallet !== undefined && defaultPin === undefined && opts.chain !== "hood") this.deps.pins?.set(agent, defaultWallet, picked.address)
+    // A Hood trade's embedded pick is the EVM twin of the Solana default, so only a TEE wallet is pinned from one.
+    if (unnamed && picked.ok && defaultWallet !== undefined && defaultPin === undefined && (opts.chain !== "hood" || picked.kind === "tee")) this.deps.pins?.set(agent, defaultWallet, picked.address)
     return picked
   }
 

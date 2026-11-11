@@ -567,6 +567,16 @@ describe("TEE wallets", () => {
     })
   })
 
+  test("a Hood TEE wallet: active with its signer here, or its signer elsewhere, as a Solana one is", async () => {
+    const HOOD = { id: "teeid9", address: "0x00000000000000000000000000000000000Ho0d1", label: "hood-bot", boundKeyPrefix: "Momentum", chain: "hood" as const }
+    const here = (signers?: Record<string, string>) => setup({ candle: { momentum: { teeWallets: [HOOD], tier: "max" }, swing: { teeWallets: [HOOD], tier: "max" } }, tee: { wallets: [HOOD], ...(signers ? { signers } : {}) } })
+    const checks = await runDoctor({ env: (await here()).env })
+    expect(find(checks, "wallet", /^momentum: Hood TEE wallet hood-bot \(0x00…o0d1\) is active, and its signer is on this machine$/)).toMatchObject({ state: "ok" })
+    expect(checks.some((c) => /later release/.test(c.text))).toBe(false)
+    const off = await runDoctor({ env: (await here({})).env })
+    expect(find(off, "wallet", /^momentum: Hood TEE wallet hood-bot \(0x00…o0d1\)'s signer isn't on this machine/)).toMatchObject({ state: "warn" })
+  })
+
   test("a signer that isn't on this machine, and a wallet stopped on Candle's side", async () => {
     const off = await runDoctor({ env: (await teeSetup({ tee: { wallets: [TEE], signers: {} } })).env })
     expect(find(off, "wallet", /^momentum: TEE wallet bot-wallet \(TeeF…1111\)'s signer isn't on this machine/)).toMatchObject({ state: "warn", fix: expect.stringContaining("machine that promoted it") })

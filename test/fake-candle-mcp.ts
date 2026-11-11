@@ -104,6 +104,8 @@ export interface FakeTeeWallet {
   boundKeyPrefix: string
   active?: boolean
   lamports?: string
+  /** "hood" for a Hood TEE wallet: under the portfolio's `hood.tee`, and "evm" in the key's list, as Candle answers; Solana when unset. */
+  chain?: "solana" | "hood"
 }
 
 export const FAKE_MINTS = {
@@ -356,8 +358,14 @@ function answer(name: string, args: Record<string, unknown>, behaviour: Behaviou
           },
         ],
         // Every TEE wallet on the account, whichever key it's bound to (the portfolio doesn't say).
-        tee: (script().teeWallets ?? []).map((w) => ({ id: w.id, address: w.address, label: w.label ?? null, active: w.active ?? true, chain: "solana", lamports: w.lamports ?? "0", tokens: [] })),
-        hood: { embedded: [{ address: FAKE_EVM_WALLET, chain: "hood", wei: "0", tokens: [] }], tee: [], unavailable: [], unpriced: 0, unpricedByReason: {} },
+        tee: (script().teeWallets ?? []).filter((w) => w.chain !== "hood").map((w) => ({ id: w.id, address: w.address, label: w.label ?? null, active: w.active ?? true, chain: "solana", lamports: w.lamports ?? "0", tokens: [] })),
+        hood: {
+          embedded: [{ address: FAKE_EVM_WALLET, chain: "hood", wei: "0", tokens: [] }],
+          tee: (script().teeWallets ?? []).filter((w) => w.chain === "hood").map((w) => ({ id: w.id, address: w.address, ...(w.label ? { label: w.label } : {}), active: w.active ?? true, chain: "hood", wei: "0", tokens: [] })),
+          unavailable: [],
+          unpriced: 0,
+          unpricedByReason: {},
+        },
         prices: Object.fromEntries(
           Object.entries(prices()).map(([mint, priceUsd]) => [mint, { priceUsd: unpriced.has(mint) ? null : priceUsd, source: "fake" }]),
         ),
@@ -377,7 +385,7 @@ function answer(name: string, args: Record<string, unknown>, behaviour: Behaviou
         keyPrefix: args.keyPrefix,
         profileId: `fake-profileId-${args.keyPrefix === ownPrefix ? 1 : 2}`,
         walletScope: "selected",
-        wallets: bound.map((w) => ({ address: w.address, assignedAt: 1_790_000_000_000, chain: "solana", ...(w.label ? { label: w.label } : {}), linkedWalletId: w.id, spendCapable: w.active ?? true })),
+        wallets: bound.map((w) => ({ address: w.address, assignedAt: 1_790_000_000_000, chain: w.chain === "hood" ? "evm" : "solana", ...(w.label ? { label: w.label } : {}), linkedWalletId: w.id, spendCapable: w.active ?? true })),
         scopeLimit: { max: 1000, rows: bound.length },
       })
     }

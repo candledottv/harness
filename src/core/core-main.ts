@@ -1386,7 +1386,7 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
           byAddress.set(address, w)
         }
         if (payable.embedded) add(payable.embedded.address, "embedded", "embedded")
-        for (const t of payable.tee) if (t.chain === "solana") add(t.address, nameOf(t.address, "tee", t.label), "tee", t.cantSign)
+        for (const t of payable.tee) if (t.chain === "solana" || t.chain === "hood") add(t.address, nameOf(t.address, "tee", t.label), "tee", t.cantSign)
       }
       return { list: [...byAddress.values()], read }
     }
@@ -2416,7 +2416,8 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
       portfolio: () => prices.lastPortfolio(),
       prices: latest,
       keyPrefix: (agent) => apiKeyPrefix(keys.get(agent) ?? ""),
-      teeWallets: (agent) => wallets.payable(agent).tee.filter((w) => w.chain === "solana"),
+      // Hood's too: `candle tee disable <0x address>` stops one as it does a Solana one.
+      teeWallets: (agent) => wallets.payable(agent).tee.filter((w) => w.chain === "solana" || w.chain === "hood"),
       nameOf: (address, kind, label) => nameOf(address, kind, label),
       pnl: pnlFigure,
       insideLimits: () => autonomyDesk.inside(),
@@ -4492,12 +4493,15 @@ export function decimalsIn(result: unknown, mint: string): number | undefined {
 }
 
 export function holdingFrom(result: unknown, wallet: string, mint: string): { amountRaw: bigint; decimals: number } | "none" | "unreadable" {
-  const body = result as { embedded?: unknown; tee?: unknown } | undefined
+  const body = result as { embedded?: unknown; tee?: unknown; hood?: { embedded?: unknown; tee?: unknown } } | undefined
   if (!Array.isArray(body?.embedded)) return "unreadable"
-  const entry = [...body.embedded, ...(Array.isArray(body.tee) ? body.tee : [])].find((w) => (w as { address?: unknown }).address === wallet) as { tokens?: unknown } | undefined
+  const list = (v: unknown): unknown[] => (Array.isArray(v) ? v : [])
+  // Hood's wallets are under `hood`, never in the Solana arrays, and a 0x address or contract matches in any case.
+  const same = (a: unknown, b: string) => typeof a === "string" && (a === b || (b.startsWith("0x") && a.toLowerCase() === b.toLowerCase()))
+  const entry = [...body.embedded, ...list(body.tee), ...list(body.hood?.embedded), ...list(body.hood?.tee)].find((w) => same((w as { address?: unknown }).address, wallet)) as { tokens?: unknown } | undefined
   if (!entry) return "none"
   if (!Array.isArray(entry.tokens)) return "unreadable" // a failed read is null, never zero
-  const token = entry.tokens.find((t) => (t as { mint?: unknown }).mint === mint) as { amountRaw?: unknown; decimals?: unknown } | undefined
+  const token = entry.tokens.find((t) => same((t as { mint?: unknown }).mint, mint)) as { amountRaw?: unknown; decimals?: unknown } | undefined
   if (!token) return "none"
   if (typeof token.amountRaw !== "string" || !/^\d+$/.test(token.amountRaw) || typeof token.decimals !== "number") return "unreadable"
   return { amountRaw: BigInt(token.amountRaw), decimals: token.decimals }
