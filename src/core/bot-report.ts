@@ -15,6 +15,7 @@
 //   is in the journal already, as the core's own rows.
 import { refused } from "../shared/rpc"
 import { terminalText } from "../shared/terminal-text"
+import { familyOfAddress } from "../shared/chains"
 
 export type BotHealth = "ok" | "warn" | "error"
 export const BOT_EVENT_KINDS = ["considered", "entered", "skipped", "exited", "alert", "note"] as const
@@ -70,8 +71,6 @@ function readsAsFigure(name: string): boolean {
 /** An event's own id, or a code: letters, digits and `_ . : -`. */
 const ID = /^[A-Za-z0-9_.:-]{1,64}$/
 const WORD = /^[A-Za-z0-9_.-]{1,32}$/
-const SOLANA_MINT = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/
-const HOOD_MINT = /^0x[0-9a-fA-F]{40}$/
 /** An event may say it happened up to this far ahead of the core's clock (clocks drift), and no further. */
 const FUTURE_MS = 5 * 60_000
 
@@ -184,7 +183,7 @@ export class BotReports {
         onlyKeys(r, ["id", "at", "kind", "text", "mint"], `events[${i}]`)
         if (!BOT_EVENT_KINDS.includes(r.kind as BotEventKind)) bad(`events[${i}].kind is one of ${BOT_EVENT_KINDS.join(", ")}.`)
         if (r.id !== undefined && (typeof r.id !== "string" || !ID.test(r.id))) bad(`events[${i}].id is its own: 1 to 64 letters, digits, _ . : or -.`)
-        if (r.mint !== undefined && (typeof r.mint !== "string" || !(SOLANA_MINT.test(r.mint) || HOOD_MINT.test(r.mint)))) bad(`events[${i}].mint is a token's address.`)
+        if (r.mint !== undefined && (typeof r.mint !== "string" || familyOfAddress(r.mint) === undefined)) bad(`events[${i}].mint is a token's address.`)
         events.push({
           id: typeof r.id === "string" ? r.id : `core:${++this.seq}`,
           at: when(r.at, `events[${i}].at`, now),

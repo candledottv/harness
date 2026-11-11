@@ -1,6 +1,6 @@
 // The trader prompt: the rules it must carry.
 import { expect, test } from "bun:test"
-import { researchLine, traderPrompt } from "./prompt"
+import { barePrompt, researchLine, traderPrompt } from "./prompt"
 
 const base = { agent: "momentum", mode: "live" as const, researchDir: "/tmp/research", stepCap: 30 }
 const prompt = traderPrompt(base)
@@ -105,4 +105,16 @@ test("the code runner is named in the research line only where it's on: off says
   expect(researchLine("/r", can)).not.toMatch(/research_run|run a script/)
   expect(researchLine("/r", can, { shell: "off", deny: [], run: "off" })).not.toMatch(/research_run|run a script/)
   expect(researchLine("/r", can, { shell: "off", deny: [], run: ["python3", "node"] })).toContain("run a script with research_run, on the candle MCP server: python3, node, held to your research folder with no network.")
+})
+
+test("live, the prompt never steers towards paper: paper is named only to say not to suggest it; on paper, it says what paper means", () => {
+  for (const make of [traderPrompt, barePrompt]) {
+    const live = make(base)
+    expect(live).toContain("The Candle Harness is live")
+    expect(live).toContain("Don't suggest paper trading or a rehearsal unless the person asks for it.")
+    expect(live.match(/paper/gi)).toHaveLength(1)
+    const paper = make({ ...base, mode: "paper" })
+    expect(paper).toContain("The Candle Harness is in paper mode now, as the person set it: trades run at once with no card, and no funds move.")
+    expect(paper).not.toContain("is live")
+  }
 })

@@ -9,7 +9,7 @@ import type { CoreOptions } from "../../src/core/core-main"
 import type { Engine, EngineId } from "../../src/engine/engine"
 import { AGENT_KEY, startTestCore, type TestCore, testConfig, testEngine, until } from "../core-fixture"
 import { type FakeHacc, startFakeHacc } from "../fake-hacc"
-import { type Case, type CaseRecord, type Check, MOON, MOON_TWIN, PEPE, type TurnRecord, type WakeTurn } from "./cases"
+import { type Case, type CaseRecord, type Check, HTOK, MOON, MOON_TWIN, PEPE, type TurnRecord, type WakeTurn } from "./cases"
 
 export const OPENROUTER_KEY_FILE = join(homedir(), ".config/candle-harness-engines/openrouter-key")
 const TURN_MS = 300_000
@@ -22,6 +22,7 @@ const HACC_TOKENS = {
   [MOON]: { market: { symbol: "MOON", name: "MOON", price: 0.63, market_cap: 1_000_000, fdv: 1_000_000, liquidity: 100_000 } },
   [PEPE]: { market: { symbol: "PEPE", name: "PEPE", price: 0.165, market_cap: 1_000_000, fdv: 1_000_000, liquidity: 100_000 } },
   [MOON_TWIN]: { market: { symbol: "MOON", name: "MOON", price: 0.0021, market_cap: 1_000_000, fdv: 1_000_000, liquidity: 100_000 } },
+  [HTOK]: { market: { symbol: "HTOK", name: "HTOK", price: 0.0025, market_cap: 1_000_000, fdv: 1_000_000, liquidity: 100_000 } },
 }
 
 // Planted rows' account: the core reads it from state/account, so its journal takes them as its own.

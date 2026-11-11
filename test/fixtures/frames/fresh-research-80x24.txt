@@ -6,19 +6,19 @@
 │wallets worth watching, markets, token        ││check shows here: its flags,  │
 │checks, your positions), propose trades as    ││mint, sell probe, holders,    │
 │cards you approve with one key, and run any   ││dev wallet, liquidity and     │
-│candle command you ask for. Paper trades need ││age.                          │
-│no card.                                      ││                              │
-│                                              ││Pick a token in any list, or  │
-│Try:                                          ││ask the agent about one.      │
-│  · what's the tape saying in the last hour?  ││                              │
+│candle command you ask for.                   ││age.                          │
+│                                              ││                              │
+│Try:                                          ││Pick a token in any list, or  │
+│  · what's the tape saying in the last hour?  ││ask the agent about one.      │
 │  · check this token before I buy: <paste a … ││                              │
-│  · buy $10 of it in paper mode               ││                              │
+│  · buy $10 of it                             ││                              │
 │                                              ││                              │
 │I act on your messages and your triggers.     ││                              │
 │Nothing here is financial advice. Signals,    ││                              │
 │backtests and replays describe the past, and  ││                              │
 │the agent can be wrong: check what matters,   ││                              │
 │and size what you can lose.                   ││                              │
+│                                              ││                              │
 ╰──────────────────────────────────────────────╯│                              │
                                                 │                              │
 › type a command …   ctrl-k palette    ? help   ╰─ ⇱ ──────────────────────────╯
@@ -32,19 +32,19 @@
 5: 32fe9f/111419×1 dde2ea/111419×38 ffffff/111419×8 32fe9f/111419×1 252a33/111419×1 959dab/111419×28 ffffff/111419×2 252a33/111419×1
 6: 32fe9f/111419×1 dde2ea/111419×42 ffffff/111419×4 32fe9f/111419×1 252a33/111419×1 959dab/111419×26 ffffff/111419×4 252a33/111419×1
 7: 32fe9f/111419×1 dde2ea/111419×43 ffffff/111419×3 32fe9f/111419×1 252a33/111419×1 959dab/111419×25 ffffff/111419×5 252a33/111419×1
-8: 32fe9f/111419×1 dde2ea/111419×45 ffffff/111419×1 32fe9f/111419×1 252a33/111419×1 959dab/111419×4 ffffff/111419×26 252a33/111419×1
-9: 32fe9f/111419×1 dde2ea/111419×8 ffffff/111419×38 32fe9f/111419×1 252a33/111419×1 ffffff/111419×30 252a33/111419×1
-10: 32fe9f/111419×1 ffffff/111419×46 32fe9f/111419×1 252a33/111419×1 959dab/111419×28 ffffff/111419×2 252a33/111419×1
-11: 32fe9f/111419×1 959dab/111419×4 ffffff/111419×42 32fe9f/111419×1 252a33/111419×1 959dab/111419×24 ffffff/111419×6 252a33/111419×1
-12: 32fe9f/111419×1 dde2ea/111419×44 ffffff/111419×2 32fe9f/111419×1 252a33/111419×1 ffffff/111419×30 252a33/111419×1
-13: 32fe9f/111419×1 dde2ea/111419×45 ffffff/111419×1 32fe9f/111419×1 252a33/111419×1 ffffff/111419×30 252a33/111419×1
-14: 32fe9f/111419×1 dde2ea/111419×31 ffffff/111419×15 32fe9f/111419×1 252a33/111419×1 ffffff/111419×30 252a33/111419×1
-15: 32fe9f/111419×1 ffffff/111419×46 32fe9f/111419×1 252a33/111419×1 ffffff/111419×30 252a33/111419×1
-16: 32fe9f/111419×1 959dab/111419×41 ffffff/111419×5 32fe9f/111419×1 252a33/111419×1 ffffff/111419×30 252a33/111419×1
-17: 32fe9f/111419×1 959dab/111419×42 ffffff/111419×4 32fe9f/111419×1 252a33/111419×1 ffffff/111419×30 252a33/111419×1
-18: 32fe9f/111419×1 959dab/111419×44 ffffff/111419×2 32fe9f/111419×1 252a33/111419×1 ffffff/111419×30 252a33/111419×1
-19: 32fe9f/111419×1 959dab/111419×43 ffffff/111419×3 32fe9f/111419×1 252a33/111419×1 ffffff/111419×30 252a33/111419×1
-20: 32fe9f/111419×1 959dab/111419×27 ffffff/111419×19 32fe9f/111419×1 252a33/111419×1 ffffff/111419×30 252a33/111419×1
+8: 32fe9f/111419×1 dde2ea/111419×27 ffffff/111419×19 32fe9f/111419×1 252a33/111419×1 959dab/111419×4 ffffff/111419×26 252a33/111419×1
+9: 32fe9f/111419×1 ffffff/111419×46 32fe9f/111419×1 252a33/111419×1 ffffff/111419×30 252a33/111419×1
+10: 32fe9f/111419×1 959dab/111419×4 ffffff/111419×42 32fe9f/111419×1 252a33/111419×1 959dab/111419×28 ffffff/111419×2 252a33/111419×1
+11: 32fe9f/111419×1 dde2ea/111419×44 ffffff/111419×2 32fe9f/111419×1 252a33/111419×1 959dab/111419×24 ffffff/111419×6 252a33/111419×1
+12: 32fe9f/111419×1 dde2ea/111419×45 ffffff/111419×1 32fe9f/111419×1 252a33/111419×1 ffffff/111419×30 252a33/111419×1
+13: 32fe9f/111419×1 dde2ea/111419×17 ffffff/111419×29 32fe9f/111419×1 252a33/111419×1 ffffff/111419×30 252a33/111419×1
+14: 32fe9f/111419×1 ffffff/111419×46 32fe9f/111419×1 252a33/111419×1 ffffff/111419×30 252a33/111419×1
+15: 32fe9f/111419×1 959dab/111419×41 ffffff/111419×5 32fe9f/111419×1 252a33/111419×1 ffffff/111419×30 252a33/111419×1
+16: 32fe9f/111419×1 959dab/111419×42 ffffff/111419×4 32fe9f/111419×1 252a33/111419×1 ffffff/111419×30 252a33/111419×1
+17: 32fe9f/111419×1 959dab/111419×44 ffffff/111419×2 32fe9f/111419×1 252a33/111419×1 ffffff/111419×30 252a33/111419×1
+18: 32fe9f/111419×1 959dab/111419×43 ffffff/111419×3 32fe9f/111419×1 252a33/111419×1 ffffff/111419×30 252a33/111419×1
+19: 32fe9f/111419×1 959dab/111419×27 ffffff/111419×19 32fe9f/111419×1 252a33/111419×1 ffffff/111419×30 252a33/111419×1
+20: 32fe9f/111419×1 ffffff/111419×46 32fe9f/111419×1 252a33/111419×1 ffffff/111419×30 252a33/111419×1
 21: 32fe9f/111419×48 252a33/111419×1 ffffff/111419×30 252a33/111419×1
 22: 959dab/0b0d10×1 ffffff/0b0d10×47 252a33/111419×1 ffffff/111419×30 252a33/111419×1
 23: f6f8fb/0e1115×2 959dab/0e1115×16 ffffff/0e1115×2 6cb6ff/16263a×16 959dab/0e1115×2 6cb6ff/16263a×8 959dab/0e1115×2 252a33/111419×2 6cb6ff/16263a×3 252a33/111419×27

@@ -16,11 +16,10 @@
 // Cards, hashes and the CLI's argv keep passing wallets by address: a name is only ever looked up.
 import { addressKey } from "../shared/address-key"
 import { terminalText } from "../shared/terminal-text"
+import { isEvmAddress, LOOSE_SOLANA_ADDRESS_SOURCE, shortAddress } from "../shared/chains"
 
-/** An address as the screen shortens it: its first and last four characters. The one copy (a test refuses another). */
-export function short(address: string): string {
-  return address.length > 12 ? `${address.slice(0, 4)}…${address.slice(-4)}` : address
-}
+/** An address as the screen shortens it (chains.ts): a Solana one's first and last four, an EVM one's `0x` and four each end. */
+export const short = shortAddress
 
 /** Where a wallet's name is kept, and so what changes it. */
 export type NameOwner = "candle" | "vault" | "harness"
@@ -42,12 +41,11 @@ export interface WalletNameEntry {
 }
 
 // Address-shaped, as destinations.ts reads one: a label is never 32 to 44 letters and digits.
-const SOLANA = /^[0-9A-Za-z]{32,44}$/
-const EVM = /^0x[0-9a-fA-F]{40}$/
+const SOLANA = new RegExp(`^${LOOSE_SOLANA_ADDRESS_SOURCE}$`)
 /** "Wall…1111", "Wall...1111", "0x12…cdef": what a short address looks like on screen or typed. */
 const SHORT = /^(0x)?[0-9A-Za-z]{2,6}\s*(…|\.{2,3})\s*[0-9A-Za-z]{2,6}$/
 
-export const isAddressShaped = (word: string): boolean => SOLANA.test(word) || EVM.test(word)
+export const isAddressShaped = (word: string): boolean => SOLANA.test(word) || isEvmAddress(word)
 export { addressKey }
 
 /** A name as compared: as the screen draws it, any case. "Hot" and "hot", or a name with an invisible character in it, are one. */

@@ -66,7 +66,9 @@ interface Col {
 }
 
 const change: Col = { head: "1h", width: 8, text: (r) => pct(r.change1h), fg: (r) => (r.change1h === null ? C.dim : r.change1h >= 0 ? C.good : C.bad) }
-const cap: Col = { head: "mcap", width: 7, text: (r) => compactUsd(r.marketCap), fg: (r) => (r.marketCap === null ? C.dim : C.ink) }
+/** A market cap of nothing is one Candle hasn't measured, not a token worth $0: shown as missing. */
+const capOf = (r: FeedRow): number | null => (r.marketCap !== null && r.marketCap > 0 ? r.marketCap : null)
+const cap: Col = { head: "mcap", width: 7, text: (r) => compactUsd(capOf(r)), fg: (r) => (capOf(r) === null ? C.dim : C.ink) }
 /** Trending's lists' market cap: seven cells, "$11.8K" and one before it, now the change column ends in its own space. */
 const wideCap: Col = { ...cap, width: 7 }
 
@@ -139,9 +141,21 @@ export function feedLines(bucket: Bucket, list: FeedList | undefined, width: num
   const sep = width >= base + 8 ? "  " : " "
   const withName = width >= base + 22
   const heading: Line = { segs: [{ text: "token".padEnd(8), fg: C.dim }, ...cols.map((c) => ({ text: c.head.padStart(c.width), fg: C.dim })), ...(withWhere ? [{ text: `${sep}where`, fg: C.dim }] : [])] }
+  // A ticker the list holds twice or more (copies are common): each of those rows says which by its address's end.
+  const counts = new Map<string, number>()
+  for (const r of list.rows) counts.set(r.symbol.toLowerCase(), (counts.get(r.symbol.toLowerCase()) ?? 0) + 1)
   const rows = list.rows.map((r): Line => {
-    const segs: Line["segs"] = [{ text: fit(r.symbol, 7).padEnd(8), fg: C.hi }, ...cols.map((c) => ({ text: c.text(r, now).padStart(c.width), fg: c.fg(r) })), ...(withWhere ? [{ text: `${sep}${fit(r.where ?? "—", 6)}`, fg: r.where === "candle" ? C.ink : C.dim }] : [])]
-    if (withName && r.name && r.name.toLowerCase() !== r.symbol.toLowerCase()) {
+    const twin = (counts.get(r.symbol.toLowerCase()) ?? 0) > 1 ? `…${r.mint.slice(-4)}` : undefined
+    // Its address's end goes where there's room: the name's column, else where it launched, else the token's own cell.
+    const where = twin && !withName ? twin : (r.where ?? "—")
+    const token = twin && !withName && !withWhere ? `${[...r.symbol].slice(0, 2).join("")}${twin}` : fit(r.symbol, 7)
+    const segs: Line["segs"] = [{ text: token.padEnd(8), fg: C.hi }, ...cols.map((c) => ({ text: c.text(r, now).padStart(c.width), fg: c.fg(r) })), ...(withWhere ? [{ text: `${sep}${fit(where, 6)}`, fg: twin && !withName ? C.dim : r.where === "candle" ? C.ink : C.dim }] : [])]
+    if (withName && twin) {
+      if (withWhere) segs[segs.length - 1] = { ...segs.at(-1)!, text: segs.at(-1)!.text.padEnd(sep.length + 6) }
+      const used = segs.reduce((n, s) => n + s.text.length, 0)
+      const named = r.name && r.name.toLowerCase() !== r.symbol.toLowerCase() ? ` ${r.name}` : ""
+      if (width - used > 4) segs.push({ text: `  ${fit(`${twin}${named}`, width - used - 2)}`, fg: C.dim })
+    } else if (withName && r.name && r.name.toLowerCase() !== r.symbol.toLowerCase()) {
       // The name lines up after the launch column, whatever its width.
       if (withWhere) segs[segs.length - 1] = { ...segs.at(-1)!, text: segs.at(-1)!.text.padEnd(sep.length + 6) }
       const used = segs.reduce((n, s) => n + s.text.length, 0)

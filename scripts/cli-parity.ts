@@ -22,6 +22,8 @@ export function parityProblems(source: { commands: readonly SourceEntry[]; help:
   const exists = (path: string) => {
     if (routedSet.has(path)) return true
     const words = path.split(" ")
+    // A word a bare command's handler dispatches itself (`transfer status`).
+    if (words.length === 2 && source.commands.some((c) => c.command === words[0] && c.subcommand === null && c.actions?.[words[1]!] !== undefined)) return true
     return words.length === 3 && routedSet.has(words.slice(0, 2).join(" ")) && helpLine(source.help, path).exact
   }
   const table = rows.map((r) => r.path)

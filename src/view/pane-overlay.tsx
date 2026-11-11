@@ -43,14 +43,15 @@ export function PaneOverlay(props: { title: string; lines: readonly Line[]; scro
 }
 
 /**
- * A code bot's card the Build pane's harness proposed, whole over the frame with focus on it: the strip above the
- * input line would cut its headline and command. ⏎ approves it after the usual 300 ms; Esc goes back to the harness,
- * and the card waits in the strip.
+ * A code bot's card the Build pane's harness proposed, or a code bot's own trade that arrived while the harness had the
+ * keys, whole over the frame with focus on it: the strip above the input line would cut its headline and command, and
+ * the harness's Enter isn't an approval. ⏎ approves it after the usual 300 ms; Esc goes back to the harness, and the
+ * card waits in the strip.
  */
 /** The card's own rows in the overlay: the window less the bars, the box and its footer. */
 export const buildCardRows = (height: number): number => Math.max(4, height - 6)
 
-export function BuildCardOverlay(props: { lines: readonly Line[]; width: number; height: number; onAct: (ref: string, act: Act) => void; waiting?: boolean; onTake?: () => void }) {
+export function BuildCardOverlay(props: { lines: readonly Line[]; width: number; height: number; onAct: (ref: string, act: Act) => void; waiting?: boolean; onTake?: () => void; title?: string }) {
   const w = Math.min(84, Math.max(36, props.width - 4))
   const fits = buildCardRows(props.height)
   const shown = props.lines.slice(0, fits)
@@ -68,7 +69,7 @@ export function BuildCardOverlay(props: { lines: readonly Line[]; width: number;
       borderColor={props.waiting ? C.edge : C.focus}
       backgroundColor={C.term}
       titleColor={C.head}
-      title=" your harness proposed a bot "
+      title={` ${props.title ?? "your harness proposed a bot"} `}
       flexDirection="column"
       paddingLeft={1}
       paddingRight={1}

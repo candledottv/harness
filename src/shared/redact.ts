@@ -10,6 +10,9 @@
  *     credential, and a URL's `user:pass@`;
  *   - a JWT, an RPC provider's key in its URL's path (QuickNode, Alchemy, Infura, Ankr, and the like), and a
  *     keypair file's 64-number array;
+ *   - an EVM private key named one by the words just before it ("private key is", "pk:", "secret ="). A key with
+ *     no such words is the same shape as a transaction hash, which must show: an own wallet's key refused in a
+ *     message is registered as a value.
  *   - anything shaped like a Candle API key (`cndl_live_` / `cndl_test_`), held or not;
  *   - anything shaped like a code bot's or a Build pane's token (`chb_` / `chd_`), which live outside the core;
  *   - anything shaped like another service's key or token (Anthropic, OpenAI, OpenRouter, xAI, GitHub,
@@ -21,7 +24,7 @@
  * see that something was there.
  */
 
-import { isKeypair } from "./wallet-secret"
+import { isKeypair, withoutEvmKeysByContext } from "./wallet-secret"
 
 export const REDACTED = "[redacted]"
 
@@ -132,6 +135,7 @@ export class Redactor {
     out = out.replace(HARNESS_TOKEN_SHAPE, REDACTED)
     for (const shape of OTHER_KEY_SHAPES) out = out.replace(shape, REDACTED)
     out = out.replace(JWT, REDACTED).replace(KEYPAIR_ARRAY, (array) => (keypairArray(array) ? REDACTED : array))
+    out = withoutEvmKeysByContext(out, REDACTED)
     out = out.replace(RPC_PATH_URL, (url) => url.replace(LONG_SEGMENT, REDACTED))
     out = out.replace(USERINFO, `$1${REDACTED}@`)
     out = out.replace(BASIC, (whole, lead: string, b64: string) => (isBasicCredential(b64) ? `${lead}${REDACTED}` : whole))

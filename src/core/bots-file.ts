@@ -43,6 +43,7 @@ import { fileStamp } from "../shared/file-stamp"
 import { canonicalJson } from "../shared/canonical-json"
 import { type Definition, readDefinition } from "../shared/definition"
 import { terminalText } from "../shared/terminal-text"
+import { familyOfAddress } from "../shared/chains"
 
 export const BOTS_HEADER =
   "# candle-harness's bots: Hacc strategy definitions the Candle Harness runs, and programs of yours it holds to their figures. It writes this file whole when you approve\n" +
@@ -189,7 +190,7 @@ export function figuresProblem(f: { perTradeUsd: unknown; perDayUsd: unknown; ma
 const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v)
 const quote = (v: string) => JSON.stringify(v)
 const AGENT_NAME = /^[a-z0-9][a-z0-9_-]{0,31}$/
-const WALLET = /^(embedded|[1-9A-HJ-NP-Za-km-z]{32,44}|0x[0-9a-fA-F]{40})$/
+const WALLET = { test: (word: string) => word === "embedded" || familyOfAddress(word) !== undefined }
 
 /** Why a name can't name a bot, or undefined when it can: a trigger names a bot in quotes, and a view shows it in a row. */
 export function botNameProblem(name: string): string | undefined {

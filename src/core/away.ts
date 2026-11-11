@@ -34,6 +34,7 @@ import { ranWithoutCard } from "../shared/approved-how"
 import { randomBytes } from "node:crypto"
 import { readFileSync } from "node:fs"
 import { chmod, rename, writeFile } from "node:fs/promises"
+import { sameAddress } from "../shared/chains"
 import type { Redactor } from "../shared/redact"
 import type { ToolOutcome } from "./candle-mcp"
 import { type HaccAnswer, haccCursor } from "./hacc"
@@ -159,9 +160,11 @@ export interface AgentFills {
 export interface HoldingChange {
   wallet: string
   name: string
-  /** A token's mint, or "SOL". */
+  /** A token's mint, or the wallet's native asset's symbol ("SOL", "ETH"). */
   asset: string
   symbol?: string
+  /** The wallet's native asset, not a token. */
+  native?: true
   then: number
   now: number
   /** No live trade this Candle Harness sent from the wallet in the gap explains it: other keys pay from it too. */
@@ -173,7 +176,8 @@ export interface HoldingsSnapshot {
   at: number
   /** When that portfolio was read. */
   readAt: number | null
-  wallets: { address: string; name: string; sol: number | null; tokens: { mint: string; symbol?: string; amount: number }[] | null }[]
+  /** `sol` is the wallet's native balance (kept under that name, as snapshots were written); `native` names it when it isn't SOL. */
+  wallets: { address: string; name: string; sol: number | null; native?: string; tokens: { mint: string; symbol?: string; amount: number }[] | null }[]
 }
 
 export type ReadState = "reading" | "read" | "failed"
@@ -603,7 +607,8 @@ export function holdingChanges(then: HoldingsSnapshot, now: HoldingsSnapshot): H
   for (const w of now.wallets) {
     const before = then.wallets.find((x) => x.address === w.address)
     if (!before) continue
-    if (w.sol !== null && before.sol !== null && moved(before.sol, w.sol)) out.push({ wallet: w.address, name: w.name, asset: "SOL", symbol: "SOL", then: before.sol, now: w.sol })
+    const native = w.native ?? "SOL"
+    if (w.sol !== null && before.sol !== null && (before.native ?? "SOL") === native && moved(before.sol, w.sol)) out.push({ wallet: w.address, name: w.name, asset: native, symbol: native, native: true, then: before.sol, now: w.sol })
     if (!w.tokens || !before.tokens) continue
     const mints = new Set([...w.tokens.map((t) => t.mint), ...before.tokens.map((t) => t.mint)])
     for (const mint of mints) {
@@ -624,7 +629,7 @@ export function holdingChanges(then: HoldingsSnapshot, now: HoldingsSnapshot): H
 export function markOutside(changes: readonly HoldingChange[], trades: readonly HarnessTrade[], from: number, to: number): HoldingChange[] {
   const sent = trades.filter((t) => t.sentAt !== undefined && t.sentAt > from && t.sentAt <= to)
   return changes.map((c) => {
-    const explained = sent.some((t) => (t.wallet === undefined || t.wallet === c.wallet) && (c.asset === "SOL" || t.mint === undefined || t.mint === c.asset || t.side === "swap"))
+    const explained = sent.some((t) => (t.wallet === undefined || sameAddress(t.wallet, c.wallet)) && (c.native === true || c.asset === "SOL" || t.mint === undefined || sameAddress(t.mint, c.asset) || t.side === "swap"))
     return explained ? c : { ...c, outside: true as const }
   })
 }
@@ -805,7 +810,7 @@ export class AwayDesk {
       return
     }
     // A token the snapshots didn't name is named as the views name it.
-    const named = holdingChanges(then, now).map((c) => (c.symbol || c.asset === "SOL" ? c : { ...c, ...(this.deps.symbolOf(c.asset) ? { symbol: this.deps.symbolOf(c.asset)! } : {}) }))
+    const named = holdingChanges(then, now).map((c) => (c.symbol || c.native || c.asset === "SOL" ? c : { ...c, ...(this.deps.symbolOf(c.asset) ? { symbol: this.deps.symbolOf(c.asset)! } : {}) }))
     // A change no trade this Candle Harness sent explains is said so: other keys pay from a shared wallet.
     const changes = this.gapTrades?.id === s.id ? markOutside(named, this.gapTrades.trades, then.at, now.readAt) : named
     this.update(s.id, (x) => {

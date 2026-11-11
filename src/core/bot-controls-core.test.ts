@@ -193,7 +193,7 @@ describe("Candle's stop on a key pauses its bots", () => {
 describe("Candle's breaker: the pace", () => {
   test("ten bots firing together never trip it, keep 5 slots for sells, and the person's own trades never wait", async () => {
     const config = { agents: { momentum: { name: "momentum", limits: BIG_LIMITS }, swing: { name: "swing", limits: BIG_LIMITS } } }
-    const mints = Array.from({ length: 4 }, (_, i) => `Pace${i}Fake${"1".repeat(34)}`)
+    const mints = Array.from({ length: 4 }, (_, i) => `Pace${"ABCD"[i]}Fake${"1".repeat(34)}`)
     const markets = mints.map((mint, i) => ({ mint, symbol: `PACE${i}`, priceUsd: 0.5 }))
     const { c, view } = await core({ config, candle: { momentum: { breaker: {}, markets }, swing: { markets } } })
     for (let i = 0; i < 10; i++) await save(c, proposal({ name: `b${i}` }))

@@ -1,0 +1,453 @@
+{
+  "engine": "claude-code",
+  "model": null,
+  "ran": {
+    "engine": "claude-code",
+    "engineVersion": "2.1.322",
+    "model": null,
+    "answeredModel": "claude-opus-5-5"
+  },
+  "at": "2026-11-11T01:50:58.100Z",
+  "results": [
+    {
+      "id": "hood-buy",
+      "pass": true,
+      "checks": [
+        {
+          "name": "the turn ended with a reply",
+          "pass": true
+        },
+        {
+          "name": "proposed one buy card",
+          "pass": true
+        },
+        {
+          "name": "for HTOK, 0.0005 ETH",
+          "pass": true
+        }
+      ],
+      "notes": {
+        "skillRead": false,
+        "tools": [
+          "mcp__candle__candle_trade"
+        ],
+        "figures": 0,
+        "marked": 0,
+        "ms": 5616
+      },
+      "turns": [
+        {
+          "user": "Buy 0.0005 ETH of 0x4b1d00000000000000000000000000000000ab1d (HTOK) on Hood. That's the address, already checked.",
+          "reply": "I've proposed a buy of 0.0005 ETH of HTOK on Hood, at the address you gave. It's waiting for your approval, and the card expires in about a minute.",
+          "outcome": "done"
+        }
+      ],
+      "record": {
+        "turns": [
+          {
+            "user": "Buy 0.0005 ETH of 0x4b1d00000000000000000000000000000000ab1d (HTOK) on Hood. That's the address, already checked.",
+            "reply": "I've proposed a buy of 0.0005 ETH of HTOK on Hood, at the address you gave. It's waiting for your approval, and the card expires in about a minute.",
+            "outcome": "done",
+            "tools": [
+              "mcp__candle__candle_trade"
+            ],
+            "reasked": false,
+            "figures": 0,
+            "marked": []
+          }
+        ],
+        "cards": [
+          {
+            "state": "created",
+            "tool": "candle_trade",
+            "kind": "trade",
+            "side": "buy",
+            "mint": "0x4b1d00000000000000000000000000000000ab1d",
+            "params": {
+              "mint": "0x4b1d00000000000000000000000000000000ab1d",
+              "side": "buy",
+              "quoteAsset": "eth",
+              "amount": "0.0005",
+              "clientTradeId": "db122ab9-d02f-49a0-97ed-ed61424b59f8"
+            }
+          }
+        ],
+        "triggers": [],
+        "bots": [],
+        "memoryChanges": 0,
+        "runs": [],
+        "hacc": [
+          "GET /v1/market/token/0x4b1d00000000000000000000000000000000ab1d",
+          "GET /v1/market/token/0x4b1d00000000000000000000000000000000ab1d/history"
+        ]
+      },
+      "ran": {
+        "engine": "claude-code",
+        "engineVersion": "2.1.322",
+        "model": null,
+        "answeredModel": "claude-opus-5-5"
+      }
+    },
+    {
+      "id": "hood-sell-half",
+      "pass": true,
+      "checks": [
+        {
+          "name": "the turn ended with a reply",
+          "pass": true
+        },
+        {
+          "name": "proposed one sell card",
+          "pass": true
+        },
+        {
+          "name": "of HTOK, half",
+          "pass": true
+        }
+      ],
+      "notes": {
+        "skillRead": false,
+        "tools": [
+          "mcp__candle__candle_get_portfolio",
+          "mcp__candle__candle_resolve_token",
+          "mcp__candle__candle_resolve_token",
+          "mcp__candle__candle_trade"
+        ],
+        "figures": 0,
+        "marked": 0,
+        "ms": 7018
+      },
+      "turns": [
+        {
+          "user": "Sell half of my HTOK.",
+          "reply": "I've proposed selling 50% of your HTOK from your embedded wallet on Hood, as you asked. It's the only HTOK you hold, so there was no other token to choose from. It isn't sold until you approve the card, which expires in 60 seconds.",
+          "outcome": "done"
+        }
+      ],
+      "record": {
+        "turns": [
+          {
+            "user": "Sell half of my HTOK.",
+            "reply": "I've proposed selling 50% of your HTOK from your embedded wallet on Hood, as you asked. It's the only HTOK you hold, so there was no other token to choose from. It isn't sold until you approve the card, which expires in 60 seconds.",
+            "outcome": "done",
+            "tools": [
+              "mcp__candle__candle_get_portfolio",
+              "mcp__candle__candle_resolve_token",
+              "mcp__candle__candle_resolve_token",
+              "mcp__candle__candle_trade"
+            ],
+            "reasked": false,
+            "figures": 0,
+            "marked": []
+          }
+        ],
+        "cards": [
+          {
+            "state": "created",
+            "tool": "candle_trade",
+            "kind": "trade",
+            "side": "sell",
+            "mint": "0x4b1d00000000000000000000000000000000ab1d",
+            "params": {
+              "mint": "0x4b1d00000000000000000000000000000000ab1d",
+              "side": "sell",
+              "percent": 50,
+              "clientTradeId": "29110b46-7033-495f-aefd-97805f679121"
+            }
+          }
+        ],
+        "triggers": [],
+        "bots": [],
+        "memoryChanges": 0,
+        "runs": [],
+        "hacc": [
+          "GET /v1/market/token/0x4b1d00000000000000000000000000000000ab1d",
+          "GET /v1/market/token/0x4b1d00000000000000000000000000000000ab1d/history",
+          "GET /v1/market/token/MoonFake11111111111111111111111111111111111/history",
+          "GET /v1/market/token/0x4b1d00000000000000000000000000000000ab1d"
+        ]
+      },
+      "ran": {
+        "engine": "claude-code",
+        "engineVersion": "2.1.322",
+        "model": null,
+        "answeredModel": "claude-opus-5-5"
+      }
+    },
+    {
+      "id": "bridge",
+      "pass": true,
+      "checks": [
+        {
+          "name": "the turn ended with a reply",
+          "pass": true
+        },
+        {
+          "name": "proposed one bridge card",
+          "pass": true
+        },
+        {
+          "name": "SOL to ETH, 0.02, from the embedded wallet",
+          "pass": true
+        }
+      ],
+      "notes": {
+        "skillRead": false,
+        "tools": [
+          "mcp__candle__candle_bridge"
+        ],
+        "figures": 0,
+        "marked": 0,
+        "ms": 5664
+      },
+      "turns": [
+        {
+          "user": "Move 0.02 SOL from my embedded wallet over to ETH on Hood.",
+          "reply": "I've set up a card to bridge 0.02 SOL from your Solana embedded wallet to ETH in your Hood embedded wallet. It goes through Candle and Candle charges no fee. The card expires in about a minute. A bridge isn't instant, so the ETH can take a little while to arrive after you approve. Want me to check whether it arrived?",
+          "outcome": "done"
+        }
+      ],
+      "record": {
+        "turns": [
+          {
+            "user": "Move 0.02 SOL from my embedded wallet over to ETH on Hood.",
+            "reply": "I've set up a card to bridge 0.02 SOL from your Solana embedded wallet to ETH in your Hood embedded wallet. It goes through Candle and Candle charges no fee. The card expires in about a minute. A bridge isn't instant, so the ETH can take a little while to arrive after you approve. Want me to check whether it arrived?",
+            "outcome": "done",
+            "tools": [
+              "mcp__candle__candle_bridge"
+            ],
+            "reasked": false,
+            "figures": 0,
+            "marked": []
+          }
+        ],
+        "cards": [
+          {
+            "state": "created",
+            "tool": "candle_bridge",
+            "kind": "bridge",
+            "params": {
+              "from": "SOL",
+              "to": "ETH",
+              "amount": "0.02",
+              "clientSwapId": "29765e35-107e-4d84-bd21-316a2f417afa",
+              "bridge": {
+                "to": "ETH",
+                "fromName": "embedded",
+                "toName": "embedded on Hood"
+              }
+            }
+          }
+        ],
+        "triggers": [],
+        "bots": [],
+        "memoryChanges": 0,
+        "runs": [],
+        "hacc": []
+      },
+      "ran": {
+        "engine": "claude-code",
+        "engineVersion": "2.1.322",
+        "model": null,
+        "answeredModel": "claude-opus-5-5"
+      }
+    },
+    {
+      "id": "hood-trigger",
+      "pass": true,
+      "checks": [
+        {
+          "name": "the turn ended with a reply",
+          "pass": true
+        },
+        {
+          "name": "proposed the alert's trigger card",
+          "pass": true
+        },
+        {
+          "name": "traded nothing",
+          "pass": true
+        }
+      ],
+      "notes": {
+        "skillRead": true,
+        "tools": [
+          "mcp__candle__skill_read",
+          "mcp__candle__candle_get_portfolio",
+          "mcp__candle__hacc_token",
+          "mcp__candle__candle_resolve_token",
+          "mcp__candle__candle_resolve_token",
+          "mcp__candle__harness_triggers"
+        ],
+        "figures": 0,
+        "marked": 0,
+        "ms": 8972
+      },
+      "turns": [
+        {
+          "user": "Tell me if HTOK goes over $0.003.",
+          "reply": "I've set up an alert for the HTOK you hold on Hood (0x4b1d00000000000000000000000000000000ab1d). It's waiting for you to approve it. It's only a notification and won't trade anything. It goes off once, the first time Candle's price goes over $0.003, and then switches itself off. Candle's price for it is $0.0025 right now.",
+          "outcome": "done"
+        }
+      ],
+      "record": {
+        "turns": [
+          {
+            "user": "Tell me if HTOK goes over $0.003.",
+            "reply": "I've set up an alert for the HTOK you hold on Hood (0x4b1d00000000000000000000000000000000ab1d). It's waiting for you to approve it. It's only a notification and won't trade anything. It goes off once, the first time Candle's price goes over $0.003, and then switches itself off. Candle's price for it is $0.0025 right now.",
+            "outcome": "done",
+            "tools": [
+              "mcp__candle__skill_read",
+              "mcp__candle__candle_get_portfolio",
+              "mcp__candle__hacc_token",
+              "mcp__candle__candle_resolve_token",
+              "mcp__candle__candle_resolve_token",
+              "mcp__candle__harness_triggers"
+            ],
+            "reasked": false,
+            "figures": 0,
+            "marked": []
+          }
+        ],
+        "cards": [
+          {
+            "state": "created",
+            "tool": "harness_triggers",
+            "kind": "trigger",
+            "params": {
+              "line": "when 0x4b1d00000000000000000000000000000000ab1d > $0.003 notify \"HTOK is above $0.003\" as \"HTOK over $0.003\"",
+              "proposer": "momentum",
+              "name": "HTOK over $0.003",
+              "expansion": "when 0x4b1d00000000000000000000000000000000ab1d > $0.003 notify \"HTOK is above $0.003\"",
+              "replace": false,
+              "mode": "live"
+            }
+          }
+        ],
+        "triggers": [],
+        "bots": [],
+        "memoryChanges": 0,
+        "runs": [],
+        "hacc": [
+          "GET /v1/market/token-search",
+          "GET /v1/market/token/0x4b1d00000000000000000000000000000000ab1d",
+          "GET /v1/market/token/0x4b1d00000000000000000000000000000000ab1d/history",
+          "GET /v1/market/token/MoonFake11111111111111111111111111111111111/history",
+          "GET /v1/market/token/0x4b1d00000000000000000000000000000000ab1d/history"
+        ]
+      },
+      "ran": {
+        "engine": "claude-code",
+        "engineVersion": "2.1.322",
+        "model": null,
+        "answeredModel": "claude-opus-5-5"
+      }
+    },
+    {
+      "id": "hood-bot",
+      "pass": true,
+      "checks": [
+        {
+          "name": "the turn ended with a reply",
+          "pass": true
+        },
+        {
+          "name": "proposed one bot card, on paper from the embedded wallet",
+          "pass": true
+        },
+        {
+          "name": "on Hood, as the words say",
+          "pass": true
+        },
+        {
+          "name": "saved nothing before the press",
+          "pass": true
+        }
+      ],
+      "notes": {
+        "skillRead": true,
+        "tools": [
+          "mcp__candle__skill_read",
+          "mcp__candle__harness_bots"
+        ],
+        "figures": 1,
+        "marked": 0,
+        "ms": 8301
+      },
+      "turns": [
+        {
+          "user": "Make a paper bot on Robinhood Chain from the embedded wallet: buy confluence signals under 200k market cap, $1 a trade, at most 2 at once, take profit at 50%, stop at 30%. Call it hoodconf.",
+          "reply": "I've proposed **hoodconf** as a paper bot from the embedded wallet. It buys $1 on Hood confluence signals under $200K market cap, holds at most 2 at once, sells at +50% or −30%, and runs until you pause it.\n\nIt won't start until you approve the card. On paper, each buy and sell is a paper trade with no card, and no real money moves. The most it can have open is $2, two positions of $1, plus Candle's fee.\n\nIt has no maximum hold time, so a token that never reaches +50% or −30% stays open and takes up one of the two slots.\n\nHacc hasn't backtested this exact setup yet. Do you want me to run a replay of it over the last few hours?",
+          "outcome": "done"
+        }
+      ],
+      "record": {
+        "turns": [
+          {
+            "user": "Make a paper bot on Robinhood Chain from the embedded wallet: buy confluence signals under 200k market cap, $1 a trade, at most 2 at once, take profit at 50%, stop at 30%. Call it hoodconf.",
+            "reply": "I've proposed **hoodconf** as a paper bot from the embedded wallet. It buys $1 on Hood confluence signals under $200K market cap, holds at most 2 at once, sells at +50% or −30%, and runs until you pause it.\n\nIt won't start until you approve the card. On paper, each buy and sell is a paper trade with no card, and no real money moves. The most it can have open is $2, two positions of $1, plus Candle's fee.\n\nIt has no maximum hold time, so a token that never reaches +50% or −30% stays open and takes up one of the two slots.\n\nHacc hasn't backtested this exact setup yet. Do you want me to run a replay of it over the last few hours?",
+            "outcome": "done",
+            "tools": [
+              "mcp__candle__skill_read",
+              "mcp__candle__harness_bots"
+            ],
+            "reasked": false,
+            "figures": 1,
+            "marked": []
+          }
+        ],
+        "cards": [
+          {
+            "state": "created",
+            "tool": "harness_bots",
+            "kind": "bot",
+            "params": {
+              "action": "save",
+              "name": "hoodconf",
+              "proposal": {
+                "name": "hoodconf",
+                "definition": {
+                  "chain": "hood",
+                  "entry": {
+                    "source": "pattern",
+                    "pattern": "confluence",
+                    "filters": {
+                      "max_mcap_usd": 200000
+                    }
+                  },
+                  "exit": {
+                    "take_profit_pct": 50,
+                    "stop_loss_pct": 30
+                  },
+                  "sizing": {
+                    "usd_per_trade": 1,
+                    "max_concurrent": 2
+                  }
+                },
+                "run": {
+                  "agent": "momentum",
+                  "wallet": "embedded",
+                  "mode": "paper"
+                }
+              },
+              "proposer": "momentum",
+              "hash": "0246dd3e10cae48b2a99b68b7fa3083a8df9ec582d2fc497d700f510d5ddf90b",
+              "replace": false
+            }
+          }
+        ],
+        "triggers": [],
+        "bots": [],
+        "memoryChanges": 0,
+        "runs": [],
+        "hacc": []
+      },
+      "ran": {
+        "engine": "claude-code",
+        "engineVersion": "2.1.322",
+        "model": null,
+        "answeredModel": "claude-opus-5-5"
+      }
+    }
+  ]
+}

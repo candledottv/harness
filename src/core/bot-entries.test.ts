@@ -8,7 +8,7 @@ import { join } from "node:path"
 import { fakeAddress } from "../../scripts/scrub-hacc"
 import { HOUR_COLUMNS } from "../../scripts/scrub-bots"
 import { type Definition, readDefinition } from "../shared/definition"
-import { BOT_CLIENT_PREFIX, BotEntries, type BotEntriesDeps, easternHour, PRICE_RECHECK_MS, PRICE_WAIT_MS, rowMatches, SKIP_FLUSH_MS, stakeOf } from "./bot-entries"
+import { BOT_CLIENT_PREFIX, BotEntries, type BotEntriesDeps, easternHour, PRICE_RECHECK_MS, PRICE_WAIT_MS, rowMatches, rowToken, SKIP_FLUSH_MS, stakeOf } from "./bot-entries"
 import type { BotEntry } from "./bots-file"
 import type { ToolOutcome } from "./candle-mcp"
 import type { HaccAnswer } from "./hacc"
@@ -49,7 +49,9 @@ interface Harness {
   tick(ms: number): Promise<void>
   types(): string[]
   of(type: string): JournalRow[]
-  set: { paused: boolean; mode: "paper" | "live"; sol: number | undefined; send: (args: Record<string, unknown>) => unknown }
+  set: { paused: boolean; mode: "paper" | "live"; sol: number | undefined; eth?: number; send: (args: Record<string, unknown>) => unknown; wrongChain?: (wallet: string, chain: string) => string | undefined }
+  /** Each budget read: the wallet word and the token's chain. */
+  spendReads: { wallet: string; chain: string }[]
 }
 
 function harness(o: { bots?: BotEntry[]; onSince?: number; journal?: JournalRow[] } = {}): Harness {
@@ -68,6 +70,7 @@ function harness(o: { bots?: BotEntry[]; onSince?: number; journal?: JournalRow[
   const open = new Map<string, number>()
   const sent: Harness["sent"] = []
   const hacc: Harness["hacc"] = []
+  const spendReads: Harness["spendReads"] = []
   let seq = rows.length
   const deps: BotEntriesDeps = {
     bots: { live: () => bots.filter((b) => b.state === "on"), onSince: () => new Date(o.onSince ?? T0 - 60_000).toISOString(), setLastSignal: () => {} },
@@ -96,8 +99,13 @@ function harness(o: { bots?: BotEntry[]; onSince?: number; journal?: JournalRow[
       hacc.push({ route, query })
       return h.haccAnswer(query)
     },
-    solUsd: () => set.sol,
+    spendable: (_agent, wallet, chain) => {
+      spendReads.push({ wallet, chain })
+      if (chain === "hood") return set.eth === undefined ? undefined : { usd: set.eth, asset: "ETH" }
+      return set.sol === undefined ? undefined : { usd: set.sol, asset: "SOL" }
+    },
     feeBps: () => 25,
+    wrongChain: (_agent, wallet, chain) => set.wrongChain?.(wallet, chain),
     paused: () => set.paused,
     send: async (trade, client, mode) => {
       sent.push({ args: trade.args, client, mode })
@@ -118,6 +126,7 @@ function harness(o: { bots?: BotEntry[]; onSince?: number; journal?: JournalRow[
     open,
     prices,
     hacc,
+    spendReads,
     haccAnswer: () => ({ kind: "ok", status: 200, body: { signals: [] }, ms: 1, cached: false }),
     now,
     set,
@@ -147,6 +156,24 @@ describe("a tape row as a definition's candidate", () => {
     expect(rowMatches(def({}), row({ asset_chain: "hood", mint: "0xfa4e000000000000000000000000000000000001" }))).toBe(false)
     expect(rowMatches(def({ chain: "any" }), row({ asset_chain: "hood", mint: "0xfa4e000000000000000000000000000000000001" }))).toBe(true)
     expect(rowMatches(def({}), row({ asset_address: "" }))).toBe(false)
+  })
+
+  test("Hacc's chain is taken only where the address fits it: a 0x token said to be on Solana is no Solana bot's, and nothing is read or bought", async () => {
+    const EVM_TOKEN = "0x0000000000000000000000000000000000b0b009"
+    expect(rowToken(row({ mint: EVM_TOKEN, asset_chain: "solana" }))).toBeUndefined()
+    expect(rowToken(row({ mint: MOON, asset_chain: "hood" }))).toBeUndefined()
+    expect(rowToken(row({ mint: EVM_TOKEN, asset_chain: "base" }))).toBeUndefined()
+    expect(rowToken(row({ mint: EVM_TOKEN, asset_chain: "hood" }))).toEqual({ mint: EVM_TOKEN, chain: "hood" })
+    // A row that says no chain: its address's family's, as before.
+    expect(rowToken(row({ mint: MOON, asset_chain: undefined }))).toEqual({ mint: MOON, chain: "solana" })
+    expect(rowMatches(def({}), row({ mint: EVM_TOKEN, asset_chain: "solana" }))).toBe(false)
+    expect(rowMatches(def({ chain: "any" }), row({ mint: EVM_TOKEN, asset_chain: "solana" }))).toBe(false)
+    const h = harness()
+    h.prices.set(EVM_TOKEN, market(EVM_TOKEN, 0.5))
+    await h.e.onTape([row({ mint: EVM_TOKEN, asset_chain: "solana" })])
+    await h.tick(1_000)
+    expect(h.sent).toEqual([])
+    expect(h.spendReads).toEqual([])
   })
 
   test("groups (any of), groups_all (each of) and wallet_ids, from the row's wallet", () => {
@@ -367,6 +394,30 @@ describe("an entry", () => {
     expect(h.of("bot.skipped")[0]).toMatchObject({ reason: "unpriceable", words: "Candle had no price for MOON within a minute of its signal" })
   })
 
+  test("a token Candle has no market for is skipped as not on Candle, in words, not as unpriceable", async () => {
+    const TOKEN = "0x229f628da8a7d3e1b235bb8166f456ec1d7faec5"
+    const bot: BotEntry = { ...BOT, definition: def({ chain: "hood" }) }
+    const h = harness({ bots: [bot] })
+    h.set.eth = 50
+    h.prices.set(TOKEN, { kind: "error", code: "MARKET_NOT_FOUND", retryable: false, body: { message: "No hood market found" } })
+    const tape = h.e.onTape([row({ mint: TOKEN, asset_chain: "hood" })])
+    await h.tick(PRICE_WAIT_MS + 1)
+    await tape
+    expect(h.sent).toEqual([])
+    await h.e.flush()
+    expect(h.of("bot.skipped")[0]).toMatchObject({ reason: "not_on_candle", words: "Candle doesn't list 0x229f…aec5 on Hood, so it can't be bought" })
+  })
+
+  test("a Hood token Candle answers in another letter case is the same token: it's priced and entered", async () => {
+    const TOKEN = "0x00000000000000000000000000000000000b0b0a"
+    const bot: BotEntry = { ...BOT, definition: def({ chain: "hood" }) }
+    const h = harness({ bots: [bot] })
+    h.set.eth = 50
+    h.prices.set(TOKEN, market(TOKEN.toUpperCase().replace("0X", "0x"), 0.001))
+    await h.e.onTape([row({ mint: TOKEN, asset_chain: "hood" })])
+    expect(h.sent.map((s) => s.args.mint)).toEqual([TOKEN])
+  })
+
   test("the market-cap band on Candle's market cap; one Candle doesn't know doesn't pass", async () => {
     const bot = { ...BOT, definition: def({ entry: { source: "pattern", pattern: "confluence", filters: { max_mcap_usd: 500_000 } } }) }
     const h = harness({ bots: [bot] })
@@ -415,6 +466,59 @@ describe("an entry", () => {
     await h.e.flush()
     expect(h.of("bot.skipped")[0]).toMatchObject({ reason: "no_budget" })
     expect(String(h.of("bot.skipped")[0]!.words)).toContain("short of the $2.01 stake with Candle's fee")
+  })
+
+  test("a Hood token's entry is checked against the wallet's ETH on Hood, never the SOL beside it", async () => {
+    const TOKEN = "0x00000000000000000000000000000000000b0b01"
+    const bot: BotEntry = { ...BOT, definition: def({ chain: "hood" }) }
+    const h = harness({ bots: [bot] })
+    h.prices.set(TOKEN, market(TOKEN, 0.001))
+    h.set.sol = 1_000
+    h.set.eth = 1
+    await h.e.onTape([row({ mint: TOKEN, asset_chain: "hood" })])
+    expect(h.sent).toEqual([])
+    expect(h.spendReads).toEqual([{ wallet: "embedded", chain: "hood" }])
+    await h.e.flush()
+    expect(h.of("bot.skipped")[0]).toMatchObject({ reason: "no_budget" })
+    expect(String(h.of("bot.skipped")[0]!.words)).toContain("the wallet holds $1.00 of ETH, short of the $2.01 stake")
+    // With the ETH for it, the next signal enters.
+    h.set.eth = 50
+    await h.e.onTape([row({ mint: TOKEN, asset_chain: "hood" })])
+    expect(h.sent.map((s) => s.args.mint)).toEqual([TOKEN])
+  })
+
+  test("what's committed is counted on the token's own chain: a Solana entry under way doesn't hold back a Hood one", async () => {
+    const TOKEN = "0x00000000000000000000000000000000000b0b02"
+    const both: BotEntry = { ...BOT, definition: def({ chain: "any" }) }
+    const h = harness({ bots: [both] })
+    h.prices.set(TOKEN, market(TOKEN, 0.001))
+    h.set.sol = 3
+    h.set.eth = 3
+    h.set.send = () => ({ cardId: "card_1", state: "approved" })
+    await h.e.onTape([row({ mint: MOON }), row({ mint: TOKEN, asset_chain: "hood" })])
+    expect(h.sent.map((s) => s.args.mint)).toEqual([MOON, TOKEN])
+  })
+
+  test("a live bot on both chains whose wallet pays on one skips the other chain's signals in words, before any read", async () => {
+    const TEE = "TeeFake1111111111111111111111111111111111111"
+    const TOKEN = "0x00000000000000000000000000000000000b0b03"
+    const both: BotEntry = { ...BOT, wallet: TEE, definition: def({ chain: "any" }) }
+    const h = harness({ bots: [both] })
+    h.prices.set(TOKEN, market(TOKEN, 0.001))
+    h.set.eth = 50
+    h.set.wrongChain = (wallet, chain) => (wallet === TEE && chain === "hood" ? "tee-one is a Solana wallet, and this trade is on Hood: a trade pays from a wallet on its own chain." : undefined)
+    await h.e.onTape([row({ mint: TOKEN, asset_chain: "hood" }), row({ mint: MOON })])
+    expect(h.sent.map((s) => s.args.mint)).toEqual([MOON])
+    expect(h.spendReads).toEqual([{ wallet: TEE, chain: "solana" }])
+    await h.e.flush()
+    expect(h.of("bot.skipped")[0]).toMatchObject({ reason: "wallet_chain" })
+    expect(String(h.of("bot.skipped")[0]!.words)).toContain("tee-one is a Solana wallet, and this trade is on Hood")
+    // On paper it pays from the paper book on either chain: not skipped.
+    const paper = harness({ bots: [{ ...both, mode: "paper" }] })
+    paper.prices.set(TOKEN, market(TOKEN, 0.001))
+    paper.set.wrongChain = h.set.wrongChain
+    await paper.e.onTape([row({ mint: TOKEN, asset_chain: "hood" })])
+    expect(paper.sent.map((s) => s.args.mint)).toEqual([TOKEN])
   })
 
   test("the kill switch holds every entry", async () => {

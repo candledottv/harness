@@ -4,7 +4,7 @@
 // (limits.ts's lines), and anything holding trades now. With `setting: "ask"` or a lower figure it proposes
 // the autonomy's narrowing card; it never widens anything, which only the person does. Described in the
 // tool, with one prompt line a turn only where a wallet trades inside limits.
-import type { AutonomyWallet } from "./autonomy"
+import { type AutonomyWallet, embeddedWords } from "./autonomy"
 import type { Mode } from "./classify"
 import { type KeyHold, type LimitLine, usd } from "./limits"
 
@@ -18,7 +18,7 @@ export const LIMITS_TOOL = {
   inputSchema: {
     type: "object" as const,
     properties: {
-      wallet: { type: "string", description: 'To narrow: "embedded", or a TEE wallet\'s label, as the read names it.' },
+      wallet: { type: "string", description: 'To narrow: the wallet as the read names it ("embedded", "embedded on Hood", or a TEE wallet\'s label).' },
       setting: { type: "string", enum: ["ask", "inside"], description: '"ask": every trade from it becomes a card again. "inside" with a lower figure: fewer dollars run without a card.' },
       perTradeUsd: { type: "number", description: "To narrow: a lower figure for one trade without a card, in dollars, Candle's fee included." },
       perDayUsd: { type: "number", description: "To narrow: a lower figure for a day's trades without a card, in dollars." },
@@ -36,8 +36,8 @@ export function narrowingArgs(args: Record<string, unknown>): Record<string, unk
   return rest.setting === undefined ? { ...rest, setting: "inside" } : rest
 }
 
-/** The person's own words for a wallet: "the embedded wallet", or a TEE wallet's label. */
-const named = (w: Pick<AutonomyWallet, "name" | "kind">) => (w.kind === "embedded" || w.name === "embedded" ? "the embedded wallet" : w.name)
+/** The person's own words for a wallet: "the embedded wallet" (on Hood), or a TEE wallet's label. */
+const named = (w: Pick<AutonomyWallet, "name" | "kind">) => embeddedWords(w.name) ?? (w.kind === "embedded" ? "the embedded wallet" : w.name)
 
 const cents = (n: number) => Math.round(n * 100) / 100
 

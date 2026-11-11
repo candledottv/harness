@@ -13,8 +13,12 @@
 // - Hacc's tape: each stream row, by pattern, chain and group. A row from before the trigger was switched on
 //   is never acted on (the stream's opening snapshot included), nor one heard more than 10 minutes after it
 //   happened (a core catching up after a gap). Market-cap filters check Candle's market cap for the token,
-//   never Hacc's filter alone, which passes a token whose market cap it doesn't know; age filters ask Hacc's
-//   filtered tape whether it holds the row.
+//   never Hacc's filter alone, which passes a token whose market cap it doesn't know. A trigger that only notifies
+//   or wakes an agent, on a token Candle has no market cap for (one Candle doesn't list, as most new Hood tokens on
+//   Hacc's tape), takes Hacc's market read's figure instead and says so when it fires; one that trades keeps to
+//   Candle's, as Candle couldn't trade a token it doesn't list. A signal whose market cap neither knows is skipped,
+//   and skips are journalled with why, gathered per trigger and reason, one row a minute at most (`trigger.skipped`),
+//   so a trigger that never fires says why. Age filters ask Hacc's filtered tape whether it holds the row.
 // - Personal signals: each polled row, by the rule's name. The rows carry Hacc's asset id, not the token's
 //   address, so a trigger that acts on `it` reads the token from Hacc's asset read.
 // - Fills, cards expiring and replays ending, from the journal.
@@ -33,9 +37,10 @@ import type { ToolOutcome } from "./candle-mcp"
 import type { HaccAnswer } from "./hacc"
 import type { JournalRow } from "./journal"
 import type { SignalRow } from "./signal-stream"
-import { cooldownOf, cooledUntil, type FireCause, type TriggerBook, type WatchInfo } from "./triggers"
+import { cooldownOf, cooledUntil, type FireCause, type TokenOn, type TriggerBook, type WatchInfo } from "./triggers"
 import type { TriggerEntry } from "./triggers-file"
 import { short } from "./wallet-names"
+import { type ChainSlug, isAddressOn, maybeChain, requestChain, sameAddress, storedChain } from "../shared/chains"
 
 export const HEARTBEAT_MS = 5_000
 /** How often an armed level's token is read, at its own pace. */
@@ -58,14 +63,33 @@ const RULES_REUSE_MS = 5 * 60_000
 const ASSETS_KEPT = 2_000
 /** Readings kept per token for its measured pace. */
 const PACE_KEPT = 6
+/** A trigger's skipped signals are gathered and journalled at most this often, per trigger and reason. */
+export const TRIGGER_SKIP_FLUSH_MS = 60_000
+/** The signal ids and tokens a skip row keeps. */
+const SKIP_IDS_KEPT = 200
+const SKIP_MINTS_KEPT = 20
+/** Candle's answers that mean it doesn't list the token at all. */
+const NOT_LISTED = new Set(["MARKET_NOT_FOUND"])
+
+/** Why a tape signal a trigger watched for didn't fire it: its market cap was unknown to every source it may use. */
+export type TriggerSkipReason = "not_on_candle" | "no_market_cap"
+
+/** Skips gathered for one trigger and reason, before they're journalled. */
+interface SkipGroup {
+  t: TriggerEntry
+  count: number
+  signals: number[]
+  mints: string[]
+  words: string
+}
 
 export interface Clock {
   now(): number
   schedule(run: () => void, ms: number): () => void
 }
 
-type Book = Pick<TriggerBook, "live" | "resolved" | "stateOf" | "fired" | "missed" | "setArmed" | "setNextRun" | "canFire"> & Partial<Pick<TriggerBook, "noteUnread">>
-type Chain = "solana" | "hood"
+type Book = Pick<TriggerBook, "live" | "resolved" | "stateOf" | "fired" | "missed" | "setArmed" | "setNextRun" | "canFire"> & Partial<Pick<TriggerBook, "noteUnread" | "skipped">>
+type Chain = ChainSlug
 
 export interface TriggerWatchDeps {
   book: Book
@@ -112,7 +136,25 @@ interface Live {
 
 const record = (v: unknown): Record<string, unknown> | undefined => (typeof v === "object" && v !== null && !Array.isArray(v) ? (v as Record<string, unknown>) : undefined)
 const positive = (v: unknown): number | null => (typeof v === "number" && Number.isFinite(v) && v > 0 ? v : null)
-const chainOf = (mint: string): Chain => (mint.startsWith("0x") ? "hood" : "solana")
+const chainOf = (mint: string): Chain => requestChain(mint) ?? "solana"
+
+/** The chain a level's token is read on: the one stored with its trigger, else (one saved before triggers kept it) its address's family's. */
+export const levelChain = (t: Pick<TriggerEntry, "chain">, mint: string): Chain => t.chain ?? storedChain(undefined, mint) ?? "solana"
+
+/**
+ * The token a tape row is about, and its chain: the chain Hacc says, taken only where the address fits it; with none
+ * said, the address's family's. A row whose address doesn't fit the chain it names, or that names a chain that isn't
+ * on, is unreadable: undefined, as for a row with no address.
+ */
+export function tapeToken(row: Record<string, unknown>): { mint: string; chain: Chain } | undefined {
+  const mint = typeof row.asset_address === "string" && row.asset_address.length > 0 ? row.asset_address : undefined
+  if (!mint) return undefined
+  const said: unknown = row.asset_chain
+  if (said === undefined || said === null || said === "") return { mint, chain: storedChain(undefined, mint) ?? "solana" }
+  const chain = maybeChain(said)?.slug
+  return chain !== undefined && isAddressOn(chain, mint) ? { mint, chain } : undefined
+}
+
 const iso = (ms: number) => new Date(ms).toISOString()
 
 /** A reading from Candle's market answer for `mint`, or undefined when it carries neither a price nor a market cap. */
@@ -204,6 +246,9 @@ export class TriggerWatch {
   private dirty = false
   private readonly rules = new Map<string, { at: number; byName: Map<string, Set<number>> }>()
   private readonly assets = new Map<number, { mint: string; chain: Chain }>()
+  /** Skipped signals not journalled yet, by trigger and reason. */
+  private readonly skips = new Map<string, Map<TriggerSkipReason, SkipGroup>>()
+  private cancelSkipFlush: (() => void) | undefined
 
   constructor(private readonly deps: TriggerWatchDeps) {}
 
@@ -218,6 +263,8 @@ export class TriggerWatch {
     this.running = false
     this.cancel?.()
     this.cancel = undefined
+    this.cancelSkipFlush?.()
+    this.cancelSkipFlush = undefined
   }
 
   /** The triggers changed (saved, switched, held): what's watched is worked out again, and checked soon. */
@@ -333,12 +380,12 @@ export class TriggerWatch {
     if (!levels.length && !exits.length) return
     // Each token once, however many levels watch it; a sell's token first, then the one picked longest ago.
     // A bot's open position is a sell's token: its stop must be read before a buy's level.
-    const tokens = new Map<string, { sell: boolean }>(exits.map((mint) => [mint, { sell: true }]))
+    const tokens = new Map<string, { sell: boolean; chain: Chain }>(exits.map((mint) => [mint, { sell: true, chain: chainOf(mint) }]))
     for (const { t, r } of levels) {
       const mint = (r.when as { token: string }).token
       if (r.when.kind === "entry" && this.entryOf(t, r, mint) === undefined) continue
       const sell = r.action.kind === "command" && partsOfAction(r.action.command).some((p) => p.args.side === "sell")
-      tokens.set(mint, { sell: (tokens.get(mint)?.sell ?? false) || sell })
+      tokens.set(mint, { sell: (tokens.get(mint)?.sell ?? false) || sell, chain: levelChain(t, mint) })
     }
     const now = this.deps.clock.now()
     const due = [...tokens]
@@ -347,22 +394,36 @@ export class TriggerWatch {
       .slice(0, LEVEL_READS_PER_BEAT)
     for (const [mint] of due) this.picked.set(mint, ++this.pickSeq)
     for (const mint of this.picked.keys()) if (!tokens.has(mint)) this.picked.delete(mint)
-    await Promise.all(due.map(([mint]) => this.read(mint)))
+    await Promise.all(due.map(([mint, { chain }]) => this.read(mint, chain)))
     for (const { t, r } of levels) await this.level(t, r)
   }
 
-  private async read(mint: string): Promise<Reading | undefined> {
+  private async read(mint: string, chain: Chain): Promise<Reading | undefined> {
+    return (await this.readWith(mint, chain)).reading
+  }
+
+  /** A market read, with Candle's answer beside it: a filter tells a token Candle doesn't list from one it can't price. */
+  private async readWith(mint: string, chain: Chain): Promise<{ reading?: Reading; outcome?: ToolOutcome }> {
     this.reading.add(mint)
     try {
       // Stamped when it was asked: an answer can't be of a price after that, so a fill since isn't in it.
       const asked = this.deps.clock.now()
-      const outcome = await this.deps.market(chainOf(mint), mint).catch(() => undefined)
+      const outcome = await this.deps.market(chain, mint).catch(() => undefined)
       const r = readingOf(outcome, mint, asked)
       if (r) this.keep(mint, r)
-      return r
+      return { ...(r ? { reading: r } : {}), ...(outcome ? { outcome } : {}) }
     } finally {
       this.reading.delete(mint)
     }
+  }
+
+  /** Hacc's market cap for a token, from its market read on the token's chain; null where it gives none. */
+  private async haccMarketCap(agent: string, mint: string, chain: Chain): Promise<number | null> {
+    const answer = await this.deps.hacc(agent, `/v1/market/token/${mint}`, chain === "hood" ? { chain } : {}).catch(() => undefined)
+    if (answer?.kind !== "ok") return null
+    const market = record(record(answer.body)?.market)
+    if (typeof market?.address === "string" && !sameAddress(market.address, mint)) return null
+    return positive(market?.market_cap)
   }
 
   /** The newest reading of a token's market, from this heartbeat's reads or any reader's. */
@@ -414,13 +475,13 @@ export class TriggerWatch {
       if (entry === undefined || reading.priceUsd === null) return
       const level = entry * (w.dir === "down" ? 1 - w.percent / 100 : 1 + w.percent / 100)
       const cond = w.dir === "down" ? reading.priceUsd < level : reading.priceUsd > level
-      return this.crossed(t, r, cond, { by: "level", what: "entry", mint: w.token, chain: chainOf(w.token), reading: reading.priceUsd, level, entryUsd: entry, readAt: iso(reading.at) }, `${name} was ${priceWords(reading.priceUsd)}, ${w.dir} ${w.percent}% from your ${priceWords(entry)} entry (${priceWords(level)})`)
+      return this.crossed(t, r, cond, { by: "level", what: "entry", mint: w.token, chain: levelChain(t, w.token), reading: reading.priceUsd, level, entryUsd: entry, readAt: iso(reading.at) }, `${name} was ${priceWords(reading.priceUsd)}, ${w.dir} ${w.percent}% from your ${priceWords(entry)} entry (${priceWords(level)})`)
     }
     const value = w.kind === "price" ? reading.priceUsd : reading.marketCap
     if (value === null) return
     const cond = w.op === "<" ? value < w.usd : value > w.usd
     const shown = w.kind === "price" ? `${name} was ${priceWords(value)}` : `${name}'s market cap was ${dollarWords(Math.round(value))}`
-    return this.crossed(t, r, cond, { by: "level", what: w.kind, mint: w.token, chain: chainOf(w.token), reading: value, level: w.usd, readAt: iso(reading.at) }, `${shown}, ${w.op === "<" ? "under" : "over"} ${dollarWords(w.usd)}`)
+    return this.crossed(t, r, cond, { by: "level", what: w.kind, mint: w.token, chain: levelChain(t, w.token), reading: value, level: w.usd, readAt: iso(reading.at) }, `${shown}, ${w.op === "<" ? "under" : "over"} ${dollarWords(w.usd)}`)
   }
 
   private pnl(live: Live[]): void {
@@ -472,9 +533,9 @@ export class TriggerWatch {
       let stale = 0
       for (const row of rows) {
         if (row.pattern !== w.pattern) continue
-        const mint = typeof row.asset_address === "string" && row.asset_address.length > 0 ? row.asset_address : undefined
-        if (!mint) continue
-        const chain: Chain = row.asset_chain === "hood" || row.asset_chain === "solana" ? row.asset_chain : chainOf(mint)
+        const token = tapeToken(row)
+        if (!token) continue
+        const { mint, chain } = token
         if (w.filters.chain && chain !== w.filters.chain) continue
         if (w.filters.group && !(Array.isArray(row.wallet_groups) && row.wallet_groups.includes(w.filters.group))) continue
         const at = Date.parse(row.created_at)
@@ -494,12 +555,29 @@ export class TriggerWatch {
   private async tapeRow(t: TriggerEntry, r: ResolvedTrigger, row: SignalRow, mint: string, chain: Chain): Promise<void> {
     const w = r.when as Extract<TriggerWhen, { kind: "tape" }>
     const f = w.filters
+    let fromHacc: { usd: number; why: string } | undefined
     if (f.minMcapUsd !== undefined || f.maxMcapUsd !== undefined) {
       const held = this.market.get(mint)
-      const reading = held && this.deps.clock.now() - held.at <= FILTER_MARKET_MS ? held : await this.read(mint)
-      // A token whose market cap Candle doesn't know doesn't pass a market-cap filter.
-      const mc = reading?.marketCap ?? null
-      if (mc === null || (f.maxMcapUsd !== undefined && !(mc < f.maxMcapUsd)) || (f.minMcapUsd !== undefined && !(mc > f.minMcapUsd))) return
+      const got = held && this.deps.clock.now() - held.at <= FILTER_MARKET_MS ? { reading: held } : await this.readWith(mint, chain)
+      let mc = got.reading?.marketCap ?? null
+      const notListed = got.outcome?.kind === "error" && NOT_LISTED.has(got.outcome.code)
+      const trades = r.action.kind === "command"
+      // Only a trigger that notifies or wakes takes Hacc's figure: one that trades keeps to Candle's.
+      if (mc === null && !trades) {
+        const hacc = await this.haccMarketCap(t.agent, mint, chain)
+        if (hacc !== null) {
+          mc = hacc
+          fromHacc = { usd: hacc, why: notListed ? "Candle doesn't list it" : "Candle has no market cap for it" }
+        }
+      }
+      if (mc === null) {
+        const name = this.nameOf(mint)
+        const why = notListed ? `Candle doesn't list ${name}` : `Candle doesn't know ${name}'s market cap`
+        const words = trades ? `${why}, and a trigger that trades goes by Candle's market cap only, so its market-cap filter can't pass` : `${why} and Hacc gave none for it, so its market-cap filter can't pass`
+        this.skip(t, row, mint, notListed ? "not_on_candle" : "no_market_cap", words)
+        return
+      }
+      if ((f.maxMcapUsd !== undefined && !(mc < f.maxMcapUsd)) || (f.minMcapUsd !== undefined && !(mc > f.minMcapUsd))) return
     }
     if (f.minAgeMinutes !== undefined || f.maxAgeMinutes !== undefined) {
       const answer = await this.deps.hacc(t.agent, "/v1/signals", {
@@ -515,7 +593,42 @@ export class TriggerWatch {
       if (!Array.isArray(signals) || !signals.some((s) => record(s)?.id === row.id)) return
     }
     if (this.cooling(t, r, mint, Date.parse(row.created_at))) return
-    await this.fire(t, { by: "tape", mint, chain, signalId: row.id, pattern: w.pattern, signalAt: row.created_at }, `a ${w.pattern} signal on ${this.nameOf(mint)} at ${hhmm(Date.parse(row.created_at))}`)
+    const said = fromHacc ? ` (market cap ${dollarWords(Math.round(fromHacc.usd))} from Hacc: ${fromHacc.why})` : ""
+    await this.fire(
+      t,
+      { by: "tape", mint, chain, signalId: row.id, pattern: w.pattern, signalAt: row.created_at, ...(fromHacc ? { marketCap: { usd: fromHacc.usd, from: "hacc" as const } } : {}) },
+      `a ${w.pattern} signal on ${this.nameOf(mint)} at ${hhmm(Date.parse(row.created_at))}${said}`,
+    )
+  }
+
+  /** A signal a trigger watched for and didn't act on, gathered: journalled with the others for its reason, a minute later at most. */
+  private skip(t: TriggerEntry, row: SignalRow, mint: string, reason: TriggerSkipReason, words: string): void {
+    let byReason = this.skips.get(t.name)
+    if (!byReason) this.skips.set(t.name, (byReason = new Map()))
+    const g = byReason.get(reason) ?? { t, count: 0, signals: [], mints: [], words }
+    g.t = t
+    g.count++
+    g.words = words
+    if (g.signals.length < SKIP_IDS_KEPT) g.signals.push(row.id)
+    if (!g.mints.includes(mint) && g.mints.length < SKIP_MINTS_KEPT) g.mints.push(mint)
+    byReason.set(reason, g)
+    if (!this.cancelSkipFlush && this.running) {
+      this.cancelSkipFlush = this.deps.clock.schedule(() => {
+        this.cancelSkipFlush = undefined
+        void this.flushSkips().catch(() => {})
+      }, TRIGGER_SKIP_FLUSH_MS)
+    }
+  }
+
+  /** Journals the skips gathered: one row per trigger and reason. Public for tests, and for the core's stop, before its journal closes. */
+  async flushSkips(): Promise<void> {
+    const all = [...this.skips]
+    this.skips.clear()
+    for (const [, byReason] of all) {
+      for (const [reason, g] of byReason) {
+        await this.deps.book.skipped?.(g.t, { reason, count: g.count, signals: g.signals, mints: g.mints, words: g.count === 1 ? g.words : `${g.count} signals, the last because ${g.words}` })
+      }
+    }
   }
 
   /** New rows from personal signals' poll: each personal-signals trigger checks them. */
@@ -559,9 +672,10 @@ export class TriggerWatch {
     if (key && this.cooling(t, r, key, Date.parse(row.created_at))) return
     const pattern = typeof row.pattern === "string" ? row.pattern : "signal"
     const on = asset ? ` on ${this.nameOf(asset.mint)}` : ""
+    const token: TokenOn = asset ? { mint: asset.mint, chain: asset.chain } : {}
     await this.fire(
       t,
-      { by: "mine", ...(asset ? { mint: asset.mint, chain: asset.chain } : {}), ...(assetId !== undefined ? { assetId } : {}), signalId: row.id, pattern, ...(w.rule !== undefined ? { rule: w.rule } : {}), signalAt: row.created_at },
+      { by: "mine", ...token, ...(assetId !== undefined ? { assetId } : {}), signalId: row.id, pattern, ...(w.rule !== undefined ? { rule: w.rule } : {}), signalAt: row.created_at },
       `your personal signal (${pattern})${on} at ${hhmm(Date.parse(row.created_at))}`,
     )
   }

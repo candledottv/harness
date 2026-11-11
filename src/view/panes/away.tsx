@@ -81,7 +81,7 @@ function fillWords(f: OutsideFill): string {
 }
 
 function holdingWords(c: HoldingChange): string {
-  const what = c.asset === "SOL" ? "SOL" : (c.symbol ?? shortAddress(c.asset))
+  const what = c.native || c.asset === "SOL" ? c.asset : (c.symbol ?? shortAddress(c.asset))
   return `${c.name === "embedded" ? "embedded wallet" : c.name}: ${what} ${amount(c.then)} → ${amount(c.now)}${c.outside ? ", not from this Candle Harness's trades (other keys pay from this wallet)" : ""}`
 }
 
@@ -355,7 +355,7 @@ function holdingsSection(s: AwaySummary, width: number, now: number): Line[] {
   const since = h.then !== undefined ? ` since ${when(h.then, now)}` : ""
   return [
     heading(`Wallets${since}`),
-    ...h.changes.map((c): Line => ({ segs: [{ text: `  ${holdingWords(c)}`, fg: C.ink }], ...(c.asset !== "SOL" ? { pick: { id: `away:holding:${c.wallet}:${c.asset}`, mint: c.asset, ask: askAbout(c.symbol, c.asset, "It moved in the wallets while I was away.") } } : {}) })),
+    ...h.changes.map((c): Line => ({ segs: [{ text: `  ${holdingWords(c)}`, fg: C.ink }], ...(!c.native && c.asset !== "SOL" ? { pick: { id: `away:holding:${c.wallet}:${c.asset}`, mint: c.asset, ask: askAbout(c.symbol, c.asset, "It moved in the wallets while I was away.") } } : {}) })),
     blank(),
   ]
 }

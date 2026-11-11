@@ -9,6 +9,7 @@
 //     share one wallet;
 //   - what went through the Candle Harness, for the agent's own context (without it the agent couldn't see typed trades
 //     or swaps, miscounted paper trades and put a swap on the wrong key).
+import { terminalText } from "../shared/terminal-text"
 import { isTestName, shownBotName } from "../shared/bot-name"
 import { ranWithoutCard } from "../shared/approved-how"
 import { botVerb, verbPhrase } from "../shared/notify"
@@ -18,6 +19,7 @@ import type { JournalRow } from "./journal"
 import { memoryWords } from "./memory"
 import { tokenLabel } from "../shared/token-label"
 import { short } from "./wallet-names"
+import { addressKey, type ChainSlug, EVM_ADDRESS_SOURCE, SOLANA_ADDRESS_SOURCE, storedChain } from "../shared/chains"
 
 export interface ActivityEntry {
   seq: number
@@ -33,6 +35,8 @@ export interface ActivityEntry {
   hidden?: true
   /** The token the line is about (a card's, its operation's, a paper trade's), which picking the line links. */
   mint?: string
+  /** That token's chain: the chain filter and the chain tag follow it. */
+  chain?: ChainSlug
   /** A trigger's card that expired with nobody there: its id, for the `run it now` chip. */
   runNow?: string
   /**
@@ -143,7 +147,7 @@ const clip = (text: string, n: number) => (text.length > n ? `${text.slice(0, n 
 const endedTone = (outcome: unknown): ActivityEntry["tone"] => (outcome === "refused" || outcome === "failed" || outcome === "lost" ? "bad" : outcome === "expired" ? "warn" : "info")
 
 /** Every address in a line, short: "MoonFake111…1111" as "Moon…1111". */
-export const shortAddresses = (text: string): string => text.replace(/\b(?:[1-9A-HJ-NP-Za-km-z]{32,44}|0x[0-9a-fA-F]{40})\b/g, short)
+export const shortAddresses = (text: string): string => text.replace(new RegExp(`\\b(?:${SOLANA_ADDRESS_SOURCE}|${EVM_ADDRESS_SOURCE})\\b`, "g"), short)
 
 const record = (value: unknown): Record<string, unknown> | undefined =>
   typeof value === "object" && value !== null && !Array.isArray(value) ? (value as Record<string, unknown>) : undefined
@@ -162,6 +166,7 @@ export function paneResult(row: JournalRow): string | undefined {
 const TOOL_WORDS: Record<string, string> = {
   candle_trade: "trade",
   candle_swap: "swap",
+  candle_bridge: "bridge",
   candle_cli: "command",
   candle_launch_token: "launch",
   candle_launch_and_seed: "launch",
@@ -179,12 +184,36 @@ const TOOL_WORDS: Record<string, string> = {
   harness_bots: "bot",
 }
 /** How a card's kind says it went through: trades and swaps fill, a launch launches; anything else (a revoke, a claim) is done. */
-const DONE_WORDS: Record<string, string> = { trade: "filled", swap: "filled", launch: "launched", upload: "uploaded", trigger: "saved" }
+const DONE_WORDS: Record<string, string> = { trade: "filled", swap: "filled", bridge: "arrived", launch: "launched", upload: "uploaded", trigger: "saved" }
 /**
  * A live sell Candle answered by closing the key's paper position, because the live wallet held none of
  * the token: nothing live was sold, so nowhere says "filled".
  */
 export const PAPER_CLOSED_WORDS = "not sold live: the wallet held none, so Candle closed this key's paper position instead"
+
+/**
+ * A bridge's unknowns the core no longer follows (Relay's result Candle couldn't tie to one fill, two hours with no
+ * result, no balance to follow it by, no answer from Candle in ten minutes): its own words say why and where to look.
+ */
+export const BRIDGE_NOT_FOLLOWED: ReadonlySet<string> = new Set(["BRIDGE_UNCERTAIN", "BRIDGE_PAST_TWO_HOURS", "BRIDGE_UNFOLLOWED", "BRIDGE_NO_ANSWER"])
+
+/** Whether Candle's job behind an operation has ended `failed`: the job itself, or the body around it. */
+export function candleJobFailed(result: unknown): boolean {
+  const body = record(result)
+  return (record(body?.job) ?? body)?.status === "failed"
+}
+
+/**
+ * Whether an unknown operation is one the core reads no further, its error's words saying why and where to look: a
+ * bridge it stopped following, or a trade whose job Candle has ended that may still have filled (a Hood trade whose
+ * trade step was sent). Anything else unknown is still being read back.
+ */
+export function notFollowedFurther(op: { kind?: string | undefined; error?: unknown; result?: unknown }): boolean {
+  const error = record(op.error)
+  if (typeof error?.code !== "string" || typeof error.message !== "string" || error.message === "") return false
+  if (op.kind === "bridge") return BRIDGE_NOT_FOLLOWED.has(error.code)
+  return candleJobFailed(op.result)
+}
 
 export const doneWord = (kind: string | undefined): string => (kind === undefined ? "filled" : (DONE_WORDS[kind] ?? "done"))
 
@@ -241,6 +270,10 @@ export class TradeLog {
   private readonly noCard = new Set<string>()
   /** Each card's token, for the lines after its proposal (approved, rejected, expired). */
   private readonly mintOfCard = new Map<string, string>()
+  /** Each card's chain, as it was made; an old row's, by its token's address. */
+  private readonly chainOfCard = new Map<string, ChainSlug>()
+  /** Each operation's card. */
+  private readonly cardIdOfOp = new Map<string, string>()
   private readonly cardOrigin = new Map<string, { role?: string; agent?: string; trigger?: string; woken?: string; bot?: string }>()
   private readonly cardOfOp = new Map<string, { kind?: string; role?: string; agent?: string; mint?: string; side?: string; title: string; trigger?: string; woken?: string; bot?: string; botAct?: string; botReason?: string; paper?: boolean }>()
   /** Each firing's one line, by its id; and the firing each of its cards and operations belongs to. */
@@ -249,6 +282,7 @@ export class TradeLog {
   private readonly trades: SessionTrade[] = []
   /** Rows dropped from the front of `trades`, so the agent is told its record isn't the whole day. */
   private dropped = 0
+  /** Who bought each token, keyed by its address key (an EVM mint lowercased). */
   private readonly bought = new Map<string, string[]>()
   private readonly books = new Map<string, Map<string, PaperPosition>>()
 
@@ -272,8 +306,9 @@ export class TradeLog {
     const hacc = row.type === "hacc.change" ? { ...(typeof row.undoOf === "string" ? { undoes: row.undoOf } : record(row.undo) && typeof row.changeId === "string" ? { undo: row.changeId } : {}) } : {}
     const byCard = row.type === "hacc.change" && row.by === "card"
     const mint = this.mintOf(row)
+    const chain = mint ? this.chainOf(row, mint) : undefined
     const runNow = row.type === "card.expired" && typeof row.trigger === "string" && typeof row.cardId === "string" ? { runNow: row.cardId } : {}
-    const entry: ActivityEntry = { seq: row.seq, at: row.at, ...(row.agent ? { agent: row.agent } : {}), text: text.text, tone: text.tone, ...hacc, ...(byCard ? { hidden: true as const } : {}), ...(mint ? { mint } : {}), ...runNow }
+    const entry: ActivityEntry = { seq: row.seq, at: row.at, ...(row.agent ? { agent: row.agent } : {}), text: text.text, tone: text.tone, ...hacc, ...(byCard ? { hidden: true as const } : {}), ...(mint ? { mint } : {}), ...(chain ? { chain } : {}), ...runNow }
     const firing = this.firingOf(row, entry, text) ?? this.botFoldOf(row, entry, text)
     if (firing === "part") entry.hidden = true
     this.lines.push(entry)
@@ -606,6 +641,18 @@ export class TradeLog {
   }
 
   /** The token a line is about, if it's one the token pane follows: a card's, its operation's, or a paper trade's. */
+  /** The chain of a line about `mint`: its card's, as the card was made, or its own row's; an old row's by the address. */
+  private chainOf(row: JournalRow, mint: string): ChainSlug | undefined {
+    const cardId = typeof row.cardId === "string" ? row.cardId : typeof row.opId === "string" ? this.cardIdOfOp.get(row.opId) : undefined
+    if (row.type === "card.created") {
+      const chain = storedChain(row.chain, mint)
+      if (cardId && typeof row.opId === "string") this.cardIdOfOp.set(row.opId, cardId)
+      if (cardId && chain) this.chainOfCard.set(cardId, chain)
+      return chain
+    }
+    return (cardId ? this.chainOfCard.get(cardId) : undefined) ?? storedChain(row.chain, mint)
+  }
+
   private mintOf(row: JournalRow): string | undefined {
     const params = record(row.params)
     const args = record(row.args)
@@ -673,8 +720,9 @@ export class TradeLog {
     return out
   }
 
+  /** Who bought into a token, matched by address key: a Hood mint in any case. */
   buyers(mint: string): string[] {
-    return [...(this.bought.get(mint) ?? [])]
+    return [...(this.bought.get(addressKey(mint)) ?? [])]
   }
 
   private symbol(mint: string): string {
@@ -788,15 +836,17 @@ export class TradeLog {
       case "operation.succeeded": {
         const op = typeof row.opId === "string" ? this.cardOfOp.get(row.opId) : undefined
         if (op?.mint && op.side === "buy" && op.agent && row.mode === "live") {
-          const list = this.bought.get(op.mint) ?? []
-          if (!list.includes(op.agent)) this.bought.set(op.mint, [...list, op.agent])
+          const list = this.bought.get(addressKey(op.mint)) ?? []
+          if (!list.includes(op.agent)) this.bought.set(addressKey(op.mint), [...list, op.agent])
         }
         const kind = typeof row.opId === "string" ? this.cardOfOp.get(row.opId)?.kind : undefined
         // How it was approved, where nobody pressed anything: the approval line said the figures.
         const alone = typeof row.opId === "string" && this.noCard.has(row.opId) ? " · without a card" : ""
         const by = op?.trigger ? ` · by ${triggerName(op.trigger)}` : op?.bot ? ` · by ${botName(op.bot)}` : op?.woken ? ` · woke on ${triggerName(op.woken)}` : ""
         if (row.paper === true) return { text: `${opTitle()}: ${PAPER_CLOSED_WORDS}${alone}${by}`, tone: "warn" }
-        return { text: `${doneWord(kind)} ${opTitle()}${alone}${by}`, tone: "good" }
+        // A bridge says what arrived, in its own units.
+        const received = kind === "bridge" ? record(row.result)?.received : undefined
+        return { text: `${doneWord(kind)} ${opTitle()}${typeof received === "string" ? ` · ${terminalText(received, { maxLength: 40 })}` : ""}${alone}${by}`, tone: "good" }
       }
       case "operation.failed":
       case "operation.refused": {
@@ -808,8 +858,15 @@ export class TradeLog {
         if (row.type === "operation.failed" && typeof leg1 === "string") return { text: `part done ${opTitle()}: the first leg went (${short(leg1)}), the second failed${said ? `: ${said}` : ""}`, tone: "warn" }
         return { text: `failed ${opTitle()}${said ? `: ${said}` : ""}`, tone: "bad" }
       }
-      case "operation.unknown":
+      case "operation.unknown": {
+        // One the core reads no further says why and where to look: nothing is reading it back.
+        const error = record(row.error)
+        const kind = typeof row.opId === "string" ? this.cardOfOp.get(row.opId)?.kind : undefined
+        if (notFollowedFurther({ kind, error, result: row.result }) && typeof error?.message === "string") {
+          return { text: `${opTitle()}: ${terminalText(error.message, { maxLength: 300 })}`, tone: "warn" }
+        }
         return { text: `no answer yet for ${opTitle()}: reading it back`, tone: "warn" }
+      }
       case "operation.abandoned":
         return { text: `abandoned ${opTitle()}`, tone: "warn" }
       case "paper.call":
@@ -823,6 +880,8 @@ export class TradeLog {
         return undefined
       case "trigger.missed":
         return { text: `${triggerName(row.name)}: ${String(row.words ?? "a run was missed")}`, tone: "warn" }
+      case "trigger.skipped":
+        return { text: `${triggerName(row.name)} skipped: ${String(row.words ?? "a signal it couldn't check")}`, tone: "warn" }
       case "trigger.waiting":
         return { text: `${triggerName(row.name)}: ${String(row.words ?? "its card waits for you")}`, tone: "warn" }
       case "trigger.notify":

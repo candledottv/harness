@@ -67,9 +67,11 @@ import { cardLines } from "./panes/card"
 import { journalContext, readJournalRows, useJournal } from "./journal-feed"
 import type { JournalKind } from "../core/journal-query"
 import { copiedMessage, makeCopier } from "./clipboard"
+import { chainChipLabel, chainInForce, chainsInUse, signalsFold } from "./chain-filter"
+import type { ChainSlug } from "../shared/chains"
 import { StatusBar, staleCoreVersion } from "./status-bar"
 import { VERSION } from "../version"
-import { applyEvent, type CoreView, EMPTY_VIEW, lostCore, openCards, paneNext, paneWords, unanswered, type ViewOperation } from "./store"
+import { applyEvent, type CoreView, EMPTY_VIEW, lostCore, namesOnTwoChains, openCards, paneNext, paneWords, unanswered, type ViewOperation } from "./store"
 import { settingsColumn, type TabOffer, Tabs } from "./tabs"
 import { type AgentPreview, planView, type ViewPlan } from "./view-tool"
 import { C, fit as fitText, money, type TerminalColours } from "./theme"
@@ -146,6 +148,32 @@ export interface AppProps {
 
 /** The Build pane's terminal: over its pane's frame, which mounts again on a tab switch, and under every overlay. */
 const TERMINAL_Z = 5
+/** A typed command's answer longer than this goes over the frame whole, not into the message line, which would cut it. */
+const MESSAGE_ANSWER_CHARS = 160
+/** The answer's title, the command typed: fitted, since a box draws no title wider than itself. */
+const SAID_TITLE_CHARS = 52
+/** A typed command's answer as lines to read: JSON laid out, anything else as it came; never more than 2,000 lines. */
+export function answerText(output: unknown): string {
+  let value = output
+  if (typeof output === "string") {
+    try {
+      value = JSON.parse(output)
+    } catch {
+      value = output
+    }
+  }
+  const text = typeof value === "string" ? value : JSON.stringify(value, null, 2)
+  // Its indent in no-break spaces, which wrapping keeps: each level stays where JSON put it.
+  return text
+    .split("\n")
+    .slice(0, 2_000)
+    .map((l) => l.replace(/^ +/, (lead) => "\u00a0".repeat(lead.length)))
+    .join("\n")
+}
+
+/** A shown answer as it was given, for the clipboard: the indent drawn in no-break spaces back to plain ones. */
+export const copyableAnswer = (shown: string): string => shown.replace(/^\u00a0+/gm, (lead) => " ".repeat(lead.length))
+
 /** ctrl-] as a raw byte, or as the kitty keyboard protocol sends it. */
 const CTRL_BRACKET = /^(\x1d|\x1b\[93;5(:\d+)?u)$/
 /** ctrl-x as a terminal sends it: the control byte, or the keyboard protocol's form. */
@@ -223,7 +251,7 @@ const OB_WAIT_WORDS: Partial<Record<ObAction["kind"], string>> = {
   ownWallet: "Opening the pane…",
   keepLimits: "Keeping the limits…",
   approvals: "Keeping the approvals…",
-  paper: "Starting on paper…",
+  later: "Going on…",
   start: "Opening the Candle Harness…",
 }
 
@@ -263,7 +291,7 @@ export function triggersGated(hacc: HaccTopic | undefined): string | undefined {
 export function hereOf(ui: UiState, ctx: UiContext, now?: number): Here {
   const enters = ui.input === "" ? focusedCard(ui, ctx) : undefined
   const empty = ui.input.trim() === ""
-  const pops = poppable(ui)
+  const pops = poppable(ui, ctx)
   const parsed = empty ? undefined : readLine(ui.input, ctx)
   const sends = parsed === undefined ? undefined : parsed.kind === "agent" ? `to ${ctx.activeAgent ?? "the agent"}` : parsed.kind === "refused" ? "says why" : "runs it"
   return {
@@ -290,12 +318,17 @@ export function setupPaneFailed(prompt: Pick<Prompt, "exited">, op: Pick<ViewOpe
 }
 
 const restarting = new WeakSet<object>()
+// When the person last chose "restart it", per session. A login service's core can take launchd a retry to start, so
+// for this long after, a core that's gone is said as restarting rather than stopped.
+const restartedAt = new WeakMap<object, number>()
+export const RESTART_GRACE_MS = 120_000
+const restartingNow = (session: object, lost: boolean, at: number): boolean => lost && at - (restartedAt.get(session) ?? -Infinity) < RESTART_GRACE_MS
 
 /**
  * The status bar's notice for a core that kept running through an update, read from the session's last hello on
  * each draw, with its restart chip. The chip acts once: a second click while the first restart runs does nothing.
  */
-function staleCoreProps(session: Session, restart: (() => Promise<void>) | undefined): { staleCore?: string; onRestartCore?: () => void } {
+function staleCoreProps(session: Session, restart: (() => Promise<void>) | undefined, now: () => number): { staleCore?: string; onRestartCore?: () => void } {
   const staleCore = staleCoreVersion(session.coreVersion?.(), VERSION)
   if (!staleCore) return {}
   if (!restart) return { staleCore }
@@ -304,6 +337,7 @@ function staleCoreProps(session: Session, restart: (() => Promise<void>) | undef
     onRestartCore: () => {
       if (restarting.has(session)) return
       restarting.add(session)
+      restartedAt.set(session, now())
       void restart()
         .catch(() => {})
         .finally(() => restarting.delete(session))
@@ -499,7 +533,7 @@ export function App({ session, onQuit, restartCore, now = Date.now, tickMs = 250
   const bodyRef = useRef<Rect>(bodyArea(width, height))
   // Hacc's tape only while the tab on screen has a Signals pane: the core holds Hacc's stream open while
   // anyone subscribes, and Hacc allows 8 per key. Filtered by the tab's choice.
-  const signalsPick = signalsChoiceOf(view.views?.signals, shown.tab.name)
+  const signalsPick = signalsChoiceOf(view.views?.signals, shown.tab.name, signalsFold(view))
   // Which panes are on screen: collapsed, the one shown.
   const visible = panesOnScreen(place(layout, bodyArea(width, height), {}, { gap: gapFor(width, height) }), ui.recent)
   // Activity before its first line shows the tape too, where no Signals pane does.
@@ -531,6 +565,7 @@ export function App({ session, onQuit, restartCore, now = Date.now, tickMs = 250
     session,
     on: visible.includes("journal"),
     search: ui.journal,
+    chain: chainInForce(view),
     newest: view.activity.at(-1)?.seq,
     held: () => viewRef.current.journal,
     got: (held) => {
@@ -708,7 +743,7 @@ export function App({ session, onQuit, restartCore, now = Date.now, tickMs = 250
       agents: v.status?.agents.map((a) => a.name) ?? [],
       activeAgent: v.status?.activeAgent,
       engines: {
-        rows: (query, agent) => pickerRows(viewRef.current.engine, listsRef.current, query, agent),
+        rows: (query, agent) => pickerRows(viewRef.current.engine, listsRef.current, query, agent, process.platform, viewRef.current.wallets?.hoodWallet?.[agent]),
         needsModel: (agent) => needsModel(viewRef.current.engine, agent),
       },
       memory: (agent) => memoryRows(viewRef.current.memory?.agents[agent]),
@@ -724,10 +759,12 @@ export function App({ session, onQuit, restartCore, now = Date.now, tickMs = 250
       ...(v.market?.followed ? { linked: v.market.followed.mint } : {}),
       ...pinOf(v),
       paused: v.status?.paused === true,
+      ...(v.status?.activeAgent && v.wallets?.hoodWallet?.[v.status.activeAgent] ? { hoodWallet: v.wallets.hoodWallet[v.status.activeAgent]! } : {}),
       ...(triggersGated(v.hacc) ? { triggersGated: triggersGated(v.hacc) } : {}),
       commands: {
         agents: v.status?.agents.map((a) => a.name) ?? [],
         knownTokens: v.knownTokens,
+        ...(v.tokenChains ? { onTwoChains: namesOnTwoChains(v) } : {}),
         ...(v.status ? { activeAgent: v.status.activeAgent, mode: v.status.mode } : {}),
         ...(v.wallets ? { wallets: v.wallets } : {}),
         aliases: aliasesRef.current.map,
@@ -737,7 +774,8 @@ export function App({ session, onQuit, restartCore, now = Date.now, tickMs = 250
       popped: v.views?.popped ?? [],
       // Themes of yours are read from their folder only while the palette is open, never on every tick.
       ...(uiRef.current.overlay?.kind === "palette" ? { themes: { names: themeRef.current.names(), current: themeRef.current.name, dir: themes?.dir ?? "themes" } } : {}),
-      signals: signalsChoiceOf(v.views?.signals, tabLayout(heldRef.current, uiRef.current.tab).tab.name),
+      signals: signalsChoiceOf(v.views?.signals, tabLayout(heldRef.current, uiRef.current.tab).tab.name, signalsFold(v)),
+      chain: { current: v.views?.chain ?? null, chains: chainsInUse(v.portfolio) },
       // The status topic's window first: the `pnl` topic is held only while a P&L pane is on screen, so it can be stale.
       ...(v.status?.pnl?.window ? { pnlWindow: v.status.pnl.window } : v.pnl ? { pnlWindow: v.pnl.window } : {}),
       journal: journalContext(v, sizeRef.current),
@@ -795,8 +833,12 @@ export function App({ session, onQuit, restartCore, now = Date.now, tickMs = 250
     const o = uiRef.current.overlay
     if (o?.kind === "card" && o.build && !openCards(view).some((c) => c.cardId === o.cardId)) dispatch({ type: "closeOverlay", now: now() })
     for (const c of openCards(view)) {
-      if (c.origin?.role !== "build" || buildCardsSeen.current.has(c.cardId)) continue
+      if (buildCardsSeen.current.has(c.cardId)) continue
       buildCardsSeen.current.add(c.cardId)
+      // A code bot's own trade, arriving while the person is in the harness: its 60 s run out under keys that are the
+      // harness's, so it opens over the frame as the bot's own card did. Anywhere else it waits in the strip.
+      const botTrade = c.origin?.bot?.kind === "code" && buildHasKeys()
+      if (c.origin?.role !== "build" && !botTrade) continue
       // Typing in the harness a moment ago: the card opens without the keys, so an Enter meant for the harness isn't an approval.
       dispatch({ type: "openBuildCard", cardId: c.cardId, typing: buildHasKeys() && now() - buildTypedAt.current < BUILD_TYPING_MS, now: now() })
     }
@@ -1167,6 +1209,7 @@ export function App({ session, onQuit, restartCore, now = Date.now, tickMs = 250
 
   /** A tab's Signals choice changed: the core keeps it, so every view of the tab shows the same. */
   const setSignals = (tabName: string, change: SignalsChange) => void call("view.signals", signalsParams(tabName, signalsChoiceOf(viewRef.current.views?.signals, tabName), change))
+  const setChainFilter = (chain: ChainSlug | null) => void call("view.chain", { chain })
 
   /** Re-sends or abandons an operation Candle didn't answer, and says what came of it. */
   const resolve = (op: ViewOperation, action: "resend" | "abandon") =>
@@ -1213,6 +1256,7 @@ export function App({ session, onQuit, restartCore, now = Date.now, tickMs = 250
       pins: viewRef.current.views?.pins ?? [],
       theme: { current: themeRef.current.name, names: themeRef.current.names(), read: (n) => themes?.read(n) },
       signals: viewRef.current.views?.signals ?? [],
+      chain: { current: viewRef.current.views?.chain ?? null, chains: chainsInUse(viewRef.current.portfolio) },
       signalsPaused: uiRef.current.scroll.signals?.paused === true,
       ...(uiRef.current.journal ? { journal: uiRef.current.journal } : {}),
     })
@@ -1248,6 +1292,13 @@ export function App({ session, onQuit, restartCore, now = Date.now, tickMs = 250
         if (plan.paused !== undefined || Object.keys(plan.change).length) dispatch({ type: "pauseSignals", on: plan.paused === true, now: now() })
         return reply({ ok: true, text: plan.text, words: plan.words })
       }
+      case "chain":
+        try {
+          await session.request("view.chain", { chain: plan.chain })
+        } catch (error) {
+          return reply({ ok: false, code: "CHAIN_REFUSED", text: message(error) })
+        }
+        return reply({ ok: true, text: plan.text, words: plan.words })
       case "journal":
         leaving(plan.at)
         if (plan.at !== undefined) dispatch({ type: "showTab", tab: plan.at, now: now() })
@@ -1577,7 +1628,11 @@ export function App({ session, onQuit, restartCore, now = Date.now, tickMs = 250
           if (typeof r.said === "string") return r.said
           if (r.kind === "card") return `candle ${c.argv.join(" ")}: that's a new address, so it's a card. Check it in full, then click yes, a new address.`
           const out = typeof r.output === "string" ? r.output : JSON.stringify(r.output ?? r)
-          return `candle ${c.argv.join(" ")}: ${out.replace(/\s+/g, " ").slice(0, 200)}`
+          const line = `candle ${c.argv.join(" ")}: ${out.replace(/\s+/g, " ")}`
+          // An answer the message line would cut opens whole over the frame, until a key closes it.
+          if (line.length <= MESSAGE_ANSWER_CHARS && !out.trim().includes("\n")) return line
+          dispatch({ type: "openSaid", title: fitText(`candle ${c.argv.join(" ")}`, SAID_TITLE_CHARS), text: answerText(r.output ?? r), now: now() })
+          return `candle ${c.argv.slice(0, 2).join(" ")}: its answer is open above · esc closes`
         }, line)
       case "name":
         // Naming a wallet: the Candle Harness's own names at once; Candle's and the vault's in the pane, at once.
@@ -1653,6 +1708,9 @@ export function App({ session, onQuit, restartCore, now = Date.now, tickMs = 250
       case "kill":
         return call("kill", {}, () => "Kill switch on: buys paused, the agent's turn stopped. Sells still work.")
       case "mode":
+        // The mode it's already in: the line already said so, and the core keeps the pick. A view that may not switch
+        // modes keeps quiet, as the line said all there is.
+        if (effect.kept) return void session.request("mode.set", { mode: effect.mode }).catch(() => {})
         return call<{ said?: string }>("mode.set", { mode: effect.mode }, (r) => `Now in ${effect.mode} mode.${r?.said ? ` ${r.said}` : ""}`)
       case "setAgent":
         return call("agent.setActive", { agent: effect.agent })
@@ -1669,6 +1727,8 @@ export function App({ session, onQuit, restartCore, now = Date.now, tickMs = 250
         return applyLayout(effect.op)
       case "signals":
         return setSignals(tabLayout(heldRef.current, uiRef.current.tab).tab.name, effect.change)
+      case "chain":
+        return setChainFilter(effect.chain)
       case "autonomy": {
         const params = { wallet: effect.wallet, setting: effect.setting, ...(effect.setting === "inside" ? { perTradeUsd: effect.perTradeUsd, perDayUsd: effect.perDayUsd } : {}) }
         const whose = walletWords(effect.name)
@@ -2045,8 +2105,8 @@ export function App({ session, onQuit, restartCore, now = Date.now, tickMs = 250
           }
           return void (await set({ passed: "approvals" }))
         }
-        case "paper":
-          return setOnboarding(await session.request<OnboardingView>("onboarding.paper", {}))
+        case "later":
+          return setOnboarding(await session.request<OnboardingView>("onboarding.fundLater", {}))
         case "start": {
           // Step 5: the tab kept as the one the Candle Harness opens on, shown now, then setup's end.
           const at = heldRef.current.file.tabs.findIndex((t) => t.name === action.tab)
@@ -2104,11 +2164,12 @@ export function App({ session, onQuit, restartCore, now = Date.now, tickMs = 250
     const chip = engineChipText(view.engine, agent)?.replace(/ ▾$/, "")
     const engine = ob.state.engine ? (chip ?? `${view.engine?.engines[ob.state.engine]?.label ?? ob.state.engine}${ob.state.model ? ` · ${ob.state.model}` : ""}`) : undefined
     const w = view.autonomy?.wallets.find((x) => x.agents.includes(agent) && !x.gone)
-    const wallet = w ? `${walletWords(w.name)}, ${w.setting === "inside" && w.perTradeUsd !== undefined && w.perDayUsd !== undefined ? `trading inside ${money(w.perTradeUsd)} a trade and ${money(w.perDayUsd)} a day without a card` : "asking every time"}` : undefined
+    const inside = w?.setting === "inside" && w.perTradeUsd !== undefined && w.perDayUsd !== undefined
+    const wallet = w ? `${walletWords(w.name)}, ${inside ? `trading inside ${money(w.perTradeUsd!)} a trade and ${money(w.perDayUsd!)} a day without a card` : "asking every time"}` : undefined
     const own = view.status?.agents.find((a) => a.name === agent)
     const candle = (own?.limitLines ?? []).filter((l) => l.by === "Candle" && !l.wallet).map((l) => l.words.replace(/^Candle · /, "").replace(/ · \$[\d.,]+ used$/, ""))
     const limits = own?.limits ? [`Harness ${money(own.limits.perTradeUsd)} a trade, ${money(own.limits.perDayUsd)} a day`, ...candle.map((c) => `Candle ${c}`)].join(" · ") : undefined
-    return { agent, ...(engine ? { engine } : {}), ...(ob.facts.profile ? { profile: ob.facts.profile } : {}), ...(wallet ? { wallet } : {}), ...(limits ? { limits } : {}), ...(view.status?.mode ? { mode: view.status.mode } : {}) }
+    return { agent, ...(engine ? { engine } : {}), ...(ob.facts.profile ? { profile: ob.facts.profile } : {}), ...(wallet ? { wallet } : {}), ...(w ? { asksEveryTime: !inside } : {}), ...(limits ? { limits } : {}), ...(view.status?.mode ? { mode: view.status.mode } : {}) }
   }
 
   /** An owner step of setup's, typed by the person as the line would be: the pane opens at once. */
@@ -2239,12 +2300,13 @@ export function App({ session, onQuit, restartCore, now = Date.now, tickMs = 250
         // A Build card that opened without the keys takes them.
         if (buildCardWaits()) return dispatch({ type: "takeBuildCard", now: now() }), true
         if (shown) showPrompt(undefined)
-        else if (promptsRef.current.length > 0) showPrompt(promptsRef.current.at(-1)!.ticketId)
-        // The Build pane's harness: out of it to the pane before it, or the tab bar; or back in, where it's on screen.
+        // The Build pane's harness: out of it to the pane before it, or the tab bar, never into a pane left behind its
+        // chip; and back in, where it's on screen, before any such pane: its chip shows that one.
         else if (buildHasKeys()) {
           const back = uiRef.current.recent.find((p) => p !== "build")
           dispatch(back ? { type: "clickPane", pane: back, now: now() } : { type: "focusTabs", now: now() })
         } else if (buildRef.current.stage === "running" && navRef.current.order.includes("build") && !uiRef.current.overlay) dispatch({ type: "clickPane", pane: "build", now: now() })
+        else if (promptsRef.current.length > 0) showPrompt(promptsRef.current.at(-1)!.ticketId)
         else return false
         return true
       }
@@ -2513,12 +2575,14 @@ export function App({ session, onQuit, restartCore, now = Date.now, tickMs = 250
         killArmed={ui.killArmedAt !== undefined}
         oneAgent={ui.oneAgent}
         onAgent={() => dispatch({ type: "clickAgent", now: now() })}
+        {...(chainsInUse(view.portfolio).length > 1 ? { chain: chainChipLabel(view.views?.chain ?? null), onChain: (x: number) => dispatch({ type: "clickChain", x, now: now() }) } : {})}
         onMode={() => dispatch({ type: "clickMode", now: now() })}
         onKill={() => dispatch({ type: "clickKill", now: now() })}
         onResume={() => dispatch({ type: "clickResume", now: now() })}
         onTriggers={() => dispatch({ type: "openTriggers", now: now() })}
         onBots={() => dispatch({ type: "openBots", now: now() })}
-        {...staleCoreProps(session, restartCore)}
+        {...staleCoreProps(session, restartCore, now)}
+        {...(restartingNow(session, view.lost === true, now()) ? { restarting: true } : {})}
       />
       <Tabs
         width={width}
@@ -2577,9 +2641,10 @@ export function App({ session, onQuit, restartCore, now = Date.now, tickMs = 250
         {...(foldWords({ folder: build.folder, topic: view.bots, now: clock }) ? { foldWords: foldWords({ folder: build.folder, topic: view.bots, now: clock })! } : {})}
         onOpenFolded={(pane) => dispatch({ type: "openPane", pane, now: now() })}
       />}
-      {/* The Build pane's harness: mounted for as long as it runs, so a tab switch keeps its screen and scrollback; shown over its pane. */}
+      {/* The Build pane's harness: mounted for as long as it runs, so a tab switch keeps its screen and scrollback; shown over
+          its pane, and hidden under a prompt pane that's shown, whose keys those are. */}
       {build.proc ? (
-        <box position="absolute" zIndex={TERMINAL_Z} left={termAt?.x ?? 0} top={termAt?.y ?? 0} width={termAt?.w ?? 80} height={termAt?.h ?? 24} visible={buildTerm !== undefined && build.stage === "running" && !obShown}>
+        <box position="absolute" zIndex={TERMINAL_Z} left={termAt?.x ?? 0} top={termAt?.y ?? 0} width={termAt?.w ?? 80} height={termAt?.h ?? 24} visible={buildTerm !== undefined && build.stage === "running" && !obShown && !prompts.some((x) => !x.hidden)}>
           <EmbeddedTerminal proc={build.proc} width={termAt?.w ?? 80} height={termAt?.h ?? 24} focused={buildHasKeys()} maxScrollback={5000} selectable colours={{ fg: C.ink, bg: C.term }} onInput={() => { buildTypedAt.current = now() }} onClick={() => dispatch({ type: "clickPane", pane: "build", now: now() })} />
         </box>
       ) : null}
@@ -2622,14 +2687,15 @@ export function App({ session, onQuit, restartCore, now = Date.now, tickMs = 250
           next={paneNext(x.opId ? view.operations[x.opId] : undefined)}
           onInput={(bytes) => watchInput(x.ticketId, bytes)}
           onFocus={() => showPrompt(x.ticketId)}
-          onFill={(line) => {
+          onFill={(line, cursor) => {
             closePrompt(x.ticketId)
-            dispatch({ type: "clickFill", text: line, now: now() })
+            dispatch({ type: "clickFill", text: line, ...(cursor !== undefined ? { cursor } : {}), now: now() })
           }}
+          onCopy={(text) => dispatch({ type: "clickCopy", text, now: now() })}
         />
       ))}
       {obShown ? null : <PromptChips prompts={prompts} rect={agentRect} onShow={showPrompt} />}
-      <MessageLine left={lineAt.x} width={lineAt.w} top={messageTop} ui={messageUi} onAsk={() => dispatch({ type: "clickAsk", now: now() })} onCopy={(text) => dispatch({ type: "clickCopy", text, what: "the command", now: now() })} />
+      <MessageLine left={lineAt.x} width={lineAt.w} top={messageTop} ui={messageUi} onAsk={() => dispatch({ type: "clickAsk", now: now() })} onCopy={(text) => dispatch({ type: "clickCopy", text, what: "the command", now: now() })} onPick={(index) => dispatch({ type: "clickPick", index, now: now() })} />
       <InputLine left={lineAt.x} width={lineAt.w} top={inputTop} ui={ui} here={{ ...hereOf(ui, ctxNow, now()), ...(ui.focus === "build" && ui.overlay?.kind === "card" && ui.overlay.waiting ? { build: "card" as const } : ui.focus === "build" && !ui.overlay ? (build.stage === "running" ? { build: "running" as const } : build.stage === "loading" || build.stage === "starting" ? {} : { build: "start" as const }) : {}) }} onHelp={() => dispatch({ type: "clickHelp", now: now() })} onPalette={() => dispatch({ type: "clickPalette", now: now() })} />
       {ui.overlay?.kind === "pane" && ui.overlay.pane !== "agent" && !obShown ? (() => {
         const o = ui.overlay
@@ -2641,7 +2707,7 @@ export function App({ session, onQuit, restartCore, now = Date.now, tickMs = 250
         if (!card) return null
         const w = Math.min(84, Math.max(36, width - 4)) - 4
         // Taller than the window: its middle folds under its headline, keeping its foot, as in a short pane.
-        return <BuildCardOverlay lines={cardLines(card, { now: clock, focused: true, width: w, op: view.operations[card.opId], fitRows: buildCardRows(height), ...(ui.overlay.waiting ? { keysElsewhere: true } : {}) })} width={width} height={height} onAct={act} {...(ui.overlay.waiting ? { waiting: true, onTake: () => dispatch({ type: "takeBuildCard", now: now() }) } : {})} />
+        return <BuildCardOverlay lines={cardLines(card, { now: clock, focused: true, width: w, op: view.operations[card.opId], fitRows: buildCardRows(height), ...(ui.overlay.waiting ? { keysElsewhere: true } : {}) })} width={width} height={height} onAct={act} {...(ui.overlay.waiting ? { waiting: true, onTake: () => dispatch({ type: "takeBuildCard", now: now() }) } : {})} {...(card.origin?.role !== "build" && card.origin?.bot ? { title: `code bot ${card.origin.bot.name}'s trade` } : {})} />
       })() : null}
       {ui.overlay?.kind === "tour" && !obShown ? (
         <TourOverlay
@@ -2659,6 +2725,7 @@ export function App({ session, onQuit, restartCore, now = Date.now, tickMs = 250
         width={width}
         height={height}
         cards={cards}
+        operations={view.operations}
         agents={status?.agents.map((a) => a.name) ?? []}
         activeAgent={status?.activeAgent}
         onClose={() => dispatch({ type: "closeOverlay", now: now() })}
@@ -2679,6 +2746,10 @@ export function App({ session, onQuit, restartCore, now = Date.now, tickMs = 250
         onPickEngine={(engine, model) => dispatch({ type: "pickEngine", engine, ...(model !== undefined ? { model } : {}), now: now() })}
         onPickPreset={(preset) => dispatch({ type: "pickPreset", preset, now: now() })}
         onPickRunner={(on) => dispatch({ type: "pickRunner", on, now: now() })}
+        onPickFill={(line) => {
+          dispatch({ type: "closeOverlay", now: now() })
+          dispatch({ type: "clickFill", text: line, now: now() })
+        }}
         onScrollEngines={(delta) => dispatch({ type: "scrollEngines", delta, now: now() })}
         {...(view.memory ? { memory: view.memory } : {})}
         onDeleteMemory={(row) => dispatch({ type: "deleteMemory", row, now: now() })}
@@ -2690,6 +2761,8 @@ export function App({ session, onQuit, restartCore, now = Date.now, tickMs = 250
         onScrollLayoutMenu={(delta) => dispatch({ type: "scrollLayoutMenu", delta })}
         signals={signalsPick}
         onPickSignalsMenu={(index) => dispatch({ type: "pickSignalsMenu", index, now: now() })}
+        chain={{ current: view.views?.chain ?? null, chains: chainsInUse(view.portfolio) }}
+        onPickChainMenu={(index) => dispatch({ type: "pickChainMenu", index, now: now() })}
         {...(view.pnl ? { pnlWindow: view.pnl.window } : {})}
         onPickPnlMenu={(index) => dispatch({ type: "pickPnlMenu", index, now: now() })}
         {...(view.wallets?.groups ? { walletGroups: view.wallets.groups } : {})}
@@ -2706,6 +2779,8 @@ export function App({ session, onQuit, restartCore, now = Date.now, tickMs = 250
         {...(view.journalRows ? { journalRows: view.journalRows } : {})}
         onCopyJournalRows={(text) => dispatch({ type: "clickCopy", text, what: "the rows", now: now() })}
         onScrollJournalRows={(delta) => dispatch({ type: "scrollJournalRows", delta, now: now() })}
+        onCopySaid={(text) => dispatch({ type: "clickCopy", text: copyableAnswer(text), what: "the answer", now: now() })}
+        onScrollSaid={(delta) => dispatch({ type: "scrollAway", delta, now: now() })}
         {...(view.botLog ? { botLog: view.botLog } : {})}
         onCopyBotLog={(text) => dispatch({ type: "clickCopy", text, what: "the log", now: now() })}
         onScrollBotLog={(delta) => dispatch({ type: "scrollBotLog", delta, now: now() })}

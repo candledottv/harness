@@ -1,7 +1,8 @@
 // The positions and wallets panes' data: the last portfolio read, by wallet, never by agent (several
 // agents share the embedded wallet), with each holding's buyers and the agents that can only read.
 import { expect, test } from "bun:test"
-import { heldMints, portfolioSymbol, portfolioView } from "./portfolio-view"
+import { portfolioSymbol, portfolioView } from "./portfolio-view"
+import { heldMints } from "./portfolio-wallets"
 
 const MOON = "MoonFake11111111111111111111111111111111111"
 const PEPE = "PepeFake11111111111111111111111111111111111"
@@ -33,7 +34,7 @@ test("each wallet once, with the agents allowed on it, holdings valued where pri
   expect(view.readAt).toBe(1_000)
   expect(view.wallets).toHaveLength(2)
   const embedded = view.wallets[0]!
-  expect(embedded).toMatchObject({ address: W, kind: "embedded", chain: "solana", agents: ["momentum", "swing"], sol: { amount: 2, usd: 300 } })
+  expect(embedded).toMatchObject({ address: W, kind: "embedded", chain: "solana", agents: ["momentum", "swing"], nativeSymbol: "SOL", native: { amount: 2, usd: 300 } })
   expect(embedded.tokens).toEqual([
     { mint: MOON, symbol: "MOON", amount: 12345.678901, usd: 12345.678901 * 0.63, buyers: ["swing", "momentum"] },
     { mint: PEPE, symbol: "PEPE", amount: 5, usd: null, buyers: [] },
@@ -54,7 +55,7 @@ test("before any read: no wallets, and the deposit address when an agent's statu
 
 test("an unreadable SOL balance is null, not zero", () => {
   const view = portfolioView({ portfolio: { embedded: [{ address: W, tokens: [] }] }, readAt: 1, prices, agents, buyers: () => [], paper: {} })
-  expect(view.wallets[0]!.sol).toBeNull()
+  expect(view.wallets[0]!.native).toBeNull()
 })
 
 test("a token the portfolio gives no symbol is named from Candle's market read", () => {
@@ -114,9 +115,9 @@ test("a stopped TEE wallet carries its balance read on chain, priced; one Candle
     stopped: [{ address: A, label: "desk", agent: "momentum", outside: true }, { address: B }],
     stoppedBalance: (address) => (address === A ? { lamports: 500_000_000n, tokens: 1, readAt: 900 } : { error: "rpc.example: rate limited", readAt: 900 }),
   })
-  expect(view.wallets.find((w) => w.address === A)).toMatchObject({ stopped: true, stoppedOutside: true, sol: { amount: 0.5, usd: 75 }, heldTokens: 1, agents: ["momentum"] })
+  expect(view.wallets.find((w) => w.address === A)).toMatchObject({ stopped: true, stoppedOutside: true, nativeSymbol: "SOL", native: { amount: 0.5, usd: 75 }, heldTokens: 1, agents: ["momentum"] })
   const b = view.wallets.find((w) => w.address === B)!
-  expect(b).toMatchObject({ stopped: true, sol: null, balanceError: "rpc.example: rate limited" })
+  expect(b).toMatchObject({ stopped: true, nativeSymbol: "SOL", native: null, balanceError: "rpc.example: rate limited" })
   expect(b.stoppedOutside).toBeUndefined()
 })
 
@@ -139,6 +140,72 @@ test("a stopped wallet's balance error is made safe for the terminal; a SOL read
   expect(a.balanceError).not.toContain("\u001b")
   expect(a.balanceError).not.toContain("\u0007")
   const b = view.wallets.find((w) => w.address === B)!
-  expect(b).toMatchObject({ sol: { amount: 0.5, usd: 75 }, balanceError: "rpc.example: HTTP 429" })
+  expect(b).toMatchObject({ nativeSymbol: "SOL", native: { amount: 0.5, usd: 75 }, balanceError: "rpc.example: HTTP 429" })
   expect(b.heldTokens).toBeUndefined()
+})
+
+// Hood's wallets, as Candle lists them under `hood` (routes/agent.ts): wei, and tokens keyed `hood:<lowercase>` in prices.
+const EVM = "0xAbCdEf0000000000000000000000000000000001"
+const HOOD_TEE = "0xAbCdEf0000000000000000000000000000000002"
+const KITE = "0x1F8e3bD8000000000000000000000000000000Aa"
+const USDG = "0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168"
+const hoodPrices = { usd: (k: string | undefined) => ({ [SOL]: 150, "hood:native": 3300, [`hood:${KITE.toLowerCase()}`]: 0.004 })[k ?? ""] }
+const withHood = (tee: Record<string, unknown>, embedded: Record<string, unknown> = {}) => ({
+  ...portfolio,
+  hood: {
+    embedded: [{ address: EVM, chain: "hood", wei: "50000000000000000", tokens: [{ chain: "hood", mint: KITE, amountRaw: "2150000000000000000000", decimals: 18, symbol: "KITE" }], ...embedded }],
+    tee: [{ id: "h1", address: HOOD_TEE, label: "bot-1-h", active: true, chain: "hood", wei: "2000000000000000", tokens: [], ...tee }],
+    unavailable: [],
+  },
+})
+
+test("a Hood TEE wallet is drawn as Hood with its ETH balance, and the embedded EVM wallet with the agents allowed on it", () => {
+  const view = portfolioView({ portfolio: withHood({}), readAt: 1, prices: hoodPrices, agents: agents.map((a) => ({ ...a, evmWallet: EVM.toLowerCase() })), buyers: () => [], paper: {}, boundTo: (a) => (a === HOOD_TEE ? "momentum" : undefined) })
+  const tee = view.wallets.find((w) => w.address === HOOD_TEE)!
+  expect(tee).toMatchObject({ chain: "hood", kind: "tee", nativeSymbol: "ETH", native: { amount: 0.002 }, agents: ["momentum"], active: true })
+  expect(tee.native!.usd).toBeCloseTo(6.6)
+  const evm = view.wallets.find((w) => w.address === EVM)!
+  expect(evm).toMatchObject({ chain: "hood", kind: "embedded", name: "embedded", nativeSymbol: "ETH", agents: ["momentum", "swing"] })
+  expect(evm.native!.usd).toBeCloseTo(165)
+  // A Hood token is priced under its `hood:` key, never as SOL.
+  expect(evm.tokens).toMatchObject([{ mint: KITE, symbol: "KITE", amount: 2150, buyers: [] }])
+  expect(evm.tokens![0]!.usd).toBeCloseTo(8.6)
+  // Solana's wallets are as they were, first.
+  expect(view.wallets.map((w) => w.chain)).toEqual(["solana", "solana", "hood", "hood"])
+  expect(view.wallets[0]).toMatchObject({ nativeSymbol: "SOL", native: { amount: 2, usd: 300 } })
+})
+
+test("a Hood TEE wallet holding tokens and no ETH needs ETH to trade; one with ETH, or empty, doesn't", () => {
+  const held = [{ chain: "hood", mint: USDG, amountRaw: "5000000", decimals: 6, symbol: "USDG" }]
+  const at = (tee: Record<string, unknown>) => portfolioView({ portfolio: withHood(tee), readAt: 1, prices: hoodPrices, agents, buyers: () => [], paper: {} }).wallets.find((w) => w.address === HOOD_TEE)!
+  expect(at({ wei: "0", tokens: held }).needsNative).toBe(true)
+  expect(at({ wei: "1000", tokens: held }).needsNative).toBeUndefined()
+  expect(at({ wei: "0", tokens: [] }).needsNative).toBeUndefined()
+  // An unread balance isn't said to be empty.
+  expect(at({ wei: null, tokens: held }).needsNative).toBeUndefined()
+  // The embedded wallet's gas isn't the TEE route's: no note there.
+  const embedded = portfolioView({ portfolio: withHood({}, { wei: "0", tokens: held }), readAt: 1, prices: hoodPrices, agents, buyers: () => [], paper: {} }).wallets.find((w) => w.address === EVM)!
+  expect(embedded.needsNative).toBeUndefined()
+})
+
+test("an account whose only Hood wallet is the empty embedded one sees its wallets as before", () => {
+  const empty = { ...portfolio, hood: { embedded: [{ address: EVM, chain: "hood", wei: "0", tokens: [] }], tee: [], unavailable: [] } }
+  const view = portfolioView({ portfolio: empty, readAt: 1, prices, agents, buyers: () => [], paper: {} })
+  expect(view.wallets.map((w) => w.address)).toEqual([W, "TeeWallet1111111111111111111111111111111111"])
+})
+
+test("a stopped Hood TEE wallet is Hood's, in ETH, and the account uses Hood while it's there", () => {
+  const view = portfolioView({ portfolio, readAt: 1, prices: hoodPrices, agents, buyers: () => [], paper: {}, stopped: [{ address: HOOD_TEE, label: "bot-1-h" }] })
+  expect(view.wallets.find((w) => w.address === HOOD_TEE)).toMatchObject({ chain: "hood", nativeSymbol: "ETH", stopped: true, native: null })
+  expect(view.chains).toEqual(["solana", "hood"])
+})
+
+test("an embedded Hood wallet Candle couldn't read: no Hood for a Solana-only account; a known Hood account keeps it, unread", () => {
+  const unread = { ...portfolio, hood: { embedded: [{ address: EVM, chain: "hood", wei: null, tokens: null }], tee: [], unavailable: [EVM] } }
+  const plain = portfolioView({ portfolio: unread, readAt: 1, prices: hoodPrices, agents, buyers: () => [], paper: {} })
+  expect(plain.chains).toEqual(["solana"])
+  expect(plain.wallets.map((w) => w.chain)).toEqual(["solana", "solana"])
+  const known = portfolioView({ portfolio: unread, readAt: 1, prices: hoodPrices, agents, buyers: () => [], paper: {}, chains: ["solana", "hood"] })
+  expect(known.chains).toEqual(["solana", "hood"])
+  expect(known.wallets.find((w) => w.address === EVM)).toMatchObject({ chain: "hood", native: null, tokens: null })
 })

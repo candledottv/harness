@@ -4,7 +4,7 @@
 // An operation Candle didn't answer is pinned under it, with re-send and abandon, until it settles.
 // Cards sit at the bottom, inline: every open card, and the active agent's recent closed ones.
 import type { KillReport } from "../../core/kill"
-import { type ActivityEntry, doneWord, PAPER_CLOSED_WORDS } from "../../core/trade-log"
+import { type ActivityEntry, doneWord, notFollowedFurther, PAPER_CLOSED_WORDS } from "../../core/trade-log"
 import { walletName } from "../../core/wallet-names"
 import { ago, cellWidth, firingMark, shortAddress, usd, wrap } from "../format"
 import type { Rect } from "../layout"
@@ -73,7 +73,9 @@ export function killReportLines(report: KillReport, operations: Readonly<Record<
     const ended = operations[op.opId]?.paper ? PAPER_CLOSED_WORDS : doneWord(operations[op.opId]?.kind)
     // A lost swap or stake is read back by sending it again under its id, so that waits for a resume.
     const held = op.held && state === "unknown" ? "no answer yet; reading it back re-sends it under its id, so that waits until you resume" : undefined
-    inFlight.push(...labelled("in flight", `${op.title} (${op.agent}): ${state === "succeeded" ? ended : (held ?? STATE_WORDS[state] ?? state)}`, width))
+    // A bridge once sent is out of the kill switch's reach: the report says so, and how it ends.
+    const bridging = operations[op.opId]?.kind === "bridge" && (state === "pending" || state === "submitting" || state === "unknown") ? "sent, so the kill switch can't stop it: it arrives, or is refunded to the wallet it came from" : undefined
+    inFlight.push(...labelled("in flight", `${op.title} (${op.agent}): ${state === "succeeded" ? ended : (held ?? bridging ?? STATE_WORDS[state] ?? state)}`, width))
   }
   const standing: Line[] = []
   const s = report.standing
@@ -85,7 +87,7 @@ export function killReportLines(report: KillReport, operations: Readonly<Record<
     for (const w of s.wallets) {
       const who = w.agents.length ? ` (${w.agents.join(", ")})` : ""
       const unpriced = w.unpriced ? ` · ${w.unpriced} unpriced` : ""
-      standing.push(...labelled("standing", `${w.name ?? walletName(undefined, { address: w.wallet, ...(w.kind ? { kind: w.kind } : {}), ...(w.label ? { label: w.label } : {}) })}${who}: SOL ${usd(w.solUsd)} · tokens ${usd(w.tokensUsd)}${unpriced} · ${pnl} · prices ${age}`, width))
+      standing.push(...labelled("standing", `${w.name ?? walletName(undefined, { address: w.wallet, ...(w.kind ? { kind: w.kind } : {}), ...(w.label ? { label: w.label } : {}) })}${who}: ${w.nativeSymbol ?? "SOL"} ${usd(w.solUsd)} · tokens ${usd(w.tokensUsd)}${unpriced} · ${pnl} · prices ${age}`, width))
     }
   }
   const spent = s.spentToday.flatMap((sp) => labelled("spent", `${sp.agent} ${usd(sp.usd)} of ${usd(sp.perDayUsd)} today`, width))
@@ -232,15 +234,23 @@ export function unansweredLines(operations: Readonly<Record<string, ViewOperatio
       out.push(...chipRows([chip("abandon (stop following it)", "abandon")], width).map((l) => ({ ...l, cardId: op.cardId })))
       continue
     }
-    out.push(...wrap(`NO ANSWER FROM CANDLE · ${operationTitle(op, cards)} · ${op.agent}${since}`, Math.max(10, width)).map((t) => line(t, C.look)))
+    // One the core reads no further (a bridge it stopped following, a Hood trade whose job Candle ended) says why in
+    // its own words: nothing reads it back.
+    const ended = notFollowedFurther(op)
+    out.push(...wrap(`${ended ? "NOT FOLLOWED FURTHER" : "NO ANSWER FROM CANDLE"} · ${operationTitle(op, cards)} · ${op.agent}${since}`, Math.max(10, width)).map((t) => line(t, C.look)))
     // What Candle did answer, where it answered at all: the person decides from it.
-    if (op.error?.message) out.push(...wrap(`Candle said: ${op.error.message}`, Math.max(10, width - 2)).map((t) => line(`  ${t}`, C.ink)))
+    if (op.error?.message) out.push(...wrap(ended ? op.error.message : `Candle said: ${op.error.message}`, Math.max(10, width - 2)).map((t) => line(`  ${t}`, C.ink)))
     // A re-send already out: its answer settles it here, and a second click would only be refused.
     if (op.resending) {
       out.push(...wrap("Re-sending it: its answer settles it here.", Math.max(10, width - 2)).map((t) => line(`  ${t}`, C.dim)))
       continue
     }
     if (resendsUnderId(op)) {
+      if (ended) {
+        out.push(...wrap("Once you've checked, click one (or type resend or abandon): a re-send goes under its id, never twice.", Math.max(10, width - 2)).map((t) => line(`  ${t}`, C.dim)))
+        out.push(...chipRows([chip("re-send (same id: never runs twice)", "resend"), chip("abandon (stop following it)", "abandon")], width).map((l) => ({ ...l, cardId: op.cardId })))
+        continue
+      }
       out.push(...wrap("The core reads it back by its id and settles it here if Candle has it. If it stays, check candle.tv for whether it ran, then click one (or type resend or abandon):", Math.max(10, width - 2)).map((t) => line(`  ${t}`, C.dim)))
       out.push(...chipRows([chip("re-send (same id: never runs twice)", "resend"), chip("abandon (stop following it)", "abandon")], width).map((l) => ({ ...l, cardId: op.cardId })))
       continue
@@ -295,6 +305,8 @@ export interface SetUpSummary {
   profile?: string
   wallet?: string
   limits?: string
+  /** The wallet it pays from asks every time: each trade is a card. Unset where that isn't known. */
+  asksEveryTime?: boolean
   mode?: "paper" | "live"
 }
 
@@ -304,7 +316,7 @@ export function setUpLines(s: SetUpSummary, width: number): Line[] {
     [s.agent, s.engine ? `${s.engine}${s.profile ? `, as ${s.profile}` : ""}` : undefined],
     ["wallet", s.wallet],
     ["limits", s.limits],
-    ["mode", s.mode === "paper" ? "paper; go live from the status bar" : s.mode === "live" ? "live: real funds, each trade on a card" : undefined],
+    ["mode", s.mode === "paper" ? "paper; go live from the status bar" : s.mode === "live" ? `live: real funds${s.asksEveryTime ? ", a card per trade" : ""}` : undefined],
   ]
   const label = Math.max(...rows.map(([l]) => l.length)) + 2
   const out: Line[] = [{ segs: [{ text: "✓ ", fg: C.good }, { text: "Set up, and ready", fg: C.head }] }]
@@ -317,13 +329,13 @@ export function setUpLines(s: SetUpSummary, width: number): Line[] {
 
 /** The agent speaking first; after setup in this view, what was set up takes the intro's place. */
 export function greetingLines(agent: string, width: number, setUp?: SetUpSummary): Line[] {
-  const intro = `${agent} here. I read Candle and its market data for you (the feed, the signal tape, wallets worth watching, markets, token checks, your positions), propose trades as cards you approve with one key, and run any candle command you ask for. Paper trades need no card.`
+  const intro = `${agent} here. I read Candle and its market data for you (the feed, the signal tape, wallets worth watching, markets, token checks, your positions), propose trades as cards you approve with one key, and run any candle command you ask for.`
   return [
     ...(setUp ? setUpLines(setUp, width) : [...wrap(intro, width).map((t) => line(t, C.ink)), blank()]),
     line("Try:", C.dim),
     line("  · what's the tape saying in the last hour?", C.ink),
     line("  · check this token before I buy: <paste a mint>", C.ink),
-    line("  · buy $10 of it in paper mode", C.ink),
+    line("  · buy $10 of it", C.ink),
     blank(),
     // Said plainly, since a person may ask what the Candle Harness is for if the agent can't watch while they're away.
     ...wrap(WHEN_I_ACT, width).map((t) => line(t, C.dim)),

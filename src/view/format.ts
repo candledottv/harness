@@ -10,13 +10,16 @@ const DASH = "—"
 
 const missing = (n: number | null | undefined): n is null | undefined => n === null || n === undefined || !Number.isFinite(n)
 
-/** Dollars: cents above a dollar, six significant figures below it. */
+/** At least the cents: "0.2" is "0.20", while "0.595" and "0.0000841" keep every figure they have. */
+const cents = (figures: string): string => (/^\d+\.\d$/.test(figures) ? `${figures}0` : /^\d+$/.test(figures) ? `${figures}.00` : figures)
+
+/** Dollars: cents above a dollar, three significant figures below it, never fewer than the cents. */
 export function usd(n: number | null | undefined): string {
   if (missing(n)) return DASH
   const abs = Math.abs(n)
   // Under a dollar, three figures; one that rounds up to a dollar is said as one, "$1.00", not "$1".
   const small = abs !== 0 && Number(abs.toPrecision(3)) < 1
-  const text = small ? `$${Number(abs.toPrecision(3)).toString()}` : `$${abs.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+  const text = small ? `$${cents(Number(abs.toPrecision(3)).toString())}` : `$${abs.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
   return n < 0 ? `-${text}` : text
 }
 

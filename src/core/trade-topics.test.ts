@@ -34,7 +34,7 @@ test("portfolio: the embedded wallet once, with both agents on it and MOON value
   await until(() => latest<PortfolioView>(view, "portfolio")?.wallets[0]?.tokens?.[0]?.symbol === "MOON")
   const p = latest<PortfolioView>(view, "portfolio")!
   expect(p.wallets).toHaveLength(1)
-  expect(p.wallets[0]).toMatchObject({ address: WALLET, agents: ["momentum", "swing"], sol: { amount: 2, usd: 300 } })
+  expect(p.wallets[0]).toMatchObject({ address: WALLET, agents: ["momentum", "swing"], nativeSymbol: "SOL", native: { amount: 2, usd: 300 } })
   expect(p.wallets[0]!.tokens![0]).toMatchObject({ mint: MOON, symbol: "MOON", amount: 12345.678901 })
   expect(p.deposit).toBe(WALLET)
 })
@@ -70,7 +70,7 @@ test("market: the token pane follows a token the agent asked Candle about", asyn
   await until(() => latest<TokenView>(view, "market")?.followed?.mint === MOON)
 })
 
-test("market: the pane follows a Solana token the agent read on Hacc, which names it address, and never a Hood one", async () => {
+test("market: the pane follows a token the agent read on Hacc, which names it address, on its chain; never an address named for a chain it isn't on", async () => {
   const { startFakeHacc } = await import("../../test/fake-hacc")
   const { AGENT_KEY } = await import("../../test/core-fixture")
   const hacc = startFakeHacc({ keys: [AGENT_KEY] })
@@ -92,6 +92,53 @@ test("market: the pane follows a Solana token the agent read on Hacc, which name
     const r = await client.request("tools.call", { name: "hacc_token", args: { view: "top_traders", address: MOON, chain: "solana" } })
     expect(r.error).toBeUndefined()
     await until(() => latest<TokenView>(view, "market")?.followed?.mint === MOON)
+  } finally {
+    hacc.stop()
+  }
+})
+
+test("market: a Hood token the agent read on Hacc is followed on Hood", async () => {
+  const { startFakeHacc } = await import("../../test/fake-hacc")
+  const { AGENT_KEY } = await import("../../test/core-fixture")
+  const hacc = startFakeHacc({ keys: [AGENT_KEY] })
+  const HTOK = "0x00000000000000000000000000000000000b0B01"
+  try {
+    const script = { tier: "max" as const, markets: [{ mint: HTOK, symbol: "HTOK", priceUsd: 0.0000443, chain: "hood" }] }
+    const c = await startTestCore({ haccHost: hacc.url }, { config: { hacc: { enabled: true } }, candle: { momentum: script, swing: script } })
+    cores.push(c)
+    const view = await c.view()
+    await view.request("subscribe", { topics: ["market"] })
+    const { client } = await c.harness(view, "momentum")
+    await until(() => latest<TokenView>(view, "market") !== undefined)
+    await client.request("tools.call", { name: "hacc_token", args: { view: "market", address: HTOK, chain: "hood" } })
+    await until(() => latest<TokenView>(view, "market")?.followed?.mint === HTOK)
+    expect(latest<TokenView>(view, "market")!.followed).toMatchObject({ mint: HTOK, chain: "hood" })
+  } finally {
+    hacc.stop()
+  }
+})
+
+test("market: a Hood token's Hacc check, with every agent's key refused by Hacc, says so rather than naming the plan", async () => {
+  const { startFakeHacc } = await import("../../test/fake-hacc")
+  // Hacc knows no key here: it refuses each agent's, as it would a revoked one.
+  const hacc = startFakeHacc({ keys: [] })
+  const HTOK = "0x00000000000000000000000000000000000b0B01"
+  try {
+    const script = { tier: "max" as const, markets: [{ mint: HTOK, symbol: "HTOK", priceUsd: 0.0000443, chain: "hood" }, { mint: "0x00000000000000000000000000000000000b0B02", symbol: "HTWO", priceUsd: 0.0001, chain: "hood" }] }
+    const c = await startTestCore({ haccHost: hacc.url }, { config: { hacc: { enabled: true } }, candle: { momentum: script, swing: script } })
+    cores.push(c)
+    const view = await c.view()
+    await view.request("subscribe", { topics: ["market"] })
+    await until(() => latest<TokenView>(view, "market") !== undefined)
+    await view.request("view.link", { mint: HTOK, chain: "hood", from: "feed, by a click" })
+    await until(() => latest<TokenView>(view, "market")?.hacc?.words?.includes("didn't load") === true, 10_000)
+    // Once Hacc has refused the keys they aren't asked again: the next token's check is answered without a read.
+    const HTOK2 = "0x00000000000000000000000000000000000b0B02"
+    await view.request("view.link", { mint: HTOK2, chain: "hood", from: "feed, by a click" })
+    await until(() => latest<TokenView>(view, "market")?.followed?.mint === HTOK2 && latest<TokenView>(view, "market")?.hacc?.words?.includes("didn't load") === true, 10_000)
+    const words = latest<TokenView>(view, "market")!.hacc!.words
+    expect(words).not.toContain("Pro or Max")
+    expect(words).toContain("Hacc refused every agent's key")
   } finally {
     hacc.stop()
   }
@@ -189,7 +236,7 @@ test("portfolio: a TEE wallet shows once, with the agent whose key it's bound to
     ["embedded", ["momentum", "swing"]],
     ["tee", ["momentum"]],
   ])
-  expect(wallets[1]).toMatchObject({ label: "bot-wallet", active: true, sol: { amount: 0.5 } })
+  expect(wallets[1]).toMatchObject({ label: "bot-wallet", active: true, native: { amount: 0.5 } })
   expect(c.core.wallets.payer("momentum", "bot-wallet")).toMatchObject({ ok: true, kind: "tee", address: tee.address })
   expect(c.core.wallets.payer("swing", "bot-wallet")).toMatchObject({ ok: false, message: expect.stringContaining("it's bound to momentum's key") })
 })

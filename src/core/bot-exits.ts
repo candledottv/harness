@@ -39,6 +39,7 @@ import type { FaceClient } from "./tool-face"
 import { botClient } from "./bot-trades"
 import { priceWords, type Reading } from "./trigger-watch"
 import { short } from "./wallet-names"
+import { type ChainSlug, storedChain } from "../shared/chains"
 
 /** Why a position's exit is sent again after a sell that didn't go through. */
 const SELLS_AGAIN = "; its last sell didn't go through, so it sells again"
@@ -66,7 +67,7 @@ export interface ExitReason {
 }
 
 type Trade = Extract<Command, { kind: "trade" }>
-type Chain = "solana" | "hood"
+type Chain = ChainSlug
 
 /** Why a position exits now, or undefined: Hacc's order of the stop, the take profit, the trailing stop, the hold. */
 export function exitReason(x: Exit | undefined, s: { label: string; entryUsd?: number; entryIsMark?: boolean; peakUsd?: number; priceUsd?: number | null; entryAt: number; now: number }): ExitReason | undefined {
@@ -154,8 +155,8 @@ export interface BotExitsDeps {
   mode(): Mode
   /** The newest market reading of a token (the triggers' watcher's). */
   reading(mint: string): Reading | undefined
-  /** A fresh read of what a live wallet holds of a token. */
-  holding(agent: string, wallet: string, mint: string): Promise<Holding>
+  /** A fresh read of what a live wallet holds of a token, on the position's chain: "embedded" is that chain's embedded wallet. */
+  holding(agent: string, wallet: string, mint: string, chain: Chain): Promise<Holding>
   /** A token's decimals from the core's last portfolio read, where it holds the token: no read of its own. */
   decimalsOf?(mint: string): number | undefined
   failed: Pick<FailedSells, "held" | "release" | "words">
@@ -202,7 +203,8 @@ export type HeldWhy = "failed_sells" | "unread" | "decimals" | "pace" | "route" 
 type EndOutcome = "refused" | "rejected" | "withdrawn" | "expired" | "failed" | "lost"
 
 const record = (v: unknown): Record<string, unknown> | undefined => (typeof v === "object" && v !== null && !Array.isArray(v) ? (v as Record<string, unknown>) : undefined)
-const chainOf = (mint: string): Chain => (mint.startsWith("0x") ? "hood" : "solana")
+/** A position's chain as stored, else (a position from before positions carried one) its mint's family's. */
+const chainOf = (mint: string, stored?: unknown): Chain => storedChain(stored, mint) ?? "solana"
 
 export class BotExits {
   /** Exits under way, by position. */
@@ -538,7 +540,7 @@ export class BotExits {
     let holding: bigint | undefined
     let decimals = p.decimals ?? this.deps.reading(p.mint)?.decimals
     if (p.mode === "live") {
-      const h = await this.deps.holding(p.agent, p.wallet, p.mint).catch(() => "unreadable" as const)
+      const h = await this.deps.holding(p.agent, p.wallet, p.mint, chainOf(p.mint, p.chain)).catch(() => "unreadable" as const)
       if (h === "unreadable") {
         this.retryAt.set(p.id, this.deps.clock.now() + REFUSED_RETRY_MS)
         return this.held(bot, p, "unread", `its exit (${reason.words}) waits: the wallet's balance couldn't be read, so it's read again in a minute`)
@@ -606,7 +608,7 @@ export class BotExits {
       exitId,
       position: p.id,
       mint: p.mint,
-      chain: chainOf(p.mint),
+      chain: chainOf(p.mint, p.chain),
       reason: reason.code,
       wallet: p.wallet,
       botMode: p.mode,

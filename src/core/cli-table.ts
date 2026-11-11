@@ -125,7 +125,17 @@ export interface SourceEntry {
   identity: "agent" | "owner" | "both" | "none" | "unknown"
   json: boolean
   /** `byAction`: the value flags each action word takes, for a handler with an action table (agent post). */
-  flags: { value: string[]; boolean: string[]; path: string[]; pathPositionals: string[]; byAction?: Record<string, string[]> } | null
+  flags: {
+    value: string[]
+    boolean: string[]
+    path: string[]
+    pathPositionals: string[]
+    byAction?: Record<string, string[]>
+    /** It takes a key prefix as a word, and one that starts with "-" is read as that word, not a flag. */
+    keyPrefixPositional?: boolean
+    /** Value flags whose value may be a key prefix that starts with "-" (`tee rebind --to-key`). */
+    keyPrefixValueFlags?: string[]
+  } | null
   /** Whether anything it can reach unlocks the vault, under any flags. */
   unlocks: Unlocks
   /** The streams it checks are a terminal, under any flags. */
@@ -201,12 +211,21 @@ const ROWS: readonly RowInput[] = [
   r("stake claim", "card", "card", "agent", { via: "candle_claim_staking_reward", note: "Use candle_claim_staking_reward with the reward's id, as candle_get_staking lists it: a one-press card." }),
   // A TEE wallet's trade or swap is candle_trade or candle_swap with `wallet`: one
   // parser and one card path, which runs `candle swap` itself.
-  r("swap", "card", "card", "agent", { via: "candle_trade or candle_swap with wallet", note: "From any wallet the agent can pay from: candle_trade or candle_swap with wallet. The Candle Harness runs candle swap for a TEE wallet." }),
+  r("swap", "card", "card", "agent", {
+    via: "candle_trade or candle_swap with wallet",
+    note: "From any wallet the agent can pay from: candle_trade or candle_swap with wallet. The Candle Harness runs candle swap for a TEE wallet.",
+    // --dry-run (0.13.19) checks a Solana TEE wallet's pair and quote, and signs and sends nothing
+    // (trading-checks.ts swapCheck); the CLI refuses Hood and bridge pairs itself.
+    byFlags: (flags) => (flags.has("--dry-run") ? { rule: "read", route: "cli" } : undefined),
+    partly: "--dry-run (reads; a Solana TEE wallet's pair): now",
+  }),
   r("swap status", "read", "cli", "agent"),
   // Funds go out by the owner's vault-signed routes only.
   r("transfer", "funds-out", "later", "agent", {
     held: "It needs a Withdraw key, and every agent key in the Candle Harness is Write, which can't move funds. Send from a TEE wallet whose key is in this machine's vault with candle vault transfer, or sweep a disabled one home with candle tee sweep.",
   }),
+  // Where one transfer stands, by its id or client id, over the last 24 hours (0.13.19): one read, nothing sent.
+  r("transfer status", "read", "cli", "agent", { takes: 1 }),
   r("launch", "card", "card", "agent", {
     via: "candle_launch_token or candle_launch_and_seed from the embedded wallet",
     note: "From the embedded wallet: candle_launch_token, or candle_launch_and_seed with a seed, as a one-press card with an image URL.",
@@ -482,7 +501,7 @@ const ROWS: readonly RowInput[] = [
   // No factor step: it asks for its own store's passphrase. At 0.13.5 it only
   // adds to an older TEE wallet store already on the machine, and with none refuses (TEE_STORE_ABSENT).
   r("tee new", "owner", "pane", "owner", {
-    note: "Only with the older TEE wallet store on this machine. A new TEE wallet comes from the vault: candle vault new-key --chain solana, then candle vault promote.",
+    note: "Only with the older TEE wallet store on this machine. A new TEE wallet comes from the vault: candle vault new-key --chain solana (or --chain evm for a Hood one), then candle vault promote.",
     pane: { factorFirst: false, confirms: ["you'll type the older TEE wallet store's passphrase"] },
   }),
   // It binds the wallet to the key it runs with.
@@ -573,6 +592,34 @@ export function canonicalCommand(word: string): string {
 /** The source's entry for a command and subcommand (null for a bare command). */
 export function sourceFor(command: string, subcommand: string | null): SourceEntry | undefined {
   return SOURCE.commands.find((c) => c.command === command && c.subcommand === subcommand)
+}
+
+/** A key prefix is 8 base64url characters, so about 1 in 32 start with "-": the CLI's own pattern for one. */
+export const DASH_KEY_PREFIX = /^-[A-Za-z0-9_-]{7}$/
+
+const declaredFlag = (entry: SourceEntry, word: string): boolean => (entry.flags?.value ?? []).includes(word) || (entry.flags?.boolean ?? []).includes(word)
+
+/**
+ * Whether the CLI reads a word as a flag: anything starting with "-", except a key prefix that does, on a
+ * command that takes one as a word. A flag the command declares is always a flag, as in the CLI.
+ */
+export function isFlagWord(entry: SourceEntry | undefined, word: string): boolean {
+  if (!word.startsWith("-")) return false
+  if (entry?.flags?.keyPrefixPositional !== true || !DASH_KEY_PREFIX.test(word)) return true
+  return declaredFlag(entry, word)
+}
+
+/** Whether the CLI takes a value starting with "-" for this flag: a key prefix, where the flag takes one, and not a flag of its own. */
+export function dashPrefixValue(entry: SourceEntry | undefined, flag: string, value: string): boolean {
+  return entry?.flags?.keyPrefixValueFlags?.includes(flag) === true && DASH_KEY_PREFIX.test(value) && !declaredFlag(entry, value)
+}
+
+/** The source entry for a command's words (`keys update -1Y25FIQ …`, split): the subcommand's, else the bare command's. */
+export function sourceForWords(words: readonly string[]): SourceEntry | undefined {
+  const [command, sub] = words
+  if (command === undefined) return undefined
+  const canonical = canonicalCommand(command)
+  return (sub !== undefined ? sourceFor(canonical, sub) : undefined) ?? sourceFor(canonical, null)
 }
 
 /** What the source read of a row's own handler says it unlocks: a dispatched word's (`vault factor remove`) where it has one. */

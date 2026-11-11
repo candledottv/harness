@@ -2,9 +2,12 @@
 // signalled, it's waited for, and one that doesn't go says how to end it. Asking a running core is in
 // core/kept-running-core.test.ts.
 import { afterAll, expect, test } from "bun:test"
-import { writeFileSync } from "node:fs"
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs"
+import { join } from "node:path"
 import { cleanupHomes, testHome } from "../../test/core-fixture"
+import { systemdUnitText, SYSTEMD_UNIT } from "./service"
 import { isCoreCommand, stopCommand } from "./stop"
+import { paths } from "../paths"
 
 afterAll(() => cleanupHomes())
 const io = () => {
@@ -63,3 +66,22 @@ test("one still running after the wait says how to end it", async () => {
 test("stop takes no arguments", async () => {
   expect(await stopCommand(["now"], io().io, { env: process.env, platform: "linux", home: "/nonexistent/home" })).toBe(2)
 })
+
+test("the login service's note is said only when the service runs the home being stopped", async () => {
+  const user = mkdtempSync("/tmp/chrn-u-")
+  const units = join(user, ".config", "systemd", "user")
+  mkdirSync(units, { recursive: true })
+  const serviced = await lockedHome(4245)
+  writeFileSync(join(units, SYSTEMD_UNIT), systemdUnitText(["/usr/local/bin/candle-harness"], paths(serviced.env), serviced.env))
+  const run = async (env: Record<string, string | undefined>) => {
+    const t = io()
+    let alive = true
+    await stopCommand([], t.io, { env: { ...env, XDG_CONFIG_HOME: undefined }, platform: "linux", home: user, isAlive: () => alive, commandOf: () => "candle-harness core", kill: () => void (alive = false), waitMs: 500 })
+    return t.text()
+  }
+  expect(await run(serviced.env)).toContain("The login service starts a core again at your next login")
+  // A scratch home's core: the service runs another home, so it isn't mentioned.
+  const scratch = await lockedHome(4246)
+  expect(await run(scratch.env)).not.toContain("login service")
+})
+

@@ -11,6 +11,7 @@ import { RESEARCH_TOOLS } from "../src/core/research-tools"
 import { METHOD_ROLES } from "../src/core/server"
 import { TRIGGERS_TOOL } from "../src/core/triggers-tool"
 import { BOTS_TOOL } from "../src/core/bots-tool"
+import { BRIDGE_TOOL } from "../src/core/bridge"
 import { GROUP_WALLETS_TOOL, NAME_WALLETS_TOOL, SHOW_WALLETS_TOOL, VIEW_TOOL } from "../src/core/tool-face"
 import { CLAUDE_TOOLS } from "../src/engine/claude"
 import { GROK_TOOLS } from "../src/engine/grok"
@@ -34,6 +35,7 @@ describe("the audit's surface table", () => {
   test("every tool the core serves an agent besides Candle's has a row", () => {
     const served = [
       "candle_cli",
+      BRIDGE_TOOL.name,
       SHOW_WALLETS_TOOL.name,
       NAME_WALLETS_TOOL.name,
       GROUP_WALLETS_TOOL.name,
@@ -56,6 +58,7 @@ describe("the audit's surface table", () => {
     expect(sources).toEqual([
       "...withOwnPrefix(withReason(offeredTools(pool.for(call.agent).tools())), apiKeyPrefix(keys.get(call.agent) ?? \"\")),",
       "cliTool.definition(),",
+      "BRIDGE_TOOL,",
       "SHOW_WALLETS_TOOL,",
       "NAME_WALLETS_TOOL,",
       "GROUP_WALLETS_TOOL,",

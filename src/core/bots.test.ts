@@ -17,6 +17,8 @@ import { queryJournal } from "./journal-query"
 import type { HaccPlan } from "./plan-state"
 
 const TEE = "TeeFake1111111111111111111111111111111111111"
+const HOOD_TEE = "0x00000000000000000000000000000000000000a1"
+const HOOD_EMBEDDED = "0x00000000000000000000000000000000000000e1"
 const T0 = new Date(2026, 10, 5, 12, 0, 0).getTime()
 const dirs: string[] = []
 const journals: Journal[] = []
@@ -44,6 +46,8 @@ interface World {
   clock: { now: number }
   file: string
   changes: number
+  /** Each chain the book asked the payer about, "any" for none. */
+  asked: string[]
 }
 
 async function world(opts: { plan?: HaccPlan } = {}): Promise<World> {
@@ -53,7 +57,7 @@ async function world(opts: { plan?: HaccPlan } = {}): Promise<World> {
   const journal = await Journal.open({ path: join(dir, "journal.jsonl"), redactor: new Redactor(), account: "acct_fake", now: () => clock.now })
   journals.push(journal)
   const plan: Record<string, HaccPlan | undefined> = { "agent-a": opts.plan ?? "pro", "agent-b": opts.plan ?? "pro" }
-  const w = { dir, journal, plan, clock, file: join(dir, "bots.toml"), changes: 0 } as World
+  const w = { dir, journal, plan, clock, file: join(dir, "bots.toml"), changes: 0, asked: [] as string[] } as World
   w.deps = {
     file: new BotsFileStore(w.file),
     statePath: join(dir, "bots.json"),
@@ -62,7 +66,16 @@ async function world(opts: { plan?: HaccPlan } = {}): Promise<World> {
     plan: (agent) => plan[agent],
     mode: () => "live",
     now: () => clock.now,
-    payWallet: (agent, wallet) => (wallet === "embedded" ? { address: "EmbFake1111111111111111111111111111111111111", name: "embedded", setting: ASK } : wallet === TEE || wallet === "tee-one" ? { address: TEE, name: "tee-one", setting: ASK } : undefined),
+    // As the payer answers: the embedded wallet pays on each chain; a TEE wallet only on its own. With no chain, the
+    // first chain the wallet pays on.
+    payWallet: (agent, wallet, chain) => {
+      w.asked.push(chain ?? "any")
+      if (wallet === "embedded") return { address: chain === "hood" ? HOOD_EMBEDDED : "EmbFake1111111111111111111111111111111111111", name: "embedded", setting: ASK }
+      if ((wallet === TEE || wallet === "tee-one") && chain !== "hood") return { address: TEE, name: "tee-one", setting: ASK }
+      if ((wallet === HOOD_TEE || wallet === "tee-hood") && chain !== "solana") return { address: HOOD_TEE, name: "tee-hood", setting: ASK }
+      return undefined
+    },
+    payRefusal: (agent, wallet, chain) => `${agent} can't pay from ${wallet} on ${chain ?? "any chain"}.`,
     onChange: () => void w.changes++,
   }
   w.book = new BotBook(w.deps)
@@ -381,4 +394,42 @@ test("bots.toml changed in the same instant as its last read, keeping its size, 
   utimesSync(path, at, at)
   expect(statSync(path).size).toBe(one(2).length)
   expect(JSON.stringify(store.read())).not.toBe(before)
+})
+
+describe("a rules bot on Hood", () => {
+  const hood = () => ({ ...structuredClone(DEFINITION), chain: "hood" })
+
+  test("its wallet is resolved on its definition's chain: a Hood bot pays from a Hood wallet, and is made", async () => {
+    const w = await world()
+    const p = proposal({ definition: hood(), run: { agent: "agent-a", wallet: HOOD_TEE, mode: "live" } })
+    const c = w.book.check(p, "agent-a")
+    expect(c.run.wallet).toBe(HOOD_TEE)
+    expect(c.paysFrom).toBe("tee-hood")
+    expect(w.asked).toEqual(["hood"])
+    await w.book.save(p, "agent-a", { hash: c.hash, cardId: "card_1" })
+    expect(w.book.view().bots[0]).toMatchObject({ name: "confluence-small", paysFrom: "tee-hood" })
+    // The embedded wallet word pays on Hood too.
+    expect(w.book.check(proposal({ definition: hood(), run: { agent: "agent-a", wallet: "embedded", mode: "live" } }), "agent-a").run.wallet).toBe("embedded")
+  })
+
+  test("a wallet on the other chain is refused when the bot is made, either way, in the payer's words", async () => {
+    const w = await world()
+    let message = ""
+    try {
+      w.book.check(proposal({ definition: hood(), run: { agent: "agent-a", wallet: TEE, mode: "live" } }), "agent-a")
+    } catch (e) {
+      message = (e as Error).message
+    }
+    expect(message).toBe(`agent-a can't pay from ${TEE} on hood. Nothing was proposed.`)
+    expect(refusalOf(() => w.book.check(proposal({ run: { agent: "agent-a", wallet: HOOD_TEE, mode: "live" } }), "agent-a"))).toBe("WALLET_CANT_PAY")
+    expect(w.asked).toEqual(["hood", "solana"])
+  })
+
+  test("a bot on both chains takes a wallet that pays on either, asked with no chain", async () => {
+    const w = await world()
+    const any = { ...structuredClone(DEFINITION), chain: "any" }
+    expect(w.book.check(proposal({ definition: any, run: { agent: "agent-a", wallet: TEE, mode: "live" } }), "agent-a").paysFrom).toBe("tee-one")
+    expect(w.book.check(proposal({ definition: any, run: { agent: "agent-a", wallet: HOOD_TEE, mode: "live" } }), "agent-a").paysFrom).toBe("tee-hood")
+    expect(w.asked).toEqual(["any", "any"])
+  })
 })

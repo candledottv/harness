@@ -14,6 +14,12 @@ import { REDACTED } from "../shared/redact"
 /** The CLI's own variable for the Solana RPC, which it reads right after --rpc-url (solana-endpoint.ts). */
 export const RPC_URL_ENV = "CANDLE_SOLANA_RPC_URL"
 
+/**
+ * The CLI's own variable for the EVM RPC (evm-lite.ts resolveEvmRpcUrl), which its Hood paths read when no flag names
+ * one. Only ever set from config (candle.evmRpcUrl), never as `--rpc-url`: on a bridge that one flag feeds both chains' reads.
+ */
+export const EVM_RPC_URL_ENV = "CANDLE_EVM_RPC_URL"
+
 /** What stands for the configured RPC in saved arguments: `--rpc-url @config`. No address is shaped like it. */
 export const RPC_FROM_CONFIG = "@config"
 
@@ -43,6 +49,8 @@ export class CandleCli {
     private readonly deps: {
       cliPath: string
       rpcUrl?: string
+      /** The EVM RPC from config, for every run's environment; unset, the CLI's built-in Hood RPC. */
+      evmRpcUrl?: string
       keyFor: (agent: string) => string | undefined
       parentEnv: Record<string, string | undefined>
       /**
@@ -59,6 +67,11 @@ export class CandleCli {
   /** The RPC from config, so what goes back to an agent can leave it out. */
   get rpcUrl(): string | undefined {
     return this.deps.rpcUrl
+  }
+
+  /** The EVM RPC from config, likewise. */
+  get evmRpcUrl(): string | undefined {
+    return this.deps.evmRpcUrl
   }
 
   /** The exact arguments a run gets: the caller's, then `--json` and the configured `--rpc-url` where asked. */
@@ -109,6 +122,7 @@ export class CandleCli {
     }
     const moved = rpcToEnv(this.realArgs(input.argv))
     if (moved.rpcUrl !== undefined) extra[RPC_URL_ENV] = moved.rpcUrl
+    if (this.deps.evmRpcUrl) extra[EVM_RPC_URL_ENV] = this.deps.evmRpcUrl
     const result = await runChild({
       cmd: this.deps.cliPath,
       args: moved.argv,

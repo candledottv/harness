@@ -162,7 +162,7 @@ test("what the wallets hold now against then", () => {
   const then: HoldingsSnapshot = { at: T0, readAt: T0, wallets: [{ address: "W1", name: "embedded", sol: 1, tokens: [{ mint: MOON, symbol: "MOON", amount: 100 }] }] }
   const now: HoldingsSnapshot = { at: T0 + HOUR, readAt: T0 + HOUR, wallets: [{ address: "W1", name: "embedded", sol: 0.9, tokens: [{ mint: PEPE, symbol: "PEPE", amount: 5 }, { mint: MOON, symbol: "MOON", amount: 100 }] }, { address: "W2", name: "tee-1", sol: 2, tokens: [] }] }
   expect(holdingChanges(then, now)).toEqual([
-    { wallet: "W1", name: "embedded", asset: "SOL", symbol: "SOL", then: 1, now: 0.9 },
+    { wallet: "W1", name: "embedded", asset: "SOL", symbol: "SOL", native: true, then: 1, now: 0.9 },
     { wallet: "W1", name: "embedded", asset: PEPE, symbol: "PEPE", then: 0, now: 5 },
   ])
 })
@@ -489,4 +489,15 @@ test("a wallet's change no live trade this Candle Harness sent in the gap explai
   expect(markOutside([sol, moon], [sent({ wallet: "W1", mint: "PEPE", side: "buy", sentAt: T0 + 60_000 })], T0, T0 + HOUR).map((c) => c.outside)).toEqual([undefined, true])
   // A sent trade whose wallet wasn't recorded may be the Candle Harness's own: never called outside.
   expect(markOutside([moon], [sent({ mint: MOON, sentAt: T0 + 60_000 })], T0, T0 + HOUR)[0]!.outside).toBeUndefined()
+})
+
+test("a Hood holding's change is explained by this Candle Harness's trade of it in any case, from its wallet in any case", () => {
+  const KITE = "0x1F8e3bD8000000000000000000000000000000Aa"
+  const WALLET = "0xAbCdEf0000000000000000000000000000000002"
+  const kite: HoldingChange = { wallet: WALLET, name: "momentum-hood", asset: KITE, symbol: "KITE", then: 0, now: 2150 }
+  const sent = (o: Record<string, unknown>) => ({ opId: "op", unknown: false, sentAt: T0 + 60_000, ...o })
+  expect(markOutside([kite], [sent({ wallet: WALLET, mint: KITE.toLowerCase(), side: "buy" })], T0, T0 + HOUR)[0]!.outside).toBeUndefined()
+  expect(markOutside([kite], [sent({ wallet: WALLET.toLowerCase(), mint: KITE, side: "buy" })], T0, T0 + HOUR)[0]!.outside).toBeUndefined()
+  // Another token, whatever its case, still explains nothing.
+  expect(markOutside([kite], [sent({ wallet: WALLET, mint: "0x00000000000000000000000000000000000000aa", side: "buy" })], T0, T0 + HOUR)[0]!.outside).toBe(true)
 })

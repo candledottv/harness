@@ -71,7 +71,18 @@ export interface FakeScript {
   /** The token check comes back clear on all six flags, sellability measured (the scorecard's woken cases); unset, sellability is unknown. */
   forensicsClear?: boolean
   /** Real tokens Candle answers the market read and check for, beside the fake two: a run in tmux against the real Hacc. */
-  markets?: { mint: string; symbol: string; priceUsd: number }[]
+  /** Each answers on its own chain: `chain` where given, else Hood for a 0x address and Solana otherwise. */
+  markets?: { mint: string; symbol: string; priceUsd: number; chain?: string }[]
+  /** The account's embedded EVM wallet's ETH on Hood, in wei; none when unset. */
+  evmWei?: string
+  /** The tokens the account's embedded EVM wallet holds on Hood; none when unset. */
+  evmTokens?: { mint: string; amountRaw: string; decimals: number }[]
+  /** ETH's price on Hood, under the portfolio's `hood:native`; unpriced when unset. */
+  ethUsd?: number
+  /** Token rows the Solana embedded wallet lists as given, as Candle may send them: one without its amount or decimals included. */
+  solanaRows?: Record<string, unknown>[]
+  /** Candle's Hood read failed: the embedded EVM wallet answers nothing read (`wei` and `tokens` null) and is listed under `hood.unavailable`. */
+  hoodUnread?: boolean
   /** Any other Solana mint answers too, at this price, named by its first four characters: a bot in tmux entering on the real tape. `markets` wins for a mint it names. */
   anyMint?: { priceUsd: number }
   /** Final Stretch where its source is off (refused as an unknown bucket) or behind (`stale`, `feed.ok` false), as the docs say it can be. */
@@ -95,6 +106,11 @@ export interface FakeScript {
    * never trips there. `failSells`: mints whose sells land and revert (TRADE_REVERTED, stage reverted).
    */
   breaker?: { failSells?: string[] }
+  /**
+   * Where a bridge between the embedded wallets stands when Candle answers it (its `payload.settlement.state`): settled
+   * when unset. Candle measures it for three seconds, so live it's usually `pending` while Relay fills.
+   */
+  bridgeSettlement?: "settled" | "pending" | "failed" | "uncertain"
 }
 
 export interface FakeTeeWallet {
@@ -104,8 +120,10 @@ export interface FakeTeeWallet {
   boundKeyPrefix: string
   active?: boolean
   lamports?: string
-  /** "hood" for a Hood TEE wallet: under the portfolio's `hood.tee`, and "evm" in the key's list, as Candle answers; Solana when unset. */
-  chain?: "solana" | "hood"
+  /** A Hood TEE wallet: the key's list names it `evm` (the family) and the portfolio lists it under `hood.tee` as `hood`, as the real server does. */
+  chain?: "hood"
+  /** A Hood one's ETH, in wei. */
+  wei?: string
 }
 
 export const FAKE_MINTS = {
@@ -122,6 +140,14 @@ export const MOON_TWIN = "MoonTwin11111111111111111111111111111111111"
 /** What every fake launch mints. */
 export const LAUNCHED_MINT = "LaunchFake111111111111111111111111111111111"
 const USDC_MINT = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+/** The base assets candle_swap moves, each with its chain, decimals and the fake's price. */
+const SWAP_ASSETS: Record<string, { chain: "solana" | "hood"; decimals: number; usd: () => number }> = {
+  SOL: { chain: "solana", decimals: 9, usd: () => FAKE_PRICES_USD[SOL_MINT]! },
+  USDC: { chain: "solana", decimals: 6, usd: () => 1 },
+  CNDL: { chain: "solana", decimals: 6, usd: () => 0.01 },
+  ETH: { chain: "hood", decimals: 18, usd: () => script().ethUsd ?? 3000 },
+  USDG: { chain: "hood", decimals: 6, usd: () => 1 },
+}
 export const FAKE_PRICES_USD: Record<string, number> = { [SOL_MINT]: 150, [USDC_MINT]: 1, [FAKE_MINTS.MOON]: 0.63, [FAKE_MINTS.PEPE]: 0.165 }
 /** What the fake's embedded wallet holds: 12,345.678901 MOON (6 decimals) and 2 SOL. */
 export const FAKE_HOLDINGS = { lamports: "2000000000", moonRaw: "12345678901" }
@@ -185,18 +211,26 @@ const tokens = [
   { symbol: "PEPE", mint: FAKE_MINTS.PEPE, decimals: 6, quoteDecimals: 9, candleLaunched: false, quoteMint: SOL_MINT },
 ]
 const twin = { symbol: "MOON", mint: MOON_TWIN, decimals: 6, quoteDecimals: 9, candleLaunched: false, quoteMint: SOL_MINT }
-const marketTokens = () => (script().markets ?? []).map((m) => ({ symbol: m.symbol, mint: m.mint, decimals: 6, quoteDecimals: 9, candleLaunched: false, quoteMint: SOL_MINT }))
+const HOOD_WETH = "0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73"
+const marketTokens = () =>
+  (script().markets ?? []).map((m) => {
+    const chain = m.chain ?? (m.mint.startsWith("0x") ? "hood" : "solana")
+    return { symbol: m.symbol, mint: m.mint, chain, decimals: chain === "hood" ? 18 : 6, quoteDecimals: chain === "hood" ? 18 : 9, candleLaunched: false, quoteMint: chain === "hood" ? HOOD_WETH : SOL_MINT }
+  })
 const SOLANA_MINT = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/
 const anyToken = (mint: unknown) =>
   script().anyMint && typeof mint === "string" && SOLANA_MINT.test(mint) && !(mint in FAKE_PRICES_USD)
     ? { symbol: mint.slice(0, 4).toUpperCase(), mint, decimals: 6, quoteDecimals: 9, candleLaunched: false, quoteMint: SOL_MINT }
     : undefined
+/** The chain a fake token answers on: its own where scripted, else Solana. */
+const chainOfToken = (t: object) => ("chain" in t && typeof t.chain === "string" ? t.chain : "solana")
 const token = (mint: unknown) => [...tokens, ...(script().heldTwin ? [twin] : []), ...marketTokens()].find((t) => t.mint === mint) ?? anyToken(mint)
 const prices = (): Record<string, number> => new Proxy(knownPrices(), { get: (o, k) => (typeof k === "string" && !(k in o) && anyToken(k) ? script().anyMint!.priceUsd : o[k as string]) })
 const knownPrices = (): Record<string, number> => ({
   ...FAKE_PRICES_USD,
   ...(script().heldTwin ? { [MOON_TWIN]: 0.0021 } : {}),
   ...Object.fromEntries((script().markets ?? []).map((m) => [m.mint, m.priceUsd])),
+  ...(script().ethUsd !== undefined ? { "hood:native": script().ethUsd! } : {}),
 })
 // GET /api/v1/agent/wallets/embedded (docs.candle.tv/developers/agent-wallets: the key's own permission rides
 // along), as recorded: every key on the account reports the same wallets, denied keys included.
@@ -230,8 +264,10 @@ function feed(args: Record<string, unknown>) {
   if (unknown) return text({ ...feedUnknownField.answer, error: { ...(feedUnknownField.answer.error as object), message: `Unknown field: ${unknown}` } }, true)
   const { tokens: realRows, ...envelope } = recorded.answer as { tokens: Record<string, unknown>[] }
   const template = realRows[0] ?? {}
-  const all = [...tokens, ...marketTokens()].map((t, i) => {
-    const row: Record<string, unknown> = { ...template, chain: "solana", address: t.mint, symbol: t.symbol, name: t.symbol }
+  // Each list is one chain's, as Candle answers it: Solana's when none is asked for.
+  const asked = typeof args.chain === "string" ? args.chain : "solana"
+  const all = [...tokens, ...marketTokens()].filter((t) => ("chain" in t ? t.chain : "solana") === asked).map((t, i) => {
+    const row: Record<string, unknown> = { ...template, chain: asked, address: t.mint, symbol: t.symbol, name: t.symbol }
     // Final Stretch's rows often have no price or market cap (recorded); the others' always do.
     if ("priceUsd" in template || bucket !== "finalstretch") row.priceUsd = prices()[t.mint] ?? null
     if ("marketCap" in template || bucket !== "finalstretch") row.marketCap = 1_000_000
@@ -299,7 +335,7 @@ function answer(name: string, args: Record<string, unknown>, behaviour: Behaviou
         return text({
           success: true,
           forensics: {
-            chain: "solana",
+            chain: chainOfToken(t),
             mint: t.mint,
             safety: {
               summary: clear ? "clear" : "incomplete",
@@ -313,7 +349,7 @@ function answer(name: string, args: Record<string, unknown>, behaviour: Behaviou
       return text({
         success: true,
         market: {
-          chain: "solana",
+          chain: chainOfToken(t),
           mint: t.mint,
           lifecycle: "trading",
           buysOpen: true,
@@ -354,15 +390,20 @@ function answer(name: string, args: Record<string, unknown>, behaviour: Behaviou
               { chain: "solana", mint: FAKE_MINTS.MOON, amountRaw: FAKE_HOLDINGS.moonRaw, decimals: 6 },
               ...(script().heldTwin ? [{ chain: "solana", mint: MOON_TWIN, amountRaw: "5000000000", decimals: 6 }] : []),
               ...anyHeld(),
+              ...(script().solanaRows ?? []),
             ],
           },
         ],
         // Every TEE wallet on the account, whichever key it's bound to (the portfolio doesn't say).
         tee: (script().teeWallets ?? []).filter((w) => w.chain !== "hood").map((w) => ({ id: w.id, address: w.address, label: w.label ?? null, active: w.active ?? true, chain: "solana", lamports: w.lamports ?? "0", tokens: [] })),
         hood: {
-          embedded: [{ address: FAKE_EVM_WALLET, chain: "hood", wei: "0", tokens: [] }],
-          tee: (script().teeWallets ?? []).filter((w) => w.chain === "hood").map((w) => ({ id: w.id, address: w.address, ...(w.label ? { label: w.label } : {}), active: w.active ?? true, chain: "hood", wei: "0", tokens: [] })),
-          unavailable: [],
+          embedded: [
+            script().hoodUnread
+              ? { address: FAKE_EVM_WALLET, chain: "hood", wei: null, tokens: null }
+              : { address: FAKE_EVM_WALLET, chain: "hood", wei: script().evmWei ?? "0", tokens: (script().evmTokens ?? []).map((t) => ({ chain: "hood", ...t })) },
+          ],
+          tee: (script().teeWallets ?? []).filter((w) => w.chain === "hood").map((w) => ({ id: w.id, address: w.address, ...(w.label ? { label: w.label } : {}), active: w.active ?? true, chain: "hood", wei: w.wei ?? "0", tokens: [] })),
+          unavailable: script().hoodUnread ? [{ address: FAKE_EVM_WALLET }] : [],
           unpriced: 0,
           unpricedByReason: {},
         },
@@ -475,10 +516,10 @@ function answer(name: string, args: Record<string, unknown>, behaviour: Behaviou
             success: true,
             paper: true,
             clientTradeId: id,
-            chain: "solana",
+            chain: chainOfToken(token(args.mint) ?? {}),
             side: args.side,
             mint: args.mint,
-            quoteAsset: "sol",
+            quoteAsset: chainOfToken(token(args.mint) ?? {}) === "hood" ? "eth" : "sol",
             // As recorded: what was spent, and what the quote said would come back.
             ...(args.side === "buy" ? paperBuy(String(args.mint), String(args.amount ?? "0")) : {}),
             // A sell by amount: what the quote said would come back, in SOL (Candle's paper keeps no balance to take a percent of).
@@ -489,7 +530,7 @@ function answer(name: string, args: Record<string, unknown>, behaviour: Behaviou
             replay: false,
             note: "Recorded from the quote. No order was placed, and no money moved.",
           }
-        : { success: true, status: "executed", clientTradeId: id, chain: "solana", signature: `SigFake${id.slice(0, 8)}`, ...liveAmounts(args) }
+        : { success: true, status: "executed", clientTradeId: id, chain: chainOfToken(token(args.mint) ?? {}), signature: `SigFake${id.slice(0, 8)}`, ...liveAmounts(args) }
       const resolved =
         behaviour === "sell-to-paper"
           ? { percent: args.percent }
@@ -504,7 +545,24 @@ function answer(name: string, args: Record<string, unknown>, behaviour: Behaviou
       const id = String(args.clientSwapId ?? crypto.randomUUID())
       const stored = ledger()[id]
       if (stored) return text(stored.result)
-      const result = { clientSwapId: id, success: true, payload: { from: args.from, to: args.to, hashes: [`SigFake${id.slice(0, 8)}`] } }
+      // Candle's 200 (agent.ts runSwap): no status of its own; what it settled is `payload.settlement`
+      // (lib/fill-measure.ts), the deposit's legs and, once measured, `settledOutRaw`. A bridge's comes back as
+      // `bridgeSettlement` says; a swap on one chain settles in its one transaction.
+      const from = SWAP_ASSETS[String(args.from)]
+      const to = SWAP_ASSETS[String(args.to)]
+      const hash = `SigFake${id.slice(0, 8)}`
+      const inRaw = from ? BigInt(Math.round(Number(args.amount ?? 0) * 10 ** Math.min(from.decimals, 9))) * 10n ** BigInt(Math.max(0, from.decimals - 9)) : 0n
+      const outRaw = from && to ? ((inRaw * BigInt(Math.round(from.usd() * 1e6)) * 10n ** BigInt(to.decimals)) / (BigInt(Math.round(to.usd() * 1e6)) * 10n ** BigInt(from.decimals))).toString() : "0"
+      const bridge = from !== undefined && to !== undefined && from.chain !== to.chain
+      const state = bridge ? (script().bridgeSettlement ?? "settled") : "settled"
+      // A bridge that failed after its deposit landed is Relay's refund: the deposit's leg confirmed.
+      const legs = [{ chain: from?.chain ?? "solana", hash, status: "confirmed" }]
+      const settlement = { state, legs, in: { asset: String(args.from), raw: inRaw.toString() }, expectedOutRaw: outRaw, ...(state === "settled" ? { settledOutRaw: outRaw, settledOutSource: bridge ? "bridge_fill" : "tx_balance_delta" } : {}) }
+      const result = {
+        clientSwapId: id,
+        success: true,
+        payload: { hashes: [hash], expectedOutRaw: outRaw, outDecimals: to?.decimals ?? 9, statusChecks: bridge ? ["https://relay.example.invalid/intents/status?requestId=0xfake"] : [], settlement, receiptStored: true },
+      }
       remember(id, { kind: "swap", body: args, result })
       return text(result)
     }

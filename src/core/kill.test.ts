@@ -13,8 +13,12 @@ import { Journal } from "./journal"
 import { KILL_WORDING, type KillDeps, type KillReport, KillSwitch, pausedInJournal, UNSAVED_WORDS } from "./kill"
 import { readViewToken } from "./tokens"
 import { DaySpend } from "./limits"
+import { sequencedFailure } from "./reconcile"
 
 const MOON = "MoonFake11111111111111111111111111111111111"
+// The fake Candle's embedded wallets, Solana's and the EVM one.
+const FAKE_WALLET = "WalletFake111111111111111111111111111111111"
+const FAKE_EVM_WALLET = "0x00000000000000000000000000000000000Fa4e1"
 const cores: TestCore[] = []
 afterEach(async () => {
   for (const c of cores.splice(0)) await c.close()
@@ -256,6 +260,21 @@ describe("kill", () => {
       await again.stop("test")
     }
   })
+
+  test("where you stand, on a Hood account: the embedded EVM wallet is the agents' too, named on Hood, its ETH said as ETH", async () => {
+    const TOKEN = "0x00000000000000000000000000000000000b0B31"
+    const hood = { evmWei: "500000000000000000", ethUsd: 3_000, evmTokens: [{ mint: TOKEN, amountRaw: "1000000000000000000000", decimals: 18 }], markets: [{ mint: TOKEN, symbol: "HTOK", priceUsd: 2, chain: "hood" }] }
+    const c = await startTestCore({}, { candle: { momentum: hood, swing: hood } })
+    cores.push(c)
+    const view = await c.view()
+    await view.request("subscribe", { topics: ["portfolio"] })
+    await until(() => view.events.some((e) => e.topic === "portfolio" && JSON.stringify(e.data).includes(FAKE_EVM_WALLET)))
+    const { report } = (await view.request("kill", {})).result as { report: KillReport }
+    const evm = report.standing.wallets.find((w) => w.wallet === FAKE_EVM_WALLET)
+    expect(evm).toMatchObject({ name: "embedded on Hood", nativeSymbol: "ETH", chain: "hood", solUsd: 1_500 })
+    expect(evm!.agents.sort()).toEqual(["momentum", "swing"])
+    expect(report.standing.wallets.find((w) => w.wallet === FAKE_WALLET)).toMatchObject({ name: "embedded", nativeSymbol: "SOL", chain: "solana" })
+  })
 })
 
 describe("the state behind paused", () => {
@@ -278,7 +297,7 @@ describe("the state behind paused", () => {
       engine: { cancelAll: async () => [] },
       spend: new DaySpend(),
       limitsFor: () => ({ perDayUsd: 50 }),
-      walletOf: () => undefined,
+      walletsOf: () => [],
       portfolio: () => undefined,
       prices: { usd: () => undefined },
       keyPrefix: () => "momeAb3d",
@@ -288,6 +307,37 @@ describe("the state behind paused", () => {
     })
     return { k, journal, dir, statePath, published }
   }
+
+  test("where you stand lists a known Hood account's embedded wallet Candle couldn't read, as unread; a Solana-only account's stays out", async () => {
+    const unread = {
+      embedded: [{ chain: "solana", address: FAKE_WALLET, lamports: "2000000000", tokens: [] }],
+      tee: [],
+      hood: { embedded: [{ address: FAKE_EVM_WALLET, chain: "hood", wei: null, tokens: null }], tee: [], unavailable: [FAKE_EVM_WALLET] },
+    }
+    const standing = async (chains: readonly ("solana" | "hood")[]) => {
+      const { k, journal, dir } = await open([], undefined, { walletsOf: () => [FAKE_WALLET, FAKE_EVM_WALLET], portfolio: () => ({ result: unread, readAt: Date.now() }), chains: () => chains })
+      const { report } = await k.kill("v1")
+      await journal.close()
+      rmSync(dir, { recursive: true, force: true })
+      return report.standing.wallets
+    }
+    const known = (await standing(["solana", "hood"])).find((w) => w.wallet === FAKE_EVM_WALLET)
+    expect(known?.name).toBe("embedded on Hood")
+    expect(known?.solUsd).toBeNull()
+    expect(known?.tokensUsd).toBeNull()
+    expect((await standing(["solana"])).map((w) => w.wallet)).toEqual([FAKE_WALLET])
+  })
+
+  test("a Hood trade whose job Candle ended isn't in flight: nothing reads it, and its card says what it ended with", async () => {
+    const job = { status: "failed", errorCode: "SWAP_FAILED", operation: { legs: [{ kind: "approve", status: "confirmed" }, { kind: "trade", status: "failed" }] } }
+    const ended = { opId: "op-h", cardId: "c-h", state: "unknown", agent: "momentum", kind: "trade", result: job, error: sequencedFailure(job) }
+    const open1 = { opId: "op-o", cardId: "c-o", state: "unknown", agent: "momentum", kind: "trade" }
+    const { k, journal, dir } = await open([], undefined, { operations: { list: () => [ended, open1] as never } })
+    const { report } = await k.kill("v1")
+    await journal.close()
+    rmSync(dir, { recursive: true, force: true })
+    expect(report.inFlight.map((l) => l.opId)).toEqual(["op-o"])
+  })
 
   test("either the file or the journal saying paused means paused", async () => {
     const cases: [{ type: string }[], unknown, boolean][] = [

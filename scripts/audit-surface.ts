@@ -34,7 +34,7 @@ export const METHODS: Record<string, string> = {
   "onboarding.harness": "opens a harness's own sign-in in the pane",
   "onboarding.test": "one test message on an engine",
   "onboarding.limits": "writes an agent's limits into config.toml",
-  "onboarding.paper": "starts on paper",
+  "onboarding.fundLater": "goes past the deposit unfunded; setup ends live",
   "autonomy.set": "a wallet's setting: ask every time, or trade inside two figures with no card",
   "triggers.list": "every trigger, its state, and the plan gate",
   "triggers.set": "switches a trigger off, or back on as it was approved (the main view)",
@@ -82,6 +82,7 @@ export const METHODS: Record<string, string> = {
   "view.pin": "pins a token pane",
   "view.unpin": "unpins a token pane",
   "view.signals": "a Signals pane's filters",
+  "view.chain": "the chain every pane shows",
   "view.pop": "names the pane a popped view shows",
   "view.active": "the view the person last used",
   "view.answer": "a view's answer to the agent's ask to change the screen",
@@ -121,6 +122,7 @@ export const METHODS: Record<string, string> = {
 /** The core's own agent tools, beside Candle's: what each reaches. */
 export const CORE_TOOLS: Record<string, string> = {
   candle_cli: "the user's candle CLI under the command table: reads at once, the rest as cards or in the pane",
+  candle_bridge: "a bridge between two of the account's own wallets (a key's TEE wallets through the candle CLI, or the embedded wallets through candle_swap), always as a card, live only",
   harness_show_wallets: "which wallets the panes show",
   harness_name_wallets: "renames wallets, with an undo",
   harness_group_wallets: "wallet groups, with an undo",

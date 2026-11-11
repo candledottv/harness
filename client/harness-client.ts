@@ -82,6 +82,8 @@ export type ExitState = "selling" | "waiting" | "held" | "sold" | "failed" | "re
 export interface Position {
   id: string
   mint: string
+  /** The chain it was bought on. */
+  chain: "solana" | "hood"
   symbol?: string
   mode: "paper" | "live"
   wallet: string
@@ -237,9 +239,13 @@ export class HarnessClient {
     return this.hello
   }
 
-  /** Buys a token, in dollars. Waits for how it ended unless `wait: false`. */
-  buy(p: { mint: string; amountUsd: number; exits?: Exits; request?: string }, o: { wait?: boolean; waitMs?: number } = {}): Promise<TradeAnswer> {
-    return this.trade("bot.buy", { request: p.request ?? newRequestId(), mint: p.mint, amountUsd: p.amountUsd, ...(p.exits ? { exits: p.exits } : {}) }, o)
+  /**
+   * Buys a token, in dollars. `chain` is the token's chain where it names one ("solana", "hood"): the core checks the
+   * address can be on it, and that the bot's wallet pays there. Left out, the address's own. Waits for how it ended
+   * unless `wait: false`.
+   */
+  buy(p: { mint: string; amountUsd: number; chain?: "solana" | "hood"; exits?: Exits; request?: string }, o: { wait?: boolean; waitMs?: number } = {}): Promise<TradeAnswer> {
+    return this.trade("bot.buy", { request: p.request ?? newRequestId(), mint: p.mint, amountUsd: p.amountUsd, ...(p.chain ? { chain: p.chain } : {}), ...(p.exits ? { exits: p.exits } : {}) }, o)
   }
 
   /** Sets or changes the exits the core holds on one of its positions (by id, or its oldest in a token); null clears them. */

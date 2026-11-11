@@ -104,3 +104,35 @@ describe("a failed read", () => {
     expect(texts("new", list("new", [], { at: null, failed: { at: NOW, words: "INTERNAL" } }), 80)).toEqual(["Couldn't read it: INTERNAL. Trying again shortly."])
   })
 })
+
+describe("Hood's lists, as Candle sends them", () => {
+  const HOOD = (end: string) => `0x4b1d000000000000000000000000000000${end}`
+  test("a new Hood token with no creation time takes its age from when Candle first saw it (most new Hood tokens come so)", () => {
+    const rows = feedRows({ tokens: [{ chain: "hood", address: HOOD("00ab1d"), symbol: "FIZZ", marketCap: 9_536, createdAt: null, firstSeenAt: NOW - 7 * 60_000 }] }, "hood")!
+    expect(rows[0]!.createdAt).toBe(NOW - 7 * 60_000)
+    expect(texts("new", list("new", rows), 30)[1]).toBe("FIZZ      7m       —  $9.5K")
+    // Its own creation time wins where there is one.
+    expect(feedRows({ tokens: [{ chain: "hood", address: HOOD("00ab1d"), symbol: "FIZZ", createdAt: NOW - 60_000, firstSeenAt: NOW - 7 * 60_000 }] }, "hood")![0]!.createdAt).toBe(NOW - 60_000)
+  })
+
+  test("a market cap of nothing shows missing, never $0", () => {
+    const l = list("new", [{ mint: HOOD("000001"), symbol: "MOON", marketCap: 0, priceUsd: null, change1h: null, createdAt: NOW - 60_000 }])
+    expect(texts("new", l, 30)[1]).toBe("MOON      1m       —      —")
+  })
+
+  test("a ticker the list holds more than once says which by its address's end: in the name's column, else the launch column, else its own cell", () => {
+    const copies = list("new", [
+      { mint: HOOD("00ab1d"), symbol: "PAYOLA", name: "Payola", marketCap: 242_000, priceUsd: null, change1h: null, createdAt: NOW - 5 * 60_000, where: "hood" },
+      { mint: HOOD("0077c2"), symbol: "PAYOLA", name: "Payola", marketCap: 54_800, priceUsd: null, change1h: null, createdAt: NOW - 9 * 60_000, where: "hood" },
+      { mint: HOOD("000aaa"), symbol: "ECHO", marketCap: 10_900, priceUsd: null, change1h: null, createdAt: NOW - 60_000, where: "hood" },
+    ])
+    // Narrow: the token's own cell.
+    expect(texts("new", copies, 30).slice(1)).toEqual(["PA…ab1d   5m       —  $242K", "PA…77c2   9m       — $54.8K", "ECHO      1m       — $10.9K"])
+    // With the launch column: the address's end in it, the ticker whole.
+    expect(texts("new", copies, 38).slice(1)).toEqual(["PAYOLA    5m       —  $242K  …ab1d", "PAYOLA    9m       — $54.8K  …77c2", "ECHO      1m       — $10.9K  hood"])
+    // With the name's column: there, where it launched kept; a name that differs from the ticker after it.
+    expect(texts("new", copies, 64).slice(1)).toEqual(["PAYOLA    5m       —  $242K  hood    …ab1d", "PAYOLA    9m       — $54.8K  hood    …77c2", "ECHO      1m       — $10.9K  hood"])
+    const named = list("new", copies.rows.map((r, i) => ({ ...r, name: i === 0 ? "Payola Cat" : r.name })))
+    expect(texts("new", named, 64)[1]).toBe("PAYOLA    5m       —  $242K  hood    …ab1d Payola Cat")
+  })
+})

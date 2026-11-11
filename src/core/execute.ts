@@ -9,11 +9,31 @@ import type { ToolOutcome } from "./candle-mcp"
 import type { Card } from "./cards"
 import { pausedMessage, pausedStops, resultWasPaper } from "./classify"
 import { rowFor } from "./cli-table"
-import { type Fill, readFill } from "./fill"
+import { type Fill, readFill, receivedOf, swapReceived } from "./fill"
 import type { Journal, JournalRow } from "./journal"
 import type { Side } from "./limits"
-import { nextPollMs, readJob, type TradeRead } from "./reconcile"
+import { nextPollMs, readJob, sequencedFailure, type TradeRead } from "./reconcile"
+import { candleJobFailed, notFollowedFurther } from "./trade-log"
 import type { OperationState } from "./tool-face"
+import { type ChainSlug, chainField, maybeChain, sameAddress, storedChain } from "../shared/chains"
+import {
+  BRIDGE_FAST_MS,
+  BRIDGE_POLL_MS,
+  BRIDGE_SLOW_POLL_MS,
+  bridgeAnswered,
+  bridgeFactsOf,
+  bridgeMapped,
+  bridgeNotFollowed,
+  type BridgeRead,
+  embeddedBridgeStatus,
+  embeddedPastTwoHours,
+  expectedOutOf,
+  landingRose,
+  nextBridgeReadMs,
+  noAnswerMapped,
+  unfollowedMapped,
+} from "./bridge"
+import { requestsOf } from "./key-budget"
 
 /**
  * A debug switch for checking reconciliation: the next trade or swap goes to Candle, and its
@@ -69,6 +89,8 @@ export interface Operation {
   agent: string
   mode: Card["mode"]
   params: Record<string, unknown>
+  /** The chain it acts on, as its card had it. */
+  chain?: ChainSlug
   state: OperationState
   startedAt: number
   /** When it reached an end (succeeded, failed, refused, abandoned): the receipt's "filled in 4.2 s". */
@@ -103,6 +125,45 @@ export interface Operation {
   autoResent?: boolean
   /** The asset its card worked out it settles in: its fill is read in it when Candle's answer names none. */
   settles?: string
+  /**
+   * A Hood TEE wallet's trade waiting for the wallet's last one: Candle runs one operation at a time on it (WALLET_BUSY),
+   * so it's sent when the one it's behind settles. Nothing has been sent while this is set.
+   */
+  waitingFor?: string
+  /** An embedded bridge: the landing wallet's balance of what it brings, read before it was sent, in raw units. */
+  landingBefore?: string
+}
+
+/** Whether an operation runs through a wallet Candle lets run one operation at a time: an EVM chain's TEE wallet. */
+const oneAtATime = (op: Pick<Operation, "route" | "wallet" | "chain">): boolean => op.route === "cli" && op.wallet !== undefined && maybeChain(op.chain)?.family === "evm"
+
+/** The longest Candle holds a Hood TEE wallet for one operation: its lock goes on completion, failure, or after 30 minutes. */
+export const WALLET_HOLD_MS = 30 * 60_000
+
+/** A job's status where an answer carries one: the job itself, or the body around it. */
+function jobStatusOf(result: unknown): unknown {
+  const body = typeof result === "object" && result !== null && !Array.isArray(result) ? (result as Record<string, unknown>) : undefined
+  const job = typeof body?.job === "object" && body.job !== null ? (body.job as Record<string, unknown>) : body
+  return job?.status
+}
+
+/**
+ * Whether Candle has let an operation's wallet go, whatever state the core gives it: its job ended (`failed`, which
+ * may still have filled, or `confirmed`), or a bridge's deposit landed (Relay fills from its own wallet), or Candle
+ * can't say more of a bridge (uncertain, or past its two hours).
+ */
+function candleLetGo(op: Pick<Operation, "kind" | "result" | "error">): boolean {
+  const status = jobStatusOf(op.result)
+  if (status === "failed" || status === "confirmed") return true
+  if (op.kind !== "bridge") return false
+  if (op.error?.code === "BRIDGE_UNCERTAIN" || op.error?.code === "BRIDGE_PAST_TWO_HOURS") return true
+  const stands = (op.result as { bridgeStatus?: { phase?: unknown; landed?: unknown } } | undefined)?.bridgeStatus
+  return stands?.landed === true || stands?.phase === "filling" || stands?.phase === "filled"
+}
+
+/** What one read of an open bridge asks of its key: a TEE bridge's status read, or an embedded one's portfolio read (its balance), or its replay. */
+export function bridgeReadRequests(op: Pick<Operation, "route" | "result">): number {
+  return op.route !== "cli" && bridgeAnswered(op.result) ? requestsOf("candle_get_portfolio") : 1
 }
 
 export interface Mapped {
@@ -191,9 +252,17 @@ const REPLAYS = new Set(["candle_swap", "candle_stake", "candle_unstake", "candl
 const record = (value: unknown): Record<string, unknown> | undefined =>
   typeof value === "object" && value !== null && !Array.isArray(value) ? (value as Record<string, unknown>) : undefined
 
-/** Plain messages for the refusals a trader meets, from docs.candle.tv/developers/agent-trading and docs.candle.tv/developers/agent-access. */
-export function refusalMessage(code: string, error: Record<string, unknown>): string | undefined {
+/**
+ * Plain messages for the refusals a trader meets, from docs.candle.tv/developers/agent-trading and docs.candle.tv/developers/agent-access.
+ * `chain` is the operation's own, where a message names the chain's asset; none is Solana, as a stored row reads.
+ */
+export function refusalMessage(code: string, error: Record<string, unknown>, chain?: ChainSlug): string | undefined {
   switch (code) {
+    case "INSUFFICIENT_OWNER_BALANCE": {
+      // Candle's own text names the wallet's address at most; it never says that funding it fixes this.
+      const asset = maybeChain(chain)?.native.symbol ?? "SOL"
+      return `The wallet paying doesn't hold enough ${asset} for this trade and its fees. Nothing was sent. Send ${asset} to it (its address is in the Wallets pane, ⧉), or trade less.`
+    }
     case "EMBEDDED_WALLET_NOT_PERMITTED":
       return "This agent's key isn't allowed to trade from the account's embedded wallet. The owner allows it with candle keys update <prefix> --embedded-wallet allow."
     case "DELEGATION_REVOKED":
@@ -239,7 +308,7 @@ export function refusalMessage(code: string, error: Record<string, unknown>): st
 }
 
 /** A child's outcome for a card's tool call, as an operation state. */
-export function outcomeOf(kind: Card["kind"], outcome: ToolOutcome): Mapped {
+export function outcomeOf(kind: Card["kind"], outcome: ToolOutcome, chain?: ChainSlug): Mapped {
   if (outcome.kind === "lost") return { state: "unknown", reason: `no answer (${outcome.reason.replace("_", " ")})` }
   const body = record(outcome.kind === "ok" ? outcome.result : outcome.body)
   // candle_trade and candle_launch_and_seed wrap the API body under `api`; the swap and the rest use
@@ -249,13 +318,13 @@ export function outcomeOf(kind: Card["kind"], outcome: ToolOutcome): Mapped {
   if (outcome.kind === "ok") {
     const status = typeof api?.status === "string" ? api.status.toLowerCase() : ""
     const paper = kind === "trade" && resultWasPaper(outcome.result)
-    if (status === "failed") return { state: "failed", result: outcome.result, error: errorOf("OPERATION_FAILED", record(api?.error) ?? {}) }
+    if (status === "failed") return { state: "failed", result: outcome.result, error: errorOf("OPERATION_FAILED", record(api?.error) ?? {}, chain) }
     return { state: PENDING.has(status) ? "pending" : "succeeded", result: outcome.result, ...(paper ? { paper } : {}) }
   }
 
   const raw = record(api?.error) ?? {}
   const code = outcome.code
-  const error = errorOf(code, raw)
+  const error = errorOf(code, raw, chain)
   if (LOCAL_REFUSALS.has(code)) return { state: "refused", error }
   if (MCP_CARD_KINDS.has(kind)) {
     if ((code === "IDEMPOTENCY_CONFLICT" && outcome.retryable) || STILL_RUNNING.has(code)) return { state: "pending", result: outcome.body, error }
@@ -285,11 +354,11 @@ export function outcomeOf(kind: Card["kind"], outcome: ToolOutcome): Mapped {
   return { state: "unknown", result: outcome.body, error, reason: `stage ${stage}` }
 }
 
-function errorOf(code: string, raw: Record<string, unknown>): OperationError {
+function errorOf(code: string, raw: Record<string, unknown>, chain?: ChainSlug): OperationError {
   const serverText = typeof raw.message === "string" ? terminalText(raw.message, { maxLength: 500 }) : code
   return {
     code,
-    message: refusalMessage(code, raw) ?? serverText,
+    message: refusalMessage(code, raw, chain) ?? serverText,
     retryable: raw.retryable === true,
     ...(typeof raw.stage === "string" ? { stage: raw.stage } : {}),
     ...(code === "KEY_LIMIT_REACHED" ? keyLimitFields(raw) : {}),
@@ -298,12 +367,25 @@ function errorOf(code: string, raw: Record<string, unknown>): OperationError {
 }
 
 const SETTLED: ReadonlySet<OperationState> = new Set(["succeeded", "failed", "refused", "abandoned"])
+/** A trade that waited for its wallet past its card's time: refused, never sent at a price nobody saw. */
+const WAITED_TOO_LONG: OperationError = { code: "WAITED_TOO_LONG", message: "It waited for the wallet's last trade past its card's 60 s, so it wasn't sent at the price the card showed. Nothing was sent; ask for it again.", retryable: false }
 /** The operations one snapshot or list carries: under an attach message's megabyte, with room for its envelope. */
 export const OPERATIONS_LIST_BYTES = 768 * 1024
 const TEN_MINUTES = 10 * 60_000
 export const CALL_TIMEOUT_MS = 60_000
 
 type Child = { call(name: string, args: Record<string, unknown>, opts?: { timeoutMs?: number }): Promise<ToolOutcome> }
+
+/** The tool Candle's server runs an operation as: an embedded bridge is Candle's candle_swap between the account's two embedded wallets. */
+const mcpTool = (op: Pick<Operation, "kind" | "tool">): string => (op.kind === "bridge" ? "candle_swap" : op.tool)
+/** What's sent to Candle: a bridge's own words for its end (`bridge`) stay with the card. */
+function mcpParams(op: Pick<Operation, "kind" | "params">): Record<string, unknown> {
+  if (op.kind !== "bridge") return op.params
+  const { bridge: _facts, ...rest } = op.params
+  return rest
+}
+/** How Candle's answer is read: an embedded bridge's is candle_swap's. */
+const mcpKind = (op: Pick<Operation, "kind">): Card["kind"] => (op.kind === "bridge" ? "swap" : op.kind)
 
 /** A CLI card row with a read-back (cli-table.ts `card.readBack`): what the debug switch may drop. */
 function readsBack(op: Operation): boolean {
@@ -345,8 +427,12 @@ export class Operations {
       cli?: (op: Operation) => Promise<Mapped>
       /** Reads a CLI card row back by its rule (cli-cards.ts), or undefined when there's none to make now. */
       cliRead?: (op: Operation) => Promise<{ mapped: Mapped; detail: string } | undefined>
-      /** Runs and reads back a TEE wallet's trade or swap (cli-trade.ts). */
-      cliTrades?: { execute(op: Operation): Promise<Mapped>; read(op: Operation): Promise<TradeRead> }
+      /** Runs and reads back a TEE wallet's trade, swap or bridge (cli-trade.ts). */
+      cliTrades?: { execute(op: Operation): Promise<Mapped>; read(op: Operation): Promise<TradeRead>; readBridge?(op: Operation): Promise<BridgeRead> }
+      /** Whether the key's budget has room for one read of an open bridge now (`requests` of Candle's); with none, it's read at its next turn. */
+      bridgeBudget?: (agent: string, requests?: number) => boolean
+      /** An embedded bridge's landing wallet's balance of what it brings, in raw units; undefined when it can't be read. */
+      bridgeLanding?: (op: Operation) => Promise<bigint | undefined>
       /** Runs an approved Hacc card, and reads one nobody saw end back from Hacc's state. */
       hacc?: { run(op: Operation): Promise<Mapped>; read(op: Operation): Promise<Mapped | undefined> }
       /** Runs an approved narrowing of a wallet's autonomy in the core, and reads one a restart cut off. */
@@ -407,10 +493,18 @@ export class Operations {
     return all.filter((op) => chosen.has(op))
   }
 
+  /** The bridges being followed now: sent, and not yet ended or left in their own words. */
+  openBridges(): Operation[] {
+    return [...this.ops.values()].filter((op) => op.kind === "bridge" && op.route !== "pane" && (op.state === "pending" || op.state === "unknown") && !bridgeNotFollowed(op.error?.code))
+  }
+
   /** Whether anything is in flight or still being read back: the core stays up for it. */
   busy(): boolean {
     return this.watches.size > 0 || [...this.ops.values()].some((op) => op.state === "submitting")
   }
+
+  /** Set while a restart rebuilds from the journal: an operation settled then wakes nothing waiting behind it. */
+  private rebuilding = false
 
   stop(): void {
     this.stopped = true
@@ -418,7 +512,11 @@ export class Operations {
     this.watches.clear()
   }
 
-  /** Write-ahead `operation.submitting`, then the call, then the outcome. The id never changes. */
+  /**
+   * Write-ahead `operation.submitting`, then the call, then the outcome. The id never changes. A Hood TEE wallet's trade
+   * whose wallet is running another first waits, written down as `operation.waiting`, and returns at once; it's sent
+   * when that one settles (`wake`).
+   */
   async execute(card: Card): Promise<Operation> {
     const now = this.deps.now()
     const op: Operation = {
@@ -429,6 +527,7 @@ export class Operations {
       agent: card.agent,
       mode: card.mode,
       params: card.params,
+      ...(card.chain ? { chain: card.chain } : {}),
       state: "submitting",
       startedAt: now,
       cardExpiresAt: Date.parse(card.expiresAt),
@@ -436,6 +535,130 @@ export class Operations {
       ...(card.side ? { side: card.side } : {}),
       ...(card.origin?.role === "core" && card.origin.bot?.act === "exit" ? { botExit: true } : {}),
       ...(card.settles ? { settles: card.settles } : {}),
+    }
+    const behind = oneAtATime(op) ? this.lastOnWallet(op) : undefined
+    if (behind) {
+      op.waitingFor = behind.opId
+      this.ops.set(op.opId, op)
+      try {
+        await this.deps.journal.append({ type: "operation.waiting", mode: op.mode, ...this.writeAhead(op), behind: behind.opId })
+      } catch (error) {
+        this.ops.delete(op.opId)
+        throw error
+      }
+      this.deps.onChange?.(op)
+      this.waitTimer(op)
+      return op
+    }
+    return this.submit(op)
+  }
+
+  /** The operation's write-ahead fields, as `operation.submitting` and `operation.waiting` carry them for a restart to rebuild. */
+  private writeAhead(op: Operation): Record<string, unknown> {
+    return {
+      mode: op.mode,
+      agent: op.agent,
+      opId: op.opId,
+      cardId: op.cardId,
+      kind: op.kind,
+      tool: op.tool,
+      params: op.params,
+      ...(op.chain ? { chain: op.chain } : {}),
+      cardExpiresAt: op.cardExpiresAt,
+      ...(op.route ? { route: op.route, wallet: op.wallet } : {}),
+      ...(op.side ? { side: op.side } : {}),
+      ...(op.botExit ? { botExit: true } : {}),
+      ...(op.settles ? { settles: op.settles } : {}),
+    }
+  }
+
+  /**
+   * Whether a sent operation still holds its one-at-a-time wallet, as Candle's own lock does: until it has an end, or
+   * Candle has let the wallet go (candleLetGo), or 30 minutes have passed since it was sent. Its own state stays as it
+   * is ("may have filled" included); only the queue behind it moves.
+   */
+  private holds(op: Operation): boolean {
+    if (SETTLED.has(op.state) || op.waitingFor !== undefined) return false
+    if (this.deps.now() - op.startedAt >= WALLET_HOLD_MS) return false
+    return !candleLetGo(op)
+  }
+
+  /** The newest operation on the same one-at-a-time wallet that holds it or waits for it, or none. */
+  private lastOnWallet(op: Operation): Operation | undefined {
+    let last: Operation | undefined
+    for (const other of this.ops.values()) {
+      if (other.opId === op.opId || !oneAtATime(other) || !sameAddress(other.wallet, op.wallet) || SETTLED.has(other.state)) continue
+      if (other.waitingFor === undefined && !this.holds(other)) continue
+      if (!last || other.startedAt >= last.startedAt) last = other
+    }
+    return last
+  }
+
+  /**
+   * A waiting trade's own timer: at its card's end it's refused in words, never left waiting; before that, when what
+   * holds its wallet reaches its 30 minutes, the wallet is woken.
+   */
+  private waitTimer(op: Operation): void {
+    if (this.stopped) return
+    const now = this.deps.now()
+    const holders = [...this.ops.values()].filter((o) => o.opId !== op.opId && oneAtATime(o) && sameAddress(o.wallet, op.wallet) && this.holds(o))
+    const freed = Math.min(...holders.map((o) => o.startedAt + WALLET_HOLD_MS))
+    const due = Math.min(op.cardExpiresAt, freed)
+    const run = async () => {
+      this.watches.delete(op.opId)
+      if (op.waitingFor === undefined || SETTLED.has(op.state)) return
+      if (this.deps.now() >= op.cardExpiresAt) {
+        delete op.waitingFor
+        await this.settle(op, { state: "refused", error: WAITED_TOO_LONG })
+        return
+      }
+      await this.wake(op.wallet!)
+      if (op.waitingFor !== undefined && !SETTLED.has(op.state)) this.waitTimer(op)
+    }
+    this.watches.set(op.opId, this.schedule(run, Math.max(0, due - now)))
+  }
+
+  /**
+   * The next trade waiting on a wallet that's now free: the oldest, once nothing else on the wallet is running. The kill
+   * switch refuses a waiting buy, as it refuses one mid-approval; a card past its 60 s waited too long to run at its price.
+   */
+  private async wake(wallet: string): Promise<void> {
+    const onWallet = [...this.ops.values()].filter((o) => oneAtATime(o) && sameAddress(o.wallet, wallet) && !SETTLED.has(o.state))
+    if (onWallet.some((o) => o.waitingFor === undefined && this.holds(o))) return
+    const next = onWallet.filter((o) => o.waitingFor !== undefined).sort((a, b) => a.startedAt - b.startedAt)[0]
+    if (!next) return
+    delete next.waitingFor
+    this.cancelWatch(next.opId)
+    if (this.stoppedByPause(next)) {
+      await this.settle(next, { state: "refused", error: { code: "PAUSED", message: `${pausedMessage(next).split(". ")[0]}. The kill switch went on while it waited for the wallet's last trade, so nothing was sent.`, retryable: false } })
+      return
+    }
+    if (this.deps.now() > next.cardExpiresAt) {
+      await this.settle(next, { state: "refused", error: WAITED_TOO_LONG })
+      return
+    }
+    await this.submit(next, { waited: true })
+  }
+
+  /** Every trade waiting for its wallet, refused with nothing sent: the kill switch's, for each it stops. */
+  async refuseWaiting(): Promise<Operation[]> {
+    const out: Operation[] = []
+    for (const op of [...this.ops.values()]) {
+      if (op.waitingFor === undefined || SETTLED.has(op.state) || !this.stoppedByPause(op)) continue
+      delete op.waitingFor
+      await this.settle(op, { state: "refused", error: { code: "PAUSED", message: `${pausedMessage(op).split(". ")[0]}. The kill switch went on while it waited for the wallet's last trade, so nothing was sent.`, retryable: false } })
+      out.push(op)
+    }
+    return out
+  }
+
+  /** The write-ahead row, the call, and the outcome. */
+  private async submit(op: Operation, opts: { waited?: boolean } = {}): Promise<Operation> {
+    if (opts.waited) op.startedAt = this.deps.now()
+    // An embedded bridge's landing wallet, read before it goes: Candle's answer comes before Relay's fill, and its rise is how the fill is seen.
+    if (op.kind === "bridge" && op.route === undefined && op.landingBefore === undefined && this.deps.bridgeLanding) {
+      const before = await this.deps.bridgeLanding(op).catch(() => undefined)
+      if (before !== undefined) op.landingBefore = before.toString()
     }
     this.ops.set(op.opId, op)
     try {
@@ -448,15 +671,22 @@ export class Operations {
         kind: op.kind,
         tool: op.tool,
         params: op.params,
+        ...(op.chain ? { chain: op.chain } : {}),
         cardExpiresAt: op.cardExpiresAt,
         ...(op.route ? { route: op.route, wallet: op.wallet } : {}),
         ...(op.side ? { side: op.side } : {}),
         ...(op.botExit ? { botExit: true } : {}),
         ...(op.settles ? { settles: op.settles } : {}),
+        ...(op.landingBefore !== undefined ? { landingBefore: op.landingBefore } : {}),
       })
     } catch (error) {
       // Nothing was sent: the operation isn't left submitting for ever, and the approval sees the failure.
       this.ops.delete(op.opId)
+      if (opts.waited) {
+        // One that waited has no approval to see it: it's refused in words, and the next one behind it may go.
+        await this.settle(op, { state: "refused", error: { code: "JOURNAL_FAILED", message: "The core couldn't write it down before sending it, so nothing was sent.", retryable: false } }).catch(() => {})
+        return op
+      }
       throw error
     }
     this.deps.onChange?.(op)
@@ -464,8 +694,10 @@ export class Operations {
     if (await this.refusedByPause(op)) return op
     const mapped = await this.sendMapped(op)
     await this.settle(op, mapped)
-    if (op.state === "unknown") this.watch(op, 0)
-    else if (op.state === "pending") this.watch(op, 5_000)
+    // A bridge's end said in its own words is read no further.
+    if (op.state === "unknown" && !bridgeNotFollowed(op.error?.code)) this.watch(op, 0)
+    // A bridge's deposit is out: it's followed every 10 s, as the CLI's own wait reads a TEE bridge.
+    else if (op.state === "pending") this.watch(op, op.kind === "bridge" ? BRIDGE_POLL_MS : 5_000)
     return op
   }
 
@@ -482,13 +714,14 @@ export class Operations {
       agent: card.agent,
       mode: card.mode,
       params: card.params,
+      ...chainField(card.chain),
       state: "submitting",
       startedAt: this.deps.now(),
       cardExpiresAt: Date.parse(card.expiresAt),
       route: "pane",
     }
     this.ops.set(op.opId, op)
-    await this.deps.journal.append({ type: "operation.submitting", mode: op.mode, agent: op.agent, opId: op.opId, cardId: op.cardId, kind: op.kind, tool: op.tool, params: op.params, cardExpiresAt: op.cardExpiresAt, route: "pane", ticketId: detail.ticketId })
+    await this.deps.journal.append({ type: "operation.submitting", mode: op.mode, agent: op.agent, opId: op.opId, cardId: op.cardId, kind: op.kind, tool: op.tool, params: op.params, ...(op.chain ? { chain: op.chain } : {}), cardExpiresAt: op.cardExpiresAt, route: "pane", ticketId: detail.ticketId })
     await this.settle(op, { state: "pending", reason: "in the prompt pane" })
     return op
   }
@@ -550,7 +783,7 @@ export class Operations {
       }
     }
     if (op.state === "unknown") this.watch(op, 0)
-    else if (op.state === "pending") this.watch(op, 5_000)
+    else if (op.state === "pending") this.watch(op, op.kind === "bridge" ? BRIDGE_POLL_MS : 5_000)
     return op
   }
 
@@ -568,6 +801,7 @@ export class Operations {
       agent: card.agent,
       mode: card.mode,
       params: card.params,
+      ...chainField(card.chain),
       state: "submitting",
       startedAt: this.deps.now(),
       cardExpiresAt: Date.parse(card.expiresAt),
@@ -576,7 +810,7 @@ export class Operations {
     }
     this.ops.set(op.opId, op)
     try {
-      await this.deps.journal.append({ type: "operation.submitting", mode: op.mode, agent: op.agent, opId: op.opId, cardId: op.cardId, kind: op.kind, tool: op.tool, params: op.params, cardExpiresAt: op.cardExpiresAt, ...(op.route === "cli" ? { route: op.route, wallet: op.wallet } : op.route ? { route: op.route } : {}), ...(op.side ? { side: op.side } : {}) })
+      await this.deps.journal.append({ type: "operation.submitting", mode: op.mode, agent: op.agent, opId: op.opId, cardId: op.cardId, kind: op.kind, tool: op.tool, params: op.params, ...(op.chain ? { chain: op.chain } : {}), cardExpiresAt: op.cardExpiresAt, ...(op.route === "cli" ? { route: op.route, wallet: op.wallet } : op.route ? { route: op.route } : {}), ...(op.side ? { side: op.side } : {}) })
     } catch (error) {
       // Nothing was sent, as in execute: the operation isn't left submitting for ever, and the approval sees the failure.
       this.ops.delete(op.opId)
@@ -606,9 +840,13 @@ export class Operations {
    * landed while the core was down). `readBack` reads every unknown one again, once Candle is up.
    */
   async rebuild(rows: readonly JournalRow[]): Promise<string[]> {
+    const waited = new Set<string>()
+    this.rebuilding = true
     for (const row of rows) {
       if (typeof row.opId !== "string" || !row.type.startsWith("operation.")) continue
-      if (row.type === "operation.submitting") {
+      if (row.type === "operation.waiting") waited.add(row.opId)
+      if (row.type === "operation.submitting") waited.delete(row.opId)
+      if (row.type === "operation.submitting" || row.type === "operation.waiting") {
         this.ops.set(row.opId, {
           opId: row.opId,
           cardId: String(row.cardId),
@@ -618,6 +856,7 @@ export class Operations {
           agent: typeof row.agent === "string" ? row.agent : "",
           mode: row.mode,
           params: (row.params as Record<string, unknown>) ?? {},
+          ...chainField(storedChain(row.chain, (row.params as Record<string, unknown> | undefined)?.mint)),
           state: "submitting",
           startedAt: Date.parse(row.at),
           cardExpiresAt: typeof row.cardExpiresAt === "number" ? row.cardExpiresAt : 0,
@@ -626,6 +865,7 @@ export class Operations {
           ...(row.side === "buy" || row.side === "sell" || row.side === "swap" ? { side: row.side } : {}),
           ...(row.botExit === true ? { botExit: true } : {}),
           ...(typeof row.settles === "string" ? { settles: row.settles } : {}),
+          ...(typeof row.landingBefore === "string" && /^\d+$/.test(row.landingBefore) ? { landingBefore: row.landingBefore } : {}),
         })
         continue
       }
@@ -633,15 +873,31 @@ export class Operations {
       // Once is once across restarts too.
       if (op && row.type === "operation.resend" && row.by === CORE_RESEND) op.autoResent = true
       const state = row.type.slice("operation.".length)
-      if (op && ["pending", "succeeded", "failed", "refused", "unknown", "abandoned"].includes(state)) op.state = state as OperationState
+      if (op && ["pending", "succeeded", "failed", "refused", "unknown", "abandoned"].includes(state)) {
+        op.state = state as OperationState
+        // A bridge is followed from where its last answer left it: its deposit, its quote, and an end said in its own
+        // words. A job Candle ended keeps the words it ended with.
+        if (op.kind === "bridge" || (state === "unknown" && candleJobFailed(row.result))) {
+          if (row.result !== undefined) op.result = row.result
+          const error = row.error as OperationError | undefined
+          if (error && typeof error.code === "string") op.error = error
+          else delete op.error
+        }
+      }
     }
     const turned: string[] = []
     for (const op of this.ops.values()) {
+      // Written down as waiting for its wallet, never as submitting: nothing was sent, and nothing sends it now.
+      if (op.state === "submitting" && waited.has(op.opId)) {
+        await this.settle(op, { state: "refused", error: { code: "NOT_SENT_RESTART", message: "The core restarted while this waited for its wallet's last trade, so it was never sent. Ask for it again if it's still wanted.", retryable: false } })
+        continue
+      }
       if (op.state === "submitting" || op.state === "pending") {
         await this.settle(op, { state: "unknown", reason: "core_restarted" })
         turned.push(op.opId)
       }
     }
+    this.rebuilding = false
     return turned
   }
 
@@ -688,11 +944,25 @@ export class Operations {
       }
       return mapped
     }
-    return outcomeOf(op.kind, await this.send(op))
+    return this.mcpMapped(op, await this.send(op))
+  }
+
+  /**
+   * Candle's MCP answer as an operation state. An embedded bridge's ok answer has no status of its own: where it stands
+   * is its `settlement`, and one on its way is followed by its landing wallet's balance, when one was read before it went.
+   */
+  private mcpMapped(op: Operation, outcome: ToolOutcome): Mapped {
+    const mapped = outcomeOf(mcpKind(op), outcome, op.chain)
+    if (op.kind !== "bridge" || outcome.kind !== "ok") return mapped
+    const facts = bridgeFactsOf(op.params)
+    const result = (record(outcome.result) ?? {}) as Record<string, unknown>
+    const bridged = bridgeMapped(embeddedBridgeStatus(result) ?? { phase: "depositing" }, { result, ...(facts ? { facts } : {}), sent: true })
+    if (bridged.state === "pending" && (op.landingBefore === undefined || expectedOutOf(result) === undefined)) return unfollowedMapped(bridged.result as Record<string, unknown>, facts)
+    return bridged
   }
 
   private async send(op: Operation): Promise<ToolOutcome> {
-    const outcome = await this.deps.pool.for(op.agent).call(op.tool, op.params, { timeoutMs: CALL_TIMEOUT_MS })
+    const outcome = await this.deps.pool.for(op.agent).call(mcpTool(op), mcpParams(op), { timeoutMs: CALL_TIMEOUT_MS })
     if (this.loseNext && (op.kind === "trade" || op.kind === "swap")) {
       this.loseNext = false
       return { kind: "lost", reason: "transport" }
@@ -708,6 +978,12 @@ export class Operations {
     if (mapped.partial) op.partial = mapped.partial
     if (mapped.reason) op.reason = mapped.reason
     const fill = op.state === "succeeded" ? this.fillOf(op, mapped) : undefined
+    // What it brought in, from Candle's answer, for its card's done line: never the card's own estimate again.
+    const received = op.state === "succeeded" && !mapped.paper ? (fill ? receivedOf(fill) : op.kind === "swap" ? swapReceived(mapped.result, op.params.to) : undefined) : undefined
+    if (received !== undefined && typeof mapped.result === "object" && mapped.result !== null && !Array.isArray(mapped.result) && (mapped.result as { received?: unknown }).received === undefined) {
+      mapped.result = { ...(mapped.result as Record<string, unknown>), received }
+      op.result = mapped.result
+    }
     await this.deps.journal.append({
       type: `operation.${op.state}`,
       mode: op.mode,
@@ -726,6 +1002,9 @@ export class Operations {
       this.cancelWatch(op.opId)
     }
     this.deps.onChange?.(op)
+    // The wallet is free once this has an end, or Candle has let it go: the next trade waiting on it goes. Unknown or
+    // pending holds it otherwise, as Candle does, for 30 minutes at most.
+    if (oneAtATime(op) && !this.holds(op) && !this.stopped && !this.rebuilding) void this.wake(op.wallet!).catch(() => {})
   }
 
   /** A trade's fill from its answer: the card gives the side and the mint, which the TEE route's answer doesn't name. */
@@ -737,7 +1016,7 @@ export class Operations {
     const argv = Array.isArray(op.params.argv) ? op.params.argv : undefined
     const fromArgv = argv && side ? argv[side === "buy" ? 2 : 1] : undefined
     const mint = typeof op.params.mint === "string" ? op.params.mint : typeof fromArgv === "string" ? fromArgv : undefined
-    const fill = readFill({ ...(side ? { side } : {}), ...(mint ? { mint } : {}), ...(op.settles ? { fallbackAsset: op.settles } : {}), wallet: op.route === "cli" && op.wallet ? op.wallet : "embedded", result: mapped.result, ...(mapped.paper ? { paper: true } : {}) })
+    const fill = readFill({ ...(side ? { side } : {}), ...(mint ? { mint } : {}), ...chainField(op.chain), ...(op.settles ? { fallbackAsset: op.settles } : {}), wallet: op.route === "cli" && op.wallet ? op.wallet : "embedded", result: mapped.result, ...(mapped.paper ? { paper: true } : {}) })
     if (!fill) return undefined
     const usd = this.deps.assetUsd?.(fill.asset)
     return usd !== undefined && Number.isFinite(usd) && usd > 0 ? { ...fill, assetUsd: usd } : fill
@@ -749,11 +1028,15 @@ export class Operations {
     if (op.route === "pane") return
     // A stopping core reads nothing back: the next core rebuilds every open operation from the journal.
     if (this.stopped) return
+    // One whose words say why it's read no further isn't read again.
+    if (op.state === "unknown" && notFollowedFurther(op)) return
     const run = async () => {
       this.watches.delete(op.opId)
       if (op.state !== "unknown" && op.state !== "pending") return
       // A CLI card row reads back by its own rule; less access has none.
       if (op.tool === "candle_cli") await this.readRowOnce(op)
+      // A TEE bridge is read by its id until it ends or its two hours pass.
+      else if (op.route === "cli" && op.kind === "bridge") await this.readBridgeOnce(op)
       // The CLI route has no replay: a TEE swap is read by `candle swap status`, a trade as the embedded wallet's are.
       else if (op.route === "cli") await this.readCliOnce(op)
       else if (op.kind === "hacc") await this.readHaccOnce(op)
@@ -761,7 +1044,9 @@ export class Operations {
       else if (op.kind === "trigger") await this.readTriggerOnce(op)
       else if (op.kind === "bot") await this.readBotOnce(op)
       else if (op.kind === "trade" || op.kind === "launch") await this.readJobOnce(op, op.kind)
-      else if (REPLAYS.has(op.tool)) await this.replayOnce(op)
+      // An embedded bridge is replayed until Candle answers, then followed by its landing wallet's balance.
+      else if (op.kind === "bridge") await this.readEmbeddedBridgeOnce(op)
+      else if (REPLAYS.has(mcpTool(op))) await this.replayOnce(op)
       // Fee claims, posts and profile edits have no read: they wait for the user.
     }
     this.watches.set(op.opId, this.schedule(run, delayMs))
@@ -785,9 +1070,12 @@ export class Operations {
       ...(read.found ? { state: read.state, job: read.job } : { detail: read.detail }),
     })
     if (read.found && (read.state === "succeeded" || read.state === "failed" || read.state === "refused")) {
-      await this.settle(op, { state: read.state, result: read.job })
+      // A failed Hood job says from its legs what may have gone out, never "nothing was sent" alone.
+      const error = read.state === "failed" ? sequencedFailure(read.job) : undefined
+      await this.settle(op, { state: read.state, result: read.job, ...(error ? { error } : {}) })
       return
     }
+    if (read.found && (await this.endedUnknown(op, read.job))) return
     if (!read.found && read.detail === NO_RECORD && (await this.resendLostExit(op))) return
     // A launch found submitted or confirming is in flight on Candle's side: pending, and read again.
     if (read.found && kind === "launch" && read.state === "pending" && op.state !== "pending") await this.settle(op, { state: "pending", result: read.job })
@@ -823,6 +1111,18 @@ export class Operations {
     if (read) await this.settle(op, read)
   }
 
+  /**
+   * A read that finds Candle's job ended `failed` while the core can't call it failed (a Hood trade whose trade step was
+   * sent may have filled): it stays unknown, written down with the job and its words, and nothing reads it again.
+   */
+  private async endedUnknown(op: Operation, job: Record<string, unknown>): Promise<boolean> {
+    if (op.kind === "bridge" || !candleJobFailed(job)) return false
+    const words = sequencedFailure(job)
+    if (!words) return false
+    if (!candleJobFailed(op.result) || op.error?.message !== words.message) await this.settle(op, { state: "unknown", result: job, error: words })
+    return true
+  }
+
   private async readCliOnce(op: Operation): Promise<void> {
     if (!this.deps.cliTrades) return
     const read = await this.deps.cliTrades.read(op)
@@ -836,9 +1136,14 @@ export class Operations {
       ...(read.found ? { state: read.state, job: read.job } : { detail: read.detail }),
     })
     if (read.found && (read.state === "succeeded" || read.state === "failed" || read.state === "refused")) {
-      await this.settle(op, { state: read.state, result: read.job })
+      // A failed Hood job says from its legs what may have gone out, never "nothing was sent" alone.
+      const error = read.state === "failed" ? sequencedFailure(read.job) : undefined
+      await this.settle(op, { state: read.state, result: read.job, ...(error ? { error } : {}) })
       return
     }
+    // A job Candle has ended that may still have filled: it stays unknown, in words that say so, its wallet is free,
+    // and it's read no further.
+    if (read.found && (await this.endedUnknown(op, read.job))) return
     if (!read.found && read.detail === NO_RECORD && (await this.resendLostExit(op))) return
     this.scheduleNext(op, nextPollMs(op.startedAt, this.deps.now()))
   }
@@ -899,8 +1204,9 @@ export class Operations {
    * twice: a swap, staking, a staking reward claim.
    */
   private async replayOnce(op: Operation): Promise<void> {
-    // After the card's lifetime, a request that never reached Candle would run now: that's the user's call.
-    if (this.deps.now() >= op.cardExpiresAt) return
+    // After the card's lifetime, a request that never reached Candle would run now: that's the user's call. A bridge
+    // between the account's own wallets goes on being asked, inside its ten minutes (retryReplay).
+    if (op.kind !== "bridge" && this.deps.now() >= op.cardExpiresAt) return
     // A replay of a request that never reached Candle would be its first send: none while the kill switch
     // stops its kind. It's tried again after a resume, inside the card's lifetime, and after that it's the user's call.
     if (this.stoppedByPause(op)) {
@@ -914,9 +1220,11 @@ export class Operations {
       delete op.held
       this.deps.onChange?.(op)
     }
-    const outcome = await this.deps.pool.for(op.agent).call(op.tool, op.params, { timeoutMs: CALL_TIMEOUT_MS })
+    // A bridge's replay is one of its follow's reads, through the key's budget; with no room, it's asked at its next turn.
+    if (op.kind === "bridge" && this.deps.bridgeBudget && !this.deps.bridgeBudget(op.agent, 1)) return this.retryReplay(op)
+    const outcome = await this.deps.pool.for(op.agent).call(mcpTool(op), mcpParams(op), { timeoutMs: CALL_TIMEOUT_MS })
     const running = outcome.kind === "error" && ((outcome.code === "IDEMPOTENCY_CONFLICT" && outcome.retryable) || STILL_RUNNING.has(outcome.code))
-    const mapped = running ? undefined : outcomeOf(op.kind, outcome)
+    const mapped = running ? undefined : this.mcpMapped(op, outcome)
     // A refusal of the replay itself (rate-limited, the child not up yet, a cap the first one may have used)
     // is an answer about the replay, not about the write: only a stage that says nothing was sent settles it.
     const aboutReplay = mapped?.state === "refused" && !NOT_SENT_STAGES.has(mapped.error?.stage ?? "")
@@ -929,11 +1237,12 @@ export class Operations {
       outcome: outcome.kind === "error" ? outcome.code : outcome.kind,
       ...(aboutReplay ? { refusedReplay: mapped.error?.code ?? "REFUSED" } : {}),
     })
-    if (mapped && mapped.state !== "unknown" && !aboutReplay) {
+    if (mapped && !aboutReplay && (mapped.state !== "unknown" || bridgeNotFollowed(mapped.error?.code))) {
       // An earlier replay's refusal was about that replay: this answer replaces its words.
       if (!mapped.error) delete op.error
       await this.settle(op, mapped)
-      if (op.state === "pending") this.retryReplay(op)
+      // A bridge on its way is followed by its landing wallet's balance from here; anything else is replayed again.
+      if (op.state === "pending") return op.kind === "bridge" ? this.watch(op, BRIDGE_POLL_MS) : this.retryReplay(op)
       return
     }
     // Still unknown, but Candle answered: the person sees its words, not "no answer".
@@ -941,11 +1250,93 @@ export class Operations {
       op.error = mapped.error
       this.deps.onChange?.(op)
     }
-    this.retryReplay(op)
+    await this.retryReplay(op)
   }
 
-  private retryReplay(op: Operation): void {
+  private async retryReplay(op: Operation): Promise<void> {
+    if (op.kind === "bridge") {
+      // An embedded bridge goes on being asked past its card's 60 s, every 10 s for ten minutes: replaying it under its
+      // id sends nothing new. Then it's said, and no longer asked.
+      if (this.deps.now() + BRIDGE_POLL_MS < op.startedAt + BRIDGE_FAST_MS) return this.watch(op, BRIDGE_POLL_MS)
+      if (op.state === "unknown") await this.settle(op, noAnswerMapped(bridgeFactsOf(op.params)))
+      return
+    }
     if (this.deps.now() + 5_000 < op.cardExpiresAt) this.watch(op, 5_000)
+  }
+
+  /**
+   * An embedded bridge: replayed under its id until Candle answers; once it has, and it's on its way, its landing
+   * wallet's balance is read through the key's budget, every 10 s and then each minute, until it has risen by what the
+   * bridge brings or two hours pass. An end said in its own words is read no further.
+   */
+  private async readEmbeddedBridgeOnce(op: Operation): Promise<void> {
+    if (bridgeNotFollowed(op.error?.code)) return
+    if (!bridgeAnswered(op.result)) return this.replayOnce(op)
+    const prior = (record(op.result) ?? {}) as Record<string, unknown>
+    const facts = bridgeFactsOf(op.params)
+    const before = op.landingBefore !== undefined ? BigInt(op.landingBefore) : undefined
+    const expected = expectedOutOf(prior)
+    if (before === undefined || expected === undefined || !this.deps.bridgeLanding) return this.settle(op, unfollowedMapped(prior, facts))
+    if (this.deps.bridgeBudget && !this.deps.bridgeBudget(op.agent, bridgeReadRequests(op))) return this.nextBridgeRead(op, false)
+    const now = await this.deps.bridgeLanding(op).catch(() => undefined)
+    const rose = now !== undefined && landingRose(before, now, expected)
+    await this.deps.journal.append({ type: "operation.check", mode: op.mode, agent: op.agent, opId: op.opId, found: now !== undefined, ...(now !== undefined ? { landing: now.toString(), state: rose ? "arrived" : "on its way" } : { detail: "the landing wallet's balance couldn't be read" }) })
+    if (now === undefined) return this.nextBridgeRead(op, false)
+    if (rose) {
+      const was = (record(prior.bridgeStatus) ?? {}) as Record<string, unknown>
+      await this.settle(op, { state: "succeeded", result: { ...prior, bridgeStatus: { ...was, phase: "filled", landed: true } } })
+      return
+    }
+    return this.nextBridgeRead(op, true)
+  }
+
+  /**
+   * A TEE bridge read by its id: where it stands, said when it moves on, and read again until it ends. Each read goes
+   * through the key's budget, and waits for its next turn without room. A deposit the core saw sent and Candle doesn't
+   * show yet is lag, never a bridge that wasn't sent.
+   */
+  private async readBridgeOnce(op: Operation): Promise<void> {
+    if (!this.deps.cliTrades?.readBridge) return
+    if (this.deps.bridgeBudget && !this.deps.bridgeBudget(op.agent, bridgeReadRequests(op))) return this.nextBridgeRead(op, false)
+    const read = await this.deps.cliTrades.readBridge(op)
+    await this.deps.journal.append({
+      type: "operation.check",
+      mode: op.mode,
+      agent: op.agent,
+      opId: op.opId,
+      route: "cli",
+      found: read.found,
+      ...(read.found ? { phase: read.status.phase, ...(read.status.open ? { open: read.status.open } : {}) } : { detail: read.detail }),
+    })
+    if (!read.found) return this.nextBridgeRead(op, false)
+    const prior = (typeof op.result === "object" && op.result !== null ? op.result : {}) as Record<string, unknown>
+    const facts = bridgeFactsOf(op.params)
+    const mapped = bridgeMapped(read.status, { result: { ...prior, ...read.body }, ...(facts ? { facts } : {}), sent: typeof prior.bridge === "object" && prior.bridge !== null })
+    if (mapped.state === "pending") {
+      // Written down when it moves on (depositing, then filling), not at every read.
+      const was = (prior.bridgeStatus as { phase?: unknown } | undefined)?.phase
+      if (op.state !== "pending" || was !== read.status.phase) await this.settle(op, mapped)
+      else {
+        op.result = mapped.result
+        this.deps.onChange?.(op)
+      }
+      return this.nextBridgeRead(op, true)
+    }
+    await this.settle(op, mapped)
+  }
+
+  /**
+   * The next read of an open bridge. Past its two hours it's said, and followed no further, but only after a read that
+   * answered: one that couldn't be made (no room, no answer) says nothing of where it stands, so it's tried each minute.
+   */
+  private async nextBridgeRead(op: Operation, readOk: boolean): Promise<void> {
+    const next = nextBridgeReadMs(op.startedAt, this.deps.now())
+    if (next !== undefined) return this.watch(op, next)
+    if (!readOk) return this.watch(op, BRIDGE_SLOW_POLL_MS)
+    const facts = bridgeFactsOf(op.params)
+    const prior = (typeof op.result === "object" && op.result !== null ? op.result : {}) as Record<string, unknown>
+    if (op.route !== "cli") return this.settle(op, embeddedPastTwoHours(prior, facts))
+    await this.settle(op, bridgeMapped({ phase: "depositing", open: "uncertain" }, { result: prior, ...(facts ? { facts } : {}), sent: true }))
   }
 
   private cancelWatch(opId: string): void {
@@ -977,7 +1368,7 @@ export function operationLogLine(row: { type: string; at: string; agent?: string
         ? String(row.reason ?? "no answer")
         : step === "check"
           ? row.found === true || row.replay === true
-            ? `read back: ${String(row.state ?? row.outcome ?? "?")}`
+            ? `read back: ${String(row.state ?? row.outcome ?? row.phase ?? "?")}`
             : `read back: not found (${String(row.detail ?? "?")})`
           : typeof error?.code === "string"
             ? `${step}: ${error.code}`

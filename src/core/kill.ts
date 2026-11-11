@@ -20,8 +20,10 @@ import type { Card } from "./cards"
 import { pausedStops } from "./classify"
 import type { Operation } from "./execute"
 import type { Journal, JournalRow } from "./journal"
+import type { ChainSlug } from "../shared/chains"
 import type { DaySpend } from "./limits"
 import { type WalletStanding, walletStanding } from "./standing"
+import { notFollowedFurther } from "./trade-log"
 import { walletName } from "./wallet-names"
 import type { OperationState } from "./tool-face"
 
@@ -120,13 +122,16 @@ export interface KillDeps {
     /** Cards mid-approval, which withdrawWhere skips: each is refused before it runs if the pause stops it. */
     approvingNow?(): Card[]
   }
-  operations: { list(): Operation[] }
+  /** `refuseWaiting`: the trades waiting for their Hood TEE wallet's last one, refused with nothing sent where the pause stops them. */
+  operations: { list(): Operation[]; refuseWaiting?(): Promise<Operation[]> }
   engine: { cancelAll(): Promise<{ agent: string; turnId: string }[]> }
   spend: DaySpend
   limitsFor: (agent: string) => { perDayUsd: number } | undefined
-  /** Which agents may use each wallet, from their last status reads. */
-  walletOf: (agent: string) => string | undefined
+  /** The embedded wallets each agent may pay from (Solana's, and the EVM one), from their last status reads. */
+  walletsOf: (agent: string) => readonly (string | undefined)[]
   portfolio: () => { result: unknown; readAt: number } | undefined
+  /** The chains the account uses, the core's one answer; unset, what the read alone says. */
+  chains?: () => readonly ChainSlug[]
   prices: { usd(key: string | undefined): number | undefined }
   keyPrefix: (agent: string) => string | undefined
   /** The P&L window's figure now; unset, the report shows "—". */
@@ -211,6 +216,8 @@ export class KillSwitch {
     const turns = await this.deps.engine.cancelAll().catch(() => [])
     await this.save(by)
     const withdrawn = await this.deps.cards.withdrawWhere(pausedStops, "kill_switch").catch(() => [])
+    // A buy approved and waiting for its wallet's last trade hasn't been sent: it goes as a card does.
+    await this.deps.operations.refuseWaiting?.().catch(() => [])
     // Each kept sell starts again at a fresh price, so reading the report doesn't run out its 60 s.
     await this.deps.cards.refreshWhere(isSell, "kill_switch_fresh").catch(() => [])
     await this.save(by)
@@ -326,7 +333,8 @@ export class KillSwitch {
       stopped: { turns, cards: withdrawn.map(cardLine) },
       stillOpen: this.stillOpen(),
       inFlight: [
-        ...ops.filter((op) => IN_FLIGHT.has(op.state)).map((op) => ({ opId: op.opId, cardId: op.cardId, agent: op.agent, title: titleOf(op.cardId), state: op.state, ...(op.held ? { held: true } : {}) })),
+        // A trade whose job Candle ended (it may have filled) isn't in flight: nothing reads it, and its card says so.
+        ...ops.filter((op) => IN_FLIGHT.has(op.state) && (op.kind === "bridge" || !notFollowedFurther(op))).map((op) => ({ opId: op.opId, cardId: op.cardId, agent: op.agent, title: titleOf(op.cardId), state: op.state, ...(op.held ? { held: true } : {}) })),
         ...this.approvingLines().filter((line) => !ops.some((op) => op.opId === line.opId)),
       ],
       standing: this.standing(now, agents),
@@ -362,7 +370,7 @@ export class KillSwitch {
 
   private standing(now: number, agents: string[]): KillReport["standing"] {
     const read = this.deps.portfolio()
-    const all = walletStanding(read?.result, this.deps.prices, agents, (agent) => [this.deps.walletOf(agent), ...(this.deps.teeWallets?.(agent) ?? []).map((w) => w.address)], this.deps.nameOf)
+    const all = walletStanding(read?.result, this.deps.prices, agents, (agent) => [...this.deps.walletsOf(agent), ...(this.deps.teeWallets?.(agent) ?? []).map((w) => w.address)], this.deps.nameOf, this.deps.chains?.())
     // The wallets the Candle Harness's agents pay from, as the Wallets pane shows by default: an old TEE wallet on another key
     // read as one the pause held. Every wallet, where none is known to be an agent's.
     const theirs = all.filter((w) => w.agents.length > 0)

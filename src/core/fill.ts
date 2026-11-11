@@ -11,11 +11,24 @@
 // `actualOutRaw` is read off the confirmed transaction; it's omitted, never zeroed, when nothing could be read,
 // and then the quote's `expectedOutRaw` stands in. The fee is in the pair asset: on top of a buy's spend
 // (its outflow is `amountRaw + feeRaw`), and withheld from a sell's proceeds.
-import { isBaseAsset, quoteAssetOf } from "./assets"
+import { BASE_ASSETS, type BaseAsset, fromRaw, isBaseAsset, quoteAssetOf } from "./assets"
+import { type ChainSlug, chainField, maybeChain, sameAddress, storedChain } from "../shared/chains"
+
+/**
+ * A chain's native asset (ETH on Hood, SOL on Solana), as a base asset: SOL with no chain at all, and none for a
+ * chain whose native asset isn't one, so its amounts are never read with another asset's decimals.
+ */
+const nativeAsset = (chain: ChainSlug | undefined) => {
+  if (chain === undefined) return "SOL"
+  const symbol = maybeChain(chain)?.native.symbol
+  return isBaseAsset(symbol) ? symbol : undefined
+}
 
 export interface Fill {
   side: "buy" | "sell"
   mint: string
+  /** The chain it filled on: the operation's, else Candle's answer's; an old row's by its mint's family. */
+  chain?: ChainSlug
   /** The wallet that paid: "embedded", a TEE wallet's address, or "paper". */
   wallet: string
   /** The pair asset, upper case: SOL, USDC, CNDL. */
@@ -44,7 +57,7 @@ const raw = (value: unknown): string | undefined => (typeof value === "string" &
  * from the card, since the TEE route's answer names neither; a read-back's own are used where the card's are missing.
  * `fallbackAsset` is the asset the card settled in, for an answer that names none.
  */
-export function readFill(input: { side?: "buy" | "sell"; mint?: string; wallet: string; result: unknown; paper?: boolean; fallbackAsset?: string }): Fill | undefined {
+export function readFill(input: { side?: "buy" | "sell"; mint?: string; chain?: ChainSlug; wallet: string; result: unknown; paper?: boolean; fallbackAsset?: string }): Fill | undefined {
   const top = record(input.result)
   if (!top) return undefined
   // The embedded wallet's and paper's answers sit under `api`; the TEE route's and a read-back's at the top.
@@ -52,16 +65,17 @@ export function readFill(input: { side?: "buy" | "sell"; mint?: string; wallet: 
   const side = input.side ?? (body.side === "buy" || body.side === "sell" ? body.side : undefined)
   const mint = input.mint ?? (typeof body.mint === "string" ? body.mint : undefined)
   if (!side || !mint) return undefined
+  const chain = input.chain ?? storedChain(body.chain, mint)
   const amounts = record(body.amounts)
-  // An answer that names no pair asset is read in the one its card settled in, else the chain's own: ETH for a
-  // 0x mint, SOL otherwise. Never SOL for a Hood trade: wei read with SOL's nine decimals is a billion times too much.
+  // An answer that names no pair asset is read in the one its card settled in, else the chain's own: ETH on
+  // Hood, SOL on Solana. Never SOL for a Hood trade: wei read with SOL's nine decimals is a billion times too much.
   const named = amounts?.quoteAsset ?? body.quoteAsset
-  const asset = named !== undefined ? quoteAssetOf(named) : isBaseAsset(input.fallbackAsset) ? input.fallbackAsset : mint.startsWith("0x") ? "ETH" : "SOL"
+  const asset = named !== undefined ? quoteAssetOf(named) : isBaseAsset(input.fallbackAsset) ? input.fallbackAsset : nativeAsset(chain)
   if (!asset) return undefined
   const feeRaw = raw(record(body.fee)?.feeRaw ?? body.feeRaw)
   const paper = input.paper === true || body.paper === true
   const decimals = typeof body.tokenDecimals === "number" && Number.isInteger(body.tokenDecimals) && body.tokenDecimals >= 0 ? body.tokenDecimals : undefined
-  const base = { side, mint, wallet: paper ? "paper" : input.wallet, asset, ...(feeRaw ? { feeRaw } : {}), ...(decimals !== undefined ? { tokenDecimals: decimals } : {}), ...(paper ? { paper: true as const } : {}) }
+  const base = { side, mint, ...chainField(chain), wallet: paper ? "paper" : input.wallet, asset, ...(feeRaw ? { feeRaw } : {}), ...(decimals !== undefined ? { tokenDecimals: decimals } : {}), ...(paper ? { paper: true as const } : {}) }
 
   if (amounts) {
     const sent = raw(amounts.amountRaw)
@@ -92,5 +106,64 @@ export function fillOfRow(row: object): Fill | undefined {
   const f = record((row as { fill?: unknown }).fill)
   if (!f || (f.side !== "buy" && f.side !== "sell") || typeof f.mint !== "string" || typeof f.wallet !== "string" || typeof f.asset !== "string") return undefined
   if (f.measured !== "chain" && f.measured !== "quote" && f.measured !== "none") return undefined
-  return f as unknown as Fill
+  // A row from before fills carried a chain gets its mint's family's, as it's read.
+  const chain = storedChain(f.chain, f.mint)
+  return { ...(f as unknown as Fill), ...chainField(chain) }
 }
+
+/** A raw amount in six figures, with its symbol: the exact amount stays in Candle's answer. */
+export function sixFigures(raw: bigint, decimals: number, symbol: string): string {
+  const exact = fromRaw(raw, decimals)
+  const n = Number(exact)
+  return `${Number.isFinite(n) && n > 0 && n < 1e15 ? Number(n.toPrecision(6)).toLocaleString("en-US", { maximumSignificantDigits: 6, useGrouping: false }) : exact} ${symbol}`
+}
+
+/**
+ * What a sell brought in, as its card's done line says it: the proceeds less Candle's fee, in the pair asset, with "≈"
+ * when it's the quote, not read off the chain. None for a buy (its card names the tokens) or where the answer doesn't say.
+ */
+export function receivedOf(fill: Fill): string | undefined {
+  if (fill.side !== "sell" || fill.measured === "none" || !isBaseAsset(fill.asset)) return undefined
+  const net = netAssetRaw(fill)
+  if (net === undefined) return undefined
+  return `${fill.measured === "quote" ? "≈" : ""}${sixFigures(net, BASE_ASSETS[fill.asset as BaseAsset].decimals, fill.asset)}`
+}
+
+/**
+ * What a swap between base assets brought in, from Candle's answer: the amount measured off the transaction, else its
+ * quote's (with "≈"), in the asset swapped to. None where the answer says neither.
+ */
+export function swapReceived(result: unknown, to: unknown): string | undefined {
+  if (!isBaseAsset(to)) return undefined
+  const payload = record(record(result)?.payload)
+  if (!payload) return undefined
+  const settled = raw(record(payload.settlement)?.settledOutRaw)
+  const expected = raw(payload.expectedOutRaw)
+  const decimals = typeof payload.outDecimals === "number" && Number.isInteger(payload.outDecimals) ? payload.outDecimals : BASE_ASSETS[to].decimals
+  if (settled) return sixFigures(BigInt(settled), decimals, to)
+  return expected ? `≈${sixFigures(BigInt(expected), decimals, to)}` : undefined
+}
+
+/** How far back a wallet's own fills stand for what Candle's portfolio hasn't caught up with yet. */
+export const OWN_FILLS_MS = 2 * 60_000
+
+/**
+ * The least a wallet holds of a token by this core's own live fills: its buys' tokens since its last sell of it, over
+ * the last two minutes. Candle's portfolio can read a Hood wallet before a fill a few seconds old, so a sell's card
+ * sizes from the larger of that read and this. `wallet` is "embedded" or the TEE wallet's address, as fills record it.
+ */
+export function ownHeldFloor(rows: readonly object[], o: { wallet: string; mint: string; now: number }): bigint | undefined {
+  let held = 0n
+  for (const row of rows) {
+    const r = row as { type?: unknown; at?: unknown }
+    if (r.type !== "operation.succeeded" || typeof r.at !== "string" || o.now - Date.parse(r.at) > OWN_FILLS_MS) continue
+    const fill = fillOfRow(row)
+    if (!fill || fill.paper || !sameWallet(fill.wallet, o.wallet) || !sameAddress(fill.mint, o.mint)) continue
+    // After a sell, what's left isn't the sum: the floor starts again from its next buy.
+    if (fill.side === "sell") held = 0n
+    else if (fill.tokensRaw !== undefined) held += BigInt(fill.tokensRaw)
+  }
+  return held > 0n ? held : undefined
+}
+
+const sameWallet = (a: string, b: string) => (a === "embedded" || b === "embedded" ? a === b : sameAddress(a, b))

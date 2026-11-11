@@ -13,7 +13,7 @@ import type { WalletsTopic } from "./agent-wallets"
 import { AliasFile, LineReader } from "./line-reader"
 import type { HaccPlan } from "./plan-state"
 import { TokenNames } from "./token-names"
-import { approvedHash, approvedHashBeforeLine, type PayWalletInfo, rebuild, TriggerBook, type TriggerBookDeps, UNREAD_SAID_MS } from "./triggers"
+import { approvedHash, approvedHashBeforeLine, type PayWalletInfo, rebuild, theWallet, TriggerBook, type TriggerBookDeps, UNREAD_SAID_MS } from "./triggers"
 import { parseTriggersFile, serializeTriggersFile, type TriggerEntry, TriggersFileStore } from "./triggers-file"
 
 const JUP = "JupFake111111111111111111111111111111111111"
@@ -139,6 +139,19 @@ describe("triggers.toml", () => {
     expect(store.write({ [entry.name]: entry })).toEqual({ ok: true })
     expect(statSync(join(dir, "triggers.toml")).mode & 0o777).toBe(0o600)
     expect(store.read().triggers).toEqual([entry])
+  })
+
+  test("a trigger on a token off Solana keeps its chain, read back the same; a chain its token can't be on, or one that's off, is a problem", () => {
+    const HOOD = "0x00000000000000000000000000000000000b0b43"
+    const hood: TriggerEntry = { ...entry, name: "hood stop", line: `when ${HOOD} < $0.002 notify`, expansion: `when ${HOOD} < $0.002 notify`, chain: "hood" }
+    const text = serializeTriggersFile([hood])
+    expect(text).toContain('chain = "hood"\n')
+    expect(parseTriggersFile(text).triggers).toEqual([hood])
+    expect(parseTriggersFile(text.replace('chain = "hood"', 'chain = "solana"')).problems[0]).toContain("its token's address can't be on Solana")
+    expect(parseTriggersFile(text.replace('chain = "hood"', 'chain = "base"')).problems[0]).toContain('chain is "solana" or "hood"')
+    // A trigger with no token has no chain.
+    const pnl = serializeTriggersFile([{ ...entry, name: "pnl", line: "when pnl today < -$20 notify", expansion: "when pnl today < -$20 notify", chain: "hood" }])
+    expect(parseTriggersFile(pnl).problems[0]).toContain("chain is for a trigger on a token")
   })
 
   test("each problem is named by its line, and that trigger left out", () => {
@@ -648,4 +661,11 @@ describe("kept across a restart", () => {
     ])
     expect(rebuild(w.journal.rows()).triggers["every 4h"]).toBeUndefined()
   })
+})
+
+test("the embedded wallet on another chain than Solana is named on it; Solana's and a named wallet read as before", () => {
+  expect(theWallet("embedded", "hood")).toBe("the embedded wallet on Hood")
+  expect(theWallet("embedded", "solana")).toBe("the embedded wallet")
+  expect(theWallet("embedded")).toBe("the embedded wallet")
+  expect(theWallet("hood-tee", "hood")).toBe("the wallet hood-tee")
 })

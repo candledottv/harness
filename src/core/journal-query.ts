@@ -22,8 +22,9 @@ import { baseAssetForMint } from "./assets"
 import { settingWords, type WalletSetting } from "./autonomy"
 import { type JournalRow, parseRow } from "./journal"
 import { usd } from "./limits"
-import { cardTitle, doneWord, PAPER_CLOSED_WORDS, paneResult, shortAddresses, TradeLog, withdrawnWhy } from "./trade-log"
+import { cardTitle, doneWord, notFollowedFurther, PAPER_CLOSED_WORDS, paneResult, shortAddresses, TradeLog, withdrawnWhy } from "./trade-log"
 import { short } from "./wallet-names"
+import { type ChainSlug, maybeChain, storedChain } from "../shared/chains"
 
 /** The kind chips: trades, cards, the kill switch, Hacc, memory, agents, rules bots, the view and the core. */
 export const JOURNAL_KINDS = ["trades", "cards", "kill", "hacc", "memory", "agents", "bots", "view", "core"] as const
@@ -51,6 +52,7 @@ export const ROW_KINDS: Readonly<Record<string, JournalKind | "life" | "turn" | 
   "card.valued": "life",
   "approval.refused": "life",
   "operation.submitting": "life",
+  "operation.waiting": "life",
   "operation.pending": "life",
   "operation.succeeded": "life",
   "operation.failed": "life",
@@ -80,6 +82,7 @@ export const ROW_KINDS: Readonly<Record<string, JournalKind | "life" | "turn" | 
   "trigger.released": "agents",
   "trigger.fired": "agents",
   "trigger.missed": "agents",
+  "trigger.skipped": "agents",
   "trigger.waiting": "agents",
   "trigger.notify": "agents",
   "trigger.ran": "agents",
@@ -181,6 +184,8 @@ export interface JournalQuery {
   agent?: string
   /** A token's mint: only entries about it. */
   mint?: string
+  /** One chain: only entries about a token on it, and those about no token. */
+  chain?: ChainSlug
   /** Times in ms: only entries that start within them. */
   from?: number
   to?: number
@@ -201,6 +206,8 @@ export interface JournalEntry {
   agent?: string
   /** The token it's about, where it's one the token pane follows. */
   mint?: string
+  /** That token's chain, as its rows recorded it (an old row's, by the address). */
+  chain?: ChainSlug
   symbol?: string
   text: string
   tone: "info" | "good" | "bad" | "warn"
@@ -472,10 +479,14 @@ function cardLife(rows: readonly JournalRow[], symbolOf: (mint: string) => strin
         tone = partDone ? "warn" : "bad"
         break
       }
-      case "operation.unknown":
-        parts.push("no answer: being read back")
+      case "operation.unknown": {
+        // One the core reads no further says why and where to look, never that it's being read back.
+        const error = end.error as { message?: unknown } | undefined
+        const ended = notFollowedFurther({ kind: str(created?.kind), error: end.error, result: end.result }) && typeof error?.message === "string"
+        parts.push(ended ? String(error!.message) : "no answer: being read back")
         tone = "warn"
         break
+      }
       case "operation.abandoned":
         parts.push(`abandoned${took(end, "after")}`)
         tone = "warn"
@@ -483,6 +494,9 @@ function cardLife(rows: readonly JournalRow[], symbolOf: (mint: string) => strin
       case "operation.submitting":
       case "operation.pending":
         parts.push("sent, no answer yet")
+        break
+      case "operation.waiting":
+        parts.push("waiting for the wallet's last trade")
         break
       case "card.rejected":
         parts.push(`rejected${took(end, "after")}`)
@@ -786,6 +800,7 @@ function entryOf(rows: readonly JournalRow[], symbolOf: (mint: string) => string
     built = { text: said?.text ?? ownWords(first), tone: said?.tone ?? (first.type.endsWith("refused") || first.type === "core.bug" ? "bad" : "info"), kind, ...(mint ? { mint } : {}), hay: [str(first.message), str(first.code), str(first.tool)].filter(Boolean).join(" "), hidden: [{ where: "the row", text: [str(first.message), str(first.code), str(first.tool)].filter(Boolean).join(" · ") }] }
   }
   const agent = rows.find((r) => r.agent)?.agent
+  const chain = built.mint ? storedChain(rows.find((r) => maybeChain(r.chain))?.chain, built.mint) : undefined
   const symbol = built.mint ? symbolOf(built.mint) : undefined
   // A row written before its token had a name says its address, short: the Journal says the name known now, as the
   // rows after it do.
@@ -800,6 +815,7 @@ function entryOf(rows: readonly JournalRow[], symbolOf: (mint: string) => string
     mode: first.botMode === "paper" || first.botMode === "live" ? first.botMode : (record(first.run)?.mode === "paper" || record(first.run)?.mode === "live" ? (record(first.run)!.mode as "paper" | "live") : first.mode),
     ...(agent ? { agent } : {}),
     ...(built.mint ? { mint: built.mint } : {}),
+    ...(chain ? { chain } : {}),
     ...(symbol ? { symbol } : {}),
     text: clip(built.text, TEXT_CHARS),
     tone: built.tone,
@@ -862,6 +878,7 @@ export function queryProblem(q: Record<string, unknown>): string | undefined {
   for (const k of ["agent", "mint", "before"] as const) if (q[k] !== undefined && typeof q[k] !== "string") return `${k} is a string.`
   for (const k of ["from", "to", "limit"] as const) if (q[k] !== undefined && (typeof q[k] !== "number" || !Number.isFinite(q[k]))) return `${k} is a number.`
   if (q.before !== undefined && !decodeCursor(q.before)) return "before is a page's more, as it was sent."
+  if (q.chain !== undefined && !maybeChain(q.chain)) return "chain is a chain that's on, such as \"solana\" or \"hood\"."
   return undefined
 }
 
@@ -876,6 +893,7 @@ export async function queryJournal(q: JournalQuery, deps: QueryDeps): Promise<Jo
     kinds.has(e.kind) &&
     (q.agent === undefined || e.agent === q.agent) &&
     (q.mint === undefined || e.mint === q.mint) &&
+    (q.chain === undefined || e.chain === undefined || e.chain === q.chain) &&
     (q.to === undefined || Date.parse(e.at) <= q.to) &&
     words.every((w) => e.hay.includes(w))
 

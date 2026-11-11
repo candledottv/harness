@@ -77,10 +77,13 @@ export const botNamed = (topic: BotsTopic | undefined, name: string | undefined)
 /** A code bot that's on, but whose process crashed too often and isn't started again: it trades nothing until it's started. */
 export const gaveUp = (b: AnyBot): boolean => b.kind === "code" && b.state === "on" && b.process?.state === "gave_up"
 
-/** "3 on · 1 crashed · 1 live": how many enter on signals now, how many crashed and wait to be started, and how many trade live. */
+/** A code bot that's on, but whose process ended on its own or was stopped: it trades nothing until it's started again. */
+export const notRunning = (b: AnyBot): boolean => b.kind === "code" && b.state === "on" && (b.process?.state === "ended" || b.process?.state === "down")
+
+/** "3 on · 1 crashed · 1 live": how many enter on signals now (a code bot whose process ended isn't), how many crashed and wait to be started, and how many trade live. */
 export function botsCountWords(topic: BotsTopic | undefined, killed = false): string {
   const all = everyBot(topic)
-  const on = all.filter((b) => b.state === "on" && !gaveUp(b)).length
+  const on = all.filter((b) => b.state === "on" && !gaveUp(b) && !notRunning(b)).length
   const crashed = all.filter(gaveUp).length
   const live = all.filter((b) => b.mode === "live" && b.state !== "stopped").length
   // With none on, the count says what they are instead: "0 on" over a paused bot whose process runs read as a contradiction.
@@ -137,7 +140,7 @@ export const botNameWidth = (bots: readonly { name: string }[]) => Math.min(24, 
 
 export function botListLines(b: AnyBot, book: BotBookView | undefined, width: number, nameWidth = 16, killed = false): Line[] {
   const pick = { id: botRowId(b.name), mint: "", ask: askToChangeBot(b.name) }
-  const dot: Seg = gaveUp(b) ? { text: "● ", fg: C.bad } : b.state === "on" ? { text: "● ", fg: killed ? C.look : C.good } : b.state === "paused" ? { text: "● ", fg: C.look } : { text: "○ ", fg: C.dim }
+  const dot: Seg = gaveUp(b) ? { text: "● ", fg: C.bad } : notRunning(b) ? { text: "○ ", fg: C.dim } : b.state === "on" ? { text: "● ", fg: killed ? C.look : C.good } : b.state === "paused" ? { text: "● ", fg: C.look } : { text: "○ ", fg: C.dim }
   const pnl = botPnl(b, book)
   const open = book?.open.length ? `${book.open.length} open` : ""
   // A space after the name, so a name as long as its column never runs into the mode.

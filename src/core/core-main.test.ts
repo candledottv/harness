@@ -13,7 +13,8 @@ import { PROTOCOL_VERSION } from "../shared/rpc"
 import { ViewSession } from "./client"
 import { readViewToken } from "./tokens"
 import { candleConfigDir } from "./candle-mcp"
-import { AFTER_FILL_READS_MS, IDLE_EXIT_NO_AGENTS_MS, IdleWatch, holdingFrom, readAfterFill, startCore } from "./core-main"
+import { AFTER_FILL_READS_MS, IDLE_EXIT_NO_AGENTS_MS, IdleWatch, readAfterFill, startCore } from "./core-main"
+import { holdingFrom } from "./portfolio-wallets"
 
 const cores: TestCore[] = []
 const procs: { kill(signal?: number | NodeJS.Signals): void; exited: Promise<number> }[] = []
@@ -542,9 +543,9 @@ describe("the link and pins", () => {
     cores.push(c)
     const view = await c.view()
     await view.request("subscribe", { topics: ["views", "market"] })
-    const lastViews = () => view.events.filter((e) => e.topic === "views").at(-1)?.data as { link: { mint: string; by?: string } | null; pins: unknown[]; signals: unknown[]; popped: unknown[] } | undefined
+    const lastViews = () => view.events.filter((e) => e.topic === "views").at(-1)?.data as { link: { mint: string; by?: string } | null; pins: unknown[]; signals: unknown[]; popped: unknown[]; chain?: unknown } | undefined
     await until(() => lastViews() !== undefined)
-    expect(lastViews()).toEqual({ link: null, pins: [], signals: [], popped: [] })
+    expect(lastViews()).toEqual({ link: null, pins: [], signals: [], popped: [], chain: null })
 
     expect((await view.request("view.link", { mint: MOON, from: "feed, by a click" })).result).toEqual({ linked: true, symbol: "MOON" })
     await until(() => lastViews()?.link?.mint === MOON)
@@ -680,6 +681,24 @@ describe("Hacc in the core", () => {
     } finally {
       hacc.stop()
     }
+  })
+
+  test("the chain filter: one choice for every view, said on views, kept across a restart, journalled as the person's, refused to an agent", async () => {
+    const c = await startTestCore()
+    cores.push(c)
+    const one = await c.view()
+    const other = await c.view()
+    const { client: harness } = await c.harness(one, "momentum")
+    await other.request("subscribe", { topics: ["views"] })
+    expect((await one.request("view.chain", { chain: "hood" })).result).toEqual({ chain: "hood" })
+    await until(() => (other.events.filter((e) => e.topic === "views").at(-1)?.data as { chain?: unknown } | undefined)?.chain === "hood")
+    expect(c.core.journal.rows().filter((r) => r.type === "view.set").at(-1)).toMatchObject({ words: "showed Hood in every pane" })
+    expect((await one.request("view.chain", { chain: "base" })).error).toBeDefined()
+    expect((await harness.request("view.chain", { chain: null })).error?.data).toMatchObject({ code: "FORBIDDEN_FOR_ROLE" })
+    expect(JSON.parse(readFileSync(c.p.chainFilter, "utf8")).chain).toBe("hood")
+    expect(statSync(c.p.chainFilter).mode & 0o777).toBe(0o600)
+    expect((await one.request("view.chain", { chain: null })).result).toEqual({ chain: null })
+    expect(c.core.journal.rows().filter((r) => r.type === "view.set").at(-1)).toMatchObject({ words: "showed all chains in every pane" })
   })
 
   test("a tab's Signals choice is kept for every view, and a filter is read back from Hacc for its own subscription alone", async () => {

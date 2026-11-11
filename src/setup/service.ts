@@ -442,8 +442,19 @@ export function serviceHome(text: string, platform: NodeJS.Platform): string | u
   return m ? m[1]!.replace(/\\(.)/g, "$1").replace(/%%/g, "%") : undefined
 }
 
+/** Whether the login service is installed for this environment's home, not another one. */
+export function serviceRunsHome(d: Pick<ServiceDeps, "platform" | "env" | "home">): boolean {
+  const file = serviceFile(d)
+  if (!file || !existsSync(file)) return false
+  try {
+    return sameHome(serviceHome(readFileSync(file, "utf8"), d.platform), d)
+  } catch {
+    return false
+  }
+}
+
 /** Whether a service carrying `home` runs the same home as the view: both resolved as paths() resolves them. */
-function sameHome(home: string | undefined | null, d: ServiceDeps): boolean {
+function sameHome(home: string | undefined | null, d: Pick<ServiceDeps, "env" | "home">): boolean {
   if (home === null) return false
   try {
     const user = d.env.HOME ?? d.home

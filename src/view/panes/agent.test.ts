@@ -4,9 +4,10 @@ import { expect, test } from "bun:test"
 import { C } from "../theme"
 import type { KillReport } from "../../core/kill"
 import type { Exchange } from "../store"
-import { addressLines, conversationLines, greetingLines, highlightedCard, killReportLines, operationTitle, paperFiringLines, replyRows, resendsUnderId, resentWords, unansweredLines, waitingWords, withPrompt } from "./agent"
+import { addressLines, conversationLines, greetingLines, highlightedCard, killReportLines, operationTitle, paperFiringLines, replyRows, resendsUnderId, resentWords, setUpLines, unansweredLines, waitingWords, withPrompt } from "./agent"
 import { textOf } from "./lines"
 import { activityLines } from "./activity"
+import { sequencedFailure } from "../../core/reconcile"
 
 const MOON = "MoonFake11111111111111111111111111111111111"
 const NOW = Date.parse("2026-10-26T14:00:00.000Z")
@@ -54,6 +55,12 @@ test("the kill report: what it stopped, what's still open, what's in flight, whe
   const named = report()
   named.standing.wallets = [{ ...named.standing.wallets[0]!, kind: "embedded" }]
   expect(texts(killReportLines(named, {}, NOW, 200))).toContain("standing    embedded (momentum, swing): SOL $300.00")
+  // A Hood wallet's native figure is its ETH, said as ETH, never SOL.
+  const hood = report()
+  hood.standing.wallets = [{ wallet: "0xAbCdEf0000000000000000000000000000000002", name: "momentum-hood", kind: "tee", chain: "hood", nativeSymbol: "ETH", agents: ["momentum"], solUsd: 1_500, tokensUsd: 0, unpriced: 0 }]
+  const hoodText = texts(killReportLines(hood, {}, NOW, 200))
+  expect(hoodText).toContain("standing    momentum-hood (momentum): ETH $1,500.00 · tokens $0.00")
+  expect(hoodText).not.toContain("SOL $1,500.00")
   expect(t).toContain("spent       momentum $12.00 of $50.00 today")
   // What it can't reach is one line with a chip; the steps open from it.
   expect(t).toContain("not stopped other apps on these keys   how to stop them ")
@@ -127,6 +134,14 @@ test("the agent speaks first: what it can do, and three things to try", () => {
   expect(lines.filter((l) => l.startsWith("  · "))).toHaveLength(3)
 })
 
+test("after setup, live says a card per trade only when the wallet asks every time; paper says how to go live", () => {
+  const modeLine = (s: Parameters<typeof setUpLines>[0]) => setUpLines(s, 200).map(textOf).find((l) => l.trimStart().startsWith("mode"))?.replace(/\s+/g, " ").trim()
+  expect(modeLine({ agent: "momentum", wallet: "main, asking every time", asksEveryTime: true, mode: "live" })).toBe("mode live: real funds, a card per trade")
+  expect(modeLine({ agent: "momentum", wallet: "main, trading inside $5.00 a trade and $25.00 a day without a card", asksEveryTime: false, mode: "live" })).toBe("mode live: real funds")
+  expect(modeLine({ agent: "momentum", mode: "live" })).toBe("mode live: real funds")
+  expect(modeLine({ agent: "momentum", asksEveryTime: true, mode: "paper" })).toBe("mode paper; go live from the status bar")
+})
+
 test("a conversation: you, the tools in a quiet line, the reply wrapped, and addresses with their source", () => {
   const exchange: Exchange = {
     turnId: "t1",
@@ -195,6 +210,19 @@ test("an operation Candle didn't answer: what it was, that it's read back, and r
   expect(actions.cardId).toBe("card-a")
   expect(actions.segs.filter((s) => s.act).map((s) => s.act)).toEqual(["resend", "abandon"])
   expect(unansweredLines({}, [], NOW, 100)).toEqual([])
+})
+
+test("one the core reads no further says its own words, never that it's read back, and keeps re-send and abandon", () => {
+  const job = { status: "failed", errorCode: "SWAP_FAILED", operation: { legs: [{ kind: "approve", status: "confirmed" }, { kind: "trade", status: "failed" }] } }
+  const error = sequencedFailure(job)!
+  const ended = { opId: "op-h", cardId: "card-h", agent: "momentum", state: "unknown", kind: "trade", params: { mint: MOON, side: "buy", amount: "0.01" }, startedAt: NOW - 90_000, result: job, error }
+  const lines = unansweredLines({ "op-h": ended }, [], NOW, 100)
+  const text = lines.map(textOf).join(" ").replace(/\s+/g, " ")
+  expect(text).toContain("NOT FOLLOWED FURTHER · BUY 0.01 · Moon…1111 · momentum")
+  expect(text).toContain("may have filled: what the wallet holds says")
+  expect(text).not.toContain("reads it back")
+  expect(text).not.toContain("Candle said:")
+  expect(lines.at(-1)!.segs.filter((s) => s.act).map((s) => s.act)).toEqual(["resend", "abandon"])
 })
 
 test("three trades Candle didn't answer, read back by their ids (a restart cut off a bot's exits): said once, each a line with its chips", () => {
@@ -483,4 +511,33 @@ test("the cards' heading says how to reach them while another pane has the keys,
   expect(waitingWords(2, true)).toBe("2 cards waiting · ctrl-] then ⏎, or click")
   expect(waitingWords(1, true)).not.toContain("⏎ approves")
   expect(waitingWords(1)).toBe("1 card waiting · ⏎ approves the highlighted one")
+})
+
+test("a bridge in flight says the kill switch can't stop it, and how it ends; once there, it arrived", () => {
+  const r = report({ inFlight: [{ opId: "op-b1", cardId: "b1", agent: "momentum", title: "BRIDGE 0.5 SOL → ETH", state: "pending" }] })
+  const op = (state: string) => ({ "op-b1": { opId: "op-b1", cardId: "b1", agent: "momentum", kind: "bridge", state } })
+  expect(texts(killReportLines(r, op("pending"), NOW, 200))).toContain("in flight   BRIDGE 0.5 SOL → ETH (momentum): sent, so the kill switch can't stop it: it arrives, or is refunded to the wallet it came from")
+  expect(texts(killReportLines(r, op("succeeded"), NOW, 200))).toContain("in flight   BRIDGE 0.5 SOL → ETH (momentum): arrived")
+})
+
+test("Activity on two chains ends each entry's first line with its chain, dim, at the pane's edge; on one chain, no tag", () => {
+  const at = new Date(NOW).toISOString()
+  const mixed = activityLines(
+    [
+      { seq: 1, at, text: "filled BUY 0.04 SOL → LUMEN", tone: "good", chain: "solana" },
+      { seq: 2, at, text: "filled BUY 0.01 ETH → KITE", tone: "good", chain: "hood" },
+      { seq: 3, at, text: "kill switch off", tone: "info" },
+    ],
+    46,
+    NOW,
+  )
+  const text = (l: (typeof mixed)[number]) => l.segs.map((s) => s.text).join("")
+  expect(text(mixed[0]!)).toMatch(/LUMEN\s+sol$/)
+  expect(text(mixed[1]!)).toMatch(/KITE\s+hood$/)
+  expect(text(mixed[0]!).length).toBe(46)
+  expect(mixed[0]!.segs.at(-1)).toMatchObject({ text: "sol", fg: C.dim })
+  // A line about no token has no tag.
+  expect(text(mixed[2]!)).toMatch(/kill switch off$/)
+  const one = activityLines([{ seq: 1, at, text: "filled BUY 0.04 SOL → LUMEN", tone: "good", chain: "solana" }], 46, NOW)
+  expect(text(one[0]!)).toMatch(/LUMEN$/)
 })

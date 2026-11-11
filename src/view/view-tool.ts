@@ -21,6 +21,7 @@
 // It never moves focus, pops a pane out, writes config.toml, or saves a layout the person didn't keep.
 import { JOURNAL_KINDS, type JournalKind, KIND_WORDS } from "../core/journal-query"
 import type { SignalsChoice } from "../core/view-state"
+import { type ChainSlug, chainName, maybeChain } from "../shared/chains"
 import { type Layout, PANE_IDS, type PaneId, panesOf } from "./layout"
 import { isTokenPane, TOKEN_PANES, type TokenPane } from "../shared/panes"
 import { placeWords } from "../core/view-state"
@@ -53,6 +54,8 @@ export interface ViewToolContext {
   signalsPaused?: boolean
   /** The Journal's search, this view's. */
   journal?: JournalSearch
+  /** The chain filter (the core's) and the chains the account uses. */
+  chain?: { current: ChainSlug | null; chains: readonly ChainSlug[] }
 }
 
 /** The first line of a theme the agent made: while it's there, the agent may write the file again. */
@@ -68,6 +71,7 @@ export type ViewPlan =
   | { kind: "tabs"; file: LayoutsFile; before: Tab[]; hidden?: HiddenTab[]; select?: number; renamed?: { from: string; to: string }; text: string; words: string }
   | { kind: "signals"; tab: string; at?: number; change: SignalsChange; paused?: boolean; text: string; words: string }
   | { kind: "journal"; at?: number; search: JournalSearch; text: string; words: string }
+  | { kind: "chain"; chain: ChainSlug | null; text: string; words: string }
   | { kind: "pin"; tab: string; pane: TokenPane; mint?: string }
   | { kind: "unpin"; tab: string; pane: TokenPane }
   | { kind: "theme"; name: string }
@@ -174,6 +178,7 @@ function readText(ctx: ViewToolContext): string {
     `Panes: ${PANE_IDS.join(", ")}.`,
     `Pinned token panes: ${pins.length ? pins.join(", ") : "none"}.`,
     signals.length ? `Signals shows: ${signals.join("; ")}${ctx.signalsPaused ? " (paused)" : ""}.` : undefined,
+    ctx.chain && ctx.chain.chains.length > 1 ? (ctx.chain.current ? `Every pane shows ${chainName(ctx.chain.current)} only.` : "Every pane shows all chains.") : undefined,
     ctx.journal?.query || ctx.journal?.kinds ? `The Journal's search: ${searchWords(ctx.journal)}.` : undefined,
     `Themes: ${themes.join(", ")}.`,
     ctx.file.problems.length ? `layouts.toml has a problem the person must fix by hand before the Candle Harness writes it: ${ctx.file.problems[0]}` : undefined,
@@ -243,6 +248,8 @@ export function planView(args: Record<string, unknown>, ctx: ViewToolContext): V
       return signalsPlan(args, ctx)
     case "journal":
       return journalPlan(args, ctx)
+    case "chain":
+      return chainPlan(args, ctx)
     case "layout": {
       const t = tabOf(ctx, args.tab)
       if (typeof t === "string") return refused(t, "UNKNOWN_TAB")
@@ -343,6 +350,12 @@ export function planView(args: Record<string, unknown>, ctx: ViewToolContext): V
 
 /** Signals' choice and pause, on the tab on screen if it has a Signals pane, else the first tab that does. */
 function signalsPlan(args: Record<string, unknown>, ctx: ViewToolContext): ViewPlan {
+  // With the status bar's chain filter on screen, Signals' chain is its, for every pane: a chain alone sets that.
+  const folded = (ctx.chain?.chains.length ?? 0) > 1
+  if (args.chain !== undefined && folded) {
+    if (args.mine === undefined && args.pattern === undefined && args.paused === undefined) return chainPlan(args, ctx)
+    return refused('The chain is the status bar\'s here, for every pane: set it with action "chain", and Signals\' pattern or pause with "signals" apart.', "MCP_VALIDATION")
+  }
   const change: SignalsChange = {}
   if (args.mine !== undefined) {
     const mine = yesNo(args.mine)
@@ -357,13 +370,13 @@ function signalsPlan(args: Record<string, unknown>, ctx: ViewToolContext): ViewP
   }
   if (args.chain !== undefined) {
     const c = typeof args.chain === "string" ? args.chain.trim().toLowerCase() : args.chain
-    if (c === null || c === "" || c === "both") change.chain = null
+    if (c === null || c === "" || c === "both" || c === "all") change.chain = null
     else if (c === "solana" || c === "hood") change.chain = c
     else return refused('chain is "solana", "hood" or "both".', "MCP_VALIDATION")
   }
   const paused = args.paused === undefined ? undefined : yesNo(args.paused)
   if (args.paused !== undefined && paused === undefined) return refused("paused is true to hold the tape where it is, false to resume at the newest.", "MCP_VALIDATION")
-  if (!Object.keys(change).length && paused === undefined) return refused("Say what Signals shows: mine, pattern, chain or paused.", "MCP_VALIDATION")
+  if (!Object.keys(change).length && paused === undefined) return refused(`Say what Signals shows: mine, pattern${folded ? "" : ", chain"} or paused.`, "MCP_VALIDATION")
   const t = tabWith(ctx, "signals", args.tab)
   if (typeof t === "string") return refused(t, "UNKNOWN_TAB")
   const was = signalsChoiceOf(ctx.signals, t.tab.name)
@@ -387,6 +400,18 @@ function signalsPlan(args: Record<string, unknown>, ctx: ViewToolContext): ViewP
     text: `${where} Signals pane shows ${shows}${pause}.${changed ? back : ""} Say so in a sentence; the rows are on their screen.`,
     words,
   }
+}
+
+/** The chain every pane shows (the agent pane and its cards aside), or all of them: at once, the person's to change back. */
+function chainPlan(args: Record<string, unknown>, ctx: ViewToolContext): ViewPlan {
+  const chains = ctx.chain?.chains ?? []
+  const raw = typeof args.chain === "string" ? args.chain.trim().toLowerCase() : args.chain
+  const chain = raw === undefined || raw === null || raw === "" || raw === "all" || raw === "both" ? null : (maybeChain(raw)?.slug ?? undefined)
+  if (chain === undefined) return refused(`chain is ${chains.map((c) => `"${c}"`).join(", ") || '"solana"'}, or "all".`, "MCP_VALIDATION")
+  if (chains.length < 2) return refused("The account has wallets on one chain, so every pane already shows only it: there's no chain to filter.", "ONE_CHAIN")
+  if (chain !== null && !chains.includes(chain)) return refused(`The account has no wallet on ${chainName(chain)}.`, "MCP_VALIDATION")
+  const shows = chain ? `${chainName(chain)} only` : "all chains"
+  return { kind: "chain", chain, text: `Every pane shows ${shows} now (the status bar's chain chip; your pane and your cards are never filtered). Say so in a sentence.`, words: `showed ${shows} in every pane` }
 }
 
 /** A search in the Journal, on the tab on screen if it has the Journal, else the first tab that does. Nothing is read back to the agent. */

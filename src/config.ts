@@ -2,6 +2,7 @@
 // that, the mode last picked is kept: core/mode-state.ts), what a buy sized
 // in dollars spends, and where the engine and Candle's tools live. Every problem is reported at once; unknown keys only warn.
 import { keysIn } from "./config-settings"
+import { type ChainSlug, chainName, enabledChains, isChainSlug } from "./shared/chains"
 import { parseShown, type WalletsShown } from "./core/wallets-shown"
 import { DEFAULT_WINDOW, parseWindow, type PnlWindow } from "./core/pnl"
 import { existsSync, readFileSync } from "node:fs"
@@ -31,6 +32,11 @@ export interface AgentConfig {
    * agent's only TEE wallet.
    */
   wallet?: string
+  /**
+   * A default per chain (`[agents.<name>.wallet] solana = "…"`, `hood = "…"`), in place of the one `wallet`:
+   * a chain with none pays from the embedded wallet on that chain.
+   */
+  walletOn?: Partial<Record<ChainSlug, string>>
   /** Shell access and tool permissions (engine/tools.ts); unset is the shell off and every research tool. */
   tools?: ToolSettings
   /** How often triggers may wake this agent: woken turns an hour and a day. Unset, 4 and 24. */
@@ -74,6 +80,8 @@ export interface Config {
     cliPath: string
     /** The only `--rpc-url` a `candle` run ever gets. */
     rpcUrl: string | undefined
+    /** The EVM RPC a `candle` run gets as CANDLE_EVM_RPC_URL, never on its command line; unset, the CLI's built-in Hood RPC. */
+    evmRpcUrl?: string
     /**
      * The CLI profile the Candle Harness acts as, recorded by onboarding's sign-in: every `candle`
      * run gets it as CANDLE_PROFILE, so switching the CLI's active profile never moves the Candle Harness to another
@@ -260,8 +268,19 @@ export function parseConfig(source: string, file: string, opts: { setup?: boolea
       warnings.push(`${prefix}: perTradeUsd ($${perTradeUsd}) is above perDayUsd ($${perDayUsd}), so the day limit binds first`)
     }
     let wallet: string | undefined
-    if (agent.wallet !== undefined) {
-      if (typeof agent.wallet === "string" && /^[^\x00-\x1f\x7f]{1,64}$/.test(agent.wallet.trim())) wallet = agent.wallet.trim()
+    let walletOn: AgentConfig["walletOn"]
+    const walletWord = (value: unknown): value is string => typeof value === "string" && /^[^\x00-\x1f\x7f]{1,64}$/.test(value.trim())
+    if (isTable(agent.wallet)) {
+      // A default per chain: each key a chain the Candle Harness trades on.
+      const chains = enabledChains().map((c) => c.slug)
+      walletOn = {}
+      for (const [chain, value] of Object.entries(agent.wallet)) {
+        if (!isChainSlug(chain)) problems.push(`${prefix}.wallet.${chain} isn't a chain: use ${chains.join(" or ")}`)
+        else if (walletWord(value)) walletOn[chain] = value.trim()
+        else problems.push(`${prefix}.wallet.${chain} is ${show(value)}; use "embedded", or a wallet's name or address on ${chainName(chain)}`)
+      }
+    } else if (agent.wallet !== undefined) {
+      if (walletWord(agent.wallet)) wallet = agent.wallet.trim()
       else problems.push(`${prefix}.wallet is ${show(agent.wallet)}; use "embedded", or a TEE wallet's label, address or id`)
     }
     const tools = agent.tools === undefined ? undefined : toolSettings(table(agent, "tools", `${prefix}.`), `${prefix}.tools`, problems, warnings)
@@ -285,7 +304,7 @@ export function parseConfig(source: string, file: string, opts: { setup?: boolea
       wake = { ...(perHour !== undefined ? { perHour } : {}), ...(perDay !== undefined ? { perDay } : {}) }
       if (perHour !== undefined && perDay !== undefined && perHour > perDay) warnings.push(`${prefix}.wake: perHour (${perHour}) is above perDay (${perDay}), so the day's cap binds first`)
     }
-    agents[name] = { name, limits: { perTradeUsd, perDayUsd }, ...(wallet ? { wallet } : {}), ...(tools ? { tools } : {}), ...(preset ? { preset } : {}), ...(wake ? { wake } : {}) }
+    agents[name] = { name, limits: { perTradeUsd, perDayUsd }, ...(wallet ? { wallet } : {}), ...(walletOn && Object.keys(walletOn).length ? { walletOn } : {}), ...(tools ? { tools } : {}), ...(preset ? { preset } : {}), ...(wake ? { wake } : {}) }
   }
 
   // No agents only in setup: there's no active agent until the first is made.
@@ -350,6 +369,13 @@ export function parseConfig(source: string, file: string, opts: { setup?: boolea
     const fault = typeof candle.rpcUrl === "string" ? solanaRpcFault(candle.rpcUrl) : "isn't a URL"
     if (fault === undefined) rpcUrl = candle.rpcUrl as string
     else problems.push(`candle.rpcUrl is ${show(candle.rpcUrl)}; it ${fault}`)
+  }
+  let evmRpcUrl: string | undefined
+  if (candle.evmRpcUrl !== undefined) {
+    // The CLI's rule for its EVM RPC is the same as for Solana's (cli/src/evm-lite.ts resolveEvmRpcUrl).
+    const fault = typeof candle.evmRpcUrl === "string" ? solanaRpcFault(candle.evmRpcUrl) : "isn't a URL"
+    if (fault === undefined) evmRpcUrl = candle.evmRpcUrl as string
+    else problems.push(`candle.evmRpcUrl is ${show(candle.evmRpcUrl)}; it ${fault}`)
   }
   let profile: string | undefined
   if (candle.profile !== undefined) {
@@ -446,7 +472,7 @@ export function parseConfig(source: string, file: string, opts: { setup?: boolea
       pricing,
       trade: { spendAsset },
       engine: { ...engineTable, stepCap },
-      candle: { mcp: { route, path: mcpPath }, cliPath, rpcUrl, profile },
+      candle: { mcp: { route, path: mcpPath }, cliPath, rpcUrl, ...(evmRpcUrl ? { evmRpcUrl } : {}), profile },
       wallets: { show: walletsShow },
       hacc: { enabled: haccEnabled },
       pnl: { window: pnlWindow },

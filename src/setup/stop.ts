@@ -2,13 +2,13 @@
 // itself (`core.stop`, with the view token, as the same user only), which answers with what it's stopping and
 // then stops as on a signal; a core that can't be asked (an older one, or one not answering) gets SIGTERM, by the
 // pid in its lock file, once that pid is checked to be a Candle Harness core.
-import { existsSync, readFileSync } from "node:fs"
+import { readFileSync } from "node:fs"
 import { spawnSync } from "node:child_process"
 import { connectView, STOP_CLIENT } from "../core/client"
 import { type Paths, paths as pathsOf, PathsError } from "../paths"
 import { pidIsAlive } from "../shared/lock"
 import { answers } from "../shared/socket-path"
-import { serviceFile } from "./service"
+import { serviceRunsHome } from "./service"
 
 /** How long a stopping core is waited for. */
 export const STOP_WAIT_MS = 15_000
@@ -72,9 +72,9 @@ export async function stopCommand(args: string[], io: { out(text: string): void;
     throw error
   }
   const waitMs = d.waitMs ?? STOP_WAIT_MS
-  const service = serviceFile(d)
+  // Only where the service runs this home: a stop on another home leaves the service's core alone.
   const serviceNote = () => {
-    if (service && existsSync(service)) io.out("The login service starts a core again at your next login (`candle-harness service uninstall` removes it).\n")
+    if (serviceRunsHome(d)) io.out("The login service starts a core again at your next login (`candle-harness service uninstall` removes it).\n")
   }
 
   // Asked first: the core says what it stops.

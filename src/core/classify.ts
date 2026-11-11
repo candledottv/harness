@@ -18,7 +18,7 @@ export type Mode = "paper" | "live"
  * `owner`, `ceremony`, `funds-out` and `read`: cards that run in the prompt pane, by
  * their row's rule. A read only becomes a card there when it asks at the CLI's own prompt (`tee fund`).
  */
-export type CardKind = "trade" | "swap" | "lessaccess" | "launch" | "stake" | "claim" | "public" | "upload" | "lp" | "close" | "owner" | "ceremony" | "funds-out" | "hacc" | "autonomy" | "trigger" | "bot" | "read" | "unknown"
+export type CardKind = "trade" | "swap" | "bridge" | "lessaccess" | "launch" | "stake" | "claim" | "public" | "upload" | "lp" | "close" | "owner" | "ceremony" | "funds-out" | "hacc" | "autonomy" | "trigger" | "bot" | "read" | "unknown"
 /** The id field a tool already has, or `coreOpId` for a tool with none (the core keeps the id). */
 export type IdKey = "clientTradeId" | "clientSwapId" | "clientLaunchId" | "clientStakeId" | "coreOpId"
 
@@ -220,6 +220,14 @@ export const CARD_TOOL_ARGS: Readonly<Record<string, readonly string[]>> = {
   candle_upload_profile_image: ["kind", "imageUrl"],
   candle_token_edit: ["chain", "mint", "description", "socials", "idempotencyKey"],
 }
+/**
+ * The core's own card tools, which Candle's server doesn't list (so they're never in TOOL_CLASSES, which mirrors it):
+ * candle_bridge, a bridge between two of the account's own wallets. Each takes only the arguments named here.
+ */
+export const CORE_CARD_TOOLS: Readonly<Record<string, { kind: CardKind; idKey: IdKey; args: readonly string[] }>> = {
+  candle_bridge: { kind: "bridge", idKey: "coreOpId", args: ["from", "to", "amount", "percent", "wallet", "destination"] },
+}
+
 /** The Candle Harness's own arguments on Candle's card tools: taken off before Candle sees them. */
 export const HARNESS_TOOL_ARGS: Readonly<Record<string, readonly string[]>> = {
   candle_trade: ["amountUsd", "wallet"],
@@ -230,6 +238,10 @@ export const HARNESS_TOOL_ARGS: Readonly<Record<string, readonly string[]>> = {
 
 /** The first argument a card tool doesn't take, or undefined when every one is known (or the tool has no list). */
 export function unknownArgument(tool: string, args: Record<string, unknown>): string | undefined {
+  if (Object.hasOwn(CORE_CARD_TOOLS, tool)) {
+    const own = new Set(CORE_CARD_TOOLS[tool]!.args)
+    return Object.keys(args).find((key) => !own.has(key))
+  }
   if (!Object.hasOwn(CARD_TOOL_ARGS, tool)) return undefined
   const known = new Set([...CARD_TOOL_ARGS[tool]!, ...(HARNESS_TOOL_ARGS[tool] ?? [])])
   return Object.keys(args).find((key) => !known.has(key))
@@ -259,6 +271,12 @@ const LIVE_ONLY: ReadonlySet<CardKind> = new Set(["launch", "stake", "claim", "p
 
 /** How one call is treated in this mode, decided from the tool and its arguments, never from the caller's say-so. */
 export function classify(tool: string, args: Record<string, unknown>, mode: Mode): CallClass {
+  // The core's own card tools: always a card, and live only (a bridge moves real funds between real wallets).
+  if (Object.hasOwn(CORE_CARD_TOOLS, tool)) {
+    const own = CORE_CARD_TOOLS[tool]!
+    if (mode === "paper") return { class: "refused", code: "NO_PAPER_FORM", reason: "This is paper mode, and a bridge has no paper form: switch to live to bridge.", listed: true }
+    return { class: "card", kind: own.kind, idKey: own.idKey }
+  }
   if (!Object.hasOwn(TOOL_CLASSES, tool)) return UNKNOWN
   const known = TOOL_CLASSES[tool]!
   // Candle's own descriptions say "dry-run first": a dry run is a read, so it never makes a card. Only
@@ -330,6 +348,7 @@ export function pausedStops(card: { kind: CardKind; tool: string; side?: Side; r
     case "trade":
       return card.side === "buy"
     case "swap":
+    case "bridge":
     case "launch":
       return true
     case "stake":
@@ -350,6 +369,8 @@ function paneArgv(params: unknown): string[] | undefined {
 /** What a paused core says about a card it stops, when proposed. */
 export function pausedMessage(card: { kind: CardKind }): string {
   switch (card.kind) {
+    case "bridge":
+      return "Bridging is paused by the kill switch: a bridge sends funds to another chain, and a sent one can't be stopped. Sells still work; resume to bridge."
     case "launch":
       return "Launches are paused by the kill switch. Sells, unstakes and claims still work; resume to launch."
     case "stake":

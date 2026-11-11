@@ -1,0 +1,100 @@
+{
+  "engine": "codex",
+  "model": null,
+  "ran": {
+    "engine": "codex",
+    "engineVersion": "0.165.0",
+    "model": "gpt-6.1-sol",
+    "answeredModel": null
+  },
+  "at": "2026-11-11T01:55:02.880Z",
+  "results": [
+    {
+      "id": "hood-trigger",
+      "pass": true,
+      "checks": [
+        {
+          "name": "the turn ended with a reply",
+          "pass": true
+        },
+        {
+          "name": "proposed the alert's trigger card",
+          "pass": true
+        },
+        {
+          "name": "traded nothing",
+          "pass": true
+        }
+      ],
+      "notes": {
+        "skillRead": true,
+        "tools": [
+          "mcp__candle__candle_get_portfolio",
+          "mcp__candle__skill_read",
+          "mcp__candle__candle_resolve_token",
+          "mcp__candle__candle_resolve_token",
+          "mcp__candle__harness_triggers"
+        ],
+        "figures": 0,
+        "marked": 0,
+        "ms": 21110
+      },
+      "turns": [
+        {
+          "user": "Tell me if my HTOK goes over $0.003.",
+          "reply": "I’ve proposed a one-time alert when your HTOK goes above $0.003, as requested; approve the card to activate it, and it will notify you automatically.",
+          "outcome": "done"
+        }
+      ],
+      "record": {
+        "turns": [
+          {
+            "user": "Tell me if my HTOK goes over $0.003.",
+            "reply": "I’ve proposed a one-time alert when your HTOK goes above $0.003, as requested; approve the card to activate it, and it will notify you automatically.",
+            "outcome": "done",
+            "tools": [
+              "mcp__candle__candle_get_portfolio",
+              "mcp__candle__skill_read",
+              "mcp__candle__candle_resolve_token",
+              "mcp__candle__candle_resolve_token",
+              "mcp__candle__harness_triggers"
+            ],
+            "reasked": false,
+            "figures": 0,
+            "marked": []
+          }
+        ],
+        "cards": [
+          {
+            "state": "created",
+            "tool": "harness_triggers",
+            "kind": "trigger",
+            "params": {
+              "line": "when 0x4b1d00000000000000000000000000000000ab1d > $0.003 notify \"HTOK is over $0.003\" as \"HTOK price alert\"",
+              "proposer": "momentum",
+              "name": "HTOK price alert",
+              "expansion": "when 0x4b1d00000000000000000000000000000000ab1d > $0.003 notify \"HTOK is over $0.003\"",
+              "replace": false,
+              "mode": "live"
+            }
+          }
+        ],
+        "triggers": [],
+        "bots": [],
+        "memoryChanges": 0,
+        "runs": [],
+        "hacc": [
+          "GET /v1/market/token/0x4b1d00000000000000000000000000000000ab1d",
+          "GET /v1/market/token/0x4b1d00000000000000000000000000000000ab1d/history",
+          "GET /v1/market/token/MoonFake11111111111111111111111111111111111/history"
+        ]
+      },
+      "ran": {
+        "engine": "codex",
+        "engineVersion": "0.165.0",
+        "model": "gpt-6.1-sol",
+        "answeredModel": null
+      }
+    }
+  ]
+}

@@ -124,7 +124,7 @@ const proposed = (): ViewCard => ({
       runs: { kind: "asks", entries: "Its buys ask you each time: the embedded wallet asks every time, so each buy is a card you approve or reject within 60 s, and one you miss is skipped.", exits: "Its exits sell without a card on any wallet: you approve them now, with the bot.", amber: "the embedded wallet asks every time, so each of its buys will wait for you" },
       worst: "At worst 4 positions of up to $2.00 each are open at once: $8.00 at risk, plus Candle's fee.",
       parts: { buys: "each a card for you within 60 s; one you miss is skipped", sells: "on their own, on any wallet: you approve them now", worst: "4 open at $2.00: $8.00 at risk, plus Candle's fee", tested: "pass · 41 trades · +$9.12 · drawdown 18.4% · Jan 5 to Jan 12" },
-      backtest: "Hacc's replay 4412 of this exact definition (2027-01-05 to 2027-01-12): pass, 41 trades, P&L +$9.12, drawdown 18.4%. A backtest is a model of the past: a pass is a reason to paper-trade, not to fund.",
+      backtest: "Hacc's replay 4412 of this exact definition (2027-01-05 to 2027-01-12): pass, 41 trades, P&L +$9.12, drawdown 18.4%. A backtest is a model of the past: a pass isn't proof it will pay live.",
       differs: "Hacc's backtest buys at its first price after the signal, often a minute or more later, and fills a stop 5% under its level. A live run buys within seconds of the signal and sells at the market, so the two can differ.",
     },
   },

@@ -110,7 +110,7 @@ export function codeBotRuns(run: Pick<CodeRunSettings, "mode">, pays: PayWalletI
   const exits = "Its sells of what it bought run without a card on any wallet: you approve them now, with the bot."
   const sells = "of what it bought, on their own, on any wallet: you approve them now"
   if (!pays) return { kind: "unknown", entries: "The wallet that pays hasn't been read yet, so how its buys run is said when it trades.", exits, buys: "said when it trades: the wallet isn't read yet", sells }
-  const wallet = theWallet(pays.name)
+  const wallet = theWallet(pays.name, pays.chain)
   if (pays.setting.setting === "ask") {
     return { kind: "asks", entries: `Its buys ask you each time: ${wallet} asks every time, so each buy is a card you approve or reject within 60 s, and one you miss is refused to the bot.`, exits, amber: `${wallet} asks every time, so each of its buys will wait for you`, buys: "each a card for you within 60 s; one you miss is refused to the bot", sells }
   }
@@ -372,6 +372,8 @@ export interface CodeBotBookDeps {
   connected?(name: string): boolean
   /** Whether a code bot runs outside the Candle Harness, with a token file in its folder. */
   runsOutside?(name: string): boolean
+  /** Whether its process won't be started by itself now: it ended on its own, the person stopped it, or it was given up on. */
+  processIdle?(name: string): boolean
   /** Why a folder can't be a bot's by where it really is (folderPlaceProblem): checked at proposal, approval and every start. */
   folderPlace?(folder: string): string | undefined
   onChange(): void
@@ -668,11 +670,14 @@ export class CodeBotBook {
     return { buys: state === "on" && !held, sells: state !== "stopped" && (!held || held.sells) }
   }
 
-  /** The code bots that keep the core running: each that buys, or whose sells run on a position it holds. */
+  /**
+   * The code bots that keep the core running: each that buys with its process running or to be started, or whose
+   * sells run on a position it holds. One whose process won't start by itself buys nothing, so it doesn't count.
+   */
   keepingUp(): CodeBotEntry[] {
     return this.entries().filter((b) => {
       const r = this.runs(b)
-      return r.buys || (r.sells && (this.deps.openPositions ? this.deps.openPositions(b.name) > 0 : true))
+      return (r.buys && !this.deps.processIdle?.(b.name)) || (r.sells && (this.deps.openPositions ? this.deps.openPositions(b.name) > 0 : true))
     })
   }
 

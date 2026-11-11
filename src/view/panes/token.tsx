@@ -102,6 +102,8 @@ export function tokenLines(market: TokenView | undefined, opts: { now: number; w
     line(fallback ? `Candle market read, ${read.text}: no price from Candle, so ≈ the chart's last, ${ago(fallback.at, opts.now, STALE_MS).text}` : `Candle market read, ${read.text}`, read.stale ? C.look : C.dim),
   ]
   if (market.check) out.push(checkLine(market.check))
+  // Hacc's own check on an EVM chain, said as Hacc's, under Candle's: amber only where a field warrants a look.
+  if (market.hacc) out.push(...wrap(market.hacc.words, opts.width).map((t) => line(t, market.hacc!.amber ? C.look : C.dim)))
   out.push(blank())
   const hr = market.historyRead
   const history = hr?.source === "hacc" && (market.history ?? []).length > 0 ? { source: "hacc" as const } : hr?.source === "samples" ? { source: "samples" as const, words: hr.words } : undefined

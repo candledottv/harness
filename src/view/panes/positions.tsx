@@ -9,6 +9,7 @@ import { amount, approxUsd, compactUsd, shortAddress, wrap } from "../format"
 import { C } from "../theme"
 import { askAbout } from "../ask"
 import { blank, type Line, line, type RowPick, type Seg } from "./lines"
+import { byChain, chainHeading } from "./wallets"
 
 /**
  * A holding's row picks its token. Every row does, SOL and USDC too: the core says the token pane doesn't
@@ -75,8 +76,16 @@ function positionLinesIn(p: PortfolioView | undefined, opts: PositionOpts): Line
   const held = p.wallets.some((w) => w.tokens === null || w.tokens.length > 0)
   if (!held) return noPositionLines(opts, "No positions yet.")
   const out: Line[] = []
-  for (const w of p.wallets) {
+  // Holdings on more than one chain go under a heading per chain, as the Wallets pane's wallets do.
+  const holding = p.wallets.filter((w) => w.tokens === null || w.tokens.length > 0)
+  const mixed = new Set(holding.map((w) => w.chain)).size > 1
+  let lastChain: string | undefined
+  for (const w of mixed ? byChain(holding) : p.wallets) {
     if (w.tokens !== null && w.tokens.length === 0) continue
+    if (mixed && w.chain !== lastChain) {
+      out.push(chainHeading(w.chain))
+      lastChain = w.chain
+    }
     if (w.tokens === null) {
       out.push(line("couldn't read this wallet's tokens", C.dim))
       continue

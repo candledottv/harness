@@ -9,7 +9,8 @@
 //   its last start's is noted on that row and in its log, and nowhere else: code under work changes at every start.
 // - A crash (any end the supervisor didn't ask for, but a clean exit 0) is restarted after 2 s, then longer, up to a
 //   minute. After five crashes in ten minutes it stops trying, says so, and is notified at once; `candle-harness bots
-//   start` runs it again. A clean exit 0 is said as ended on its own and not restarted until it's started again.
+//   start` runs it again. A clean exit 0 is said as ended on its own and not restarted until it's started again,
+//   across a core restart too, or until a new version of it (another folder or command) is approved.
 // - The person can stop its process (`candle-harness bots stop`), which leaves the bot on: its held exits still run, and
 //   it stays down, across a core restart too, until it's started again. A process stopped, given up on or ended on
 //   its own has its token ended with it, so nothing it left behind can trade. The Bots tab's stop ends its trades as well,
@@ -260,6 +261,8 @@ interface Saved {
   where?: "outside"
   down?: { at: string }
   gaveUp?: { at: string; crashes: number }
+  /** It ended on its own (exit 0): in words, and the folder and command it ran, so a new version approved starts. */
+  ended?: { at: string; words: string; run: string }
   running?: { pid: number; at: string; args: string; started?: string; boot?: string }
 }
 
@@ -280,7 +283,6 @@ interface Runtime {
   restartTimer?: ReturnType<typeof setTimeout>
   restartAt?: number
   lastExit?: string
-  ended?: string
   /** Why it isn't started now, where it was wanted to but couldn't be. */
   waits?: string
   usage?: { rssKb: number; cpuPct?: number }
@@ -294,6 +296,8 @@ const hhmm = (ms: number) => {
 }
 const secs = (ms: number) => (ms < 60_000 ? `${Math.round(ms / 1000)} s` : `${Math.round(ms / 60_000)} min`)
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`
+/** A bot's folder and command, as one key: another means another version of it was approved. */
+const runKey = (spec: Pick<BotRunSpec, "folder" | "command">): string => [spec.folder, ...spec.command].join("\0")
 
 /** A process's end in words: "exit 1", "killed by SIGKILL". */
 function exitWords(code: number | null, signal: NodeJS.Signals | number | null): string {
@@ -639,8 +643,8 @@ export class Supervisor {
       delete s.where
       delete s.down
       delete s.gaveUp
+      delete s.ended
       r.crashes = []
-      r.ended = undefined
       if (r.restartTimer) clearTimeout(r.restartTimer)
       r.restartTimer = undefined
       r.restartAt = undefined
@@ -686,6 +690,7 @@ export class Supervisor {
       const s = this.savedOf(name)
       delete s.down
       delete s.gaveUp
+      delete s.ended
       await this.persist()
       await this.launch(name, w.spec, "person")
       const now = this.runtime(name).live
@@ -715,6 +720,7 @@ export class Supervisor {
       s.where = "outside"
       delete s.down
       delete s.gaveUp
+      delete s.ended
       r.crashes = []
       await this.persist()
       this.deps.onChange()
@@ -746,7 +752,7 @@ export class Supervisor {
     if (s.gaveUp) return { runs: "harness", state: "gave_up", words: `crashed ${plural(s.gaveUp.crashes, "time")} in ${secs(this.t.crashWindowMs)}, so it isn't started again: \`candle-harness bots start ${name}\` runs it again`, log, ...base }
     if (s.down) return { runs: "harness", state: "down", words: `its process was stopped at ${hhmm(Date.parse(s.down.at))}; the bot stays on and its held exits still run. \`candle-harness bots start ${name}\` runs it again`, log, ...base }
     if (r.restartAt !== undefined) return { runs: "harness", state: "restarting", restartAt: new Date(r.restartAt).toISOString(), words: `${r.lastExit ?? "crashed"}; starts again in ${secs(Math.max(0, r.restartAt - this.deps.now()))} (${plural(crashes, "crash", "crashes")} in ${secs(this.t.crashWindowMs)})`, log, ...base }
-    if (r.ended) return { runs: "harness", state: "ended", words: `${r.ended}: \`candle-harness bots start ${name}\` runs it again`, log, ...base }
+    if (s.ended) return { runs: "harness", state: "ended", words: `${s.ended.words}: \`candle-harness bots start ${name}\` runs it again`, log, ...(r.lastExit ? {} : { lastExit: s.ended.words }), ...base }
     const w = this.deps.wanted(name)
     return { runs: "harness", state: "waits", words: r.waits ?? (w.why ? `not running: ${w.why}` : "not running"), log, ...base }
   }
@@ -804,7 +810,9 @@ export class Supervisor {
         r.restartTimer = undefined
         r.restartAt = undefined
       }
-      if (s.where === "outside" || s.down || s.gaveUp || r.ended || r.starting || r.restartTimer) continue
+      // Ended on its own, it stays ended until it's started, or until a new version of it is approved.
+      if (s.ended && w.spec && s.ended.run !== runKey(w.spec)) delete s.ended
+      if (s.where === "outside" || s.down || s.gaveUp || s.ended || r.starting || r.restartTimer) continue
       if (!w.start || !w.spec) {
         r.waits = w.why ? `not running: ${w.why}` : undefined
         continue
@@ -939,8 +947,9 @@ export class Supervisor {
     }
     if (ranMs >= this.t.stableMs) r.crashes = []
     if (code === 0 && !signal) {
-      r.ended = `ended on its own at ${hhmm(this.deps.now())} (exit 0)`
-      r.lastExit = r.ended
+      const words = `ended on its own at ${hhmm(this.deps.now())} (exit 0)`
+      s.ended = { at: new Date(this.deps.now()).toISOString(), words, run: runKey(live.spec) }
+      r.lastExit = words
       await this.deps.journal.append({ type: "bot.process", mode: this.deps.mode(), kind: "code", agent: live.spec.agent, name, what: "ended", pid: live.pid, exit: how, words: "ended on its own (exit 0), so it isn't started again until you start it" })
       await this.deps.endToken?.(name, "process_ended")?.catch(() => {})
       await this.persist()

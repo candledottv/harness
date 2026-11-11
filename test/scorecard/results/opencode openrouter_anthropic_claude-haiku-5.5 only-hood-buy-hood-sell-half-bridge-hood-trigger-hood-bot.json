@@ -1,0 +1,456 @@
+{
+  "engine": "opencode",
+  "model": "openrouter/anthropic/claude-haiku-5.5",
+  "ran": {
+    "engine": "opencode",
+    "engineVersion": "1.19.5",
+    "model": "openrouter/anthropic/claude-haiku-5.5",
+    "answeredModel": "openrouter/anthropic/claude-haiku-5.5"
+  },
+  "at": "2026-11-11T02:01:07.945Z",
+  "results": [
+    {
+      "id": "hood-buy",
+      "pass": true,
+      "checks": [
+        {
+          "name": "the turn ended with a reply",
+          "pass": true
+        },
+        {
+          "name": "proposed one buy card",
+          "pass": true
+        },
+        {
+          "name": "for HTOK, 0.0005 ETH",
+          "pass": true
+        }
+      ],
+      "notes": {
+        "skillRead": false,
+        "tools": [
+          "mcp__candle__candle_resolve_token",
+          "mcp__candle__candle_execution_status",
+          "mcp__candle__candle_token_forensics",
+          "mcp__candle__candle_quote",
+          "mcp__candle__candle_trade"
+        ],
+        "figures": 0,
+        "marked": 0,
+        "ms": 17155
+      },
+      "turns": [
+        {
+          "user": "Buy 0.0005 ETH of 0x4b1d00000000000000000000000000000000ab1d (HTOK) on Hood. That's the address, already checked.",
+          "reply": "I've proposed a buy of 0.0005 ETH of HTOK (0x4b1d00000000000000000000000000000000ab1d) on Hood. It's waiting for your approval on the card, which expires at 02:01:17 UTC.\n\nBefore you approve, note two things from my checks:\n- The token is external (pump.fun launch, routed via Jupiter). Resolve shows buys and sells open, and the routable flag is set.\n- The safety check is **incomplete**: mint authority, freeze authority, token extensions, LP lock and liquidity drain read clear, but **sellability is unknown**. My pre-trade quote also failed, so I couldn't confirm a round-trip price. The size is small, but a sell may not be possible.",
+          "outcome": "done"
+        }
+      ],
+      "record": {
+        "turns": [
+          {
+            "user": "Buy 0.0005 ETH of 0x4b1d00000000000000000000000000000000ab1d (HTOK) on Hood. That's the address, already checked.",
+            "reply": "I've proposed a buy of 0.0005 ETH of HTOK (0x4b1d00000000000000000000000000000000ab1d) on Hood. It's waiting for your approval on the card, which expires at 02:01:17 UTC.\n\nBefore you approve, note two things from my checks:\n- The token is external (pump.fun launch, routed via Jupiter). Resolve shows buys and sells open, and the routable flag is set.\n- The safety check is **incomplete**: mint authority, freeze authority, token extensions, LP lock and liquidity drain read clear, but **sellability is unknown**. My pre-trade quote also failed, so I couldn't confirm a round-trip price. The size is small, but a sell may not be possible.",
+            "outcome": "done",
+            "tools": [
+              "mcp__candle__candle_resolve_token",
+              "mcp__candle__candle_execution_status",
+              "mcp__candle__candle_token_forensics",
+              "mcp__candle__candle_quote",
+              "mcp__candle__candle_trade"
+            ],
+            "reasked": false,
+            "figures": 0,
+            "marked": []
+          }
+        ],
+        "cards": [
+          {
+            "state": "created",
+            "tool": "candle_trade",
+            "kind": "trade",
+            "side": "buy",
+            "mint": "0x4b1d00000000000000000000000000000000ab1d",
+            "params": {
+              "mint": "0x4b1d00000000000000000000000000000000ab1d",
+              "side": "buy",
+              "quoteAsset": "eth",
+              "amount": "0.0005",
+              "clientTradeId": "5f951494-0613-4a87-9606-3f2bfd284a12"
+            }
+          }
+        ],
+        "triggers": [],
+        "bots": [],
+        "memoryChanges": 0,
+        "runs": [],
+        "hacc": [
+          "GET /v1/market/token/0x4b1d00000000000000000000000000000000ab1d",
+          "GET /v1/market/token/0x4b1d00000000000000000000000000000000ab1d/history",
+          "GET /v1/market/token/0x4b1d00000000000000000000000000000000ab1d/history"
+        ]
+      },
+      "ran": {
+        "engine": "opencode",
+        "engineVersion": "1.19.5",
+        "model": "openrouter/anthropic/claude-haiku-5.5",
+        "answeredModel": "openrouter/anthropic/claude-haiku-5.5"
+      }
+    },
+    {
+      "id": "hood-sell-half",
+      "pass": true,
+      "checks": [
+        {
+          "name": "the turn ended with a reply",
+          "pass": true
+        },
+        {
+          "name": "proposed one sell card",
+          "pass": true
+        },
+        {
+          "name": "of HTOK, half",
+          "pass": true
+        }
+      ],
+      "notes": {
+        "skillRead": false,
+        "tools": [
+          "mcp__candle__candle_get_portfolio",
+          "mcp__candle__candle_resolve_token",
+          "mcp__candle__candle_resolve_token",
+          "mcp__candle__candle_trade"
+        ],
+        "figures": 0,
+        "marked": 0,
+        "ms": 11655
+      },
+      "turns": [
+        {
+          "user": "Sell half of my HTOK.",
+          "reply": "I've proposed selling 50% of your HTOK on Hood, about 1,200 of your 2,400 HTOK, from your embedded wallet. It's waiting on your approval in the Candle Harness; the card expires at 02:01:29 UTC, so approve it within about a minute.",
+          "outcome": "done"
+        }
+      ],
+      "record": {
+        "turns": [
+          {
+            "user": "Sell half of my HTOK.",
+            "reply": "I've proposed selling 50% of your HTOK on Hood, about 1,200 of your 2,400 HTOK, from your embedded wallet. It's waiting on your approval in the Candle Harness; the card expires at 02:01:29 UTC, so approve it within about a minute.",
+            "outcome": "done",
+            "tools": [
+              "mcp__candle__candle_get_portfolio",
+              "mcp__candle__candle_resolve_token",
+              "mcp__candle__candle_resolve_token",
+              "mcp__candle__candle_trade"
+            ],
+            "reasked": false,
+            "figures": 0,
+            "marked": []
+          }
+        ],
+        "cards": [
+          {
+            "state": "created",
+            "tool": "candle_trade",
+            "kind": "trade",
+            "side": "sell",
+            "mint": "0x4b1d00000000000000000000000000000000ab1d",
+            "params": {
+              "mint": "0x4b1d00000000000000000000000000000000ab1d",
+              "side": "sell",
+              "percent": 50,
+              "clientTradeId": "f96237aa-180c-436f-a533-d488429618dc"
+            }
+          }
+        ],
+        "triggers": [],
+        "bots": [],
+        "memoryChanges": 0,
+        "runs": [],
+        "hacc": [
+          "GET /v1/market/token/MoonFake11111111111111111111111111111111111/history",
+          "GET /v1/market/token/0x4b1d00000000000000000000000000000000ab1d",
+          "GET /v1/market/token/0x4b1d00000000000000000000000000000000ab1d/history"
+        ]
+      },
+      "ran": {
+        "engine": "opencode",
+        "engineVersion": "1.19.5",
+        "model": "openrouter/anthropic/claude-haiku-5.5",
+        "answeredModel": "openrouter/anthropic/claude-haiku-5.5"
+      }
+    },
+    {
+      "id": "bridge",
+      "pass": true,
+      "checks": [
+        {
+          "name": "the turn ended with a reply",
+          "pass": true
+        },
+        {
+          "name": "proposed one bridge card",
+          "pass": true
+        },
+        {
+          "name": "SOL to ETH, 0.02, from the embedded wallet",
+          "pass": true
+        }
+      ],
+      "notes": {
+        "skillRead": false,
+        "tools": [
+          "mcp__candle__candle_bridge"
+        ],
+        "figures": 0,
+        "marked": 0,
+        "ms": 8514
+      },
+      "turns": [
+        {
+          "user": "Move 0.02 SOL from my embedded wallet over to ETH on Hood.",
+          "reply": "I've proposed a bridge of 0.02 SOL from your embedded wallet on Solana to ETH on Hood. It's waiting on your approval card, which expires at 02:01:38 UTC. Approve it in the Candle Harness to send it.",
+          "outcome": "done"
+        }
+      ],
+      "record": {
+        "turns": [
+          {
+            "user": "Move 0.02 SOL from my embedded wallet over to ETH on Hood.",
+            "reply": "I've proposed a bridge of 0.02 SOL from your embedded wallet on Solana to ETH on Hood. It's waiting on your approval card, which expires at 02:01:38 UTC. Approve it in the Candle Harness to send it.",
+            "outcome": "done",
+            "tools": [
+              "mcp__candle__candle_bridge"
+            ],
+            "reasked": false,
+            "figures": 0,
+            "marked": []
+          }
+        ],
+        "cards": [
+          {
+            "state": "created",
+            "tool": "candle_bridge",
+            "kind": "bridge",
+            "params": {
+              "from": "SOL",
+              "to": "ETH",
+              "amount": "0.02",
+              "clientSwapId": "3d0327c6-cb49-44f6-9501-19a1dd9de84c",
+              "bridge": {
+                "to": "ETH",
+                "fromName": "embedded",
+                "toName": "embedded on Hood"
+              }
+            }
+          }
+        ],
+        "triggers": [],
+        "bots": [],
+        "memoryChanges": 0,
+        "runs": [],
+        "hacc": []
+      },
+      "ran": {
+        "engine": "opencode",
+        "engineVersion": "1.19.5",
+        "model": "openrouter/anthropic/claude-haiku-5.5",
+        "answeredModel": "openrouter/anthropic/claude-haiku-5.5"
+      }
+    },
+    {
+      "id": "hood-trigger",
+      "pass": true,
+      "checks": [
+        {
+          "name": "the turn ended with a reply",
+          "pass": true
+        },
+        {
+          "name": "proposed the alert's trigger card",
+          "pass": true
+        },
+        {
+          "name": "traded nothing",
+          "pass": true
+        }
+      ],
+      "notes": {
+        "skillRead": true,
+        "tools": [
+          "mcp__candle__candle_get_portfolio",
+          "mcp__candle__candle_get_market",
+          "mcp__candle__skill_read",
+          "mcp__candle__harness_triggers"
+        ],
+        "figures": 0,
+        "marked": 0,
+        "ms": 14046
+      },
+      "turns": [
+        {
+          "user": "Tell me if my HTOK goes over $0.003.",
+          "reply": "HTOK is at $0.0025 right now, about 20% under your $0.003 line. I've proposed a notify trigger for it: it only tells you, and trades nothing. It's waiting on a card for your approval (expires in about 10 minutes). Once you approve it, it fires once and then switches off.",
+          "outcome": "done"
+        }
+      ],
+      "record": {
+        "turns": [
+          {
+            "user": "Tell me if my HTOK goes over $0.003.",
+            "reply": "HTOK is at $0.0025 right now, about 20% under your $0.003 line. I've proposed a notify trigger for it: it only tells you, and trades nothing. It's waiting on a card for your approval (expires in about 10 minutes). Once you approve it, it fires once and then switches off.",
+            "outcome": "done",
+            "tools": [
+              "mcp__candle__candle_get_portfolio",
+              "mcp__candle__candle_get_market",
+              "mcp__candle__skill_read",
+              "mcp__candle__harness_triggers"
+            ],
+            "reasked": false,
+            "figures": 0,
+            "marked": []
+          }
+        ],
+        "cards": [
+          {
+            "state": "created",
+            "tool": "harness_triggers",
+            "kind": "trigger",
+            "params": {
+              "line": "when 0x4b1d00000000000000000000000000000000ab1d > $0.003 notify \"HTOK is over $0.003\" as \"HTOK over 0.003\"",
+              "proposer": "momentum",
+              "name": "HTOK over 0.003",
+              "expansion": "when 0x4b1d00000000000000000000000000000000ab1d > $0.003 notify \"HTOK is over $0.003\"",
+              "replace": false,
+              "mode": "live"
+            }
+          }
+        ],
+        "triggers": [],
+        "bots": [],
+        "memoryChanges": 0,
+        "runs": [],
+        "hacc": [
+          "GET /v1/market/token/0x4b1d00000000000000000000000000000000ab1d",
+          "GET /v1/market/token/0x4b1d00000000000000000000000000000000ab1d/history"
+        ]
+      },
+      "ran": {
+        "engine": "opencode",
+        "engineVersion": "1.19.5",
+        "model": "openrouter/anthropic/claude-haiku-5.5",
+        "answeredModel": "openrouter/anthropic/claude-haiku-5.5"
+      }
+    },
+    {
+      "id": "hood-bot",
+      "pass": true,
+      "checks": [
+        {
+          "name": "the turn ended with a reply",
+          "pass": true
+        },
+        {
+          "name": "proposed one bot card, on paper from the embedded wallet",
+          "pass": true
+        },
+        {
+          "name": "on Hood, as the words say",
+          "pass": true
+        },
+        {
+          "name": "saved nothing before the press",
+          "pass": true
+        }
+      ],
+      "notes": {
+        "skillRead": true,
+        "tools": [
+          "mcp__candle__skill_read",
+          "mcp__candle__harness_bots",
+          "mcp__candle__harness_bots"
+        ],
+        "figures": 1,
+        "marked": 0,
+        "ms": 14192
+      },
+      "turns": [
+        {
+          "user": "Make a paper bot on Robinhood Chain from the embedded wallet: buy confluence signals under 200k market cap, $1 a trade, at most 2 at once, take profit at 50%, stop at 30%. Call it hoodconf.",
+          "reply": "I've proposed the paper bot `hoodconf`; it's waiting for your approval on the card (expires about 02:11 UTC).\n\nIt runs on Robinhood Chain from the embedded wallet: it buys $1 on Hacc confluence signals under $200k market cap, at most 2 open at once, and sells at +50% take profit or -30% stop. On paper, every buy and sell is a rehearsal with no card and no real funds. Worst case is $2 at risk across the two positions, plus Candle's fee.\n\nThere's no backtest of this exact definition yet. Say the word if you want one run first.",
+          "outcome": "done"
+        }
+      ],
+      "record": {
+        "turns": [
+          {
+            "user": "Make a paper bot on Robinhood Chain from the embedded wallet: buy confluence signals under 200k market cap, $1 a trade, at most 2 at once, take profit at 50%, stop at 30%. Call it hoodconf.",
+            "reply": "I've proposed the paper bot `hoodconf`; it's waiting for your approval on the card (expires about 02:11 UTC).\n\nIt runs on Robinhood Chain from the embedded wallet: it buys $1 on Hacc confluence signals under $200k market cap, at most 2 open at once, and sells at +50% take profit or -30% stop. On paper, every buy and sell is a rehearsal with no card and no real funds. Worst case is $2 at risk across the two positions, plus Candle's fee.\n\nThere's no backtest of this exact definition yet. Say the word if you want one run first.",
+            "outcome": "done",
+            "tools": [
+              "mcp__candle__skill_read",
+              "mcp__candle__harness_bots",
+              "mcp__candle__harness_bots"
+            ],
+            "reasked": false,
+            "figures": 1,
+            "marked": []
+          }
+        ],
+        "cards": [
+          {
+            "state": "created",
+            "tool": "harness_bots",
+            "kind": "bot",
+            "params": {
+              "action": "save",
+              "name": "hoodconf",
+              "proposal": {
+                "name": "hoodconf",
+                "definition": {
+                  "chain": "hood",
+                  "entry": {
+                    "source": "pattern",
+                    "pattern": "confluence",
+                    "filters": {
+                      "max_mcap_usd": 200000
+                    }
+                  },
+                  "exit": {
+                    "take_profit_pct": 50,
+                    "stop_loss_pct": 30
+                  },
+                  "sizing": {
+                    "usd_per_trade": 1,
+                    "max_concurrent": 2
+                  }
+                },
+                "run": {
+                  "agent": "momentum",
+                  "wallet": "embedded",
+                  "mode": "paper"
+                }
+              },
+              "proposer": "momentum",
+              "hash": "0246dd3e10cae48b2a99b68b7fa3083a8df9ec582d2fc497d700f510d5ddf90b",
+              "replace": false
+            }
+          }
+        ],
+        "triggers": [],
+        "bots": [],
+        "memoryChanges": 0,
+        "runs": [],
+        "hacc": []
+      },
+      "ran": {
+        "engine": "opencode",
+        "engineVersion": "1.19.5",
+        "model": "openrouter/anthropic/claude-haiku-5.5",
+        "answeredModel": "openrouter/anthropic/claude-haiku-5.5"
+      }
+    }
+  ]
+}

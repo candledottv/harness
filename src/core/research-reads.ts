@@ -22,6 +22,7 @@ import type { ToolOutcome } from "./candle-mcp"
 import type { PlanHeld } from "./plan-held"
 import { type HaccPlan, reaches } from "./plan-state"
 import { cleanRow, type SignalRow } from "./signal-stream"
+import { type ChainSlug, familyOfAddress } from "../shared/chains"
 
 export const RESEARCH_PARTS = ["check", "traders", "signals", "mentions"] as const
 export type ResearchPart = (typeof RESEARCH_PARTS)[number]
@@ -49,7 +50,7 @@ export const SIGNALS_LIMIT = 30
 /** A read whose key Hacc refused is no answer about the token: it goes again this soon, with the next agent's key. */
 export const AGAIN_MS = 2_000
 
-type Chain = "solana" | "hood"
+type Chain = ChainSlug
 export interface ResearchToken {
   mint: string
   chain: Chain
@@ -100,7 +101,7 @@ const time = (value: unknown): number | undefined => {
   return Number.isFinite(t) ? t : undefined
 }
 /** An address: base58 or 0x hex, nothing else, so it's safe to draw and to copy. */
-const address = (value: unknown): string | undefined => (typeof value === "string" && /^(0x[0-9a-fA-F]{40}|[1-9A-HJ-NP-Za-km-z]{32,44})$/.test(value) ? value : undefined)
+const address = (value: unknown): string | undefined => (typeof value === "string" && familyOfAddress(value) !== undefined ? value : undefined)
 /** An X handle: letters, digits and underscores (and the scrub's hyphens), short. Anything else isn't a handle. */
 const handle = (value: unknown): string | undefined => {
   const h = typeof value === "string" ? value.replace(/^@/, "") : ""

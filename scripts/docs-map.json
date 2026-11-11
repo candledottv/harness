@@ -399,7 +399,8 @@
       "id": "tee-wallets",
       "name": "TEE wallets",
       "page": "wallets",
-      "what": "A wallet of its own for an agent, on Pro or Max, made in the prompt pane from a vault key. Its trades run through your own candle CLI with the agent's key. Stopping one is final, and it stays on the Wallets pane until it's swept home.",
+      "what": "A wallet of its own for an agent, on Pro or Max, made in the prompt pane from a vault key, on Solana or on Hood (add a Hood wallet). Its trades run through your own candle CLI with the agent's key. Stopping one is final, and it stays on the Wallets pane until it's swept home.",
+      "palette": ["hood-wallet"],
       "cli": ["tee new","tee disable","tee sweep","tee rename"]
     },
     {
@@ -408,7 +409,7 @@
       "page": "wallets",
       "what": "from <wallet> names the wallet that pays, by name or address; else the agent's default; else the embedded wallet. The card always names it.",
       "typed": ["buy $25 MOON from embedded"],
-      "settings": ["config.toml agents.<name>.wallet"]
+      "settings": ["config.toml agents.<name>.wallet","config.toml agents.<name>.wallet.solana","config.toml agents.<name>.wallet.hood"]
     },
     {
       "id": "wallets-pane",
@@ -703,6 +704,7 @@
         "triggers.toml triggers.<name>.again",
         "triggers.toml triggers.<name>.cooldown",
         "triggers.toml triggers.<name>.mode",
+        "triggers.toml triggers.<name>.chain",
         "config.toml agents.<name>.wake.perHour",
         "config.toml agents.<name>.wake.perDay"
       ],
@@ -836,7 +838,7 @@
       "page": "install",
       "what": "The Candle Harness runs your own candle CLI as the profile setup signed in, and Candle's MCP server for each agent key.",
       "doctor": ["candle"],
-      "settings": ["config.toml candle.cliPath","config.toml candle.profile","config.toml candle.rpcUrl","config.toml candle.mcp.route","config.toml candle.mcp.path"]
+      "settings": ["config.toml candle.cliPath","config.toml candle.profile","config.toml candle.rpcUrl","config.toml candle.evmRpcUrl","config.toml candle.mcp.route","config.toml candle.mcp.path"]
     },
     {
       "id": "doctor",

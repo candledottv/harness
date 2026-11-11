@@ -253,6 +253,41 @@ test("a step's next steps are chips on the pane's last line too: a click closes 
   expect(session.requests.filter((r) => r.method === "cli.run")).toEqual([])
 })
 
+for (const [w, h] of [
+  [80, 24],
+  [120, 30],
+  [160, 45],
+] as const) {
+  test(`next steps on the pane's last line are whole chips, as many as fit; one puts its line with the cursor where the amount goes, and ⧉ copies, at ${w}×${h}`, async () => {
+    const session = new FakeSession((m) => (m === "cards.approve" ? opened("c1") : {}))
+    await start(session, w, h)
+    const pane = await approveAndOpen(session)
+    const HOOD = "0x00000000000000000000000000000000000b0B01"
+    const BRIDGE = "bridge  sol to eth from tee-one as momentum"
+    session.push("operations", { opId: "op-c1", cardId: "c1", agent: "momentum", state: "succeeded", route: "pane", result: { pane: { outcome: "finished", words: "finished in the pane.", next: [{ label: "bridge ETH", line: BRIDGE, cursor: 7 }, { label: "fund from vault key", line: `candle vault fund ${HOOD} --asset ETH --amount ` }, { label: "⧉ address", copy: HOOD }] } } })
+    await input(() => pane.end(0))
+    await input(() => Bun.sleep(5))
+    const rows = frame().split("\n")
+    const y = rows.findIndex((r) => r.includes("⏎ or Esc closes"))
+    // Never a cut label: each chip is whole or left out, the first always there.
+    expect(rows[y]).toContain(" bridge ETH ")
+    if (w >= 120) for (const label of [" fund from vault key ", " ⧉ address "]) expect(rows[y]).toContain(label)
+    else expect(rows[y]).not.toMatch(/fund f|⧉ a/)
+    if (w >= 120) {
+      // A copy leaves the pane open: the address is copied (here, with no clipboard, shown in full to select by hand).
+      await input(() => setup!.mockMouse.click(rows[y]!.indexOf("⧉ address") + 2, y))
+      expect(frame()).toContain("⏎ or Esc closes")
+      expect(frame()).toMatch(/copy the address|Copied/)
+      expect(session.requests.filter((r) => r.method === "cli.run")).toEqual([])
+      return
+    }
+    await input(() => setup!.mockMouse.click(rows[y]!.indexOf("bridge ETH") + 2, y))
+    await input(() => setup!.mockInput.typeText("0.5"))
+    expect(frame()).toContain("bridge 0.5 sol to eth from tee-one")
+    expect(session.requests.filter((r) => r.method === "cli.run")).toEqual([])
+  })
+}
+
 test("Esc closes a finished pane too; a running one ignores Esc (it's the CLI's)", async () => {
   const session = new FakeSession((m) => (m === "cards.approve" ? opened("c1") : {}))
   await start(session)

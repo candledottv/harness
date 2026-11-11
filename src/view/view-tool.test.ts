@@ -174,6 +174,10 @@ test("signals sets a Signals pane's choice and pause where it is, else on the fi
   const chain = planView({ action: "signals", chain: "both" }, ctx({ file: EVERY, tab: 1, signals: choices }))
   expect(chain).toMatchObject({ kind: "signals", tab: "Cockpit", change: { chain: null }, words: "set Signals on Cockpit to only woke up signals (dormancy) from Hacc's tape" })
   expect((chain as { at?: number }).at).toBeUndefined()
+  // With wallets on two chains, its chain is the status bar's, for every pane: a chain alone sets that; with another change, it's said to ask apart.
+  const both = { current: "hood" as const, chains: ["solana" as const, "hood" as const] }
+  expect(planView({ action: "signals", chain: "both" }, ctx({ file: EVERY, tab: 1, chain: both }))).toMatchObject({ kind: "chain", chain: null })
+  expect(planView({ action: "signals", chain: "solana", pattern: "deployer" }, ctx({ file: EVERY, chain: both }))).toMatchObject({ kind: "refused", code: "MCP_VALIDATION", text: expect.stringContaining('action "chain"') })
   expect(planView({ action: "signals", paused: "true" }, ctx({ file: EVERY, tab: 3 }))).toMatchObject({ kind: "signals", change: {}, paused: true, words: "paused Signals on Signals" })
   // Off a tab with Signals, the tab named after it, not the Cockpit before it.
   expect(planView({ action: "signals", mine: true }, ctx({ file: EVERY, tab: 2 }))).toMatchObject({ kind: "signals", tab: "Signals", at: 3, words: "set Signals on Signals to your own rules' signals" })
@@ -212,4 +216,15 @@ test("while you were away: the agent opens the Away pane as a preview; no tab ha
   if (opened.kind !== "preview") throw new Error()
   expect(panesOf(opened.layout.root)).toEqual(["agent", "away", "token", "positions", "wallets", "activity"])
   expect(planView({ action: "tab", pane: "away" }, ctx())).toMatchObject({ kind: "refused", text: expect.stringContaining("open puts one on a tab's layout") })
+})
+
+test("chain: every pane shows one chain, or all of them, at once; with one chain in use there's nothing to filter", () => {
+  const both = { current: null, chains: ["solana", "hood"] } as const
+  expect(planView({ action: "chain", chain: "hood" }, ctx({ chain: both }))).toMatchObject({ kind: "chain", chain: "hood", words: "showed Hood only in every pane" })
+  expect(planView({ action: "chain", chain: "all" }, ctx({ chain: { current: "hood", chains: ["solana", "hood"] } }))).toMatchObject({ kind: "chain", chain: null, words: "showed all chains in every pane" })
+  expect((planView({ action: "chain", chain: "hood" }, ctx({ chain: both })) as { text: string }).text).toContain("Every pane shows Hood only")
+  expect(planView({ action: "chain", chain: "base" }, ctx({ chain: both }))).toMatchObject({ kind: "refused", code: "MCP_VALIDATION" })
+  expect(planView({ action: "chain", chain: "hood" }, ctx({ chain: { current: null, chains: ["solana"] } }))).toMatchObject({ kind: "refused", code: "ONE_CHAIN" })
+  // The read says what's shown.
+  expect((planView({ action: "read" }, ctx({ chain: { current: "hood", chains: ["solana", "hood"] } })) as { text: string }).text).toContain("Every pane shows Hood only.")
 })

@@ -51,6 +51,14 @@ const leafOf = (key: string): string =>
 const misspelt = (example: string, leaf: string): string => example.replace(new RegExp(`(^|[\\s\\[.{,])${leaf}(?=\\s*[=\\].])`, "m"), `$1${leaf}Zz`)
 
 describe("the settings table", () => {
+  test("a default wallet's words say what pays where none is set: the embedded wallet where the key may, else the only TEE wallet there", () => {
+    const words = (key: string) => SETTINGS.find((s) => s.key === key)!
+    expect(words("agents.<name>.wallet").words).toContain("a trade on the other chain pays as if none were set: from the embedded wallet there where the key may pay from it, else from its only TEE wallet there.")
+    expect(words("agents.<name>.wallet.hood").default).toBe("the embedded wallet, when the agent's key may pay from it; else its only Hood TEE wallet")
+    expect(words("mode").words).toContain("a run of setup again keeps the mode you're on")
+    expect(words("mode").words).toContain("ends live unless you picked paper during it")
+  })
+
   test("each setting is listed once, with a type, a default, words and an example", () => {
     const ids = SETTINGS.map((s) => `${s.file} ${s.key}`)
     expect(ids.filter((id, i) => ids.indexOf(id) !== i)).toEqual([])
@@ -120,7 +128,7 @@ describe("the settings table", () => {
     expect(keysIn("layouts.toml", "tabs[]")).toEqual(["name", "layout", "shown"])
     expect(keysIn("wallets.toml", "groups.<group>")).toEqual(["prefix", "wallets"])
     expect(keysIn("triggers.toml", "")).toEqual(["triggers"])
-    expect(keysIn("triggers.toml", "triggers.<name>")).toEqual(["agent", "line", "expansion", "on", "again", "cooldown", "mode"])
+    expect(keysIn("triggers.toml", "triggers.<name>")).toEqual(["agent", "line", "expansion", "on", "again", "cooldown", "mode", "chain"])
     expect(keysIn("bots.toml", "")).toEqual(["bots"])
     expect(keysIn("bots.toml", "bots.<name>")).toEqual(["agent", "wallet", "mode", "state", "maxSlippageBps", "definition", "kind", "folder", "command", "perTradeUsd", "perDayUsd", "maxOpen"])
   })

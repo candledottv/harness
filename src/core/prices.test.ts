@@ -157,6 +157,26 @@ describe("LatestPrices", () => {
     expect(latest.usd(undefined)).toBeUndefined()
   })
 
+  test("a Hood token's market read meets the portfolio's key for it, hood:<lowercase>, and its mint in any case", () => {
+    const TOKEN = "0x00000000000000000000000000000000000B0B01"
+    const latest = new LatestPrices(book(undefined, 1_000))
+    latest.noteMarket({ kind: "ok", result: { success: true, market: { chain: "hood", mint: TOKEN, priceUsd: 0.01 } } }, 2_000)
+    expect(latest.usd("hood:0x00000000000000000000000000000000000b0b01")).toBe(0.01)
+    expect(latest.usd(TOKEN)).toBe(0.01)
+    expect(latest.usd(TOKEN.toLowerCase())).toBe(0.01)
+    // A Solana mint stays case-sensitive.
+    latest.noteMarket(market(2), 2_000)
+    expect(latest.usd(MINT)).toBe(2)
+    expect(latest.usd(MINT.toLowerCase())).toBeUndefined()
+  })
+
+  test("USDG is Candle's fixed $1 with no portfolio price for it; the portfolio's figure when there is one", () => {
+    const KEY = "hood:0x5fc5360d0400a0fd4f2af552add042d716f1d168"
+    expect(new LatestPrices(book(undefined, undefined)).usd(KEY)).toBe(1)
+    expect(new LatestPrices(book(0.9998, 1_000)).usd(KEY)).toBe(0.9998)
+    expect(new LatestPrices(book(undefined, undefined)).usd("hood:native")).toBeUndefined()
+  })
+
   test("an older read never replaces a newer one", () => {
     const latest = new LatestPrices(book(undefined, undefined))
     latest.noteMarket(market(2), 2_000)

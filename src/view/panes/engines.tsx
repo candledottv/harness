@@ -68,6 +68,8 @@ export type PickerRow =
   | { kind: "runner"; on: boolean; text: string; current: boolean }
   /** Why the code runner can't be turned on here. */
   | { kind: "runnerInfo"; text: string }
+  /** A step for the agent that Enter puts on the input line for the person to send: the Hood chip's. */
+  | { kind: "fill"; line: string; text: string; current: boolean }
   | { kind: "engine"; engine: EngineId; text: string; can: boolean }
   /** A line under a heading: its gaps, a held-back sign-in, what to do, "reading…". */
   | { kind: "info"; engine: EngineId; text: string; tone: "dim" | "look" }
@@ -92,7 +94,7 @@ const modelText = (m: EngineModel): string => `${m.label === m.id ? m.id : `${m.
  * The picker's rows for `agent`: every engine in the build, in the seam's order, with its models under
  * it when it can run. `query` narrows to the models (and engines) whose words hold every word typed.
  */
-export function pickerRows(topic: EngineTopic | undefined, lists: Partial<Record<EngineId, ModelsRead>>, query: string, agent: string, platform: NodeJS.Platform = process.platform): PickerRow[] {
+export function pickerRows(topic: EngineTopic | undefined, lists: Partial<Record<EngineId, ModelsRead>>, query: string, agent: string, platform: NodeJS.Platform = process.platform, hood?: { line: string }): PickerRow[] {
   if (!topic) return []
   const words = query.toLowerCase().split(/\s+/).filter(Boolean)
   const matches = (text: string) => words.every((w) => text.toLowerCase().includes(w))
@@ -111,6 +113,11 @@ export function pickerRows(topic: EngineTopic | undefined, lists: Partial<Record
     if (runOn(run)) out.push({ kind: "runner", on: false, text: `on for ${run.join(", ")}: ${RUN_HOLD} · ⏎ turns it off`, current: true })
     else if (topic.runner.ok) out.push({ kind: "runner", on: true, text: `off · ⏎ turns it on for ${RUN_EXAMPLE.join(", ")}: ${RUN_HOLD}`, current: false })
     else out.push({ kind: "runnerInfo", text: `can't be held here: ${topic.runner.why}. It needs ${topic.runner.fix}.` })
+  }
+  // A Hood TEE wallet of its own, where one can be made and it has none: Enter types the next step, and sends nothing.
+  if (choice && hood && matches("hood wallet tee robinhood chain evm add")) {
+    out.push({ kind: "presets", text: "Hood wallet" })
+    out.push({ kind: "fill", line: hood.line, text: "add a Hood wallet · ⏎ puts its next step on the line", current: false })
   }
   for (const id of ENGINE_IDS) {
     const info = topic.engines[id]
@@ -151,10 +158,10 @@ export function pickerRows(topic: EngineTopic | undefined, lists: Partial<Record
   return out
 }
 
-export type PickableRow = Extract<PickerRow, { kind: "model" | "preset" | "runner" }>
+export type PickableRow = Extract<PickerRow, { kind: "model" | "preset" | "runner" | "fill" }>
 
 /** The rows Enter and the arrows move through: the presets, the code runner, and models of engines that can run. */
-export const pickable = (rows: readonly PickerRow[]): PickableRow[] => rows.filter((r): r is PickableRow => r.kind === "model" || r.kind === "preset" || r.kind === "runner")
+export const pickable = (rows: readonly PickerRow[]): PickableRow[] => rows.filter((r): r is PickableRow => r.kind === "model" || r.kind === "preset" || r.kind === "runner" || r.kind === "fill")
 
 /** Where the picker opens: on the agent's model now, else the first model, else the first row. */
 export function startIndex(rows: readonly PickerRow[]): number {
@@ -189,6 +196,7 @@ export interface EnginePickerProps {
   onPick: (engine: EngineId, model: string | undefined) => void
   onPickPreset: (preset: Preset) => void
   onPickRunner: (on: boolean) => void
+  onPickFill?: (line: string) => void
   onScroll: (delta: number) => void
 }
 
@@ -270,8 +278,8 @@ export function EnginePicker(props: EnginePickerProps) {
         }
         // A preset or a model: a click picks it, as Enter does.
         const on = row === selected
-        const key = row.kind === "preset" ? `p-${row.preset}` : row.kind === "runner" ? "runner" : `m-${row.engine}-${row.model ?? ""}-${i}`
-        const pick = () => (row.kind === "preset" ? props.onPickPreset(row.preset) : row.kind === "runner" ? props.onPickRunner(row.on) : props.onPick(row.engine, row.model))
+        const key = row.kind === "preset" ? `p-${row.preset}` : row.kind === "runner" ? "runner" : row.kind === "fill" ? "fill" : `m-${row.engine}-${row.model ?? ""}-${i}`
+        const pick = () => (row.kind === "preset" ? props.onPickPreset(row.preset) : row.kind === "runner" ? props.onPickRunner(row.on) : row.kind === "fill" ? props.onPickFill?.(row.line) : props.onPick(row.engine, row.model))
         return (
           <box key={key} flexDirection="row" height={1} backgroundColor={on ? C.sel : C.term} onMouseDown={pick} {...pointer}>
             <text fg={on ? C.hi : C.dim}>{on ? "▸ " : "  "}</text>

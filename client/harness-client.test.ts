@@ -77,6 +77,9 @@ test("every method against a real core", async () => {
   expect(await h.request("req_never_asked")).toMatchObject({ state: "unknown" })
   const { positions } = await h.positions()
   expect(positions).toHaveLength(1)
+  expect(positions[0]!.chain).toBe("solana")
+  // A buy names its chain where it wants to: one its token's address can't be on is refused, nothing sent.
+  expect(await h.buy({ mint: MOON, amountUsd: 1, chain: "hood" }).catch((e: HarnessRefused) => e.code)).toBe("INVALID_PARAMS")
   expect(await h.sell({ position: positions[0]!.id, percent: 50 })).toMatchObject({ state: "filled" })
   expect(await h.sell({ mint: MOON })).toMatchObject({ state: "filled" })
   expect((await h.fills()).fills.map((f) => f.side)).toEqual(["sell", "sell", "buy"])

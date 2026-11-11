@@ -4,6 +4,7 @@
 import { TextAttributes } from "@opentui/core"
 import { Chip, type ChipKind, chipText } from "../chip"
 import { C } from "../theme"
+import type { ChainSlug } from "../../shared/chains"
 
 /** What a click on a segment does, for the card it's on. */
 export type Act = "focus" | "approve" | "reject" | "details" | "requote" | "resend" | "abandon" | "stopHelp" | "copyReply" | "copy" | "walletsAll" | "walletsActive" | "fill" | "undo" | "tab" | "offer" | "ask" | "signals" | "pnlSpan" | "journalSearch" | "journalKind" | "journalOlder" | "approvals" | "away" | "walletsFind" | "closeEmpty" | "openToken" | "runNow" | "triggers" | "bot" | "build"
@@ -42,7 +43,7 @@ export interface RowPick {
   id: string
   /** The token it picks; "" for a row with none (a Journal row), which ↑/↓ and a click highlight without moving the link. */
   mint: string
-  chain?: "solana" | "hood"
+  chain?: ChainSlug
   /** What ctrl-t on the row puts on the input line: a question in the Candle Harness's own words (ask.ts). */
   ask?: string
 }

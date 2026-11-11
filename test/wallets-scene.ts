@@ -48,17 +48,17 @@ const INSIDE = new Set(["main", ...range(12, (i) => `bot-${two(i)}`)])
 export function fiftyWallets(readAt: number): { portfolio: PortfolioView; wallets: WalletsTopic; autonomy: AutonomyTopic; names: WalletNameEntry[] } {
   const tee: WalletView[] = FIFTY_NAMES.map(({ name, agent }, i) => {
     const sol = Number(solOf(i).toFixed(3))
-    return { address: fiftyAddress(name), chain: "solana", kind: "tee", label: name, name, agents: [agent], active: true, sol: { amount: sol, usd: sol * SOL_USD }, tokens: [] }
+    return { address: fiftyAddress(name), chain: "solana" as const, kind: "tee", label: name, name, agents: [agent], active: true, nativeSymbol: "SOL", native: { amount: sol, usd: sol * SOL_USD }, tokens: [] }
   })
-  const embedded: WalletView = { address: FIFTY_EMBEDDED, chain: "solana", kind: "embedded", label: "main", name: "main", agents: ["agent-a", "agent-b"], sol: { amount: 2.184, usd: 327.6 }, tokens: [] }
+  const embedded: WalletView = { address: FIFTY_EMBEDDED, chain: "solana" as const, kind: "embedded", label: "main", name: "main", agents: ["agent-a", "agent-b"], nativeSymbol: "SOL", native: { amount: 2.184, usd: 327.6 }, tokens: [] }
   const all = [embedded, ...tee]
   const names: WalletNameEntry[] = all.map((w) => ({ address: w.address, kind: w.kind, name: w.name!, owner: w.kind === "tee" ? "candle" : "harness" }))
   const groups = resolveGroups(FIFTY_GROUPS, names, ["agent-a", "agent-b"])
-  const teeOf = (agent: string) => tee.filter((w) => w.agents[0] === agent).map((w) => ({ id: `tee-${w.name}`, address: w.address, label: w.name!, chain: "solana", active: true }))
+  const teeOf = (agent: string) => tee.filter((w) => w.agents[0] === agent).map((w) => ({ id: `tee-${w.name}`, address: w.address, label: w.name!, chain: "solana" as const, active: true }))
   const wallets: WalletsTopic = {
     agents: {
-      "agent-a": { payable: { embedded: { address: FIFTY_EMBEDDED, chain: "solana" }, tee: teeOf("agent-a"), readAt, unreadable: [] }, embeddedWallet: "allowed", prefix: "agntAb3d" },
-      "agent-b": { payable: { embedded: { address: FIFTY_EMBEDDED, chain: "solana" }, tee: teeOf("agent-b"), readAt, unreadable: [] }, embeddedWallet: "allowed", prefix: "agntBb3d" },
+      "agent-a": { payable: { embedded: { address: FIFTY_EMBEDDED, chain: "solana" as const }, tee: teeOf("agent-a"), readAt, unreadable: [] }, embeddedWallet: "allowed", prefix: "agntAb3d" },
+      "agent-b": { payable: { embedded: { address: FIFTY_EMBEDDED, chain: "solana" as const }, tee: teeOf("agent-b"), readAt, unreadable: [] }, embeddedWallet: "allowed", prefix: "agntBb3d" },
     },
     account: [...teeOf("agent-a"), ...teeOf("agent-b")],
     boundTo: Object.fromEntries(tee.map((w) => [w.address, w.agents[0]!])),

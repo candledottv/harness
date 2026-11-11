@@ -11,6 +11,8 @@ import { type ToolOutcome, toOutcome } from "./candle-mcp"
 import type { Card } from "./cards"
 import { Journal } from "./journal"
 import { type Mapped, type Operation, operationLogLine, Operations, outcomeOf, refusalMessage } from "./execute"
+import { mapCliTrade } from "./cli-trade"
+import { jobState, type TradeRead } from "./reconcile"
 
 const MOON = "MoonFake11111111111111111111111111111111111"
 const T0 = Date.parse("2026-10-26T12:00:00Z")
@@ -161,7 +163,7 @@ describe("outcome rules", () => {
 })
 
 // A scripted pool and a hand-driven clock and timer queue.
-async function setup(opts: { script?: Record<string, ToolOutcome[]>; loseNextReply?: boolean; paused?: () => boolean; resendHold?: (op: Operation) => string | undefined; cli?: (op: Operation) => Promise<Mapped>; cliRead?: (op: Operation) => Promise<{ mapped: Mapped; detail: string } | undefined> } = {}) {
+async function setup(opts: { script?: Record<string, ToolOutcome[]>; loseNextReply?: boolean; paused?: () => boolean; resendHold?: (op: Operation) => string | undefined; cli?: (op: Operation) => Promise<Mapped>; cliRead?: (op: Operation) => Promise<{ mapped: Mapped; detail: string } | undefined>; cliTrades?: { execute(op: Operation): Promise<Mapped>; read(op: Operation): Promise<TradeRead> } } = {}) {
   const dir = await mkdtemp(join(tmpdir(), "chrn-exec-"))
   dirs.push(dir)
   let now = T0
@@ -197,6 +199,7 @@ async function setup(opts: { script?: Record<string, ToolOutcome[]>; loseNextRep
       ...(opts.resendHold ? { resendHold: opts.resendHold } : {}),
       ...(opts.cli ? { cli: opts.cli } : {}),
       ...(opts.cliRead ? { cliRead: opts.cliRead } : {}),
+      ...(opts.cliTrades ? { cliTrades: opts.cliTrades } : {}),
     })
   const ops = make(journal)
   /** Moves the clock on, running every timer that falls due, in order. */
@@ -806,6 +809,8 @@ test("the core's log has a line per operation step, and none for anything else",
   expect(operationLogLine({ ...op, type: "operation.unknown", reason: "no answer (transport)" })).toBe("22:08:43 agent-a 2c2a03da no answer (transport)")
   expect(operationLogLine({ ...op, type: "operation.check", found: true, state: "succeeded" })).toBe("22:08:43 agent-a 2c2a03da read back: succeeded")
   expect(operationLogLine({ ...op, type: "operation.check", replay: true, outcome: "SWAP_FAILED" })).toBe("22:08:43 agent-a 2c2a03da read back: SWAP_FAILED")
+  // A bridge's read-back carries where it stands as its phase.
+  expect(operationLogLine({ ...op, type: "operation.check", found: true, phase: "filled" })).toBe("22:08:43 agent-a 2c2a03da read back: filled")
   expect(operationLogLine({ ...op, type: "operation.refused", error: { code: "MCP_VALIDATION" } })).toBe("22:08:43 agent-a 2c2a03da refused: MCP_VALIDATION")
   expect(operationLogLine({ ...op, type: "operation.succeeded" })).toBe("22:08:43 agent-a 2c2a03da succeeded")
   expect(operationLogLine({ ...op, type: "card.approved" })).toBeUndefined()
@@ -926,5 +931,260 @@ describe("a bot's exit a restart cut off", () => {
     await s.advance(11 * 60_000)
     expect(s.calls.filter((c) => c.name === "candle_trade")).toHaveLength(1)
     expect(s.ops.get("op-trade")!.state).toBe("unknown")
+  })
+})
+
+describe("one operation at a time on a Hood TEE wallet", () => {
+  const HOOD_W = "0x00000000000000000000000000000000000E7e01"
+  const OTHER_W = "0x00000000000000000000000000000000000E7e02"
+  const hoodCard = (opId: string, extra: Partial<Card> = {}) =>
+    card("trade", { opId, route: "cli", wallet: HOOD_W, chain: "hood", params: { argv: ["swap", "ETH", "0x" + "4d".repeat(20), "--amount", "0.0005", "--wallet", HOOD_W, "--client-trade-id", opId, "--yes", "--json"], identity: "agent", agent: "momentum", json: true }, ...extra })
+  /** A CLI route whose runs answer when the test says, each by its op id. */
+  function cliRoute() {
+    const runs: string[] = []
+    const answers = new Map<string, (m: Mapped) => void>()
+    return {
+      runs,
+      answer: (opId: string, mapped: Mapped) => answers.get(opId)!(mapped),
+      cliTrades: {
+        execute: (op: Operation) => {
+          runs.push(op.opId)
+          return new Promise<Mapped>((resolve) => answers.set(op.opId, resolve))
+        },
+        read: async (): Promise<TradeRead> => ({ found: false, detail: "JOB_NOT_FOUND" }),
+      },
+    }
+  }
+  // The journal writes to a file: a few milliseconds lets each write land.
+  const settle = () => Bun.sleep(25)
+  // What must happen next is waited for: on a slow runner the queue's next send can come after a fixed sleep.
+  const until = async (condition: () => boolean, ms = 5000) => {
+    const end = Date.now() + ms
+    while (!condition() && Date.now() < end) await Bun.sleep(5)
+  }
+  const filled: Mapped = { state: "succeeded", result: { success: true, status: "executed", signature: "0x01" } }
+
+  test("a second trade on a busy Hood TEE wallet waits, written down, and is sent once the first settles; nothing is sent twice", async () => {
+    const cli = cliRoute()
+    const s = await setup({ cliTrades: cli.cliTrades })
+    const first = s.ops.execute(hoodCard("op-1"))
+    await settle()
+    const second = await s.ops.execute(hoodCard("op-2"))
+    expect(second).toMatchObject({ opId: "op-2", state: "submitting", waitingFor: "op-1" })
+    await until(() => cli.runs.length >= 1)
+    expect(cli.runs).toEqual(["op-1"])
+    const types = () => s.journal.rows().filter((r) => r.opId === "op-2").map((r) => r.type)
+    expect(types()).toEqual(["operation.waiting"])
+    expect(s.journal.rows().find((r) => r.type === "operation.waiting")).toMatchObject({ opId: "op-2", behind: "op-1", route: "cli", wallet: HOOD_W, chain: "hood" })
+    // A third queues behind the second.
+    expect((await s.ops.execute(hoodCard("op-3"))).waitingFor).toBe("op-2")
+    cli.answer("op-1", filled)
+    await first
+    await settle()
+    await until(() => cli.runs.length >= 2)
+    expect(cli.runs).toEqual(["op-1", "op-2"])
+    expect(s.ops.get("op-2")!.waitingFor).toBeUndefined()
+    expect(types()).toEqual(["operation.waiting", "operation.submitting"])
+    cli.answer("op-2", filled)
+    await settle()
+    await until(() => cli.runs.length >= 3)
+    expect(cli.runs).toEqual(["op-1", "op-2", "op-3"])
+    cli.answer("op-3", filled)
+    await settle()
+    expect(["op-1", "op-2", "op-3"].map((id) => s.ops.get(id)!.state)).toEqual(["succeeded", "succeeded", "succeeded"])
+  })
+
+  test("another wallet, and a Solana TEE wallet, never wait for it", async () => {
+    const cli = cliRoute()
+    const s = await setup({ cliTrades: cli.cliTrades })
+    void s.ops.execute(hoodCard("op-1"))
+    await settle()
+    void s.ops.execute(hoodCard("op-2", { wallet: OTHER_W }))
+    void s.ops.execute(card("trade", { opId: "op-3", route: "cli", wallet: "TeeFake111111111111111111111111111111111111", chain: "solana" }))
+    void s.ops.execute(card("trade", { opId: "op-4", route: "cli", wallet: "TeeFake111111111111111111111111111111111111", chain: "solana" }))
+    await settle()
+    await until(() => cli.runs.length >= 4)
+    expect(cli.runs).toEqual(["op-1", "op-2", "op-3", "op-4"])
+  })
+
+  test("an unknown first trade holds the wallet, as Candle does; one that failed frees it", async () => {
+    const cli = cliRoute()
+    const s = await setup({ cliTrades: cli.cliTrades })
+    void s.ops.execute(hoodCard("op-1"))
+    await settle()
+    await s.ops.execute(hoodCard("op-2"))
+    cli.answer("op-1", { state: "unknown", reason: "no answer" })
+    await settle()
+    await until(() => cli.runs.length >= 1)
+    expect(cli.runs).toEqual(["op-1"])
+    expect(s.ops.get("op-2")!.waitingFor).toBe("op-1")
+    await s.ops.resolve("v1", "op-1", "abandon")
+    await settle()
+    await until(() => cli.runs.length >= 2)
+    expect(cli.runs).toEqual(["op-1", "op-2"])
+  })
+
+  test("the kill switch refuses a waiting buy with nothing sent, and nothing runs when the wallet frees", async () => {
+    const cli = cliRoute()
+    let paused = false
+    const s = await setup({ cliTrades: cli.cliTrades, paused: () => paused })
+    void s.ops.execute(hoodCard("op-1"))
+    await settle()
+    await s.ops.execute(hoodCard("op-2"))
+    paused = true
+    expect((await s.ops.refuseWaiting()).map((o) => o.opId)).toEqual(["op-2"])
+    expect(s.ops.get("op-2")).toMatchObject({ state: "refused", error: { code: "PAUSED" } })
+    expect(s.ops.get("op-2")!.error!.message).toContain("while it waited for the wallet's last trade, so nothing was sent")
+    cli.answer("op-1", filled)
+    await settle()
+    await until(() => cli.runs.length >= 1)
+    expect(cli.runs).toEqual(["op-1"])
+  })
+
+  test("a waiting buy whose card ran past its 60 s isn't sent at an old price", async () => {
+    const cli = cliRoute()
+    const s = await setup({ cliTrades: cli.cliTrades })
+    void s.ops.execute(hoodCard("op-1"))
+    await settle()
+    await s.ops.execute(hoodCard("op-2"))
+    await s.advance(61_000)
+    cli.answer("op-1", filled)
+    await settle()
+    await until(() => cli.runs.length >= 1)
+    expect(cli.runs).toEqual(["op-1"])
+    expect(s.ops.get("op-2")).toMatchObject({ state: "refused", error: { code: "WAITED_TOO_LONG" } })
+  })
+
+  test("a restart while one waits: the running one is read back as unknown, the waiting one is refused as never sent, and nothing runs", async () => {
+    const cli = cliRoute()
+    const s = await setup({ cliTrades: cli.cliTrades })
+    void s.ops.execute(hoodCard("op-1"))
+    await settle()
+    await s.ops.execute(hoodCard("op-2"))
+    const again = s.make(s.journal)
+    const turned = await again.rebuild(s.journal.rows())
+    expect(turned).toEqual(["op-1"])
+    expect(again.get("op-1")!.state).toBe("unknown")
+    expect(again.get("op-2")).toMatchObject({ state: "refused", error: { code: "NOT_SENT_RESTART" } })
+    await settle()
+    await until(() => cli.runs.length >= 1)
+    expect(cli.runs).toEqual(["op-1"])
+  })
+
+  // A Hood trade whose trade leg was sent and reverted: Candle's job is failed, which ends Candle's own hold on the wallet.
+  const failedJob = { clientTradeId: "op-1", status: "failed", errorCode: "SWAP_FAILED", operation: { legs: [{ kind: "approve", status: "confirmed" }, { kind: "trade", status: "failed" }] } }
+  const failedRun = (): Mapped => mapCliTrade("trade", { exitCode: 1, timedOut: false, json: { code: "SWAP_FAILED", message: "The trade leg failed" } }, { found: true, state: jobState(failedJob), job: failedJob })
+
+  test("a trade whose job Candle failed after its trade step frees the wallet; it stays unknown, saying it may have filled", async () => {
+    const cli = cliRoute()
+    const s = await setup({ cliTrades: cli.cliTrades })
+    void s.ops.execute(hoodCard("op-1"))
+    await settle()
+    await s.ops.execute(hoodCard("op-2"))
+    cli.answer("op-1", failedRun())
+    await settle()
+    await until(() => s.ops.get("op-1")?.state === "unknown")
+    expect(s.ops.get("op-1")).toMatchObject({ state: "unknown", error: { message: expect.stringContaining("may have filled") } })
+    await until(() => cli.runs.length >= 2)
+    expect(cli.runs).toEqual(["op-1", "op-2"])
+    // A later trade on the wallet doesn't wait for it either.
+    cli.answer("op-2", filled)
+    await settle()
+    void s.ops.execute(hoodCard("op-3"))
+    await settle()
+    await until(() => cli.runs.length >= 3)
+    expect(cli.runs).toEqual(["op-1", "op-2", "op-3"])
+  })
+
+  test("a read that finds the job failed frees the wallet for the trade waiting behind it", async () => {
+    let job: TradeRead = { found: false, detail: "JOB_NOT_FOUND" }
+    const cli = cliRoute()
+    const s = await setup({ cliTrades: { ...cli.cliTrades, read: async () => job } })
+    void s.ops.execute(hoodCard("op-1"))
+    await settle()
+    await s.ops.execute(hoodCard("op-2"))
+    cli.answer("op-1", { state: "unknown", reason: "the candle CLI didn't finish in time" })
+    await settle()
+    await until(() => cli.runs.length >= 1)
+    expect(cli.runs).toEqual(["op-1"])
+    job = { found: true, state: jobState(failedJob), job: failedJob }
+    await s.advance(5_000)
+    await settle()
+    await until(() => s.ops.get("op-1")?.state === "unknown")
+    expect(s.ops.get("op-1")!.state).toBe("unknown")
+    await until(() => cli.runs.length >= 2)
+    expect(cli.runs).toEqual(["op-1", "op-2"])
+  })
+
+  test("a read that finds the job ended writes down what its error says and reads no further, across a restart too", async () => {
+    let job: TradeRead = { found: false, detail: "JOB_NOT_FOUND" }
+    let reads = 0
+    const cli = cliRoute()
+    const s = await setup({ cliTrades: { ...cli.cliTrades, read: async () => (reads++, job) } })
+    void s.ops.execute(hoodCard("op-1"))
+    await settle()
+    cli.answer("op-1", { state: "unknown", reason: "the candle CLI didn't finish in time" })
+    await settle()
+    job = { found: true, state: jobState(failedJob), job: failedJob }
+    await s.advance(5_000)
+    await settle()
+    const said = s.journal.rows().filter((r) => r.opId === "op-1" && r.type === "operation.unknown").at(-1)
+    expect(said?.result).toEqual(failedJob)
+    expect(String((said?.error as { message?: unknown } | undefined)?.message)).toContain("may have filled")
+    const after = reads
+    await s.advance(60_000)
+    await settle()
+    expect(reads).toBe(after)
+    // A restart knows it ended: its words stay, and it isn't read again.
+    const again = s.make(s.journal)
+    await again.rebuild(s.journal.rows())
+    again.readBack()
+    await settle()
+    await s.advance(60_000)
+    await settle()
+    expect(again.get("op-1")!.state).toBe("unknown")
+    expect(again.get("op-1")!.error?.message).toContain("may have filled")
+    expect(reads).toBe(after)
+  })
+
+  test("an operation that never resolves holds its wallet for 30 minutes at most, as Candle's lock does, across a restart too", async () => {
+    const cli = cliRoute()
+    const s = await setup({ cliTrades: cli.cliTrades })
+    void s.ops.execute(hoodCard("op-1"))
+    await settle()
+    cli.answer("op-1", { state: "unknown", reason: "the candle CLI says it may have landed (exit 3)" })
+    await settle()
+    await s.advance(28 * 60_000)
+    expect((await s.ops.execute(hoodCard("op-2", { expiresAt: new Date(s.now() + 60_000).toISOString() }))).waitingFor).toBe("op-1")
+    await s.advance(60_000)
+    expect(s.ops.get("op-2")).toMatchObject({ state: "refused", error: { code: "WAITED_TOO_LONG" } })
+    await s.advance(61_000)
+    void s.ops.execute(hoodCard("op-3", { expiresAt: new Date(s.now() + 60_000).toISOString() }))
+    await settle()
+    expect(cli.runs).toEqual(["op-1", "op-3"])
+    expect(s.ops.get("op-1")!.state).toBe("unknown")
+    cli.answer("op-3", filled)
+    await settle()
+    // After a restart the first is still unknown, read back, and holds nothing.
+    const again = s.make(s.journal)
+    await again.rebuild(s.journal.rows())
+    void again.execute(hoodCard("op-4", { expiresAt: new Date(s.now() + 60_000).toISOString() }))
+    await settle()
+    expect(again.get("op-4")!.waitingFor).toBeUndefined()
+    expect(cli.runs).toEqual(["op-1", "op-3", "op-4"])
+  })
+
+  test("a trade waiting behind one still running is refused in words when its card's 60 s run out, with nothing sent", async () => {
+    const cli = cliRoute()
+    const s = await setup({ cliTrades: cli.cliTrades })
+    void s.ops.execute(hoodCard("op-1"))
+    await settle()
+    await s.ops.execute(hoodCard("op-2"))
+    await s.advance(60_001)
+    expect(s.ops.get("op-2")).toMatchObject({ state: "refused", error: { code: "WAITED_TOO_LONG", message: expect.stringContaining("Nothing was sent") } })
+    expect(cli.runs).toEqual(["op-1"])
+    cli.answer("op-1", filled)
+    await settle()
+    expect(cli.runs).toEqual(["op-1"])
   })
 })

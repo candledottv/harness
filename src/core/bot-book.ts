@@ -26,6 +26,7 @@ import { readFileSync, renameSync, writeFileSync } from "node:fs"
 import { BASE_ASSETS, fromRaw, isBaseAsset } from "./assets"
 import { type Fill, fillOfRow, netAssetRaw } from "./fill"
 import type { JournalRow } from "./journal"
+import { chainField, type ChainSlug } from "../shared/chains"
 
 export interface BotExit {
   /** The exit's operation id, or `paper:<seq>`. */
@@ -48,6 +49,8 @@ export interface BotPosition {
   wallet: string
   mode: "paper" | "live"
   mint: string
+  /** The chain it was bought on, from its fill. */
+  chain?: ChainSlug
   /** The pair asset it bought with. */
   asset: string
   /** Tokens it received, raw; unset when Candle's answer didn't say (a buy read back by its id). */
@@ -544,6 +547,7 @@ export class BotPositions {
         wallet: fill.wallet,
         mode,
         mint: fill.mint,
+        ...chainField(fill.chain),
         asset: fill.asset,
         ...(fill.tokensRaw !== undefined ? { tokensRaw: fill.tokensRaw } : {}),
         ...(fill.tokenDecimals !== undefined ? { decimals: fill.tokenDecimals } : {}),

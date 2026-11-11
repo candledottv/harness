@@ -536,7 +536,8 @@ const keySteps: Step[] = [
     async run(c) {
       const address = await c.match(/\b([1-9A-HJ-NP-Za-km-z]{32,44})\b/, { timeout: 20_000, what: "the wallet's address" })
       c.data.address = address
-      // The rail's ✓s aren't this: the wallet's own line says funded, or that it waits.
+      // The rail's ✓s aren't this: the wallet's own line says funded, or that it waits, once its balance is read.
+      await c.match(/(✓ [\d.]+ SOL {2}funded|waiting for a deposit)/, { timeout: 30_000, what: "the wallet's balance" })
       if (!c.screen().includes("waiting for a deposit")) return
       c.pause(`Send about 0.05 SOL to the embedded wallet **${address}**. Setup moves on by itself when it lands.`)
     },
@@ -605,39 +606,25 @@ function liveTrade(id: string, title: string, line: string, headline: string): S
 
 const afterSteps: Step[] = [
   {
-    id: "paper-buy",
-    title: "a paper buy, no card",
+    id: "live-at-once",
+    title: "setup ends live",
     async run(c) {
-      c.line(`buy $1 ${JUP}`)
-      // Recorded in Activity, not just echoed on the message line: a refusal names the token too, and Activity says
-      // "paper candle_trade refused" for it.
-      await c.expect(["paper buy JUP"], { absent: ["(paper): refused"], timeout: 30_000, what: "the paper buy in Activity, naming its token" })
-      await Bun.sleep(1_500)
+      await c.expect(["LIVE"], { absent: ["PAPER"], timeout: 10_000, what: "the status bar in live mode" })
     },
   },
+  liveTrade("live-buy", "a live $1 JUP buy on a card", `buy $1 ${JUP}`, "BUY $1.00 of JUP"),
   {
     id: "restart",
-    title: "quit and started again: the token still named",
+    title: "quit and started again: the token still named, still live",
     async run(c) {
       c.key("ctrl-c")
       await Bun.sleep(300)
       c.key("ctrl-c")
       await c.expect([PROMPT.trim()], { timeout: 10_000, what: "the shell" })
       c.line(`clear; ${startLine(c.state)}`)
-      await c.expect(["agent-a", "JUP"], { timeout: 30_000, what: "the Candle Harness, naming the paper trade's token" })
+      await c.expect(["agent-a", "JUP", "LIVE"], { timeout: 30_000, what: "the Candle Harness, naming the bought token, in live mode" })
     },
   },
-  {
-    id: "go-live",
-    title: "live mode, on a yes",
-    async run(c) {
-      c.line("live")
-      await Bun.sleep(600)
-      c.type("y")
-      await c.expect(["LIVE"], { timeout: 10_000 })
-    },
-  },
-  liveTrade("live-buy", "a live $1 JUP buy on a card", `buy $1 ${JUP}`, "BUY $1.00 of JUP"),
   liveTrade("live-sell", "the JUP sold on a card", `sell 100% ${JUP}`, "SELL 100%"),
   liveTrade("live-swap", "a live swap on a card", "swap 0.002 SOL USDC", "SWAP"),
 ]

@@ -19,6 +19,7 @@ import { readFileSync, renameSync, writeFileSync } from "node:fs"
 import { keysIn } from "../config-settings"
 import { fileStamp } from "../shared/file-stamp"
 import { terminalText } from "../shared/terminal-text"
+import { type ChainSlug, chainName, enabledChains, isAddressOn, maybeChain } from "../shared/chains"
 import { classOf, durationText, MAX_COOLDOWN_MS, MIN_COOLDOWN_MS, parseTriggerShape, triggerNameProblem } from "../shared/trigger-grammar"
 
 export const TRIGGERS_HEADER =
@@ -41,6 +42,8 @@ export interface TriggerEntry {
    * Absent on one saved before triggers kept a mode; the core then takes the mode its approval was recorded in.
    */
   mode?: "paper" | "live"
+  /** The chain of the token it watches, where that isn't Solana: set when its card is approved. */
+  chain?: ChainSlug
 }
 
 export interface TriggersFile {
@@ -129,6 +132,8 @@ export function parseTriggersFile(source: string, file = "triggers.toml"): Trigg
       if (cooldownMs === undefined) bad.push('cooldown is from "1m" to "30d", such as "30m" or "2h"')
     }
     if (value.mode !== undefined && value.mode !== "paper" && value.mode !== "live") bad.push('mode is "paper" or "live"')
+    const chain = value.chain === undefined ? undefined : maybeChain(value.chain)
+    if (value.chain !== undefined && !chain) bad.push(`chain is ${enabledChains().map((c) => `"${c.slug}"`).join(" or ")}`)
     if (bad.length) {
       at(line, `${shown} is left out: ${bad.join("; ")}`)
       continue
@@ -158,7 +163,19 @@ export function parseTriggersFile(source: string, file = "triggers.toml"): Trigg
       at(keyLine(source, "cooldown", start), `${shown} is left out: ${cls === "schedule" ? "a schedule runs at its times" : "a level without again fires once"}, so a cooldown has nothing to space`)
       continue
     }
-    triggers.push({ name, agent: agent!, line: typed!, expansion: expansion!, on: value.on as boolean, again, ...(cooldownMs !== undefined ? { cooldownMs } : {}), ...(value.mode !== undefined ? { mode: value.mode as "paper" | "live" } : {}) })
+    if (chain) {
+      const when = two!.when
+      const token = "token" in when ? when.token : undefined
+      if (token === undefined) {
+        at(keyLine(source, "chain", start), `${shown} is left out: chain is for a trigger on a token`)
+        continue
+      }
+      if (!isAddressOn(chain, token)) {
+        at(keyLine(source, "chain", start), `${shown} is left out: its token's address can't be on ${chainName(chain.slug)}`)
+        continue
+      }
+    }
+    triggers.push({ name, agent: agent!, line: typed!, expansion: expansion!, on: value.on as boolean, again, ...(cooldownMs !== undefined ? { cooldownMs } : {}), ...(value.mode !== undefined ? { mode: value.mode as "paper" | "live" } : {}), ...(chain ? { chain: chain.slug } : {}) })
   }
   return { triggers, problems }
 }
@@ -168,7 +185,7 @@ export function serializeTriggersFile(triggers: readonly TriggerEntry[]): string
   const sorted = [...triggers].sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0))
   const tables = sorted.map(
     (t) =>
-      `\n[triggers.${quote(t.name)}]\nagent = ${quote(t.agent)}\nline = ${quote(t.line)}\nexpansion = ${quote(t.expansion)}\non = ${t.on}\nagain = ${t.again}\n${t.cooldownMs !== undefined ? `cooldown = ${quote(durationText(t.cooldownMs))}\n` : ""}${t.mode !== undefined ? `mode = ${quote(t.mode)}\n` : ""}`,
+      `\n[triggers.${quote(t.name)}]\nagent = ${quote(t.agent)}\nline = ${quote(t.line)}\nexpansion = ${quote(t.expansion)}\non = ${t.on}\nagain = ${t.again}\n${t.cooldownMs !== undefined ? `cooldown = ${quote(durationText(t.cooldownMs))}\n` : ""}${t.mode !== undefined ? `mode = ${quote(t.mode)}\n` : ""}${t.chain !== undefined ? `chain = ${quote(t.chain)}\n` : ""}`,
   )
   return `${TRIGGERS_HEADER}${tables.join("")}`
 }

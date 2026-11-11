@@ -76,7 +76,8 @@ test("a notice has no address and no key: an address shows short, a key is redac
   expect(n.body).toContain("Moon…1111")
   expect(n.body).not.toContain("cndl_live_")
   expect(n.body).toContain("[redacted]")
-  expect(noticeText(`0x${"ab".repeat(20)} paid`)).toBe("0xab…abab paid")
+  // An EVM address keeps `0x` and four characters each end.
+  expect(noticeText(`0x${"ab".repeat(20)} paid`)).toBe("0xabab…abab paid")
 })
 test("notices that come together are one: how many, then each line, capped", () => {
   const a = noticeOf("triggers", "trigger \"x\": filled SELL 50% of MOON")

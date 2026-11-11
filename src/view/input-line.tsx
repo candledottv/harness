@@ -4,7 +4,7 @@
 // help's. It takes only the room the line leaves, so it never moves a row: Enter's word goes last,
 // the palette's chip before it, and Esc's and help's first.
 import { Chip, chipText } from "./chip"
-import { wrap } from "./format"
+import { shortAddress, wrap } from "./format"
 import type { UiState } from "./keys"
 import { chordOf, type Here, hintsHere } from "./keymap"
 import { C, fit } from "./theme"
@@ -99,10 +99,34 @@ function messageLines(ui: UiState, width: number): string[] {
  * wrapped refusal had covered them).
  */
 export function messageRows(ui: UiState, width: number, canAsk: boolean): number {
-  return messageLines(ui, width).length + (ui.message?.ask !== undefined && canAsk ? 1 : 0) + (ui.message?.copy !== undefined ? 1 : 0)
+  return messageLines(ui, width).length + (ui.message?.ask !== undefined && canAsk ? 1 : 0) + (ui.message?.copy !== undefined ? 1 : 0) + pickRows(ui, width).length
 }
 
-export function MessageLine(props: { left?: number; width: number; top: number; ui: UiState; onAsk?: () => void; onCopy?: (text: string) => void }) {
+const PICK_HINT = "puts it on the line"
+
+/**
+ * A refusal's tokens on more than one chain, as chips (chain · short address): as many to a row as fit after a
+ * space, the hint after the last where it fits too.
+ */
+export function pickRows(ui: UiState, width: number): { chips: { label: string; index: number }[]; hint: boolean }[] {
+  const tokens = ui.message?.pick?.tokens ?? []
+  const rows: { chips: { label: string; index: number }[]; hint: boolean }[] = []
+  let x = 0
+  tokens.forEach((t, index) => {
+    const label = `${t.chain} · ${shortAddress(t.mint)}`
+    const w = chipText(label).length
+    // A row starts one cell in; chips on it are two apart.
+    if (rows.length === 0 || x + 2 + w > width) {
+      rows.push({ chips: [], hint: false })
+      x = 1 + w
+    } else x += 2 + w
+    rows.at(-1)!.chips.push({ label, index })
+  })
+  if (rows.length > 0 && x + 2 + PICK_HINT.length <= width) rows.at(-1)!.hint = true
+  return rows
+}
+
+export function MessageLine(props: { left?: number; width: number; top: number; ui: UiState; onAsk?: () => void; onCopy?: (text: string) => void; onPick?: (index: number) => void }) {
   const m = props.ui.message
   const ask = m?.ask !== undefined && props.onAsk ? props.onAsk : undefined
   const copy = m?.copy
@@ -124,6 +148,18 @@ export function MessageLine(props: { left?: number; width: number; top: number; 
           <text fg={C.dim}>{fit("  sends the line as typed; the agent confirms the token with you", Math.max(0, props.width - 24))}</text>
         </box>
       ) : null}
+      {pickRows(props.ui, props.width).map((row, r) => (
+        <box key={`pick-${r}`} flexDirection="row" height={1}>
+          <text fg={C.dim}> </text>
+          {row.chips.map((c, i) => (
+            <box key={c.index} flexDirection="row" flexShrink={0}>
+              {i > 0 ? <text fg={C.dim}>{"  "}</text> : null}
+              <Chip label={c.label} onClick={() => props.onPick?.(c.index)} />
+            </box>
+          ))}
+          {row.hint ? <text fg={C.dim}>{`  ${PICK_HINT}`}</text> : null}
+        </box>
+      ))}
       {copy !== undefined ? (
         <box flexDirection="row" height={1}>
           <text fg={C.dim}> </text>

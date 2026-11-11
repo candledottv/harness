@@ -8,6 +8,7 @@
 // on whose behalf; the display isn't hashed. It lives 60 s (trades and swaps) whether or not a view
 // is attached; approving it late proposes a fresh one at the current price, and the late one never
 // runs.
+import { ownHeldFloor } from "./fill"
 import { tokenLabel } from "../shared/token-label"
 import { createHash, randomBytes, randomUUID } from "node:crypto"
 import { CORE_HOWS } from "../shared/approved-how"
@@ -15,14 +16,15 @@ import { canonicalJson } from "../shared/canonical-json"
 import { invalidParams, refused } from "../shared/rpc"
 import { terminalText } from "../shared/terminal-text"
 import { type AgentStatus, FALLBACK_FEE_BPS } from "./agent-status"
-import type { PayerResult } from "./agent-wallets"
-import { ASK, type WalletSetting } from "./autonomy"
+import type { Payable, PayerResult } from "./agent-wallets"
+import { ASK, embeddedName, embeddedWords, type WalletSetting } from "./autonomy"
 import { amountText, BASE_ASSETS, type BaseAsset, fromRaw, isBaseAsset, notATradeToken, priceText, settlementAsset, toRaw } from "./assets"
 import type { ToolOutcome } from "./candle-mcp"
 import { type CardKind, type IdKey, type Mode, pausedMessage, pausedStops, unknownArgument } from "./classify"
 import type { CliResult } from "./candle-cli"
 import { type CliCardRequest, type CliRowParams, planCliRow, type UploadStage } from "./cli-cards"
 import { type CliTradeParams, teeSwapArgs } from "./cli-trade"
+import { bridgeArgs, bridgeChainName, isBridgeAsset } from "./bridge"
 import type { EmptyState } from "./empty-accounts"
 import { PANE_NOTE, type PaneParams, type PaneRequest, paneHeadline, paneSteps, paneTitleLine, planPane } from "./pane-plan"
 import type { Journal, JournalRow } from "./journal"
@@ -34,6 +36,7 @@ import { type CardDesk, type CardState, type CardView, type FaceClient, type Ope
 import type { TriggerSpec } from "./triggers-tool"
 import type { BotSpec } from "./bots-tool"
 import { short, walletName } from "./wallet-names"
+import { type ChainSlug, enabledChains, isChainSlug, maybeChain, requestChain } from "../shared/chains"
 
 export const OPEN_CARD_CAP = 5
 /** The core's own client holds every trigger's cards: more at once than one view or harness, still bounded. */
@@ -64,7 +67,7 @@ function botSpecShown(spec: BotSpec): BotSpec {
 }
 
 export function cardLifetimeMs(kind: CardKind): number {
-  return kind === "trade" || kind === "swap" ? 60_000 : 10 * 60_000
+  return kind === "trade" || kind === "swap" || kind === "bridge" ? 60_000 : 10 * 60_000
 }
 
 /** A figure on the compact card: an amount of an asset or token, which the view rounds. */
@@ -187,6 +190,21 @@ export interface CardDisplay {
   modeDiffers?: string
   /** Once expired it's asked for again, never re-quoted: what it was made from may have changed since. */
   askAgain?: boolean
+  /**
+   * A bridge's own lines: the route from one of the account's wallets to the other, how it goes and what it costs,
+   * and what it says while it's on its way.
+   */
+  bridge?: BridgeDisplay
+}
+
+/** A bridge card's words: its route, how it goes, and its line in flight. */
+export interface BridgeDisplay {
+  /** "bot-1 · TEE (Solana) → bot-1-h · TEE (Hood)". */
+  route: string
+  /** "via Relay · less Relay's fee · no Candle fee · same key, not funds out": its figure is before Relay's fee. */
+  via: string
+  /** "sent on Solana · arriving on Hood…". */
+  arriving: string
 }
 
 /**
@@ -278,11 +296,12 @@ export function withoutCard(input: {
   const { card, setting } = input
   if (setting.setting !== "inside" || card.mode !== "live") return { run: false }
   if ((card.kind !== "trade" && card.kind !== "swap") || !card.side || card.row !== undefined || card.route === "pane") return { run: false }
-  const whose = card.walletName === "embedded" ? "the embedded wallet's" : `${card.walletName}'s`
+  const own = embeddedWords(card.walletName)
+  const whose = own ? `${own}'s` : `${card.walletName}'s`
   if (input.inFlight) return { run: false, words: "the same trade is still in flight, so this one waits for you" }
   // A bound looser than the route's default, sells included: a confused or misled agent could dump into a thin pool.
   if (card.display?.slippageLooser && botBound(card) === undefined) return { run: false, words: `${card.display.slippage}, looser than that, so this one waits for you` }
-  if (card.side === "sell") return { run: true, words: `without a card: ${card.walletName === "embedded" ? "the embedded wallet" : card.walletName} trades inside limits, and sells aren't limited${boundWords(card)}` }
+  if (card.side === "sell") return { run: true, words: `without a card: ${own ?? card.walletName} trades inside limits, and sells aren't limited${boundWords(card)}` }
   if (input.usedUsd === undefined) return { run: false, words: `the core can't count ${whose} day without a card` }
   const value = card.value.usd
   if (value === undefined) return { run: false, words: `no price, so ${whose} figures can't be checked` }
@@ -339,7 +358,7 @@ export interface CardBookDeps {
   /** Operations sent and not yet settled, those a restart rebuilt included: a retry of one waits for the person. */
   operations?: () => readonly { opId: string; agent: string; tool: string; params: Record<string, unknown>; state: string }[]
   /** Which wallet pays (AgentWallets.payer). Without it, every card pays from the embedded wallet. */
-  wallets?: { payer(agent: string, word?: string, opts?: { chain?: "solana" | "hood" }): PayerResult }
+  wallets?: { payer(agent: string, word?: string, opts?: { chain?: ChainSlug }): PayerResult; payable?(agent: string): Payable }
   /**
    * The final words of a CLI card's run: `--json` (unless `json: false`, as for a pane step on the
    * user's terminal), and the configured `--rpc-url` where it takes one (CandleCli.finalArgs).
@@ -413,6 +432,8 @@ const grouped = (amount: string): string => {
 
 interface Planned {
   params: Record<string, unknown>
+  /** The chain the card acts on, from Candle's market answer or the request; none for a card about no chain. */
+  chain?: ChainSlug
   side?: Side
   /** What a buy or swap spends, in a base asset: an unpriced one is valued once it fills, so it counts toward the day. */
   spent?: { asset: BaseAsset; amount: string }
@@ -420,11 +441,6 @@ interface Planned {
   /** A TEE wallet pays: the card runs `cli` through `candle swap`. */
   tee?: { address: string; label?: string }
   cli?: string[]
-  /**
-   * Whether `cli` takes candle.rpcUrl, a Solana endpoint: a Hood TEE wallet's trade reads Hood's chain, and given a
-   * Solana URL as `--rpc-url` its reads fail (swap.ts hoodSwap), so it runs on the CLI's own Hood endpoint.
-   */
-  cliRpcUrl?: boolean
   /** One of the CLI's card rows: what runs. */
   cliRow?: { row: string; argv: string[]; rpcUrl: boolean; file?: CliRowParams["file"] }
   /** A row that runs in the prompt pane: what the launcher runs, and what the user will be asked. */
@@ -457,6 +473,7 @@ interface Planned {
   settles?: BaseAsset
   publishes?: string
   launchTerms?: string
+  bridge?: BridgeDisplay
 }
 
 /** How many closed cards the book keeps: every open one stays, and a card being approved or still in flight. */
@@ -568,7 +585,7 @@ export class CardBook implements CardDesk {
   /**
    * An unpriced buy or swap that filled, valued now at what it spent, so the agent's day counts it: an agent
    * could otherwise spend without limit by trading while no price can be read. Its card said it couldn't be
-   * checked. Still no price (USDG), and it isn't counted: the card said so, and nothing is made up.
+   * checked. Still no price (ETH with no portfolio read), and it isn't counted: the card said so, and nothing is made up.
    */
   private async valueFilled(card: Card): Promise<void> {
     const later = card.valueLater!
@@ -643,6 +660,7 @@ export class CardBook implements CardDesk {
     else if (input.pane) planned = this.planPane(input.pane)
     else if (kind === "trade") planned = await this.planTrade(client, agent, given, status, opId)
     else if (kind === "swap") planned = await this.planSwap(client, agent, given, status, opId)
+    else if (kind === "bridge") planned = await this.planBridge(client, agent, given, status, opId)
     else if (kind === "launch") planned = await this.planLaunch(client, agent, tool, given, status, opId)
     else if (kind === "stake") planned = await this.planStake(client, agent, tool, given, status, opId)
     else if (kind === "claim") planned = await this.planClaim(client, agent, tool, given, status)
@@ -677,7 +695,9 @@ export class CardBook implements CardDesk {
           ...(planned.cliRow.file ? { file: planned.cliRow.file } : {}),
         } satisfies CliRowParams)
       : planned.tee
-        ? ({ argv: this.cliArgs(planned.cli!, { rpcUrl: planned.cliRpcUrl !== false }), identity: "agent", agent, json: true } satisfies CliTradeParams)
+        ? // The Solana RPC only for a Solana trade: the CLI reads an EVM chain over its own (candle.evmRpcUrl, else its
+          // built-in). Never on a bridge, whose one --rpc-url would feed both chains' reads.
+          ({ argv: this.cliArgs(planned.cli!, { rpcUrl: kind !== "bridge" && maybeChain(planned.chain)?.family !== "evm" }), identity: "agent", agent, json: true, ...(planned.params.bridge ? { bridge: planned.params.bridge } : {}) } satisfies CliTradeParams & { bridge?: unknown })
         : idKey === "coreOpId"
           ? planned.params
           : { ...planned.params, [idKey]: opId }
@@ -697,6 +717,7 @@ export class CardBook implements CardDesk {
       state: "awaiting_approval",
       expiresAt,
       params,
+      ...(planned.chain ? { chain: planned.chain } : {}),
       cardHash: hashCard({ kind, tool, params, opId, account: this.deps.account, agent, wallet: planned.wallet, mode, ...(route ? { route } : {}) }),
       origin: { clientId: client.clientId, role: client.role, source: sourceOf(client), ...(client.trigger ? { trigger: client.trigger } : {}), ...(client.bot ? { bot: client.bot } : {}), ...(turn?.woken ? { woken: turn.woken } : {}) },
       ...(reason ? { reason } : {}),
@@ -734,6 +755,7 @@ export class CardBook implements CardDesk {
         ...(planned.risks ? { risks: planned.risks } : {}),
         ...(planned.publishes ? { publishes: planned.publishes } : {}),
         ...(planned.launchTerms ? { launchTerms: planned.launchTerms } : {}),
+        ...(planned.bridge ? { bridge: planned.bridge } : {}),
         ...(() => {
           // The same name held here, or on an earlier card, for another token: a copy of a ticker reads exactly as the one the person knows.
           const other = planned.mint && planned.symbol ? this.deps.otherMints?.(planned.symbol, planned.mint)[0] : undefined
@@ -813,6 +835,7 @@ export class CardBook implements CardDesk {
       ...botFields(client.bot),
       kind,
       tool,
+      ...(planned.chain ? { chain: planned.chain } : {}),
       params,
       cardHash: card.cardHash,
       wallet: card.wallet,
@@ -1014,8 +1037,10 @@ export class CardBook implements CardDesk {
   private insideCheck(card: Card, now: number): WithoutCard {
     const setting = card.wallet === "none" ? ASK : (this.deps.autonomy?.get(card.wallet) ?? ASK)
     if (setting.setting !== "inside") return { run: false }
+    // The embedded wallet pays on its card's chain: on Hood, it's the embedded EVM wallet, with figures of its own.
+    const label = card.display.walletLabel ?? "embedded"
     return withoutCard({
-      card: { ...card, walletName: card.display.walletLabel ?? "embedded" },
+      card: { ...card, walletName: label === "embedded" && card.chain ? embeddedName(card.chain) : label },
       setting,
       usedUsd: this.deps.walletSpend?.spent(card.wallet, now, card.opId),
       inFlight: this.inFlight(card),
@@ -1198,7 +1223,7 @@ export class CardBook implements CardDesk {
     const invalid = (message: string) => this.refuse(client, agent, tool, "INVALID_TRADE", message)
     // What trades spend isn't a trade's token. Sold as one, it would be a conversion that every limit, the
     // wallet's figures and the kill switch let through as a sell. CNDL trades like any token.
-    const spent = notATradeToken(given.mint)
+    const spent = notATradeToken(given.mint, maybeChain(given.chain)?.slug)
     if (spent !== undefined) return this.refuse(client, agent, tool, "BASE_ASSET", spent)
     const sized = await sizeInUsd(agent, given, { markets: this.deps.markets, pricing: this.deps.pricing, spendAsset: this.deps.spendAsset })
     if (!sized.ok) return this.refuse(client, agent, tool, sized.code, sized.message)
@@ -1232,7 +1257,7 @@ export class CardBook implements CardDesk {
     if ("invalid" in settled) return invalid(settled.invalid)
     const asset = settled.asset
     const assetName = asset ?? "its pair asset"
-    const named = { ...(market.symbol ? { symbol: market.symbol } : {}), ...(asset ? { settles: asset } : {}) }
+    const named = { chain: market.chain, ...(market.symbol ? { symbol: market.symbol } : {}), ...(asset ? { settles: asset } : {}) }
     // Over the key's Candle cap for the asset a buy spends: Candle would refuse it when it builds the
     // trade, so it's refused here in Candle's words, before any read.
     if (side === "buy" && asset !== undefined && amount !== undefined) {
@@ -1241,7 +1266,7 @@ export class CardBook implements CardDesk {
       if (over) return this.refuse(client, agent, tool, "SPEND_LIMIT_EXCEEDED", `Over ${agent}'s Candle cap of ${capText(over)} a buy: this buy spends ${grouped(amount)} ${asset}. Nothing was sent; a smaller amount can go.`)
     }
     // A TEE wallet's trade runs through `candle swap`: the argv is what the card binds.
-    let via: Pick<Planned, "tee" | "cli" | "cliRpcUrl"> = {}
+    let via: Pick<Planned, "tee" | "cli"> = {}
     if (tee) {
       if (modeFor(client, this.deps.mode()) === "paper") return this.refuse(client, agent, tool, "NO_PAPER_TEE", "TEE wallets have no paper form; switch to live to trade from one.")
       if (asset === undefined) return this.refuse(client, agent, tool, "PAIR_UNKNOWN", `${label} trades against an asset the Candle Harness doesn't know, so it can't be traded from a TEE wallet yet. Nothing was sent.`)
@@ -1249,7 +1274,7 @@ export class CardBook implements CardDesk {
       if (slippage === null) return invalid("maxSlippageBps is a whole number of basis points, from 0 to 10000.")
       const sizing = side === "buy" ? { amount: amount! } : percent !== undefined ? { percent: percent as number } : { amount: amount! }
       const [from, to] = side === "buy" ? [asset, mint] : [mint, asset]
-      via = { tee: { address: tee.address, ...(tee.label ? { label: tee.label } : {}) }, cli: teeSwapArgs({ from, to, sizing, wallet: tee.address, opId, ...(slippage !== undefined ? { slippageBps: slippage } : {}) }), cliRpcUrl: market.chain === "solana" }
+      via = { tee: { address: tee.address, ...(tee.label ? { label: tee.label } : {}) }, cli: teeSwapArgs({ from, to, sizing, wallet: tee.address, opId, ...(slippage !== undefined ? { slippageBps: slippage } : {}) }) }
     }
     // Both prices read now, together: a sized buy's asset read is shared, not repeated.
     const [assetPoint, tokenPoint] = await Promise.all([asset ? this.deps.pricing.asset(agent, asset) : undefined, this.deps.pricing.token(agent, market.chain, mint)])
@@ -1352,13 +1377,19 @@ export class CardBook implements CardDesk {
     let sellRaw: bigint | undefined
     let sold: string
     if (percent !== undefined) {
-      const holding = await this.deps.holding(agent, wallet, mint)
+      const read = await this.deps.holding(agent, wallet, mint)
+      // A fill of this core's a moment ago that Candle's portfolio doesn't show yet still counts: the larger stands.
+      const floor = ownHeldFloor(this.deps.journal.rows(), { wallet: tee ? wallet : "embedded", mint, now: this.deps.now() })
+      // A token Candle's read doesn't list yet has no decimals here unless its market read gave them: then the card
+      // says the percent alone, and Candle sizes it from the wallet when it runs, as it does every percent sell.
+      const decimals = read !== "unreadable" && read !== "none" ? read.decimals : market.decimals
+      const holding = floor !== undefined && read !== "unreadable" && (read === "none" || read.amountRaw < floor) ? { amountRaw: floor, decimals } : read
       if (holding === "unreadable") return this.refuse(client, agent, tool, "BALANCE_UNREADABLE", "Couldn't read the wallet's balance for a percent sell; try again in a moment. Nothing was sent.")
       if (holding === "none" || holding.amountRaw === 0n) return this.refuse(client, agent, tool, "NOTHING_TO_SELL", `The wallet holds no ${label} to sell.`)
       sellRaw = (holding.amountRaw * BigInt(percent as number)) / 100n
       if (sellRaw === 0n) return this.refuse(client, agent, tool, "NOTHING_TO_SELL", `${percent}% of the wallet's ${label} rounds to nothing.`)
-      sellAmount = fromRaw(sellRaw, holding.decimals)
-      sold = `${percent}% · ≈${grouped(sellAmount)} ${label}`
+      sellAmount = holding.decimals === undefined ? undefined : fromRaw(sellRaw, holding.decimals)
+      sold = sellAmount === undefined ? `${percent}% of ${label}` : `${percent}% · ≈${grouped(sellAmount)} ${label}`
     } else if (tee) {
       // `candle swap` reads the token's decimals from the chain (swap.ts:366-384), so an amount sells
       // on this route whatever Candle's market read says.
@@ -1379,7 +1410,7 @@ export class CardBook implements CardDesk {
     }
     const sizing = percent !== undefined ? { percent: percent as number } : { amount: sellAmount! }
     const headline = percent !== undefined ? `SELL ${percent}% of ${label}` : `SELL ${grouped(sellAmount!)} ${label}`
-    const sells = percent !== undefined ? { sells: { amount: Number(sellAmount), asset: label } } : {}
+    const sells = percent !== undefined && sellAmount !== undefined ? { sells: { amount: Number(sellAmount), asset: label } } : {}
     const quote = await quoted("sell", sellRaw)
     const assetOut = quote && asset ? Number(quote.amountOutRaw) / 10 ** BASE_ASSETS[asset].decimals : undefined
     if (assetOut !== undefined && quote) {
@@ -1405,7 +1436,7 @@ export class CardBook implements CardDesk {
         ...riskText(quote),
       }
     }
-    const usdValue = tokenPrice === undefined ? undefined : Number(sellAmount) * tokenPrice
+    const usdValue = tokenPrice === undefined || sellAmount === undefined ? undefined : Number(sellAmount) * tokenPrice
     return {
       params: { ...rest, mint, side, ...sizing },
       ...via,
@@ -1433,20 +1464,20 @@ export class CardBook implements CardDesk {
     const amount = args.amount === undefined ? undefined : decimalAmount(args.amount)
     const amountRaw = typeof args.amountRaw === "string" && /^\d+$/.test(args.amountRaw) && BigInt(args.amountRaw) > 0n ? args.amountRaw : undefined
     if ((amount === undefined) === (amountRaw === undefined)) return invalid("Pass exactly one of amount (a decimal) or amountRaw.")
+    // Across chains it's a bridge between two of the account's own wallets, with its own card: candle_bridge.
+    if (BASE_ASSETS[to].chain !== BASE_ASSETS[from].chain) return this.refuse(client, agent, "candle_swap", "USE_BRIDGE", `${from} to ${to} crosses chains, which is a bridge: use candle_bridge with the same from, to and amount. Nothing was sent.`)
     const word = walletWord(args.wallet)
     if (word === null) return invalid('wallet names a wallet the agent can pay from: a label, an address or "embedded".')
     const payer = await this.paying(client, agent, "candle_swap", status, BASE_ASSETS[from].chain, word)
     const wallet = payer.address
     const decimal = amount ?? fromRaw(BigInt(amountRaw!), BASE_ASSETS[from].decimals)
-    let via: Pick<Planned, "tee" | "cli" | "cliRpcUrl"> = {}
+    let via: Pick<Planned, "tee" | "cli"> = {}
     if (payer.kind === "tee") {
       const refuse = (code: string, message: string) => this.refuse(client, agent, "candle_swap", code, message)
       if (modeFor(client, this.deps.mode()) === "paper") return refuse("NO_PAPER_TEE", "TEE wallets have no paper form; switch to live to swap from one.")
-      // SOL or USDC to ETH or USDG is a bridge between two TEE wallets in `candle swap`: not yet.
-      if (BASE_ASSETS[to].chain !== BASE_ASSETS[from].chain) return refuse("BRIDGE_LATER", `${from} to ${to} is a bridge between chains, which the Candle Harness doesn't run from a TEE wallet yet. Nothing was sent.`)
       const slippage = slippageBps(args.maxSlippageBps)
       if (slippage === null) return invalid("maxSlippageBps is a whole number of basis points, from 0 to 10000.")
-      via = { tee: { address: payer.address, ...(payer.label ? { label: payer.label } : {}) }, cli: teeSwapArgs({ from, to, sizing: { amount: decimal }, wallet: payer.address, opId, ...(slippage !== undefined ? { slippageBps: slippage } : {}) }), cliRpcUrl: BASE_ASSETS[from].chain === "solana" }
+      via = { tee: { address: payer.address, ...(payer.label ? { label: payer.label } : {}) }, cli: teeSwapArgs({ from, to, sizing: { amount: decimal }, wallet: payer.address, opId, ...(slippage !== undefined ? { slippageBps: slippage } : {}) }) }
     }
     const [fromPoint, toPoint] = await Promise.all([this.deps.pricing.asset(agent, from), this.deps.pricing.asset(agent, to)])
     const price = fromPoint?.usd
@@ -1457,6 +1488,7 @@ export class CardBook implements CardDesk {
     // Converting between base assets has no Candle fee (docs.candle.tv/protocol/fees).
     return {
       params: rest,
+      chain: BASE_ASSETS[from].chain,
       ...via,
       side: "swap",
       spent: { asset: from, amount: decimal },
@@ -1468,6 +1500,92 @@ export class CardBook implements CardDesk {
       ...(value !== undefined ? { valueUsd: value } : {}),
       ...(value !== undefined && toPrice !== undefined ? { receives: `≈${amountText(value / toPrice)} ${to}, before slippage` } : {}),
       ...(at.length ? { pricedAt: Math.min(...at), pricedBy: "Candle market read" } : {}),
+    }
+  }
+
+  /**
+   * A bridge between two of the account's own wallets: SOL or USDC on Solana to ETH or USDG
+   * on Hood, or back. From a TEE wallet it lands in the same key's active TEE wallet on the other chain, through the
+   * CLI; from the embedded wallet, in the account's embedded wallet on the other chain, through Candle's candle_swap.
+   * Any other pair of ends is refused. It has no side: it moves funds between the key's own wallets, so no Candle
+   * Harness limit counts it and it never runs without a card.
+   */
+  private async planBridge(client: FaceClient, agent: string, args: Record<string, unknown>, status: AgentStatus | undefined, opId: string): Promise<Planned> {
+    const tool = "candle_bridge"
+    const refuse = (code: string, message: string) => this.refuse(client, agent, tool, code, message)
+    const invalid = (message: string) => refuse("INVALID_BRIDGE", message)
+    const { from, to } = args
+    if (!isBridgeAsset(from) || !isBridgeAsset(to) || BASE_ASSETS[from].chain === BASE_ASSETS[to].chain) {
+      return invalid("A bridge moves SOL or USDC on Solana to ETH or USDG on Hood, or back: one asset on each chain. Between two assets on one chain, that's a swap (candle_swap). Nothing was sent.")
+    }
+    const amount = args.amount === undefined ? undefined : decimalAmount(args.amount)
+    const percentGiven = args.percent !== undefined
+    const percent = typeof args.percent === "number" && Number.isFinite(args.percent) && args.percent > 0 && args.percent <= 100 ? args.percent : undefined
+    if (percentGiven && percent === undefined) return invalid("percent is a number above 0 and at most 100. Nothing was sent.")
+    if ((amount === undefined) === (percent === undefined)) return invalid('Pass exactly one of amount (a decimal, such as "0.5") or percent. Nothing was sent.')
+    const word = walletWord(args.wallet)
+    if (word === null) return invalid('wallet names the wallet that sends: "embedded", or a TEE wallet\'s label or address. Nothing was sent.')
+    const destWord = walletWord(args.destination)
+    if (destWord === null) return invalid("destination names the TEE wallet it lands in, by label or address. Nothing was sent.")
+    const fromChain = BASE_ASSETS[from].chain
+    const toChain = BASE_ASSETS[to].chain
+    const payer = await this.paying(client, agent, tool, status, fromChain, word)
+    const ends = "A bridge runs between the same key's two TEE wallets, or between the account's two embedded wallets: never from one kind to the other. Nothing was sent."
+    const sizing = amount !== undefined ? { amount } : { percent: percent! }
+    const how = amount !== undefined ? `${grouped(amount)} ${from}` : `${percent}% of ${from}`
+    const [fromPoint, toPoint] = await Promise.all([this.deps.pricing.asset(agent, from), this.deps.pricing.asset(agent, to)])
+    const value = amount !== undefined && fromPoint ? Number(amount) * fromPoint.usd : undefined
+    const at = [fromPoint?.at, toPoint?.at].filter((t): t is number => t !== undefined)
+    const figures = {
+      usd: value,
+      ...(value !== undefined ? { valueUsd: value } : {}),
+      ...(value !== undefined && toPoint ? { gets: { amount: value / toPoint.usd, asset: to }, receives: `≈${amountText(value / toPoint.usd)} ${to}, before Relay's fee comes off it` } : {}),
+      ...(at.length ? { pricedAt: Math.min(...at), pricedBy: "Candle market read" } : {}),
+    }
+    const headline = `BRIDGE ${how} → ${to}`
+    const arriving = `sent on ${bridgeChainName(from)} · arriving on ${bridgeChainName(to)}…`
+
+    if (payer.kind === "embedded") {
+      if (percent !== undefined) return invalid("From the embedded wallet a bridge takes an amount, not a percent. Nothing was sent.")
+      if (destWord !== undefined && destWord.toLowerCase() !== "embedded") return refuse("BRIDGE_ENDS", ends)
+      // It lands in the account's embedded wallet on the other chain, which this key must be allowed.
+      await this.payingWallet(client, agent, tool, status, toChain)
+      const facts = { to, fromName: embeddedName(fromChain), toName: embeddedName(toChain) }
+      return {
+        params: { from, to, amount: amount!, clientSwapId: opId, bridge: facts },
+        chain: fromChain,
+        wallet: payer.address,
+        title: `${headline}${value === undefined ? "" : ` (≈${usd(value)})`}`,
+        headline,
+        ...figures,
+        bridge: { route: `embedded (${bridgeChainName(from)}) → embedded (${bridgeChainName(to)})`, via: "through Candle · less Relay's fee · no Candle fee · same account, not funds out", arriving },
+      }
+    }
+    if (modeFor(client, this.deps.mode()) === "paper") return refuse("NO_PAPER_TEE", "TEE wallets have no paper form; switch to live to bridge from one.")
+    if (destWord?.toLowerCase() === "embedded") return refuse("BRIDGE_ENDS", ends)
+    // The landing wallet: the same key's own active TEE wallet on the other chain, named or the only one.
+    const onKey = (this.deps.wallets?.payable?.(agent)?.tee ?? []).filter((w) => w.chain === toChain && w.active && !w.cantSign)
+    const toName = (w: { address: string; label?: string }) => walletName(undefined, { ...w, kind: "tee" })
+    let landing = onKey[0]
+    if (destWord !== undefined) {
+      landing = onKey.find((w) => w.label === destWord || w.address === destWord || w.address.toLowerCase() === destWord.toLowerCase() || w.id === destWord)
+      if (!landing) return refuse("BRIDGE_DESTINATION_MISSING", `${terminalText(destWord, { maxLength: 64 })} isn't an active ${bridgeChainName(to)} TEE wallet on ${agent}'s key, and a bridge lands only in one of those${onKey.length ? `: ${onKey.map(toName).join(", ")}` : ""}. Nothing was sent.`)
+    } else if (onKey.length > 1) {
+      return refuse("BRIDGE_DESTINATION_UNNAMED", `${agent}'s key holds more than one ${bridgeChainName(to)} TEE wallet: ${onKey.map(toName).join(", ")}. Name the one it lands in as destination (typed, add \`into\` and one of those names to the line). Nothing was sent.`)
+    }
+    if (!landing) return refuse("BRIDGE_DESTINATION_MISSING", `${agent}'s key has no active ${bridgeChainName(to)} TEE wallet for the bridge to land in. Promote one onto the key (its wallet chip in the Wallets pane), then bridge. Nothing was sent.`)
+    const sender = toName(payer)
+    const facts = { to, fromName: sender, toName: toName(landing) }
+    return {
+      params: { bridge: facts },
+      chain: fromChain,
+      tee: { address: payer.address, ...(payer.label ? { label: payer.label } : {}) },
+      cli: bridgeArgs({ from, to, sizing, wallet: payer.address, destination: landing.address, opId }),
+      wallet: payer.address,
+      title: `${headline}${value === undefined ? "" : ` (≈${usd(value)})`}`,
+      headline,
+      ...figures,
+      bridge: { route: `${sender} · TEE (${bridgeChainName(from)}) → ${facts.toName} · TEE (${bridgeChainName(to)})`, via: "via Relay · less Relay's fee · no Candle fee · same key, not funds out", arriving },
     }
   }
 
@@ -1490,7 +1608,7 @@ export class CardBook implements CardDesk {
       )
     }
     const { dryRun: _d, paper: _p, clientLaunchId: _id, ...rest } = given
-    const chain = given.chain === "hood" ? "hood" : "solana"
+    const chain: ChainSlug = isChainSlug(given.chain) ? given.chain : "solana"
     const wallet = await this.payingWallet(client, agent, tool, status, chain)
     const quote = (typeof given.quoteAsset === "string" ? given.quoteAsset : chain === "hood" ? "eth" : "sol").toUpperCase()
     const asset = isBaseAsset(quote) ? quote : undefined
@@ -1525,6 +1643,7 @@ export class CardBook implements CardDesk {
     const setTerms = launchTerms(given)
     return {
       params,
+      chain,
       ...(publishes ? { publishes } : {}),
       ...(setTerms ? { launchTerms: setTerms } : {}),
       ...(seed !== undefined ? { side: "buy" as const } : {}),
@@ -1601,7 +1720,8 @@ export class CardBook implements CardDesk {
       const mint = given.mint
       if (typeof mint !== "string" || mint.length === 0 || mint.length > 64) return invalid("Name the launched token's mint, as candle_get_fees lists it.")
       // Candle signs from the embedded wallet, which pays the network fee; the chain comes from the mint.
-      const wallet = await this.payingWallet(client, agent, tool, status, mint.startsWith("0x") ? "hood" : "solana")
+      const chain = requestChain(mint, given.chain) ?? "solana"
+      const wallet = await this.payingWallet(client, agent, tool, status, chain)
       const dry = await this.askCandle(client, agent, tool, { mint, dryRun: true })
       if (dry.claimable === false) {
         const why = typeof dry.reason === "string" ? terminalText(dry.reason, { maxLength: 64 }) : "no reason given"
@@ -1613,6 +1733,7 @@ export class CardBook implements CardDesk {
       const to = typeof dry.recipient === "string" ? ` to ${short(dry.recipient)}, the recipient fixed at launch` : ""
       return {
         params: { mint, dryRun: false },
+        chain,
         wallet,
         usd: undefined,
         title: `CLAIM FEES · ${short(mint)}`,
@@ -1723,7 +1844,7 @@ export class CardBook implements CardDesk {
    * launched it; a re-send of the same values changes nothing and adds no version.
    */
   private async planTokenEdit(given: Record<string, unknown>, base: Pick<Planned, "params" | "wallet" | "usd">, invalid: (message: string) => Promise<never>): Promise<Planned> {
-    if (given.chain !== "solana" && given.chain !== "hood") return invalid('Say the chain: "solana" or "hood".')
+    if (!isChainSlug(given.chain)) return invalid(`Say the chain: ${enabledChains().map((c) => `"${c.slug}"`).join(" or ")}.`)
     if (typeof given.mint !== "string" || given.mint.length === 0) return invalid("Name the token by its mint.")
     const socials = typeof given.socials === "object" && given.socials !== null ? (given.socials as Record<string, unknown>) : {}
     const changes: [string, unknown][] = [
@@ -1734,6 +1855,7 @@ export class CardBook implements CardDesk {
     const show = (v: unknown) => (v === null || v === "" ? "removed" : terminalText(typeof v === "string" ? v : JSON.stringify(v), { maxLength: 120 }))
     return {
       ...base,
+      chain: given.chain,
       title: `TOKEN EDIT · ${short(terminalText(given.mint, { maxLength: 64 }))} · ${changes.map(([f]) => f).join(", ")}`,
       headline: `TOKEN EDIT · ${changes.map(([f]) => f).join(", ")}`,
       preview: changes.map(([f, v]) => `${f}: ${show(v)}`).join(" · "),

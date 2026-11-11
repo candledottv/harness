@@ -37,8 +37,9 @@ import type { Journal, JournalRow } from "./journal"
 import type { SignalRow } from "./signal-stream"
 import { botClient } from "./bot-trades"
 import type { FaceClient } from "./tool-face"
-import { TAPE_FRESH_MS } from "./trigger-watch"
+import { TAPE_FRESH_MS, tapeToken } from "./trigger-watch"
 import { short } from "./wallet-names"
+import { type ChainSlug, chainName, storedChain } from "../shared/chains"
 
 /** Each bot's cards are its own client's: one bot's open cards never count against another's. */
 export { BOT_CLIENT_PREFIX } from "./bot-trades"
@@ -61,6 +62,7 @@ export type SkipReason =
   | "already_open"
   | "max_concurrent"
   | "unpriceable"
+  | "not_on_candle"
   | "no_budget"
   | "sizing_skip"
   | "sizing_zero"
@@ -72,6 +74,7 @@ export type SkipReason =
   | "route_failing"
   | "stale_signal"
   | "changed"
+  | "wallet_chain"
 
 /** What a bot enters as: its definition and run settings, to tell whether it changed while a candidate was checked. */
 const runsAs = (b: BotEntry): string => canonicalJson({ definition: b.definition, agent: b.agent, wallet: b.wallet, mode: b.mode, maxSlippageBps: b.maxSlippageBps ?? null })
@@ -81,7 +84,7 @@ export interface Clock {
   schedule(run: () => void, ms: number): () => void
 }
 
-type Chain = "solana" | "hood"
+type Chain = ChainSlug
 type Trade = Extract<Command, { kind: "trade" }>
 
 export interface BotEntriesDeps {
@@ -102,10 +105,19 @@ export interface BotEntriesDeps {
   market(chain: Chain, mint: string): Promise<ToolOutcome | undefined>
   /** A read of Hacc's, with the bot's agent's key. */
   hacc(agent: string, route: string, query: Record<string, string | number | undefined>): Promise<HaccAnswer>
-  /** What a live wallet holds of SOL, in dollars, from the last portfolio read; undefined where it isn't known. */
-  solUsd(agent: string, wallet: string): number | undefined
+  /**
+   * What a live wallet holds, in dollars, of the asset a bot's buy of this token spends, as Candle's market answer
+   * settles it (a Candle-launched token's own pair asset; else the configured spend asset on Solana, the native asset
+   * elsewhere), from the last portfolio read; undefined where it isn't known.
+   */
+  spendable(agent: string, wallet: string, chain: Chain, market: { candleLaunched: boolean; quoteMint?: string }): { usd: number; asset: string } | undefined
   /** Candle's fee for the agent's key, in basis points. */
   feeBps(agent: string): number
+  /**
+   * The payer's words where a live bot's wallet is on another chain than the token (a bot on both chains paying from
+   * a TEE wallet, which is on one); undefined where it pays there, or that isn't known yet.
+   */
+  wrongChain?(agent: string, wallet: string, chain: Chain): string | undefined
   /** The kill switch: its pause holds every bot's entries. */
   paused(): boolean
   /**
@@ -132,6 +144,8 @@ interface Pending {
   signalId: number
   usd: number
   wallet: string
+  /** The token's chain: what's committed is counted per chain, since one wallet word pays on each. */
+  chain: Chain
   cardId?: string
   opId?: string
   approved?: boolean
@@ -149,7 +163,8 @@ interface SkipGroup {
 
 const record = (v: unknown): Record<string, unknown> | undefined => (typeof v === "object" && v !== null && !Array.isArray(v) ? (v as Record<string, unknown>) : undefined)
 const positive = (v: unknown): number | null => (typeof v === "number" && Number.isFinite(v) && v > 0 ? v : null)
-const chainOf = (mint: string): Chain => (mint.startsWith("0x") ? "hood" : "solana")
+/** A signal's chain as Hacc says it, else its mint's family's. */
+const chainOf = (mint: string, said?: unknown): Chain => storedChain(said, mint) ?? "solana"
 const iso = (ms: number) => new Date(ms).toISOString()
 const cents = (usd: number) => (Math.round(usd * 100) / 100).toFixed(2)
 /** Why a signal too old to buy on is skipped. */
@@ -165,12 +180,8 @@ const ET_HOUR = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York",
 /** The hour a time falls in, US Eastern. */
 export const easternHour = (ms: number): number => Number(ET_HOUR.format(new Date(ms))) % 24
 
-/** The token a tape row is about, and its chain. */
-export function rowToken(row: SignalRow): { mint: string; chain: Chain } | undefined {
-  const mint = typeof row.asset_address === "string" && row.asset_address.length > 0 ? row.asset_address : undefined
-  if (!mint) return undefined
-  return { mint, chain: row.asset_chain === "hood" || row.asset_chain === "solana" ? row.asset_chain : chainOf(mint) }
-}
+/** The token a tape row is about, and its chain; undefined for a row whose address doesn't fit the chain Hacc says. */
+export const rowToken = (row: SignalRow): { mint: string; chain: Chain } | undefined => tapeToken(row)
 
 /**
  * Whether a tape row is one of a definition's candidates: its pattern and chain, and every filter the row itself
@@ -243,7 +254,7 @@ export class BotEntries {
   private rebuilding = false
   /** Ends found while reading the journal at start, journalled after it unless a later row there already ended them. */
   private readonly endsFound = new Map<string, { p: Pending; outcome: EndOutcome; words: string; code?: string }>()
-  private readonly markets = new Map<string, { at: number; priceUsd: number | null; marketCap: number | null }>()
+  private readonly markets = new Map<string, { at: number; priceUsd: number | null; marketCap: number | null; candleLaunched: boolean; quoteMint?: string }>()
   private readonly skips = new Map<string, Map<SkipReason, SkipGroup>>()
   private flushTimer: (() => void) | undefined
   private readonly waits = new Set<() => void>()
@@ -325,6 +336,7 @@ export class BotEntries {
         signalId: row.signalId,
         usd: typeof row.usd === "number" ? row.usd : 0,
         wallet: typeof row.wallet === "string" ? row.wallet : "embedded",
+        chain: chainOf(row.mint, row.chain),
       })
       return
     }
@@ -441,6 +453,12 @@ export class BotEntries {
           this.skip(bot, row, token.mint, "paused", "the kill switch holds every bot's entries")
           continue
         }
+        // Its wallet pays on one chain: a signal on the other is never a buy it can make. On paper, either chain's.
+        const wrong = bot.mode === "live" ? this.deps.wrongChain?.(bot.agent, bot.wallet, token.chain) : undefined
+        if (wrong) {
+          this.skip(bot, row, token.mint, "wallet_chain", wrong)
+          continue
+        }
         const reason = this.slotCheck(bot, token.mint)
         if (reason) {
           this.skip(bot, row, token.mint, reason.code, reason.words)
@@ -486,6 +504,7 @@ export class BotEntries {
       reading = await this.read(token, true)
     }
     if (this.stopped) return
+    if (reading?.notListed) return this.skip(bot, row, token.mint, "not_on_candle", `Candle doesn't list ${name()} on ${chainName(token.chain)}, so it can't be bought`)
     if (reading?.priceUsd == null) return this.skip(bot, row, token.mint, "unpriceable", `Candle had no price for ${name()} within a minute of its signal`)
     // Bots may have changed while it waited: a paused or removed bot enters nothing.
     const now = this.deps.bots.live().find((b) => b.name === bot.name)
@@ -508,11 +527,12 @@ export class BotEntries {
     const age = this.deps.clock.now() - Date.parse(row.created_at)
     if (age > BOT_SIGNAL_FRESH_MS) return this.skip(bot, row, token.mint, "stale_signal", staleWords(age))
     if (bot.mode === "live") {
-      const sol = this.deps.solUsd(bot.agent, bot.wallet)
+      // The asset the buy spends, on the token's own chain: ETH from a Hood wallet, never the SOL beside it.
+      const held = this.deps.spendable(bot.agent, bot.wallet, token.chain, { candleLaunched: reading.candleLaunched, ...(reading.quoteMint !== undefined ? { quoteMint: reading.quoteMint } : {}) })
       const needed = usd * (1 + this.deps.feeBps(bot.agent) / 10_000)
-      // Entries under way from the same wallet: the portfolio read may not show what they spend yet.
-      const committed = this.under().filter((p) => p.mode === "live" && p.wallet === bot.wallet).reduce((sum, p) => sum + p.usd, 0)
-      if (sol !== undefined && sol - committed < needed) return this.skip(bot, row, token.mint, "no_budget", `the wallet holds $${cents(Math.max(0, sol - committed))} of SOL${committed ? " not already committed to its entries" : ""}, short of the $${cents(needed)} stake with Candle's fee`)
+      // Entries under way from the same wallet on the same chain: the portfolio read may not show what they spend yet.
+      const committed = this.under().filter((p) => p.mode === "live" && p.wallet === bot.wallet && p.chain === token.chain).reduce((sum, p) => sum + p.usd, 0)
+      if (held !== undefined && held.usd - committed < needed) return this.skip(bot, row, token.mint, "no_budget", `the wallet holds $${cents(Math.max(0, held.usd - committed))} of ${held.asset}${committed ? " not already committed to its entries" : ""}, short of the $${cents(needed)} stake with Candle's fee`)
     }
     // The bot as it is now, with nothing awaited from here to its entry: one paused, stopped or removed while its reads
     // were out enters nothing, and one changed meanwhile isn't entered at the stake, filters or bound it had before.
@@ -638,16 +658,28 @@ export class BotEntries {
     }
   }
 
-  /** Candle's market read for a token: price and market cap, or none. */
-  private async read(token: { mint: string; chain: Chain }, fresh = false): Promise<{ priceUsd: number | null; marketCap: number | null } | undefined> {
+  /**
+   * Candle's market read for a token: price and market cap, or none. A token Candle answers it has no market for
+   * (MARKET_NOT_FOUND: not indexed on that chain) is said as not listed, never kept, so a later read can find it.
+   */
+  private async read(token: { mint: string; chain: Chain }, fresh = false): Promise<{ priceUsd: number | null; marketCap: number | null; candleLaunched: boolean; quoteMint?: string; notListed?: true } | undefined> {
     const held = this.markets.get(token.mint)
     const now = this.deps.clock.now()
     if (held && !fresh && now - held.at < MARKET_REUSE_MS) return held
     const outcome = await this.deps.market(token.chain, token.mint).catch(() => undefined)
+    if (outcome?.kind === "error" && outcome.code === "MARKET_NOT_FOUND") return { priceUsd: null, marketCap: null, candleLaunched: false, notListed: true }
     if (outcome?.kind !== "ok") return undefined
     const market = record(record(outcome.result)?.market)
-    if (!market || market.mint !== token.mint) return undefined
-    const r = { at: this.deps.clock.now(), priceUsd: positive(market.priceUsd), marketCap: positive(market.marketCap) }
+    // An EVM address is one address in any letter case.
+    if (!market || typeof market.mint !== "string" || !sameAddress(market.mint, token.mint)) return undefined
+    const r = {
+      at: this.deps.clock.now(),
+      priceUsd: positive(market.priceUsd),
+      marketCap: positive(market.marketCap),
+      // What its buy spends: a Candle-launched token's own pair asset.
+      candleLaunched: market.candleLaunched === true,
+      ...(typeof market.quoteMint === "string" ? { quoteMint: market.quoteMint } : {}),
+    }
     if (this.markets.size > 2_000) this.markets.clear()
     this.markets.set(token.mint, r)
     return r

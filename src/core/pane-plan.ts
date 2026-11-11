@@ -12,9 +12,10 @@
 import { terminalText } from "../shared/terminal-text"
 import type { CliRow, CliRule, Identity, PaneSpec } from "./cli-table"
 import type { Mapped } from "./execute"
-import type { Fill } from "./owner-rows"
+import type { Fill, NextStep } from "./owner-rows"
 import { NO_VAULT_STEP } from "./vault-mark"
 import { short } from "./wallet-names"
+import { SOLANA_ADDRESS_SOURCE } from "../shared/chains"
 
 export interface PaneStep {
   /** `preview`: a batch rename's `--dry-run`, shown before the person types yes to run the command. */
@@ -158,7 +159,7 @@ export function paneTitleLine(params: PaneParams): string {
 
 /** The card's headline: the title with addresses shortened, so what happened fits beside it once it ends. */
 export function paneHeadline(params: PaneParams): string {
-  return paneTitleLine(params).replace(/[1-9A-HJ-NP-Za-km-z]{32,44}/g, short)
+  return paneTitleLine(params).replace(new RegExp(SOLANA_ADDRESS_SOURCE, "g"), short)
 }
 
 /** A path asked in the pane that goes on the command line as a positional (`<path>`, `<file>`), not after a flag. */
@@ -290,8 +291,8 @@ export interface PaneResult {
   exit?: number
   signal?: string
   code?: string
-  /** What to do next, as chips that put a command on the input line, never run by the core. */
-  next?: Fill[]
+  /** What to do next, as chips that put a command on the input line (or copy a value), never run by the core. */
+  next?: NextStep[]
 }
 
 const MAY_STILL_LAND = "may still land: check the signature before anything else"
@@ -334,6 +335,8 @@ export function paneOutcome(report: PaneReport, opts: { fundsOut: boolean; revea
       if (opts.reveals) return { outcome: "didnt_finish", words: `didn't finish: it may have shown ${opts.reveals} before it stopped.`, ...base }
       // A send can fail after it was signed and sent, so its words never say nothing went out.
       if (opts.fundsOut) return { outcome: "didnt_finish", words: `didn't finish (exit ${report.exit ?? "?"}): refused, answered no, or failed partway. Check the wallet or the signature before sending again.`, ...base }
+      // A captured row's refusal came back as its code: the record names it, beside the CLI's own words in the pane.
+      if (report.captured?.code) return { outcome: "didnt_finish", words: `didn't finish: the CLI refused it (${report.captured.code}); its words are in the pane.`, ...base }
       return { outcome: "didnt_finish", words: "didn't finish: the CLI's own line above says why (a wrong passphrase, a refusal, or no at its prompt).", ...base }
   }
 }

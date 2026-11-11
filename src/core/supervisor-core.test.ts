@@ -56,7 +56,8 @@ const a = await h.buy({ request: "req_boot_000001", mint: "${MOON}", amountUsd: 
 console.log("bought " + a.state)
 setInterval(() => {}, 1000)
 `
-  writeFileSync(join(d, "bot.ts"), body === "crash" ? crash : buy)
+  const end = `console.log("one round and done"); process.exit(0)`
+  writeFileSync(join(d, "bot.ts"), body === "crash" ? crash : body === "end" ? end : buy)
   return d
 }
 
@@ -168,6 +169,29 @@ test("a code bot runs once approved, ends with its core, starts again with the n
   await fourth.exited
   await until(() => !pidIsAlive(last), 10_000)
 }, 90_000)
+
+test("a code bot that ended on its own counts as no bot on, and the next core doesn't start it again", async () => {
+  const c = await startTestCore({ supervise: TUNING })
+  cores.push(c)
+  const view = await c.view()
+  await made(c, view, botFolder("end"))
+  await until(() => processRows(c, "ended").length === 1, 10_000)
+  const status = async (v: TestClient) => (await v.request("core.status", {})).result as { botsOn: number }
+  // Its process ended and nothing starts it: it keeps nothing running.
+  let on = await status(view)
+  for (let i = 0; i < 50 && on.botsOn !== 0; i++) {
+    await Bun.sleep(100)
+    on = await status(view)
+  }
+  expect(on.botsOn).toBe(0)
+  const p = c.p
+  cores.splice(cores.indexOf(c), 1)
+  await c.close()
+  const next = await startCore({ paths: p, config: loadConfig(p).config, env: process.env, headless: true, supervise: TUNING })
+  extra.push(next)
+  await Bun.sleep(1_500)
+  expect(processRows(c, "started")).toHaveLength(1)
+}, 30_000)
 
 test("a crash loop stops after five in ten minutes, said, told, and shown; `bots start` runs it again", async () => {
   const c = await startTestCore({ supervise: { backoffMs: [50, 50, 50, 50], stopGraceMs: 2_000 }, notify: { native: false, quietMs: 0 } })

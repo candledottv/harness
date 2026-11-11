@@ -16,6 +16,8 @@ export interface StatusBarProps {
   connected: boolean
   /** The core went away after this view attached: said in place of figures that no longer move. */
   lost?: boolean
+  /** The core went away because the person chose "restart it": it comes back by itself, so nothing asks them to start it. */
+  restarting?: boolean
   status: StatusView | undefined
   cardsWaiting: number
   killArmed: boolean
@@ -24,6 +26,10 @@ export interface StatusBarProps {
   /** The view's clock: the P&L figure says "since 09:14" today, a date before. */
   now?: number
   onAgent: () => void
+  /** The chain filter's chip, beside the agent's: its words, only while the account uses more than one chain. */
+  chain?: string
+  /** A click on it, with the column it starts at, for its menu to open under it. */
+  onChain?: (x: number) => void
   onMode: () => void
   onKill: () => void
   onResume: () => void
@@ -51,6 +57,10 @@ interface SegmentSpec {
   spacer?: boolean
   /** A figure with its label: the figure in `fg`, the words dim. */
   figure?: boolean
+  /** A cell of air before it, where it would otherwise run into a chip of the same colours. */
+  gap?: boolean
+  /** A name that gives up its end ("…") when what always shows is still too wide. */
+  shrink?: boolean
 }
 
 function Segment(props: { spec: SegmentSpec }) {
@@ -58,7 +68,15 @@ function Segment(props: { spec: SegmentSpec }) {
   if (spec.spacer) return <box flexGrow={1} />
   if (spec.onClick) {
     const kind = typeof spec.chip === "string" ? spec.chip : "control"
-    return <Chip label={spec.text} kind={kind} onClick={spec.onClick} {...(typeof spec.chip === "object" ? { colours: spec.chip } : {})} />
+    const chip = <Chip label={spec.text} kind={kind} onClick={spec.onClick} {...(typeof spec.chip === "object" ? { colours: spec.chip } : {})} />
+    return spec.gap ? (
+      <box flexDirection="row" flexShrink={0}>
+        <text fg={C.dim}> </text>
+        {chip}
+      </box>
+    ) : (
+      chip
+    )
   }
   return (
     <box paddingLeft={1} paddingRight={1} flexShrink={0} flexDirection="row" backgroundColor={spec.bg ?? C.bar}>
@@ -87,14 +105,26 @@ export function figureParts(text: string, fg: string): { text: string; fg: strin
 }
 
 /** The segments that fit `width`, dropping the least important first; the kill switch always stays. */
-export function fitSegments<T extends { text: string; priority: number; spacer?: boolean }>(segments: T[], width: number): T[] {
-  // Plain segments and chips both take one cell of padding either side.
-  const cells = (s: T) => (s.spacer ? 0 : cellWidth(s.text) + 2)
+export function fitSegments<T extends { text: string; priority: number; spacer?: boolean; gap?: boolean; shrink?: boolean }>(segments: T[], width: number): T[] {
+  // Plain segments and chips both take one cell of padding either side, and one of air before where it's asked for.
+  const cells = (s: T) => (s.spacer ? 0 : cellWidth(s.text) + 2 + (s.gap ? 1 : 0))
   const kept = [...segments]
   for (let p = Math.max(...segments.map((s) => s.priority)); p > 0 && kept.reduce((n, s) => n + cells(s), 0) > width; p--) {
     for (let i = kept.length - 1; i >= 0 && kept.reduce((n, s) => n + cells(s), 0) > width; i--) if (kept[i]!.priority === p) kept.splice(i, 1)
   }
+  // Still too wide with only what always shows: a name gives up its end rather than the bar losing the kill switch.
+  const over = kept.reduce((n, s) => n + cells(s), 0) - width
+  const at = kept.findIndex((s) => s.shrink)
+  if (over > 0 && at >= 0) kept[at] = { ...kept[at]!, text: shrunk(kept[at]!.text, cellWidth(kept[at]!.text) - over) }
   return kept
+}
+
+/** A name cut to `cells` with "…", keeping a closing " ▾" and at least four characters of the name. */
+function shrunk(text: string, cells: number): string {
+  const tail = text.endsWith(" ▾") ? " ▾" : ""
+  const name = [...text.slice(0, text.length - tail.length)]
+  const room = Math.max(4, cells - cellWidth(tail) - 1)
+  return name.length <= room ? text : `${name.slice(0, room).join("")}…${tail}`
 }
 
 /** The figures, as text, so tests and narrow layouts can read them without drawing. */
@@ -167,6 +197,13 @@ export function StatusBar(props: StatusBarProps) {
       ))}
     </box>
   )
+  if (props.lost && props.restarting) {
+    return bar([
+      { key: "brand", text: "▲ candle", fg: C.hi, priority: 1 },
+      { key: "lost", text: "restarting the core…", fg: C.look, priority: 0 },
+      { key: "how", text: "the view reattaches by itself", fg: C.dim, priority: 2 },
+    ])
+  }
   if (props.lost) {
     return bar([
       { key: "brand", text: "▲ candle", fg: C.hi, priority: 1 },
@@ -183,14 +220,19 @@ export function StatusBar(props: StatusBarProps) {
   const figures = statusFigures(status, props.now)
   const live = status.mode === "live"
   const waiting = props.cardsWaiting
-  return bar([
+  const segments: SegmentSpec[] = [
     { key: "brand", text: "▲ candle", fg: C.hi, priority: 5 },
-    { key: "agent", text: `${status.activeAgent}${props.oneAgent ? " · only" : ""} ▾`, fg: C.ctl, onClick: props.onAgent, priority: 0 },
+    { key: "agent", text: `${status.activeAgent}${props.oneAgent ? " · only" : ""} ▾`, fg: C.ctl, onClick: props.onAgent, priority: 0, shrink: true },
+    // The chain every pane shows: its menu opens under it. On a narrow bar it goes before a waiting card's count
+    // (it's also in the palette); a card waits only a minute, and on a tab without the agent's pane this is where it shows.
+    ...(props.chain !== undefined && props.onChain ? [{ key: "chain", text: `${props.chain} ▾`, fg: C.ctl, gap: true, onClick: () => props.onChain?.(segmentAt(segments, props.width, "chain") + 1), priority: 2 }] : []),
     { key: "mode", text: live ? "LIVE" : "PAPER", fg: live ? C.page : C.hi, chip: live ? { fg: C.page, bg: C.good } : { fg: C.hi, bg: C.paperBg }, onClick: props.onMode, priority: 0 },
     { key: "spend", text: figures.spend, fg: C.hi, figure: true, priority: 2 },
-    { key: "exposure", text: figures.exposure, fg: C.hi, figure: true, priority: 4 },
+    // With the chain chip on the bar, exposure is the first to give way, before the brand.
+    { key: "exposure", text: figures.exposure, fg: C.hi, figure: true, priority: props.chain !== undefined ? 6 : 4 },
     { key: "pnl", text: figures.pnl, fg: status.pnl?.usd == null ? C.dim : status.pnl.usd >= 0 ? C.good : C.bad, figure: true, priority: 3 },
-    { key: "cards", text: `● ${waiting} card${waiting === 1 ? "" : "s"} waiting`, fg: waiting > 0 ? C.look : C.dim, priority: 1 },
+    // A card waiting always shows; none waiting gives way as before.
+    { key: "cards", text: `● ${waiting} card${waiting === 1 ? "" : "s"} waiting`, fg: waiting > 0 ? C.look : C.dim, priority: waiting > 0 ? 0 : 1 },
     // The triggers that keep the core running after the view quits.
     // The triggers on, which keep the core running after the view quits: a chip to the Triggers overlay. Narrow, its count alone.
     ...(status.triggersOn ? [{ key: "triggers", text: triggersChipWords(status.triggersOn, status.keepAwake?.active === true, props.width < 100), fg: C.ctl, ...(props.onTriggers ? { onClick: props.onTriggers } : {}), priority: 1 }] : []),
@@ -217,5 +259,16 @@ export function StatusBar(props: StatusBarProps) {
             priority: 0,
           },
         ]),
-  ])
+  ]
+  return bar(segments)
+}
+
+/** The column a segment starts at, among those that fit. */
+function segmentAt(segments: SegmentSpec[], width: number, key: string): number {
+  let x = 0
+  for (const s of fitSegments(segments, width)) {
+    if (s.key === key) return x
+    x += s.spacer ? 0 : cellWidth(s.text) + 2 + (s.gap ? 1 : 0)
+  }
+  return 0
 }

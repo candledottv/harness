@@ -122,6 +122,8 @@ test("candle-harness stop, from a second terminal: the core answers with what it
   const code = await stopCommand([], t.io, { env: { ...process.env, CANDLE_HARNESS_HOME: c.p.configDir }, platform: "linux", home: "/nonexistent/home" })
   expect(t.err).toEqual([])
   expect(code).toBe(0)
+  // The command returns once the core answers; the core's own stop, and its callback, follow a moment later.
+  await until(() => stopped !== undefined)
   expect(stopped).toBe("candle-harness stop")
   expect(t.out.join("")).toBe(
     [

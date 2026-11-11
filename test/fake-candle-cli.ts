@@ -63,7 +63,8 @@ interface FakeCliScript {
   keysListFail?: { stderr: string; exitCode: number }
   tee?: {
     /** The account's TEE wallets, each bound to one key by its prefix. */
-    wallets: { id: string; address: string; label?: string; boundKeyPrefix: string; active?: boolean; lamports?: string }[]
+    /** `chain: "hood"`: a Hood TEE wallet, whose trades answer in Hood's shape (as CLI 0.13.19 did live). */
+    wallets: { id: string; address: string; label?: string; boundKeyPrefix: string; active?: boolean; lamports?: string; chain?: "hood" }[]
     /** Jobs `swap status` finds, by client id: the rail (`--kind`) and Candle's job row. */
     jobs?: Record<string, { kind: "trade" | "swap"; job: Record<string, unknown> }>
     /** `candle wallets --json`'s `signers` by wallet id; "stored" for each of the key's wallets when unset. */
@@ -76,9 +77,11 @@ interface FakeCliScript {
      *   requestFailed  it landed, and the answer was lost: REQUEST_FAILED, exit 1
      *   refused        Candle's build refused it (SPEND_LIMIT_EXCEEDED), exit 1, a job built and never sent
      *   usage          USAGE, exit 2, before any claim
+     *   approvalFailed a Hood trade stopped at its approval leg: SWAP_FAILED, exit 1, "already known No leg landed",
+     *                  the job failed with that leg failed and the rest planned (as answered live)
      *   sleep          never finishes
      */
-    swapOutcome?: "filled" | "pending" | "exit3" | "requestFailed" | "refused" | "usage" | "sleep"
+    swapOutcome?: "filled" | "pending" | "exit3" | "requestFailed" | "refused" | "usage" | "sleep" | "approvalFailed"
     /**
      * What a TEE `stake` run does after its claim:
      *   confirmed          submitted and confirmed (the default)
@@ -397,7 +400,7 @@ if (tee && argv[0] === "keys" && argv[1] === "wallets" && positional.length === 
     keyPrefix: prefix,
     profileId: "fake-profileId-1",
     walletScope: "selected",
-    wallets: bound.map((w) => ({ address: w.address, assignedAt: 1_790_000_000_000, chain: "solana", ...(w.label ? { label: w.label } : {}), linkedWalletId: w.id, spendCapable: w.active ?? true })),
+    wallets: bound.map((w) => ({ address: w.address, assignedAt: 1_790_000_000_000, chain: w.chain === "hood" ? "evm" : "solana", ...(w.label ? { label: w.label } : {}), linkedWalletId: w.id, spendCapable: w.active ?? true })),
     scopeLimit: { max: 1000, rows: bound.length },
   }, 0)
 }
@@ -410,7 +413,7 @@ if (tee && argv[0] === "swap" && argv[1] !== "status") {
   const values = new Set(["--amount", "--percent", "--wallet", "--client-trade-id", "--slippage-bps", "--rpc-url"])
   const [from, to] = argv.slice(1).filter((a, i, rest) => !a.startsWith("--") && !values.has(rest[i - 1] ?? ""))
   const id = flag("--client-trade-id") ?? "swap-fake"
-  const base = (a: string | undefined) => a !== undefined && ["SOL", "USDC", "CNDL"].includes(a.toUpperCase())
+  const base = (a: string | undefined) => a !== undefined && ["SOL", "USDC", "CNDL", "ETH", "USDG"].includes(a.toUpperCase())
   const kind = base(from) && base(to) ? "swap" : "trade"
   const outcome = tee.swapOutcome ?? "filled"
   if (outcome === "usage") answer({ ok: false, code: "USAGE", message: "Usage: candle swap <from> <to> --amount <decimal> | --percent <n> …" }, 2)
@@ -425,7 +428,32 @@ if (tee && argv[0] === "swap" && argv[1] !== "status") {
   writeFileSync(claim, "{}")
   const signature = `FakeSig${id.replace(/-/g, "").slice(0, 20)}`
   const now = 1_790_000_000_000
-  const filledJob = kind === "swap" ? { status: "confirmed", clientTradeId: id, kind, signature, settlement: { state: "settled", settledOutRaw: "1000000" } } : { status: "confirmed", clientTradeId: id, chain: "solana", side: base(from) ? "buy" : "sell", mint: base(from) ? to : from, amountRaw: "1", signature, createdAt: now, updatedAt: now }
+  // A bridge (SOL or USDC to ETH or USDG, or back): the deposit sent, its receipt at exit 0, and Relay's fill followed by
+  // `swap status`, which moves it on a phase per read (depositing, filling, filled). The receipt is the CLI's own
+  // (swap.ts bridgeSwap at cli-v0.13.20): the submit's answer, then `bridge` (the two assets, where it lands, the
+  // deposit's hash) and Relay's quote, with no `bridgeStatus`, which only `swap status` adds.
+  const side = (a: string | undefined) => (["ETH", "USDG"].includes((a ?? "").toUpperCase()) ? "evm" : "solana")
+  if (kind === "swap" && side(from) !== side(to)) {
+    const blockingUntil = Date.now() + 2 * 3_600_000
+    keepJob(id, { kind, job: { status: "submitted", clientTradeId: id, bridge: { state: "open", blockingUntil }, settlement: { state: "pending", legs: [{ status: "submitted" }] }, fakeReads: 0 } })
+    const destination = flag("--to") ?? tee.wallets.find((w) => (w.chain === "hood" ? "evm" : "solana") === side(to))?.address
+    answer(
+      {
+        success: true,
+        payload: { hashes: [signature], expectedOutRaw: "71000000000000000", settlement: { state: "pending", legs: [{ chain: side(from) === "evm" ? "hood" : "solana", hash: signature, status: "pending" }] } },
+        clientTradeId: id,
+        kind,
+        bridge: { from, to, ...(destination ? { destination } : {}), depositHash: signature },
+        quote: { venue: "relay", candleFee: "none", relayFees: "about $0.05 as Relay reports it", estimatedTime: "about 2s as Relay reports it", minimumReceived: "0.0708 ETH" },
+        wallet: wallet!.address,
+      },
+      0,
+    )
+  }
+  const hood = wallet!.chain === "hood"
+  const filledJob = hood && kind === "trade"
+    ? { status: "confirmed", clientTradeId: id, chain: "hood", side: base(from) ? "buy" : "sell", mint: base(from) ? to : from, quoteAsset: "eth", amountRaw: "470000000000000", createdAt: now, updatedAt: now, operation: { operationId: `op-${id}`, kind: "trade", status: "completed", plannedLegCount: 2, currentLegIndex: 2, legs: [{ kind: "trade", status: "landed" }, { kind: "feeTransfer", status: "landed" }] } }
+    : kind === "swap" ? { status: "confirmed", clientTradeId: id, kind, signature, settlement: { state: "settled", settledOutRaw: "1000000" } } : { status: "confirmed", clientTradeId: id, chain: "solana", side: base(from) ? "buy" : "sell", mint: base(from) ? to : from, amountRaw: "1", signature, createdAt: now, updatedAt: now }
   const quote = { intent: `Swap ${flag("--amount") ?? `${flag("--percent")}%`} ${from} to ${to}`, wallet: wallet!.address, venue: "jupiter", fee: { bps: 25, feeRaw: "0" } }
   switch (outcome) {
     case "sleep":
@@ -443,8 +471,19 @@ if (tee && argv[0] === "swap" && argv[1] !== "status") {
     case "refused":
       keepJob(id, { kind, job: kind === "swap" ? { status: "built", clientTradeId: id, kind, signature: null } : { ...filledJob, status: "built", signature: undefined } })
       answer({ ok: false, code: "SPEND_LIMIT_EXCEEDED", message: `Over this key's per-trade cap. Operation ${id}; use candle swap status ${id} before another attempt.` }, 1)
+    case "approvalFailed":
+      keepJob(id, { kind, job: { status: "failed", clientTradeId: id, chain: "hood", side: base(from) ? "buy" : "sell", errorCode: "SWAP_FAILED", operation: { operationId: `op-${id}`, kind: "trade", status: "failed", plannedLegCount: 4, currentLegIndex: 0, legs: [{ kind: "approval", status: "failed", nonce: 2 }, { kind: "permit2Approval", status: "planned" }, { kind: "trade", status: "planned" }, { kind: "feeTransfer", status: "planned" }] } } })
+      answer({ ok: false, code: "SWAP_FAILED", message: `The approval leg failed: already known No leg landed. Operation op-${id}; use candle swap status op-${id} before another attempt.` }, 1)
     default:
       keepJob(id, { kind, job: filledJob })
+      if (hood && kind === "trade") {
+        const hash = (n: number) => `0x${n}${id.replace(/[^0-9a-f]/g, "").padEnd(63, "0").slice(0, 63)}`
+        const buy = base(from)
+        const amounts = buy
+          ? { amountRaw: "470000000000000", expectedOutRaw: "22241349318215453756701", minOutRaw: "22130142571624376487917", quoteAsset: "eth", actualOutRaw: "22241349318215453756701", slippageBps: 0 }
+          : { amountRaw: "22241349318215453756701", expectedOutRaw: "441626360486918", minOutRaw: "439418228684483", quoteAsset: "eth" }
+        answer({ success: true, status: "executed", clientTradeId: id, chain: "hood", signature: hash(1), feeSignature: hash(2), fee: { bps: 25, feeRaw: buy ? "1175000000000" : "1105561218748" }, amounts, kind: "trade", quote: { ...quote, venue: "dex", legs: buy ? ["trade", "fee"] : ["Permit2 approve", "trade", "fee"] }, wallet: wallet!.address, operationId: `op-${id}`, landedLegs: [{ kind: "trade", hash: hash(1) }, { kind: "feeTransfer", hash: hash(2) }], signatures: [hash(1), hash(2)] }, 0)
+      }
       if (kind === "swap") answer({ success: true, payload: { hashes: [signature], settlement: filledJob.settlement }, clientTradeId: id, kind, quote, wallet: wallet!.address, settlement: filledJob.settlement }, 0)
       answer({ success: true, status: "executed", signature, clientTradeId: id, kind, quote, wallet: wallet!.address }, 0)
   }
@@ -453,6 +492,15 @@ if (tee && argv[0] === "swap" && argv[1] === "status") {
   const id = positional[2]!
   const kind = argv[argv.indexOf("--kind") + 1]
   const found = { ...tee.jobs, ...madeJobs() }[id]
+  // A bridge moves on a phase each read: filling (the deposit landed, Relay filling), then filled.
+  if (found && found.kind === kind && found.job.bridge !== undefined && found.job.status !== "confirmed") {
+    const reads = Number(found.job.fakeReads ?? 0) + 1
+    const job = reads === 1
+      ? { ...found.job, fakeReads: reads, settlement: { state: "pending", legs: [{ status: "confirmed" }] } }
+      : { ...found.job, fakeReads: reads, status: "confirmed", bridge: undefined, settlement: { state: "settled", legs: [{ status: "confirmed" }], settledOutRaw: "70800000000000000" } }
+    keepJob(id, { kind, job })
+    answer({ job, success: true, kind, clientTradeId: id, bridgeStatus: reads === 1 ? { phase: "filling", open: "open", blockingUntil: (found.job.bridge as { blockingUntil?: number }).blockingUntil } : { phase: "filled", settledOutRaw: "70800000000000000" } }, 0)
+  }
   if (found && found.kind === kind) answer({ job: found.job, success: true, kind, clientTradeId: id }, 0)
   answer({
     ok: false,

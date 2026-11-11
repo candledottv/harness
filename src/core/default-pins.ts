@@ -6,6 +6,7 @@
 // from that address, whatever the wallet is called now or whoever takes its old name; once the person edits
 // the line, it's found again. The person's config.toml is never written.
 import { readFileSync, renameSync, writeFileSync } from "node:fs"
+import { EVM_ADDRESS_SOURCE, LOOSE_SOLANA_ADDRESS_SOURCE } from "../shared/chains"
 
 export interface DefaultPin {
   /** The line as config.toml has it (`agents.<agent>.wallet`). */
@@ -14,7 +15,7 @@ export interface DefaultPin {
 }
 
 // Shaped like an address, nothing more: what pays is checked against the wallets read, never against this.
-const ADDRESS = /^(?:[A-Za-z0-9]{32,44}|0x[0-9a-fA-F]{40})$/
+const ADDRESS = new RegExp(`^(?:${LOOSE_SOLANA_ADDRESS_SOURCE}|${EVM_ADDRESS_SOURCE})$`)
 
 /** The pins as kept, or none: a file that's missing or unreadable pins nothing, and each is found again. */
 export function readDefaultPins(file: string): Record<string, DefaultPin> {

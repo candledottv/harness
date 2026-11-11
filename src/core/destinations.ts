@@ -19,6 +19,7 @@ import { addressKey as keyOf } from "../shared/address-key"
 import { terminalText } from "../shared/terminal-text"
 import { type Fill, positionals } from "./owner-rows"
 import { short } from "./wallet-names"
+import { EVM_ADDRESS_SOURCE, isEvmAddress, LOOSE_EVM_ADDRESS_SOURCE, LOOSE_SOLANA_ADDRESS_SOURCE, startsAsEvm } from "../shared/chains"
 
 export type DestinationKind = "embedded" | "tee" | "trusted" | "vault-key" | "pinned-vault"
 
@@ -46,9 +47,8 @@ const RANK: Record<DestinationKind, number> = { "vault-key": 0, tee: 1, trusted:
 
 // Address-shaped, not decoded: a label is never 32 to 44 letters and digits, and the scrubbed fixtures'
 // made-up addresses aren't strict base58.
-const SOLANA = /^[0-9A-Za-z]{32,44}$/
-const EVM = /^0x[0-9a-fA-F]{40}$/
-const isAddress = (word: string) => SOLANA.test(word) || EVM.test(word)
+const SOLANA = new RegExp(`^${LOOSE_SOLANA_ADDRESS_SOURCE}$`)
+const isAddress = (word: string) => SOLANA.test(word) || isEvmAddress(word)
 const str = (v: unknown): string | undefined => (typeof v === "string" && v.length > 0 && v.length <= 200 ? v : undefined)
 
 /** How a destination is named on a card: "cold, a vault key on this machine (Vaul…1111)". */
@@ -128,6 +128,11 @@ export function fromVaultList(body: unknown): Destination[] {
     if (kind) out.push({ address, ...(label ? { label } : {}), kind })
   }
   return out
+}
+
+/** The vault keys among `list` on one chain family: an EVM key has an 0x address, a Solana key a base58 one. */
+export function vaultKeysOn(list: readonly Destination[], family: "solana" | "evm"): Destination[] {
+  return list.filter((d) => d.kind === "vault-key" && (family === "evm") === isEvmAddress(d.address))
 }
 
 /** The known list, from every source. The vault list survives a restart; the reads are made again. */
@@ -222,7 +227,7 @@ export type DestinationCheck =
  * characters, or `0x` and hex of the wrong length. A label is rarely like that, so it's worded as a mistyped address.
  */
 const MISTYPED_SOLANA = /^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])[1-9A-HJ-NP-Za-km-z]{24,60}$/
-const MISTYPED_EVM = /^0x[0-9a-fA-F]{8,60}$/
+const MISTYPED_EVM = new RegExp(`^${LOOSE_EVM_ADDRESS_SOURCE}{8,60}$`)
 const mistyped = (word: string) => MISTYPED_SOLANA.test(word) || MISTYPED_EVM.test(word)
 
 /** A destination as given (an address or a label) against the known list. */
@@ -231,7 +236,7 @@ export function checkDestination(word: string, known: readonly Destination[]): D
   const exact = known.find((d) => keyOf(d.address) === key) ?? known.find((d) => d.label !== undefined && d.label === word)
   if (exact) return { kind: "known", destination: exact }
   // `0x` and hex is never base58 (no 0), so one of the wrong length is a mistyped EVM address, not a new Solana one.
-  if (!isAddress(word) || (MISTYPED_EVM.test(word) && !EVM.test(word))) return { kind: "unknown-label", word, ...(mistyped(word) ? { mistyped: true as const } : {}) }
+  if (!isAddress(word) || (MISTYPED_EVM.test(word) && !isEvmAddress(word))) return { kind: "unknown-label", word, ...(mistyped(word) ? { mistyped: true as const } : {}) }
   const ends = (a: string) => `${keyOf(a).slice(0, 4)}|${keyOf(a).slice(-4)}`
   const like = known.find((d) => ends(d.address) === ends(word))
   return like ? { kind: "lookalike", like } : { kind: "new", address: word }
@@ -240,7 +245,7 @@ export function checkDestination(word: string, known: readonly Destination[]): D
 const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
 /** Whether the text names it: its address, whole, or its label as a word of its own (any case). */
 function names(text: string, what: Named): boolean {
-  const address = what.address.startsWith("0x") ? new RegExp(`(?<![0-9A-Za-z])${escape(what.address)}(?![0-9A-Za-z])`, "i") : new RegExp(`(?<![0-9A-Za-z])${escape(what.address)}(?![0-9A-Za-z])`)
+  const address = startsAsEvm(what.address) ? new RegExp(`(?<![0-9A-Za-z])${escape(what.address)}(?![0-9A-Za-z])`, "i") : new RegExp(`(?<![0-9A-Za-z])${escape(what.address)}(?![0-9A-Za-z])`)
   if (address.test(text)) return true
   return what.label !== undefined && new RegExp(`(?<![\\w-])${escape(what.label)}(?![\\w-])`, "i").test(text)
 }
@@ -263,7 +268,7 @@ function without(text: string, named: readonly Named[]): string {
 
 /** The assets a person names by word. Anything else they name by its mint, in full. */
 const TICKERS = ["SOL", "USDC", "USDG", "USDT", "ETH", "CNDL"]
-const ADDRESS_IN_TEXT = /(?<![0-9A-Za-z])(?:0x[0-9a-fA-F]{40}|[0-9A-Za-z]{32,44})(?![0-9A-Za-z])/g
+const ADDRESS_IN_TEXT = new RegExp(`(?<![0-9A-Za-z])(?:${EVM_ADDRESS_SOURCE}|${LOOSE_SOLANA_ADDRESS_SOURCE})(?![0-9A-Za-z])`, "g")
 
 /**
  * Whether the message asks for this asset: by its word (SOL, USDC…) or its mint in full. A message that
@@ -420,7 +425,7 @@ export function prepareFundsOut(
       case "unknown-label":
         if (opts.labelsPass) return { ok: true, named: { address: word, label: word } }
         if (check.mistyped) {
-          const want = word.startsWith("0x") ? "an EVM address is 0x and 40 more" : "a Solana address is 32 to 44"
+          const want = startsAsEvm(word) ? "an EVM address is 0x and 40 more" : "a Solana address is 32 to 44"
           return { ok: false, why: fail("MISTYPED_ADDRESS", `${shown} is ${word.length} characters, and ${want}: it looks cut short or run on. Copy the address again, whole.`) }
         }
         return { ok: false, why: fail("UNKNOWN_DESTINATION", `${shown} isn't a wallet or vault key the Candle Harness knows. Give the address in full, or run candle vault list in the pane first so the Candle Harness knows your vault keys.`) }
@@ -515,6 +520,9 @@ export function prepareFundsOut(
         const d = destination(to, -1, { resolve: false, newAllowed: false, labelsPass: true })
         if (!d.ok) return d.why
       }
+      // `--all --empty` stops every empty TEE wallet the vault holds, naming none: the card couldn't say which,
+      // and the user's words couldn't be checked against them.
+      if (words.includes("--all") || words.includes("--empty")) return fail("NAME_EACH_WALLET", "candle vault demote --all --empty names no wallet, so the card couldn't say which it stops for good: name each wallet instead.")
       // Several wallets (CLI 0.13.11) demote one after another under one unlock and one confirm: the card says how many.
       const wallets = words.slice(2).filter((w, i, all) => !w.startsWith("-") && !(i > 0 && DEMOTE_VALUE_FLAGS.has(all[i - 1]!)))
       // It stops each wallet for good: from the agent, the user's own words this turn name every one, as a sweep's do.

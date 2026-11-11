@@ -80,6 +80,11 @@ describe("each tab's choice", () => {
     const choices = [{ at: "Signals", pattern: "dormancy" }, { at: "Cockpit", mine: true as const }]
     expect(signalsChoiceOf(choices, "Signals")).toEqual({ pattern: "dormancy" })
     expect(signalsChoiceOf(choices, "Trade")).toEqual({})
+    // With the chain filter's chip on screen, the tab's own chain gives way to the filter's (none: all chains).
+    const kept = [{ at: "Signals", pattern: "dormancy", chain: "solana" as const }]
+    expect(signalsChoiceOf(kept, "Signals")).toEqual({ pattern: "dormancy", chain: "solana" })
+    expect(signalsChoiceOf(kept, "Signals", { chain: "hood" })).toEqual({ pattern: "dormancy", chain: "hood", folded: true })
+    expect(signalsChoiceOf(kept, "Signals", {})).toEqual({ pattern: "dormancy", folded: true })
     expect(signalsFilter({ pattern: "dormancy", chain: "hood" })).toEqual({ pattern: ["dormancy"], chain: ["hood"] })
     // Your rules' signals aren't Hacc's tape: no filter goes to the core for them.
     expect(signalsFilter({ mine: true, pattern: "dormancy" })).toBeUndefined()
@@ -100,6 +105,9 @@ describe("each tab's choice", () => {
     expect(signalsChips({ pattern: "large_move" }, 156).map((c) => c.text)).toEqual(["big move ▾", "chain ▾", "all ▾"])
     expect(signalsChips({ mine: true }, 156).map((c) => c.text)).toEqual(["mine ▾"])
     expect(signalsTitle({ pattern: "dormancy" })).toBe("Signals · Hacc's tape")
+    // With the status bar's chain filter on screen the chain is its: no chain chip, set or not.
+    expect(signalsChips({ folded: true }, 156).map((c) => c.text)).toEqual(["pattern ▾", "all ▾"])
+    expect(signalsChips({ folded: true, chain: "hood" }, 40).map((c) => c.text)).toEqual(["all ▾"])
   })
 
   test("the menus: every pattern Hacc sends, in words, and both chains; the one on is ticked", () => {

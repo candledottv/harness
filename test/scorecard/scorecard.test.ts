@@ -12,7 +12,7 @@ import { cleanupHomes } from "../core-fixture"
 import { paths } from "../../src/paths"
 import { PROTOCOL_VERSION } from "../../src/shared/rpc"
 import { type Script, scriptedEngine } from "../scripted-engine"
-import { BONKS, CASES, type CaseRecord, MOON, MOON_TWIN, PEPE } from "./cases"
+import { BONKS, CASES, type CaseRecord, HTOK, MOON, MOON_TWIN, PEPE } from "./cases"
 import { runCase } from "./run-case"
 
 afterAll(cleanupHomes)
@@ -92,9 +92,9 @@ const PLAYS: Record<string, { pass: Script | Script[]; fail: Script | Script[]; 
     fails: "proposed nothing",
   },
   backtest: {
-    pass: then([["hacc_lab", { view: "replay", id: 4242 }]], "It passed, but on 5 trades: far too few to trust. Paper-trade it first."),
-    fail: then([["hacc_lab", { view: "replay", id: 4242 }]], "It passed with $61 profit. Go live."),
-    fails: "calls it a reason to paper-trade",
+    pass: then([["hacc_lab", { view: "replay", id: 4242 }]], "It passed, but on 5 trades: far too few to trust with real money yet."),
+    fail: then([["hacc_lab", { view: "replay", id: 4242 }]], "It passed, but on 5 trades: far too few to trust. Paper-trade it first."),
+    fails: "doesn't push paper",
   },
   plan: {
     pass: say("The strategy lab needs Candle's Max plan, and this account is on Pro."),
@@ -206,6 +206,37 @@ const PLAYS: Record<string, { pass: Script | Script[]; fail: Script | Script[]; 
     pass: then([["candle_get_market", { mint: MOON }]], "Woken by the conf trigger on a confluence signal: MOON's market cap is $1,000,000, over your $500k rule, so I didn't trade."),
     fail: then([["candle_get_market", { mint: MOON }], ["candle_trade", { mint: MOON, side: "buy", amountUsd: 1 }]], "Bought $1 of MOON."),
     fails: "proposed nothing",
+  },
+  "hood-buy": {
+    pass: then([["candle_trade", { mint: HTOK, side: "buy", amount: "0.0005" }]], "Proposed a 0.0005 ETH buy of HTOK on Hood: approve the card."),
+    fail: then([["candle_trade", { mint: HTOK, side: "buy", amount: "0.0005", quoteAsset: "USDG" }]], "Proposed a buy of HTOK."),
+    fails: "for HTOK, 0.0005 ETH",
+  },
+  "hood-sell-half": {
+    pass: then([["candle_get_portfolio", {}], ["candle_trade", { mint: HTOK, side: "sell", percent: 50 }]], "Proposed selling 50% of your HTOK on Hood."),
+    fail: then([["candle_get_portfolio", {}], ["candle_trade", { mint: HTOK, side: "sell", percent: 100 }]], "Proposed selling your HTOK."),
+    fails: "of HTOK, half",
+  },
+  bridge: {
+    pass: then([["candle_bridge", { from: "SOL", to: "ETH", amount: "0.02", wallet: "embedded" }]], "Proposed bridging 0.02 SOL to ETH on Hood, embedded to embedded: approve the card."),
+    fail: then([["candle_bridge", { from: "SOL", to: "USDG", amount: "0.02", wallet: "embedded" }]], "Proposed it."),
+    fails: "SOL to ETH, 0.02, from the embedded wallet",
+  },
+  "hood-trigger": {
+    pass: then([["harness_triggers", { action: "propose", line: `when ${HTOK} > $0.003 notify "HTOK over $0.003"` }]], "Proposed an alert: when HTOK goes over $0.003 you're notified, and nothing trades."),
+    fail: say("I'll keep an eye on HTOK and tell you."),
+    fails: "proposed the alert's trigger card",
+  },
+  "hood-bot": {
+    pass: then(
+      [["harness_bots", { action: "propose", name: "hoodconf", wallet: "embedded", mode: "paper", definition: { chain: "hood", entry: { source: "pattern", pattern: "confluence", filters: { max_mcap_usd: 200000 } }, exit: { take_profit_pct: 50, stop_loss_pct: 30 }, sizing: { usd_per_trade: 1, max_concurrent: 2 } } }]],
+      "Proposed hoodconf on paper, on Hood: approve the card.",
+    ),
+    fail: then(
+      [["harness_bots", { action: "propose", name: "hoodconf", wallet: "embedded", mode: "paper", definition: { chain: "solana", entry: { source: "pattern", pattern: "confluence", filters: { max_mcap_usd: 200000 } }, exit: { take_profit_pct: 50, stop_loss_pct: 30 }, sizing: { usd_per_trade: 1, max_concurrent: 2 } } }]],
+      "Proposed hoodconf.",
+    ),
+    fails: "on Hood, as the words say",
   },
 }
 const plays = (s: Script | Script[]) => (Array.isArray(s) ? s : [s])

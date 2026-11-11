@@ -9,7 +9,7 @@ import { act } from "react"
 import type { CoreEventParams } from "../core/client"
 import { App, hereOf, type Session } from "./app"
 import { hintParts } from "./input-line"
-import { helpLines, INITIAL_UI, type Key, paletteFound, step, type UiContext, type UiState } from "./keys"
+import { helpLines, INITIAL_UI, type Key, paletteFound, poppable, step, type UiContext, type UiState } from "./keys"
 import { chordOf, hintsHere, KEYMAP, pressed } from "./keymap"
 import type { ViewCard } from "./store"
 
@@ -93,6 +93,14 @@ describe("what reads the table", () => {
       const d = KEYMAP.find((x) => `key:${x.id}` === r.id)!
       expect(r).toMatchObject({ key: d.chord, words: d.words })
     }
+  })
+
+  test("ctrl-p's hint and pop are for a pane on the tab drawn now: focus left on a hidden tab's pane offers neither", () => {
+    const nav = (order: string[]) => ({ order, group: [], rects: {} }) as unknown as UiContext["panes"]
+    const onNew = { ...INITIAL_UI, focus: "new" } as UiState
+    expect(poppable(onNew, { panes: nav(["agent", "new", "graduated"]) })).toBe("new")
+    expect(poppable(onNew, { panes: nav(["agent", "research"]) })).toBeUndefined()
+    expect(hereOf(onNew, { ...ctx, panes: nav(["agent", "research"]) }).pops).toBeUndefined()
   })
 
   test("the hint line says what Enter and Esc do here", () => {

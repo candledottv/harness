@@ -5,7 +5,7 @@
 import { afterAll, afterEach, expect, test } from "bun:test"
 import { mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
-import { cleanupHomes, startTestCore, type TestCore, testConfig, testHome, until } from "../../test/core-fixture"
+import { cleanupHomes, prefixedKey, startTestCore, type TestCore, testConfig, testHome, until } from "../../test/core-fixture"
 import { connectTestClient } from "../../test/core-test-client"
 import { PROTOCOL_VERSION } from "../shared/rpc"
 import type { BotsTopic } from "./bots"
@@ -263,4 +263,16 @@ test("a change approved to a bot the person paused or stopped keeps it so, and i
   // On, a change keeps it on, and says nothing of staying.
   const r = await build.request("bots.proposeCode", { ...ASK, replace: true, perDayUsd: 16 })
   expect(c.core.cards.get((r.result as { cardId: string }).cardId)!.display.botCard?.changes).toBe("a day's figure $16.00, from $14.00")
+})
+
+test("a live code bot on a Hood TEE wallet: its card says how its buys run from that wallet's own setting", async () => {
+  const HOOD_TEE = "0x00000000000000000000000000000000000E7e01"
+  const tee = { id: "teeH", address: HOOD_TEE, label: "hood-tee", boundKeyPrefix: "Momentum", chain: "hood" as const, wei: "2500000000000000" }
+  const { c, build } = await core({}, { keys: { momentum: prefixedKey("Momentum"), swing: prefixedKey("Swingkey") }, candle: { momentum: { teeWallets: [tee] } } })
+  await until(() => c.core.autonomy.view().wallets.some((w) => w.wallet === HOOD_TEE))
+  const r = await build.request("bots.proposeCode", { ...ASK, wallet: HOOD_TEE, mode: "live" })
+  if (r.error) throw new Error(JSON.stringify(r.error))
+  const card = c.core.cards.get((r.result as { cardId: string }).cardId)!
+  expect(card.display.botCard?.runs.kind).toBe("asks")
+  expect(card.display.botCard?.runs.entries).toContain("hood-tee asks every time")
 })

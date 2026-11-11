@@ -26,7 +26,8 @@ import { countWords, runnableCards, triggersPaneLines } from "../triggers-view"
 import { type BotConfirm, botDetailLines, botNamed, botsListLines, botsTitle, botTitle, everyBot } from "../bots-view"
 import { awayLines, awayTitle } from "./away"
 import { type BuildFolder, type DaemonView, folderLines, folderTitle, testLines, testTitle } from "../build-view"
-import { emptyWallets, type WalletsFind, grouping, insideWallets, walletLines, walletsFound, walletsHead, walletsTitle } from "./wallets"
+import { emptyWallets, type WalletsFind, grouping, hoodOffers, insideWallets, walletLines, walletsFound, walletsHead, walletsTitle } from "./wallets"
+import { chainInForce, chainScoped, chainsInUse } from "../chain-filter"
 
 /**
  * How a pane's lines run: a list from its first, scrolled down (Positions, Feed); a tail with its newest
@@ -214,7 +215,9 @@ export interface PaneLines {
 }
 
 function body(id: Exclude<PaneId, "agent">, p: PaneLinesInput): PaneLines {
-  const { view: whole, rect, now, only, shownInFull, rows } = p
+  const { rect, now, only, shownInFull, rows } = p
+  // Under the chain filter, every listing pane draws only its rows on the chosen chain (the agent's pane isn't drawn here).
+  const whole = chainScoped(p.view)
   const width = innerCols(rect) - 1
   const scoped: CoreView = only ? { ...whole, portfolio: portfolioFor(whole.portfolio, only), activity: activityFor(whole.activity, only) } : whole
   // Which wallets show: the core's choice, applied to both panes.
@@ -261,7 +264,7 @@ function body(id: Exclude<PaneId, "agent">, p: PaneLinesInput): PaneLines {
       return {
         title: `${walletsTitle(view.portfolio, now, whole.status?.walletsShown)}${slowed("prices")}`,
         ...(count ? { head: walletsHead(g.find, count.found, count.of, width) } : {}),
-        lines: walletLines(view.portfolio, { mode, now, width, ...(shownInFull ? { shownInFull } : {}), ...(rows !== undefined ? { rows } : {}), hidden: { count: hidden, choice, activeHides }, inside: insideWallets(whole.autonomy), empty: emptyWallets(whole.wallets), closeOn: closeEmptyOn(), grouping: g }),
+        lines: walletLines(view.portfolio, { mode, now, width, ...(shownInFull ? { shownInFull } : {}), ...(rows !== undefined ? { rows } : {}), hidden: { count: hidden, choice, activeHides }, inside: insideWallets(whole.autonomy), empty: emptyWallets(whole.wallets), closeOn: closeEmptyOn(), grouping: g, hood: hoodOffers(whole.wallets) }),
       }
     }
     case "activity": {
@@ -276,6 +279,13 @@ function body(id: Exclude<PaneId, "agent">, p: PaneLinesInput): PaneLines {
       // Candle's lists, each the core's last read of it.
       const bucket = FEED_PANES[id]
       const list = listOf(bucket, whole.feeds, whole.market)
+      // Final Stretch is pump.fun's: on Solana alone, which it says where the account uses more than one chain.
+      if (bucket === "finalstretch" && chainsInUse(p.view.portfolio).length > 1) {
+        const elsewhere = chainInForce(p.view)
+        const title = `${feedTitle(bucket, list, now).replace(/^Final Stretch/, "Final Stretch · Solana's")}${slowed("lists")}`
+        if (elsewhere && elsewhere !== "solana") return { title, lines: wrap(`Final Stretch is pump.fun's, on Solana only: it shows with Solana or all chains picked in the status bar.`, Math.max(10, width)).map((t) => line(t, C.dim)) }
+        return { title, lines: feedLines(bucket, list, width, now) }
+      }
       return { title: `${feedTitle(bucket, list, now)}${slowed("lists")}`, lines: feedLines(bucket, list, width, now) }
     }
     case "signals": {

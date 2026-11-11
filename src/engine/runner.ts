@@ -57,7 +57,7 @@ import { type Skill, SKILL_TOOL_NAME, skillsFor } from "./skills"
 import { removeAll } from "./home"
 import { harnessEnv } from "./spawn"
 import { terminalText } from "../shared/terminal-text"
-import { walletSecretIn } from "../shared/wallet-secret"
+import { ownEvmKeysIn, walletSecretIn } from "../shared/wallet-secret"
 import { DEFAULT_TOOLS, shellFor, shellOn, toolAllowed, type ToolSettings } from "./tools"
 import { type Exchange, fenced, type FigureMark, toolName, toolSummary, Transcript, type TurnOutcome } from "./transcript"
 
@@ -207,6 +207,8 @@ export interface RunnerDeps {
   mode: () => "paper" | "live"
   /** The agents that have a key, so a turn's tools can reach Candle as them. */
   agents: () => ReadonlySet<string>
+  /** Whether an EVM address (by addressKey) is one of the account's own wallets, so its private key in a message is refused. */
+  ownEvm?: (addressKey: string) => boolean
   tokens: { mintHarness(name: string, agent: string): Promise<{ token: string; tokenId: string }>; revoke(tokenId: string): Promise<boolean> }
   /** Drops every connection made with a revoked harness token. */
   disconnectToken: (tokenId: string) => void
@@ -358,8 +360,16 @@ export class EngineRunner {
     if (!this.deps.agents().has(agent)) throw refused("UNKNOWN_AGENT", `No agent named ${agent} has a key.`)
     if (typeof text !== "string" || text.trim().length === 0) throw refused("EMPTY_MESSAGE", "There's no message to send.")
     if (text.length > MAX_MESSAGE_CHARS) throw refused("MESSAGE_TOO_LONG", `Messages are limited to ${MAX_MESSAGE_CHARS} characters.`)
-    // A wallet's keypair or recovery phrase first, in its own words (the redactor catches a keypair's array too).
-    if (walletSecretIn(text)) {
+    // A wallet's keypair, recovery phrase or EVM private key first, in its own words (the redactor catches a keypair's array too).
+    const ctx = { ...(this.deps.ownEvm ? { ownEvm: this.deps.ownEvm } : {}) }
+    if (walletSecretIn(text, ctx)) {
+      // An EVM key has a transaction hash's shape, so no log can tell it by its shape: one of the account's own wallets'
+      // keys refused here is taken out of every log after. A value refused for the words before it alone isn't kept,
+      // since it may be a hash the person asks about next.
+      for (const key of ownEvmKeysIn(text, ctx)) {
+        const hex = key.replace(/^0x/i, "")
+        for (const h of [hex, hex.toLowerCase(), hex.toUpperCase()]) for (const shown of [`0x${h}`, `0X${h}`, h]) this.deps.redactor.add(shown)
+      }
       await this.deps.journal.append({ type: "agent.message_refused", mode: this.deps.mode(), agent, by, code: "SECRET_IN_MESSAGE" })
       throw refused("SECRET_IN_MESSAGE", "That message holds a wallet's private key or recovery phrase, so it wasn't sent to the agent. Never paste one into the chat: the agent can't use it, and it would reach the model's provider.")
     }

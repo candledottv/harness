@@ -6,8 +6,9 @@
 // with none) is offered as a chip that puts the exact command on the input line, where the user
 // reads it and presses Enter; a typed owner row opens the pane at once.
 import { isAgentName } from "../paths"
+import { isEvmAddress } from "../shared/chains"
 import { terminalText } from "../shared/terminal-text"
-import { type CliRule, LP_AGENT_SCOPES, type Preset, SOURCE } from "./cli-table"
+import { type CliRule, isFlagWord, LP_AGENT_SCOPES, type Preset, SOURCE, sourceForWords } from "./cli-table"
 
 /**
  * Whether a call runs in the prompt pane now, by its rule and route as its flags make them (`tee status
@@ -65,7 +66,18 @@ export const REAL_IN_PAPER = "Real, whatever the mode: owner steps act on your a
 export interface Fill {
   label: string
   line: string
+  /** Where the cursor waits on the line, where the person types a value in the middle (a bridge's amount); else its end. */
+  cursor?: number
 }
+
+/** A next step that copies a value rather than typing a line: a wallet's address, to send funds to. */
+export interface CopyStep {
+  label: string
+  copy: string
+}
+
+/** What a finished step offers next: lines to send, or a value to copy. */
+export type NextStep = Fill | CopyStep
 
 const flagValue = (words: readonly string[], flag: string): string | undefined => {
   const at = words.indexOf(flag)
@@ -74,10 +86,11 @@ const flagValue = (words: readonly string[], flag: string): string | undefined =
 
 /** The positionals after `candle <command> <subcommand>`: words that aren't flags or a flag's value. */
 export function positionals(words: readonly string[], valueFlags: readonly string[]): string[] {
+  const entry = sourceForWords(words)
   const out: string[] = []
   for (let i = 2; i < words.length; i++) {
     const w = words[i]!
-    if (w.startsWith("-")) {
+    if (isFlagWord(entry, w)) {
       if (valueFlags.includes(w)) i++
       continue
     }
@@ -187,10 +200,68 @@ export function presetDrops(current: readonly string[], to: string | undefined):
  * of its own for the same agent (a bot's) is the usual case.
  */
 export function teeLabelFor(agent: string, taken: readonly string[] = []): string {
+  return walletLabelFor(agent, "tee", taken)
+}
+
+/** `<agent>-<ending>`, or the first `<agent>-<ending>-2`, `-3`… that no name the Candle Harness knows holds, without case. */
+export function walletLabelFor(agent: string, ending: string, taken: readonly string[] = []): string {
   const held = new Set(taken.map((n) => n.normalize("NFKC").toLowerCase()))
-  const base = `${agent}-tee`
+  const base = `${agent}-${ending}`
   if (!held.has(base.toLowerCase())) return base
   for (let n = 2; ; n++) if (!held.has(`${base}-${n}`.toLowerCase())) return `${base}-${n}`
+}
+
+/** What the Hood chip is called, wherever it shows. */
+export const ADD_HOOD_WALLET = "add a Hood wallet"
+
+/**
+ * How `vault promote --to-key` names an agent's key. Its prefix, unless that starts with "-": `vault promote` reads
+ * such a value as a missing one (unlike `tee rebind`), so the key goes by its label, the agent's name that setup gives
+ * it. The CLI refuses a label two keys share, so the wrong key is never reached.
+ */
+export const promoteTarget = (agent: string, prefix: string): string => (prefix.startsWith("-") ? agent : prefix)
+
+/**
+ * The next step to an agent's own Hood TEE wallet, as the chip types it for the person to send: a vault where this
+ * machine has none; an EVM vault key where the vault has none (a new one holds nothing, and the funding comes after);
+ * then the promote from that key to the agent's key, which makes the wallet and pins it to the key, its sweep home.
+ * With several EVM vault keys, the person names the one, typed last. Nothing is made unless the person sends it.
+ */
+export function hoodWalletStep(agent: string, ctx: { prefix: string; vault: boolean; evmKeys: readonly string[]; taken?: readonly string[] }): Fill {
+  if (!ctx.vault) return { label: ADD_HOOD_WALLET, line: "candle vault init" }
+  if (ctx.evmKeys.length === 0) return { label: ADD_HOOD_WALLET, line: `candle vault new-key --chain evm --label ${walletLabelFor(agent, "hood-key", ctx.taken)}` }
+  const from = ctx.evmKeys.length === 1 ? ctx.evmKeys[0]! : ""
+  return { label: ADD_HOOD_WALLET, line: `candle vault promote --to-key ${promoteTarget(agent, ctx.prefix)} --label ${walletLabelFor(agent, "hood", ctx.taken)} --from ${from}` }
+}
+
+/**
+ * A fresh Hood TEE wallet's funding, ETH first: it can't trade, or be swept, without ETH for gas and its reserve. A
+ * bridge landing ETH from the same key's Solana TEE wallet (the one the key holds; a bridge lands only in the key's own
+ * wallet on the other chain), with the amount typed where the cursor waits; the fund line from its pinned EVM vault key,
+ * which starts empty; or its address, to send ETH to from anywhere.
+ */
+export function hoodFundSteps(agent: string, ctx: { address?: string; solanaTee?: string }): NextStep[] {
+  const steps: NextStep[] = []
+  if (ctx.address !== undefined && ctx.solanaTee !== undefined) {
+    // It names where it lands: the key may hold another Hood TEE wallet, and a bridge never guesses between them.
+    steps.push({ label: "bridge ETH", line: `bridge  sol to eth from ${ctx.solanaTee} into ${ctx.address} as ${agent}`, cursor: "bridge ".length })
+  }
+  steps.push({ label: "fund from vault key", line: `candle vault fund ${ctx.address ?? "<its address>"} --asset ETH --amount ` })
+  if (ctx.address !== undefined) steps.push({ label: "⧉ address", copy: ctx.address })
+  return steps
+}
+
+/**
+ * A new EVM vault key the Hood chip named for an agent (`<agent>-hood-key`, or one of its numbered ones), one key at a
+ * time: what follows is that agent's promote from it.
+ */
+export function hoodNewKeyOf(words: readonly string[], agents: ReadonlyMap<string, string>): { agent: string; key: string } | undefined {
+  const [command, sub] = words
+  if (command !== "vault" || sub !== "new-key" || flagValue(words, "--chain") !== "evm" || words.includes("--count") || words.includes("--labels-from")) return undefined
+  const key = flagValue(words, "--label")
+  if (key === undefined) return undefined
+  for (const agent of agents.keys()) if (new RegExp(`^${agent.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}-hood-key(-\\d+)?$`, "i").test(key)) return { agent, key }
+  return undefined
 }
 
 /**
@@ -205,9 +276,9 @@ export function teeLabelFor(agent: string, taken: readonly string[] = []): strin
 export function freshTeeStep(step: 1 | 2, agent: string, ctx: { prefix: string; vaultKey?: string; address?: string; taken?: readonly string[] }): Fill {
   switch (step) {
     case 1:
-      return { label: `new TEE wallet for ${agent}`, line: `candle vault promote --to-key ${ctx.prefix} --label ${teeLabelFor(agent, ctx.taken)} --from ${ctx.vaultKey ?? ""}` }
+      return { label: `new TEE wallet for ${agent}`, line: `candle vault promote --to-key ${promoteTarget(agent, ctx.prefix)} --label ${teeLabelFor(agent, ctx.taken)} --from ${ctx.vaultKey ?? ""}` }
     case 2:
-      return { label: `fund ${agent}'s TEE wallet`, line: `candle vault fund ${ctx.address ?? "<its address>"} --asset SOL --amount ` }
+      return { label: `fund ${agent}'s TEE wallet`, line: `candle vault fund ${ctx.address ?? "<its address>"} --asset ${ctx.address !== undefined && isEvmAddress(ctx.address) ? "ETH" : "SOL"} --amount ` }
   }
 }
 
@@ -217,7 +288,7 @@ export function freshTeeStepOf(words: readonly string[], agents: ReadonlyMap<str
   if (command !== "vault" || sub !== "promote") return undefined
   const to = flagValue(words, "--to-key")
   const label = flagValue(words, "--label")
-  for (const [agent, prefix] of agents) if (to === prefix) return { agent, ...(label !== undefined ? { label } : {}) }
+  for (const [agent, prefix] of agents) if (to === prefix || (to !== undefined && to === promoteTarget(agent, prefix))) return { agent, ...(label !== undefined ? { label } : {}) }
   return undefined
 }
 

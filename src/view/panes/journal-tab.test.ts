@@ -198,3 +198,15 @@ describe("the keys", () => {
     expect(run([key("o", { ctrl: true })], ctx(), { ...INITIAL_UI, focus: "agent" }).state.overlay).toEqual({ kind: "card", cardId: "c1" })
   })
 })
+
+test("the Journal on two chains ends each entry's first line with its chain; on one chain, no tag", () => {
+  const entry = (id: string, text: string, chain?: "solana" | "hood") => ({ id, seq: Number(id), at: "2026-10-30T12:00:00.000Z", last: "2026-10-30T12:00:00.000Z", kind: "trades" as const, mode: "live" as const, text, tone: "good" as const, seqs: [Number(id)], ...(chain ? { chain, mint: chain === "hood" ? "0x00000000000000000000000000000000000b0B01" : "MoonFake11111111111111111111111111111111111" } : {}) })
+  const text = (l: { segs: { text: string }[] }) => l.segs.map((s) => s.text).join("")
+  const mixed = journalLines({ key: "", entries: [entry("3", "filled BUY 0.01 ETH → KITE", "hood"), entry("2", "filled BUY 0.04 SOL → LUMEN", "solana"), entry("1", "kill switch on")] }, undefined, { width: 50, now: Date.parse("2026-10-30T13:00:00.000Z") })
+  const rows = mixed.filter((l) => /KITE|LUMEN|kill/.test(text(l)))
+  expect(text(rows[0]!)).toMatch(/KITE\s+hood$/)
+  expect(text(rows[1]!)).toMatch(/LUMEN\s+sol$/)
+  expect(text(rows[2]!)).toMatch(/kill switch on$/)
+  const one = journalLines({ key: "", entries: [entry("2", "filled BUY 0.04 SOL → LUMEN", "solana")] }, undefined, { width: 50, now: Date.parse("2026-10-30T13:00:00.000Z") })
+  expect(text(one.find((l) => /LUMEN/.test(text(l)))!)).toMatch(/LUMEN$/)
+})

@@ -26,7 +26,7 @@
 // - **Told what happens to it:** each request's outcome, its state (paused, resumed, held), the kill switch, and the
 //   core stopping, on the `bot` topic, to its own connection only.
 import { sameAddress } from "../shared/address-key"
-import { BASE_ASSETS, baseAssetForMint, fromRaw, isBaseAsset, toRaw } from "./assets"
+import { BASE_ASSETS, fromRaw, isBaseAsset, spentSymbol, toRaw } from "./assets"
 import { type Exit, readHeldExit } from "../shared/definition"
 import { exitWords } from "../shared/definition-words"
 import { refused } from "../shared/rpc"
@@ -42,11 +42,10 @@ import { startOfLocalDay, usd } from "./limits"
 import type { HeldBy } from "./held-exits"
 import type { FaceClient } from "./tool-face"
 import { short } from "./wallet-names"
+import { addressKey, type ChainSlug, enabledChains, familyOfAddress, isAddressOn, maybeChain, requestChain, storedChain } from "../shared/chains"
 
 /** A request id: the bot's own, 8 to 64 letters, digits, `_` or `-`. */
 const REQUEST_ID = /^[A-Za-z0-9_-]{8,64}$/
-const SOLANA_MINT = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/
-const HOOD_MINT = /^0x[0-9a-fA-F]{40}$/
 /** A market read this fresh is used as it is. */
 export const BOT_MARKET_REUSE_MS = 4_500
 /** The same refusal of one bot is journalled at most this often: a bot in a loop can't fill the journal. */
@@ -148,14 +147,19 @@ export interface CodeBotDeskDeps {
   failed: { held(agent: string, mint: string): boolean; words(agent: string, label: string): string }
   /** The bot's trade, as its own (bot-trades.ts `send`). */
   send(trade: { tool: string; args: Record<string, unknown> }, client: FaceClient, mode: "paper" | "live", reason: string, check?: (card: Card) => { code: string; words: string } | undefined): Promise<unknown>
-  /** What a live wallet holds of a token now. */
-  holding(agent: string, wallet: string, mint: string): Promise<Holding>
+  /** What a live wallet holds of a token now, on the position's chain: "embedded" is that chain's embedded wallet. */
+  holding(agent: string, wallet: string, mint: string, chain: ChainSlug): Promise<Holding>
+  /**
+   * The payer's words where a live bot's wallet is on another chain than the token (a TEE wallet is on one); undefined
+   * where it pays there, or that isn't known yet.
+   */
+  wrongChain?(agent: string, wallet: string, chain: ChainSlug): string | undefined
   /** A token's decimals where the core knows them. */
   decimalsOf(mint: string): number | undefined
   /** Whether a sell of the token from this wallet goes by an exact amount (a TEE wallet, a token Candle gives decimals for). */
   byAmount(wallet: string, mint: string): boolean
   /** Candle's market read, not counted toward a key's limit; undefined when no key can make it. */
-  market(chain: "solana" | "hood", mint: string): Promise<ToolOutcome | undefined>
+  market(chain: ChainSlug, mint: string): Promise<ToolOutcome | undefined>
   /** A card, as it is now. */
   card(cardId: string): Card | undefined
   /** A token's name for words, where the core knows one. */
@@ -423,9 +427,10 @@ export class CodeBotDesk {
     const seen = this.requests.get(keyOf(bot, request))
     if (seen) return this.answer(seen)
     this.unspent(bot, request)
-    onlyKeys(params, ["request", "mint", "amountUsd", "exits"])
+    onlyKeys(params, ["request", "mint", "amountUsd", "exits", "chain"])
     const { b, run } = this.settings(bot)
     const mint = mintOf(params.mint)
+    const chain = chainOfRequest(mint, params.chain)
     const amount = params.amountUsd
     if (typeof amount !== "number" || !Number.isFinite(amount) || amount <= 0) throw refused("INVALID_PARAMS", "amountUsd is what the buy spends, in dollars, more than 0.")
     // Exits the core holds on the position this buy opens: read before anything is recorded, so a bad one sends nothing.
@@ -437,6 +442,9 @@ export class CodeBotDesk {
     }
     const stake = cents(amount)
     if (stake < 0.01) throw refused("INVALID_PARAMS", "amountUsd is at least $0.01.")
+    // Its wallet pays on one chain: a token on another is refused before anything is recorded. On paper, either chain's.
+    const wrong = run.mode === "live" ? this.deps.wrongChain?.(b.agent, run.wallet, chain) : undefined
+    if (wrong) return this.refuse(bot, b.agent, "WALLET_CHAIN", `${wrong} Nothing was sent.`)
     const label = this.label(mint)
     this.buysRun(bot, b.agent, "buy")
     if (stake > run.perTradeUsd) return this.refuse(bot, b.agent, "FIGURE_TRADE", `A buy of ${usd(stake)} is over its ${usd(run.perTradeUsd)} a trade, so nothing was sent.`)
@@ -449,7 +457,7 @@ export class CodeBotDesk {
     this.room(bot, b.agent, mint, "buy", label)
     const held = exit ? `; the core holds its exits: ${exitWords(exit).replace(/^Sells /, "sells ").replace(/\.$/, "")}` : ""
     const r = this.record(bot, b.agent, request, { side: "buy", mode: run.mode, mint, usd: stake, words: `buys ${usd(stake)} of ${label}${run.mode === "paper" ? ", on paper" : ""}${held}` })
-    await this.deps.journal.append({ type: "bot.request", mode: run.mode, kind: "code", agent: b.agent, name: bot, request, side: "buy", mint, usd: stake, botMode: run.mode, wallet: run.wallet, ...(exit ? { exits: exit } : {}), words: r.words })
+    await this.deps.journal.append({ type: "bot.request", mode: run.mode, kind: "code", agent: b.agent, name: bot, request, side: "buy", mint, chain, usd: stake, botMode: run.mode, wallet: run.wallet, ...(exit ? { exits: exit } : {}), words: r.words })
     const trade = { tool: "candle_trade", args: { mint, side: "buy", amountUsd: stake, ...(run.mode === "live" ? { wallet: run.wallet } : {}), ...(run.maxSlippageBps !== undefined ? { maxSlippageBps: run.maxSlippageBps } : {}) } }
     return this.dispatch(r, trade, this.client(bot, b.agent, run, run.mode, { act: "entry", request }), `the code bot "${bot}" buys`)
   }
@@ -561,7 +569,7 @@ export class CodeBotDesk {
     let holding: bigint | undefined
     let dec = decimals
     if (p.mode === "live") {
-      const h = await this.deps.holding(b.agent, p.wallet, p.mint).catch(() => "unreadable" as const)
+      const h = await this.deps.holding(b.agent, p.wallet, p.mint, positionChain(p)).catch(() => "unreadable" as const)
       if (h === "unreadable") return this.refuse(bot, b.agent, "HOLDING_UNREAD", `The wallet's balance of ${label} couldn't be read, so nothing was sent. Ask again in a moment.`)
       holding = h === "none" ? 0n : h.amountRaw
       if (h !== "none") {
@@ -617,19 +625,21 @@ export class CodeBotDesk {
     this.settings(bot)
     onlyKeys(params, ["mint", "chain"])
     const mint = mintOf(params.mint)
-    const chain = params.chain === "hood" || HOOD_MINT.test(mint) ? "hood" : "solana"
-    const held = this.markets.get(mint)
+    const chain = chainOfRequest(mint, params.chain)
+    // Kept per chain and address: one address on two EVM chains is two tokens.
+    const key = `${chain}:${addressKey(mint)}`
+    const held = this.markets.get(key)
     const now = this.deps.now()
     let outcome = held && now - held.at < BOT_MARKET_REUSE_MS ? held.outcome : undefined
     if (!outcome) {
       outcome = await this.deps.market(chain, mint)
       if (!outcome) throw refused("NO_KEY", "No key can read Candle's market now. Try again in a moment.")
       if (this.markets.size > 2_000) this.markets.clear()
-      this.markets.set(mint, { at: this.deps.now(), outcome })
+      this.markets.set(key, { at: this.deps.now(), outcome })
     }
     if (outcome.kind === "error") throw refused(outcome.code, typeof record(outcome.body)?.message === "string" ? String(record(outcome.body)!.message) : "Candle refused the market read.")
     if (outcome.kind !== "ok") {
-      this.markets.delete(mint)
+      this.markets.delete(key)
       throw refused("MARKET_UNREAD", "Candle's market read didn't answer. Try again in a moment.")
     }
     const market = record(record(outcome.result)?.market)
@@ -866,6 +876,7 @@ export class CodeBotDesk {
     return {
       id: p.id,
       mint: p.mint,
+      chain: positionChain(p),
       ...(this.deps.nameOf(p.mint) ? { symbol: this.deps.nameOf(p.mint)! } : {}),
       mode: p.mode,
       wallet: p.wallet,
@@ -926,9 +937,24 @@ function onlyKeys(params: Record<string, unknown>, allowed: readonly string[]): 
   for (const key of Object.keys(params)) if (!allowed.includes(key) && params[key] !== undefined) throw refused("INVALID_PARAMS", `${key} isn't something this takes: it takes ${allowed.join(", ")}.`)
 }
 
+/** A position's chain as stored, else (one from before positions carried one) its mint's family's. */
+const positionChain = (p: BotPosition): ChainSlug => storedChain(p.chain, p.mint) ?? "solana"
+
+/**
+ * The chain a request names, checked against the token's address; with none named, the address's family's chain that's
+ * on, as Candle's request edge takes it. Refused, nothing sent, for a chain that isn't on or an address it can't hold.
+ */
+function chainOfRequest(mint: string, given: unknown): ChainSlug {
+  if (given === undefined || given === null) return requestChain(mint) ?? "solana"
+  const entry = maybeChain(given)
+  if (!entry) throw refused("INVALID_PARAMS", `chain is ${enabledChains().map((c) => `"${c.slug}"`).join(" or ")}, or left out for the address's own.`)
+  if (!isAddressOn(entry, mint)) throw refused("INVALID_PARAMS", `${short(mint)} isn't an address on ${entry.name}, so nothing was sent.`)
+  return entry.slug
+}
+
 function mintOf(v: unknown): string {
-  if (typeof v !== "string" || !(SOLANA_MINT.test(v) || HOOD_MINT.test(v))) throw refused("INVALID_PARAMS", "mint is a token's address.")
-  if (baseAssetForMint(v)) throw refused("BASE_ASSET", "That's what trades spend: swap it, don't buy it.")
+  if (typeof v !== "string" || familyOfAddress(v) === undefined) throw refused("INVALID_PARAMS", "mint is a token's address.")
+  if (spentSymbol(v)) throw refused("BASE_ASSET", "That's what trades spend: swap it, don't buy it.")
   return v
 }
 

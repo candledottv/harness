@@ -1,0 +1,523 @@
+{
+  "engine": "grok",
+  "model": null,
+  "ran": {
+    "engine": "grok",
+    "engineVersion": "1.0.77",
+    "model": "grok-4.7",
+    "answeredModel": "grok-4.7"
+  },
+  "at": "2026-11-11T02:00:02.034Z",
+  "results": [
+    {
+      "id": "hood-buy",
+      "pass": true,
+      "checks": [
+        {
+          "name": "the turn ended with a reply",
+          "pass": true
+        },
+        {
+          "name": "proposed one buy card",
+          "pass": true
+        },
+        {
+          "name": "for HTOK, 0.0005 ETH",
+          "pass": true
+        }
+      ],
+      "notes": {
+        "skillRead": true,
+        "tools": [
+          "search_tool",
+          "list_dir",
+          "mcp__candle__skill_read",
+          "mcp__candle__candle_execution_status",
+          "mcp__candle__hacc_token",
+          "search_tool",
+          "mcp__candle__candle_resolve_token",
+          "mcp__candle__candle_token_forensics",
+          "mcp__candle__candle_get_market",
+          "mcp__candle__candle_trade"
+        ],
+        "figures": 0,
+        "marked": 0,
+        "ms": 52708
+      },
+      "turns": [
+        {
+          "user": "Buy 0.0005 ETH of 0x4b1d00000000000000000000000000000000ab1d (HTOK) on Hood. That's the address, already checked.",
+          "reply": "I've proposed a buy of HTOK on Hood with ETH, as you asked. The safety check left sellability unknown.",
+          "outcome": "done"
+        }
+      ],
+      "record": {
+        "turns": [
+          {
+            "user": "Buy 0.0005 ETH of 0x4b1d00000000000000000000000000000000ab1d (HTOK) on Hood. That's the address, already checked.",
+            "reply": "I've proposed a buy of HTOK on Hood with ETH, as you asked. The safety check left sellability unknown.",
+            "outcome": "done",
+            "tools": [
+              "search_tool",
+              "list_dir",
+              "mcp__candle__skill_read",
+              "mcp__candle__candle_execution_status",
+              "mcp__candle__hacc_token",
+              "search_tool",
+              "mcp__candle__candle_resolve_token",
+              "mcp__candle__candle_token_forensics",
+              "mcp__candle__candle_get_market",
+              "mcp__candle__candle_trade"
+            ],
+            "reasked": false,
+            "figures": 0,
+            "marked": []
+          }
+        ],
+        "cards": [
+          {
+            "state": "created",
+            "tool": "candle_trade",
+            "kind": "trade",
+            "side": "buy",
+            "mint": "0x4b1d00000000000000000000000000000000ab1d",
+            "params": {
+              "mint": "0x4b1d00000000000000000000000000000000ab1d",
+              "side": "buy",
+              "quoteAsset": "eth",
+              "clientTradeId": "28463b87-c954-4174-9e46-1f0f89fcd64b",
+              "amount": "0.0005"
+            }
+          }
+        ],
+        "triggers": [],
+        "bots": [],
+        "memoryChanges": 0,
+        "runs": [],
+        "hacc": [
+          "GET /v1/market/token/0x4b1d00000000000000000000000000000000ab1d",
+          "GET /v1/market/token/0x4b1d00000000000000000000000000000000ab1d",
+          "GET /v1/market/token/0x4b1d00000000000000000000000000000000ab1d/history"
+        ]
+      },
+      "ran": {
+        "engine": "grok",
+        "engineVersion": "1.0.77",
+        "model": "grok-4.7",
+        "answeredModel": "grok-4.7"
+      }
+    },
+    {
+      "id": "hood-sell-half",
+      "pass": true,
+      "checks": [
+        {
+          "name": "the turn ended with a reply",
+          "pass": true
+        },
+        {
+          "name": "proposed one sell card",
+          "pass": true
+        },
+        {
+          "name": "of HTOK, half",
+          "pass": true
+        }
+      ],
+      "notes": {
+        "skillRead": false,
+        "tools": [
+          "list_dir",
+          "search_tool",
+          "mcp__candle__candle_get_portfolio",
+          "mcp__candle__candle_execution_status",
+          "search_tool",
+          "mcp__candle__hacc_token",
+          "mcp__candle__candle_resolve_token",
+          "mcp__candle__candle_resolve_token",
+          "mcp__candle__candle_trade"
+        ],
+        "figures": 0,
+        "marked": 0,
+        "ms": 48673
+      },
+      "turns": [
+        {
+          "user": "Sell half of my HTOK.",
+          "reply": "I've proposed selling half of your HTOK (`0x4b1d00000000000000000000000000000000ab1d`) on Hood, the one position you hold under that ticker.",
+          "outcome": "done"
+        }
+      ],
+      "record": {
+        "turns": [
+          {
+            "user": "Sell half of my HTOK.",
+            "reply": "I've proposed selling half of your HTOK (`0x4b1d00000000000000000000000000000000ab1d`) on Hood, the one position you hold under that ticker.",
+            "outcome": "done",
+            "tools": [
+              "list_dir",
+              "search_tool",
+              "mcp__candle__candle_get_portfolio",
+              "mcp__candle__candle_execution_status",
+              "search_tool",
+              "mcp__candle__hacc_token",
+              "mcp__candle__candle_resolve_token",
+              "mcp__candle__candle_resolve_token",
+              "mcp__candle__candle_trade"
+            ],
+            "reasked": false,
+            "figures": 0,
+            "marked": []
+          }
+        ],
+        "cards": [
+          {
+            "state": "created",
+            "tool": "candle_trade",
+            "kind": "trade",
+            "side": "sell",
+            "mint": "0x4b1d00000000000000000000000000000000ab1d",
+            "params": {
+              "mint": "0x4b1d00000000000000000000000000000000ab1d",
+              "side": "sell",
+              "percent": 50,
+              "clientTradeId": "6414feea-117a-4fb5-8e47-2571b24d2ba4"
+            }
+          }
+        ],
+        "triggers": [],
+        "bots": [],
+        "memoryChanges": 0,
+        "runs": [],
+        "hacc": [
+          "GET /v1/market/token-search",
+          "GET /v1/market/token/0x4b1d00000000000000000000000000000000ab1d",
+          "GET /v1/market/token/0x4b1d00000000000000000000000000000000ab1d/history",
+          "GET /v1/market/token/0x4b1d00000000000000000000000000000000ab1d/history"
+        ]
+      },
+      "ran": {
+        "engine": "grok",
+        "engineVersion": "1.0.77",
+        "model": "grok-4.7",
+        "answeredModel": "grok-4.7"
+      }
+    },
+    {
+      "id": "bridge",
+      "pass": false,
+      "checks": [
+        {
+          "name": "the turn ended with a reply",
+          "pass": true
+        },
+        {
+          "name": "proposed one bridge card",
+          "pass": false,
+          "why": "proposed [{\"tool\":\"candle_swap\"},{\"tool\":\"candle_bridge\",\"from\":\"SOL\",\"to\":\"ETH\",\"amount\":\"0.02\",\"clientSwapId\":\"61ebee34-7dc8-484d-a329-fa191f9de35b\",\"bridge\":{\"to\":\"ETH\",\"fromName\":\"embedded\",\"toName\":\"embedded on Hood\"}}]; I've proposed a bridge from your embedded wallet into ETH on Hood, so that wallet can spend there. Approve the card to send it."
+        },
+        {
+          "name": "SOL to ETH, 0.02, from the embedded wallet",
+          "pass": true
+        }
+      ],
+      "notes": {
+        "skillRead": false,
+        "tools": [
+          "list_dir",
+          "search_tool",
+          "mcp__candle__candle_get_portfolio",
+          "mcp__candle__candle_execution_status",
+          "mcp__candle__harness_limits",
+          "mcp__candle__candle_swap",
+          "search_tool",
+          "mcp__candle__candle_bridge"
+        ],
+        "figures": 0,
+        "marked": 0,
+        "ms": 43515
+      },
+      "turns": [
+        {
+          "user": "Move 0.02 SOL from my embedded wallet over to ETH on Hood.",
+          "reply": "I've proposed a bridge from your embedded wallet into ETH on Hood, so that wallet can spend there. Approve the card to send it.",
+          "outcome": "done"
+        }
+      ],
+      "record": {
+        "turns": [
+          {
+            "user": "Move 0.02 SOL from my embedded wallet over to ETH on Hood.",
+            "reply": "I've proposed a bridge from your embedded wallet into ETH on Hood, so that wallet can spend there. Approve the card to send it.",
+            "outcome": "done",
+            "tools": [
+              "list_dir",
+              "search_tool",
+              "mcp__candle__candle_get_portfolio",
+              "mcp__candle__candle_execution_status",
+              "mcp__candle__harness_limits",
+              "mcp__candle__candle_swap",
+              "search_tool",
+              "mcp__candle__candle_bridge"
+            ],
+            "reasked": false,
+            "figures": 0,
+            "marked": []
+          }
+        ],
+        "cards": [
+          {
+            "state": "refused",
+            "tool": "candle_swap",
+            "params": {}
+          },
+          {
+            "state": "created",
+            "tool": "candle_bridge",
+            "kind": "bridge",
+            "params": {
+              "from": "SOL",
+              "to": "ETH",
+              "amount": "0.02",
+              "clientSwapId": "61ebee34-7dc8-484d-a329-fa191f9de35b",
+              "bridge": {
+                "to": "ETH",
+                "fromName": "embedded",
+                "toName": "embedded on Hood"
+              }
+            }
+          }
+        ],
+        "triggers": [],
+        "bots": [],
+        "memoryChanges": 0,
+        "runs": [],
+        "hacc": []
+      },
+      "ran": {
+        "engine": "grok",
+        "engineVersion": "1.0.77",
+        "model": "grok-4.7",
+        "answeredModel": "grok-4.7"
+      }
+    },
+    {
+      "id": "hood-trigger",
+      "pass": true,
+      "checks": [
+        {
+          "name": "the turn ended with a reply",
+          "pass": true
+        },
+        {
+          "name": "proposed the alert's trigger card",
+          "pass": true
+        },
+        {
+          "name": "traded nothing",
+          "pass": true
+        }
+      ],
+      "notes": {
+        "skillRead": true,
+        "tools": [
+          "search_tool",
+          "list_dir",
+          "search_tool",
+          "mcp__candle__candle_get_portfolio",
+          "mcp__candle__skill_read",
+          "search_tool",
+          "mcp__candle__hacc_token",
+          "mcp__candle__candle_resolve_token",
+          "mcp__candle__candle_resolve_token",
+          "mcp__candle__harness_triggers",
+          "mcp__candle__harness_triggers"
+        ],
+        "figures": 0,
+        "marked": 0,
+        "ms": 52294
+      },
+      "turns": [
+        {
+          "user": "Tell me if my HTOK goes over $0.003.",
+          "reply": "I've proposed a one-time alert on your Hood HTOK (`0x4b1d00000000000000000000000000000000ab1d`), the only one your wallets hold. It notifies you when the price goes over $0.003, then switches off. Nothing trades.\n\nCandle's price just now is $0.0025. The level is checked about every 5 seconds. The card is waiting for your press.",
+          "outcome": "done"
+        }
+      ],
+      "record": {
+        "turns": [
+          {
+            "user": "Tell me if my HTOK goes over $0.003.",
+            "reply": "I've proposed a one-time alert on your Hood HTOK (`0x4b1d00000000000000000000000000000000ab1d`), the only one your wallets hold. It notifies you when the price goes over $0.003, then switches off. Nothing trades.\n\nCandle's price just now is $0.0025. The level is checked about every 5 seconds. The card is waiting for your press.",
+            "outcome": "done",
+            "tools": [
+              "search_tool",
+              "list_dir",
+              "search_tool",
+              "mcp__candle__candle_get_portfolio",
+              "mcp__candle__skill_read",
+              "search_tool",
+              "mcp__candle__hacc_token",
+              "mcp__candle__candle_resolve_token",
+              "mcp__candle__candle_resolve_token",
+              "mcp__candle__harness_triggers",
+              "mcp__candle__harness_triggers"
+            ],
+            "reasked": false,
+            "figures": 0,
+            "marked": []
+          }
+        ],
+        "cards": [
+          {
+            "state": "created",
+            "tool": "harness_triggers",
+            "kind": "trigger",
+            "params": {
+              "line": "when 0x4b1d00000000000000000000000000000000ab1d > $0.003 notify \"HTOK is over $0.003\" as \"HTOK over $0.003\"",
+              "proposer": "momentum",
+              "name": "HTOK over $0.003",
+              "expansion": "when 0x4b1d00000000000000000000000000000000ab1d > $0.003 notify \"HTOK is over $0.003\"",
+              "replace": false,
+              "mode": "live"
+            }
+          }
+        ],
+        "triggers": [],
+        "bots": [],
+        "memoryChanges": 0,
+        "runs": [],
+        "hacc": [
+          "GET /v1/market/token-search",
+          "GET /v1/market/token/0x4b1d00000000000000000000000000000000ab1d",
+          "GET /v1/market/token/0x4b1d00000000000000000000000000000000ab1d/history",
+          "GET /v1/market/token/0x4b1d00000000000000000000000000000000ab1d/history"
+        ]
+      },
+      "ran": {
+        "engine": "grok",
+        "engineVersion": "1.0.77",
+        "model": "grok-4.7",
+        "answeredModel": "grok-4.7"
+      }
+    },
+    {
+      "id": "hood-bot",
+      "pass": true,
+      "checks": [
+        {
+          "name": "the turn ended with a reply",
+          "pass": true
+        },
+        {
+          "name": "proposed one bot card, on paper from the embedded wallet",
+          "pass": true
+        },
+        {
+          "name": "on Hood, as the words say",
+          "pass": true
+        },
+        {
+          "name": "saved nothing before the press",
+          "pass": true
+        }
+      ],
+      "notes": {
+        "skillRead": true,
+        "tools": [
+          "list_dir",
+          "search_tool",
+          "search_tool",
+          "mcp__candle__skill_read",
+          "search_tool",
+          "mcp__candle__harness_bots",
+          "mcp__candle__candle_execution_status",
+          "mcp__candle__harness_bots"
+        ],
+        "figures": 1,
+        "marked": 0,
+        "ms": 86946
+      },
+      "turns": [
+        {
+          "user": "Make a paper bot on Robinhood Chain from the embedded wallet: buy confluence signals under 200k market cap, $1 a trade, at most 2 at once, take profit at 50%, stop at 30%. Call it hoodconf.",
+          "reply": "I've proposed **hoodconf**, a paper bot on Robinhood Chain from the embedded wallet. It buys confluence signals under $200k market cap, $1 a trade, two at a time, and sells at +50% or −30%.\n\nNothing runs until you approve the card. Once it's on, each buy and sell is a paper trade with no further card, and nothing real is bought or sold. Worst case is two positions of $1 open at once, $2 at risk, plus Candle's fee.",
+          "outcome": "done"
+        }
+      ],
+      "record": {
+        "turns": [
+          {
+            "user": "Make a paper bot on Robinhood Chain from the embedded wallet: buy confluence signals under 200k market cap, $1 a trade, at most 2 at once, take profit at 50%, stop at 30%. Call it hoodconf.",
+            "reply": "I've proposed **hoodconf**, a paper bot on Robinhood Chain from the embedded wallet. It buys confluence signals under $200k market cap, $1 a trade, two at a time, and sells at +50% or −30%.\n\nNothing runs until you approve the card. Once it's on, each buy and sell is a paper trade with no further card, and nothing real is bought or sold. Worst case is two positions of $1 open at once, $2 at risk, plus Candle's fee.",
+            "outcome": "done",
+            "tools": [
+              "list_dir",
+              "search_tool",
+              "search_tool",
+              "mcp__candle__skill_read",
+              "search_tool",
+              "mcp__candle__harness_bots",
+              "mcp__candle__candle_execution_status",
+              "mcp__candle__harness_bots"
+            ],
+            "reasked": false,
+            "figures": 1,
+            "marked": []
+          }
+        ],
+        "cards": [
+          {
+            "state": "created",
+            "tool": "harness_bots",
+            "kind": "bot",
+            "params": {
+              "action": "save",
+              "name": "hoodconf",
+              "proposal": {
+                "name": "hoodconf",
+                "definition": {
+                  "chain": "hood",
+                  "entry": {
+                    "source": "pattern",
+                    "pattern": "confluence",
+                    "filters": {
+                      "max_mcap_usd": 200000
+                    }
+                  },
+                  "exit": {
+                    "take_profit_pct": 50,
+                    "stop_loss_pct": 30
+                  },
+                  "sizing": {
+                    "usd_per_trade": 1,
+                    "max_concurrent": 2
+                  }
+                },
+                "run": {
+                  "agent": "momentum",
+                  "wallet": "embedded",
+                  "mode": "paper"
+                }
+              },
+              "proposer": "momentum",
+              "hash": "0246dd3e10cae48b2a99b68b7fa3083a8df9ec582d2fc497d700f510d5ddf90b",
+              "replace": false
+            }
+          }
+        ],
+        "triggers": [],
+        "bots": [],
+        "memoryChanges": 0,
+        "runs": [],
+        "hacc": []
+      },
+      "ran": {
+        "engine": "grok",
+        "engineVersion": "1.0.77",
+        "model": "grok-4.7",
+        "answeredModel": "grok-4.7"
+      }
+    }
+  ]
+}

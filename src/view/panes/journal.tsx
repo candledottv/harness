@@ -9,6 +9,7 @@ import { wrap } from "../format"
 import { C, fit } from "../theme"
 import { clock, dayWords } from "./activity"
 import { chip, type Line, line } from "./lines"
+import { mixesChains, TAG_CELLS, withChainTag } from "./chain-tag"
 
 /** What the Journal's search is, this view's own: the words typed, whether the line takes keys, and the kinds on. */
 export interface JournalSearch {
@@ -116,6 +117,8 @@ export function journalLines(held: JournalHeld | undefined, s: JournalSearch | u
   }
   const out: Line[] = []
   let lastDay: string | undefined
+  // On more than one chain, each entry's first line ends with its chain.
+  const tagged = mixesChains(held.entries.map((e) => e.chain))
   for (const e of held.entries) {
     const day = new Date(e.at).toDateString()
     if (day !== lastDay) {
@@ -124,7 +127,7 @@ export function journalLines(held: JournalHeld | undefined, s: JournalSearch | u
       lastDay = day
     }
     const paper = e.mode === "paper" ? "paper · " : ""
-    const parts = wrap(`${paper}${e.text}`, Math.max(10, width - 7))
+    const parts = wrap(`${paper}${e.text}`, Math.max(10, width - 7 - (tagged ? TAG_CELLS : 0)))
     // Every line of an entry is its row: ↑/↓ and a click pick it, and ctrl-o shows its rows. Only one about a token moves the link.
     const pick = { id: e.id, mint: e.mint ?? "", ...(e.mint ? { ask: askAbout(e.symbol, e.mint, `From the Journal, ${dayWords(e.at, opts.now)} ${clock(e.at)}: ${clipped(e.text)}`) } : {}) }
     parts.forEach((part, i) => {
@@ -132,7 +135,8 @@ export function journalLines(held: JournalHeld | undefined, s: JournalSearch | u
       // The first word in its tone, as in Activity: an agent's name, "you", "kill", "refused".
       const rest = part.slice(paper.length)
       const word = e.tone === "info" ? "" : (/^\S+/.exec(rest)?.[0] ?? "")
-      out.push({ segs: [{ text: `${clock(e.at)}  `, fg: C.dim }, ...(paper ? [{ text: paper, fg: C.dim }] : []), ...(word ? [{ text: word, fg: tone(e.tone) }] : []), { text: rest.slice(word.length), fg: C.ink }], key: e.id, pick })
+      const segs = [{ text: `${clock(e.at)}  `, fg: C.dim }, ...(paper ? [{ text: paper, fg: C.dim }] : []), ...(word ? [{ text: word, fg: tone(e.tone) }] : []), { text: rest.slice(word.length), fg: C.ink }]
+      out.push({ segs: tagged ? withChainTag(segs, e.chain, width) : segs, key: e.id, pick })
     })
     // Why a search matched a row whose words don't show it, dim under it.
     if (searching && e.matched) for (const part of wrap(`matched in ${e.matched}`, Math.max(10, width - 7))) out.push({ segs: [{ text: `       ${part}`, fg: C.dim }], key: e.id, pick })

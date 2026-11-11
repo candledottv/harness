@@ -24,9 +24,11 @@ import type { GroupOp } from "../core/wallet-groups"
 import { isAddressShaped, lookupWallet } from "../core/wallet-names"
 import { extractAddresses } from "../engine/gate"
 import { parseWindow, type PnlWindow } from "../core/pnl"
+import { type ChainEntry, type ChainSlug, chainName, enabledChains, requestChain, shortAddress } from "./chains"
+import { BASE_ASSETS, isBaseAsset } from "../core/assets"
 
 export type Command =
-  | { kind: "trade"; tool: "candle_trade" | "candle_swap"; args: Record<string, unknown>; agent?: string; echo: string }
+  | { kind: "trade"; tool: "candle_trade" | "candle_swap" | "candle_bridge"; args: Record<string, unknown>; agent?: string; echo: string }
   | { kind: "mode"; mode: "paper" | "live" }
   | { kind: "kill" }
   | { kind: "resume" }
@@ -48,7 +50,7 @@ export type Command =
    * It parsed, but can't run as typed: say why, and send nothing. `keepLine` leaves it to fix; `ask`
    * offers to send the line to the agent as typed, to find the token (ctrl-t or a chip).
    */
-  | { kind: "refused"; message: string; keepLine?: boolean; ask?: true; askText?: string }
+  | { kind: "refused"; message: string; keepLine?: boolean; ask?: true; askText?: string; pick?: TokenPick }
   /** Two to five parts, each a trade or a candle command, run one after another. */
   | { kind: "chain"; parts: ChainPart[]; echo: string }
 
@@ -64,6 +66,8 @@ export interface CommandContext {
   knownTokens: ReadonlyMap<string, string>
   /** Names read for several tokens, upper-cased, to their mints: refused, naming them (the core's reader). */
   severalTokens?: ReadonlyMap<string, readonly string[]>
+  /** Names the view has seen on two chains, each mint with its chain: never traded by name, said with both. */
+  onTwoChains?: ReadonlyMap<string, readonly { chain: string; mint: string }[]>
   /** The agent a line without `as` runs as. */
   activeAgent?: string
   mode?: "paper" | "live"
@@ -73,13 +77,28 @@ export interface CommandContext {
   aliases?: ReadonlyMap<string, string>
 }
 
-const SPEND = new Set(["sol", "usdc", "cndl"])
+/** What a typed buy can pay with: each chain's quote assets (SOL, USDC or CNDL on Solana; ETH or USDG on Hood). */
+const spendOn = (): { chain: ChainEntry; words: string[] }[] => enabledChains().map((chain) => ({ chain, words: chain.quoteAssets.map((a) => a.symbol.toLowerCase()) }))
+const spendWords = (): Set<string> => new Set(spendOn().flatMap((c) => c.words))
+/** "SOL, USDC or CNDL", a chain's spend words as people write them. */
+const orList = (words: string[]): string => words.map((w) => w.toUpperCase()).join(", ").replace(/, ([^,]*)$/, " or $1")
 const BASE = new Set(["SOL", "USDC", "CNDL", "ETH", "USDG"])
+/** What a bridge moves, and the chain each is on: one on each side. */
+const BRIDGE_SIDES: Readonly<Record<string, ChainSlug>> = Object.fromEntries((["SOL", "USDC", "ETH", "USDG"] as const).map((asset) => [asset, BASE_ASSETS[asset].chain]))
 const AMOUNT = /^(?:\d+(?:\.\d+)?|\.\d+)$/
 const DOLLARS = /^\$(\d+(?:\.\d{1,2})?)$/
 const PERCENT = /^(\d{1,3})%$/
 
 const plain = (line: string): Command => ({ kind: "agent", text: line })
+/** A name on more than one chain: the tokens it names, for the person to pick one, whose address then goes in its place. */
+export interface TokenPick {
+  /** The name, as the tokens are known by it (no $, upper case). */
+  word: string
+  tokens: readonly { chain: string; mint: string }[]
+  /** Which of the line's words (split at spaces, from 0) is the token's, where the line names it. */
+  at?: number
+}
+
 const notTrade = (why: string): Command => ({ kind: "refused", message: `Not a trade yet: ${why}`, keepLine: true })
 /**
  * A name nobody has shown: it may match many tokens (copies of a ticker are common), so it's never
@@ -88,6 +107,12 @@ const notTrade = (why: string): Command => ({ kind: "refused", message: `Not a t
  * several tokens is refused naming each.
  */
 const unknown = (word: string, ctx: CommandContext): Command => {
+  const name = word.replace(/^\$/, "").toUpperCase()
+  const both = ctx.onTwoChains?.get(name)
+  if (both && both.length > 1) {
+    const each = both.map((t) => `on ${t.chain} (${shortAddress(t.mint)})`).join(" and ")
+    return { kind: "refused", message: `Not a trade yet: ${word} is a token ${each}. Pick the one you mean, or paste its address.`, keepLine: true, pick: { word: name, tokens: both } }
+  }
   const several = ctx.severalTokens?.get(word.replace(/^\$/, "").toUpperCase())
   if (several && several.length > 1) {
     return { kind: "refused", message: `Not a trade yet: ${word} is the name of ${several.length} tokens: ${several.join(", ")}. Name the one you mean by its mint.`, keepLine: true, ask: true }
@@ -151,7 +176,10 @@ function payFrom(command: Command, word: string, agent: string | undefined, ctx:
   if (paper && word.toLowerCase() === "embedded") return pays("embedded")
   if (!agent) return notTrade("the core hasn't said which agent is active yet. Try again in a moment.")
   const mint = typeof command.args.mint === "string" ? command.args.mint : undefined
-  const payer = ctx.wallets && payerContextFrom(ctx.wallets, agent, mint?.startsWith("0x") ? "hood" : undefined)
+  // A token's chain is its address's; a swap's is its assets', both on one chain (across chains it's a bridge).
+  const swapped = command.tool === "candle_swap" && typeof command.args.from === "string" && isBaseAsset(command.args.from) ? BASE_ASSETS[command.args.from].chain : undefined
+  const chain = mint ? requestChain(mint) : swapped
+  const payer = ctx.wallets && payerContextFrom(ctx.wallets, agent, chain)
   if (!payer) return notTrade(`${agent}'s wallets haven't been read from Candle yet. Try again in a moment.`)
   // On paper either embedded address is the embedded wallet, whichever chain the token is on: the core takes it the same way.
   if (paper && (["solana", "hood"] as const).some((chain) => {
@@ -247,6 +275,7 @@ function parseOne(line: string, ctx: CommandContext): Command {
     }
     return { kind: "cli", argv: rest.words, ...(rest.agent ? { agent: rest.agent } : {}) }
   }
+  if (verb === "bridge") return bridgeLine(all, line, ctx)
   if (verb !== "buy" && verb !== "sell" && verb !== "swap") return plain(line)
 
   // "Buy $1 of ORE." as a sentence: the full stop isn't part of the token.
@@ -262,6 +291,8 @@ function parseOne(line: string, ctx: CommandContext): Command {
   // any trade takes, or a sentence's punctuation, is prose; a short miss such as `sell 100% ORE` still says why.
   if (prose(line, words)) return plain(line)
   const command = tradeCommand(verb, words, line, stripped.agent, ctx)
+  // A name on two chains is the trade's last word before its `as` and `from`: the pick goes in that word's place.
+  if (command.kind === "refused" && command.pick) return { ...command, pick: { ...command.pick, at: stripped.words.length - 1 } }
   return stripped.from === undefined ? command : payFrom(command, stripped.from, stripped.agent ?? ctx.activeAgent, ctx)
 }
 
@@ -339,10 +370,20 @@ function tradeCommand(verb: "buy" | "sell" | "swap", words: string[], line: stri
     }
     // buy 0.1 sol MOON
     if (!AMOUNT.test(words[1]!)) return notTrade("buy an amount, such as buy 0.1 sol MOON or buy $25 MOON.")
-    if (words.length !== 4 || !SPEND.has(words[2]!.toLowerCase())) return notTrade("say what pays: SOL, USDC or CNDL, such as buy 0.1 sol MOON, or buy dollars, such as buy $25 MOON.")
+    const pays = words[2]?.toLowerCase() ?? ""
+    if (words.length !== 4 || !spendWords().has(pays)) {
+      return notTrade(`say what pays: ${spendOn().map((c) => `${orList(c.words)} for a token on ${c.chain.name}`).join(", ")}, such as buy 0.1 sol MOON, or buy dollars, such as buy $25 MOON.`)
+    }
     const mint = token(words[3]!, ctx)
     if (!mint) return unknown(words[3]!, ctx)
-    return { kind: "trade", tool: "candle_trade", args: { mint, side: "buy", amount: words[1], quoteAsset: words[2]!.toLowerCase() }, ...agent, echo: line }
+    // The token's chain at the line's edge, from its address: what pays must be that chain's.
+    const on = requestChain(mint)
+    const here = spendOn().find((c) => c.chain.slug === on)
+    if (here && !here.words.includes(pays)) {
+      const its = spendOn().find((c) => c.words.includes(pays))
+      return { kind: "refused", message: `${pays.toUpperCase()} pays for a token on ${its?.chain.name ?? "another chain"}, and ${words[3]} is on ${chainName(on)}: buy it with ${orList(here.words)}. Nothing was sent.`, keepLine: true }
+    }
+    return { kind: "trade", tool: "candle_trade", args: { mint, side: "buy", amount: words[1], quoteAsset: pays }, ...agent, echo: line }
   }
 
   if (verb === "sell") {
@@ -366,7 +407,46 @@ function tradeCommand(verb: "buy" | "sell" | "swap", words: string[], line: stri
   const to = words[3]!.toUpperCase()
   if (!BASE.has(from) || !BASE.has(to)) return notTrade(`swap is between ${[...BASE].join(", ")}. A token is bought or sold: buy 0.1 sol MOON, sell 50% MOON.`)
   if (from === to) return { kind: "refused", message: "A swap needs two different assets." }
+  // Across chains, it's a bridge between two of the account's own wallets: its own line and card.
+  if (BRIDGE_SIDES[from] && BRIDGE_SIDES[to] && BRIDGE_SIDES[from] !== BRIDGE_SIDES[to]) return notTrade(`${from} to ${to} crosses chains, which is a bridge: bridge ${words[1]} ${from.toLowerCase()} to ${to.toLowerCase()}.`)
   return { kind: "trade", tool: "candle_swap", args: { from, to, amount: words[1] }, ...agent, echo: line }
+}
+
+/**
+ * `bridge 0.5 sol to eth`, or `bridge 50% eth to sol` from a TEE wallet, with `from <wallet>` and `as <agent>` as a
+ * trade takes them, and `into <wallet>` for the TEE wallet it lands in where the key holds more than one there: SOL or USDC on Solana to ETH or USDG on Hood, or back. The core finds the wallet it lands in, and
+ * says why where it can't. Anything else shaped like it is said, never sent to the agent.
+ */
+function bridgeLine(all: readonly string[], line: string, ctx: CommandContext): Command {
+  const last = all.at(-1)!.replace(/[.!]+$/, "")
+  // `into <wallet>` after the pair names the TEE wallet it lands in, beside `from` and `as` in any order.
+  let named = [...all.slice(0, -1), last]
+  let into: string | undefined
+  const tail: string[] = []
+  // The trailing word pairs, from the end: `into`'s is taken out, `from`'s and `as`'s kept for the trade's own reading.
+  for (let n = 0; n < 3 && named.length >= 6; n++) {
+    const word = named.at(-2)!.toLowerCase()
+    if (word === "into" && into === undefined) into = named.at(-1)!
+    else if (word === "from" || word === "as") tail.unshift(...named.slice(-2))
+    else break
+    named = named.slice(0, -2)
+  }
+  const stripped = tradeTail([...named, ...tail], ctx)
+  if ("refused" in stripped) return { kind: "refused", message: stripped.refused }
+  const words = stripped.words.filter((w, i) => !(i === 3 && (w.toLowerCase() === "to" || w.toLowerCase() === "into")))
+  if (!tradeShaped(words[1])) return plain(line)
+  // A line that goes on as a sentence is for the agent, as a buy's or a sell's is.
+  if (prose(line, words)) return plain(line)
+  if (words.length !== 4) return notTrade("bridge an amount from one chain to the other, such as bridge 0.5 sol to eth.")
+  const from = words[2]!.toUpperCase()
+  const to = words[3]!.toUpperCase()
+  if (!BRIDGE_SIDES[from] || !BRIDGE_SIDES[to] || BRIDGE_SIDES[from] === BRIDGE_SIDES[to]) return notTrade("a bridge moves SOL or USDC on Solana to ETH or USDG on Hood, or back, such as bridge 0.5 sol to eth.")
+  const percent = PERCENT.exec(words[1]!)
+  const n = percent ? Number(percent[1]) : undefined
+  if (n !== undefined && (n < 1 || n > 100)) return { kind: "refused", message: "Bridge a percent from 1% to 100%.", keepLine: true }
+  const sizing = n !== undefined ? { percent: n } : AMOUNT.test(words[1]!) ? { amount: words[1]! } : undefined
+  if (!sizing) return notTrade("bridge an amount, or a percent of a TEE wallet's balance, such as bridge 0.5 sol to eth.")
+  return { kind: "trade", tool: "candle_bridge", args: { from, to, ...sizing, ...(stripped.from !== undefined ? { wallet: stripped.from } : {}), ...(into !== undefined ? { destination: into } : {}) }, ...(stripped.agent ? { agent: stripped.agent } : {}), echo: line }
 }
 
 /**
@@ -388,16 +468,16 @@ export interface TypedRow {
 export const TYPED_ROWS: readonly TypedRow[] = [
   {
     form: "buy 0.1 sol MOON",
-    help: "buy with SOL, USDC or CNDL",
+    help: "buy with SOL, USDC or CNDL; a Hood token with ETH or USDG",
     example: "buy 0.5 usdc of MOON",
-    words: "Buys a token with an amount of SOL, USDC or CNDL. The token is its mint, or a name a pane or the agent has shown this session; a name nobody has shown is never guessed.",
+    words: "Buys a token with an amount of SOL, USDC or CNDL, or a Hood token with ETH or USDG. The token is its mint, or a name a pane or the agent has shown this session; a name nobody has shown is never guessed.",
     kinds: ["trade"],
   },
   {
     form: "buy $25 MOON",
     help: "buy 25 dollars' worth, in the spend asset",
     example: "buy $5 of MOON",
-    words: "Buys a dollar amount of a token, converted when the card is made into what it spends: SOL, unless config.toml's `trade.spendAsset` says otherwise.",
+    words: "Buys a dollar amount of a token, converted when the card is made into what it spends: SOL, unless config.toml's `trade.spendAsset` says otherwise; ETH for a Hood token.",
     kinds: ["trade"],
   },
   {
@@ -412,6 +492,13 @@ export const TYPED_ROWS: readonly TypedRow[] = [
     help: "between base assets",
     example: "swap 25 USDC SOL",
     words: "Swaps an amount between two base assets: SOL, USDC, CNDL, ETH or USDG. A token is bought or sold instead.",
+    kinds: ["trade"],
+  },
+  {
+    form: "bridge 0.5 sol to eth",
+    help: "between your own wallets on Solana and Hood",
+    example: "bridge 0.5 sol to eth from bot-1 into bot-1-h",
+    words: "Moves SOL or USDC on Solana to ETH or USDG on Hood, or back, between two of the account's own wallets: a TEE wallet to the same key's TEE wallet on the other chain, through Relay, or the embedded wallet to the embedded wallet there, through Candle. Always a card. From a TEE wallet it can be a percent, such as `bridge 50% eth to sol from bot-1-h`. `into <wallet>` names the TEE wallet it lands in when the key holds more than one on the other chain.",
     kinds: ["trade"],
   },
   {
@@ -488,7 +575,7 @@ export const TYPED_ROWS: readonly TypedRow[] = [
     form: "candle <command>",
     help: "any Candle CLI command, under its rule",
     example: "candle keys list",
-    words: "Runs any of Candle's CLI commands under its rule: a read at once, the rest as a card or in the prompt pane.",
+    words: "Runs any of Candle's CLI commands under its rule: a read at once, the rest as a card or in the prompt pane. A read with a long answer opens it whole over the screen, with a copy chip; any key closes it.",
     kinds: ["cli"],
   },
   {

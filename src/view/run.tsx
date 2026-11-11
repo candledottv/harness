@@ -110,6 +110,9 @@ export function dropRenderTimings(everyMs = 10_000): () => void {
 /** Any of the Candle Harness's own tokens (a view's, a turn's, a bot's, a Build pane's): `ch`, a letter, `_`, then the id and secret. */
 const OWN_TOKEN_SHAPE = /(?<![A-Za-z0-9_])ch[a-z]_[A-Za-z0-9_-]{20,}/
 
+/** Any 32-byte hex value, with or without `0x`: an EVM private key's shape. The paste log can't tell which are the account's own, so it keeps none. */
+const EVM_HEX_SHAPE = /(?<![0-9A-Za-z])(?:0[xX])?[0-9a-fA-F]{64}(?![0-9A-Za-z])/
+
 /**
  * The long-paste check: with CANDLE_HARNESS_PASTE_LOG naming a file, each paste the
  * terminal delivers to the input line is appended to it as one JSON line, its length, SHA-256 and text,
@@ -125,7 +128,7 @@ export function pasteLogger(env: Record<string, string | undefined>): ((text: st
   let held = false
   return (text) => {
     const sha256 = new Bun.CryptoHasher("sha256").update(text).digest("hex")
-    const secret = redactor.text(text) !== text || OWN_TOKEN_SHAPE.test(text) || walletSecretIn(text)
+    const secret = redactor.text(text) !== text || OWN_TOKEN_SHAPE.test(text) || EVM_HEX_SHAPE.test(text) || walletSecretIn(text)
     appendFileSync(file, `${JSON.stringify({ at: Date.now(), length: text.length, sha256, ...(secret ? {} : { text }) })}\n`, { mode: 0o600 })
     // The mode above counts only for a file this made: one that was already there is narrowed once.
     if (!held) {

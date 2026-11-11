@@ -3,9 +3,10 @@
 // kept for the session; one that can't trade now isn't, so a later card checks again.
 import { terminalText } from "../shared/terminal-text"
 import type { ToolOutcome } from "./candle-mcp"
+import { type ChainSlug, isChainSlug } from "../shared/chains"
 
 export interface MarketInfo {
-  chain: "solana" | "hood"
+  chain: ChainSlug
   mint: string
   symbol?: string
   candleLaunched: boolean
@@ -69,7 +70,7 @@ export class Markets {
       return { ok: false, code: "TOKEN_CHECK_FAILED", message: `Couldn't check this token with Candle (${outcome.code}); try again.` }
     }
     const market = record(record(outcome.result)?.market)
-    if (!market || market.mint !== mint || (market.chain !== "solana" && market.chain !== "hood")) {
+    if (!market || market.mint !== mint || !isChainSlug(market.chain)) {
       return { ok: false, code: "TOKEN_CHECK_FAILED", message: "Candle's answer about this token couldn't be read; try again." }
     }
     // `trade.routable` is stored eligibility, not a quote (docs.candle.tv/developers/market-state).

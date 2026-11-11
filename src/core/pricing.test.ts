@@ -7,7 +7,9 @@ import { MAX_PRICE_AGE_MS, Pricing } from "./pricing"
 const MOON = "MoonFake11111111111111111111111111111111111"
 const SOL = "So11111111111111111111111111111111111111112"
 
-function rig(opts: { tools?: string[]; source?: "auto" | "market"; answers?: Partial<Record<string, (args: Record<string, unknown>) => ToolOutcome>>; book?: { usd: number; at: number }; refreshed?: { usd: number } } = {}) {
+const USDG_KEY = "hood:0x5fc5360d0400a0fd4f2af552add042d716f1d168"
+
+function rig(opts: { tools?: string[]; source?: "auto" | "market"; answers?: Partial<Record<string, (args: Record<string, unknown>) => ToolOutcome>>; book?: { usd: number; at: number }; refreshed?: { usd: number }; usdg?: { usd: number; at: number } } = {}) {
   let clock = 1_000_000
   const calls: { agent: string; tool: string; args: Record<string, unknown> }[] = []
   const prices: Record<string, number> = { [SOL]: 150, [MOON]: 0.63 }
@@ -28,7 +30,7 @@ function rig(opts: { tools?: string[]; source?: "auto" | "market"; answers?: Par
     now: () => clock,
     config: { source: opts.source ?? "auto", quoteTool: "candle_quote" },
     book: {
-      point: (key) => (key === "hood:native" ? opts.book : undefined),
+      point: (key) => (key === "hood:native" ? opts.book : key === USDG_KEY ? opts.usdg : undefined),
       ...(opts.refreshed ? { refresh: async () => void (opts.book = { ...opts.refreshed!, at: clock }) } : {}),
     },
   })
@@ -53,6 +55,17 @@ describe("the market source", () => {
     expect(r.calls).toHaveLength(2)
   })
 
+  test("USDG: the portfolio's price while a wallet holds some, else Candle's fixed $1, with no read spent on it", async () => {
+    expect(await rig({ usdg: { usd: 1, at: 1_000_000 - 5_000 } }).pricing.asset("momentum", "USDG")).toEqual({ usd: 1, at: 995_000, source: "portfolio" })
+    let refreshed = 0
+    const none = rig()
+    const r = new Pricing({ call: async () => ({ kind: "error", code: "X", retryable: false, body: {} }), tools: () => [], now: () => 1_000_000, config: { source: "market", quoteTool: "candle_quote" }, book: { point: () => undefined, refresh: async () => void refreshed++ } })
+    expect(await r.asset("momentum", "USDG")).toEqual({ usd: 1, at: 1_000_000, source: "Candle's fixed price" })
+    expect(refreshed).toBe(0)
+    expect(await none.pricing.asset("momentum", "USDG")).toMatchObject({ usd: 1 })
+    expect(none.calls).toEqual([])
+  })
+
   test("ETH on Hood: the portfolio's price is fresh for a whole refresh; older, the book is read again for the card", async () => {
     // At 15 s, one refresh of the book, the price still holds: it was "no price" a third of the time at 10 s.
     expect(await rig({ book: { usd: 3000, at: 1_000_000 - 15_000 } }).pricing.asset("momentum", "ETH")).toMatchObject({ usd: 3000, source: "portfolio" })
@@ -66,7 +79,7 @@ describe("the market source", () => {
     // ETH on Hood has no mint to read; the portfolio's price is used only while it's fresh.
     expect(await rig({ book: { usd: 3000, at: 1_000_000 - 4_000 } }).pricing.asset("momentum", "ETH")).toEqual({ usd: 3000, at: 996_000, source: "portfolio" })
     expect(await rig({ book: { usd: 3000, at: 1_000_000 - MAX_PRICE_AGE_MS - 1 } }).pricing.asset("momentum", "ETH")).toBeUndefined()
-    expect(await rig().pricing.asset("momentum", "USDG")).toBeUndefined()
+    // USDG isn't an old figure: Candle holds it at $1 (the test above).
   })
 })
 

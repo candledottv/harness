@@ -16,6 +16,7 @@ import type { WalletGroup } from "../../core/wallet-groups"
 import { groupedWallets } from "../wallet-list"
 import { C, fit, money, signedMoney } from "../theme"
 import { chip, type Line, line, type Seg } from "./lines"
+import { mixesChains, TAG_CELLS, withChainTag } from "./chain-tag"
 
 /** A book older than this is marked stale: the core reads each every minute while the tab shows. */
 const STALE_MS = 12 * 60_000
@@ -375,7 +376,12 @@ export function pnlPositionLines(pnl: PnlView | undefined, opts: { width: number
   // Spread where there's room past the wallet column, up to three cells a column.
   const grow = withMore ? Math.max(0, Math.min(3, Math.floor((w - 39 - 28) / 4))) : 0
   const out: Line[] = [{ segs: [{ text: "token   ".padEnd(8 + grow), fg: C.dim }, { text: "cost".padStart(10 + grow), fg: C.dim }, { text: "value".padStart(10 + grow), fg: C.dim }, { text: "unrealised".padStart(11 + grow), fg: C.dim }, ...(withMore ? [{ text: `${" ".repeat(2 + grow)}wallet · agent`, fg: C.dim }] : [])] }]
-  for (const { agent, p } of held) out.push(positionRow(agent, p, pnl, w, withMore, grow))
+  // On more than one chain, each position ends with its chain.
+  const tagged = mixesChains(held.map(({ p }) => p.chain))
+  for (const { agent, p } of held) {
+    const row = positionRow(agent, p, pnl, tagged ? w - TAG_CELLS : w, withMore, grow)
+    out.push(tagged ? { ...row, segs: withChainTag(row.segs, p.chain, w) } : row)
+  }
   const marks = held.flatMap(({ p }) => (p.markedAt !== null ? [p.markedAt] : []))
   const oldest = marks.length ? Math.min(...marks) : null
   if (oldest !== null && opts.now - oldest > OLD_MARK_MS) out.push(...say(`Candle's marks are up to ${ago(oldest, opts.now, Number.POSITIVE_INFINITY).text.replace(" ago", " old")}.`))

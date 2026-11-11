@@ -35,7 +35,7 @@
 //     next page; ctrl-o on a row shows its rows as recorded.
 import type { MemoryRow } from "./panes/memory"
 import type { EngineId } from "../engine/engine"
-import { type Command, type CommandContext, parseCommand } from "../shared/commands"
+import { type Command, type CommandContext, parseCommand, type TokenPick } from "../shared/commands"
 import { parseTriggerShape } from "../shared/trigger-grammar"
 import { HELP_LINES, type KeyId, keyLines, pressed } from "./keymap"
 import { AGENT_FIRST, beside, type Direction, type PaneId, type PaneNav, paneNav, panesOf, place, shownOf } from "./layout"
@@ -49,6 +49,7 @@ import type { AwayView } from "../core/away"
 import type { RowPick } from "./panes/lines"
 import { type ListSource, nextListSource, PANES } from "./panes/registry"
 import { type SignalsChipId, signalsMenuRows, type SignalsPick } from "./panes/signals"
+import { chainChipLabel, chainMenuRows } from "./chain-filter"
 import { type PnlSpan, pnlWindowRows, pnlWindowWords } from "./panes/pnl"
 import { parseWindow } from "../core/pnl"
 import { type JournalSearch, toggleKind } from "./panes/journal"
@@ -73,6 +74,7 @@ import type { BotsTopic } from "../core/bots"
 import { type AgentLimits, type ApprovalsRow, type ApprovalsState, approvalsEntries, detailRows, parseFigure, pickedWallet, walletWords } from "./approvals"
 import { money } from "./theme"
 import { TOUR_STOPS } from "./tour-stops"
+import { type ChainSlug, isEvmAddress, requestChain } from "../shared/chains"
 
 export const KILL_WINDOW_MS = 1_000
 export const QUIT_WINDOW_MS = 1_000
@@ -111,6 +113,8 @@ export type Overlay =
   | { kind: "settings"; index: number }
   /** Signals' pattern or chain menu, under its chip at column `x` and row `y` (unset from the palette). */
   | { kind: "signalsMenu"; which: "pattern" | "chain"; index: number; x?: number; y?: number }
+  /** The chain filter's menu, under the status bar's chip at column `x` (unset from the palette). */
+  | { kind: "chainMenu"; index: number; x?: number }
   /** The P&L window's menu, under the P&L pane's chip at column `x` and row `y` (unset from settings or the palette). */
   /** `typing`: the time typed on its last row, "since another time…" (filling the input line put it out of sight). */
   | { kind: "pnlMenu"; index: number; x?: number; y?: number; typing?: string }
@@ -134,6 +138,8 @@ export type Overlay =
   | { kind: "tour"; step: number }
   /** A pane folded into its tab's strip (the Build tab's bots folder or test run, below 100 columns), open over the frame. */
   | { kind: "pane"; pane: PaneId; scroll?: number }
+  /** A typed command's whole answer, too long for the message line: over the frame until a key closes it, scrolled `scroll` lines down. */
+  | { kind: "said"; title: string; text: string; scroll?: number }
 
 /** The settings menu's rows: one button, with a submenu for each setting not commonly changed. */
 export const SETTINGS = [
@@ -176,7 +182,7 @@ export interface UiState {
   overlay?: Overlay
   /** `ask`: a refused line ctrl-t or the message's chip sends to the agent as typed (an unknown token name). */
   /** `copy`: a command the message offers to copy, with a chip under it (a pop-out with no split to go to). */
-  message?: { text: string; level: "info" | "error"; at: number; ask?: string; askLine?: string; copy?: string }
+  message?: { text: string; level: "info" | "error"; at: number; ask?: string; askLine?: string; copy?: string; pick?: TokenPick }
   /** An address shows in full until then, after its ⧉ chip, to select by hand where a copy can't land. */
   shownInFull?: { text: string; until: number }
   /** What the P&L chart spans: this view's, not kept; unset, the P&L window. */
@@ -271,10 +277,13 @@ export type UiAction =
   | { type: "clickCopy"; text: string; now: number; what?: string }
   | { type: "clickOpenToken"; mint: string; now: number }
   /** A chip that puts a line on the input line for the user to send (the kill report's tee disable). */
-  | { type: "clickFill"; text: string; now: number }
+  /** `cursor`: where the cursor waits, where a value goes in the middle of the line; else at its end. */
+  | { type: "clickFill"; text: string; cursor?: number; now: number }
   | { type: "clickHelp"; now: number }
   /** The refusal's "ask the agent" chip. */
   | { type: "clickAsk"; now: number }
+  /** One of a refusal's tokens on the chains a name is on, by its place in the list. */
+  | { type: "clickPick"; index: number; now: number }
   /** A pane's ⇱ chip: it pops out, as ctrl-p does on it. */
   | { type: "popOutPane"; pane: PaneId; now: number }
   /** A palette row clicked, by its id; the palette's chip on the hint line. */
@@ -297,6 +306,10 @@ export type UiAction =
   | { type: "clickSignalsChip"; which: SignalsChipId; x?: number; y?: number; now: number }
   /** A row of Signals' pattern or chain menu, clicked. */
   | { type: "pickSignalsMenu"; index: number; now: number }
+  /** The status bar's chain chip: its menu opens under it, at column `x`, or closes. */
+  | { type: "clickChain"; x?: number; now: number }
+  /** A row of the chain menu, clicked. */
+  | { type: "pickChainMenu"; index: number; now: number }
   /** Signals' pause chip, and resume. */
   | { type: "pauseSignals"; on: boolean; now: number }
   /** The empty filter's `clear filters` chip. */
@@ -348,6 +361,7 @@ export type UiAction =
   | { type: "openBuildCard"; cardId: string; typing?: boolean; now: number }
   /** ctrl-] or a click on a Build card that opened without the keys: it takes them, and Enter's wait starts now. */
   | { type: "takeBuildCard"; now: number }
+  | { type: "openSaid"; title: string; text: string; now: number }
   /** The frame is drawn again after a window too small to draw: Enter's wait on every card starts over. */
   | { type: "shown"; now: number }
   /** A key other than the kill chord went to a pane that has the keys: an armed kill is off. */
@@ -390,7 +404,8 @@ export type Effect =
   | { type: "reject"; cardId: string }
   | { type: "kill" }
   | { type: "quit" }
-  | { type: "mode"; mode: "paper" | "live" }
+  /** `kept`: the mode it's already in, picked: no switch, but the core keeps it as picked (a setup then leaves it). */
+  | { type: "mode"; mode: "paper" | "live"; kept?: true }
   | { type: "setAgent"; agent: string }
   /** A fresh card for the same request; with `wallet`, paid from that wallet, and the open one withdrawn. */
   | { type: "requote"; cardId: string; wallet?: { word: string; name: string } }
@@ -416,7 +431,7 @@ export type Effect =
   /** A change to the tab's layout, or which it shows: the frame makes it and writes layouts.toml. */
   | { type: "layout"; op: LayoutOp }
   /** The link moves to the person's pick. */
-  | { type: "link"; mint: string; chain?: "solana" | "hood"; from?: string }
+  | { type: "link"; mint: string; chain?: ChainSlug; from?: string }
   /** A step to come back to: a highlight settling (the frame sends a tick then). */
   | { type: "wake"; afterMs: number }
   /** Pin the tab's token pane on its token, or let it follow the link again (the palette's row, as its chip). */
@@ -429,6 +444,8 @@ export type Effect =
   | { type: "popOut"; pane: PaneId }
   /** What this tab's Signals pane shows: the core keeps it by the tab; null clears a filter. */
   | { type: "signals"; change: SignalsChange }
+  /** The chain every pane shows, or null for all of them: the core keeps it for every view. */
+  | { type: "chain"; chain: ChainSlug | null }
   /** The P&L window: the core keeps it, and every figure names it. */
   | { type: "pnlWindow"; window: PnlWindow }
   /** A skill folder of the person's own turned on or off, and the folders read fresh as their rows open. */
@@ -492,6 +509,8 @@ export interface UiContext {
   /** For the palette: each agent's preset, the linked token, the tab's token pane and its pin, and the kill switch's pause. */
   presets?: Readonly<Record<string, Preset | undefined>>
   runner?: PaletteInput["runner"]
+  /** The active agent's Hood chip step, where it's offered. */
+  hoodWallet?: PaletteInput["hoodWallet"]
   linked?: string
   pin?: { pinned: boolean; symbol?: string }
   paused?: boolean
@@ -507,6 +526,8 @@ export interface UiContext {
   themes?: { names: readonly string[]; current: string; dir: string }
   /** This tab's Signals choice, the core's; unset, the whole tape. */
   signals?: SignalsPick
+  /** The chain filter, the core's, and the chains the account uses; its chip and menu only while that's more than one. */
+  chain?: { current: ChainSlug | null; chains: readonly ChainSlug[] }
   /** The P&L window the core keeps, once it has said; unset, its default. */
   pnlWindow?: PnlWindow
   /** The Journal's rows as held: whether there's an older page to read, each row's seqs, and how far its details scroll. */
@@ -545,7 +566,7 @@ export interface UiContext {
 export interface SignalsChange {
   mine?: boolean
   pattern?: string | null
-  chain?: "solana" | "hood" | null
+  chain?: ChainSlug | null
 }
 
 /** A tab's tick in the settings menu: its name, and whether it's on the tab bar. */
@@ -594,7 +615,7 @@ function approve(state: UiState, card: ViewCard | undefined, ctx: UiContext, now
 }
 
 function switchMode(state: UiState, mode: "paper" | "live", ctx: UiContext, now: number): Step {
-  if (ctx.mode === mode) return done(say(state, `Already in ${mode} mode.`, now))
+  if (ctx.mode === mode) return done(say(state, `Already in ${mode} mode.`, now), { type: "mode", mode, kept: true })
   if (mode === "live") return done({ ...state, overlay: { kind: "confirmLive" } })
   return done(state, { type: "mode", mode })
 }
@@ -620,6 +641,7 @@ function submit(state: UiState, ctx: UiContext, now: number): Step {
     case "refused": {
       // A typed trade that can't run stays on the line, to paste the mint into.
       const said = say(command.keepLine ? state : cleared, command.message, now, "error")
+      if (command.pick) return done({ ...said, message: { ...said.message!, pick: command.pick } })
       return done(command.ask ? { ...said, message: { ...said.message!, ask: command.askText ?? line, ...(command.askText ? { askLine: line } : {}) } } : said)
     }
     case "setAgent":
@@ -666,6 +688,30 @@ function askRow(state: UiState, ctx: UiContext, now: number, at?: { pane: PaneId
   const picked = highlighted(focusPane(state, pane), pane, row, now, ctx, true)
   const question = row.ask!
   return done({ ...picked, input: question, cursor: question.length }, ...(linked || !row.mint ? [] : [{ type: "link" as const, mint: row.mint, ...(row.chain ? { chain: row.chain } : {}), from: `${pane}, by ctrl-t` }]))
+}
+
+/**
+ * A token picked from a refusal's choice of chains: its address takes the token word's place on the line ($, any case
+ * and a sentence's closing . or ! included), or the name's first place where the line has changed since, or goes at
+ * the line's end if the name has gone. Nothing is sent: ⏎ proposes it, as any typed trade.
+ */
+function pickToken(state: UiState, index: number, now: number): Step {
+  const pick = state.message?.pick
+  const token = pick?.tokens[index]
+  if (!pick || !token) return done(state)
+  const escaped = pick.word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+  const isName = new RegExp(`^\\$?${escaped}[.!]*$`, "i")
+  const words = [...state.input.matchAll(/\S+/g)]
+  const there = pick.at === undefined ? undefined : words[pick.at]
+  const name = new RegExp(`(^|\\s)\\$?${escaped}[.!]*(?=\\s|$)`, "i")
+  const input =
+    there && isName.test(there[0])
+      ? `${state.input.slice(0, there.index)}${token.mint}${state.input.slice(there.index! + there[0].length)}`
+      : name.test(state.input)
+        ? state.input.replace(name, (_m, lead: string) => `${lead}${token.mint}`)
+        : `${state.input.trimEnd()} ${token.mint}`.trimStart()
+  const placed = say({ ...state, message: undefined, input, cursor: input.length }, `${pick.word} on ${token.chain}: its address is on the line. Nothing was sent.`, now)
+  return done(placed)
 }
 
 /** Sends a refused line to the agent as typed, when the refusal offered it; the line is cleared if it's still that line. */
@@ -790,7 +836,7 @@ function pickSignalsMenu(state: UiState, which: "pattern" | "chain", index: numb
   const row = signalsMenuRows(which, ctx.signals ?? {})[index]
   const closed: UiState = { ...state, overlay: undefined }
   if (!row) return done(closed)
-  return changeSignals(closed, which === "pattern" ? { pattern: row.value } : { chain: row.value as "solana" | "hood" | null })
+  return changeSignals(closed, which === "pattern" ? { pattern: row.value } : { chain: row.value as ChainSlug | null })
 }
 
 /** The P&L window's menu, opened on the window that's on. */
@@ -813,6 +859,28 @@ function pickPnlMenu(state: UiState, index: number, ctx: UiContext, now: number)
 function setPnlWindow(state: UiState, window: PnlWindow, ctx: UiContext, now: number): Step {
   if (window === (ctx.pnlWindow ?? "24h")) return done(say(state, `The P&L window is already ${pnlWindowWords(window)}.`, now))
   return done(state, { type: "pnlWindow", window })
+}
+
+/** The chain filter's menu, opened on the choice that's on; with one chain in use there's nothing to pick. */
+function openChainMenu(state: UiState, ctx: UiContext, x?: number): Step {
+  const c = ctx.chain
+  if (!c || c.chains.length < 2) return done(state)
+  const index = Math.max(0, chainMenuRows(c.current, c.chains).findIndex((r) => r.on))
+  return done({ ...state, overlay: { kind: "chainMenu", index, ...(x !== undefined ? { x } : {}) } })
+}
+
+/** A row of the chain menu picked: the menu closes, and the choice goes to the core, which every pane follows. */
+function pickChainMenu(state: UiState, index: number, ctx: UiContext, now: number): Step {
+  const closed: UiState = { ...state, overlay: undefined }
+  const c = ctx.chain
+  const row = c ? chainMenuRows(c.current, c.chains)[index] : undefined
+  if (!c || !row) return done(closed)
+  return setChain(closed, row.value, ctx, now)
+}
+
+function setChain(state: UiState, chain: ChainSlug | null, ctx: UiContext, now: number): Step {
+  if (chain === (ctx.chain?.current ?? null)) return done(say(state, `Every pane shows ${chain ? `${chainChipLabel(chain)} only` : "all chains"} already.`, now))
+  return done(state, { type: "chain", chain })
 }
 
 /** Signals' pattern or chain menu, opened on the row that's on. */
@@ -926,6 +994,8 @@ function pickEngine(state: UiState, agent: string, row: PickableRow | undefined)
   if (!row) return done(closed)
   if (row.kind === "preset") return done(closed, { type: "choosePreset", agent, preset: row.preset })
   if (row.kind === "runner") return done(closed, { type: "setRunner", agent, on: row.on })
+  // A step for the person to send, put on the line; nothing is sent.
+  if (row.kind === "fill") return done({ ...closed, input: row.line, cursor: row.line.length })
   return done(closed, { type: "chooseEngine", agent, engine: row.engine, ...(row.model !== undefined ? { model: row.model } : {}) })
 }
 
@@ -970,6 +1040,7 @@ export function paletteInput(state: UiState, ctx: UiContext): PaletteInput {
     ...(ctx.activeAgent ? { activeAgent: ctx.activeAgent } : {}),
     presets: ctx.presets ?? {},
     ...(ctx.runner ? { runner: ctx.runner } : {}),
+    ...(ctx.hoodWallet ? { hoodWallet: ctx.hoodWallet } : {}),
     tokens: ctx.commands.knownTokens,
     ...(ctx.linked ? { linked: ctx.linked } : {}),
     ...(ctx.pin ? { pin: ctx.pin } : {}),
@@ -979,6 +1050,8 @@ export function paletteInput(state: UiState, ctx: UiContext): PaletteInput {
     requotable: ctx.requotable !== undefined,
     working: ctx.working === true,
     ask: state.message?.ask !== undefined || rowAsk(state, ctx) !== undefined,
+    ...(state.message?.pick ? { pick: state.message.pick } : {}),
+    ...(ctx.chain && ctx.chain.chains.length > 1 ? { chain: ctx.chain } : {}),
     aliases: ctx.commands.aliases ?? new Map(),
     aliasProblems: ctx.aliasProblems ?? 0,
     popped: ctx.popped ?? [],
@@ -1054,10 +1127,14 @@ function runPalette(state: UiState, row: PaletteRow | undefined, ctx: UiContext,
       return done({ ...state, overlay: { kind: "palette", query: "aliases", index: 0 } }, { type: "reloadAliases" })
     case "theme":
       return done(closed, { type: "theme", name: run.name })
+    case "pickToken":
+      return pickToken(closed, run.index, now)
     case "popOut":
       return popOut(closed, ctx, now, run.pane)
     case "signalsMenu":
       return openSignalsMenu(closed, run.which, ctx)
+    case "chain":
+      return setChain(closed, run.chain, ctx, now)
     case "signals":
       return changeSignals(closed, run.change)
     case "pnlWindow":
@@ -1153,13 +1230,18 @@ function runKey(state: UiState, id: KeyId, ctx: UiContext, now: number): Step {
 }
 
 /** The focused pane, when it can pop out. */
-export const poppable = (state: UiState): PaneId | undefined => (state.focus !== "tabs" && state.focus !== "cards" && PANES[state.focus].pops ? state.focus : undefined)
+/** The focused pane, when it can pop out and is on the tab drawn now: focus left on a pane of a tab since hidden never pops. */
+export const poppable = (state: UiState, ctx?: Pick<UiContext, "panes">): PaneId | undefined => {
+  if (state.focus === "tabs" || state.focus === "cards" || !PANES[state.focus].pops) return undefined
+  if (ctx?.panes && !ctx.panes.order.includes(state.focus) && !ctx.panes.group.includes(state.focus)) return undefined
+  return state.focus
+}
 
 /**
  * ctrl-p: the focused pane moves into a split of its own, and focus goes to the agent
  * pane, or the tab bar where the layout has none. The agent's conversation stays.
  */
-function popOut(state: UiState, ctx: UiContext, now: number, pane = poppable(state)): Step {
+function popOut(state: UiState, ctx: UiContext, now: number, pane = poppable(state, ctx)): Step {
   if (!pane) {
     const why = state.focus === "agent" || state.focus === "cards" ? "The agent's conversation and its cards stay here, with the input line." : "Nothing is focused to pop out."
     return done(say(state, `${why} Focus a pane (tab, the arrows or a click), then ctrl-p moves it into a split of its own.`, now))
@@ -1856,6 +1938,12 @@ function onOverlayKey(state: UiState, key: Key, ctx: UiContext, now: number): St
     if (by !== 0) return done({ ...state, overlay: { kind: "away", scroll: awayScrolled(overlay.scroll, by, ctx.awayMax) } })
     return done(closed)
   }
+  if (overlay.kind === "said") {
+    // A typed command's answer scrolls where it doesn't fit; any other key closes it.
+    const by = key.name === "up" ? -1 : key.name === "down" ? 1 : key.name === "pageup" ? -10 : key.name === "pagedown" ? 10 : 0
+    if (by !== 0) return done({ ...state, overlay: { ...overlay, scroll: Math.max(0, (overlay.scroll ?? 0) + by) } })
+    return done(closed)
+  }
   if (overlay.kind === "pane") {
     // A folded pane's lines scroll where they don't fit; any other key closes it.
     const by = key.name === "up" ? -1 : key.name === "down" ? 1 : key.name === "pageup" ? -10 : key.name === "pagedown" ? 10 : 0
@@ -1879,6 +1967,13 @@ function onOverlayKey(state: UiState, key: Key, ctx: UiContext, now: number): St
     if (key.name === "up") return done({ ...state, overlay: { ...overlay, index: Math.max(0, overlay.index - 1) } })
     if (key.name === "down") return done({ ...state, overlay: { ...overlay, index: Math.min(n - 1, overlay.index + 1) } })
     if (key.name === "return" || key.name === "enter") return pickWalletsMenu(state, overlay.index, ctx, now)
+    return done(closed)
+  }
+  if (overlay.kind === "chainMenu") {
+    const n = ctx.chain ? chainMenuRows(ctx.chain.current, ctx.chain.chains).length : 0
+    if (key.name === "up") return done({ ...state, overlay: { ...overlay, index: Math.max(0, overlay.index - 1) } })
+    if (key.name === "down") return done({ ...state, overlay: { ...overlay, index: Math.min(Math.max(0, n - 1), overlay.index + 1) } })
+    if (key.name === "return" || key.name === "enter") return pickChainMenu(state, overlay.index, ctx, now)
     return done(closed)
   }
   if (overlay.kind === "signalsMenu") {
@@ -2200,11 +2295,13 @@ function stepOnce(state: UiState, action: UiAction, ctx: UiContext): Step {
       return done({ ...state, shownInFull: { text: action.text, until: action.now + SHOWN_IN_FULL_MS } }, { type: "copy", text: action.text })
     case "clickOpenToken":
       // Opens it only: the link moves to a token Candle has a market for, and nothing trades.
-      return done(state, { type: "link", mint: action.mint, ...(action.mint.startsWith("0x") ? { chain: "hood" as const } : {}), from: "the agent's reply, by a click" })
+      return done(state, { type: "link", mint: action.mint, ...(isEvmAddress(action.mint) ? { chain: requestChain(action.mint) } : {}), from: "the agent's reply, by a click" })
     case "clickFill":
-      return done({ ...state, input: action.text, cursor: action.text.length })
+      return done({ ...state, input: action.text, cursor: action.cursor !== undefined ? Math.max(0, Math.min(action.text.length, action.cursor)) : action.text.length })
     case "clickAsk":
       return askAgent(state)
+    case "clickPick":
+      return pickToken(state, action.index, action.now)
     case "popOutPane":
       return popOut(state, ctx, action.now, action.pane)
     case "clickHelp":
@@ -2276,6 +2373,10 @@ function stepOnce(state: UiState, action: UiAction, ctx: UiContext): Step {
       return state.overlay?.kind === "signalsMenu" && state.overlay.which === action.which ? done({ ...state, overlay: undefined }) : openSignalsMenu({ ...state, overlay: undefined }, action.which, ctx, { ...(action.x !== undefined ? { x: action.x } : {}), ...(action.y !== undefined ? { y: action.y } : {}) })
     case "pickSignalsMenu":
       return state.overlay?.kind === "signalsMenu" ? pickSignalsMenu(state, state.overlay.which, action.index, ctx) : done(state)
+    case "clickChain":
+      return state.overlay?.kind === "chainMenu" ? done({ ...state, overlay: undefined }) : openChainMenu({ ...state, overlay: undefined }, ctx, action.x)
+    case "pickChainMenu":
+      return state.overlay?.kind === "chainMenu" ? pickChainMenu(state, action.index, ctx, action.now) : done(state)
     case "pauseSignals":
       return done(pauseSignals(state, action.on, ctx))
     case "clearSignals":
@@ -2333,6 +2434,9 @@ function stepOnce(state: UiState, action: UiAction, ctx: UiContext): Step {
       // Mid-sentence in the harness's terminal, the card shows but the keys stay where the person is typing:
       // their Enter is the harness's send key, not an approval.
       return state.overlay && !staleCardOverlay(state, ctx) ? done(state) : done({ ...state, focusedCardId: action.cardId, overlay: { kind: "card", cardId: action.cardId, build: true, ...(action.typing ? { waiting: true as const } : {}) } })
+    case "openSaid":
+      // Asked for just now, so it opens over a menu; never over a card, whose keys approve it.
+      return state.overlay?.kind === "card" ? done(state) : done({ ...state, overlay: { kind: "said", title: action.title, text: action.text } })
     case "takeBuildCard":
       return state.overlay?.kind === "card" && state.overlay.waiting ? done({ ...state, shownSince: action.now, overlay: { kind: "card", cardId: state.overlay.cardId, build: true } }) : done(state)
     case "shown":
@@ -2358,6 +2462,7 @@ function stepOnce(state: UiState, action: UiAction, ctx: UiContext): Step {
     case "scrollAway": {
       const o = state.overlay
       if (o?.kind === "pane") return done({ ...state, overlay: { ...o, scroll: Math.max(0, (o.scroll ?? 0) + action.delta) } })
+      if (o?.kind === "said") return done({ ...state, overlay: { ...o, scroll: Math.max(0, (o.scroll ?? 0) + action.delta) } })
       return o?.kind === "away" ? done({ ...state, overlay: { kind: "away", scroll: awayScrolled(o.scroll, action.delta, ctx.awayMax) } }) : done(state)
     }
     case "pickAway":

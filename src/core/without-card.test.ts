@@ -148,3 +148,71 @@ describe("typed trades on a wallet that trades inside limits", () => {
     expect(lastOf<AutonomyTopic>(view, "autonomy")!.wallets.find((w) => w.wallet === FAKE_WALLET)!.usedTodayUsd).toBe(0)
   })
 })
+
+describe("on Hood: the embedded EVM wallet has figures of its own", () => {
+  const EVM_WALLET = "0x00000000000000000000000000000000000Fa4e1"
+  const HOOD_TOKEN = "0x00000000000000000000000000000000000b0b03"
+  // 1 ETH at $3,000 in the embedded EVM wallet, so the account uses Hood; a Hood token at a cent.
+  const hoodScript = { evmWei: "1000000000000000000", ethUsd: 3_000, markets: [{ mint: HOOD_TOKEN, symbol: "HTOK", priceUsd: 0.01 }] }
+  async function hoodCore(script: Record<string, unknown> = hoodScript) {
+    const c = await startTestCore({}, { candle: { momentum: script, swing: script } })
+    cores.push(c)
+    const view = await c.view()
+    await view.request("subscribe", { topics: ["autonomy", "portfolio"] })
+    await until(() => lastOf<AutonomyTopic>(view, "autonomy")?.wallets.some((w) => w.wallet === FAKE_WALLET) === true)
+    return { c, view }
+  }
+
+  test("listed once the account uses Hood, as \"embedded on Hood\"; a Solana-only account's list is as it was", async () => {
+    const { view } = await hoodCore()
+    await until(() => lastOf<AutonomyTopic>(view, "autonomy")?.wallets.some((w) => w.wallet === EVM_WALLET) === true)
+    expect(lastOf<AutonomyTopic>(view, "autonomy")!.wallets.map((w) => ({ wallet: w.wallet, name: w.name, chain: w.chain }))).toEqual([
+      { wallet: FAKE_WALLET, name: "embedded", chain: undefined },
+      { wallet: EVM_WALLET, name: "embedded on Hood", chain: "hood" },
+    ])
+    // The fake's embedded EVM wallet is empty by default: Solana-only, and nothing new is listed.
+    const { view: plain } = await hoodCore({})
+    await Bun.sleep(300)
+    expect(lastOf<AutonomyTopic>(plain, "autonomy")!.wallets.map((w) => w.name)).toEqual(["embedded"])
+    // Nor when Candle couldn't read it: a wallet nothing is known of isn't one the account uses.
+    const { view: unread } = await hoodCore({ hoodUnread: true })
+    await Bun.sleep(300)
+    expect(lastOf<AutonomyTopic>(unread, "autonomy")!.wallets.map((w) => w.name)).toEqual(["embedded"])
+  })
+
+  test("a Hood buy in ETH counts at its dollar value: inside the wallet's figures it runs without a card, over them it's a card that says so", async () => {
+    const { c, view } = await hoodCore()
+    await until(() => lastOf<AutonomyTopic>(view, "autonomy")?.wallets.some((w) => w.wallet === EVM_WALLET) === true)
+    // Setting Solana's embedded wallet changes nothing on Hood: each has its own figures.
+    await view.request("autonomy.set", INSIDE)
+    const { client: harness } = await c.harness(view)
+    const first = answer(await harness.request("tools.call", { name: "candle_trade", args: { mint: HOOD_TOKEN, side: "buy", amount: "0.0011" } }))
+    expect(first).toMatchObject({ error: { code: "APPROVAL_REQUIRED" } })
+    expect(first.why).toBeUndefined()
+
+    expect((await view.request("autonomy.set", { wallet: "embedded on Hood", setting: "inside", perTradeUsd: 5, perDayUsd: 8 })).result).toMatchObject({ wallet: EVM_WALLET, name: "embedded on Hood" })
+    // 0.001 ETH at $3,000 with Candle's fee: about $3.02, inside $5.00 a trade.
+    const inside = answer(await harness.request("tools.call", { name: "candle_trade", args: { mint: HOOD_TOKEN, side: "buy", amount: "0.001" } }))
+    expect(inside).toMatchObject({ success: true, state: "succeeded" })
+    expect(inside.approved).toMatch(/^without a card, inside the embedded wallet on Hood's limits \(\$3\.0\d of \$5\.00 a trade, \$3\.0\d of \$8\.00 today\)$/)
+    expect(c.core.journal.rows().findLast((r) => r.type === "card.approved")).toMatchObject({ how: "inside-limits", wallet: EVM_WALLET })
+    await until(() => (lastOf<AutonomyTopic>(view, "autonomy")?.wallets.find((w) => w.wallet === EVM_WALLET)?.usedTodayUsd ?? 0) > 3)
+    // The Solana embedded wallet's day is untouched.
+    expect(lastOf<AutonomyTopic>(view, "autonomy")!.wallets.find((w) => w.wallet === FAKE_WALLET)!.usedTodayUsd).toBe(0)
+    // Another $3.02 would make $6.03 of the $8.00 day; a third would pass it, and is a card that says which figure.
+    expect(answer(await harness.request("tools.call", { name: "candle_trade", args: { mint: HOOD_TOKEN, side: "buy", amount: "0.001" } }))).toMatchObject({ state: "succeeded" })
+    const over = answer(await harness.request("tools.call", { name: "candle_trade", args: { mint: HOOD_TOKEN, side: "buy", amount: "0.0012" } }))
+    expect(over).toMatchObject({ error: { code: "APPROVAL_REQUIRED" } })
+    expect(over.why).toMatch(/^over the embedded wallet on Hood's \$8\.00 a day without a card: \$6\.03 used today, and this \$3\.6\d with Candle's fee would make \$9\.6\d$/)
+  })
+
+  test("a USDG buy is valued at Candle's $1 with no read, and runs inside the figures like an ETH one", async () => {
+    const { c, view } = await hoodCore()
+    await until(() => lastOf<AutonomyTopic>(view, "autonomy")?.wallets.some((w) => w.wallet === EVM_WALLET) === true)
+    await view.request("autonomy.set", { wallet: EVM_WALLET.toLowerCase(), setting: "inside", perTradeUsd: 5, perDayUsd: 8 })
+    const { client: harness } = await c.harness(view)
+    const out = answer(await harness.request("tools.call", { name: "candle_trade", args: { mint: HOOD_TOKEN, side: "buy", amount: "2", quoteAsset: "usdg" } }))
+    expect(out).toMatchObject({ success: true, state: "succeeded" })
+    expect(out.approved).toMatch(/^without a card, inside the embedded wallet on Hood's limits \(\$2\.01 of \$5\.00 a trade/)
+  })
+})

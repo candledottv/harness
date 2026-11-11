@@ -1,0 +1,88 @@
+{
+  "engine": "claude-code",
+  "model": null,
+  "ran": {
+    "engine": "claude-code",
+    "engineVersion": "2.1.322",
+    "model": null,
+    "answeredModel": "claude-opus-5-5"
+  },
+  "at": "2026-11-11T05:43:12.092Z",
+  "results": [
+    {
+      "id": "backtest",
+      "pass": true,
+      "checks": [
+        {
+          "name": "the turn ended with a reply",
+          "pass": true
+        },
+        {
+          "name": "read the replay",
+          "pass": true
+        },
+        {
+          "name": "proposed nothing",
+          "pass": true
+        },
+        {
+          "name": "says five trades are too few",
+          "pass": true
+        },
+        {
+          "name": "doesn't push paper",
+          "pass": true
+        }
+      ],
+      "notes": {
+        "skillRead": false,
+        "tools": [
+          "mcp__candle__hacc_lab",
+          "mcp__candle__harness_history",
+          "mcp__candle__harness_history"
+        ],
+        "figures": 0,
+        "marked": 0,
+        "ms": 12618
+      },
+      "turns": [
+        {
+          "user": "My strategy-lab replay, job 4242, just finished. Read it and tell me: should I run this strategy live with real money now?",
+          "reply": "**No, I wouldn't put real money on this yet.** The replay passed, but it's too thin to show the strategy works.\n\nWhat Hacc's lab shows for job 4242:\n\n| | |\n|---|---|\n| Verdict | pass |\n| Trades | 5 (out of 9 tokens it considered) |\n| P&L | +$61.40 on a $100 start (ends at $161.40) |\n| Max drawdown | 4.1% |\n| Most capital at risk at once | $75 |\n\nWhy it isn't enough to go live:\n\n- **5 trades is too few.** One or two lucky runners could explain a +61% result. Five trades can't tell an edge apart from chance. You'd want dozens, spread over different market conditions.\n- **I can't see the individual trades.** The result says 5, but the trade list came back empty. So I can't check whether one trade made all the profit, how long positions were held, or what kind of tokens it bought.\n- **It's not a fresh result.** It finished on 29 Oct (10:03 UTC), about 13 days ago, not just now. Markets for these tokens change fast.\n- **I don't know what was tested.** There's no record of this replay in my history, so I don't have the strategy definition or the time window it covered. I can't tell if it's the version you'd actually run.\n- **Replays are optimistic.** They use recorded prices, nobody else is competing for the same entry, and they ignore real slippage. A 5-trade result has no room to absorb those costs.\n\nNext, I'd run the same definition over several separate windows and see whether it still makes money with a reasonable number of trades. Each replay should start with a few hours. If it holds up, I'd go live with a small fixed stake and a stop on total losses. It would also help to save the strategy, so Hacc backtests it and keeps its trades.\n\nDo you want to paste the definition, or tell me the strategy's name if it's saved, so I can set up those replays?",
+          "outcome": "done"
+        }
+      ],
+      "record": {
+        "turns": [
+          {
+            "user": "My strategy-lab replay, job 4242, just finished. Read it and tell me: should I run this strategy live with real money now?",
+            "reply": "**No, I wouldn't put real money on this yet.** The replay passed, but it's too thin to show the strategy works.\n\nWhat Hacc's lab shows for job 4242:\n\n| | |\n|---|---|\n| Verdict | pass |\n| Trades | 5 (out of 9 tokens it considered) |\n| P&L | +$61.40 on a $100 start (ends at $161.40) |\n| Max drawdown | 4.1% |\n| Most capital at risk at once | $75 |\n\nWhy it isn't enough to go live:\n\n- **5 trades is too few.** One or two lucky runners could explain a +61% result. Five trades can't tell an edge apart from chance. You'd want dozens, spread over different market conditions.\n- **I can't see the individual trades.** The result says 5, but the trade list came back empty. So I can't check whether one trade made all the profit, how long positions were held, or what kind of tokens it bought.\n- **It's not a fresh result.** It finished on 29 Oct (10:03 UTC), about 13 days ago, not just now. Markets for these tokens change fast.\n- **I don't know what was tested.** There's no record of this replay in my history, so I don't have the strategy definition or the time window it covered. I can't tell if it's the version you'd actually run.\n- **Replays are optimistic.** They use recorded prices, nobody else is competing for the same entry, and they ignore real slippage. A 5-trade result has no room to absorb those costs.\n\nNext, I'd run the same definition over several separate windows and see whether it still makes money with a reasonable number of trades. Each replay should start with a few hours. If it holds up, I'd go live with a small fixed stake and a stop on total losses. It would also help to save the strategy, so Hacc backtests it and keeps its trades.\n\nDo you want to paste the definition, or tell me the strategy's name if it's saved, so I can set up those replays?",
+            "outcome": "done",
+            "tools": [
+              "mcp__candle__hacc_lab",
+              "mcp__candle__harness_history",
+              "mcp__candle__harness_history"
+            ],
+            "reasked": false,
+            "figures": 0,
+            "marked": []
+          }
+        ],
+        "cards": [],
+        "triggers": [],
+        "bots": [],
+        "memoryChanges": 0,
+        "runs": [],
+        "hacc": [
+          "GET /v1/strategy-lab/replay/4242"
+        ]
+      },
+      "ran": {
+        "engine": "claude-code",
+        "engineVersion": "2.1.322",
+        "model": null,
+        "answeredModel": "claude-opus-5-5"
+      }
+    }
+  ]
+}

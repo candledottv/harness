@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test"
-import { pnlWords, quitNote, statusFigures, triggersOnWords } from "./status-bar"
+import { fitSegments, pnlWords, quitNote, statusFigures, triggersOnWords } from "./status-bar"
 import type { StatusView } from "./store"
 
 const NOW = new Date(2026, 9, 30, 15, 0).getTime()
@@ -31,4 +31,23 @@ test("triggers on: how many, while keep-awake holds the Mac awake; quitting says
   expect(quitNote({ triggersOn: 3, botsOn: 2 })).toBe("2 bots and 3 triggers keep running in the background · `candle-harness stop` to end them")
   expect(quitNote({ botsOn: 1 })).toBe("1 bot keeps running in the background · `candle-harness stop` to end it")
   expect(quitNote(undefined)).toBeUndefined()
+})
+
+test("the longest agent name at 80 columns: the name gives up its end, so the waiting count and the kill switch both stay", () => {
+  const name = `${"m".repeat(28)}-bot`
+  const bar = [
+    { key: "brand", text: "▲ candle", priority: 5 },
+    { key: "agent", text: `${name} · only ▾`, priority: 0, shrink: true },
+    { key: "chain", text: "all chains ▾", priority: 2, gap: true },
+    { key: "mode", text: "LIVE", priority: 0 },
+    { key: "cards", text: "● 12 cards waiting", priority: 0 },
+    { key: "spacer", text: "", priority: 0, spacer: true },
+    { key: "kill", text: "ctrl-x again to kill", priority: 0 },
+  ]
+  const kept = fitSegments(bar, 80)
+  expect(kept.map((s) => s.key)).toEqual(["agent", "mode", "cards", "spacer", "kill"])
+  expect(kept.reduce((n, s) => n + (s.spacer ? 0 : [...s.text].length + 2), 0)).toBeLessThanOrEqual(80)
+  expect(kept[0]!.text).toMatch(/^m+… ▾$/)
+  // A name that fits is left whole.
+  expect(fitSegments(bar, 120).find((s) => s.key === "agent")!.text).toBe(`${name} · only ▾`)
 })

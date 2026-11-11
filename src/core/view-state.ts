@@ -15,17 +15,21 @@
 // - Signals' choices: each place's Signals pane shows Hacc's tape or the account's own
 //   rules' signals, and may filter by one pattern and one chain. Kept by place as pins are, so every view
 //   of a tab shows the same, and they survive a restart (`state/signals-filters.json`, 0600).
+// - The chain filter: one chain, or all of them, for every pane of every view (the agent's pane and its cards
+//   aside), kept across a restart (`state/chain-filter.json`, 0600). All chains is kept as no choice, and every
+//   account starts there: a Signals pane's own chain is a choice about the tape, not about the wallets.
 import { randomBytes } from "node:crypto"
 import { readFileSync } from "node:fs"
 import { chmod, rename, writeFile } from "node:fs/promises"
 import { isTokenPane, type PaneId, type TokenPane } from "../shared/panes"
 import { terminalText } from "../shared/terminal-text"
+import { type ChainSlug, familyOfAddress, maybeChain, storedChain } from "../shared/chains"
 
 export const MAX_PINS = 3
 /** A place's name: a tab's, as layouts.toml allows (layouts-file.ts), or a popped pane's. */
 const MAX_PLACE = 40
 
-export type Chain = "solana" | "hood"
+export type Chain = ChainSlug
 
 export interface Pin {
   /** Where the pinned token pane is: a tab's name. */
@@ -52,6 +56,8 @@ export interface ViewsTopic {
   signals: SignalsChoice[]
   /** The panes popped out into views of their own, which the tiled views leave out. */
   popped: PaneId[]
+  /** The chain every pane shows, or null (or absent, from an older core) for all of them. */
+  chain?: Chain | null
 }
 
 /** The person's pick, as the agent is told it. */
@@ -63,11 +69,11 @@ export interface Picked {
   at: number
 }
 
-const MINT = /^[1-9A-HJ-NP-Za-km-z]{32,44}$|^0x[0-9a-fA-F]{40}$/
+const MINT = { test: (word: string) => familyOfAddress(word) !== undefined }
 
 /** A mint as a view may send it, or undefined. */
 export const mintParam = (value: unknown): string | undefined => (typeof value === "string" && MINT.test(value) ? value : undefined)
-export const chainParam = (value: unknown): Chain | undefined => (value === undefined || value === "solana" ? "solana" : value === "hood" ? "hood" : undefined)
+export const chainParam = (value: unknown): Chain | undefined => (value === undefined ? "solana" : maybeChain(value)?.slug)
 /** Which token pane a pin is on. */
 export const pinPane = (pin: Pick<Pin, "pane">): TokenPane => pin.pane ?? "token"
 const samePlace = (a: Pick<Pin, "at" | "pane">, b: Pick<Pin, "at" | "pane">) => a.at === b.at && pinPane(a) === pinPane(b)
@@ -89,7 +95,8 @@ function readPins(path: string): Pin[] {
       const at = placeParam(p?.at)
       const pane = tokenPaneParam(p?.pane)
       const mint = mintParam(p?.mint)
-      const chain = chainParam(p?.chain)
+      // A pin kept before pins carried their chain is on its mint's family's chain.
+      const chain = p?.chain === undefined ? storedChain(undefined, mint) : chainParam(p.chain)
       if (!at || !pane || !mint || !chain || out.some((o) => samePlace(o, placed(at, pane)))) continue
       const symbol = typeof p?.symbol === "string" ? terminalText(p.symbol, { maxLength: 16 }) : undefined
       out.push({ ...placed(at, pane), mint, chain, ...(symbol ? { symbol } : {}) })
@@ -121,6 +128,23 @@ export function signalsChoiceParam(params: Record<string, unknown>): SignalsChoi
   const chain = params.chain === undefined || params.chain === null ? undefined : params.chain === "solana" || params.chain === "hood" ? params.chain : null
   if (chain === null) return { problem: 'chain is "solana", "hood", or null for both.' }
   return { at, ...(params.mine === true ? { mine: true as const } : {}), ...(pattern ? { pattern } : {}), ...(chain ? { chain } : {}) }
+}
+
+/** A chain filter as a view may send it: a chain that's on, or null for all of them. */
+export function chainFilterParam(value: unknown): { chain: Chain | null } | { problem: string } {
+  if (value === null) return { chain: null }
+  const chain = maybeChain(value)?.slug
+  return chain ? { chain } : { problem: "chain is a chain that's on, such as \"solana\" or \"hood\", or null for all of them." }
+}
+
+function readChain(path: string | undefined): Chain | null {
+  if (!path) return null
+  try {
+    const read = chainFilterParam((JSON.parse(readFileSync(path, "utf8")) as { chain?: unknown }).chain ?? null)
+    return "problem" in read ? null : read.chain
+  } catch {
+    return null
+  }
 }
 
 const isWholeTape = (c: SignalsChoice) => !c.mine && !c.pattern && !c.chain
@@ -155,11 +179,26 @@ export class ViewState {
   private readonly poppedBy = new Map<PaneId, string>()
 
   private choiceList: SignalsChoice[]
+  private chainFilter: Chain | null
 
-  /** `signalsPath`: where Signals' choices are kept; without it, they last as long as the core. */
-  constructor(private readonly deps: { path: string; signalsPath?: string; now: () => number }) {
+  /** `signalsPath` and `chainPath`: where Signals' choices and the chain filter are kept; without them, they last as long as the core. */
+  constructor(private readonly deps: { path: string; signalsPath?: string; chainPath?: string; now: () => number }) {
     this.pinList = readPins(deps.path)
     this.choiceList = readChoices(deps.signalsPath)
+    this.chainFilter = readChain(deps.chainPath)
+  }
+
+  /** The chain every pane shows, or null for all of them. */
+  chain(): Chain | null {
+    return this.chainFilter
+  }
+
+  /** Every pane shows `chain` from now (null, all of them). True when it changed. */
+  async setChain(chain: Chain | null): Promise<boolean> {
+    if (chain === this.chainFilter) return false
+    this.chainFilter = chain
+    if (this.deps.chainPath) await saveJson(this.deps.chainPath, { chain }, this.deps.now())
+    return true
   }
 
   signals(): SignalsChoice[] {

@@ -74,14 +74,14 @@ const card = (cardId: string, over: Partial<ViewCard> = {}, display: Partial<Vie
 })
 const portfolio = (over: Partial<PortfolioView> = {}): PortfolioView => ({
   readAt: clock - 3_000,
-  wallets: [{ address: W, chain: "solana", kind: "embedded", agents: ["momentum", "swing"], sol: { amount: 2, usd: 300 }, tokens: [{ mint: MOON, symbol: "MOON", amount: 12345.678901, usd: 7777.78, buyers: ["swing"] }] }],
+  wallets: [{ address: W, chain: "solana" as const, kind: "embedded", agents: ["momentum", "swing"], nativeSymbol: "SOL", native: { amount: 2, usd: 300 }, tokens: [{ mint: MOON, symbol: "MOON", amount: 12345.678901, usd: 7777.78, buyers: ["swing"] }] }],
   readOnly: [],
   paper: {},
   deposit: W,
   ...over,
 })
 const market = (over: Partial<TokenView> = {}): TokenView => ({
-  followed: { mint: MOON, chain: "solana", symbol: "MOON", since: clock - 60_000 },
+  followed: { mint: MOON, chain: "solana" as const, symbol: "MOON", since: clock - 60_000 },
   market: { name: "Moon Coin", symbol: "MOON", priceUsd: 0.63, marketCap: 1_000_000, liquidityUsd: 100_000, at: clock - 5_000 },
   check: { summary: "clear", flagged: [], unknown: [], at: clock - 60_000 },
   samples: Array.from({ length: 10 }, (_, i) => ({ at: clock - (9 - i) * 15_000, usd: 0.6 + i * 0.003 })),
@@ -234,7 +234,7 @@ test("ctrl-f, a pane's border label or the agent menu show the active agent only
       portfolio({
         wallets: [
           ...portfolio().wallets,
-          { address: "TeeWallet1111111111111111111111111111111111", chain: "solana", kind: "tee", label: "swing tee", agents: ["swing"], sol: { amount: 1, usd: 150 }, tokens: [{ mint: MOON, symbol: "MOON", amount: 5, usd: 3.15, buyers: ["swing"] }] },
+          { address: "TeeWallet1111111111111111111111111111111111", chain: "solana" as const, kind: "tee", label: "swing tee", agents: ["swing"], nativeSymbol: "SOL", native: { amount: 1, usd: 150 }, tokens: [{ mint: MOON, symbol: "MOON", amount: 5, usd: 3.15, buyers: ["swing"] }] },
         ],
       }),
     ),
@@ -321,11 +321,11 @@ test("the wheel scrolls the conversation", async () => {
 // Paying from a wallet.
 const TEE = "TeeFakeA11111111111111111111111111111111111"
 const wallets = (over: { active?: boolean } = {}): WalletsTopic => {
-  const tee = { id: "teeA", address: TEE, label: "tee-one", chain: "solana", active: over.active ?? true }
+  const tee = { id: "teeA", address: TEE, label: "tee-one", chain: "solana" as const, active: over.active ?? true }
   return {
     agents: {
-      momentum: { payable: { embedded: { address: W, chain: "solana" }, tee: [tee], readAt: clock, unreadable: [] }, embeddedWallet: "allowed", prefix: "momeAb3d" },
-      swing: { payable: { embedded: { address: W, chain: "solana" }, tee: [], readAt: clock, unreadable: [] }, embeddedWallet: "allowed", prefix: "swinAb3d" },
+      momentum: { payable: { embedded: { address: W, chain: "solana" as const }, tee: [tee], readAt: clock, unreadable: [] }, embeddedWallet: "allowed", prefix: "momeAb3d" },
+      swing: { payable: { embedded: { address: W, chain: "solana" as const }, tee: [], readAt: clock, unreadable: [] }, embeddedWallet: "allowed", prefix: "swinAb3d" },
     },
     account: [tee],
     boundTo: { [TEE]: "momentum" },
@@ -341,7 +341,7 @@ const teePortfolio = (active = true) =>
   portfolio({
     wallets: [
       ...portfolio().wallets,
-      { address: TEE, chain: "solana", kind: "tee", label: "tee-one", agents: ["momentum"], active, sol: { amount: 0.5, usd: 75 }, tokens: [] },
+      { address: TEE, chain: "solana" as const, kind: "tee", label: "tee-one", agents: ["momentum"], active, nativeSymbol: "SOL", native: { amount: 0.5, usd: 75 }, tokens: [] },
     ],
   })
 
@@ -456,7 +456,7 @@ test("more wallets than two lines each can hold: one line each, the name, SOL an
   const session = await attached({}, 120, 30)
   const rows = Array.from({ length: 11 }, (_, i) => ({ mint: `Mint${i}`.padEnd(43, "1"), symbol: `TOK${i}`, name: `Token ${i}`, marketCap: 100_000 + i }))
   await input(() => session.push("market", market({ followed: null, market: null, check: null, samples: [], history: [], historyRead: null, trending: { bucket: "onfire", at: clock - 5_000, rows } })))
-  const tees = Array.from({ length: 4 }, (_, i) => ({ address: `Tee${i}`.padEnd(43, "1"), chain: "solana" as const, kind: "tee" as const, label: `bot-${i}`, agents: ["momentum"], active: true, sol: { amount: 0.1 * (i + 1), usd: 15 * (i + 1) }, tokens: [] }))
+  const tees = Array.from({ length: 4 }, (_, i) => ({ address: `Tee${i}`.padEnd(43, "1"), chain: "solana" as const, kind: "tee" as const, label: `bot-${i}`, agents: ["momentum"], active: true, nativeSymbol: "SOL", native: { amount: 0.1 * (i + 1), usd: 15 * (i + 1) }, tokens: [] }))
   await input(() => session.push("portfolio", portfolio({ wallets: [portfolio().wallets[0]!, ...tees] })))
   const f = frame()
   expect(f).toContain("embedded     2 SOL ≈$300.00  ⧉")
@@ -468,7 +468,7 @@ test("more wallets than two lines each can hold: one line each, the name, SOL an
 
 test("the panes show the core's choice of wallets; the rest are counted, and a chip shows them", async () => {
   const session = await attached({ walletsShown: "active" })
-  const other = { address: "Other11111111111111111111111111111111111111", chain: "solana" as const, kind: "tee" as const, label: "other-bot", agents: [], active: true, sol: { amount: 1, usd: 150 }, tokens: [{ mint: MOON, symbol: "MOON", amount: 5, usd: 3, buyers: [] }] }
+  const other = { address: "Other11111111111111111111111111111111111111", chain: "solana" as const, kind: "tee" as const, label: "other-bot", agents: [], active: true, nativeSymbol: "SOL", native: { amount: 1, usd: 150 }, tokens: [{ mint: MOON, symbol: "MOON", amount: 5, usd: 3, buyers: [] }] }
   await input(() => session.push("portfolio", portfolio({ wallets: [...teePortfolio().wallets, other] })))
   let f = frame()
   expect(f).toContain("tee-one · TEE · momentum")

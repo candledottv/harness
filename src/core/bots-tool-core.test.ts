@@ -2,8 +2,9 @@
 // nothing until the person's press, whose hash binds the definition and run settings; "stop all my bots" pauses
 // them at once; and a trigger on a bot fires when it buys, sells or is paused.
 import { afterAll, afterEach, describe, expect, test } from "bun:test"
-import { cleanupHomes, startTestCore, type TestCore, until } from "../../test/core-fixture"
+import { cleanupHomes, prefixedKey, startTestCore, type TestCore, until } from "../../test/core-fixture"
 import type { AutonomyTopic } from "./autonomy"
+import type { BotsTopic } from "./bots"
 
 const FAKE_WALLET = "WalletFake111111111111111111111111111111111"
 const MOON = "MoonFake11111111111111111111111111111111111"
@@ -114,5 +115,58 @@ describe("harness_bots through a real core", () => {
       ["conf-in", "entered"],
       ["conf-paused", "paused"],
     ])
+  })
+})
+
+describe("a Hood bot's card says how its buys run from the wallet that pays on Hood", () => {
+  const HOOD = { ...DEFINITION, chain: "hood" }
+  const HOOD_TEE = "0x00000000000000000000000000000000000E7e01"
+  const FAKE_EVM = "0x00000000000000000000000000000000000Fa4e1"
+
+  async function hoodCore(home: Parameters<typeof startTestCore>[1], wallet: string) {
+    const c = await startTestCore({}, home)
+    cores.push(c)
+    const view = await c.view()
+    await view.request("subscribe", { topics: ["cards", "autonomy", "bots"] })
+    await until(() => c.core.plans.planFor("momentum").plan !== undefined)
+    await until(() => lastOf<AutonomyTopic>(view, "autonomy")?.wallets.some((w) => w.wallet === wallet) === true)
+    const { client: harness } = await c.harness(view)
+    const call = async (args: Record<string, unknown>): Promise<Answer> => {
+      const r = await harness.request("tools.call", { name: "harness_bots", args })
+      return JSON.parse((r.result as { content: { text: string }[] }).content[0]!.text) as Answer
+    }
+    return { c, view, call }
+  }
+
+  test("on the embedded wallet: the embedded wallet on Hood's setting, not Solana's", async () => {
+    const { c, view, call } = await hoodCore({ candle: { momentum: { evmWei: "2500000000000000" } } }, FAKE_EVM)
+    // Solana's embedded wallet trades inside limits; Hood's asks every time.
+    await view.request("autonomy.set", { wallet: "embedded", setting: "inside", perTradeUsd: 10, perDayUsd: 100 })
+    const a = await call({ action: "propose", name: "hood-conf", definition: HOOD, wallet: "embedded", mode: "live" })
+    const card = c.core.cards.get(a.cardId)!
+    expect(card.display.botCard?.runs.kind).toBe("asks")
+    // It names the embedded wallet on Hood, never Solana's, wherever the card says it.
+    expect(card.display.botCard?.runs.entries).toContain("the embedded wallet on Hood asks every time")
+    expect(JSON.stringify(card.display.botCard)).not.toMatch(/the embedded wallet (asks|is shared)/)
+    await view.request("cards.approve", { cardId: card.cardId, cardHash: card.cardHash, how: "enter" })
+    await until(() => c.core.bots.entries().length === 1)
+    expect((await call({ action: "read" })).bots[0].runs).toContain("Its buys ask you each time: the embedded wallet on Hood asks every time")
+  })
+
+  test("on a Hood TEE wallet: its own setting, on the card, in the agent's read and in the Bots tab's steer", async () => {
+    const tee = { id: "teeH", address: HOOD_TEE, label: "hood-tee", boundKeyPrefix: "Momentum", chain: "hood" as const, wei: "2500000000000000" }
+    const { c, view, call } = await hoodCore({ keys: { momentum: prefixedKey("Momentum"), swing: prefixedKey("Swingkey") }, candle: { momentum: { teeWallets: [tee] } } }, HOOD_TEE)
+    const a = await call({ action: "propose", name: "hood-tee-conf", definition: HOOD, wallet: HOOD_TEE, mode: "live" })
+    const card = c.core.cards.get(a.cardId)!
+    expect(card.display.botCard?.runs.kind).toBe("asks")
+    expect(card.display.botCard?.runs.entries).toContain("hood-tee asks every time")
+    await view.request("cards.approve", { cardId: card.cardId, cardHash: card.cardHash, how: "enter" })
+    await until(() => c.core.bots.entries().length === 1)
+    expect((await call({ action: "read" })).bots[0].runs).toContain("Its buys ask you each time")
+    // The wallet is the bot's alone, so only its asking steers to a wallet of its own.
+    await until(() => (lastOf<BotsTopic>(view, "bots")?.bots.length ?? 0) === 1)
+    const shown = lastOf<BotsTopic>(view, "bots")!.bots[0]!
+    expect(shown.sharedWith).toBeUndefined()
+    expect(shown.ownWallet?.length).toBeGreaterThan(0)
   })
 })

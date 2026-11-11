@@ -18,6 +18,7 @@
 import { terminalText } from "../shared/terminal-text"
 import type { ToolOutcome } from "./candle-mcp"
 import type { TokenView } from "./token-watch"
+import { type ChainSlug, maybeChain } from "../shared/chains"
 
 export const BUCKETS = ["new", "graduated", "onfire", "finalstretch"] as const
 export type Bucket = (typeof BUCKETS)[number]
@@ -35,12 +36,12 @@ export const FEED_LIMIT = 20
 
 /**
  * The fields each list's pane draws (`fields` refuses `_creationTime` by name, so a token's age is
- * `createdAt`). `chain`, `address` and `symbol` always come back. On Fire's are what the Feed pane draws.
+ * `createdAt`, or `firstSeenAt` where Candle sends no creation time, as for most new Hood tokens). `chain`, `address` and `symbol` always come back. On Fire's are what the Feed pane draws.
  * `launchpad` and `isCandle` say where a token was launched, the column that took the price's place (the
  * per-unit price told a trader almost nothing).
  */
 export const FEED_FIELDS: Readonly<Record<Bucket, string>> = {
-  new: "name,priceUsd,marketCap,change1h,createdAt,launchpad,isCandle",
+  new: "name,priceUsd,marketCap,change1h,createdAt,firstSeenAt,launchpad,isCandle",
   graduated: "name,priceUsd,marketCap,change1h,graduatedAt,launchpad,isCandle",
   onfire: "name,marketCap,priceUsd,change1h,launchpad,isCandle",
   finalstretch: "name,priceUsd,marketCap,progress,lastTradeAt,launchpad,isCandle",
@@ -48,6 +49,8 @@ export const FEED_FIELDS: Readonly<Record<Bucket, string>> = {
 
 export interface FeedRow {
   mint: string
+  /** Its chain, as Candle's answer names it, else the chain the list was read for. */
+  chain?: ChainSlug
   symbol: string
   name?: string
   /** Missing shows as missing, never zero: Final Stretch's rows often have neither. */
@@ -55,7 +58,7 @@ export interface FeedRow {
   priceUsd: number | null
   /** The hour's change as a fraction (Candle sends a percent). */
   change1h: number | null
-  /** New: when the token was made (epoch ms). */
+  /** New: when the token was made (epoch ms), or Candle first saw it where it sends no creation time. */
   createdAt?: number
   /** Graduated: when it graduated (epoch ms). */
   graduatedAt?: number
@@ -135,8 +138,8 @@ const time = (value: unknown): number | undefined => {
   return undefined
 }
 
-/** A list's rows from Candle's answer: those that name a token, its figures read as they are. */
-export function feedRows(result: unknown): FeedRow[] | undefined {
+/** A list's rows from Candle's answer, read for `asked`: those that name a token, its figures read as they are. */
+export function feedRows(result: unknown, asked: ChainSlug = "solana"): FeedRow[] | undefined {
   const body = record(result)
   const tokens = body?.tokens ?? record(body?.data)?.tokens
   if (!Array.isArray(tokens)) return undefined
@@ -148,12 +151,13 @@ export function feedRows(result: unknown): FeedRow[] | undefined {
       const price = num(t.priceUsd)
       const change = num(t.change1h)
       const progress = num(t.progress)
-      const createdAt = time(t.createdAt)
+      const createdAt = time(t.createdAt) ?? time(t.firstSeenAt)
       const graduatedAt = time(t.graduatedAt)
       const lastTradeAt = time(t.lastTradeAt)
       const where = whereOf(t)
       return {
         mint: String(t.address),
+        chain: maybeChain(t.chain)?.slug ?? asked,
         symbol: text(t.symbol, 16)!,
         ...(name ? { name } : {}),
         marketCap: num(t.marketCap),
@@ -214,8 +218,35 @@ interface Slot {
   reading: boolean
 }
 
+/** A chain whose lists are read, and whether at half the pace (another chain beside it, so both fit the key's budget). */
+export interface FeedChain {
+  chain: ChainSlug
+  slow?: boolean
+}
+
+/** One list on one chain. */
+interface Read {
+  bucket: Bucket
+  chain: ChainSlug
+  slow: boolean
+}
+
+const slotKey = (chain: ChainSlug, bucket: Bucket) => `${chain}:${bucket}`
+
+/** Each list's rows across the chains read, in the list's own order: New by when made, Graduated by when, the others rank by rank. */
+function mergeRows(bucket: Bucket, lists: readonly FeedRow[][]): FeedRow[] {
+  if (lists.length === 1) return lists[0]!
+  if (bucket === "new" || bucket === "graduated") {
+    const at = (r: FeedRow) => (bucket === "new" ? r.createdAt : r.graduatedAt) ?? Number.NEGATIVE_INFINITY
+    return lists.flat().sort((a, b) => at(b) - at(a))
+  }
+  const out: FeedRow[] = []
+  for (let i = 0; i < Math.max(...lists.map((l) => l.length)); i++) for (const l of lists) if (l[i]) out.push(l[i]!)
+  return out
+}
+
 export class Feeds {
-  private readonly slots = new Map<Bucket, Slot>()
+  private readonly slots = new Map<string, Slot>()
   private running = false
   private timer: ReturnType<typeof setTimeout> | undefined
 
@@ -228,27 +259,62 @@ export class Feeds {
       publish: (view: FeedsView, changed: Bucket) => void
       /** How many times its own pace the lists now wait, from the key's budget; 1 when they fit. */
       stretch?: () => number
+      /** The chains read now (the account's, under the chain filter); Solana's alone without it. */
+      chains?: () => readonly FeedChain[]
     },
   ) {}
 
+  private chains(): readonly FeedChain[] {
+    return this.deps.chains?.() ?? [{ chain: "solana" }]
+  }
+
+  /** Each list as the views draw it: its rows on every chain read now, each with its chain. */
   view(): FeedsView {
     const out: FeedsView = {}
-    for (const [b, s] of this.slots) out[b] = s.list
+    for (const bucket of BUCKETS) {
+      const lists = this.chains()
+        .map((c) => this.slots.get(slotKey(c.chain, bucket))?.list)
+        .filter((l): l is FeedList => l !== undefined)
+      if (!lists.length) continue
+      const read = lists.filter((l) => l.at !== null)
+      const failed = lists.find((l) => l.failed)?.failed
+      const matched = lists.every((l) => l.matched !== undefined) ? lists.reduce((n, l) => n + l.matched!, 0) : undefined
+      const solana = lists.find((l) => l.rows.every((r) => r.chain !== "hood")) ?? lists[0]!
+      out[bucket] = {
+        bucket,
+        at: read.length ? Math.min(...read.map((l) => l.at!)) : null,
+        rows: mergeRows(bucket, lists.map((l) => l.rows)),
+        ...(matched !== undefined ? { matched } : {}),
+        ...(failed ? { failed } : {}),
+        ...(solana.state ? { state: solana.state } : {}),
+        ...(solana.behindS !== undefined ? { behindS: solana.behindS } : {}),
+      }
+    }
     return out
   }
 
   /** On Fire as the token pane's empty state and Positions' read it (`market.trending`), the same list Feed shows. */
   trending(): TokenView["trending"] {
-    const list = this.slots.get("onfire")?.list
+    const list = this.view().onfire
     if (!list || list.at === null) return null
     return { bucket: "onfire", at: list.at, rows: list.rows.map((r) => ({ mint: r.mint, symbol: r.symbol, ...(r.name ? { name: r.name } : {}), marketCap: r.marketCap, priceUsd: r.priceUsd, change1h: r.change1h, ...(r.where ? { where: r.where } : {}) })) }
   }
 
-  /** The lists read now: those wanted, and On Fire while any view is attached. */
-  active(): Bucket[] {
+  /**
+   * The lists read now: those wanted, and On Fire while any view is attached, on each chain read. A chain read at
+   * half the pace reads only the lists on screen, and Final Stretch, pump.fun's, is read on Solana alone.
+   */
+  private reads(): Read[] {
     if (!this.running) return []
     const wanted = this.deps.wanted()
-    return BUCKETS.filter((b) => b === "onfire" || wanted.has(b))
+    return this.chains().flatMap((c) =>
+      BUCKETS.filter((b) => (b !== "finalstretch" || c.chain === "solana") && (c.slow ? wanted.has(b) : b === "onfire" || wanted.has(b))).map((bucket) => ({ bucket, chain: c.chain, slow: c.slow === true })),
+    )
+  }
+
+  /** The lists read now, by name (each once, whatever its chains). */
+  active(): Bucket[] {
+    return [...new Set(this.reads().map((r) => r.bucket))]
   }
 
   /** On Fire keeps the lists' 15 s only while another list is on screen beside it. */
@@ -257,11 +323,12 @@ export class Feeds {
     return BUCKETS.some((b) => b !== "onfire" && wanted.has(b))
   }
 
-  /** A bucket's own pace, before the budget stretches it. */
-  naturalMs(bucket: Bucket): number {
-    if (bucket === "finalstretch" && this.slots.get(bucket)?.list.state === "off") return OFF_RETRY_MS
-    if (bucket === "onfire" && !this.fast()) return ONFIRE_MS
-    return FEED_MS
+  /** A bucket's own pace on a chain, before the budget stretches it: twice as long on a chain read slowly. */
+  naturalMs(bucket: Bucket, chain: ChainSlug = "solana"): number {
+    const slow = this.chains().find((c) => c.chain === chain)?.slow === true ? 2 : 1
+    if (bucket === "finalstretch" && this.slots.get(slotKey(chain, bucket))?.list.state === "off") return OFF_RETRY_MS
+    if (bucket === "onfire" && !this.fast()) return ONFIRE_MS * slow
+    return FEED_MS * slow
   }
 
   /** The lists' pace, for the pane that says it's slowed: the fastest wanted's. */
@@ -271,8 +338,8 @@ export class Feeds {
 
   /** Reads a minute at each list's own pace (for the key's budget), and one a minute per list first. */
   demand(): { perMin: number; lists: number } {
-    const active = this.active()
-    return { perMin: active.reduce((n, b) => n + 60_000 / this.naturalMs(b), 0), lists: active.length }
+    const reads = this.reads()
+    return { perMin: reads.reduce((n, r) => n + 60_000 / this.naturalMs(r.bucket, r.chain), 0), lists: reads.length }
   }
 
   start(): void {
@@ -287,7 +354,7 @@ export class Feeds {
     this.timer = undefined
   }
 
-  /** The subscriptions changed: read what's newly wanted now, and plan the next turn again. */
+  /** The subscriptions or the chains changed: read what's newly wanted now, and plan the next turn again. */
   poke(): void {
     if (!this.running) return
     clearTimeout(this.timer)
@@ -295,10 +362,10 @@ export class Feeds {
     void this.tick()
   }
 
-  /** One turn: every active list that's due, read together. */
+  /** One turn: every list that's due, on each chain, read together. */
   async step(): Promise<void> {
     const now = this.deps.now()
-    await Promise.all(this.active().filter((b) => this.due(b, now)).map((b) => this.read(b)))
+    await Promise.all(this.reads().filter((r) => this.due(r, now)).map((r) => this.read(r)))
   }
 
   private async tick(): Promise<void> {
@@ -315,41 +382,42 @@ export class Feeds {
     return Math.max(1, this.deps.stretch?.() ?? 1)
   }
 
-  private dueAt(bucket: Bucket): number {
-    const s = this.slots.get(bucket)
+  private dueAt(r: Read): number {
+    const s = this.slots.get(slotKey(r.chain, r.bucket))
     if (!s || s.triedAt === undefined) return s?.retryAt ?? Number.NEGATIVE_INFINITY
-    return s.retryAt ?? s.triedAt + this.naturalMs(bucket) * this.stretch()
+    return s.retryAt ?? s.triedAt + this.naturalMs(r.bucket, r.chain) * this.stretch()
   }
 
-  private due(bucket: Bucket, now: number): boolean {
-    if (this.slots.get(bucket)?.reading) return false
+  private due(r: Read, now: number): boolean {
+    if (this.slots.get(slotKey(r.chain, r.bucket))?.reading) return false
     // A little slack, so a timer that fires a little early still counts.
-    return this.dueAt(bucket) <= now + 250
+    return this.dueAt(r) <= now + 250
   }
 
   /** Until the next list is due, at least a second. */
   nextMs(): number {
     const now = this.deps.now()
-    const soonest = Math.min(...this.active().map((b) => this.dueAt(b) - now))
+    const soonest = Math.min(...this.reads().map((r) => this.dueAt(r) - now))
     return Number.isFinite(soonest) ? Math.max(1_000, Math.ceil(soonest)) : FEED_MS
   }
 
-  private slot(bucket: Bucket): Slot {
-    let s = this.slots.get(bucket)
+  private slot(chain: ChainSlug, bucket: Bucket): Slot {
+    let s = this.slots.get(slotKey(chain, bucket))
     if (!s) {
       s = { list: { bucket, at: null, rows: [] }, reading: false }
-      this.slots.set(bucket, s)
+      this.slots.set(slotKey(chain, bucket), s)
     }
     return s
   }
 
-  private async read(bucket: Bucket): Promise<void> {
-    const s = this.slot(bucket)
+  private async read(r: Read): Promise<void> {
+    const { bucket, chain } = r
+    const s = this.slot(chain, bucket)
     s.reading = true
     const at = this.deps.now()
     let outcome: ToolOutcome
     try {
-      outcome = await this.deps.call("candle_get_feed", { bucket, chain: "solana", fields: FEED_FIELDS[bucket], limit: FEED_LIMIT })
+      outcome = await this.deps.call("candle_get_feed", { bucket, chain, fields: FEED_FIELDS[bucket], limit: FEED_LIMIT })
     } catch (e) {
       outcome = { kind: "error", code: "UNKNOWN_ERROR", retryable: true, body: { message: e instanceof Error ? e.message : String(e) } }
     } finally {
@@ -363,7 +431,7 @@ export class Feeds {
     delete s.retryAt
     const now = this.deps.now()
     if (outcome.kind === "ok") {
-      const rows = feedRows(outcome.result)
+      const rows = feedRows(outcome.result, chain)
       if (rows) {
         const matched = num(record(outcome.result)?.matched)
         s.list = { bucket, at: now, rows, ...(matched !== null ? { matched } : {}), ...(bucket === "finalstretch" ? stretchState(outcome.result) : {}) }

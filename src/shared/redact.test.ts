@@ -1,6 +1,6 @@
 // The core's redactor; the journal half is in core/journal.test.ts.
 import { describe, expect, test } from "bun:test"
-import { generateKeyPairSync } from "node:crypto"
+import { generateKeyPairSync, randomBytes } from "node:crypto"
 import { REDACTED, Redactor, withoutFactorValue } from "./redact"
 
 const READ_KEY = `cndl_test_${"r".repeat(43)}`
@@ -212,5 +212,36 @@ describe("more secret shapes", () => {
   test("a transaction signature on Solscan still shows", () => {
     const sig = "5VERv8NMvzbJMEkV8xnrLkEaWRtSz9CosKDYjCJjBRnbJLgp8uirBgmQpjKhoR4tjF3ZpRzrFmBV6UjKdiSZkQUW"
     expect(redactor.text(`https://solscan.io/tx/${sig}`)).toBe(`https://solscan.io/tx/${sig}`)
+  })
+
+  test("an EVM private key the words beside it name one; a transaction hash on an explorer still shows", () => {
+    const redactor = new Redactor()
+    const key = randomBytes(32).toString("hex")
+    const tx = "0x5c504ed432cb51138bcf09aa5e8a410dd4a1e204ef84bfed1be16dfba1b22060"
+    expect(redactor.text(`my private key is 0x${key}`)).toBe(`my private key is ${REDACTED}`)
+    expect(redactor.text(`https://explorer.example/tx/${tx}`)).toBe(`https://explorer.example/tx/${tx}`)
+    expect(redactor.value({ note: `privkey=${key}`, hash: tx })).toEqual({ note: `privkey=${REDACTED}`, hash: tx })
+  })
+
+  test("an agent's reply keeps the hash of a trade when it speaks of private keys after it", () => {
+    const redactor = new Redactor()
+    const tx = "0x5c504ed432cb51138bcf09aa5e8a410dd4a1e204ef84bfed1be16dfba1b22060"
+    for (const text of [`Done: the buy landed in tx ${tx}. Your private key never leaves the TEE.`, `I can't see any private key. Your last swap was ${tx} on Hood.`]) {
+      expect(redactor.text(text)).toBe(text)
+    }
+  })
+
+  test("an EVM private key named just before it is taken out with a capital 0X too", () => {
+    const redactor = new Redactor()
+    const key = randomBytes(32).toString("hex")
+    expect(redactor.text(`pk: 0X${key}`)).toBe(`pk: ${REDACTED}`)
+  })
+
+  test("a key registered once it was refused is taken out wherever it shows after, with or without 0x", () => {
+    const redactor = new Redactor()
+    const key = randomBytes(32).toString("hex")
+    redactor.add(`0x${key}`)
+    redactor.add(key)
+    expect(redactor.text(`seen again: 0x${key} and ${key}`)).toBe(`seen again: ${REDACTED} and ${REDACTED}`)
   })
 })

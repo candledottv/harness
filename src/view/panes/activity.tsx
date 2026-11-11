@@ -7,6 +7,7 @@ import { cellWidth, firingMark, wrap } from "../format"
 import { C } from "../theme"
 import { askAbout } from "../ask"
 import { chip, type Line, line } from "./lines"
+import { mixesChains, TAG_CELLS, withChainTag } from "./chain-tag"
 
 /** A line's colour by its tone, from the theme on screen. */
 const tone = (t: "info" | "good" | "bad" | "warn"): string => ({ info: C.ink, good: C.good, bad: C.bad, warn: C.look })[t]
@@ -43,6 +44,9 @@ export function activityLines(entries: readonly ActivityEntry[], width: number, 
   // A trigger's card that expired with nobody there: proposed again at a fresh price, by the person's click.
   const runNowChip = chip("run it now", "runNow")
   const days = new Set(shown.map((e) => new Date(e.at).toDateString()))
+  // On more than one chain, each entry's first line ends with its chain: its words leave room for it.
+  const tagged = mixesChains(shown.map((e) => e.chain))
+  const tagRoom = tagged ? TAG_CELLS : 0
   let lastDay: string | undefined
   return shown.flatMap((e) => {
     const day = new Date(e.at).toDateString()
@@ -53,8 +57,9 @@ export function activityLines(entries: readonly ActivityEntry[], width: number, 
     // A trigger's firing is one line: its name after ⚡ in the heading colour, what it saw, then what came of it.
     // A rules bot's is too, its entries, exits and skips folded. ⚡ takes two cells, one more than its length.
     const mark = e.firing ? firingMark(e.firing) : ""
-    const parts = wrap(e.firing ? `${mark} ${e.firing.said}` : e.text, Math.max(10, width - 7 - (end ? end.chip.text.length + 1 : 0) - (cellWidth(mark) - mark.length)))
-    return [...divider, ...parts.map((part, i): Line => {
+    const parts = wrap(e.firing ? `${mark} ${e.firing.said}` : e.text, Math.max(10, width - 7 - tagRoom - (end ? end.chip.text.length + 1 : 0) - (cellWidth(mark) - mark.length)))
+    return [...divider, ...parts.map((part, i): Line => (tagged && i === 0 ? { ...drawn(part, i), segs: withChainTag(drawn(part, i).segs, e.chain, width) } : drawn(part, i)))]
+    function drawn(part: string, i: number): Line {
       const tail = end && i === parts.length - 1 ? [{ text: " ", fg: C.ink }, end.chip] : []
       // Every line of an entry about a token picks it, as one row.
       const ref = { key: String(e.seq), ...(tail.length ? { ref: end!.ref } : {}), ...(e.mint ? { pick: { id: String(e.seq), mint: e.mint, ask: askAbout(undefined, e.mint, `From Activity, ${clock(e.at)}.`) } } : {}) }
@@ -65,6 +70,6 @@ export function activityLines(entries: readonly ActivityEntry[], width: number, 
       }
       const word = e.tone === "info" ? "" : (/^\S+/.exec(part)?.[0] ?? "")
       return { segs: [{ text: `${clock(e.at)}  `, fg: C.dim }, ...(word ? [{ text: word, fg: tone(e.tone) }] : []), { text: part.slice(word.length), fg: C.ink }, ...tail], ...ref }
-    })]
+    }
   })
 }

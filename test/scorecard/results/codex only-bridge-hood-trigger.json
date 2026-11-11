@@ -1,0 +1,158 @@
+{
+  "engine": "codex",
+  "model": null,
+  "ran": {
+    "engine": "codex",
+    "engineVersion": "0.165.0",
+    "model": "gpt-6.1-sol",
+    "answeredModel": null
+  },
+  "at": "2026-11-11T01:54:25.887Z",
+  "results": [
+    {
+      "id": "bridge",
+      "pass": true,
+      "checks": [
+        {
+          "name": "the turn ended with a reply",
+          "pass": true
+        },
+        {
+          "name": "proposed one bridge card",
+          "pass": true
+        },
+        {
+          "name": "SOL to ETH, 0.02, from the embedded wallet",
+          "pass": true
+        }
+      ],
+      "notes": {
+        "skillRead": false,
+        "tools": [
+          "mcp__candle__candle_execution_status",
+          "mcp__candle__candle_bridge"
+        ],
+        "figures": 0,
+        "marked": 0,
+        "ms": 16240
+      },
+      "turns": [
+        {
+          "user": "Move 0.02 SOL from my embedded wallet over to ETH on Hood.",
+          "reply": "I’ve proposed bridging SOL from your embedded wallet to ETH on Hood as requested; the card is ready for your approval.",
+          "outcome": "done"
+        }
+      ],
+      "record": {
+        "turns": [
+          {
+            "user": "Move 0.02 SOL from my embedded wallet over to ETH on Hood.",
+            "reply": "I’ve proposed bridging SOL from your embedded wallet to ETH on Hood as requested; the card is ready for your approval.",
+            "outcome": "done",
+            "tools": [
+              "mcp__candle__candle_execution_status",
+              "mcp__candle__candle_bridge"
+            ],
+            "reasked": false,
+            "figures": 0,
+            "marked": []
+          }
+        ],
+        "cards": [
+          {
+            "state": "created",
+            "tool": "candle_bridge",
+            "kind": "bridge",
+            "params": {
+              "from": "SOL",
+              "to": "ETH",
+              "amount": "0.02",
+              "clientSwapId": "9bef467d-144f-4ecf-834e-0b8292c3fa3b",
+              "bridge": {
+                "to": "ETH",
+                "fromName": "embedded",
+                "toName": "embedded on Hood"
+              }
+            }
+          }
+        ],
+        "triggers": [],
+        "bots": [],
+        "memoryChanges": 0,
+        "runs": [],
+        "hacc": []
+      },
+      "ran": {
+        "engine": "codex",
+        "engineVersion": "0.165.0",
+        "model": "gpt-6.1-sol",
+        "answeredModel": null
+      }
+    },
+    {
+      "id": "hood-trigger",
+      "pass": false,
+      "checks": [
+        {
+          "name": "the turn ended with a reply",
+          "pass": true
+        },
+        {
+          "name": "proposed the alert's trigger card",
+          "pass": false,
+          "why": "proposed 0 trigger card(s); other cards: none"
+        },
+        {
+          "name": "traded nothing",
+          "pass": true
+        }
+      ],
+      "notes": {
+        "skillRead": false,
+        "tools": [
+          "mcp__candle__hacc_token"
+        ],
+        "figures": 1,
+        "marked": 0,
+        "ms": 11570
+      },
+      "turns": [
+        {
+          "user": "Tell me if HTOK goes over $0.003.",
+          "reply": "Hacc’s search found HTOK on Hood: mint `0x4b1d00000000000000000000000000000000ab1d`, $100,000 liquidity, about 41 days old.\n\nThe search can’t see every copy. Is this the token you want a one-time alert for when it goes above $0.003?",
+          "outcome": "done"
+        }
+      ],
+      "record": {
+        "turns": [
+          {
+            "user": "Tell me if HTOK goes over $0.003.",
+            "reply": "Hacc’s search found HTOK on Hood: mint `0x4b1d00000000000000000000000000000000ab1d`, $100,000 liquidity, about 41 days old.\n\nThe search can’t see every copy. Is this the token you want a one-time alert for when it goes above $0.003?",
+            "outcome": "done",
+            "tools": [
+              "mcp__candle__hacc_token"
+            ],
+            "reasked": false,
+            "figures": 1,
+            "marked": []
+          }
+        ],
+        "cards": [],
+        "triggers": [],
+        "bots": [],
+        "memoryChanges": 0,
+        "runs": [],
+        "hacc": [
+          "GET /v1/market/token-search",
+          "GET /v1/market/token/0x4b1d00000000000000000000000000000000ab1d/history"
+        ]
+      },
+      "ran": {
+        "engine": "codex",
+        "engineVersion": "0.165.0",
+        "model": "gpt-6.1-sol",
+        "answeredModel": null
+      }
+    }
+  ]
+}

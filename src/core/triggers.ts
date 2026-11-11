@@ -35,6 +35,7 @@ import {
   partsOfAction,
   resolveTrigger,
   type TriggerClass,
+  type TriggerWhen,
   triggerWords,
 } from "../shared/trigger-grammar"
 import type { WalletSetting } from "./autonomy"
@@ -44,6 +45,7 @@ import { usd } from "./limits"
 import type { LineReader } from "./line-reader"
 import type { HaccPlan } from "./plan-state"
 import type { TriggerEntry, TriggersFileStore } from "./triggers-file"
+import { type ChainSlug, chainName, requestChain } from "../shared/chains"
 
 export interface TriggerState {
   /** The hash of what was approved: agent, expansion, again and cooldown. */
@@ -140,6 +142,8 @@ export interface PayWalletInfo {
   address: string
   /** "embedded", or its name. */
   name: string
+  /** The chain it pays on, where it's known: the embedded wallet on another chain than Solana is said on it. */
+  chain?: ChainSlug
   setting: WalletSetting
 }
 
@@ -166,12 +170,15 @@ export interface TriggerBookDeps {
   onChange(): void
 }
 
+/** A token and the chain it's on, always together: a cause names both, or neither (a P&L level, a rule's signal with no token). */
+export type TokenOn = { mint: string; chain: ChainSlug } | { mint?: undefined; chain?: undefined }
+
 /** What made a trigger fire, journalled with it before anything it does is proposed. */
 export type FireCause =
   | { by: "call"; clientId: string }
-  | { by: "level"; what: "price" | "mcap" | "entry" | "pnl"; mint?: string; chain?: "solana" | "hood"; reading: number; level: number; entryUsd?: number; readAt: string }
-  | { by: "tape"; mint: string; chain: "solana" | "hood"; signalId: number; pattern: string; signalAt: string }
-  | { by: "mine"; mint?: string; chain?: "solana" | "hood"; assetId?: number; signalId: number; pattern: string; rule?: string; signalAt: string }
+  | ({ by: "level"; what: "price" | "mcap" | "entry" | "pnl"; reading: number; level: number; entryUsd?: number; readAt: string } & TokenOn)
+  | { by: "tape"; mint: string; chain: ChainSlug; signalId: number; pattern: string; signalAt: string; marketCap?: { usd: number; from: "hacc" } }
+  | ({ by: "mine"; assetId?: number; signalId: number; pattern: string; rule?: string; signalAt: string } & TokenOn)
   | { by: "schedule"; due: string; late?: true }
   | { by: "event"; event: "fill" | "card-expired" | "replay-ended"; agent?: string; opId?: string; cardId?: string; jobId?: number; mint?: string }
   | { by: "event"; event: "bot"; bot: string; what: BotEvent; word?: string; agent?: string; opId?: string; mint?: string; paper?: true }
@@ -180,6 +187,25 @@ export type Firer = (trigger: TriggerEntry, cause: FireCause, fireId: string) =>
 
 /** What a firing was recorded as, or why it wasn't: the firing path isn't wired, or the trigger stopped being live. */
 export type Fired = { fired: true; fireId: string; run: Promise<unknown> } | { fired: false; code: string; words: string }
+
+/** Each skip's why, short, for a day's tally. */
+const TRIGGER_SKIP_SHORT: Readonly<Record<string, string>> = {
+  not_on_candle: "not on Candle",
+  no_market_cap: "no market cap",
+}
+
+/** A trigger's skips over the last day, by why in words, most first. */
+export function triggerSkips(rows: readonly JournalRow[], name: string, now: number): { total: number; by: { why: string; count: number }[] } {
+  const skips = new Map<string, number>()
+  const since = now - 24 * 60 * 60_000
+  for (const r of rows) {
+    if (r.type !== "trigger.skipped" || r.name !== name || Date.parse(r.at) < since) continue
+    const why = TRIGGER_SKIP_SHORT[String(r.reason)] ?? String(r.reason ?? "other")
+    skips.set(why, (skips.get(why) ?? 0) + (typeof r.count === "number" ? r.count : 1))
+  }
+  const by = [...skips.entries()].sort((a, b) => b[1] - a[1]).map(([why, count]) => ({ why, count }))
+  return { total: by.reduce((n, x) => n + x.count, 0), by }
+}
 
 /**
  * What a firing's cooldown is kept by: on the tape and personal signals, the token that fired it (Hacc's asset id
@@ -215,9 +241,9 @@ export interface WatchInfo {
  * the file, and its line, which a woken turn and the panes show, so the words can't be changed under the approval.
  * One saved before the file kept a mode has none there, and hashes as it always did.
  */
-export function approvedHash(t: Pick<TriggerEntry, "agent" | "line" | "expansion" | "again" | "cooldownMs" | "mode">): string {
+export function approvedHash(t: Pick<TriggerEntry, "agent" | "line" | "expansion" | "again" | "cooldownMs" | "mode" | "chain">): string {
   return createHash("sha256")
-    .update(canonicalJson({ agent: t.agent, line: t.line, expansion: t.expansion, again: t.again, cooldownMs: t.cooldownMs ?? null, ...(t.mode !== undefined ? { mode: t.mode } : {}) }))
+    .update(canonicalJson({ agent: t.agent, line: t.line, expansion: t.expansion, again: t.again, cooldownMs: t.cooldownMs ?? null, ...(t.mode !== undefined ? { mode: t.mode } : {}), ...(t.chain !== undefined ? { chain: t.chain } : {}) }))
     .digest("base64url")
 }
 
@@ -230,6 +256,16 @@ export function approvedHashBeforeLine(t: Pick<TriggerEntry, "agent" | "expansio
   return createHash("sha256")
     .update(canonicalJson({ agent: t.agent, expansion: t.expansion, again: t.again, cooldownMs: t.cooldownMs ?? null, ...(t.mode !== undefined ? { mode: t.mode } : {}) }))
     .digest("base64url")
+}
+
+/**
+ * The chain a trigger on a token keeps, where it isn't Solana: taken from the token's address when its card is approved
+ * (the request's edge), and stored, so a read never guesses it again. None for a trigger with no token, or on Solana.
+ */
+export function chainOfTrigger(when: TriggerWhen): { chain?: ChainSlug } {
+  const token = "token" in when ? when.token : undefined
+  const chain = token === undefined ? undefined : requestChain(token)
+  return chain && chain !== "solana" ? { chain } : {}
 }
 
 /** How long a live trigger's line must have gone unread before it's journalled: the wallets' first read at start isn't news. */
@@ -254,7 +290,7 @@ function approvalModes(rows: readonly JournalRow[]): Map<string, Mode> {
 }
 
 // A wallet by its name, said as a wallet: a sentence may start with it, and "Tee-one trades…" read as a person.
-export const theWallet = (name: string) => (name === "embedded" ? "the embedded wallet" : `the wallet ${name}`)
+export const theWallet = (name: string, chain?: ChainSlug) => (name === "embedded" ? (chain !== undefined && chain !== "solana" ? `the embedded wallet on ${chainName(chain)}` : "the embedded wallet") : `the wallet ${name}`)
 
 /**
  * How a trigger's command runs when it fires: on its own (its wallet trades inside limits and the command
@@ -273,7 +309,7 @@ export function runsOf(t: ResolvedTrigger, wallet: (part: { wallet?: string; min
     const w = wallet({ ...(typeof p.args.wallet === "string" ? { wallet: p.args.wallet } : {}), ...(typeof p.args.mint === "string" && p.args.mint !== IT_MINT ? { mint: p.args.mint } : {}) })
     if (!w) return { runs: "unknown", words: "The wallet that pays hasn't been read yet, so whether it runs on its own is said when it fires." }
     shown ??= w
-    const name = theWallet(w.name)
+    const name = theWallet(w.name, w.chain)
     if (w.setting.setting === "ask") {
       return {
         runs: "asks",
@@ -298,7 +334,7 @@ export function runsOf(t: ResolvedTrigger, wallet: (part: { wallet?: string; min
   }
   const w = shown!
   if (w.setting.setting !== "inside") return { runs: "unknown", words: "" }
-  const name = theWallet(w.name)
+  const name = theWallet(w.name, w.chain)
   if (sellsOnly) return { runs: "own", words: `Runs on its own: ${name} trades inside limits, and sells aren't limited. Each firing trades with a receipt.` }
   return {
     runs: "own",
@@ -549,7 +585,7 @@ export class TriggerBook {
       ...(s?.lastFired ? { lastFired: s.lastFired } : {}),
       ...(s?.nextRun ? { nextRun: s.nextRun } : {}),
       ...(readsNow ? { readsNow } : {}),
-      ...(on && !holds ? this.watchInfo?.(t.name) : undefined),
+      ...(on && !holds ? this.withSkips(t.name, cls, this.watchInfo?.(t.name)) : undefined),
       ...this.runsAndPays(t),
       ...(this.expiredCards.get(t.name) ? { expired: this.expiredCards.get(t.name)! } : {}),
     }
@@ -612,7 +648,7 @@ export class TriggerBook {
     }
     const was = this.entry(t.name)
     if (was && !by.replace) throw refused("NAME_TAKEN", `A trigger named "${t.name}" is already saved. Give this one another name with as "<name>", or replace that one.`)
-    const entry: TriggerEntry = { name: t.name, agent: t.agent, line: t.shape.body, expansion: t.expansion, on: true, again: t.again, ...(t.shape.cooldownMs !== undefined ? { cooldownMs: t.shape.cooldownMs } : {}), mode }
+    const entry: TriggerEntry = { name: t.name, agent: t.agent, line: t.shape.body, expansion: t.expansion, on: true, again: t.again, ...(t.shape.cooldownMs !== undefined ? { cooldownMs: t.shape.cooldownMs } : {}), mode, ...chainOfTrigger(t.when) }
     const w = this.deps.file.write({ [t.name]: entry })
     if (!w.ok) throw refused("TRIGGERS_FILE", `${w.message} Nothing was saved.`)
     const at = new Date(this.deps.now()).toISOString()
@@ -650,7 +686,7 @@ export class TriggerBook {
     const t = c.trigger
     // A narrowing never changes paper or live: it stays as it was approved.
     const mode = this.modeOf(was)
-    const entry: TriggerEntry = { name, agent: t.agent, line: t.shape.body, expansion: t.expansion, on: was.on, again: t.again, ...(t.shape.cooldownMs !== undefined ? { cooldownMs: t.shape.cooldownMs } : {}), mode }
+    const entry: TriggerEntry = { name, agent: t.agent, line: t.shape.body, expansion: t.expansion, on: was.on, again: t.again, ...(t.shape.cooldownMs !== undefined ? { cooldownMs: t.shape.cooldownMs } : {}), mode, ...chainOfTrigger(t.when) }
     const w = this.deps.file.write({ [name]: entry })
     if (!w.ok) throw refused("TRIGGERS_FILE", `${w.message} "${name}" is unchanged.`)
     s.approved = approvedHash(entry)
@@ -825,6 +861,24 @@ export class TriggerBook {
     const run = this.firer(t, cause, fireId)
     run.catch(() => {})
     return { fired: true, fireId, run }
+  }
+
+  /**
+   * Tape signals a trigger watched for and didn't act on, gathered by the watcher (a market cap no source it may use
+   * knows): journalled one row per reason a minute at most, so a trigger that never fires says why.
+   */
+  async skipped(t: TriggerEntry, g: { reason: string; count: number; signals: number[]; mints: string[]; words: string }): Promise<void> {
+    await this.deps.journal.append({ type: "trigger.skipped", mode: this.modeOf(t), agent: t.agent, name: t.name, reason: g.reason, count: g.count, signals: g.signals, mints: g.mints, words: g.words })
+    this.deps.onChange()
+  }
+
+  /** A tape trigger's watch words, with its skips over the last day after them, tallied by why. */
+  private withSkips(name: string, cls: TriggerClass, info: WatchInfo | undefined): WatchInfo | undefined {
+    if (cls !== "tape") return info
+    const tally = triggerSkips(this.deps.journal.rows(), name, this.deps.now())
+    if (!tally.total) return info
+    const skipped = `skipped ${tally.total} in the last day: ${tally.by.map((s) => `${s.count} ${s.why}`).join(", ")}`
+    return { ...info, watching: info?.watching ? `${info.watching} · ${skipped}` : skipped }
   }
 
   /** A run the watcher couldn't make (a schedule the machine slept through), or tape rows too old to act on: said, never fired. */
