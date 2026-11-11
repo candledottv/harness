@@ -495,7 +495,8 @@ describe("TEE wallets", () => {
     const rpc = find(checks, "wallet", /TEE trades read the chain over rpc\.example\.test/)!
     expect(rpc.state).toBe("ok")
     expect(rpc.text).not.toContain("secret-path")
-    expect(find(checks, "candle", /^Candle doesn't serve LP yet \(LP_NOT_ENABLED\)/)).toMatchObject({ state: "ok" })
+    expect(find(checks, "candle", /^Candle doesn't serve LP here \(LP_NOT_ENABLED\)/)).toMatchObject({ state: "ok" })
+    expect(find(checks, "candle", /key preset with lp:write, which none has yet/)).toBeDefined()
     expect(find(checks, "candle", /^momentum: .*plan Max \(fee 0\.5%\)/)).toBeDefined()
     // The signer read ran with the agent's own key; the LP read too.
     const runs = readFileSync(join(env.CANDLE_CONFIG_DIR!, "fake-cli-runs.jsonl"), "utf8").trim().split("\n").map((l) => JSON.parse(l))
@@ -621,6 +622,7 @@ describe("TEE wallets", () => {
   test("Candle serving LP is said, so the LP cards can be checked live", async () => {
     const checks = await runDoctor({ env: (await setup({ lpEnabled: true })).env })
     expect(find(checks, "candle", /^Candle serves LP now/)).toMatchObject({ state: "ok" })
+    expect(find(checks, "candle", /wait on a key preset that grants lp:write, which none has yet/)).toBeDefined()
   })
 })
 

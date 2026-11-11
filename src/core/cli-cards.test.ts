@@ -457,7 +457,7 @@ describe("through a running core and the fake candle CLI", () => {
     const s = await setup()
     const lp = await s.call({ command: "lp", subcommand: "add", args: [POOL, "SOL", "--amount", "1", "--wallet", "tee-one"] })
     expect(lp.error).toMatchObject({ code: "NOT_YET" })
-    expect(lp.error.message).toContain("Candle hasn't switched LP on")
+    expect(lp.error.message).toContain("no key preset grants lp:write yet")
     // close-empty: from the embedded wallet never an agent key's. From a TEE wallet it's on.
     const close = await s.call({ command: "wallets", subcommand: "close-empty" })
     expect(close.error).toMatchObject({ code: "NEEDS_TRANSFER_WRITE" })
