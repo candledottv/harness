@@ -957,6 +957,11 @@ describe("one operation at a time on a Hood TEE wallet", () => {
   }
   // The journal writes to a file: a few milliseconds lets each write land.
   const settle = () => Bun.sleep(25)
+  // What must happen next is waited for: on a slow runner the queue's next send can come after a fixed sleep.
+  const until = async (condition: () => boolean, ms = 5000) => {
+    const end = Date.now() + ms
+    while (!condition() && Date.now() < end) await Bun.sleep(5)
+  }
   const filled: Mapped = { state: "succeeded", result: { success: true, status: "executed", signature: "0x01" } }
 
   test("a second trade on a busy Hood TEE wallet waits, written down, and is sent once the first settles; nothing is sent twice", async () => {
@@ -966,6 +971,7 @@ describe("one operation at a time on a Hood TEE wallet", () => {
     await settle()
     const second = await s.ops.execute(hoodCard("op-2"))
     expect(second).toMatchObject({ opId: "op-2", state: "submitting", waitingFor: "op-1" })
+    await until(() => cli.runs.length >= 1)
     expect(cli.runs).toEqual(["op-1"])
     const types = () => s.journal.rows().filter((r) => r.opId === "op-2").map((r) => r.type)
     expect(types()).toEqual(["operation.waiting"])
@@ -975,11 +981,13 @@ describe("one operation at a time on a Hood TEE wallet", () => {
     cli.answer("op-1", filled)
     await first
     await settle()
+    await until(() => cli.runs.length >= 2)
     expect(cli.runs).toEqual(["op-1", "op-2"])
     expect(s.ops.get("op-2")!.waitingFor).toBeUndefined()
     expect(types()).toEqual(["operation.waiting", "operation.submitting"])
     cli.answer("op-2", filled)
     await settle()
+    await until(() => cli.runs.length >= 3)
     expect(cli.runs).toEqual(["op-1", "op-2", "op-3"])
     cli.answer("op-3", filled)
     await settle()
@@ -995,6 +1003,7 @@ describe("one operation at a time on a Hood TEE wallet", () => {
     void s.ops.execute(card("trade", { opId: "op-3", route: "cli", wallet: "TeeFake111111111111111111111111111111111111", chain: "solana" }))
     void s.ops.execute(card("trade", { opId: "op-4", route: "cli", wallet: "TeeFake111111111111111111111111111111111111", chain: "solana" }))
     await settle()
+    await until(() => cli.runs.length >= 4)
     expect(cli.runs).toEqual(["op-1", "op-2", "op-3", "op-4"])
   })
 
@@ -1006,10 +1015,12 @@ describe("one operation at a time on a Hood TEE wallet", () => {
     await s.ops.execute(hoodCard("op-2"))
     cli.answer("op-1", { state: "unknown", reason: "no answer" })
     await settle()
+    await until(() => cli.runs.length >= 1)
     expect(cli.runs).toEqual(["op-1"])
     expect(s.ops.get("op-2")!.waitingFor).toBe("op-1")
     await s.ops.resolve("v1", "op-1", "abandon")
     await settle()
+    await until(() => cli.runs.length >= 2)
     expect(cli.runs).toEqual(["op-1", "op-2"])
   })
 
@@ -1026,6 +1037,7 @@ describe("one operation at a time on a Hood TEE wallet", () => {
     expect(s.ops.get("op-2")!.error!.message).toContain("while it waited for the wallet's last trade, so nothing was sent")
     cli.answer("op-1", filled)
     await settle()
+    await until(() => cli.runs.length >= 1)
     expect(cli.runs).toEqual(["op-1"])
   })
 
@@ -1038,6 +1050,7 @@ describe("one operation at a time on a Hood TEE wallet", () => {
     await s.advance(61_000)
     cli.answer("op-1", filled)
     await settle()
+    await until(() => cli.runs.length >= 1)
     expect(cli.runs).toEqual(["op-1"])
     expect(s.ops.get("op-2")).toMatchObject({ state: "refused", error: { code: "WAITED_TOO_LONG" } })
   })
@@ -1054,6 +1067,7 @@ describe("one operation at a time on a Hood TEE wallet", () => {
     expect(again.get("op-1")!.state).toBe("unknown")
     expect(again.get("op-2")).toMatchObject({ state: "refused", error: { code: "NOT_SENT_RESTART" } })
     await settle()
+    await until(() => cli.runs.length >= 1)
     expect(cli.runs).toEqual(["op-1"])
   })
 
@@ -1069,13 +1083,16 @@ describe("one operation at a time on a Hood TEE wallet", () => {
     await s.ops.execute(hoodCard("op-2"))
     cli.answer("op-1", failedRun())
     await settle()
+    await until(() => s.ops.get("op-1")?.state === "unknown")
     expect(s.ops.get("op-1")).toMatchObject({ state: "unknown", error: { message: expect.stringContaining("may have filled") } })
+    await until(() => cli.runs.length >= 2)
     expect(cli.runs).toEqual(["op-1", "op-2"])
     // A later trade on the wallet doesn't wait for it either.
     cli.answer("op-2", filled)
     await settle()
     void s.ops.execute(hoodCard("op-3"))
     await settle()
+    await until(() => cli.runs.length >= 3)
     expect(cli.runs).toEqual(["op-1", "op-2", "op-3"])
   })
 
@@ -1088,11 +1105,14 @@ describe("one operation at a time on a Hood TEE wallet", () => {
     await s.ops.execute(hoodCard("op-2"))
     cli.answer("op-1", { state: "unknown", reason: "the candle CLI didn't finish in time" })
     await settle()
+    await until(() => cli.runs.length >= 1)
     expect(cli.runs).toEqual(["op-1"])
     job = { found: true, state: jobState(failedJob), job: failedJob }
     await s.advance(5_000)
     await settle()
+    await until(() => s.ops.get("op-1")?.state === "unknown")
     expect(s.ops.get("op-1")!.state).toBe("unknown")
+    await until(() => cli.runs.length >= 2)
     expect(cli.runs).toEqual(["op-1", "op-2"])
   })
 
