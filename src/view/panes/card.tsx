@@ -10,13 +10,14 @@
 // to one line saying what happened; an expired one offers a re-quote and never approves.
 import { ranWithoutCard } from "../../shared/approved-how"
 import { amount, wrap } from "../format"
-import { doneWord, PAPER_CLOSED_WORDS } from "../../core/trade-log"
+import { doneWord, notFollowedFurther, PAPER_CLOSED_WORDS } from "../../core/trade-log"
 import { tookWords } from "../../core/journal-query"
 import { paneNext, paneWords, type ViewCard, type ViewOperation } from "../store"
 import { C, fit, money, shortDuration } from "../theme"
 import { chip, type Line, type Seg } from "./lines"
 import { BACKTEST_DIFFERS_SHORT } from "../../shared/definition-words"
 import { short } from "../../core/wallet-names"
+import { chainName } from "../../shared/chains"
 
 // How a card was approved is shown: an Enter pressed by reflex once approved two cards as they arrived, and
 // nothing said so.
@@ -198,8 +199,10 @@ function openLines(card: ViewCard, opts: { now: number; focused: boolean; width:
     out.push(line)
   }
   // Line 1: the headline, the figures, and the expiry on the right; the figures drop a line when narrow.
-  const first: Seg[] = [{ text: head, fg: C.hi }]
-  const together = head.length + 3 + figures.length + 2 + left.length <= room
+  // Too long for the row, the headline's end (the token's name) is cut: the chain and the countdown stay.
+  const chain = onChain(card)
+  const first: Seg[] = [{ text: fit(head, Math.max(4, room - cells(chain) - 2 - left.length)), fg: C.hi }, ...chain]
+  const together = cells(first) + 3 + figures.length + 2 + left.length <= room
   if (figures && together) first.push({ text: `   ${figures}`, fg: C.dim })
   const pad = Math.max(2, room - cells(first) - left.length)
   out.push(row([...first, { text: " ".repeat(pad), fg: C.ink }, { text: left, fg: C.look }]))
@@ -216,7 +219,14 @@ function openLines(card: ViewCard, opts: { now: number; focused: boolean; width:
   // says whose it is the same way: the bot, never the person, where a short pane drops why.
   const mark = d.trigger ? `⚡ ${d.trigger}` : d.bot && !d.botCard ? `bot ${d.bot}` : undefined
   const tail = (mintShort ? 3 + mintShort.length : 0) + (mark ? mark.length + 4 : 0)
-  if (tail === 0) out.push(row([{ text: fit(who, room), fg: C.dim }]))
+  // A bridge says its route where who pays goes, then how it goes and what it costs: its four lines.
+  if (d.bridge) {
+    // Narrow, both ends stay: the agent's name goes first, then each wallet's kind.
+    const kindless = d.bridge.route.replace(/ · TEE \(/g, " (")
+    const route = [`${card.agent} · ${d.bridge.route}`, d.bridge.route, kindless].find((t) => t.length <= room) ?? kindless
+    out.push(...wrapped(wrap(route, room), (t) => row([{ text: t, fg: C.dim }])))
+    out.push(...wrapped(wrap(d.bridge.via, room), (t) => row([{ text: t, fg: C.dim }])))
+  } else if (tail === 0) out.push(row([{ text: fit(who, room), fg: C.dim }]))
   else {
     // Narrow: "pays from" goes first, then a TEE wallet's own short address (its label stays), before anything is cut.
     const unsaid = who.replace("pays from ", "")
@@ -370,6 +380,16 @@ function folded(card: ViewCard, op: ViewOperation | undefined, expired: boolean,
         return { mark: { text: mark, fg }, state: { text: said ?? state ?? "ended", fg }, detail: approved }
       }
       const gets = card.display.gets ? `≈${amount(card.display.gets.amount)} ${card.display.gets.asset}` : undefined
+      // A bridge on its way says where the funds are; once there, what arrived and how long it took.
+      const bridge = card.display.bridge
+      if (bridge && (state === "pending" || (state === "submitting" && op?.waitingFor === undefined))) {
+        return { mark: { text: "◌", fg: C.ink }, state: { text: state === "pending" ? bridge.arriving : "sending", fg: C.ink }, detail: approved }
+      }
+      if (bridge && state === "succeeded") {
+        const received = (op?.result as { received?: unknown } | undefined)?.received
+        const took = op?.settledAt !== undefined && op.startedAt !== undefined ? ` in ${tookWords(op.settledAt - op.startedAt)}` : ""
+        return { mark: { text: "✓", fg: C.good }, state: { text: `${doneWord(card.kind)}${took}`, fg: C.good }, detail: [typeof received === "string" ? received : gets, approved].filter(Boolean).join(" · ") }
+      }
       // Nothing live was sold, whatever Candle's success says: no "filled", and no sell chip.
       if (state === "succeeded" && (op?.paper || card.operation?.paper)) return { mark: { text: "✕", fg: C.look }, state: { text: PAPER_CLOSED_WORDS, fg: C.look }, detail: approved }
       // A follow, a rule or a stake is done, not filled: "filled" means a position.
@@ -379,7 +399,9 @@ function folded(card: ViewCard, op: ViewOperation | undefined, expired: boolean,
         const sell = ranWithoutCard(card.approvedHow) ? sellLine(card) : undefined
         // Nobody saw a card, so the receipt names the token by its short address, as the card would have.
         const mint = ranWithoutCard(card.approvedHow) && card.kind === "trade" && card.display.mint ? short(card.display.mint) : undefined
-        return { mark: { text: "✓", fg: C.good }, state: { text: `${doneWord(card.kind)}${took}`, fg: C.good }, detail: [gets, mint, approved].filter(Boolean).join(" · "), ...(sell ? { chips: [{ ...chip("sell", "fill"), ref: sell }] } : {}) }
+        // What came back, from Candle's own answer where it says, else the card's estimate.
+        const received = (op?.result as { received?: unknown } | undefined)?.received
+        return { mark: { text: "✓", fg: C.good }, state: { text: `${doneWord(card.kind)}${took}`, fg: C.good }, detail: [typeof received === "string" ? received : gets, mint, approved].filter(Boolean).join(" · "), ...(sell ? { chips: [{ ...chip("sell", "fill"), ref: sell }] } : {}) }
       }
       // A swap whose first leg landed and whose second failed isn't "failed, nothing moved": what it sent left the wallet.
       const partial = op?.partial ?? card.operation?.partial
@@ -392,8 +414,15 @@ function folded(card: ViewCard, op: ViewOperation | undefined, expired: boolean,
         if (ranWithoutCard(card.approvedHow)) return { mark: { text: "✕", fg: C.bad }, state: { text: `${state} · without a card`, fg: C.bad }, ...(op?.error?.message ? { detail: op.error.message } : {}) }
         return { mark: { text: "✕", fg: C.bad }, state: { text: state, fg: C.bad }, detail: [op?.error?.message, approved].filter(Boolean).join(" · ") }
       }
+      // One the core reads no further (a bridge it stopped following, a Hood trade whose job Candle ended) says why and
+      // where to look: nothing is reading it back.
+      if (state === "unknown" && op?.error && notFollowedFurther({ kind: op.kind ?? card.kind, error: op.error, result: op.result })) {
+        return { mark: { text: "?", fg: C.look }, state: { text: "not followed further", fg: C.look }, detail: [op.error.message, approved].join(" · ") }
+      }
       if (state === "unknown") return { mark: { text: "?", fg: C.look }, state: { text: "no answer yet: reading it back", fg: C.look }, detail: approved }
       if (state === "abandoned") return { mark: { text: "–", fg: C.dim }, state: { text: "abandoned: no longer followed", fg: C.dim }, detail: approved }
+      // A Hood TEE wallet runs one trade at a time: this one is approved and goes once the wallet's last settles.
+      if (state === "submitting" && op?.waitingFor !== undefined) return { mark: { text: "◌", fg: C.ink }, state: { text: "waits for the wallet's last trade", fg: C.ink }, detail: approved }
       return { mark: { text: "◌", fg: C.ink }, state: { text: state ?? "sending", fg: C.ink }, detail: approved }
     }
     default:
@@ -433,6 +462,12 @@ function firingLines(card: ViewCard, f: ReturnType<typeof folded>, head: string,
   return out
 }
 
+/** " · on Hood", dim, for a card on a chain other than Solana: it says so on its first line, always. Not a bridge, which crosses both. */
+function onChain(card: ViewCard): Seg[] {
+  if (!card.chain || card.chain === "solana" || card.kind === "bridge") return []
+  return [{ text: ` · on ${chainName(card.chain)}`, fg: C.dim }]
+}
+
 export function cardLines(card: ViewCard, opts: { now: number; focused: boolean; width: number; op?: ViewOperation; maxRows?: number; fitRows?: number; runnable?: ReadonlySet<string>; /** Another pane has the keys, so ⏎ doesn't approve this card yet: only a click does. */ keysElsewhere?: boolean }): Line[] {
   const awaiting = card.state === "awaiting_approval"
   const expired = card.state === "expired" || (awaiting && opts.now >= Date.parse(card.expiresAt))
@@ -445,13 +480,13 @@ export function cardLines(card: ViewCard, opts: { now: number; focused: boolean;
   const out: Line[] = []
   // A long headline keeps its line, and what happened goes under it whole, never cut off (an owner step's words).
   if (5 + head.length + 2 + f.state.text.length + chipCells > opts.width) {
-    out.push({ segs: [{ text: "  ", fg: C.ink }, f.mark, { text: " ", fg: C.ink }, { text: fit(head, Math.max(10, opts.width - 4 - chipCells)), fg: C.hi }, ...chips.flatMap((c) => [{ text: "  ", fg: C.ink }, c])], cardId: card.cardId })
+    out.push({ segs: [{ text: "  ", fg: C.ink }, f.mark, { text: " ", fg: C.ink }, { text: fit(head, Math.max(10, opts.width - 4 - chipCells - cells(onChain(card)))), fg: C.hi }, ...onChain(card), ...chips.flatMap((c) => [{ text: "  ", fg: C.ink }, c])], cardId: card.cardId })
     out.push(...wrapped(wrap(f.state.text, Math.max(10, opts.width - 4)), (t) => ({ segs: [{ text: `    ${t}`, fg: f.state.fg }], cardId: card.cardId })))
     if (f.detail) out.push(...wrapped(wrap(f.detail, Math.max(10, opts.width - 4)), (t) => ({ segs: [{ text: `    ${t}`, fg: C.dim }], cardId: card.cardId })))
-    for (const n of paneNext(opts.op)) out.push({ segs: [{ text: "    next  ", fg: C.dim }, chip(n.label, "fill")], cardId: card.cardId, ref: n.line })
+    for (const n of paneNext(opts.op).filter((s) => "line" in s)) if ("line" in n) out.push({ segs: [{ text: "    next  ", fg: C.dim }, chip(n.label, "fill")], cardId: card.cardId, ref: n.line })
     return out
   }
-  const segs: Seg[] = [{ text: "  ", fg: C.ink }, f.mark, { text: " ", fg: C.ink }, { text: head, fg: C.hi }, { text: "  ", fg: C.ink }, f.state]
+  const segs: Seg[] = [{ text: "  ", fg: C.ink }, f.mark, { text: " ", fg: C.ink }, { text: head, fg: C.hi }, ...onChain(card), { text: "  ", fg: C.ink }, f.state]
   // The detail fills the rest of the line; what doesn't fit wraps under the headline.
   const room = Math.max(0, opts.width - cells(segs) - chipCells)
   const detail = f.detail ? ` · ${f.detail}` : ""
@@ -474,6 +509,6 @@ export function cardLines(card: ViewCard, opts: { now: number; focused: boolean;
   // And that the same name was read here for another token, in amber, as its card would have.
   if (ranWithoutCard(card.approvedHow) && card.display.otherMint) out.push(...wrapped(wrap(card.display.otherMint, Math.max(10, opts.width - 4)), (t) => ({ segs: [{ text: `    ${t}`, fg: C.look }], cardId: card.cardId })))
   // A pane step's next steps: each a chip that puts its command on the input line.
-  for (const n of paneNext(opts.op)) out.push({ segs: [{ text: "    next  ", fg: C.dim }, chip(n.label, "fill")], cardId: card.cardId, ref: n.line })
+  for (const n of paneNext(opts.op).filter((s) => "line" in s)) if ("line" in n) out.push({ segs: [{ text: "    next  ", fg: C.dim }, chip(n.label, "fill")], cardId: card.cardId, ref: n.line })
   return out
 }

@@ -29,13 +29,14 @@ import { ENGINE_IDS, ENGINE_LABELS, type Engine, type EngineId, isEngineId, newe
 import { buildEngines, selfCommand } from "../engine/registry"
 import { recoverHomes } from "../engine/home"
 import { EngineRunner, type RunnerDeps } from "../engine/runner"
+import { BRIDGE_POLL_MS, BRIDGE_TOOL, bridgeFactsOf, landingBalance } from "./bridge"
 import { canonicalToolName, DEFAULT_TOOLS, RUN_EXAMPLE, runOn, runWords, toolAllowed } from "../engine/tools"
 import { harnessEnv } from "../engine/spawn"
 import { isPreset, PRESET_LABELS, PRESETS } from "../engine/preset"
 import { loadPersonSkills, skillsFor, skillTool } from "../engine/skills"
 import { SkillFolders } from "./skill-folders"
 import { SHIPPED, VERSION } from "../version"
-import { BASE_ASSETS, baseAssetForMint, isBaseAsset } from "./assets"
+import { BASE_ASSETS, baseAssetForMint, isBaseAsset, settlementAsset, spentSymbol } from "./assets"
 import { AgentStatusBook, FALLBACK_FEE_BPS } from "./agent-status"
 import { AwayDesk, awayRecords, FILLS_LIMIT as AWAY_FILLS_LIMIT, MINE_PAGE as AWAY_MINE_PAGE, type HoldingsSnapshot } from "./away"
 import { HACC_HOST, type HaccAnswer, HaccClient } from "./hacc"
@@ -44,11 +45,11 @@ import { HACC_TOOLS, haccDataLine, HaccTools, haccToolsFor } from "./hacc-tools"
 import { PlanHeld } from "./plan-held"
 import { PlanState } from "./plan-state"
 import { isGap, SignalStream, type SignalFilter, type SignalRow, signalsTopicFilter } from "./signal-stream"
-import { BUCKETS, type Bucket, Feeds, type FeedsFilter, feedsTopicFilter } from "./feeds"
+import { BUCKETS, type Bucket, type FeedChain, Feeds, type FeedsFilter, feedsTopicFilter } from "./feeds"
 import { RESEARCH_PARTS, type ResearchFilter, type ResearchPart, ResearchReads, researchTopicFilter } from "./research-reads"
-import { AgentWallets, payerContextFrom, portfolioTee, resolvePayer, WALLETS_REFRESH_MS, walletsNote } from "./agent-wallets"
-import { listsEveryTee, onHood, StoppedWallets, stoppedNote } from "./stopped-wallets"
-import { type ChainBalance, PUBLIC_SOLANA_RPC, readChainBalance } from "./chain-balance"
+import { AgentWallets, defaultLineOf, payerContextFrom, pinKey, portfolioTee, resolvePayer, WALLETS_REFRESH_MS, walletsNote } from "./agent-wallets"
+import { listsEveryTee, StoppedWallets, stoppedNote } from "./stopped-wallets"
+import { type ChainBalance, PUBLIC_SOLANA_RPC, readChainBalance, readEvmBalance } from "./chain-balance"
 import { CandleCli } from "./candle-cli"
 import { CandleMcpPool, type ToolOutcome } from "./candle-mcp"
 import { BUDGET_WAIT, CORE_TRADE_REQUESTS, KeyBudget, PLAN_LIMITS, requestsOf } from "./key-budget"
@@ -56,14 +57,14 @@ import { Usage } from "./usage"
 import { ASK_CLIENT, OBSERVER_CLIENTS, READ_ONLY_CLIENTS } from "./client"
 import { CliCards, UploadStage } from "./cli-cards"
 import { CliTool } from "./cli-tool"
-import { Destinations, fromVaultList } from "./destinations"
+import { Destinations, fromVaultList, vaultKeysOn } from "./destinations"
 import { EMPTY_REFRESH_MS, EmptyAccountsBook, PREVIEW_CALLS } from "./empty-accounts"
 import { CliTrades } from "./cli-trade"
 import { type Card, CardBook, type Holding, hashCard } from "./cards"
 import { classify, type Mode, normaliseForMode, unclassifiedTools } from "./classify"
-import { losesNextReply, type Operation, Operations } from "./execute"
+import { bridgeReadRequests, losesNextReply, type Operation, Operations } from "./execute"
 import { Journal, type JournalRow } from "./journal"
-import { Autonomy, AutonomyDesk, type PayWallet } from "./autonomy"
+import { Autonomy, AutonomyDesk, embeddedName, type PayWallet } from "./autonomy"
 import { KillSwitch } from "./kill"
 import { byWalletWithoutCard, DaySpend, KeyHolds, limitLines, Limits } from "./limits"
 import { SymbolBook } from "./symbols"
@@ -71,7 +72,7 @@ import { DefaultPins } from "./default-pins"
 import { Markets } from "./markets"
 import { EngineModels, MODELS_EVERY_MS } from "./engine-models"
 import { EngineState } from "./engine-state"
-import { saveAgent, saveMode, startingAgent, startingMode } from "./mode-state"
+import { readSavedMode, saveAgent, saveMode, startingAgent, startingMode } from "./mode-state"
 import { holdSupport } from "./hold"
 import { researchRun, runTool } from "./research-run"
 import { RESEARCH_TOOLS, researchCall } from "./research-tools"
@@ -82,7 +83,8 @@ import { autonomyNote, LIMITS_TOOL, limitsRead } from "./limits-tool"
 import { PNL_TOOL, pnlCall } from "./pnl-tool"
 import { LONG_INDEX_CHARS, MemoryBook } from "./memory"
 import { parseShown, readSavedShown, saveShown, shownGroup, shownWallets, unknownNames, type WalletsShown } from "./wallets-shown"
-import { heldMints, portfolioSymbol, portfolioView, viewName } from "./portfolio-view"
+import { portfolioSymbol, portfolioView, viewName } from "./portfolio-view"
+import { chainsInUse, decimalsIn, heldMints, holdingFrom } from "./portfolio-wallets"
 import { tokenLabel } from "../shared/token-label"
 import { buildNames, lookupWallet, pairsFile, planRenames, type RenameRow, short, walletName, type WalletKind, type WalletNameEntry } from "./wallet-names"
 import { type GroupDef as GroupDefKept, type GroupOp, planGroupChange, resolveGroups, type WalletGroup } from "./wallet-groups"
@@ -100,12 +102,13 @@ import { enginePathOf, HARNESS_SIGN_INS, harnessSignInArgv } from "../setup/harn
 import { folderProblem, harnessProblem, readBuildPrefs, saveBuildPrefs } from "./build-prefs"
 import { signInTurn } from "../setup/doctor"
 import { type Captured, FACTOR_ARGV, NO_REPORT, NOT_OPENED, type PaneParams, type PaneReport, paneMapped, paneOutcome, type PaneResult, paneTitle, asSentence, STOPPED_FOR_GOOD, SWEPT_AND_RETIRED, vaultListCount } from "./pane-plan"
-import { freshTeeStep, freshTeeStepOf, positionals, rebindLeft } from "./owner-rows"
+import { type Fill, freshTeeStep, freshTeeStepOf, hoodFundSteps, hoodNewKeyOf, hoodWalletStep, positionals, rebindLeft } from "./owner-rows"
 import { rowFor, SOURCE, sourceFor } from "./cli-table"
+import { readChainsKnown, saveChainsKnown } from "./chains-known"
 import { type CallContext, CoreServer, WithSecret } from "./server"
 import { type PaneGrant, PaneTickets } from "./tickets"
 import { historyRequest, SAMPLE_MS, TokenWatch } from "./token-watch"
-import { chainParam, mintParam, placeParam, signalsChoiceParam, tokenPaneParam, ViewState, type ViewsTopic } from "./view-state"
+import { chainFilterParam, chainParam, mintParam, placeParam, signalsChoiceParam, tokenPaneParam, ViewState, type ViewsTopic } from "./view-state"
 import { terminalText } from "../shared/terminal-text"
 import { isPoppable, POPPABLE, TOKEN_PANES } from "../shared/panes"
 import { TokenBook } from "./tokens"
@@ -124,7 +127,7 @@ import { type FireEnd, fireEndSaid, TriggerFirer } from "./trigger-fire"
 import { WAKES_PER_DAY, WAKES_PER_HOUR, Waker } from "./trigger-wake"
 import { partsOfAction } from "../shared/trigger-grammar"
 import { TriggersFileStore } from "./triggers-file"
-import { BotBook, type BotsTopic, routeSlippageBps } from "./bots"
+import { BotBook, type BotsTopic, payChain, routeSlippageBps } from "./bots"
 import { BotPositions } from "./bot-book"
 import { type BotTold, CodeBotDesk } from "./bot-protocol"
 import { HeldExits } from "./held-exits"
@@ -143,6 +146,7 @@ import { cardAnswer, type CardView, type FaceClient, GROUP_WALLETS_TOOL, modeFor
 import { CoreNotifier } from "./notifier"
 import { ViewAsks } from "./view-asks"
 import { clockNote, sessionNote, TradeLog } from "./trade-log"
+import { addressKey, type ChainSlug, chainName, defaultEvmChain, enabledChains, EVM_ADDRESS_SOURCE, familyOfAddress, isAddressOn, isEvmAddress, LOOSE_SOLANA_ADDRESS_SOURCE, maybeChain, requestChain, sameAddress, storedChain } from "../shared/chains"
 
 export const IDLE_EXIT_MS = 60_000
 /**
@@ -218,7 +222,7 @@ export interface CoreOptions {
    */
   notify?: { native?: boolean; spawn?: (argv: string[]) => Promise<{ exitCode: number; stderr: string }>; quietMs?: number }
   /** Tests only: a stopped wallet's balance in place of the chain's (chain-balance.ts). */
-  chainBalance?: (address: string) => Promise<ChainBalance>
+  chainBalance?: (address: string, chain: ChainSlug) => Promise<ChainBalance>
   /**
    * The code bots' supervisor (supervisor.ts). Unset, it runs each approved code bot's command; `false` leaves it off,
    * for tests that connect a bot themselves; figures given replace its own, for tests.
@@ -226,6 +230,8 @@ export interface CoreOptions {
   supervise?: false | Partial<SupervisorTuning>
   /** How long a Build pane's paper test run lasts at most: 30 minutes, shorter in tests. */
   buildTestMs?: number
+  /** How long after a promote finishes the key's wallets are read again when the new one isn't listed yet: 3 s. */
+  promoteReadAgainMs?: number
 }
 
 export { selfCommand }
@@ -359,6 +365,7 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
     for (const key of keys.values()) redactor.add(key)
     // The RPC address often holds a paid key, in its path as often as its query: whole, it's never sent or written.
     redactor.add(config.candle.rpcUrl)
+    redactor.add(config.candle.evmRpcUrl)
     // The CLI's keyring passphrase, passed to every candle run where there's no keychain: never written or shown.
     redactor.add(opts.env.CANDLE_KEYRING_PASSPHRASE)
     const account = await accountId(paths.stateDir)
@@ -564,7 +571,7 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
         if (run.exitCode === 0 && body?.server) return body.server.boundKeyPrefix === apiKeyPrefix(keys.get(agent) ?? "") ? "bound" : "not_on_key"
         return run.exitCode === 1 && body?.code === "TEE_WALLET_NOT_ON_KEY" ? "not_on_key" : "unreadable"
       },
-      defaultWallet: (agent) => config.agents[agent]?.wallet,
+      defaultWallet: (agent, chain) => defaultLineOf(config.agents[agent], chain),
       pins: defaultPins,
       now,
       names: () => nameBook(),
@@ -586,10 +593,16 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
     const staleDefaults = (renamed: readonly { address: string; name: string }[]): string | undefined => {
       const lines: string[] = []
       for (const [agent, a] of Object.entries(config.agents)) {
-        if (a.wallet === undefined) continue
-        const row = renamed.find((r) => r.address === defaultPins.get(agent, a.wallet))
-        if (!row || row.name.toLowerCase() === a.wallet.toLowerCase()) continue
-        lines.push(`${agent}'s default in config.toml (agents.${agent}.wallet = "${terminalText(a.wallet, { maxLength: 64 })}") still pays from it, by its address: change the line to "${terminalText(row.name, { maxLength: 64 })}" when you like.`)
+        // Each line once: the one wallet line, or each chain's.
+        const seen = new Set<string>()
+        for (const { slug } of enabledChains()) {
+          const line = defaultLineOf(a, slug)
+          if (line?.word === undefined || seen.has(line.setting)) continue
+          seen.add(line.setting)
+          const row = renamed.find((r) => sameAddress(r.address, defaultPins.get(pinKey(agent, line, slug), line.word)))
+          if (!row || row.name.toLowerCase() === line.word.toLowerCase()) continue
+          lines.push(`${agent}'s default in config.toml (${line.setting} = "${terminalText(line.word, { maxLength: 64 })}") still pays from it, by its address: change the line to "${terminalText(row.name, { maxLength: 64 })}" when you like.`)
+        }
       }
       return lines.length ? lines.join(" ") : undefined
     }
@@ -606,6 +619,16 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
     // TEE wallets stopped in the pane (a stop is final): Candle drops them from every list, so the core keeps them until they're swept.
     const stoppedWallets = new StoppedWallets({ file: paths.stoppedWallets })
     await stoppedWallets.load()
+    // The chains the account uses: one answer for Candle's lists, the approvals menu and every view (sent with the
+    // portfolio). A read that can't say keeps what the last one said, so a known chain doesn't flicker off with Candle's health.
+    // The last core's answer to start from, so a restart doesn't show one chain until the first read.
+    let chainsKnown: readonly ChainSlug[] = readChainsKnown(paths.chainsUsed)
+    const chainsUsed = (): ChainSlug[] => {
+      const used = chainsInUse(prices.lastPortfolio()?.result, { stopped: stoppedWallets.all(), was: chainsKnown })
+      if (used.join(",") !== chainsKnown.join(",")) void saveChainsKnown(paths.chainsUsed, used, now()).catch(() => {})
+      chainsKnown = used
+      return used
+    }
     // A stopped wallet's balance, read on chain over the CLI's RPC, since no Candle read lists it any more:
     // after a portfolio read, at most every 5 minutes, only while there's a stopped wallet.
     const stoppedBalances = new Map<string, ChainBalance>()
@@ -620,8 +643,19 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
       if (due.length === 0 || (which === balancesFor && now() - balancesReadAt < 5 * 60_000)) return
       balancesReadAt = now()
       balancesFor = which
-      // A Hood wallet is never sent to the Solana RPC: its balance is said as not read.
-      for (const w of due) stoppedBalances.set(w.address, onHood(w.address) ? { error: "Hood balances aren't read yet", readAt: now() } : await (opts.chainBalance?.(w.address) ?? readChainBalance({ url: rpcForReads(), address: w.address, now: now() })))
+      // Each over its own chain's RPC: a Hood wallet is never sent to the Solana RPC. A stopped wallet is kept from before
+      // rows carried a chain, so its address's family says which.
+      for (const w of due) {
+        const chain = maybeChain(storedChain(undefined, w.address))
+        const read =
+          (chain ? opts.chainBalance?.(w.address, chain.slug) : undefined) ??
+          (chain?.family === "evm"
+            ? chain.publicRpcUrl || config.candle.evmRpcUrl
+              ? readEvmBalance({ url: config.candle.evmRpcUrl ?? chain.publicRpcUrl!, address: w.address, now: now() })
+              : Promise.resolve({ error: `no RPC for ${chain.name} is set`, readAt: now() })
+            : readChainBalance({ url: rpcForReads(), address: w.address, now: now() }))
+        stoppedBalances.set(w.address, await read)
+      }
       publishPortfolio?.()
     }
     noteTeeListed = () => {
@@ -632,9 +666,8 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
       // Only a read that lists TEE wallets at all, with a wallet list that wasn't cut off, says which are missing.
       if (!listsEveryTee(body)) return
       const embedded = Array.isArray(body?.embedded) ? (body.embedded as { address?: unknown }[]).find((e) => typeof e?.address === "string")?.address : undefined
-      const listed = portfolioTee(body)
-        .filter((t) => t.chain === "solana")
-        .map((t) => ({ address: t.address, ...(t.label ? { label: t.label } : {}), ...(wallets.boundTo(t.address) ? { agent: wallets.boundTo(t.address)! } : {}) }))
+      // Solana's and Hood's TEE wallets are one list on Candle's side (the account's linked wallets), so walletsComplete covers both.
+      const listed = portfolioTee(body).map((t) => ({ address: t.address, ...(t.label ? { label: t.label } : {}), ...(wallets.boundTo(t.address) ? { agent: wallets.boundTo(t.address)! } : {}) }))
       void stoppedWallets
         .listed(listed, now(), typeof embedded === "string" ? embedded : undefined)
         .then(() => readStoppedBalances())
@@ -694,10 +727,35 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
     })
     /** The wallet a trade pays from: the one it names, else the agent's default; undefined before it's read or when it can't pay. */
     const payWalletOf = (agent: string, wallet: string | undefined, mint: string | undefined) => {
-      const ctx = payerContextFrom(walletsTopic(), agent, mint?.startsWith("0x") ? "hood" : undefined)
+      const ctx = payerContextFrom(walletsTopic(), agent, mint ? requestChain(mint) : undefined)
       const r = ctx ? resolvePayer(ctx, wallet) : undefined
       if (!r?.ok) return undefined
-      return { address: r.address, name: r.kind === "embedded" ? "embedded" : nameOf(r.address, "tee", r.label), setting: autonomy.get(r.address) }
+      return { address: r.address, name: r.kind === "embedded" ? "embedded" : nameOf(r.address, "tee", r.label), ...(ctx ? { chain: ctx.chain } : {}), setting: autonomy.get(r.address) }
+    }
+    /**
+     * A bot's wallet as the payer resolves it on `chain`: a rules bot's definition's. With no chain (a rules bot on
+     * both, or a code bot, which trades any token), on each chain that's on in turn, Solana first, until one pays: a
+     * Hood wallet's on Hood, the embedded wallet's on Solana. When none pays, Solana's refusal.
+     */
+    const botPayer = (agent: string, wallet: string, chain: ChainSlug | undefined) => {
+      let refusal: ReturnType<typeof resolvePayer> | undefined
+      for (const c of chain ? [chain] : enabledChains().map((e) => e.slug)) {
+        const ctx = payerContextFrom(walletsTopic(), agent, c)
+        const r = ctx ? resolvePayer(ctx, wallet) : undefined
+        if (r?.ok) return { ...r, chain: c }
+        refusal ??= r
+      }
+      return refusal
+    }
+    const botPayWallet = (agent: string, wallet: string, chain?: ChainSlug) => {
+      const r = botPayer(agent, wallet, chain)
+      if (!r?.ok) return undefined
+      // The words name the embedded wallet on its chain; the bot's setting keeps "embedded", as it's stored.
+      return { address: r.address, name: r.kind === "embedded" ? "embedded" : nameOf(r.address, "tee", r.label), chain: r.chain, setting: autonomy.get(r.address) }
+    }
+    const botPayRefusal = (agent: string, wallet: string, chain?: ChainSlug) => {
+      const r = botPayer(agent, wallet, chain)
+      return r && !r.ok ? r.message : undefined
     }
     // Keep-awake: caffeinate while a trigger or bot is on, on macOS, when the person has it on.
     const keepAwake = new KeepAwake({
@@ -768,12 +826,8 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
       plan: (agent) => plans.planFor(agent).plan,
       mode: () => mode,
       now,
-      payWallet: (agent, wallet) => payWalletOf(agent, wallet, undefined),
-      payRefusal: (agent, wallet) => {
-        const ctx = payerContextFrom(walletsTopic(), agent, undefined)
-        const r = ctx ? resolvePayer(ctx, wallet) : undefined
-        return r && !r.ok ? r.message : undefined
-      },
+      payWallet: botPayWallet,
+      payRefusal: botPayRefusal,
       openPositions: (name) => botPositions.open(name).length,
       onChange: () => {
         botEntries?.refresh()
@@ -805,16 +859,13 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
       plan: (agent) => plans.planFor(agent).plan,
       mode: () => mode,
       now,
-      payWallet: (agent, wallet) => payWalletOf(agent, wallet, undefined),
-      payRefusal: (agent, wallet) => {
-        const ctx = payerContextFrom(walletsTopic(), agent, undefined)
-        const r = ctx ? resolvePayer(ctx, wallet) : undefined
-        return r && !r.ok ? r.message : undefined
-      },
+      payWallet: botPayWallet,
+      payRefusal: botPayRefusal,
       tokens,
       disconnect: (tokenId) => server?.disconnectToken(tokenId),
       connected: (name) => server?.clients().some((c) => c.role === "bot" && c.bot === name) ?? false,
       runsOutside: (name) => supervisor?.view(name).runs === "outside",
+      processIdle: (name) => ["ended", "down", "gave_up"].includes(supervisor?.view(name).state ?? ""),
       openPositions: (name) => botPositions.open(name).length,
       letGo: async (name) => (codeBotDesk ? codeBotDesk.letGo(name) : []),
       onChange: () => {
@@ -913,7 +964,7 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
     // The prompt pane. Approving a pane card mints a ticket for the
     // approving view, which starts the launcher with it; the launcher's report settles the operation.
     // Nothing a pane runs is ever re-run by the core.
-    const panes = new Map<string, { opId: string; cardId: string; pane: PaneParams["pane"]; approvedAt: number; holders?: string[]; redeemed?: true }>()
+    const panes = new Map<string, { opId: string; cardId: string; pane: PaneParams["pane"]; approvedAt: number; holders?: string[]; teeBefore?: string[]; redeemed?: true }>()
     const settlePane = async (ticketId: string, reported: PaneResult, captured?: Captured): Promise<void> => {
       let result = reported
       const open = panes.get(ticketId)
@@ -923,6 +974,8 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
         const list = fromVaultList({ entries: captured.addresses })
         await destinations.setVaultList(list).catch(() => {})
         const count = vaultListCount(list.filter((d) => d.kind === "vault-key").length, list.filter((d) => d.kind === "tee").length)
+        // The chips that fill in a vault key follow what it now knows.
+        publishPortfolio?.()
         result = { ...result, words: `finished in the pane: the Candle Harness now knows ${count} as places funds may go.` }
       }
       // What the step touched is read before the outcome is told, so the outcome says what's true now.
@@ -945,38 +998,86 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
     /** The vault key a fresh TEE wallet is promoted from and funded by: filled in only when the Candle Harness knows just one. */
     // Every wallet name the Candle Harness knows, so a fresh TEE wallet's label is one no wallet holds.
     const takenNames = (): { taken: string[] } => ({ taken: nameBook().flatMap((e) => (e.name !== undefined ? [e.name] : [])) })
+    // The Solana TEE chip's vault key: filled in when this machine's vault holds exactly one Solana key, whatever EVM keys it has.
     const vaultKeyOf = (): { vaultKey?: string } => {
-      const held = destinations.all().filter((d) => d.kind === "vault-key")
+      const held = vaultKeysOn(destinations.all(), "solana")
       return held.length === 1 ? { vaultKey: held[0]!.label ?? held[0]!.address } : {}
     }
+    /**
+     * The next step to an agent's own Hood TEE wallet, where one can be made and it has none: Hood on, Pro or Max (a TEE
+     * wallet is a linked wallet, which Free has none of), and a key. Nothing is made unless the person sends the line.
+     */
+    const hoodWalletFor = (agent: string): Fill | undefined => {
+      if (!maybeChain("hood")) return undefined
+      const plan = plans.planFor(agent).plan
+      if (plan !== "pro" && plan !== "max") return undefined
+      const prefix = prefixOf(agent)
+      if (!prefix || wallets.teeOnKey(prefix).some((w) => w.chain !== "solana")) return undefined
+      const vault = vaultMark.seen() || destinations.all().some((d) => d.kind === "vault-key")
+      return hoodWalletStep(agent, { prefix, vault, evmKeys: vaultKeysOn(destinations.all(), "evm").map((d) => d.label ?? d.address), ...takenNames() })
+    }
+    // A promote from an EVM vault key that makes the account's first Hood TEE wallet: the vault file moves to version 4.
+    const firstEvmTee = (from: string): boolean => {
+      const key = isEvmAddress(from) ? from : vaultKeysOn(destinations.all(), "evm").find((d) => d.label?.toLowerCase() === from.toLowerCase())?.address
+      if (key === undefined) return false
+      return !wallets.view().account.some((w) => w.chain !== "solana")
+    }
     const valueFlagsOf = (words: string[]) => sourceFor(words[0]!, words[1] ?? null)?.flags?.value ?? []
-    const afterOwner = async (open: { pane: PaneParams["pane"]; approvedAt: number; holders?: string[] }, result: PaneResult, captured?: Captured): Promise<PaneResult> => {
+    const afterOwner = async (open: { pane: PaneParams["pane"]; approvedAt: number; holders?: string[]; teeBefore?: string[] }, result: PaneResult, captured?: Captured): Promise<PaneResult> => {
       const pane = open.pane
       const words = ownerWords(pane)
       if (pane.row === "keys create" && pane.newAgent) return afterKeysCreate(pane.newAgent, words, open.approvedAt, result, captured)
       // Onboarding's sign-in: only its own `auth login` names a profile (the agent can't). Signed in
       // as that profile now, it's recorded as the one the Candle Harness acts as, whatever the CLI's exit said.
       if (pane.row === "auth login" && words.includes("--profile")) return afterSignIn(words[words.indexOf("--profile") + 1] ?? "", result)
-      if (pane.row === "tee disable" && (result.outcome === "finished" || result.outcome === "pending")) return afterStop(words.slice(2).find(isAddress), pane.agent, result)
+      if (pane.row === "tee disable" && (result.outcome === "finished" || result.outcome === "pending")) return afterStop(positionals(words, valueFlagsOf(words)).find(isAddress), pane.agent, result)
       if (pane.row === "tee rename" || pane.row === "vault rename") return afterRename(pane, words, result)
       if (result.outcome !== "finished") return result
       // An owner step that finished may be what setup waits on (the wallet part would stay put after the allow, since
       // nothing read it again): read back and published, so setup moves on by itself.
       const setup = await onboarding.read().catch(() => undefined)
       if (setup && setup.finishedAt === undefined) await publishOnboarding({ fresh: true }).catch(() => {})
-      if (pane.row === "tee sweep") return afterSweep(words.slice(2).find(isAddress), result)
+      // The wallet is the first word that isn't a flag or a flag's value: `--token 0x…` may come before it.
+      if (pane.row === "tee sweep") return afterSweep(positionals(words, valueFlagsOf(words)).find(isAddress), result)
       if (pane.row === "update") return { ...result, words: await afterUpdate() }
       // A vault made here: read, so it's marked and owner steps take the factor from the next card.
       if (pane.row === "vault init" || pane.row === "vault restore") await cliTool.vaultState().catch(() => {})
       if (pane.row === "tee rebind") return afterRebind(open.holders ?? [], result)
+      // A new EVM vault key the Hood chip named for an agent: its promote is next, from that key by its label.
+      const newKey = pane.row === "vault new-key" ? hoodNewKeyOf(words, agentPrefixes()) : undefined
+      if (newKey) {
+        const prefix = prefixOf(newKey.agent)!
+        publishPortfolio?.()
+        return { ...result, next: [hoodWalletStep(newKey.agent, { prefix, vault: true, evmKeys: [newKey.key], ...takenNames() })] }
+      }
       const step = freshTeeStepOf(words, agentPrefixes())
       if (step) {
-        const before = new Set(wallets.teeOnKey(prefixOf(step.agent)!).map((w) => w.address))
-        await wallets.refresh(step.agent).catch(() => {})
-        const onKey = wallets.teeOnKey(prefixOf(step.agent)!)
+        // The key's wallets as they were when the pane was approved: a read while it ran may already list the new one.
+        const before = new Set(open.teeBefore ?? wallets.teeOnKey(prefixOf(step.agent)!).map((w) => w.address))
         // The promoted wallet by its label, else the one wallet new on the key: never a guess, which could fund the wrong one.
-        const fresh = onKey.filter((w) => !before.has(w.address))
-        const tee = onKey.find((w) => step.label !== undefined && w.label?.toLowerCase() === step.label.toLowerCase()) ?? (fresh.length === 1 ? fresh[0] : undefined)
+        const promoted = () => {
+          const onKey = wallets.teeOnKey(prefixOf(step.agent)!)
+          const fresh = onKey.filter((w) => !before.has(w.address))
+          return { onKey, tee: onKey.find((w) => step.label !== undefined && w.label?.toLowerCase() === step.label.toLowerCase()) ?? (fresh.length === 1 ? fresh[0] : undefined) }
+        }
+        // The key's list names a wallet only once the account's portfolio has it too: both read again.
+        const readBoth = () => Promise.all([prices.refresh().catch(() => {}), wallets.refresh(step.agent).catch(() => {})])
+        await readBoth()
+        // Candle may list a wallet a moment after its import: read once more before saying it without its address.
+        if (promoted().tee === undefined) {
+          await Bun.sleep(opts.promoteReadAgainMs ?? 3000)
+          await readBoth()
+        }
+        const { onKey, tee } = promoted()
+        // A Hood wallet (by the wallet found, else by the vault key it came from): funded ETH first.
+        const from = words[words.indexOf("--from") + 1]
+        const evmFrom = from !== undefined && (isEvmAddress(from) || vaultKeysOn(destinations.all(), "evm").some((d) => d.label?.toLowerCase() === from.toLowerCase()))
+        if (tee ? tee.chain !== "solana" : evmFrom) {
+          // The bridge lands only in the key's own wallet on the other chain, from its Solana TEE wallet: offered where it holds one that pays.
+          const solana = onKey.filter((w) => w.chain === "solana" && w.active && !w.cantSign)
+          const solanaTee = solana.length === 1 ? (solana[0]!.label ?? solana[0]!.address) : undefined
+          return { ...result, next: hoodFundSteps(step.agent, { ...(tee ? { address: tee.address } : {}), ...(solanaTee ? { solanaTee } : {}) }) }
+        }
         return { ...result, next: [freshTeeStep(2, step.agent, { prefix: prefixOf(step.agent)!, ...(tee ? { address: tee.address } : {}) })] }
       }
       // A fund or a rebind changes what an agent can pay from: read again now, so the approvals menu and the next card see it.
@@ -1030,8 +1131,35 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
       return { ...result, outcome: "finished", words: `signed in to Candle${signed.account ? ` as ${short(signed.account)}` : ""}: the Candle Harness acts as the profile ${profile} from now on.` }
     }
     /**
+     * Paper the person picked, which a run of setup keeps: a mode saved since (the status bar, `paper`), or
+     * config.toml's own `mode = "paper"`, as an install from before setup ended live wrote it. A fresh install's
+     * config.toml says live, written at sign-in after the core started.
+     */
+    const pickedPaper = (): boolean => {
+      const saved = readSavedMode(paths.modeState)
+      if (saved !== undefined) return saved === "paper"
+      try {
+        return (Bun.TOML.parse(readFileSync(paths.configFile, "utf8")) as { mode?: unknown }).mode === "paper"
+      } catch {
+        return false
+      }
+    }
+    /**
+     * Setup ends in live on a fresh install: past the fund step, funded or not, and Straight in once its key is made.
+     * A run of setup again keeps the mode the person is on. A live trade without funds, or from a key not yet allowed a
+     * wallet, is refused saying what to do. Paper is the person's own pick, from the status bar or `paper`.
+     */
+    const setupGoesLive = async (by: string): Promise<void> => {
+      if (mode === "live" || pickedPaper()) return
+      mode = "live"
+      await saveMode(paths.modeState, mode, now())
+      await j.append({ type: "mode.changed", mode, by })
+      publishStatus?.()
+      void publish("triggers", triggers.view())
+    }
+    /**
      * The agent onboarding asked for: it runs on the engine and model step 2 tested, and Straight
-     * in then opens the Candle Harness on paper. An agent made any other way is left as `keys create` made it.
+     * in then opens the Candle Harness, live on a fresh install (setupGoesLive). An agent made any other way is left as `keys create` made it.
      */
     const afterOnboardingKey = async (agent: string): Promise<void> => {
       const state = await onboarding.read()
@@ -1041,12 +1169,7 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
         await j.append({ type: "engine.chosen", mode, agent, engine: state.engine, model: state.model ?? null, by: "onboarding" })
         publish("engine", engineView())
       }
-      if (state.straightIn && mode !== "paper") {
-        mode = "paper"
-        await saveMode(paths.modeState, mode, now())
-        await j.append({ type: "mode.changed", mode, by: "onboarding" })
-        publishStatus?.()
-      }
+      if (state.straightIn) await setupGoesLive("onboarding")
       await publishOnboarding()
     }
     // Candle's code when setup's last `keys create` made no key, for setup's key step to say what to do; the next try clears it.
@@ -1205,7 +1328,19 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
       cli: (op) => cliTool.execute(op),
       cliRead: (op) => cliTool.readBack(op),
       // A TEE wallet's trade or swap, through the user's own `candle swap`.
-      cliTrades: { execute: (op) => cliTrades.execute(op), read: (op) => cliTrades.read(op) },
+      cliTrades: { execute: (op) => cliTrades.execute(op), read: (op) => cliTrades.read(op), readBridge: (op) => cliTrades.readBridge(op) },
+      // An open bridge's read is through the key that placed it: `candle swap status`, a replay, or a portfolio read.
+      bridgeBudget: (agent, requests) => budget.take("bridges", agent, requests) !== undefined,
+      // An embedded bridge's landing wallet: the account's embedded wallet on the chain of what it brings.
+      bridgeLanding: async (op) => {
+        const facts = bridgeFactsOf(op.params)
+        const family = facts ? maybeChain(BASE_ASSETS[facts.to].chain)?.family : undefined
+        const wallets = status.get(op.agent)?.wallets
+        const address = family === "solana" ? wallets?.solana : family === "evm" ? wallets?.evm : undefined
+        if (!facts || !address) return undefined
+        const outcome = await pool.for(op.agent).call("candle_get_portfolio", {})
+        return outcome.kind === "ok" ? landingBalance(outcome.result, address, facts.to) : undefined
+      },
       // An approved Hacc card: a removal, or a rule's add.
       hacc: { run: (op) => haccChanges.run(op), read: (op) => haccChanges.readBack(op) },
       // The agent's narrowing of a wallet's autonomy, approved: it runs in the core.
@@ -1221,6 +1356,10 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
         return typeof mint === "string" ? botTrades.resendHold(op.agent, mint, op.opId, symbolOf(mint) ?? short(mint)) : undefined
       },
     })
+    // An open bridge is read every 10 s by its key until it ends: six reads a minute each (an embedded one's balance
+    // read is two of Candle's requests), ahead of the panes' reads.
+    const bridgeRequests = () => operations.openBridges().reduce((n, op) => n + bridgeReadRequests(op), 0)
+    budget.want("bridges", { perMin: () => bridgeRequests() * (60_000 / BRIDGE_POLL_MS), floor: bridgeRequests, naturalMs: BRIDGE_POLL_MS, key: () => operations.openBridges()[0]?.agent })
     const symbols = new SymbolBook(paths.symbols)
     const markets = new Markets({ pool: { for: (agent) => ({ call: async (name, args) => noted(name, await pool.for(agent).call(name, args)) }) }, now, learned: (mint, symbol) => symbols.learn(mint, symbol) })
     // Cards are priced when proposed, fresh, or by Candle's quote once the MCP server has it.
@@ -1256,7 +1395,7 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
       sellWarning: (agent, mint) => botTrades.sellWarning(agent, mint, symbolOf(mint) ?? short(mint)),
       autonomy,
       // A name held in a wallet or on an earlier card under another mint: the card and its receipt say so.
-      otherMints: (symbol, mint) => metNames.mintsOf(symbol).filter((m) => m !== mint),
+      otherMints: (symbol, mint) => metNames.mintsOf(symbol).filter((m) => !sameAddress(m, mint)),
       onDropped: (card) => cardOwner.delete(card.cardId),
       paused,
       onValued: () => publishStatus?.(), // the agent's spend today changed
@@ -1287,7 +1426,9 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
           ...(pane.newAgent ? { newAgent: pane.newAgent } : {}),
         }
         const minted = tickets.mint({ cardId: card.cardId, cardHash: card.cardHash, viewClientId, grant })
-        panes.set(minted.ticketId, { opId: card.opId, cardId: card.cardId, pane, approvedAt: now(), ...(pane.row === "tee rebind" ? { holders: rebindHolders(pane) } : {}) })
+        const promoteTo = pane.row === "vault promote" ? freshTeeStepOf(ownerWords(pane), agentPrefixes()) : undefined
+        const teeBefore = promoteTo ? wallets.teeOnKey(prefixOf(promoteTo.agent)!).map((w) => w.address) : undefined
+        panes.set(minted.ticketId, { opId: card.opId, cardId: card.cardId, pane, approvedAt: now(), ...(pane.row === "tee rebind" ? { holders: rebindHolders(pane) } : {}), ...(teeBefore ? { teeBefore } : {}) })
         const operation = await operations.beginPane(card, { ticketId: minted.ticketId })
         return { ...minted, title, operation: { state: operation.state } }
       },
@@ -1301,7 +1442,9 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
         publish("cards", card, card.origin.clientId)
         // The token pane follows a token a card was just proposed on: the person's, when they typed it.
         const mint = card.display.mint ?? card.params.mint
-        if (card.state === "awaiting_approval" && typeof mint === "string") void tokenWatch.follow(mint, "solana", card.origin.role === "view" ? "you" : "agent").catch(() => {})
+        // On the card's own chain, from Candle's market answer; a card with none takes its mint's at the request's edge.
+        const followChain = typeof mint === "string" ? (card.chain ?? requestChain(mint)) : undefined
+        if (card.state === "awaiting_approval" && typeof mint === "string" && followChain) void tokenWatch.follow(mint, followChain, card.origin.role === "view" ? "you" : "agent").catch(() => {})
       },
     })
     // The CLI profile the Candle Harness acts as: config.toml's, or the one onboarding records.
@@ -1310,6 +1453,7 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
       profile: () => candleProfile,
       cliPath: config.candle.cliPath,
       ...(config.candle.rpcUrl ? { rpcUrl: config.candle.rpcUrl } : {}),
+      ...(config.candle.evmRpcUrl ? { evmRpcUrl: config.candle.evmRpcUrl } : {}),
       keyFor: (agent) => keys.get(agent),
       parentEnv: opts.env,
       onRun: (agent, calls) => {
@@ -1351,6 +1495,7 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
       configured: () => new Set(Object.keys(config.agents)),
       maxAgents: MAX_AGENTS,
       agentPrefixes,
+      firstEvmTee: (from) => firstEvmTee(from),
       isTee: (wallet) => [...agentPrefixes().values()].some((prefix) => wallets.teeOnKey(prefix).some((w) => w.address === wallet || w.id === wallet || w.label === wallet)),
       nameOf: (address, label) => nameOf(address, "tee", label),
       // Funds out: where funds may go, and the user's own message this turn, which must ask.
@@ -1377,16 +1522,21 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
     const payWallets = (): { list: PayWallet[]; read: boolean } => {
       const byAddress = new Map<string, PayWallet>()
       let read = true
+      // The embedded EVM wallet joins once the account uses its chain, or once it has a setting: every account has one,
+      // and a Solana-only account's approvals menu stays as it was.
+      const evm = defaultEvmChain()
+      const evmInUse = evm !== undefined && chainsUsed().includes(evm.slug)
       for (const agent of keys.keys()) {
         const payable = wallets.payable(agent)
         if (!status.get(agent) || payable.readAt === undefined) read = false
-        const add = (address: string, name: string, kind: PayWallet["kind"], cantSign?: true) => {
-          const w = byAddress.get(address) ?? { address, name, kind, agents: [], ...(cantSign ? { cantSign } : {}) }
+        const add = (address: string, name: string, kind: PayWallet["kind"], cantSign?: true, chain?: ChainSlug) => {
+          const w = byAddress.get(addressKey(address)) ?? { address, name, kind, agents: [], ...(cantSign ? { cantSign } : {}), ...(chain && chain !== "solana" ? { chain } : {}) }
           if (!w.agents.includes(agent)) w.agents.push(agent)
-          byAddress.set(address, w)
+          byAddress.set(addressKey(address), w)
         }
         if (payable.embedded) add(payable.embedded.address, "embedded", "embedded")
-        for (const t of payable.tee) if (t.chain === "solana" || t.chain === "hood") add(t.address, nameOf(t.address, "tee", t.label), "tee", t.cantSign)
+        if (evm && payable.embeddedEvm && (evmInUse || autonomy.entry(payable.embeddedEvm))) add(payable.embeddedEvm, embeddedName(evm.slug), "embedded", undefined, evm.slug)
+        for (const t of payable.tee) add(t.address, nameOf(t.address, "tee", t.label), "tee", t.cantSign, t.chain)
       }
       return { list: [...byAddress.values()], read }
     }
@@ -1510,7 +1660,7 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
         return { open, closed: totals.closed, realizedUsd: totals.realizedUsd, valued: totals.valued }
       },
       recent: (name) => botRecent(j.botRows(), name, now(), (mint: string) => wordName(mint)),
-      payWallet: (agent, wallet) => payWalletOf(agent, wallet, undefined),
+      payWallet: botPayWallet,
       feeBps: (agent) => status.get(agent)?.feeBps ?? FALLBACK_FEE_BPS,
       sharedWith: botSharedWith,
       ownWallet: (agent) => ownWalletSteps(agent),
@@ -1767,6 +1917,27 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
       },
       now,
       trending: () => feeds.trending(),
+      // Hacc's market read of a Hood token, for its safety fields (Candle's forensics doesn't read Hacc there): the first
+      // agent whose key Hacc answers, as the history's; with no key Hacc's plan admits, it says the check needs Pro.
+      haccMarket: async (chain, address) => {
+        if (!config.hacc.enabled) return { kind: "refused", words: "Hacc is off in this Candle Harness's config" }
+        let refusal: string | undefined
+        let offered = false
+        let keyRefused = false
+        for (const agent of new Set([anyAgent(), ...keys.keys()])) {
+          // Hacc's market read is Pro and Max: a Free key isn't asked, nor one Hacc has refused.
+          if (agent !== undefined && hacc.keyRefused(agent)) keyRefused = true
+          if (agent === undefined || !haccOffered(agent) || plans.planFor(agent).plan === "free") continue
+          offered = true
+          const answer = await hacc.get(agent, `/v1/market/token/${address}`, { chain })
+          if (answer.kind === "ok") return { kind: "ok", body: answer.body }
+          refusal = answer.message
+          if (answer.code !== "HACC_KEY_REFUSED" && answer.code !== "HACC_NO_KEY") break
+        }
+        // A key Hacc refused isn't a plan's limit: said as the history's line says it.
+        if (!offered) return { kind: "refused", words: keyRefused ? "Hacc refused every agent's key" : "Hacc's check needs a Pro or Max plan" }
+        return { kind: "refused", words: refusal ?? "no answer" }
+      },
       publish: (view) => {
         publish("market", view)
         budget.check() // a token linked or pinned changes what the key's budget plans
@@ -1798,6 +1969,7 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
       },
       now,
       stretch: () => budget.stretch("lists"),
+      chains: () => feedChains(),
       wanted: () => {
         const out = new Set<Bucket>()
         for (const f of s.events.filtersOf("feeds")) for (const b of f === null ? BUCKETS : (f as FeedsFilter).buckets) out.add(b)
@@ -1811,6 +1983,23 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
       },
     })
     budget.want("lists", { perMin: () => feeds.demand().perMin, floor: () => feeds.demand().lists, naturalMs: () => feeds.paceMs() })
+    // The chains Candle's lists are read on: the account's, under the chain filter. A chain beside Solana's is read at
+    // half the pace while all chains show; picked, it takes Solana's pace and Solana's stop. One chain in use: Solana's.
+    function feedChains(): FeedChain[] {
+      const used = chainsUsed()
+      if (used.length < 2) return [{ chain: "solana" }]
+      const picked = viewState.chain()
+      if (picked && used.includes(picked)) return [{ chain: picked }]
+      return used.map((chain) => (chain === "solana" ? { chain } : { chain, slow: true }))
+    }
+    let feedChainsWere = ""
+    /** Candle's lists plan again when the chains they're read on change. */
+    const replanFeeds = () => {
+      const now = JSON.stringify(feedChains())
+      if (now === feedChainsWere) return
+      feedChainsWere = now
+      feeds.poke()
+    }
     // Research, one token in depth: Hacc's reads of the linked token while a view's `research`
     // subscription names a pane, each at most once a minute for each token, with the first agent Hacc is
     // offered to; and Candle's check, the token pane's own, read again every 5 minutes while Check shows.
@@ -1851,9 +2040,9 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
     })
     pokeResearch = () => research.poke()
     // The pins and the person's last pick: kept by the core, so every view shows the same.
-    const viewState = new ViewState({ path: paths.pinsState, signalsPath: paths.signalsFilters, now })
+    const viewState = new ViewState({ path: paths.pinsState, signalsPath: paths.signalsFilters, chainPath: paths.chainFilter, now })
     let lastLink = ""
-    const viewsNow = (): ViewsTopic => ({ link: tokenWatch.view().followed, pins: viewState.pins(), signals: viewState.signals(), popped: viewState.popped() })
+    const viewsNow = (): ViewsTopic => ({ link: tokenWatch.view().followed, pins: viewState.pins(), signals: viewState.signals(), popped: viewState.popped(), chain: viewState.chain() })
     const publishViews = () => publish("views", viewsNow())
     tokenWatch.setPinned(viewState.pins())
     // The plan is the account's: any agent's status read says it.
@@ -1868,7 +2057,7 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
         agents: Object.keys(config.agents).map((name) => {
           const st = status.get(name)
           const key = keys.get(name)
-          return { name, ...(st?.wallets.solana ? { wallet: st.wallets.solana } : {}), ...(st ? { embeddedWallet: st.embeddedWallet } : {}), ...(key ? { prefix: apiKeyPrefix(key) } : {}) }
+          return { name, ...(st?.wallets.solana ? { wallet: st.wallets.solana } : {}), ...(st?.wallets.evm ? { evmWallet: st.wallets.evm } : {}), ...(st ? { embeddedWallet: st.embeddedWallet } : {}), ...(key ? { prefix: apiKeyPrefix(key) } : {}) }
         }),
         buyers: (mint) => tradeLog.buyers(mint),
         paper: tradeLog.paper(),
@@ -1876,6 +2065,7 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
         stopped: stoppedWallets.all(),
         stoppedBalance: (address) => stoppedBalances.get(address),
         names: nameBook(),
+        chains: chainsUsed(),
         ...(accountTier() ? { tier: accountTier()! } : {}),
         ...(prices.lastFailure() ? { failed: prices.lastFailure()! } : {}),
       })
@@ -1965,7 +2155,7 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
       // null (shown "—") before any sample in it, never 0. Always live: paper P&L is the P&L tab's.
       exposureUsd: (() => {
         const read = prices.lastPortfolio()
-        return read ? exposureUsd(walletStanding(read.result, latest, [...keys.keys()], (a) => [status.get(a)?.wallets.solana])) : null
+        return read ? exposureUsd(walletStanding(read.result, latest, [...keys.keys()], (a) => [status.get(a)?.wallets.solana], undefined, chainsUsed())) : null
       })(),
       pnl: pnlFigure(),
     })
@@ -2146,7 +2336,7 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
         const held = botExits?.heldSells(b.name) ?? []
         const shared = b.mode === "live" ? botSharedWith(b.agent, b.wallet, b.name) : []
         // The way to a wallet of its own, as its card offered it: where the wallet is shared or asks every time.
-        const asks = b.mode === "live" && payWalletOf(b.agent, b.wallet, undefined)?.setting.setting === "ask"
+        const asks = b.mode === "live" && botPayWallet(b.agent, b.wallet, payChain(b.definition))?.setting.setting === "ask"
         const own = b.mode === "live" && b.state !== "stopped" && (shared.length > 0 || asks) ? ownWalletSteps(b.agent) : []
         return { ...b, ...(held.length ? { sellsHeld: held } : {}), ...(shared.length ? { sharedWith: shared } : {}), ...(own.length ? { ownWallet: own } : {}) }
       })
@@ -2194,7 +2384,7 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
     for (const row of j.rows()) triggers.noteRow(row, { quiet: true })
     j.onAppend((row) => triggers.noteRow(row))
     // What a fill filled, for `on fill` triggers: a trade's or swap's agent and the tokens it named (its argv on the CLI route).
-    const ADDRESS = /^(?:[1-9A-HJ-NP-Za-km-z]{32,44}|0x[0-9a-fA-F]{40})$/
+    const ADDRESS = { test: (word: string) => familyOfAddress(word) !== undefined }
     const fillOf = (row: JournalRow) => {
       const op = typeof row.opId === "string" ? operations.get(row.opId) : undefined
       if (!op || (op.kind !== "trade" && op.kind !== "swap")) return undefined
@@ -2269,6 +2459,8 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
       redactor,
       mode: () => mode,
       agents: () => new Set(keys.keys()),
+      // The account's own wallets: embedded, TEE, linked and the vault's keys; not an address only pinned or named.
+      ownEvm: (key) => nameBook().some((e) => e.kind !== "other" && addressKey(e.address) === key),
       tokens,
       disconnectToken: (tokenId) => s.disconnectToken(tokenId),
       publish: (event) => {
@@ -2319,7 +2511,7 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
       session: (agent) =>
         [
           clockNote(now()),
-          sessionNote(tradeLog.sessionTrades(), tradeLog.paper(), { leftOut: tradeLog.sessionLeftOut(), wallets: [walletsNote(wallets.view(), agent), stoppedNote(stoppedWallets.all(), agent), autonomyNote(agentAutonomy(agent).wallets, agent, mode)].filter(Boolean).join(" ") || undefined }),
+          sessionNote(tradeLog.sessionTrades(), tradeLog.paper(), { leftOut: tradeLog.sessionLeftOut(), wallets: [walletsNote(wallets.view(), agent, chainsUsed()), stoppedNote(stoppedWallets.all(), agent), autonomyNote(agentAutonomy(agent).wallets, agent, mode)].filter(Boolean).join(" ") || undefined }),
           replayNote(j.rows(), agent, now()),
         ]
           .filter(Boolean)
@@ -2411,13 +2603,17 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
       engine,
       spend,
       limitsFor: (agent) => config.agents[agent]?.limits,
-      // Only a key allowed the embedded wallet stands on it (else the report would list denied agents).
-      walletOf: (agent) => wallets.payable(agent).embedded?.address,
+      // Only a key allowed the embedded wallet stands on it (else the report would list denied agents): Solana's, and the EVM one.
+      walletsOf: (agent) => {
+        const payable = wallets.payable(agent)
+        return [payable.embedded?.address, payable.embeddedEvm]
+      },
       portfolio: () => prices.lastPortfolio(),
+      chains: chainsUsed,
       prices: latest,
       keyPrefix: (agent) => apiKeyPrefix(keys.get(agent) ?? ""),
-      // Hood's too: `candle tee disable <0x address>` stops one as it does a Solana one.
-      teeWallets: (agent) => wallets.payable(agent).tee.filter((w) => w.chain === "solana" || w.chain === "hood"),
+      // Every TEE wallet on the agent's key, either chain: the kill switch's `tee disable <address>` stops a Hood one too.
+      teeWallets: (agent) => wallets.payable(agent).tee,
       nameOf: (address, kind, label) => nameOf(address, kind, label),
       pnl: pnlFigure,
       insideLimits: () => autonomyDesk.inside(),
@@ -2529,9 +2725,14 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
       room: (agent, mint, side, label) => botTrades.room(agent, mint, side, label),
       failed: failedSells,
       send: (trade, client, botMode, reason, check) => botTrades.send(trade, client, botMode, reason, check),
-      holding: (agent, wallet, mint) => {
-        const address = wallet === "embedded" ? payWalletOf(agent, "embedded", undefined)?.address : wallet
+      // "embedded" is the embedded wallet on the position's own chain: a Hood position's is the EVM one.
+      holding: (agent, wallet, mint, chain) => {
+        const address = wallet === "embedded" ? botPayWallet(agent, "embedded", chain)?.address : wallet
         return address ? holdingNow(agent, address, mint) : Promise.resolve("unreadable" as const)
+      },
+      wrongChain: (agent, wallet, chain) => {
+        const r = botPayer(agent, wallet, chain)
+        return r && !r.ok && r.code === "WRONG_CHAIN" ? r.message : undefined
       },
       decimalsOf: (mint) => decimalsIn(prices.lastPortfolio()?.result, mint) ?? triggerWatch?.latest(mint)?.decimals,
       byAmount: (wallet, mint) => wallet !== "embedded" || triggerWatch?.latest(mint)?.decimals !== undefined,
@@ -2580,12 +2781,38 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
         return outcome
       },
       hacc: (agent, route, query) => (config.hacc.enabled ? hacc.get(agent, route, query) : Promise.resolve({ kind: "refused", code: "HACC_NO_KEY", message: "Hacc is off in this Candle Harness's config ([hacc] enabled = false).", ms: 0 })),
-      solUsd: (agent, wallet) => {
-        const address = wallet === "embedded" ? payWalletOf(agent, "embedded", undefined)?.address : wallet
-        const usd = portfolioNow().wallets.find((w) => w.address === address)?.sol?.usd
-        return typeof usd === "number" ? usd : undefined
+      spendable: (agent, wallet, chain, market) => {
+        // "embedded" is the embedded wallet on the token's chain: the EVM one for a Hood token.
+        const ctx = wallet === "embedded" ? payerContextFrom(walletsTopic(), agent, chain) : undefined
+        const payer = ctx ? resolvePayer(ctx, "embedded") : undefined
+        const address = wallet === "embedded" ? (payer?.ok ? payer.address : undefined) : wallet
+        const w = address === undefined ? undefined : portfolioNow().wallets.find((x) => sameAddress(x.address, address))
+        // A wallet on another chain holds nothing a buy here spends; the trade's own payer check refuses it.
+        if (!w || w.chain !== chain) return undefined
+        const entry = maybeChain(chain)
+        // The asset a bot's dollar buy spends, as sizing.ts settles it: a Candle-launched token's own pair asset; else
+        // the configured spend asset on Solana, the native asset elsewhere.
+        const settled = settlementAsset({ chain, ...market }, entry?.family === "solana" && !market.candleLaunched ? config.trade.spendAsset.toLowerCase() : undefined)
+        const asset = "asset" in settled ? settled.asset : undefined
+        if (asset === undefined) return undefined
+        if (asset === entry?.native.symbol) return typeof w.native?.usd === "number" ? { usd: w.native.usd, asset } : undefined
+        // Another asset (USDC as the spend asset): its token row, or none of it where the tokens were read whole.
+        if (w.tokens === null) return undefined
+        const held = w.tokens.find((t) => baseAssetForMint(t.mint) === asset)
+        if (!held) {
+          // A row Candle sent without its amount or decimals (or a list cut short) isn't none of it.
+          const mint = isBaseAsset(asset) ? (BASE_ASSETS[asset].address ?? BASE_ASSETS[asset].priceKey) : undefined
+          const read = prices.lastPortfolio()?.result
+          return mint !== undefined && read !== undefined && holdingFrom(read, w.address, mint) === "unreadable" ? undefined : { usd: 0, asset }
+        }
+        return held.usd === null ? undefined : { usd: held.usd, asset }
       },
       feeBps: (agent) => status.get(agent)?.feeBps ?? FALLBACK_FEE_BPS,
+      // The payer's own words, only where it says the wallet is on another chain: an unread wallet isn't skipped here.
+      wrongChain: (agent, wallet, chain) => {
+        const r = botPayer(agent, wallet, chain)
+        return r && !r.ok && r.code === "WRONG_CHAIN" ? r.message : undefined
+      },
       paused: () => killSwitch.paused(),
       send: (trade, client, botMode) => sendAsBot(trade, client, botMode, `the bot "${client.bot?.name ?? ""}" entered on a signal`),
       breaker: { entry: (agent, mint, label) => botTrades.entryRoom(agent, mint, label) },
@@ -2620,9 +2847,10 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
       clock: opts.triggerClock ?? { now },
       mode: () => mode,
       reading: (mint) => triggerWatch?.latest(mint),
-      // A position's wallet is "embedded" or a TEE wallet's address; the portfolio read names the embedded one by its address.
-      holding: (agent, wallet, mint) => {
-        const address = wallet === "embedded" ? payWalletOf(agent, "embedded", undefined)?.address : wallet
+      // A position's wallet is "embedded" or a TEE wallet's address; the portfolio read names the embedded one by its
+      // address, on the position's own chain: a Hood position's is the EVM embedded wallet, never the Solana one.
+      holding: (agent, wallet, mint, chain) => {
+        const address = wallet === "embedded" ? botPayWallet(agent, "embedded", chain)?.address : wallet
         return address ? holdingNow(agent, address, mint) : Promise.resolve("unreadable" as const)
       },
       decimalsOf: (mint) => decimalsIn(prices.lastPortfolio()?.result, mint),
@@ -2682,7 +2910,15 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
         if (!mint) return { ok: false, code: "MCP_VALIDATION", message: "mint is a token's address." }
         const v = tokenWatch.view()
         if (v.followed?.mint !== mint && !v.pinned?.some((p) => p.mint === mint)) {
-          const outcome = await tokenWatch.link(mint, "solana", "agent")
+          // The chain the agent names wins; with none, its address's family's (the request's edge).
+          let chain: ChainSlug | undefined
+          try {
+            chain = requestChain(mint, args.chain)
+          } catch (e) {
+            return { ok: false, code: "UNKNOWN_CHAIN", message: (e as Error).message }
+          }
+          if (!chain || !isAddressOn(chain, mint)) return { ok: false, code: "MCP_VALIDATION", message: chain ? `That address isn't one on ${chainName(chain)}.` : "mint is a token's address." }
+          const outcome = await tokenWatch.link(mint, chain, "agent")
           if (outcome === "base") return { ok: false, code: "BASE_ASSET", message: "That's what trades spend, so a token pane doesn't follow it." }
           if (outcome === "no-market") return { ok: false, code: "NO_MARKET", message: "Candle has no market for that token, so it can't be pinned." }
         }
@@ -2704,6 +2940,7 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
       publish("portfolio", portfolioNow())
       publish("wallets", walletsTopic())
       publish("autonomy", autonomyDesk.view())
+      replanFeeds()
     }
 
     // Naming wallets: one name per wallet, kept where it's owned. The whole ask is checked first (planRenames). The Candle Harness's own
@@ -2712,8 +2949,17 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
     // written by the core. Cards, hashes and argv keep naming wallets by address: a name is only looked up.
     let lastNamed: { changeId: string; agent?: string; words: string; rows: { address: string; name: string; was?: string }[]; at: number } | undefined
     let lastGrouped: { changeId: string; agent?: string; words: string; group: string; was?: GroupDefKept; at: number } | undefined
+    // Each agent's Hood chip, where it's offered.
+    const hoodWalletsOffered = (): { hoodWallet?: Record<string, Fill> } => {
+      const offered = [...keys.keys()].flatMap((agent) => {
+        const step = hoodWalletFor(agent)
+        return step ? [[agent, step] as const] : []
+      })
+      return offered.length ? { hoodWallet: Object.fromEntries(offered) } : {}
+    }
     const walletsTopic = () => ({
       ...wallets.view(),
+      ...hoodWalletsOffered(),
       empty: emptyAccounts.view(),
       ...(lastNamed ? { named: { changeId: lastNamed.changeId, words: lastNamed.words, at: lastNamed.at, ...(lastNamed.agent ? { agent: lastNamed.agent } : {}) } } : {}),
       ...(lastGrouped ? { grouped: { changeId: lastGrouped.changeId, words: lastGrouped.words, at: lastGrouped.at, ...(lastGrouped.agent ? { agent: lastGrouped.agent } : {}) } } : {}),
@@ -2928,6 +3174,7 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
       const all = [
         ...withOwnPrefix(withReason(offeredTools(pool.for(call.agent).tools())), apiKeyPrefix(keys.get(call.agent) ?? "")),
         cliTool.definition(),
+        BRIDGE_TOOL,
         SHOW_WALLETS_TOOL,
         NAME_WALLETS_TOOL,
         GROUP_WALLETS_TOOL,
@@ -2950,11 +3197,16 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
       refuseHidden(call, name)
       const result = await face.call(faceClient(call), name, params.args ?? {}, typeof params.reason === "string" ? params.reason : undefined)
       // The token pane follows a token the agent just asked Candle about, once Candle answered, or a
-      // Solana token it read on Hacc, which names it `address` (without it, a Quant turn reading only Hacc
-      // left the pane on the trending list). Hood tokens aren't followed yet.
+      // token it read on Hacc, which names it `address` (without it, a Quant turn reading only Hacc
+      // left the pane on the trending list), on the chain the call named, else its address's family's.
       const args = params.args as { mint?: unknown; address?: unknown; chain?: unknown } | undefined
-      const mint = args?.mint ?? (params.name === "hacc_token" && args?.chain !== "hood" ? args?.address : undefined)
-      if (typeof mint === "string" && !(result as { isError?: boolean }).isError) void tokenWatch.follow(mint).catch(() => {})
+      const mint = args?.mint ?? (params.name === "hacc_token" ? args?.address : undefined)
+      let readChain: ChainSlug | undefined
+      try {
+        readChain = typeof mint === "string" ? requestChain(mint, args?.chain) : undefined
+      } catch {}
+      // An address named for a chain it can't be on (a Solana mint called Hood's) is followed nowhere.
+      if (typeof mint === "string" && readChain && isAddressOn(readChain, mint) && !(result as { isError?: boolean }).isError) void tokenWatch.follow(mint, readChain).catch(() => {})
       return result
     })
     // The main view's alone, by what each connection said at hello and can't change: approving a card, a typed
@@ -3113,6 +3365,7 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
         ...(plan ? { plan } : {}),
         ...(vault === "present" ? vaultKeyOf() : {}),
         ...(keyRefused && !storedPrefix ? { keyRefused } : {}),
+        ...(mode === "paper" && pickedPaper() ? { keepsPaper: true as const } : {}),
       }
       lastFacts = facts
       const view = onboardingProgress(state, facts)
@@ -3173,6 +3426,7 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
       } else next = applyChange(await onboarding.open(), change, now())
       await onboarding.write(next)
       await j.append({ type: "onboarding.changed", mode, change: Object.keys(change)[0], ...("passed" in change ? { step: change.passed } : {}), by: call.client.clientId })
+      if ("passed" in change && change.passed === "fund") await setupGoesLive(call.client.clientId)
       // A step gone past changes only the person's own marks, so it's answered from what was read last, at once: each
       // read runs the CLI (sign-in, vault, keys), seconds on a slow machine, and the screen would sit still meanwhile.
       // The reads follow, and what they find is published. Setup's end waits for them, since it's marked from them.
@@ -3261,19 +3515,14 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
       publish("onboarding", view)
       return view
     })
-    // Setup's step 3, its last part: "start on paper". Paper needs no funds, so the step is gone past; live is the status
-    // bar's, later. The Candle Harness doesn't steer the first trade.
-    s.handle("onboarding.paper", async (_params, call) => {
-      mainViewOnly(call, "Starting on paper")
-      if (mode !== "paper") {
-        mode = "paper"
-        await saveMode(paths.modeState, mode, now())
-        await j.append({ type: "mode.changed", mode, by: call.client.clientId })
-        publishStatus?.()
-      }
+    // Setup's step 3, its last part: "fund it later". The step is gone past unfunded, and setup still ends live, as
+    // setupGoesLive has it: the first trade without funds is refused saying so. The Candle Harness doesn't steer the first trade.
+    s.handle("onboarding.fundLater", async (_params, call) => {
+      mainViewOnly(call, "Funding it later")
       const next = applyChange(await onboarding.open(), { passed: "fund" }, now())
       await onboarding.write(next)
-      await j.append({ type: "onboarding.changed", mode, change: "passed", step: "fund", paper: true, by: call.client.clientId })
+      await j.append({ type: "onboarding.changed", mode, change: "passed", step: "fund", later: true, by: call.client.clientId })
+      await setupGoesLive(call.client.clientId)
       const view = await onboardingView(next)
       publish("onboarding", view)
       return view
@@ -3535,7 +3784,7 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
     /** A code bot's card, for the person's press: from a Build pane's proposal, or a control its report offered. */
     const proposeCodeCard = (check: ReturnType<typeof codeBots.check>, client: FaceClient, wasMode: "paper" | "live" | undefined, reason?: string) => {
       const input = codeBotCard(check, {
-        pays: payWalletOf(client.agent, check.run.wallet, undefined),
+        pays: botPayWallet(client.agent, check.run.wallet),
         sharedWith: check.run.mode === "live" ? botSharedWith(client.agent, check.run.wallet, check.name) : [],
         ownWallet: ownWalletSteps(client.agent),
         ...(wasMode ? { wasMode } : {}),
@@ -3760,7 +4009,7 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
       const chain = chainParam(params.chain)
       if (!mint || !chain) throw invalidParams('mint is a token\'s address, and chain "solana" or "hood".')
       const outcome = await tokenWatch.link(mint, chain, "you")
-      if (outcome === "base") throw refused("BASE_ASSET", `${baseAssetForMint(mint) ?? "That"} is what trades spend, so the token pane doesn't follow it.`)
+      if (outcome === "base") throw refused("BASE_ASSET", `${spentSymbol(mint, chain) ?? "That"} is what trades spend, so the token pane doesn't follow it.`)
       if (outcome === "no-market") throw refused("NO_MARKET", "Candle has no market for that token, so the token pane stays where it was.")
       if (outcome === "superseded") return { linked: false, superseded: true }
       const v = tokenWatch.view()
@@ -3811,6 +4060,17 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
       if (await viewState.setSignals(choice)) publishViews()
       return { signals: viewState.signals() }
     })
+    // The chain every pane shows, in every view: the person's choice, kept, and journalled as theirs.
+    s.handle("view.chain", async (params, call) => {
+      const read = chainFilterParam(params.chain === undefined ? undefined : params.chain)
+      if ("problem" in read) throw invalidParams(read.problem)
+      if (await viewState.setChain(read.chain)) {
+        publishViews()
+        replanFeeds()
+        await j.append({ type: "view.set", mode, by: call.client.clientId, words: `showed ${read.chain ? chainName(read.chain) : "all chains"} in every pane` })
+      }
+      return { chain: viewState.chain() }
+    })
     // A popped view's pane: held by its connection, so it returns to the tiled views when that goes.
     s.handle("view.pop", async (params, call) => {
       if (!isPoppable(params.pane)) throw invalidParams(`pane is one of ${POPPABLE.join(", ")}: the agent's conversation stays in the main window.`)
@@ -3832,7 +4092,8 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
         wallets: view.wallets.map((w) => ({
           address: w.address,
           name: viewName(w),
-          sol: w.sol?.amount ?? null,
+          sol: w.native?.amount ?? null,
+          ...(w.nativeSymbol !== "SOL" ? { native: w.nativeSymbol } : {}),
           tokens: w.tokens ? w.tokens.map((t) => ({ mint: t.mint, ...(t.symbol ? { symbol: t.symbol } : {}), amount: t.amount })) : null,
         })),
       }
@@ -3998,6 +4259,10 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
           const still = mode === "paper" ? "still real" : "still on paper"
           return { mode, said: other.length === 1 ? `1 ${kind} trigger stays as approved: its trades are ${still}.` : `${other.length} ${kind} triggers stay as approved: their trades are ${still}.` }
         }
+      } else if (readSavedMode(paths.modeState) !== mode) {
+        // The mode the core is already on, picked: saved all the same, so a setup in progress keeps it (setupGoesLive).
+        await saveMode(paths.modeState, mode, now())
+        void publishOnboarding().catch(() => {})
       }
       return { mode }
     })
@@ -4262,6 +4527,8 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
         ...(pane.renews ? { renews: pane.renews } : {}),
         // The profile every `candle` run acts as: the launcher runs it as the core's runs do.
         ...(candleProfile ? { profile: candleProfile } : {}),
+        // The EVM RPC from config, as the core's own runs get it: in the CLI's variable, never on a command line.
+        ...(config.candle.evmRpcUrl ? { evmRpcUrl: config.candle.evmRpcUrl } : {}),
         // The core's own home: the pane's environment drops CANDLE_HARNESS_*, so the launcher can't find it otherwise.
         ...(pane.newAgent ? { newAgent: pane.newAgent, home: paths.configDir } : {}),
       }
@@ -4456,6 +4723,7 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
         await pnlSamples.flush()
         await away.flush()
         await botEntries?.flush().catch(() => {})
+        await triggerWatch?.flushSkips().catch(() => {})
         await j.append({ type: "core.stopped", mode, reason }).catch(() => {})
         await j.close()
         // A core started while this one was stopping may hold the lock, the socket and the view token by now: only ours go.
@@ -4477,36 +4745,6 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
   }
 }
 
-/**
- * What `wallet` holds of `mint`, from a candle_get_portfolio result (the SDK's PortfolioResult): the
- * embedded wallet or a TEE wallet, each listed under its own array.
- */
-/** A token's decimals in a portfolio read, from any wallet that holds it. */
-export function decimalsIn(result: unknown, mint: string): number | undefined {
-  const body = result as { embedded?: unknown; tee?: unknown } | undefined
-  for (const w of [...(Array.isArray(body?.embedded) ? body.embedded : []), ...(Array.isArray(body?.tee) ? body.tee : [])]) {
-    const tokens = (w as { tokens?: unknown }).tokens
-    const t = Array.isArray(tokens) ? (tokens.find((x) => (x as { mint?: unknown }).mint === mint) as { decimals?: unknown } | undefined) : undefined
-    if (typeof t?.decimals === "number" && Number.isInteger(t.decimals) && t.decimals >= 0) return t.decimals
-  }
-  return undefined
-}
-
-export function holdingFrom(result: unknown, wallet: string, mint: string): { amountRaw: bigint; decimals: number } | "none" | "unreadable" {
-  const body = result as { embedded?: unknown; tee?: unknown; hood?: { embedded?: unknown; tee?: unknown } } | undefined
-  if (!Array.isArray(body?.embedded)) return "unreadable"
-  const list = (v: unknown): unknown[] => (Array.isArray(v) ? v : [])
-  // Hood's wallets are under `hood`, never in the Solana arrays, and a 0x address or contract matches in any case.
-  const same = (a: unknown, b: string) => typeof a === "string" && (a === b || (b.startsWith("0x") && a.toLowerCase() === b.toLowerCase()))
-  const entry = [...body.embedded, ...list(body.tee), ...list(body.hood?.embedded), ...list(body.hood?.tee)].find((w) => same((w as { address?: unknown }).address, wallet)) as { tokens?: unknown } | undefined
-  if (!entry) return "none"
-  if (!Array.isArray(entry.tokens)) return "unreadable" // a failed read is null, never zero
-  const token = entry.tokens.find((t) => same((t as { mint?: unknown }).mint, mint)) as { amountRaw?: unknown; decimals?: unknown } | undefined
-  if (!token) return "none"
-  if (typeof token.amountRaw !== "string" || !/^\d+$/.test(token.amountRaw) || typeof token.decimals !== "number") return "unreadable"
-  return { amountRaw: BigInt(token.amountRaw), decimals: token.decimals }
-}
-
 /** A launcher's report, checked for shape: anything else is refused. */
 export function paneReportFrom(params: Record<string, unknown>): PaneReport | undefined {
   const { stage, exit, signal, code, stopped, captured } = params
@@ -4522,8 +4760,9 @@ export function paneReportFrom(params: Record<string, unknown>): PaneReport | un
 
 /** At most this many of `vault list`'s entries are taken back. */
 const MAX_CAPTURED_ADDRESSES = 500
-const isAddress = (word: string) => /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(word)
-const CAPTURED_ADDRESS = /^(0x[0-9a-fA-F]{40}|[0-9A-Za-z]{32,44})$/
+/** A wallet's address on either family's chains: `tee disable` and `tee sweep` take a Hood TEE wallet's `0x` address too. */
+const isAddress = (word: string) => familyOfAddress(word) !== undefined
+const CAPTURED_ADDRESS = new RegExp(`^(${EVM_ADDRESS_SOURCE}|${LOOSE_SOLANA_ADDRESS_SOURCE})$`)
 
 /** `vault list`'s capture: each entry's address, label and role, and nothing else. */
 function capturedAddresses(value: unknown): Captured["addresses"] | undefined {

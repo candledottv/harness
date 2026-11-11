@@ -9,6 +9,7 @@ import type { UiContext } from "./keys"
 import { frameMaxScroll } from "./overlays"
 import { type JournalHeld, type JournalRowsHeld, journalFilter, journalKey, journalRowsLines, type JournalSearch } from "./panes/journal"
 import type { CoreView } from "./store"
+import type { ChainSlug } from "../shared/chains"
 
 /** How long after a key the search goes, so typing a word sends one query, not one a letter. */
 export const SEARCH_SETTLE_MS = 150
@@ -30,13 +31,16 @@ export function useJournal(input: {
   session: Session
   on: boolean
   search: JournalSearch | undefined
+  /** The chain filter, while it's in force: only entries on that chain, and those about no token. */
+  chain?: ChainSlug | undefined
   /** The newest thing the view has heard the core record: a new one reads the first page again. */
   newest: number | undefined
   held: () => JournalHeld | undefined
   got: (held: JournalHeld) => void
 }): { older: () => void } {
   const { session, on, search, newest } = input
-  const key = journalKey(search)
+  const key = `${journalKey(search)}${input.chain ? ` · ${input.chain}` : ""}`
+  const filter = () => ({ ...journalFilter(ref.current.search), ...(ref.current.chain ? { chain: ref.current.chain } : {}) })
   const ref = useRef(input)
   ref.current = input
   const asked = useRef(0)
@@ -50,7 +54,7 @@ export function useJournal(input: {
     // Typing waits a moment; the first read and a refresh for something new go at once.
     const timer = setTimeout(
       () => {
-        session.request<JournalPage>("journal.query", { ...journalFilter(ref.current.search), limit: PAGE_ROWS }).then(
+        session.request<JournalPage>("journal.query", { ...filter(), limit: PAGE_ROWS }).then(
           (page) => {
             if (ask !== asked.current || page.superseded) return
             ref.current.got(mergeFirst(ref.current.held(), page, key))
@@ -74,7 +78,7 @@ export function useJournal(input: {
       if (!held?.more || held.loading) return
       const ask = asked.current
       ref.current.got({ ...held, loading: "older" })
-      session.request<JournalPage>("journal.query", { ...journalFilter(ref.current.search), limit: PAGE_ROWS, before: held.more }).then(
+      session.request<JournalPage>("journal.query", { ...filter(), limit: PAGE_ROWS, before: held.more }).then(
         (page) => {
           const now = ref.current.held()
           if (ask !== asked.current || page.superseded || now?.key !== held.key) return

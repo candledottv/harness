@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test"
-import { applyEvent, EMPTY_VIEW, openCards } from "./store"
+import { applyEvent, EMPTY_VIEW, namesOnTwoChains, openCards } from "./store"
 
 const MOON = "MoonFake11111111111111111111111111111111111"
 const card = (cardId: string, state = "awaiting_approval") => ({
@@ -72,4 +72,19 @@ test("the figure gate's marks come with the final reply and with the conversatio
   expect(v.conversations.momentum![0]!.marked).toEqual(marked)
   const snap = { topic: "agent", seq: 0, snapshot: true, data: { agents: { momentum: { exchanges: [{ turnId: "t", user: "hi", reply: "MOON is $0.0051.", outcome: "done", marked }] } } } }
   expect(applyEvent(EMPTY_VIEW, snap, 0).conversations.momentum![0]!.marked).toEqual(marked)
+})
+
+test("a name seen on two chains isn't traded by name: it leaves the names a line resolves, and is said with both", () => {
+  const HOOD_MOON = "0x00000000000000000000000000000000000b0B01"
+  const MOON2 = "Moon2Fake1111111111111111111111111111111111"
+  const market = (rows: { symbol: string; mint: string }[]) => ({ topic: "market", seq: 1, data: { followed: null, trending: { rows } } })
+  let v = applyEvent(EMPTY_VIEW, market([{ symbol: "MOON", mint: MOON }]) as never, 100)
+  expect(v.knownTokens.get("MOON")).toBe(MOON)
+  // Another Solana MOON: the newest on Solana stands, as it always has.
+  v = applyEvent(v, market([{ symbol: "MOON", mint: MOON2 }]) as never, 200)
+  expect(v.knownTokens.get("MOON")).toBe(MOON2)
+  // A Hood MOON too: neither is traded by name.
+  v = applyEvent(v, market([{ symbol: "MOON", mint: HOOD_MOON }]) as never, 300)
+  expect(v.knownTokens.has("MOON")).toBe(false)
+  expect(namesOnTwoChains(v).get("MOON")).toEqual([{ chain: "Solana", mint: MOON2 }, { chain: "Hood", mint: HOOD_MOON }])
 })

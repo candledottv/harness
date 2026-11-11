@@ -8,12 +8,14 @@
 //     (on the card alone, behind the pane, nobody saw them): a click closes the pane and puts the
 //     command on the input line.
 import { asSentence } from "../../core/pane-plan"
+import type { PaneNextStep } from "../store"
 import { shortAddress } from "../format"
 import type { Rect } from "../layout"
 import { Chip } from "../chip"
 import { EmbeddedTerminal } from "../embedded-terminal"
 import type { PaneProcess } from "../pane-process"
 import { C, fit } from "../theme"
+import { SOLANA_ADDRESS_SOURCE } from "../../shared/chains"
 
 /** One open prompt pane. The ticket isn't kept: it went to the launcher's environment, once. */
 export interface Prompt {
@@ -42,7 +44,7 @@ export function promptFooter(prompt: Prompt, outcome: string | undefined, width:
 
 /** A pane's title as drawn: addresses shortened (the card's hash covers them in full), cut to the border. */
 export function promptTitle(title: string, width: number): string {
-  const short = title.replace(/[1-9A-HJ-NP-Za-km-z]{32,44}/g, (a) => shortAddress(a))
+  const short = title.replace(new RegExp(SOLANA_ADDRESS_SOURCE, "g"), (a) => shortAddress(a))
   return fit(short, Math.max(4, width - 6))
 }
 
@@ -54,10 +56,12 @@ export function CliPrompt(p: {
   rect: Rect
   focused: boolean
   outcome?: string
-  next?: readonly { label: string; line: string }[]
+  next?: readonly PaneNextStep[]
   onInput: (bytes: Uint8Array) => void
   onFocus: () => void
-  onFill?: (line: string) => void
+  onFill?: (line: string, cursor?: number) => void
+  /** A next step that copies a value: a wallet's address. */
+  onCopy?: (text: string) => void
   /** What the footer says while it runs: onboarding's says "back to setup", with no agent to name. */
   running?: string
   /** How it closes, once it has exited: setup's says it offers a step that didn't work again. */
@@ -65,7 +69,10 @@ export function CliPrompt(p: {
 }) {
   const { rect, prompt } = p
   const inner = promptInner(rect)
-  const next = prompt.exited !== undefined && p.onFill ? (p.next ?? []) : []
+  // Whole chips, in order, while they fit beside how to close it and a little of the outcome; one that doesn't is left out, never cut.
+  const offered = prompt.exited !== undefined && p.onFill ? (p.next ?? []) : []
+  const room = rect.w - 2 - CLOSES.length - 4
+  const next = offered.filter((_, i) => i === 0 || offered.slice(0, i + 1).reduce((n, c) => n + c.label.length + 3, 0) <= room)
   const chipCells = next.reduce((n, c) => n + c.label.length + 3, 0)
   const footer = promptFooter(prompt, p.outcome, Math.max(4, rect.w - 2 - chipCells), p.running, p.closes)
   return (
@@ -94,9 +101,9 @@ export function CliPrompt(p: {
         <box height={1} flexDirection="row">
           <text fg={C.ink}>{footer.slice(0, footer.length - CLOSES.length)}</text>
           {next.map((n) => (
-            <box key={n.line} flexDirection="row">
+            <box key={"copy" in n ? `copy-${n.copy}` : n.line} flexDirection="row">
               <text> </text>
-              <Chip label={n.label} onClick={() => p.onFill!(n.line)} />
+              <Chip label={n.label} onClick={() => ("copy" in n ? p.onCopy?.(n.copy) : p.onFill!(n.line, n.cursor))} />
             </box>
           ))}
           <text fg={C.ink}>{CLOSES}</text>

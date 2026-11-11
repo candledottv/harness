@@ -69,6 +69,21 @@ describe("reading a handler's flags", () => {
     expect(flagsOf(src, "stake")).toEqual({ flags: { value: ["--client-stake-id", "--wallet"], boolean: ["--all", "--yes"], path: [], pathPositionals: [] }, unread: [] })
   })
 
+  test("a spec that takes a key prefix as a word, or as a flag's value, says so", () => {
+    const src = cliSource({
+      revoke: `export async function revoke(args: string[], ctx: Ctx): Promise<number> {
+  const parsed = parseArgs(args, { booleanFlags: ["--yes"], keyPrefixPositional: true })
+  return ctx.json
+}`,
+      rebind: `export async function rebind(args: string[], ctx: Ctx): Promise<number> {
+  const parsed = parseArgs(args, { valueFlags: ["--to-key", "--label-prefix"], keyPrefixValueFlags: ["--to-key"] })
+  return ctx.json
+}`,
+    })
+    expect(flagsOf(src, "revoke").flags).toEqual({ value: [], boolean: ["--yes"], path: [], pathPositionals: [], keyPrefixPositional: true })
+    expect(flagsOf(src, "rebind").flags).toEqual({ value: ["--label-prefix", "--to-key"], boolean: [], path: [], pathPositionals: [], keyPrefixValueFlags: ["--to-key"] })
+  })
+
   test("close-empty: a lifted flag and a parse of the rest, in a helper with an object return type", () => {
     const src = cliSource({
       Close: `export function splitKeep(args: string[]): { rest: string[]; keep: string[] } | { error: string } {

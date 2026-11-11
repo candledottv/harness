@@ -89,6 +89,10 @@ export interface Paths {
   signalsCursor: string
   /** Each tab's Signals choice: your rules or Hacc's tape, and its pattern and chain (0600), so a restart keeps them. */
   signalsFilters: string
+  /** The chain filter every view shows. */
+  chainFilter: string
+  /** The chains the account was last known to use (0600), so a core that has just started shows them at once. */
+  chainsUsed: string
   /** Each agent's P&L totals from Candle, a sample a minute at most (0600): the P&L window's start, and the chart. */
   pnlSamples: string
   /** The P&L window last picked, and when the main view was last closed (0600); config.toml's [pnl] window is where a fresh install starts. */
@@ -198,6 +202,8 @@ export function paths(env: Record<string, string | undefined> = process.env): Pa
     defaultPins: join(stateDir, "default-wallets.json"),
     signalsCursor: join(stateDir, "signals.json"),
     signalsFilters: join(stateDir, "signals-filters.json"),
+    chainFilter: join(stateDir, "chain-filter.json"),
+    chainsUsed: join(stateDir, "chains-used.json"),
     pnlSamples: join(stateDir, "pnl.jsonl"),
     pnlWindow: join(stateDir, "pnl-window.json"),
     buildPrefs: join(stateDir, "build.json"),

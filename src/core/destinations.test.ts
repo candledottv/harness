@@ -286,6 +286,11 @@ describe("a funds-out step, prepared", () => {
     expect((prepareFundsOut(["vault", "demote", TEE], ctx({ typed: true })) as { notes: string[] }).notes).toEqual([])
     const batch = prepareFundsOut(["vault", "demote", TEE, "--rpc-url", "https://rpc.example.test", "Tee2Fake11111111111111111111111111111111111"], ctx({ typed: true })) as { ok: true; notes: string[] }
     expect(batch.notes).toEqual(["Demotes 2 TEE wallets, one after another under one unlock and one confirm: each is stopped for good, then swept to its pinned vault."])
+    // --all --empty names no wallet: refused typed or from the agent, whatever the user's words.
+    for (const words of [["vault", "demote", "--all", "--empty"], ["vault", "demote", "--empty", "--all"]]) {
+      expect(prepareFundsOut(words, ctx({ typed: true }))).toMatchObject({ ok: false, code: "NAME_EACH_WALLET" })
+      expect(prepareFundsOut(words, ctx({ asked: "demote all my empty TEE wallets" }))).toMatchObject({ ok: false, code: "NAME_EACH_WALLET" })
+    }
   })
 })
 

@@ -56,7 +56,7 @@ const AGENT = {
   ],
 }
 const AUTONOMY: AutonomyTopic = { wallets: [{ wallet: EMBEDDED, name: "main", kind: "embedded", setting: "ask", usedTodayUsd: 0, agents: ["agent-a"], notes: [] }] } as unknown as AutonomyTopic
-const portfolio = (sol: number) => ({ readAt: CLOCK, wallets: [{ address: EMBEDDED, chain: "solana", kind: "embedded", name: "main", agents: ["agent-a"], active: true, sol: sol ? { amount: sol, usd: sol * 150 } : null, tokens: [] }], readOnly: [], paper: [] })
+const portfolio = (sol: number) => ({ readAt: CLOCK, wallets: [{ address: EMBEDDED, chain: "solana", kind: "embedded", name: "main", agents: ["agent-a"], active: true, nativeSymbol: "SOL", native: sol ? { amount: sol, usd: sol * 150 } : null, tokens: [] }], readOnly: [], paper: [] })
 
 /** A session that answers onboarding's methods as a core would, and keeps what it was asked. */
 class SetupSession extends SceneSession {
@@ -93,7 +93,7 @@ function fakePane(screen: string): PaneProcess {
   return { pid: 4242, write: () => {}, resize: () => {}, onData: (l) => l(bytes), exited: new Promise(() => {}), signal: () => {}, close: () => {} }
 }
 
-async function draw(width: number, height: number, view: OnboardingView, opts: { pane?: string; straightIn?: boolean; agents?: unknown[]; sol?: number } = {}) {
+async function draw(width: number, height: number, view: OnboardingView, opts: { pane?: string; straightIn?: boolean; agents?: unknown[]; sol?: number; unread?: true } = {}) {
   const session = new SetupSession(view)
   const spawnPane = () => fakePane(opts.pane ?? "")
   const s = await testRender(<App session={session} onQuit={() => {}} now={() => CLOCK} tickMs={0} spawnPane={spawnPane} onboarding={{ straightIn: opts.straightIn === true, asked: false }} />, { width, height, exitOnCtrlC: false })
@@ -106,7 +106,7 @@ async function draw(width: number, height: number, view: OnboardingView, opts: {
   await push("status", { agents: opts.agents ?? [], activeAgent: opts.agents?.length ? "agent-a" : "", mode: "paper", setup: !opts.agents?.length, paused: false }, true)
   await push("engine", ENGINES, true)
   await push("autonomy", AUTONOMY, true)
-  await push("portfolio", portfolio(opts.sol ?? 0), true)
+  await push("portfolio", opts.unread ? { ...portfolio(0), readAt: null, wallets: [] } : portfolio(opts.sol ?? 0), true)
   await push("onboarding", view, true)
   await settle(s)
   return { s, session, push }
@@ -296,15 +296,17 @@ test("approvals, as the approvals menu: on ask every time; trade inside limits t
   expect(d.session.requests.filter((r) => r.method === "onboarding.set").map((r) => r.params)).toEqual([{ passed: "approvals" }])
 })
 
-test("fund it, or start on paper: the address with ⧉, a deposit moving it on by itself, or paper", async () => {
+test("fund it, now or later: the address with ⧉, a deposit moving it on by itself, or fund it later; setup ends live either way", async () => {
   const view = () => onboardingProgress(state(["limits", "approvals"], { vaultChoice: "later", agent: { name: "agent-a", askedAt: new Date(CLOCK).toISOString() } }), facts(PAYABLE))
   await each("fund", view, { agents: [AGENT] }, (f) => {
-    expect(f).toContain("Fund main, or start on paper")
+    expect(f).toContain("Fund main")
+    expect(f).not.toContain("paper")
     expect(f).toContain("waiting for a deposit")
+    expect(f).toContain("Fund it later")
   })
   let d = await draw(120, 30, view(), { agents: [AGENT] })
   await press(d.s, "down", "enter")
-  expect(d.session.requests.filter((r) => r.method === "onboarding.paper")).toHaveLength(1)
+  expect(d.session.requests.filter((r) => r.method === "onboarding.fundLater")).toHaveLength(1)
   await act(async () => d.s.dispose())
   setup = undefined
   // A deposit lands on the fake: the step goes on with nothing pressed.
@@ -321,9 +323,39 @@ test("fund it, or start on paper: the address with ⧉, a deposit moving it on b
   await settle(d.s)
   expect(d.session.requests.some((r) => r.method === "onboarding.set")).toBe(false)
   expect(d.s.captureCharFrame()).toContain("✓ 1.75 SOL  funded")
+  // Funded, there's nothing to put off: Continue alone, and the words say live.
+  expect(d.s.captureCharFrame()).not.toContain("Fund it later")
+  expect(d.s.captureCharFrame().replace(/[│\s]+/g, " ")).toContain("The Candle Harness starts live")
   await compare("onboarding-120x30-fund-funded", d.s)
   await press(d.s, "enter")
   expect(d.session.requests.filter((r) => r.method === "onboarding.set").map((r) => r.params)).toEqual([{ passed: "fund" }])
+})
+
+test("before the first portfolio read, the fund step says it's reading the balance, never 0 SOL; a funded wallet then shows funded", async () => {
+  const view = () => onboardingProgress(state(["limits", "approvals"], { vaultChoice: "later", agent: { name: "agent-a", askedAt: new Date(CLOCK).toISOString() } }), facts(PAYABLE))
+  const d = await draw(120, 30, view(), { agents: [AGENT], unread: true })
+  expect(d.s.captureCharFrame()).toContain("reading its balance…")
+  expect(d.s.captureCharFrame()).not.toContain("0 SOL")
+  expect(d.s.captureCharFrame()).not.toContain("waiting for a deposit")
+  await d.push("portfolio", portfolio(0.04))
+  await settle(d.s)
+  expect(d.s.captureCharFrame()).toContain("✓ 0.04 SOL  funded")
+})
+
+test("a run of setup again on paper says it stays on paper, funded or not, and never says live", async () => {
+  const view = () => onboardingProgress(state(["limits", "approvals"], { vaultChoice: "later", agent: { name: "agent-a", askedAt: new Date(CLOCK).toISOString() } }), facts({ ...PAYABLE, keepsPaper: true }))
+  let d = await draw(120, 30, view(), { agents: [AGENT] })
+  let f = d.s.captureCharFrame().replace(/[│\s]+/g, " ")
+  expect(f).toContain("The Candle Harness stays on paper, as you had it: go live from the status")
+  expect(f).not.toContain("live:")
+  await act(async () => d.s.dispose())
+  setup = undefined
+  d = await draw(120, 30, view(), { agents: [AGENT], sol: 1.5 })
+  await d.push("portfolio", portfolio(1.75))
+  await settle(d.s)
+  f = d.s.captureCharFrame().replace(/[│\s]+/g, " ")
+  expect(f).toContain("Funded. The Candle Harness stays on paper, as you had it: go live from the status")
+  expect(f).not.toContain("starts live")
 })
 
 test("Straight in at 80×24: the vault skipped, the key made with no vault, the tour and where to start skipped", async () => {

@@ -12,6 +12,7 @@ import { type LayoutStore, memoryStore } from "../src/view/layouts-store"
 import { KNOWN_TABS, layoutsText, parseLayouts } from "../src/view/layouts-file"
 import type { ThemeStore } from "../src/view/themes"
 import type { BuildSpawner } from "../src/view/build-process"
+import type { PaneSpawner } from "../src/view/pane-process"
 import type { KillReport } from "../src/core/kill"
 import type { EngineTopic } from "../src/view/panes/engines"
 import type { StatusView, ViewCard } from "../src/view/store"
@@ -266,14 +267,14 @@ const portfolio: PortfolioView = {
       chain: "solana",
       kind: "embedded",
       agents: ["agent-a", "agent-b"],
-      sol: { amount: 2.184, usd: 327.6 },
+      nativeSymbol: "SOL", native: { amount: 2.184, usd: 327.6 },
       tokens: [
         { mint: MINT, symbol: "JUPF", amount: 120.5, usd: 51.2, buyers: ["agent-a"] },
         { mint: pad("Trend2"), symbol: "LUMEN", amount: 40_210.33, usd: 12.04, buyers: ["agent-b"] },
         { mint: pad("Trend5"), symbol: "QUILL", amount: 912, usd: 3.3, buyers: ["agent-a"] },
       ],
     },
-    { address: TEE, chain: "solana", kind: "tee", label: "tee-one", agents: ["agent-a"], active: true, sol: { amount: 0.5, usd: 75 }, tokens: [{ mint: pad("Trend0"), symbol: "ORBIT", amount: 18, usd: 4.1, buyers: ["agent-a"] }] },
+    { address: TEE, chain: "solana", kind: "tee", label: "tee-one", agents: ["agent-a"], active: true, nativeSymbol: "SOL", native: { amount: 0.5, usd: 75 }, tokens: [{ mint: pad("Trend0"), symbol: "ORBIT", amount: 18, usd: 4.1, buyers: ["agent-a"] }] },
   ],
   readOnly: [],
   paper: {},
@@ -381,7 +382,7 @@ const freshWallets: WalletsTopic = {
 }
 const freshPortfolio: PortfolioView = {
   readAt: CLOCK - 3_000,
-  wallets: [{ address: EMBEDDED, chain: "solana", kind: "embedded", agents: ["agent-a"], sol: { amount: 0, usd: 0 }, tokens: [] }],
+  wallets: [{ address: EMBEDDED, chain: "solana", kind: "embedded", agents: ["agent-a"], nativeSymbol: "SOL", native: { amount: 0, usd: 0 }, tokens: [] }],
   readOnly: [],
   paper: {},
   deposit: EMBEDDED,
@@ -460,7 +461,7 @@ function signalsExtra(which: "filtered" | "empty" | "empty-failed") {
  * Cockpit, Trending (Candle's four lists, Final Stretch on, off or behind), or Perps (its stub over the
  * short agent pane). `streaming`: a second turn, answering that much so far.
  */
-export async function drawScene(scene: SceneName, width: number, height: number, tab: keyof typeof TAB_AT = "trade", layouts?: LayoutStore, extra: { themes?: ThemeStore; kill?: boolean; streaming?: string; finalStretch?: "on" | "off" | "behind"; signals?: "filtered" | "empty" | "empty-failed"; pnl?: PnlVariant; journal?: "full" | "empty"; research?: ResearchVariant; onPaste?: (text: string) => void; spawnBuild?: BuildSpawner; buildPrefs?: SceneSession["buildPrefs"] } = {}) {
+export async function drawScene(scene: SceneName, width: number, height: number, tab: keyof typeof TAB_AT = "trade", layouts?: LayoutStore, extra: { themes?: ThemeStore; kill?: boolean; streaming?: string; finalStretch?: "on" | "off" | "behind"; signals?: "filtered" | "empty" | "empty-failed"; pnl?: PnlVariant; journal?: "full" | "empty"; research?: ResearchVariant; onPaste?: (text: string) => void; spawnBuild?: BuildSpawner; buildPrefs?: SceneSession["buildPrefs"]; spawnPane?: PaneSpawner } = {}) {
   moved = 0
   const session = new SceneSession()
   if (extra.buildPrefs) session.buildPrefs = extra.buildPrefs
@@ -470,7 +471,7 @@ export async function drawScene(scene: SceneName, width: number, height: number,
   const store = layouts ?? (KNOWN_TABS.some((k) => !k.shown && k.tab.name === TAB_NAMES[tab]) ? tabsShowing(TAB_NAMES[tab]) : undefined)
   const shownAt = parseLayouts(store?.read() ?? "", "layouts.toml").tabs.findIndex((t) => t.name === TAB_NAMES[tab])
   const tabIndex = shownAt >= 0 ? shownAt : TAB_AT[tab]
-  const setup = await testRender(<App session={session} onQuit={() => {}} now={() => CLOCK + moved} tickMs={0} {...(store ? { layouts: store } : {})} {...(extra.themes ? { themes: extra.themes } : {})} {...(extra.onPaste ? { onPaste: extra.onPaste } : {})} {...(extra.spawnBuild ? { spawnBuild: extra.spawnBuild } : {})} />, { width, height, exitOnCtrlC: false })
+  const setup = await testRender(<App session={session} onQuit={() => {}} now={() => CLOCK + moved} tickMs={0} {...(store ? { layouts: store } : {})} {...(extra.themes ? { themes: extra.themes } : {})} {...(extra.onPaste ? { onPaste: extra.onPaste } : {})} {...(extra.spawnBuild ? { spawnBuild: extra.spawnBuild } : {})} {...(extra.spawnPane ? { spawnPane: extra.spawnPane } : {})} />, { width, height, exitOnCtrlC: false })
   const push = async (topic: string, data: unknown, snapshot = false) => {
     await act(async () => session.push(topic, data, snapshot))
     await setup.renderOnce()

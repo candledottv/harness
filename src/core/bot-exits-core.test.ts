@@ -176,3 +176,41 @@ describe("a bot's exit on a real core", () => {
     expect(rows(c.core.journal.rows(), "bot.exit_held")[0]).toMatchObject({ why: "failed_sells" })
   })
 })
+
+describe("a Hood bot's exit on a real core", () => {
+  test("a live Hood bot's stop sells what its book holds in the embedded wallet on Hood, never looking for it in the Solana one", async () => {
+    const TOKEN = "0x00000000000000000000000000000000000b0B21"
+    const held = "1000000000000000000000"
+    const hoodScript = { evmWei: "5000000000000000000", ethUsd: 2_000, evmTokens: [{ mint: TOKEN, amountRaw: held, decimals: 18 }], markets: [{ mint: TOKEN, symbol: "HTOK", priceUsd: 0.002, chain: "hood" }] }
+    const c = await startTestCore({ env: process.env, triggerClock: clock }, { candle: { momentum: hoodScript, swing: hoodScript } })
+    cores.push(c)
+    await until(() => ["pro", "max"].includes(String(c.core.plans.planFor("momentum").plan)))
+    const hood: BotProposal = { name: "hood-conf", definition: { ...definition, chain: "hood" }, run: { agent: "momentum", wallet: "embedded", mode: "live" } }
+    await until(() => {
+      try {
+        c.core.bots.check(hood, "momentum")
+        return true
+      } catch {
+        return false
+      }
+    })
+    await c.core.bots.save(hood, "momentum", { hash: c.core.bots.check(hood, "momentum").hash })
+    // Its entry, as the journal holds a filled buy of the bot's: 1,000 HTOK bought for $2 from the embedded wallet on Hood.
+    const base = { mode: "live" as const, agent: "momentum", cardId: "card_hood1", opId: "op_hood1" }
+    await c.core.journal.append({ type: "card.created", ...base, bot: "hood-conf", botAct: "entry", side: "buy", mint: TOKEN, route: "embedded", chain: "hood" })
+    await c.core.journal.append({ type: "card.approved", ...base, how: "bot-entry", usd: 2 })
+    await c.core.journal.append({ type: "operation.succeeded", ...base, fill: { side: "buy", mint: TOKEN, chain: "hood", wallet: "embedded", asset: "ETH", tokensRaw: held, assetRaw: "1000000000000000", measured: "chain", tokenDecimals: 18 } })
+    await until(() => c.core.botExits.tokens().includes(TOKEN))
+    // The price falls 60%: its 40% stop holds.
+    for (const agent of ["momentum", "swing"]) script(c.p, { markets: [{ mint: TOKEN, symbol: "HTOK", priceUsd: 0.0008, chain: "hood" }] }, agent)
+    await beat(c.core)
+    await until(() => sells(c.p).some((s) => s.args.mint === TOKEN) || rows(c.core.journal.rows(), "bot.position_left").length > 0 || rows(c.core.journal.rows(), "bot.held").length > 0)
+    // A second look a minute on, as the exits read a wallet that seemed empty again before giving the position up.
+    skew += 61_000
+    await beat(c.core)
+    await until(() => sells(c.p).some((s) => s.args.mint === TOKEN) || rows(c.core.journal.rows(), "bot.position_left").length > 0)
+    expect(rows(c.core.journal.rows(), "bot.position_left")).toEqual([])
+    expect(rows(c.core.journal.rows(), "bot.exiting").at(-1)).toMatchObject({ name: "hood-conf", reason: "stop_loss", chain: "hood", wallet: "embedded" })
+    expect(sells(c.p).find((s) => s.args.mint === TOKEN)!.args).toMatchObject({ mint: TOKEN, side: "sell" })
+  }, 30_000)
+})

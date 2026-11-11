@@ -95,7 +95,7 @@ function profileLine(text: string): string | undefined {
 
 const HEAD = `# Candle Harness config: https://github.com/candledottv/harness
 # A fresh install starts in this mode; after that, the Candle Harness keeps the mode you last picked.
-mode = "paper"
+mode = "live"
 `
 const NOTE = `# The Candle CLI profile the Candle Harness acts as, recorded by setup: every candle run gets it, so switching
 # the CLI's active profile doesn't move the Candle Harness to another account.

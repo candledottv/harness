@@ -10,6 +10,28 @@ const ctx = { defaultAgent: "momentum", agents: new Set(["momentum", "swing"]) }
 const resolve = (command: string, subcommand: string | undefined, args: string[] = [], agent?: string) =>
   resolveCall({ command, ...(subcommand ? { subcommand } : {}), args, ...(agent ? { agent } : {}) }, ctx)
 
+describe("a key prefix that starts with \"-\"", () => {
+  // Key prefixes are 8 base64url characters, so about 1 in 32 start with "-"; the CLI reads one as a word where its command takes a prefix.
+  test("is a word, not a flag, where the command takes a prefix, as the CLI reads it", () => {
+    const update = resolve("keys", "update", ["-1Y25FIQ", "--embedded-wallet", "allow"])
+    expect(update.ok && update.call.argv).toEqual(["keys", "update", "-1Y25FIQ", "--embedded-wallet", "allow"])
+    expect(resolve("keys", "revoke", ["-1Y25FIQ"])).toMatchObject({ ok: true })
+    expect(resolve("keys", "wallets", ["set", "-1Y25FIQ", "--wallets", "wal_one"])).toMatchObject({ ok: true })
+  })
+
+  test("only in a prefix's shape, on a command that takes one; a flag the command has stays a flag", () => {
+    expect(resolve("keys", "update", ["-1Y25FIQX", "--embedded-wallet", "allow"])).toMatchObject({ ok: false, code: "FLAG_NOT_ALLOWED" })
+    expect(resolve("keys", "update", ["Abcdefgh", "--embedded-wallet"])).toMatchObject({ ok: false, code: "BAD_ARGS" })
+    expect(resolve("portfolio", undefined, ["-1Y25FIQ"])).toMatchObject({ ok: false, code: "FLAG_NOT_ALLOWED" })
+  })
+
+  test("is a value only after a flag the CLI takes one for: tee rebind's --to-key, never vault promote's", () => {
+    const rebind = resolve("tee", "rebind", ["tee-one", "--to-key", "-1Y25FIQ"])
+    expect(rebind.ok && rebind.call.argv).toEqual(["tee", "rebind", "tee-one", "--to-key", "-1Y25FIQ"])
+    expect(resolve("vault", "promote", ["--from", "cold", "--to-key", "-1Y25FIQ"])).toMatchObject({ ok: false, code: "BAD_ARGS", message: "--to-key needs a value." })
+  })
+})
+
 describe("refusals", () => {
   test("a command or subcommand the table doesn't have", () => {
     expect(resolve("rm", undefined)).toMatchObject({ ok: false, code: "NOT_IN_MAP" })
@@ -357,6 +379,32 @@ describe("candle_cli through the core", () => {
     expect(resolve("wallet", "close-empty")).toMatchObject({ ok: true })
   })
 
+  test("0.13.19: swap --dry-run and transfer status read, by the agent and typed; a swap or transfer without them is unchanged", async () => {
+    const s = await setup()
+    const dry = await s.call({ command: "swap", args: ["SOL", "USDC", "--amount", "0.001", "--wallet", "AgentOne", "--dry-run"] })
+    expect(dry).toMatchObject({ source: "candle", command: "candle swap SOL USDC --amount 0.001 --wallet AgentOne --dry-run --json", exitCode: 0 })
+    expect(s.runs()[0]!.env.CANDLE_API_KEY).toBe(AGENT_KEY)
+    const status = await s.call({ command: "transfer", args: ["status", "tr_fake_1"] })
+    expect(status).toMatchObject({ command: "candle transfer status tr_fake_1 --json", exitCode: 0 })
+    const typed = await s.view.request("cli.run", { argv: ["transfer", "status", "tr_fake_1"] })
+    expect(typed.error).toBeUndefined()
+    expect((await s.view.request("cli.run", { argv: ["swap", "SOL", "USDC", "--amount", "0.001", "--wallet", "AgentOne", "--dry-run"] })).error).toBeUndefined()
+    expect(s.runs().map((r) => r.argv)).toEqual([
+      ["swap", "SOL", "USDC", "--amount", "0.001", "--wallet", "AgentOne", "--dry-run", "--json"],
+      ["transfer", "status", "tr_fake_1", "--json"],
+      ["transfer", "status", "tr_fake_1", "--json"],
+      ["swap", "SOL", "USDC", "--amount", "0.001", "--wallet", "AgentOne", "--dry-run", "--json"],
+    ])
+    // Without --dry-run a swap is still the card path's, typed or from the agent.
+    expect((await s.call({ command: "swap", args: ["SOL", "USDC", "--amount", "0.001", "--wallet", "AgentOne"] })).error.code).toBe("USE_MCP_TOOL")
+    expect((await s.view.request("cli.run", { argv: ["swap", "SOL", "USDC", "--amount", "0.001", "--wallet", "AgentOne"] })).error?.data).toMatchObject({ code: "USE_THE_HARNESS" })
+    // One id only, and the status word first; a transfer itself stays held.
+    expect((await s.call({ command: "transfer", args: ["status", "tr_fake_1", "tr_fake_2"] })).error.code).toBe("BAD_ARGS")
+    expect((await s.call({ command: "transfer", args: ["--amount", "1", "status"] })).error.code).toBe("BAD_ARGS")
+    expect((await s.call({ command: "transfer", args: ["--to", "Fake", "--amount", "1"] })).error).toBeDefined()
+    expect(s.runs().length).toBe(4)
+  })
+
   test("0.13.9: the strategy lab goes to hacc_lab and agent positions to Candle's tool, by the agent and typed; nothing runs", async () => {
     const s = await setup()
     const lab = await s.call({ command: "lab", subcommand: "status" })
@@ -404,6 +452,13 @@ describe("the stranding warning", () => {
     const before = profileReads(s)
     expect((await s.view.request("cards.approve", { cardId: card.cardId, cardHash: card.cardHash })).result).toMatchObject({ kind: "submitted" })
     await until(() => profileReads(s) > before)
+  })
+
+  test("a key whose prefix starts with \"-\" is found as the key revoked, not skipped as a flag", async () => {
+    const dashTee = { ...TEE, boundKeyPrefix: "-Mmentum" }
+    const s = await setup({ keys: { momentum: prefixedKey("-Mmentum"), swing: prefixedKey("Swingkey") }, candle: { momentum: { teeWallets: [dashTee] }, swing: { teeWallets: [dashTee] } } })
+    const answer = await s.call({ command: "keys", subcommand: "revoke", args: ["-Mmentum"] })
+    expect(s.c.core.cards.get(answer.cardId)!.display.warning).toBe(STRANDED)
   })
 
   test("a wallet set that leaves out a TEE wallet the key holds says so; one that keeps it doesn't", async () => {

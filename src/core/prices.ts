@@ -10,6 +10,7 @@
 // valued from the asset it spends, which the portfolio prices; anything unpriced is "no price".
 // (The real market read does carry `priceUsd`, as recorded from Candle's server; `LatestPrices` below uses it for
 // what the panes show.)
+import { addressKey, fixedUsd, maybeChain, tokenPriceKey } from "../shared/chains"
 import type { ToolOutcome } from "./candle-mcp"
 import { refusalWords } from "./feeds"
 
@@ -145,22 +146,30 @@ export class LatestPrices {
 
   constructor(private readonly book: { usd(key: string | undefined): number | undefined; lastPortfolio(): { readAt: number } | undefined }) {}
 
-  /** Notes the price in a candle_get_market answer, if it carries one. */
+  /**
+   * Notes the price in a candle_get_market answer, if it carries one: under the portfolio's key for the token
+   * (`hood:<lowercase>` for an EVM chain's), so a market read and the portfolio's price meet, and under the mint
+   * itself (any case) for what still looks a token up by its mint alone (a paper book).
+   */
   noteMarket(outcome: ToolOutcome, at: number): void {
     if (outcome.kind !== "ok") return
-    const market = (outcome.result as { market?: { mint?: unknown; priceUsd?: unknown } } | undefined)?.market
+    const market = (outcome.result as { market?: { mint?: unknown; priceUsd?: unknown; chain?: unknown } } | undefined)?.market
     const usd = market?.priceUsd
     if (typeof market?.mint !== "string" || typeof usd !== "number" || !Number.isFinite(usd) || usd <= 0) return
-    const held = this.market.get(market.mint)
-    if (!held || held.at <= at) this.market.set(market.mint, { usd, at })
+    const chain = maybeChain(market.chain)
+    for (const key of new Set([...(chain ? [tokenPriceKey(chain, market.mint)] : []), addressKey(market.mint)])) {
+      const held = this.market.get(key)
+      if (!held || held.at <= at) this.market.set(key, { usd, at })
+    }
   }
 
+  /** The newest price under a portfolio price key, or a mint; an asset Candle prices at a fixed figure (USDG) has it with no read. */
   usd(key: string | undefined): number | undefined {
     if (key === undefined) return undefined
-    const read = this.market.get(key)
+    const read = this.market.get(key) ?? this.market.get(addressKey(key))
     const fromBook = this.book.usd(key)
     const bookAt = this.book.lastPortfolio()?.readAt
     if (read && (fromBook === undefined || bookAt === undefined || read.at > bookAt)) return read.usd
-    return fromBook
+    return fromBook ?? fixedUsd(key)
   }
 }

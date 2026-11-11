@@ -178,6 +178,39 @@ test("a clean exit 0 is said as ended on its own and isn't restarted", async () 
   expect(h.sup.view("probe").state).toBe("ended")
 })
 
+test("a bot that ended on its own stays ended across a core restart, until it's started or a new version is approved", async () => {
+  const f = folder()
+  const h = harness({ mode: "end", folder: f })
+  await h.sup.start()
+  await until(() => what(h.rows, "ended").length === 1)
+  await h.sup.stopAll("test")
+  // The next core, from what this one saved: the bot isn't started again by itself.
+  const spec = { folder: f, command: [process.execPath, "bot.ts", "run"], agent: "momentum" }
+  let wanted: Wanted = { start: true, keep: true, spec: h.spec }
+  const next = harness({ state: h.state, folder: f, wanted: () => wanted })
+  await next.sup.start()
+  await Bun.sleep(300)
+  expect(what(next.rows, "started")).toHaveLength(0)
+  expect(next.sup.view("probe")).toMatchObject({ state: "ended" })
+  expect(next.sup.view("probe").words).toMatch(/^ended on its own at \d\d:\d\d \(exit 0\): `candle-harness bots start probe` runs it again$/)
+  // Another command approved: a new version, so it starts.
+  wanted = { start: true, keep: true, spec }
+  await next.sup.reconcile()
+  await until(() => next.sup.view("probe").state === "running")
+})
+
+test("a bot ended on its own and kept ended by the next core runs again when the person starts it", async () => {
+  const h = harness({ mode: "end" })
+  await h.sup.start()
+  await until(() => what(h.rows, "ended").length === 1)
+  await h.sup.stopAll("test")
+  const next = harness({ state: h.state, folder: h.folder, wanted: () => ({ start: true, keep: true, spec: h.spec }) })
+  await next.sup.start()
+  expect(next.sup.view("probe").state).toBe("ended")
+  await next.sup.startByPerson("probe")
+  await until(() => what(next.rows, "started").length === 1)
+})
+
 test("a bot that may no longer run is ended; a new version's folder or command restarts it", async () => {
   let wanted: Wanted | undefined
   const f = folder()

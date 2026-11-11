@@ -9,7 +9,7 @@ import { AGENT_KEY, cleanupHomes, fakeCandle, prefixedKey, startTestCore, type T
 import type { TestClient } from "../../test/core-test-client"
 import { rowFor } from "../core/cli-table"
 import { paths } from "../paths"
-import { candleEnv, captureOf, PANE_SOCKET_ENV, PANE_TICKET_ENV, refusalWords } from "./launcher"
+import { candleEnv, capturedRefusal, captureOf, PANE_SOCKET_ENV, PANE_TICKET_ENV, refusalWords } from "./launcher"
 import { paneEnv } from "../view/pane-process"
 
 const MAIN = join(import.meta.dir, "../main.ts")
@@ -395,6 +395,21 @@ describe("the RPC from config", () => {
     expect(ran.argv).toEqual(["tee", "status", TEE, "--verify"])
     expect(ran.env.CANDLE_SOLANA_RPC_URL).toBe(RPC)
   }, 20_000)
+
+  test("the EVM RPC reaches the pane's candle as CANDLE_EVM_RPC_URL, as the core's own runs get it", async () => {
+    const EVM = "https://hood-rpc.example.test/secret-path-token/"
+    const dir = cliDir({ vault: { missing: true } })
+    const candle = await fakeCandle()
+    const c = await startTestCore({ env: { ...process.env, CANDLE_CONFIG_DIR: dir } }, { config: { candle: { mcp: { route: "cli", path: "candle-mcp" }, cliPath: candle, rpcUrl: undefined, evmRpcUrl: EVM, profile: undefined } } })
+    cores.push(c)
+    const view = await c.view()
+    const opened = await typed(view, ["tee", "status", TEE, "--verify"])
+    const pane = await openPane(c, view, opened, { CANDLE_CONFIG_DIR: dir })
+    await pane.proc.exited
+    const ran = runs(dir).find((r) => r.argv[0] === "tee")!
+    expect(ran.argv).toEqual(["tee", "status", TEE, "--verify"])
+    expect(ran.env.CANDLE_EVM_RPC_URL).toBe(EVM)
+  }, 20_000)
 })
 
 describe("the plan's renewal", () => {
@@ -695,6 +710,14 @@ describe("a capture row's reading", () => {
   test("vault status: its code, and nothing else of the output", async () => {
     expect(await captureOf({ capture: "code" }, JSON.stringify({ ok: false, code: "VAULT_MISSING", path: "/somewhere" }))).toEqual({ code: "VAULT_MISSING" })
     expect(await captureOf({ capture: "code" }, JSON.stringify({ ok: true, path: "/somewhere" }))).toBeUndefined()
+  })
+
+  test("vault status refused: the CLI's own words are said in the pane, so its \"line above\" is there; a working one says nothing", () => {
+    expect(capturedRefusal("code", { ok: false, code: "VAULT_MISSING", message: "No vault at /somewhere/vault.enc.", suggestion: "Run candle vault init." })).toBe("VAULT_MISSING: No vault at /somewhere/vault.enc. Run candle vault init.")
+    expect(capturedRefusal("code", { ok: true, code: "VAULT_OK", path: "/somewhere" })).toBeUndefined()
+    // Other captured rows as before: a refusal is said, a key never is.
+    expect(capturedRefusal("new-key", { ok: false, code: "KEY_LIMIT", message: "This account has 12 active keys." })).toBe("KEY_LIMIT: This account has 12 active keys.")
+    expect(capturedRefusal("new-key", { key: "x", ok: false, code: "ODD" })).toBeUndefined()
   })
 })
 

@@ -480,7 +480,7 @@ export class HaccChanges {
         const paged = pageList(job, REPLAY_PAGES, {})
         return dataAnswer(tool, "run_replay", { ...paged.data, quota: `${used} of Hacc's ${CAPS.replaysPerDay} replays a day from this Candle Harness today` }, {
           rows: [paged.field],
-          leftOut: "A replay is a model of the past: recorded prices, and no competition for the entry. A pass is a reason to paper-trade, not to fund.",
+          leftOut: "A replay is a model of the past: recorded prices, and no competition for the entry. A pass isn't proof it will pay live.",
           more: (kept) => `The totals cover every trade. For the rest of the trades, read view replay, id ${jobId}, offset ${kept}.`,
         })
       }

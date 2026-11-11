@@ -86,3 +86,13 @@ describe("a refused paper trade, in words", () => {
     expect(paperRefusal("no route for this token")).toBe("no route for this token")
   })
 })
+
+test("dollars under one keep the cents, and every figure past them", () => {
+  expect(usd(0.2)).toBe("$0.20")
+  expect(usd(0.5)).toBe("$0.50")
+  expect(usd(-0.3)).toBe("-$0.30")
+  expect(usd(0.595)).toBe("$0.595")
+  expect(usd(0.0000841)).toBe("$0.0000841")
+  expect(usd(0.05)).toBe("$0.05")
+  expect(usd(0.25)).toBe("$0.25")
+})

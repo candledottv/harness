@@ -8,7 +8,7 @@ import { act } from "react"
 import { advanceClock, card as tradeCard, CLOCK, drawScene, EMBEDDED, engineTopic, status } from "../../test/frame-scenes"
 import type { ViewCard } from "./store"
 import type { BuildSpawner } from "./build-process"
-import type { PaneProcess } from "./pane-process"
+import type { PaneProcess, PaneSpawner } from "./pane-process"
 import { memoryStore, type LayoutStore } from "./layouts-store"
 import { KNOWN_TABS, layoutsText } from "./layouts-file"
 
@@ -112,14 +112,14 @@ const ENGINES = {
   },
 }
 
-async function scene(width: number, height: number, prefs = { folder: "~/candle-bots", opened: false, bins: {} as Record<string, string> }, layouts?: LayoutStore) {
+async function scene(width: number, height: number, prefs = { folder: "~/candle-bots", opened: false, bins: {} as Record<string, string> }, layouts?: LayoutStore, spawnPane?: PaneSpawner) {
   const harnesses: FakeHarness[] = []
   const spawnBuild: BuildSpawner = (input) => {
     const h = new FakeHarness(input)
     harnesses.push(h)
     return h
   }
-  const drawn = await drawScene("followed", width, height, "build", layouts, { spawnBuild, buildPrefs: { ...prefs } })
+  const drawn = await drawScene("followed", width, height, "build", layouts, { spawnBuild, buildPrefs: { ...prefs }, ...(spawnPane ? { spawnPane } : {}) })
   setup = drawn.setup
   const settle = async (fn: () => unknown = () => {}) => {
     await act(async () => {
@@ -325,8 +325,8 @@ for (const [w, h] of SIZES) {
 }
 
 /** The Build pane with its harness running and the keys in it. */
-async function running(w = 120, h = 30) {
-  const s = await scene(w, h, { folder: "~/candle-bots", opened: true, bins: {}, harness: "claude-code" } as never)
+async function running(w = 120, h = 30, spawnPane?: PaneSpawner) {
+  const s = await scene(w, h, { folder: "~/candle-bots", opened: true, bins: {}, harness: "claude-code" } as never, undefined, spawnPane)
   await s.settle(() => s.setup.mockInput.pressEnter())
   await s.settle(() => Bun.sleep(10))
   await s.settle(() => s.harnesses.at(-1)!.emit(SESSION))
@@ -635,4 +635,130 @@ test("at 74×40, ctrl-n on the Build card then a click 120 ms later rejects only
   const rejects = s.session.requests.filter((r) => r.method === "cards.reject")
   expect(rejects.map((r) => r.params.cardId)).toEqual(["cb1"])
   expect(s.session.requests.some((r) => r.method === "cards.approve")).toBe(false)
+})
+
+/** A pane the core opened for a typed `candle` line: its screen, then it ends when told. */
+function endingPane(): { spawn: PaneSpawner; end: (code: number) => void } {
+  let end!: (code: number) => void
+  const exited = new Promise<number>((resolve) => (end = resolve))
+  const pane: PaneProcess = { pid: 4242, write: () => {}, resize: () => {}, onData: (l) => l(new TextEncoder().encode("Vault passphrase (input hidden):\r\nFinished in the pane.\r\n")), exited, signal: () => {}, close: () => {} }
+  return { spawn: () => pane, end }
+}
+
+/** The Build tab with a typed line's prompt pane run, ended and left behind its chip, then the harness started. */
+async function harnessAfterPane() {
+  const pane = endingPane()
+  const harnesses: FakeHarness[] = []
+  const drawn = await drawScene("followed", 120, 30, "build", undefined, { spawnPane: pane.spawn, spawnBuild: (input) => (harnesses.push(new FakeHarness(input)), harnesses.at(-1)!), buildPrefs: { folder: "~/candle-bots", opened: true, bins: {}, harness: "claude-code" } as never })
+  setup = drawn.setup
+  const ask = drawn.session.request.bind(drawn.session)
+  drawn.session.request = (async (method: string, params: Record<string, unknown> = {}) =>
+    method === "cli.run" ? { kind: "pane", ticket: "chp_fake", ticketId: "t1", title: "candle vault list · the agent can't see this pane" } : ask(method, params)) as typeof drawn.session.request
+  const settle = async (fn: () => unknown = () => {}) => {
+    await act(async () => {
+      await fn()
+    })
+    for (let i = 0; i < 3; i++) await act(async () => void (await drawn.setup.renderOnce()))
+  }
+  await settle(() => drawn.session.push("engine", ENGINES, true))
+  await settle(() => drawn.setup.mockInput.typeText("candle vault list"))
+  await settle(() => drawn.setup.mockInput.pressEnter())
+  await settle(() => Bun.sleep(10))
+  expect(drawn.setup.captureCharFrame()).toContain("Finished in the pane.")
+  await settle(() => pane.end(0))
+  await settle(() => drawn.setup.mockInput.pressKey("]", { ctrl: true }))
+  expect(drawn.setup.captureCharFrame()).toContain("▣ candle vault list (ended)")
+  await settle(() => drawn.setup.mockInput.pressArrow("down"))
+  await settle(() => drawn.setup.mockInput.pressEnter())
+  await settle(() => Bun.sleep(10))
+  const harness = harnesses.at(-1)!
+  await settle(() => harness.emit(SESSION))
+  return { ...drawn, settle, harness, frame: () => drawn.setup.captureCharFrame() }
+}
+
+test("with an ended prompt pane behind its chip, ctrl-] still leaves the harness: the waiting card takes ⏎, and no pane nobody sees holds the keys", async () => {
+  const s = await harnessAfterPane()
+  expect(s.frame()).toContain("1 card waiting · ctrl-] then ⏎, or click")
+  await s.settle(() => s.setup.mockInput.pressKey("]", { ctrl: true }))
+  expect(s.frame()).not.toContain("candle vault list · the agent can't see this pane")
+  expect(s.frame()).toContain("1 card waiting · ⏎ approves the highlighted one")
+  advanceClock(350)
+  await s.settle(() => s.setup.mockInput.pressEnter())
+  expect(s.session.requests.some((r) => r.method === "cards.approve")).toBe(true)
+  // Back in, ctrl-] goes to the harness on screen, not to the pane behind its chip.
+  await s.settle(() => s.setup.mockInput.pressKey("]", { ctrl: true }))
+  await s.settle(() => s.setup.mockInput.typeText("zz"))
+  expect(s.harness.written.join("")).toBe("zz")
+})
+
+test("a prompt pane shown on the Build tab is drawn over the harness, which takes its screen back once it's left", async () => {
+  const s = await harnessAfterPane()
+  // Its chip shows it again: over the harness, whose screen doesn't draw through it.
+  const rows = s.frame().split("\n")
+  const y = rows.findIndex((l) => l.includes("▣ candle vault list (ended)"))
+  await s.settle(() => s.setup.mockMouse.click(rows[y]!.indexOf("▣ candle vault list") + 3, y))
+  await s.settle(() => s.setup.mockMouse.moveTo(0, 0))
+  expect(s.frame()).toContain("candle vault list · the agent can't see this pane")
+  expect(s.frame()).toContain("Finished in the pane.")
+  expect(s.frame()).not.toContain("candle-strategy-to-bot")
+  await s.settle(() => s.setup.mockInput.pressKey("]", { ctrl: true }))
+  expect(s.frame()).toContain("candle-strategy-to-bot")
+})
+
+/** A trade a running code bot asked for, as the core sends its card. */
+const botTrade = (id = "bt1"): ViewCard => ({ ...tradeCard, cardId: id, opId: `op-${id}`, cardHash: `hash-${id}`, origin: { role: "core", bot: { name: "momentum", kind: "code", act: "entry" } } }) as ViewCard
+
+test("a code bot's own trade that arrives while the harness has the keys opens over the frame, and ⏎ approves it after 300 ms", async () => {
+  const s = await running()
+  await s.settle(() => s.setup.mockInput.typeText("go"))
+  advanceClock(2_500)
+  await s.settle(() => s.session.push("cards", [tradeCard, botTrade()], true))
+  expect(s.frame()).toContain("code bot momentum's trade")
+  expect(s.frame()).toContain("⏎ approve · ctrl-n reject")
+  advanceClock(350)
+  await s.settle(() => s.setup.mockInput.pressEnter())
+  const approved = s.session.requests.filter((r) => r.method === "cards.approve")
+  expect(approved).toHaveLength(1)
+  expect(approved[0]!.params.cardId).toBe("bt1")
+  expect(s.harness.written.join("")).toBe("go")
+})
+
+test("a code bot's trade that arrives mid-sentence in the harness opens without the keys, and ctrl-] takes it", async () => {
+  const s = await running()
+  await s.settle(() => s.setup.mockInput.typeText("add a stop"))
+  advanceClock(500)
+  await s.settle(() => s.session.push("cards", [tradeCard, botTrade()], true))
+  expect(s.frame()).toContain("code bot momentum's trade")
+  expect(s.frame()).toContain("or ctrl-] · the keys are still your harness's")
+  await s.settle(() => s.setup.mockInput.pressEnter())
+  expect(s.session.requests.some((r) => r.method === "cards.approve")).toBe(false)
+  await s.settle(() => s.setup.mockInput.pressKey("]", { ctrl: true }))
+  advanceClock(350)
+  await s.settle(() => s.setup.mockInput.pressEnter())
+  expect(s.session.requests.find((r) => r.method === "cards.approve")?.params.cardId).toBe("bt1")
+})
+
+test("the first open's folder: a whole path typed over the one offered takes its place, never nests in it; ctrl-u clears the line", async () => {
+  const s = await scene(120, 30)
+  const folderSet = () => s.session.requests.filter((r) => r.method === "build.prefs" && r.params.set).map((r) => (r.params.set as { folder?: string }).folder)
+  await s.settle(() => s.setup.mockInput.typeText("/srv/my-bots"))
+  expect(s.frame()).toContain("/srv/my-bots")
+  expect(s.frame()).not.toContain("~/candle-bots/srv")
+  // Edited, a slash goes on the end like any other character; ctrl-u empties the line for another path.
+  await s.settle(() => s.setup.mockInput.typeText("/x"))
+  expect(s.frame()).toContain("/srv/my-bots/x")
+  await s.settle(() => s.setup.mockInput.pressKey("u", { ctrl: true }))
+  expect(s.frame()).not.toContain("/srv/my-bots")
+  await s.settle(() => s.setup.mockInput.typeText("~/bots"))
+  await s.settle(() => s.setup.mockInput.pressEnter())
+  await s.settle(() => Bun.sleep(30))
+  expect(folderSet()[0]).toBe("~/bots")
+})
+
+test("the first open's folder: a name typed after the one offered still adds to it", async () => {
+  const s = await scene(120, 30)
+  await s.settle(() => s.setup.mockInput.typeText("-test"))
+  await s.settle(() => s.setup.mockInput.pressEnter())
+  await s.settle(() => Bun.sleep(30))
+  expect(s.session.requests.find((r) => r.method === "build.prefs" && r.params.set)?.params.set).toMatchObject({ folder: "~/candle-bots-test" })
 })

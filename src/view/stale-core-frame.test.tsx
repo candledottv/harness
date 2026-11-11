@@ -87,6 +87,30 @@ test("a core still on an older version is said on the status bar, with a chip th
   expect(top()).not.toContain("the core is still")
 })
 
+test("after restart it, a core that's gone is said as restarting, not stopped, while the login service may take a retry to start it", async () => {
+  const session = new VersionedSession()
+  session.version = "0.0.1"
+  let clock = 1_800_000_000_000
+  setup = await testRender(<App session={session} onQuit={() => {}} now={() => clock} tickMs={0} restartCore={async () => {}} />, { width: 140, height: 40, exitOnCtrlC: false })
+  await setup.renderOnce()
+  await act(async () => session.push("status", status, true))
+  await setup.renderOnce()
+  const top = () => setup!.captureCharFrame().split("\n")[0]!
+  const x = top().indexOf("restart it")
+  await act(async () => setup!.mockMouse.click(x + 2, 0))
+  await act(async () => session.lose())
+  await setup.renderOnce()
+  expect(top()).toContain("restarting the core…")
+  expect(top()).not.toContain("quit and run candle-harness")
+  // Long past the restart, a core that's still gone is said as stopped, with what to do.
+  clock += 5 * 60_000
+  await act(async () => session.push("status", status, true))
+  await act(async () => session.lose())
+  await setup.renderOnce()
+  expect(top()).toContain("the core stopped · reconnecting…")
+  expect(top()).toContain("quit and run candle-harness to start it again")
+})
+
 test("at 80 columns the notice and its chip still fit beside the agent, the mode and the kill switch", async () => {
   const session = new VersionedSession()
   session.version = "0.0.1"

@@ -43,7 +43,7 @@ export interface AgentLimits {
   limitLines?: LimitLine[]
 }
 
-export const walletWords = (name: string): string => (name === "embedded" ? "the embedded wallet" : name)
+export const walletWords = (name: string): string => (name === "embedded" ? "the embedded wallet" : name.startsWith("embedded on ") ? `the embedded wallet on ${name.slice("embedded on ".length)}` : name)
 
 /** The rows that act on the picked wallet, in order. */
 export function detailRows(w: AutonomyWallet | undefined, draft: ApprovalsDraft | undefined): ApprovalsRow[] {

@@ -63,3 +63,16 @@ test("the base assets' names are reserved: SOL, USDC, ETH, USDG and CNDL are lea
   names.learn("CNDL", "9dXSV8VWuYvGfTzqvkBeoFwH9ihVTybDuWo5VaJPCNDL")
   expect(names.known()).toEqual(new Map([["USDC", "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"], ["CNDL", "9dXSV8VWuYvGfTzqvkBeoFwH9ihVTybDuWo5VaJPCNDL"]]))
 })
+
+test("a Hood address in two cases is one token: never a second mint for its name, nor a look-alike of itself", () => {
+  const names = new TokenNames()
+  names.learn("ZOLVA", "0x8E04549484D0612Be8373A0263B11928a5f7681F")
+  names.learn("ZOLVA", "0x8e04549484d0612be8373a0263b11928a5f7681f")
+  expect(names.mintsOf("ZOLVA")).toEqual(["0x8E04549484D0612Be8373A0263B11928a5f7681F"])
+  expect(names.known().get("ZOLVA")).toBe("0x8E04549484D0612Be8373A0263B11928a5f7681F")
+  expect(names.several().has("ZOLVA")).toBe(false)
+  // A Solana mint's case is its own: two spellings are two tokens.
+  names.learn("MOON", "MoonFake11111111111111111111111111111111111")
+  names.learn("MOON", "moonFake11111111111111111111111111111111111")
+  expect(names.several().get("MOON")).toHaveLength(2)
+})

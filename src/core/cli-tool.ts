@@ -13,6 +13,7 @@
 // a `--flag=value` form; a positional path; an argument that's really a second command; more than 64
 // arguments or 4 KiB.
 import { canonicalJson } from "../shared/canonical-json"
+import { isEvmAddress } from "../shared/chains"
 import type { Redactor } from "../shared/redact"
 import { refused } from "../shared/rpc"
 import { terminalText } from "../shared/terminal-text"
@@ -21,7 +22,7 @@ import type { CliCardRequest, CliCards } from "./cli-cards"
 import type { CardKind } from "./classify"
 import { type Destination, notAsked, prepareFundsOut } from "./destinations"
 import { versionAtLeast } from "./candle-mcp"
-import { allowedFlags, CLI_ROWS, type CliRow, canonicalCommand, LP_AGENT_SCOPES, type CliRule, type Identity, MIN_CANDLE_CLI, type Route, needsVault, repeats, rowFor, runsInPane, SOURCE, type SourceEntry, sourceFor } from "./cli-table"
+import { allowedFlags, CLI_ROWS, type CliRow, canonicalCommand, LP_AGENT_SCOPES, type CliRule, dashPrefixValue, type Identity, isFlagWord, MIN_CANDLE_CLI, type Route, needsVault, repeats, rowFor, runsInPane, SOURCE, type SourceEntry, sourceFor } from "./cli-table"
 import type { Mapped, Operation } from "./execute"
 import type { Journal } from "./journal"
 import { paneRowNow, positionals, prepareKeysCreate, presetDrops, REAL_IN_PAPER, rebindFills, rebindNote } from "./owner-rows"
@@ -42,8 +43,8 @@ const WORD = /^[a-z][a-z-]{0,31}$/
 /** A word the input line reads back as one word: no space, ";" or control character. */
 const PLAIN_WORD = /^[^\s;\p{C}]+$/u
 /** `candle swap` is the TEE route's runner, reached by one parser and one card path. */
-const SWAP_FOR_AGENT = "Use candle_trade or candle_swap with wallet set to the TEE wallet's label or address: the Candle Harness runs candle swap for you, on a one-press card."
-const SWAP_TYPED = "Type buy, sell or swap … from <wallet> instead: the Candle Harness runs candle swap for you, on a one-press card. Nothing was run."
+const SWAP_FOR_AGENT = "Use candle_trade or candle_swap with wallet set to the TEE wallet's label or address, or candle_bridge for SOL or USDC to ETH or USDG (or back): the Candle Harness runs candle swap for you, on a one-press card."
+const SWAP_TYPED = "Type buy, sell, swap or bridge … from <wallet> instead: the Candle Harness runs candle swap for you, on a one-press card. Nothing was run."
 
 export interface ResolvedCall {
   row: CliRow
@@ -104,7 +105,7 @@ export function resolveCall(input: { command: unknown; subcommand?: unknown; arg
   const positionals: string[] = []
   for (let i = 0; i < rest.length; i++) {
     const arg = rest[i]!
-    if (!arg.startsWith("-")) {
+    if (!isFlagWord(entry, arg)) {
       positionals.push(arg)
       continue
     }
@@ -114,7 +115,7 @@ export function resolveCall(input: { command: unknown; subcommand?: unknown; arg
     if (flags.has(arg) && !repeats(row.path, arg)) return fail("BAD_ARGS", `${arg} is given twice: give each flag once.`)
     if (allowed.value.has(arg)) {
       const value = rest[i + 1]
-      if (value === undefined || value.startsWith("-")) return fail("BAD_ARGS", `${arg} needs a value.`)
+      if (value === undefined || (value.startsWith("-") && !dashPrefixValue(entry, arg, value))) return fail("BAD_ARGS", `${arg} needs a value.`)
       flags.set(arg, value)
       i++
     } else if (allowed.boolean.has(arg)) {
@@ -206,6 +207,15 @@ function heldByReason(): string {
 }
 
 /** The amber line on a `tee disable` card: a stop is final, since the CLI never re-enables a TEE wallet. */
+/** A promote that makes the vault's first EVM TEE wallet: the CLI moves the vault file to version 4 as it writes it. */
+export const VAULT_V4_NOTE = "This is the vault's first Hood TEE wallet, so the CLI moves the vault file to version 4: an older candle CLI can't open it after this. Keep candle at 0.13.20 or later on every machine that uses this vault."
+
+/**
+ * A Hood TEE wallet's sweep, said before it runs: what it needs, and the CLI's refusals the pane will show by their codes,
+ * since what the pane shows never reaches the Candle Harness.
+ */
+export const HOOD_SWEEP_NOTE = "A Hood TEE wallet sweeps its tokens, then its ETH last, paying gas in ETH. It needs the wallet stopped first and ETH in it (EVM_SWEEP_NEEDS_GAS), and is refused while a bridge with it is open, up to two hours (BRIDGE_IN_FLIGHT), or a trade holds it (WALLET_BUSY): the pane says which."
+
 export const STOP_IS_FINAL = "Permanent: Candle never re-enables a stopped TEE wallet. Next you sweep it home (candle tee sweep), then make a new one."
 /** `vault demote` stops each wallet it names, then sweeps it home: said before the press, as for `tee disable`. */
 export const DEMOTE_IS_FINAL = "Permanent: Candle never re-enables a stopped TEE wallet, so it can never trade again. Its funds go home to your vault."
@@ -288,6 +298,8 @@ export class CliTool {
       agentPrefixes?: () => ReadonlyMap<string, string>
       /** Whether a label, address or id names a TEE wallet bound to an agent's key. */
       isTee?: (wallet: string) => boolean
+      /** Whether a promote from this vault key makes the vault's first EVM TEE wallet. */
+      firstEvmTee?: (from: string) => boolean
       /** What a wallet is called, from the core's one book. */
       nameOf?: (address: string, label?: string) => string
       /** Where funds may go: the user's own wallets, vault keys and pinned vaults. */
@@ -323,9 +335,10 @@ export class CliTool {
     const resolved = resolveCall({ command: args.command, subcommand: args.subcommand, args: args.args, agent: client.role === "harness" ? client.agent : args.agent }, { defaultAgent: client.agent, agents: this.deps.agents() })
     if (!resolved.ok) return this.refuse(client, resolved.code, resolved.message, command)
     const call = resolved.call
-    if (call.row.path === "swap") return this.refuse(client, "USE_MCP_TOOL", SWAP_FOR_AGENT, command)
-    // A card row whose flags make it a read (`launch --check`) runs as one.
-    if (call.row.card && call.rule === "read" && call.route === "cli" && !paneNow(call)) return this.output(await this.run(call), this.final(call))
+    // A swap is the card path's; only --dry-run, a read, runs here.
+    if (call.row.path === "swap" && call.rule !== "read") return this.refuse(client, "USE_MCP_TOOL", SWAP_FOR_AGENT, command)
+    // A card row whose flags make it a read (`launch --check`, `swap --dry-run`) runs as one.
+    if ((call.row.card || call.row.via !== undefined) && call.rule === "read" && call.route === "cli" && !paneNow(call)) return this.output(await this.run(call), this.final(call))
     if (call.row.card) {
       const stop = this.cardRowStop(call)
       if (stop) return this.refuse(client, stop.code, stop.message, command)
@@ -408,7 +421,7 @@ export class CliTool {
     const resolved = resolveCall({ command, subcommand: hasSub ? maybeSub : undefined, args: hasSub ? rest : [maybeSub, ...rest].filter((w) => w !== undefined) }, { defaultAgent: agent, agents: this.deps.agents() })
     if (!resolved.ok) throw refused(resolved.code, resolved.message)
     const call = resolved.call
-    if (call.row.path === "swap") throw refused("USE_THE_HARNESS", SWAP_TYPED)
+    if (call.row.path === "swap" && call.rule !== "read") throw refused("USE_THE_HARNESS", SWAP_TYPED)
     // The CLI's card rows: the same card the agent's request makes, or at once
     // under cards.typedTrades = "instant", approved by the core in this call. One whose flags make it
     // a read (`launch --check`) runs below, as reads do.
@@ -662,6 +675,11 @@ export class CliTool {
     // Whether there's a vault, read once for this card, and only where it decides something.
     let vaultNow: Awaited<ReturnType<CliTool["vaultState"]>> | undefined
     const vault = async () => (vaultNow ??= await this.vaultState())
+    if (path === "tee sweep" && positionals(words, call.valueFlags).some((w) => isEvmAddress(w))) notes.push(HOOD_SWEEP_NOTE)
+    if (path === "vault promote") {
+      const from = words[words.indexOf("--from") + 1]
+      if (words.includes("--from") && from !== undefined && this.deps.firstEvmTee?.(from)) notes.push(VAULT_V4_NOTE)
+    }
     if (path === "tee rename") {
       // The CLI unlocks the vault itself to rename a TEE wallet's entry: no factor step for one the Candle Harness knows.
       const [target] = positionals(words, call.valueFlags)
@@ -802,13 +820,13 @@ export class CliTool {
   private stranded(call: ResolvedCall): { id: string; address: string; label?: string }[] {
     const [command, sub, ...rest] = call.argv
     if (command !== "keys" || !this.deps.teeOnKey) return []
-    const positionals = rest.filter((a, i) => !a.startsWith("-") && !rest[i - 1]?.startsWith("--"))
+    const words = positionals(call.argv, call.valueFlags)
     let held: { id: string; address: string; label?: string }[] = []
-    if (sub === "revoke" && positionals[0]) held = this.deps.teeOnKey(positionals[0])
-    else if (sub === "wallets" && positionals[0] === "set" && positionals[1]) {
+    if (sub === "revoke" && words[0]) held = this.deps.teeOnKey(words[0])
+    else if (sub === "wallets" && words[0] === "set" && words[1]) {
       const at = rest.indexOf("--wallets")
       const kept = new Set((at >= 0 ? (rest[at + 1] ?? "") : "").split(",").map((w) => w.trim()).filter(Boolean))
-      held = this.deps.teeOnKey(positionals[1]).filter((w) => !kept.has(w.id) && !kept.has(w.address))
+      held = this.deps.teeOnKey(words[1]).filter((w) => !kept.has(w.id) && !kept.has(w.address))
     }
     return held
   }

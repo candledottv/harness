@@ -17,7 +17,7 @@ import { BASE_ASSETS, type BaseAsset, isBaseAsset, notATradeToken } from "./asse
 import type { ToolOutcome } from "./candle-mcp"
 import type { CliCardRequest } from "./cli-cards"
 import type { PaneRequest } from "./pane-plan"
-import { type CardKind, classify, type IdKey, type Mode, normaliseForMode, TOOL_CLASSES } from "./classify"
+import { type CardKind, classify, CORE_CARD_TOOLS, type IdKey, type Mode, normaliseForMode, TOOL_CLASSES } from "./classify"
 import { type Fill, readFill } from "./fill"
 import { cutToBudget, HACC_TOOL_NAMES, PATTERNS } from "./hacc-tools"
 import { HISTORY_TOOL_NAME } from "./history-tool"
@@ -30,6 +30,7 @@ import type { Journal } from "./journal"
 import { RESEARCH_TOOL_NAMES } from "./research-tools"
 import { PAPER_CLOSED_WORDS } from "./trade-log"
 import { type SizingDeps, sizeInUsd } from "./sizing"
+import { type ChainSlug, maybeChain } from "../shared/chains"
 
 export interface ToolResult {
   content: { type: "text"; text: string }[]
@@ -152,6 +153,8 @@ export interface CardView {
   /** The arguments as the proposer gave them, before the core normalised them and minted the id. */
   asked: Record<string, unknown>
   agent: string
+  /** The chain it acts on: a trade's, a swap's, a launch's; none for a card about no chain. */
+  chain?: ChainSlug
   state: CardState
   expiresAt: string
   /**
@@ -385,13 +388,14 @@ export function withOwnPrefix<T extends { inputSchema: { type: "object"; propert
 }
 
 /** The tools whose calls can become a card: offered with an optional `reason`, shown on the card. */
-const REASON_TOOLS = new Set(Object.entries(TOOL_CLASSES).filter(([, c]) => c.class === "card").map(([name]) => name))
+// The core's own card tools (candle_bridge) take a reason the same way.
+const REASON_TOOLS = new Set([...Object.entries(TOOL_CLASSES).filter(([, c]) => c.class === "card").map(([name]) => name), ...Object.keys(CORE_CARD_TOOLS)])
 const REASON_PROPERTY = { type: "string", description: "Why, in a sentence or two. It's shown to the user on the approval card. At most 500 characters." }
 
 const WALLET_PROPERTY = {
   type: "string",
   description:
-    'Which wallet pays: "embedded" (the account\'s embedded wallet), or a TEE wallet bound to your key, by its label or address. Left out, your default applies. A TEE wallet\'s trade runs through the user\'s candle CLI on the same one-press card. Live only: TEE wallets have no paper form.',
+    'Which wallet pays: "embedded" (the account\'s embedded wallet), or a TEE wallet bound to your key, by its label or address, on the token\'s chain. Left out, your default for that chain applies. A TEE wallet\'s trade runs through the user\'s candle CLI on the same one-press card. Live only: TEE wallets have no paper form.',
 }
 
 const AMOUNT_USD_PROPERTY = {
@@ -436,9 +440,9 @@ const NOT_OFFERED: Readonly<Record<string, readonly string[]>> = { candle_trade:
  */
 const HARNESS_NOTES: Readonly<Record<string, string>> = {
   candle_trade:
-    'In the Candle Harness, where this differs from the above: a live trade answers APPROVAL_REQUIRED with a card for the user to approve (or runs at once where the paying wallet trades inside its limits, and says so), so read its outcome with candle_get_operation. The wallet that pays is the agent\'s default, or the one `wallet` names, which may be a TEE wallet. A sell names `percent` (1 to 100) or `amount`: leaving both out is refused, never the whole position. Paper or live is the Candle Harness\'s mode, set by the user: there is no `paper` argument.',
+    'In the Candle Harness, where this differs from the above: a live trade answers APPROVAL_REQUIRED with a card for the user to approve (or runs at once where the paying wallet trades inside its limits, and says so), so read its outcome with candle_get_operation. The wallet that pays is the agent\'s default, or the one `wallet` names, which may be a TEE wallet. A sell names `percent` (1 to 100) or `amount`: leaving both out is refused, never the whole position. Paper or live is the Candle Harness\'s mode, set by the user: there is no `paper` argument, and don\'t suggest a paper rehearsal unless the user asks for one.',
   candle_swap:
-    'In the Candle Harness, where this differs from the above: a swap answers APPROVAL_REQUIRED with a card for the user to approve (or runs at once where the paying wallet trades inside its limits, and says so), so read its outcome with candle_get_operation (kind: swap) rather than sending it again. The wallet that pays is the agent\'s default, or the one `wallet` names, which may be a TEE wallet.',
+    'In the Candle Harness, where this differs from the above: a swap answers APPROVAL_REQUIRED with a card for the user to approve (or runs at once where the paying wallet trades inside its limits, and says so), so read its outcome with candle_get_operation (kind: swap) rather than sending it again. The wallet that pays is the agent\'s default, or the one `wallet` names, which may be a TEE wallet. A pair spanning both chains (a bridge) is refused here: use candle_bridge, from any wallet.',
 }
 
 /**
@@ -464,7 +468,7 @@ Pass \`clientId\`, the id the write's answer gave, and \`kind\`, the kind that a
 export const DESCRIPTION_BASIS: Readonly<Record<string, readonly string[]>> = {
   candle_get_operation: ["`confirmed`/`failed`", "`built`/`submitted`", "job.outcome", "Do NOT re-send the write"],
   candle_trade: ["the payer is the account's embedded (main) wallet", "Omitting the amount on a sell sells the whole position", "Pass `paper: true` to rehearse"],
-  candle_swap: ["This tool spends the embedded wallets", "send the SAME request with that id"],
+  candle_swap: ["This tool spends the embedded wallets", "send the SAME request with that id", "A pair spanning both is a BRIDGE"],
 }
 
 /**
@@ -472,7 +476,7 @@ export const DESCRIPTION_BASIS: Readonly<Record<string, readonly string[]>> = {
  * every other kind, the CLI's card rows included (without them the agent couldn't read an upload's
  * URL or a less-access result). Only a trade or a launch the core doesn't hold is read from Candle.
  */
-const OPERATION_KINDS = ["trade", "launch", "swap", "stake", "claim", "public", "upload", "lessaccess", "lp", "close", "hacc", "autonomy", "trigger", "bot"]
+const OPERATION_KINDS = ["trade", "launch", "swap", "bridge", "stake", "claim", "public", "upload", "lessaccess", "lp", "close", "hacc", "autonomy", "trigger", "bot"]
 const CANDLE_READS = new Set(["trade", "launch"])
 
 /**
@@ -564,7 +568,7 @@ export const VIEW_TOOL = {
   inputSchema: {
     type: "object" as const,
     properties: {
-      action: { type: "string", enum: ["read", "tab", "layout", "open", "close", "build", "add_tab", "rename_tab", "remove_tab", "show_tab", "hide_tab", "pin", "unpin", "signals", "journal", "theme", "make_theme"] },
+      action: { type: "string", enum: ["read", "tab", "layout", "open", "close", "build", "add_tab", "rename_tab", "remove_tab", "show_tab", "hide_tab", "pin", "unpin", "signals", "chain", "journal", "theme", "make_theme"] },
       tab: { type: "string", description: "The tab's name; left out, the tab on screen (for \"signals\" and \"journal\", else the tab named after the pane, else the first with it). For \"tab\", the tab to switch to (or its number, 1 to 9)." },
       layout: { type: "string", description: "\"layout\" and \"add_tab\": a layout's name, such as \"Cockpit\"." },
       pane: { type: "string", description: `"open" and "close": a pane's id (${PANE_IDS.join(", ")}; token:2 and token:3 are more token panes, to compare tokens side by side). "tab": a pane to show, on the tab named or the first tab that has it. "pin" and "unpin": which token pane; left out, the first.` },
@@ -574,7 +578,7 @@ export const VIEW_TOOL = {
       mint: { type: "string", description: "\"pin\": the token to pin; left out, the token the tab's token pane shows." },
       mine: { type: "boolean", description: "\"signals\": true for the person's own rules' signals, false for Hacc's tape." },
       pattern: { type: "string", enum: [...PATTERNS, "all"], description: "\"signals\": only this pattern on Hacc's tape (kol_mention: a KOL posting about a token, with a buy); \"all\" clears it." },
-      chain: { type: "string", enum: ["solana", "hood", "both"], description: "\"signals\": only this chain's tokens; \"both\" clears it." },
+      chain: { type: "string", enum: ["solana", "hood", "all", "both"], description: "\"chain\": the chain every pane shows, or \"all\" (wallets on two chains). \"signals\" (one chain): only its tokens; \"both\" clears it." },
       paused: { type: "boolean", description: "\"signals\": true holds the tape where it is, false resumes at the newest." },
       search: { type: "string", description: "\"journal\": the words a row must all hold, such as \"JUP sell\" or an agent's name; \"\" shows everything." },
       kinds: { type: "array", items: { type: "string", enum: [...JOURNAL_KINDS] }, description: "\"journal\": only rows of these kinds; left out, every kind but the core's." },
@@ -777,7 +781,7 @@ export class ToolFace {
       if (wallet !== undefined && !embedded) return refusedHere("NO_PAPER_TEE", "TEE wallets have no paper form.", "TEE wallets have no paper form; switch to live to trade from one. Nothing was sent.")
       args = unwalleted
       // What trades spend isn't a trade's token on paper either: the paper book would hold a position no live trade can make.
-      const spent = name === "candle_trade" ? notATradeToken(args.mint) : undefined
+      const spent = name === "candle_trade" ? notATradeToken(args.mint, maybeChain(args.chain)?.slug) : undefined
       if (spent !== undefined) return refusedHere("BASE_ASSET", spent)
       let paperArgs = args
       if (name === "candle_trade" && args.amountUsd !== undefined) {

@@ -287,6 +287,9 @@ function dispatchedWords(body: string): Record<string, string> {
   const out: Record<string, string> = {}
   for (const m of body.matchAll(/case\s+"([a-z][a-z-]*)"\s*:\s*return\s+([A-Za-z_$][\w$]*)\s*\(/g)) out[m[1]!] = m[2]!
   for (const m of body.matchAll(/if\s*\(\s*[a-z]+\s*===\s*"([a-z][a-z-]*)"\s*\)\s*return\s+([A-Za-z_$][\w$]*)\s*\(/g)) out[m[1]!] = m[2]!
+  // The first argument itself (`transfer status`, 0.13.19), awaited or not. Not any local awaited the same
+  // way: `chain === "hood"` and `reason === "interrupted"` branch on a value, not a typed word.
+  for (const m of body.matchAll(/if\s*\(\s*args\[0\]\s*===\s*"([a-z][a-z-]*)"\s*\)\s*return\s+(?:await\s+)?([A-Za-z_$][\w$]*)\s*\(/g)) out[m[1]!] = m[2]!
   return out
 }
 
@@ -633,6 +636,10 @@ interface Flags {
   path: Set<string>
   pathPositionals: Set<string>
   byAction?: Record<string, string[]>
+  /** The spec's `keyPrefixPositional`: a word like a key prefix that starts with "-" is a word, not a flag. */
+  keyPrefixPositional?: true
+  /** The spec's `keyPrefixValueFlags`: value flags whose value may be a key prefix that starts with "-". */
+  keyPrefixValueFlags?: Set<string>
 }
 
 /**
@@ -665,6 +672,10 @@ function readSpec(spec: string, scope: Scope, into: Flags): void {
       if (key === "...") readSpec(value, scope, into)
       else if (key in keys) for (const f of flagsOf(value, scope)) keys[key]!.add(f)
       else if (key === "pathPositionals") for (const p of value.matchAll(/"([^"]+)"/g)) into.pathPositionals.add(p[1]!)
+      else if (key === "keyPrefixPositional") {
+        if (value.trim() !== "true") throw new Error(`keyPrefixPositional the reader can't read: ${value.slice(0, 40)}`)
+        into.keyPrefixPositional = true
+      } else if (key === "keyPrefixValueFlags") for (const f of flagsOf(value, scope)) (into.keyPrefixValueFlags ??= new Set()).add(f)
       if (key === "valueFlags") {
         const table = actionTable(value, scope)
         if (table) into.byAction = { ...into.byAction, ...table }
@@ -679,6 +690,36 @@ function liftedFlags(body: string): string[] {
   for (const m of body.matchAll(/\[\s*[\w$+]+\s*\]\s*[!=]==\s*"(--[a-z][a-z0-9-]*)"/g)) out.add(m[1]!)
   for (const m of body.matchAll(/\b[a-zA-Z]+\(\s*args\s*,\s*"(--[a-z][a-z0-9-]*)"\s*\)/g)) out.add(m[1]!)
   return [...out]
+}
+
+/** Every flag a function (and what it calls in its own file) parses, lifts or tests for, added to `flags`. */
+function readFlags(file: string, name: string, flags: Flags): void {
+  const text = read(file)
+  const body = reachable(text, name)
+  for (const m of body.matchAll(/\bparseArgs\(/g)) {
+    const args = callArguments(body, m.index + m[0].length - 1)
+    if (args.length < 2) throw new Error("a parseArgs call with no spec")
+    readSpec(args[1]!, { file, text, body, vars: boundParameters(text, name) }, flags)
+  }
+  for (const f of liftedFlags(body)) flags.value.add(f)
+  for (const f of checkedFlags(body)) if (!flags.value.has(f)) flags.boolean.add(f)
+}
+
+/** Another file's functions a handler returns into with its whole arguments: `return teeSweepEvm(args, ctx)`. */
+function delegates(file: string, name: string): { file: string; name: string }[] {
+  const own = functionText(read(file), name) ?? ""
+  const imports = importsOf(file)
+  const out = new Map<string, { file: string; name: string }>()
+  for (const m of own.matchAll(/\breturn\s+(?:await\s+)?([A-Za-z_$][\w$]*)\(\s*args\s*,/g)) {
+    const target = imports.get(m[1]!)
+    if (target) out.set(`${target.file}#${target.name}`, target)
+  }
+  return [...out.values()]
+}
+
+/** Flags a handler tests for before any parse and branches on (`args.includes("--dry-run")`, swap at 0.13.19): booleans. */
+function checkedFlags(body: string): string[] {
+  return [...new Set([...body.matchAll(/\bargs\.includes\(\s*"(--[a-z][a-z0-9-]*)"\s*\)/g)].map((m) => m[1]!))]
 }
 
 /** A function's parameter names, in order: `(args: string[], ctx: Ctx, kind: "a" | "b")`. */
@@ -744,12 +785,10 @@ export function readCliSource(srcDir: string, commit: string, repo = "candledott
     const text = read(file)
     const body = reachable(text, handler)
     const flags: Flags = { value: new Set(), boolean: new Set(), path: new Set(), pathPositionals: new Set() }
-    for (const m of body.matchAll(/\bparseArgs\(/g)) {
-      const args = callArguments(body, m.index + m[0].length - 1)
-      if (args.length < 2) throw new Error("a parseArgs call with no spec")
-      readSpec(args[1]!, { file, text, body, vars: boundParameters(text, handler) }, flags)
-    }
-    for (const f of liftedFlags(body)) flags.value.add(f)
+    readFlags(file, handler, flags)
+    // A handler that hands its arguments whole to another file's (`tee sweep` to teeSweepEvm for a Hood
+    // wallet): that one's flags are this command's too.
+    for (const target of delegates(file, handler)) readFlags(target.file, target.name, flags)
     const owner = OWNER.test(body)
     const agent = AGENT.test(body)
     const across = reachAcross(file, handler, REACH_DEPTH)
@@ -771,6 +810,8 @@ export function readCliSource(srcDir: string, commit: string, repo = "candledott
         path: [...flags.path].sort(),
         pathPositionals: [...flags.pathPositionals],
         ...(flags.byAction ? { byAction: flags.byAction } : {}),
+        ...(flags.keyPrefixPositional ? { keyPrefixPositional: true } : {}),
+        ...(flags.keyPrefixValueFlags ? { keyPrefixValueFlags: [...flags.keyPrefixValueFlags].sort() } : {}),
       },
       identity: owner && agent ? "both" : owner ? "owner" : agent ? "agent" : "none",
       json: /\bjson\b/.test(body),
@@ -840,15 +881,41 @@ export function readCliSource(srcDir: string, commit: string, repo = "candledott
   const groupsAt = /export const GROUPS\s*=\s*\[/.exec(help)
   const groups = groupsAt ? [...balanced(help, groupsAt.index + groupsAt[0].length - 1).matchAll(/"([^"]+)"/g)].map((m) => m[1]!) : []
   const topics: Record<string, { group: string; display?: string; summary: string; rows: { invocation: string; description: string }[] }> = {}
+  /**
+   * A word the topic documents only in its usage lines and description, with no row of its own
+   * (`candle transfer status <id>`, 0.13.19): a row from the usage line, described by the description's
+   * sentence that names it. A usage line whose second word isn't a plain word (`<from>`, a flag) is the
+   * command itself.
+   */
+  function usageRows(word: string, topicText: string, rows: readonly { invocation: string }[]): { invocation: string; description: string }[] {
+    const usageAt = /\busage\s*:\s*\[/.exec(topicText)
+    if (!usageAt) return []
+    const lines = [...balanced(topicText, usageAt.index + usageAt[0].length - 1).matchAll(/"(?:[^"\\]|\\.)*"/g)].map((m) => JSON.parse(m[0]) as string)
+    const description = stringField(topicText, "description") ?? ""
+    const out: { invocation: string; description: string }[] = []
+    for (const line of lines) {
+      const m = new RegExp(`^candle ${word} ([a-z][a-z-]*)(?:\\s|$)`).exec(line)
+      if (!m || rows.some((r) => r.invocation.trim().split(/\s+/)[0] === m[1]) || out.some((r) => r.invocation.startsWith(`${m[1]} `))) continue
+      const sentence = description.split(/(?<=\.)\s+/).find((s) => s.includes(`candle ${word} ${m[1]} `))
+      if (!sentence) {
+        failures.push(`help ${word}: usage names ${m[1]}, which no row or sentence of the description says what it does`)
+        continue
+      }
+      const said = sentence.replace(new RegExp(`^candle ${word} ${m[1]} \\S+\\s*`), "")
+      out.push({ invocation: line.slice(`candle ${word} `.length), description: said.charAt(0).toUpperCase() + said.slice(1) })
+    }
+    return out
+  }
   for (const [word, topicText] of topLevelEntries(helpText)) {
     const rowsAt = /\brows\s*:\s*\[/.exec(topicText)
     const rows = rowsAt ? objectsIn(balanced(topicText, rowsAt.index + rowsAt[0].length - 1), `help ${word}`) : []
     const display = stringField(topicText, "display")
+    const listed = rows.map((row) => ({ invocation: stringField(row, "invocation") ?? "", description: stringField(row, "description") ?? "" }))
     topics[word] = {
       group: stringField(topicText, "group") ?? "",
       ...(display ? { display } : {}),
       summary: stringField(topicText, "summary") ?? "",
-      rows: rows.map((row) => ({ invocation: stringField(row, "invocation") ?? "", description: stringField(row, "description") ?? "" })),
+      rows: [...listed, ...usageRows(word, topicText, listed)],
     }
     if (!groups.includes(topics[word]!.group)) failures.push(`help ${word}: group "${topics[word]!.group}" isn't in GROUPS`)
   }

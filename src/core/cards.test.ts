@@ -1658,6 +1658,21 @@ describe("what a trade's token may be", () => {
     expect(card.display.headline).toBe("SELL 50% of CNDL")
   })
 
+  test("on Hood, USDG and WETH by address are refused as a trade's token in any case, before anything is read", async () => {
+    const USDG = "0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168"
+    const WETH = "0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73"
+    const s = await setup()
+    for (const [mint, name] of [[USDG, "USDG"], [USDG.toLowerCase(), "USDG"], [WETH, "WETH"], [WETH.toLowerCase(), "WETH"]] as const) {
+      for (const side of ["buy", "sell"] as const) {
+        const r = await refusal(s.propose(side === "buy" ? { mint, side, amount: "0.01" } : { mint, side, percent: 100 }))
+        expect(r.code).toBe("BASE_ASSET")
+        expect(r.message).toStartWith(`${name} is`)
+      }
+    }
+    expect(s.network).toEqual([])
+    expect(s.book.list()).toEqual([])
+  })
+
   test("the same refusal on a TEE wallet, where a sell would be the very swap the limits would have checked", async () => {
     const TEE = "TeeWalletFake111111111111111111111111111111"
     const s = await setup({ resolve: { [USDC]: market(USDC, { candleLaunched: false }) }, wallets: { payer: () => ({ ok: true, kind: "tee", address: TEE, label: "tee-one" }) as never } })

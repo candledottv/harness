@@ -11,6 +11,8 @@ import type { EngineId } from "../engine/engine"
 import { Chip, chipText, usePointer } from "./chip"
 import { helpLines, type Overlay, SETTINGS } from "./keys"
 import { signalsMenuRows, type SignalsPick } from "./panes/signals"
+import { chainMenuRows } from "./chain-filter"
+import type { ChainSlug } from "../shared/chains"
 import { walletsMenuRows } from "./panes/wallets"
 import { EveryWalletOverlay } from "./panes/every-wallet"
 import type { PortfolioView } from "../core/portfolio-view"
@@ -30,7 +32,8 @@ import { LayoutMenu } from "./panes/layout-menu"
 import type { LayoutInfo } from "./layout-menu"
 import type { PaneId } from "./layout"
 import type { Preset } from "../engine/preset"
-import type { ViewCard } from "./store"
+import type { ViewCard, ViewOperation } from "./store"
+import { terminalText } from "../shared/terminal-text"
 import type { AutonomyTopic } from "../core/autonomy"
 import type { AgentLimits, ApprovalsRow } from "./approvals"
 import { ApprovalsMenu } from "./panes/approvals"
@@ -44,6 +47,7 @@ import { AwayOverlay } from "./panes/away"
 import type { Act, RowPick } from "./panes/lines"
 import { exact, wrap } from "./format"
 import { C, fit, OVERLAY_Z } from "./theme"
+import { maybeChain, storedChain } from "../shared/chains"
 
 /** A card's argv as read: without the RPC flag the core adds, whose value is a marker for the configured address. */
 const shownArgv = (argv: readonly unknown[]): unknown[] => {
@@ -55,12 +59,22 @@ const shownArgv = (argv: readonly unknown[]): unknown[] => {
  * A card's details (`ctrl-o`): everything the compact card leaves out, one field per line,
  * with the exact amounts.
  */
-export function cardDetails(card: ViewCard): string[] {
+export function cardDetails(card: ViewCard, op?: ViewOperation): string[] {
   const d = card.display
   const field = (label: string, value: string | undefined) => (value ? [`${label.padEnd(9)} ${value}`] : [])
+  // A bridge once sent: Relay's quote as the CLI gave it, the deposit, and where it stands.
+  const sent = d.bridge ? (op?.result as { quote?: Record<string, unknown>; bridge?: { depositHash?: unknown }; bridgeStatus?: { phase?: unknown; open?: unknown } } | undefined) : undefined
+  const said = (v: unknown) => (typeof v === "string" && v !== "" ? terminalText(v, { maxLength: 120 }) : undefined)
+  const quote = sent?.quote
+  const relay = quote ? [said(quote.relayFees) && `fee ${said(quote.relayFees)}`, said(quote.estimatedTime) && `time ${said(quote.estimatedTime)}`, said(quote.minimumReceived) && `at least ${said(quote.minimumReceived)}`].filter(Boolean).join(" · ") : undefined
   const exactSize = card.params?.percent !== undefined ? `${String(card.params.percent)}% of the wallet's holding, when it runs` : card.params?.amount !== undefined ? exact(Number(card.params.amount)) + (d.spend ? ` ${d.spend.asset}` : "") : undefined
   return [
     ...field("title", d.title),
+    ...field("route", d.bridge?.route),
+    ...field("goes", d.bridge?.via),
+    ...field("relay", relay || undefined),
+    ...field("deposit", said(sent?.bridge?.depositHash)),
+    ...field("stands", said(sent?.bridgeStatus?.phase) && [said(sent?.bridgeStatus?.phase), said(sent?.bridgeStatus?.open)].filter(Boolean).join(" · ")),
     // A trigger's card: the exact line it saves, in words, and how it runs.
     ...field("line", d.triggerCard?.line),
     ...field("trigger", d.triggerCard?.words),
@@ -117,8 +131,9 @@ export function otherWallets(card: ViewCard, wallets: WalletsTopic | undefined):
   if (card.state !== "awaiting_approval" || (card.tool !== "candle_trade" && card.tool !== "candle_swap")) return []
   // A bot's buy pays from the wallet the bot was approved on.
   if (card.display.bot) return []
-  // A Hood trade pays from the embedded EVM wallet; TEE wallets here are Solana's.
-  if (card.display.wallet.startsWith("0x")) return []
+  // A trade on an EVM chain pays from the embedded EVM wallet; TEE wallets here are Solana's. A card from an
+  // older core carries no chain: its payer's address says which.
+  if (maybeChain(storedChain(card.chain, card.display.wallet))?.family === "evm") return []
   const agent = wallets?.agents[card.agent]
   if (!agent) return []
   return payableWallets(agent.payable)
@@ -244,6 +259,8 @@ export interface OverlayProps {
   width: number
   height: number
   cards: readonly ViewCard[]
+  /** The cards' operations, by id: a bridge's details say where it stands. */
+  operations?: Readonly<Record<string, ViewOperation>>
   agents: readonly string[]
   activeAgent: string | undefined
   onClose: () => void
@@ -270,6 +287,8 @@ export interface OverlayProps {
   onPickEngine: (engine: EngineId, model: string | undefined) => void
   onPickPreset: (preset: Preset) => void
   onPickRunner: (on: boolean) => void
+  /** A picker row that puts a line on the input line: the Hood chip's step. */
+  onPickFill?: (line: string) => void
   onScrollEngines: (delta: number) => void
   /** Each agent's memory, and the person's deletes. */
   memory?: MemoryTopic
@@ -284,6 +303,9 @@ export interface OverlayProps {
   /** This tab's Signals choice, and a row of its pattern or chain menu clicked. */
   signals?: SignalsPick
   onPickSignalsMenu?: (index: number) => void
+  /** The chain filter and the chains in use, for its menu. */
+  chain?: { current: ChainSlug | null; chains: readonly ChainSlug[] }
+  onPickChainMenu?: (index: number) => void
   /** The P&L window the core keeps, and a row of its menu clicked. */
   pnlWindow?: PnlWindow
   onPickPnlMenu?: (index: number) => void
@@ -301,6 +323,9 @@ export interface OverlayProps {
   journalRows?: JournalRowsHeld
   onCopyJournalRows?: (text: string) => void
   onScrollJournalRows?: (delta: number) => void
+  /** A typed command's whole answer: copy it, scroll it. */
+  onCopySaid?: (text: string) => void
+  onScrollSaid?: (delta: number) => void
   /** A code bot's log as read, copying it, scrolling it, and stderr alone. */
   botLog?: BotLogHeld
   onCopyBotLog?: (text: string) => void
@@ -378,6 +403,14 @@ export function SignalsMenu(props: { overlay: Extract<Overlay, { kind: "signalsM
   return <ChoiceMenu title={o.which === "pattern" ? "which signals" : "which chain"} rows={signalsMenuRows(o.which, props.pick)} index={o.index} {...(o.x !== undefined ? { x: o.x } : {})} {...(o.y !== undefined ? { y: o.y } : {})} width={props.width} height={props.height} onPick={props.onPick} />
 }
 
+/** The status bar's chain menu, under its chip: all chains, or one chain for every pane. */
+export function ChainMenu(props: { overlay: Extract<Overlay, { kind: "chainMenu" }>; chain: { current: ChainSlug | null; chains: readonly ChainSlug[] } | undefined; width: number; height: number; onPick: (index: number) => void }) {
+  const o = props.overlay
+  const rows = chainMenuRows(props.chain?.current ?? null, props.chain?.chains ?? [])
+  // Under the chip, on the tab bar's row: the bar is row 0.
+  return <ChoiceMenu title="chain" rows={rows} index={o.index} {...(o.x !== undefined ? { x: o.x, y: 0 } : {})} width={props.width} height={props.height} onPick={props.onPick} />
+}
+
 /** The Wallets pane's `all groups ▾` menu, drawn by the main view and a popped Wallets pane. */
 export function WalletsMenu(props: { overlay: Extract<Overlay, { kind: "walletsMenu" }>; groups: readonly WalletGroup[]; shown: WalletsShown | undefined; width: number; height: number; onPick: (index: number) => void }) {
   const o = props.overlay
@@ -412,6 +445,7 @@ export function Overlays(props: OverlayProps) {
         onPick={props.onPickEngine}
         onPickPreset={props.onPickPreset}
         onPickRunner={props.onPickRunner}
+        {...(props.onPickFill ? { onPickFill: props.onPickFill } : {})}
         onScroll={props.onScrollEngines}
       />
     )
@@ -512,6 +546,7 @@ export function Overlays(props: OverlayProps) {
       </box>
     )
   }
+  if (o.kind === "chainMenu") return <ChainMenu overlay={o} chain={props.chain} width={props.width} height={props.height} onPick={props.onPickChainMenu ?? (() => {})} />
   if (o.kind === "signalsMenu") return <SignalsMenu overlay={o} pick={props.signals ?? {}} width={props.width} height={props.height} onPick={props.onPickSignalsMenu ?? (() => {})} />
   if (o.kind === "triggers") return <TriggersMenu state={o} topic={props.triggers} {...(props.keepAwake ? { keepAwake: props.keepAwake } : {})} width={props.width} height={props.height} now={props.now ?? Date.now()} onPick={props.onPickTriggers ?? (() => {})} onAct={props.onTriggersAct ?? (() => {})} />
   if (o.kind === "bots") return <BotsMenu state={o} topic={props.bots} killed={props.killed === true} {...(props.botConfirm ? { confirm: props.botConfirm } : {})} width={props.width} height={props.height} now={props.now ?? Date.now()} onPick={props.onPickBots ?? (() => {})} onAct={props.onBotsAct ?? (() => {})} />
@@ -555,6 +590,10 @@ export function Overlays(props: OverlayProps) {
     const chips = text && props.onCopyJournalRows ? { label: "", chips: [{ name: "⧉ copy them", onClick: () => props.onCopyJournalRows!(text) }] } : undefined
     return <Frame width={props.width} height={props.height} title="as recorded" lines={journalRowsLines(held)} {...(chips ? { chips } : {})} scroll={o.scroll ?? 0} {...(props.onScrollJournalRows ? { onScroll: props.onScrollJournalRows } : {})} footer="already redacted · esc or any key closes" onClick={props.onClose} />
   }
+  if (o.kind === "said") {
+    const chips = props.onCopySaid ? { label: "", chips: [{ name: "⧉ copy it", onClick: () => props.onCopySaid!(o.text) }] } : undefined
+    return <Frame width={props.width} height={props.height} title={o.title} lines={o.text.split("\n")} hanging={2} {...(chips ? { chips } : {})} scroll={o.scroll ?? 0} {...(props.onScrollSaid ? { onScroll: props.onScrollSaid } : {})} footer="its answer, as the CLI gave it · esc or any key closes" onClick={props.onClose} />
+  }
   // The tour draws over the frame itself, where the panes are placed (app.tsx, tour.tsx); so does a folded pane
   // opened over it, from the pane's own lines (pane-overlay.tsx).
   if (o.kind === "tour" || o.kind === "pane") return null
@@ -565,5 +604,5 @@ export function Overlays(props: OverlayProps) {
   const others = otherWallets(card, props.wallets)
   const chips = others.length ? { label: "pay from ", chips: others.map((w) => ({ name: w.name, onClick: () => props.onPayFrom(card.cardId, w) })) } : undefined
   const footer = chips ? "a wallet makes a new card paid from it · esc or any key closes" : "esc or any key closes"
-  return <Frame width={props.width} height={props.height} title={card.display.headline ?? "card"} lines={cardDetails(card)} hanging={10} {...(chips ? { chips } : {})} onClick={props.onClose} footer={footer} />
+  return <Frame width={props.width} height={props.height} title={card.display.headline ?? "card"} lines={cardDetails(card, props.operations?.[card.opId])} hanging={10} {...(chips ? { chips } : {})} onClick={props.onClose} footer={footer} />
 }

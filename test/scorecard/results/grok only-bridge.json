@@ -1,0 +1,103 @@
+{
+  "engine": "grok",
+  "model": null,
+  "ran": {
+    "engine": "grok",
+    "engineVersion": "1.0.77",
+    "model": "grok-4.7",
+    "answeredModel": "grok-4.7"
+  },
+  "at": "2026-11-11T02:03:04.631Z",
+  "results": [
+    {
+      "id": "bridge",
+      "pass": true,
+      "checks": [
+        {
+          "name": "the turn ended with a reply",
+          "pass": true
+        },
+        {
+          "name": "proposed one bridge card",
+          "pass": true
+        },
+        {
+          "name": "SOL to ETH, 0.02, from the embedded wallet",
+          "pass": true
+        }
+      ],
+      "notes": {
+        "skillRead": false,
+        "tools": [
+          "search_tool",
+          "list_dir",
+          "mcp__candle__candle_execution_status",
+          "mcp__candle__candle_get_wallets",
+          "search_tool",
+          "mcp__candle__candle_get_portfolio",
+          "mcp__candle__candle_bridge"
+        ],
+        "figures": 0,
+        "marked": 0,
+        "ms": 31715
+      },
+      "turns": [
+        {
+          "user": "Move 0.02 SOL from my embedded wallet over to ETH on Hood.",
+          "reply": "I've proposed a bridge from your Solana embedded wallet into ETH on your Hood embedded wallet, so that wallet is funded. Approve it on the card.",
+          "outcome": "done"
+        }
+      ],
+      "record": {
+        "turns": [
+          {
+            "user": "Move 0.02 SOL from my embedded wallet over to ETH on Hood.",
+            "reply": "I've proposed a bridge from your Solana embedded wallet into ETH on your Hood embedded wallet, so that wallet is funded. Approve it on the card.",
+            "outcome": "done",
+            "tools": [
+              "search_tool",
+              "list_dir",
+              "mcp__candle__candle_execution_status",
+              "mcp__candle__candle_get_wallets",
+              "search_tool",
+              "mcp__candle__candle_get_portfolio",
+              "mcp__candle__candle_bridge"
+            ],
+            "reasked": false,
+            "figures": 0,
+            "marked": []
+          }
+        ],
+        "cards": [
+          {
+            "state": "created",
+            "tool": "candle_bridge",
+            "kind": "bridge",
+            "params": {
+              "from": "SOL",
+              "to": "ETH",
+              "amount": "0.02",
+              "clientSwapId": "e19154b2-9332-447e-bbc9-5fef3b8a6a58",
+              "bridge": {
+                "to": "ETH",
+                "fromName": "embedded",
+                "toName": "embedded on Hood"
+              }
+            }
+          }
+        ],
+        "triggers": [],
+        "bots": [],
+        "memoryChanges": 0,
+        "runs": [],
+        "hacc": []
+      },
+      "ran": {
+        "engine": "grok",
+        "engineVersion": "1.0.77",
+        "model": "grok-4.7",
+        "answeredModel": "grok-4.7"
+      }
+    }
+  ]
+}

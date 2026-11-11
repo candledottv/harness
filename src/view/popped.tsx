@@ -35,6 +35,7 @@ import { C, fit, type TerminalColours } from "./theme"
 import type { ThemeStore } from "./themes"
 import { useTheme } from "./use-theme"
 import { TabBody } from "./trade-tab"
+import { chainInForce, signalsFold } from "./chain-filter"
 import { useRepaintAfterResize } from "./repaint"
 import { guardMouse } from "./mouse-guard"
 
@@ -104,7 +105,7 @@ export function PoppedApp({ session, pane, onQuit, now = Date.now, tickMs = 250,
   // Hacc's tape while this is the Signals pane, as a tab showing it asks; a list of Candle's
   // while this is one of them.
   // Its Signals choice is kept as `popped out`'s, as its pin is.
-  const signalsPick = signalsChoiceOf(view.views?.signals, POPPED_AT)
+  const signalsPick = signalsChoiceOf(view.views?.signals, POPPED_AT, signalsFold(view))
   // A popped Activity before its first line shows the tape.
   const signalsTopic = pane === "signals" ? (signalsPick.mine ? "signals:mine" : "signals") : activityTape(view, [pane]) ? "signals" : undefined
   const signalsWant = signalsTopic === "signals" ? signalsFilter(signalsPick) : undefined
@@ -126,6 +127,7 @@ export function PoppedApp({ session, pane, onQuit, now = Date.now, tickMs = 250,
     session,
     on: pane === "journal",
     search: ui.journal,
+    chain: chainInForce(view),
     newest: view.activity.at(-1)?.seq,
     held: () => viewRef.current.journal,
     got: (held) => {
@@ -150,7 +152,7 @@ export function PoppedApp({ session, pane, onQuit, now = Date.now, tickMs = 250,
       scrolls: reachRef.current,
       picks: picksRef.current,
       popped: v.views?.popped ?? [],
-      signals: signalsChoiceOf(v.views?.signals, POPPED_AT),
+      signals: signalsChoiceOf(v.views?.signals, POPPED_AT, signalsFold(v)),
       ...(v.pnl ? { pnlWindow: v.pnl.window } : {}),
       journal: journalContext(v, { width, height }),
       ...(v.wallets?.groups ? { walletGroups: v.wallets.groups } : {}),

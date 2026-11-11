@@ -13,6 +13,7 @@
 //
 // The base assets' names (SOL, USDC, ETH, USDG, CNDL) are reserved: they're learned only for their real mints, so a
 // token that calls itself "USDC" is never what a typed USDC reads as. Anyone can launch one with that symbol.
+import { addressKey } from "../shared/address-key"
 import { baseAssetForMint, isBaseAsset } from "./assets"
 
 /** At most this many symbol and mint pairs are kept; past it, the one seen longest ago goes. */
@@ -39,8 +40,10 @@ export class TokenNames {
     if (isBaseAsset(s) && baseAssetForMint(m) !== s) return
     let mints = this.bySymbol.get(s)
     if (!mints) this.bySymbol.set(s, (mints = new Map()))
-    if (!mints.has(m)) this.pairs += 1
-    mints.set(m, ++this.seq)
+    // An EVM address is one token whatever its case: the spelling first read for it is kept.
+    const held = [...mints.keys()].find((x) => addressKey(x) === addressKey(m)) ?? m
+    if (!mints.has(held)) this.pairs += 1
+    mints.set(held, ++this.seq)
     if (this.pairs > this.maxPairs) this.dropOldest()
   }
 

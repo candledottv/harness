@@ -13,29 +13,35 @@ import stretchFields from "../../test/fixtures/candle-recorded/feeds-pnl/feed-fi
 import stretchHood from "../../test/fixtures/candle-recorded/feeds-pnl/feed-finalstretch-hood.json"
 import unknownBucket from "../../test/fixtures/candle-recorded/feeds-pnl/feed-unknown-bucket.json"
 import { candleConfigDir } from "./candle-mcp"
+import { BACKGROUND_SHARE, BUDGET_WAIT, FREE_LIMIT, KeyBudget } from "./key-budget"
 import type { ToolOutcome } from "./candle-mcp"
 import { type Bucket, BUCKETS, FEED_FIELDS, feedRows, Feeds, type FeedsView, feedsTopicFilter, OFF_RETRY_MS, RETRY_SOON_MS, whereOf } from "./feeds"
 
 const MOON = "MoonFake11111111111111111111111111111111111"
+const HOOD = "0x00000000000000000000000000000000000b0B01"
 const DUST = "DustFake11111111111111111111111111111111111"
 
 const ok = (result: unknown): ToolOutcome => ({ kind: "ok", result })
 const refused = (code: string, body: unknown = {}): ToolOutcome => ({ kind: "error", code, retryable: false, body })
 
-function rig(opts: { wanted?: Bucket[]; answer?: (bucket: Bucket) => ToolOutcome; stretch?: number } = {}) {
+function rig(opts: { wanted?: Bucket[]; answer?: (bucket: Bucket, chain: string) => ToolOutcome; stretch?: number; chains?: () => readonly { chain: "solana" | "hood"; slow?: boolean }[] } = {}) {
   let clock = 1_000_000
   let wanted = new Set<Bucket>(opts.wanted ?? [])
-  const calls: { bucket: Bucket; args: Record<string, unknown>; at: number }[] = []
+  const calls: { bucket: Bucket; chain: string; args: Record<string, unknown>; at: number }[] = []
   const published: { view: FeedsView; changed: Bucket }[] = []
   const feeds = new Feeds({
     call: async (_tool, args) => {
-      calls.push({ bucket: args.bucket as Bucket, args, at: clock })
-      return opts.answer?.(args.bucket as Bucket) ?? ok({ success: true, tokens: [{ chain: "solana", address: MOON, symbol: "MOON", marketCap: 1 }] })
+      calls.push({ bucket: args.bucket as Bucket, chain: String(args.chain), args, at: clock })
+      return (
+        opts.answer?.(args.bucket as Bucket, String(args.chain)) ??
+        ok({ success: true, tokens: args.chain === "hood" ? [{ chain: "hood", address: HOOD, symbol: "KITE", marketCap: 1, createdAt: 2_000 }] : [{ chain: "solana", address: MOON, symbol: "MOON", marketCap: 1, createdAt: 1_000 }] })
+      )
     },
     now: () => clock,
     wanted: () => wanted,
     publish: (view, changed) => published.push({ view, changed }),
     stretch: () => opts.stretch ?? 1,
+    ...(opts.chains ? { chains: opts.chains } : {}),
   })
   // Running as with a view attached, driven by step() rather than its own timer.
   ;(feeds as unknown as { running: boolean }).running = true
@@ -47,7 +53,7 @@ function rig(opts: { wanted?: Bucket[]; answer?: (bucket: Bucket) => ToolOutcome
       clock += 1_000
     }
   }
-  return { feeds, calls, published, run, tick: (ms: number) => (clock += ms), want: (b: Bucket[]) => (wanted = new Set(b)), count: (b: Bucket) => calls.filter((c) => c.bucket === b).length }
+  return { feeds, calls, published, run, tick: (ms: number) => (clock += ms), want: (b: Bucket[]) => (wanted = new Set(b)), count: (b: Bucket, chain = "solana") => calls.filter((c) => c.bucket === b && c.chain === chain).length }
 }
 
 describe("reading Candle's lists", () => {
@@ -75,8 +81,15 @@ describe("reading Candle's lists", () => {
       ],
     })!
     expect(rows).toHaveLength(2)
-    expect(rows[0]).toEqual({ mint: MOON, symbol: "MO[2JON", name: "Moon Coin", priceUsd: 0.000806, marketCap: 812_000, change1h: expect.closeTo(0.241, 9), createdAt: 1_793_367_492_000 })
-    expect(rows[1]).toEqual({ mint: DUST, symbol: "DUST", marketCap: null, priceUsd: null, change1h: null, progress: 0.96278036, lastTradeAt: Date.parse("2026-10-30T13:36:07.869Z") })
+    expect(rows[0]).toEqual({ mint: MOON, chain: "solana", symbol: "MO[2JON", name: "Moon Coin", priceUsd: 0.000806, marketCap: 812_000, change1h: expect.closeTo(0.241, 9), createdAt: 1_793_367_492_000 })
+    expect(rows[1]).toEqual({ mint: DUST, chain: "solana", symbol: "DUST", marketCap: null, priceUsd: null, change1h: null, progress: 0.96278036, lastTradeAt: Date.parse("2026-10-30T13:36:07.869Z") })
+  })
+
+  test("a row's chain is Candle's own, else the chain the list was read for", () => {
+    const HOOD = "0x00000000000000000000000000000000000b0B01"
+    expect(feedRows({ tokens: [{ chain: "hood", address: HOOD, symbol: "MOON" }] })![0]!.chain).toBe("hood")
+    expect(feedRows({ tokens: [{ address: HOOD, symbol: "MOON" }] }, "hood")![0]!.chain).toBe("hood")
+    expect(feedRows({ tokens: [{ chain: "base", address: MOON, symbol: "MOON" }] })![0]!.chain).toBe("solana")
   })
 
   test("Candle's recorded lists read: New's ages, Graduated's times, Final Stretch's progress and last trade, and On Fire's outlier change", () => {
@@ -183,6 +196,100 @@ describe("how often", () => {
   })
 })
 
+describe("Trending on Hood", () => {
+  const both = () => [{ chain: "solana" as const }, { chain: "hood" as const, slow: true }]
+  test("all chains: Hood's New, Graduated and On Fire at half the pace, only while on screen; never Final Stretch. Inside Free's 30 a minute", async () => {
+    const r = rig({ wanted: ["new", "graduated", "onfire", "finalstretch"], chains: both })
+    await r.run(60_000)
+    for (const b of BUCKETS) expect(r.count(b)).toBe(4)
+    for (const b of ["new", "graduated", "onfire"] as const) expect(r.count(b, "hood")).toBe(2)
+    expect(r.count("finalstretch", "hood")).toBe(0)
+    expect(r.feeds.demand()).toEqual({ perMin: 22, lists: 7 })
+    expect(r.feeds.demand().perMin).toBeLessThanOrEqual(30)
+    // Off the tab, Hood's lists stop: only Solana's On Fire goes on, for the empty states.
+    r.want([])
+    r.calls.length = 0
+    await r.run(120_000)
+    expect(new Set(r.calls.map((c) => `${c.chain}:${c.bucket}`))).toEqual(new Set(["solana:onfire"]))
+  })
+
+  test("on Free's 30 a minute, both chains on screen and then off it: the lists' reads stay inside the background share, and their pane says the limit slows them", async () => {
+    let clock = 1_000_000
+    let wanted = new Set<Bucket>(["new", "graduated", "onfire", "finalstretch"])
+    const budget = new KeyBudget({ limitOf: () => FREE_LIMIT, agents: () => ["momentum"], preferred: () => "momentum", now: () => clock })
+    const reads: number[] = []
+    const feeds: Feeds = new Feeds({
+      call: async (_tool, args) => {
+        const agent = budget.take("lists")
+        if (!agent) return BUDGET_WAIT
+        budget.noteCall(agent)
+        reads.push(clock)
+        return ok({ success: true, tokens: args.chain === "hood" ? [{ chain: "hood", address: HOOD, symbol: "KITE" }] : [{ chain: "solana", address: MOON, symbol: "MOON" }] })
+      },
+      now: () => clock,
+      wanted: () => wanted,
+      publish: () => {},
+      stretch: () => budget.stretch("lists"),
+      chains: both,
+    })
+    budget.want("lists", { perMin: () => feeds.demand().perMin, floor: () => feeds.demand().lists, naturalMs: () => feeds.paceMs() })
+    ;(feeds as unknown as { running: boolean }).running = true
+    const share = Math.floor(FREE_LIMIT * BACKGROUND_SHARE)
+    /** The most reads in any minute from `from` on. */
+    const busiest = (from: number) => Math.max(0, ...reads.filter((at) => at >= from).map((at) => reads.filter((x) => x >= at && x < at + 60_000).length))
+    const run = async (ms: number) => {
+      const end = clock + ms
+      while (clock < end) {
+        await feeds.step()
+        clock += 1_000
+      }
+    }
+
+    // On screen: 22 a minute wanted, more than the share holds.
+    await run(5 * 60_000)
+    expect(feeds.demand().perMin).toBe(22)
+    expect(busiest(0)).toBeLessThanOrEqual(share)
+    expect(reads.length).toBeGreaterThan(0)
+    expect(budget.pace().lists).toMatchObject({ why: "limit" })
+    expect(budget.use()[0]!.background).toBeLessThanOrEqual(share)
+
+    // Off the tab: Solana's On Fire alone, inside the share too, and nothing slows it.
+    wanted = new Set()
+    const closed = clock
+    await run(5 * 60_000)
+    expect(busiest(closed)).toBeLessThanOrEqual(share)
+    expect(reads.filter((at) => at >= closed).length).toBeGreaterThan(0)
+    expect(budget.pace().lists).toBeUndefined()
+  })
+
+  test("Hood picked: Hood's lists take Solana's pace and Solana's stop", async () => {
+    const r = rig({ wanted: ["new", "onfire"], chains: () => [{ chain: "hood" }] })
+    await r.run(60_000)
+    expect(r.count("new", "hood")).toBe(4)
+    expect(r.count("onfire", "hood")).toBe(4)
+    expect(r.count("new")).toBe(0)
+    expect(r.count("onfire")).toBe(0)
+  })
+
+  test("each list holds both chains' rows, each with its chain: New by when it was made, newest first", async () => {
+    const r = rig({ wanted: ["new"], chains: both })
+    await r.run(1_000)
+    const rows = r.feeds.view().new!.rows
+    expect(rows.map((x) => [x.symbol, x.chain])).toEqual([
+      ["KITE", "hood"],
+      ["MOON", "solana"],
+    ])
+    // On Fire's ranks interleave, a chain's first beside the other's first.
+    const fire = rig({
+      wanted: ["onfire"],
+      chains: both,
+      answer: (_b, chain) => ok({ tokens: chain === "hood" ? [{ chain: "hood", address: HOOD, symbol: "H1" }, { chain: "hood", address: `${HOOD.slice(0, -1)}2`, symbol: "H2" }] : [{ chain: "solana", address: MOON, symbol: "S1" }, { chain: "solana", address: DUST, symbol: "S2" }] }),
+    })
+    await fire.run(1_000)
+    expect(fire.feeds.view().onfire!.rows.map((x) => x.symbol)).toEqual(["S1", "H1", "S2", "H2"])
+  })
+})
+
 describe("Final Stretch says the truth", () => {
   test("off on Candle's server (refused as an unknown bucket): off, no rows, and asked again only every 10 minutes", async () => {
     const r = rig({ wanted: ["finalstretch"], answer: (b) => (b === "finalstretch" ? refused("VALIDATION_FAILED", unknownBucket.answer) : ok({ success: true, tokens: [] })) })
@@ -281,6 +388,37 @@ describe("through a real core", () => {
     const view = await c.view()
     await view.request("subscribe", { topics: ["feeds"], filters: { feeds: { buckets: ["finalstretch"] } } })
     await until(() => latestFeeds(view)?.finalstretch?.state === "off")
+  })
+
+  test("a Solana-only account whose Hood read fails reads Solana's lists alone; one that holds on Hood reads Hood's too", async () => {
+    const chainsRead = (c: TestCore) =>
+      ["momentum", "swing"].flatMap((agent) => {
+        const path = join(candleConfigDir(c.p.stateDir, agent), "fake-candle-calls.jsonl")
+        if (!existsSync(path)) return []
+        return readFileSync(path, "utf8")
+          .split("\n")
+          .filter(Boolean)
+          .map((l) => JSON.parse(l) as { name: string; args: { chain?: string } })
+          .filter((l) => l.name === "candle_get_feed")
+          .map((l) => l.args.chain ?? "solana")
+      })
+    const read = async (script: Record<string, unknown>) => {
+      const c = await startTestCore({}, { candle: { momentum: script, swing: script } })
+      cores.push(c)
+      const view = await c.view()
+      await view.request("subscribe", { topics: ["feeds", "portfolio"], filters: { feeds: { buckets: ["new"] } } })
+      await until(() => view.events.some((e) => e.topic === "portfolio" && (e.data as { readAt: number | null }).readAt !== null))
+      return { c, view }
+    }
+    const held = await read({ evmWei: "1000000000000000000" })
+    await until(() => chainsRead(held.c).includes("hood"))
+    const failed = await read({ hoodUnread: true })
+    const portfolio = failed.view.events.filter((e) => e.topic === "portfolio").at(-1)!.data as { chains: string[]; wallets: { chain: string }[] }
+    expect(portfolio.chains).toEqual(["solana"])
+    expect(portfolio.wallets.map((w) => w.chain)).not.toContain("hood")
+    await until(() => (latestFeeds(failed.view)?.new?.rows.length ?? 0) > 0)
+    await Bun.sleep(500)
+    expect(chainsRead(failed.c)).not.toContain("hood")
   })
 
   test("a harness may not subscribe to the lists", async () => {

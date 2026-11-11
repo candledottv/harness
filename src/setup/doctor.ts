@@ -41,7 +41,8 @@ import { homedir } from "node:os"
 import { join } from "node:path"
 import { type Config, ConfigError, loadConfig, solanaRpcFault } from "../config"
 import { type AgentStatus, parseExecutionStatus } from "../core/agent-status"
-import { joinTee, parseProfileWallets, portfolioTee, resolvePayer, type TeeWallet } from "../core/agent-wallets"
+import { portfolioWallets } from "../core/portfolio-wallets"
+import { defaultLineOf, joinTee, lineFields, parseProfileWallets, pinKey, portfolioTee, resolvePayer, type TeeWallet } from "../core/agent-wallets"
 import { pinnedAddress, readDefaultPins, type DefaultPin } from "../core/default-pins"
 import { BASE_ASSETS } from "../core/assets"
 import { CandleCli, type CliResult } from "../core/candle-cli"
@@ -78,6 +79,7 @@ import { type HoldSupport, holdSupport } from "../core/hold"
 import { harnessEnv, runLines } from "../engine/spawn"
 import { configProblem, ensureStateDir, paths, PathsError, type Paths, SOCKET_PATH_MAX_BYTES, UnsafeStateDir } from "../paths"
 import { apiKeyPrefix } from "../shared/api-key"
+import { addressKey, chainName, enabledChains, maybeChain } from "../shared/chains"
 import { isTestName, sharedWithWords } from "../shared/bot-name"
 import { Redactor } from "../shared/redact"
 import { terminalText } from "../shared/terminal-text"
@@ -299,6 +301,7 @@ export async function runDoctor(opts: DoctorOptions): Promise<Check[]> {
   if (owned) for (const check of withdrawKeys(prefixes, owned)) add(check)
   if (owned) for (const check of await strandedWallets(config, env, owned, prefixes)) add(check)
   if ([...reads.values()].some((r) => r.tee?.some((t) => t.chain === "solana"))) add(rpcCheck(config, env))
+  if ([...reads.values()].some((r) => r.tee?.some((t) => maybeChain(t.chain)?.family === "evm"))) add(evmRpcCheck(config))
   if (cliOk) for (const check of await emptyAccountChecks({ p, config, env, keys, reads, coreUp, now })) add(check)
   if (cliOk) add(await lpCheck(config, env, keys, redactor))
   const plans = new Map([...reads].map(([agent, r]) => [agent, r.status.tier]))
@@ -1152,12 +1155,12 @@ async function teeChecks(input: {
   if (free && held.length > 0) {
     add("warn", `its key holds TEE wallet ${held.map((t) => teeName(t)).join(", ")}, but the plan is Free: TEE wallets need Pro or Max, so its TEE cards are refused`, "Move the account to Pro or Max in the Candle app, or trade from the embedded wallet.")
   }
-  // The signer: `candle wallets --json` with this agent's key says, per wallet id, whether it's here.
-  // Solana's and Hood's alike: `candle wallets` lists every linked wallet's signer by id.
-  const active = held.filter((t) => t.active)
+  // The signer: `candle wallets --json` with this agent's key says, per wallet id, whether it's here. Every chain's TEE
+  // wallet is signed by its relay signer on the machine that promoted it (the CLI's payer check is the same for both).
+  const signable = held.filter((t) => t.active)
   let signers: Record<string, unknown> | undefined
   let signerError: string | undefined
-  if (active.length > 0 && input.cliOk && !free) {
+  if (signable.length > 0 && input.cliOk && !free) {
     const cli = new CandleCli({ cliPath: config.candle.cliPath, rpcUrl: undefined, keyFor: () => input.key, parentEnv: input.env, profile: () => config.candle.profile })
     const run = await cli.run({ agent, args: ["wallets"], json: true, timeoutMs: 30_000 }).catch((error: Error) => ({ exitCode: -1, stdout: "", stderr: error.message, json: undefined }))
     signers = record(record(run.json)?.signers)
@@ -1166,10 +1169,25 @@ async function teeChecks(input: {
       signerError = lastLine(redactor, run.stdout, run.stderr) || `exit ${run.exitCode}`
     }
   }
+  const onPortfolio = portfolio === undefined ? [] : portfolioWallets(portfolio)
   for (const t of held) {
-    const name = `${t.chain === "hood" ? "Hood " : ""}TEE wallet ${teeName(t)} (${short(t.address)})`
-    if (t.chain !== "solana" && t.chain !== "hood") add("ok", `${name} is on ${terminalText(t.chain, { maxLength: 16 })}, a chain the Candle Harness doesn't trade on`)
-    else if (!t.active) add("warn", `${name} is stopped on Candle's side (inactive), so its cards are refused`, "Turning it back on is the owner's step, in their own terminal.")
+    const evm = maybeChain(t.chain)?.family === "evm"
+    const name = `${evm ? `${chainName(t.chain)} TEE wallet` : "TEE wallet"} ${teeName(t)} (${short(t.address)})`
+    // An EVM TEE wallet pays each leg's gas in its native asset and keeps a reserve to sweep it home: with none, Candle
+    // refuses every trade from it before anything is bought (GAS_INSUFFICIENT).
+    const native = evm && t.active ? onPortfolio.find((w) => w.kind === "tee" && w.chain === t.chain && addressKey(w.address) === addressKey(t.address))?.nativeRaw : undefined
+    if (native === 0n) {
+      const symbol = maybeChain(t.chain)!.native.symbol
+      // A bridge lands only in the same key's TEE wallet on the other chain, sent from its Solana TEE wallet: typed with
+      // `from` and `as`, as the wallet's own chip types it, where the key holds one Solana TEE wallet that can send and
+      // this is its only active wallet on this chain (a typed bridge can't name where it lands).
+      const sending = held.filter((s) => s.chain === "solana" && s.active && !s.cantSign && (signers?.[s.id] === undefined || signers[s.id] === "stored"))
+      const landing = held.filter((s) => s.chain === t.chain && s.active)
+      const from = sending.length === 1 && landing.length === 1 ? (sending[0]!.label ?? sending[0]!.address) : undefined
+      const bridge = from === undefined ? "" : `, or bridge some from the key's Solana TEE wallet (type bridge 0.05 sol to ${symbol.toLowerCase()} from ${from} as ${agent})`
+      add("warn", `${name} holds no ${symbol}: it pays each trade's gas in ${symbol} and keeps a reserve to sweep it home, so its trades are refused (GAS_INSUFFICIENT)`, `Send ${symbol} to ${t.address}${bridge}.`)
+    }
+    if (!t.active) add("warn", `${name} is stopped on Candle's side (inactive), so its cards are refused`, "Turning it back on is the owner's step, in their own terminal.")
     else if (free || !input.cliOk) continue
     else if (signerError !== undefined) add("warn", `couldn't read whether ${name}'s signer is on this machine: ${signerError}`, "Run `candle wallets` with this agent's key to see it.")
     else if (signers?.[t.id] === "stored") add("ok", `${name} is active, and its signer is on this machine`)
@@ -1235,37 +1253,51 @@ function defaultWalletChecks(config: Config, reads: Map<string, TeeRead>, prefix
   const checks: Check[] = []
   const boundTo = (address: string) => [...reads].find(([, r]) => r.tee?.some((t) => t.address === address))?.[0]
   for (const [agent, read] of reads) {
-    const word = config.agents[agent]?.wallet
-    if (word === undefined || read.tee === undefined) continue
+    const lines = enabledChains().flatMap(({ slug }) => {
+      const line = defaultLineOf(config.agents[agent], slug)
+      return line?.word !== undefined ? [{ chain: slug, line, word: line.word }] : []
+    })
+    if (lines.length === 0 || read.tee === undefined) continue
     const { status } = read
     const prefix = prefixes.get(agent)
-    const defaultPin = pinnedAddress(pins, agent, word)
+    const allowed = status.embeddedWallet === "allowed"
     const ctx = {
       agent,
       payable: {
-        ...(status.embeddedWallet === "allowed" && status.wallets.solana ? { embedded: { address: status.wallets.solana, chain: "solana" as const } } : {}),
+        ...(allowed && status.wallets.solana ? { embedded: { address: status.wallets.solana, chain: "solana" as const } } : {}),
+        ...(allowed && status.wallets.evm ? { embeddedEvm: status.wallets.evm } : {}),
         tee: read.tee,
         readAt: Date.now(),
         unreadable: [],
         ...(status.tier ? { tier: status.tier } : {}),
       },
       embeddedWallet: status.embeddedWallet,
+      ...(status.wallets.evm ? { evm: status.wallets.evm } : {}),
       ...(prefix ? { prefix } : {}),
       account: portfolioTee(read.portfolio),
       boundTo,
-      defaultWallet: word,
     }
-    // Followed by the address it was last found at (default-pins.ts), as the core pays: a rename leaves the line's name behind.
-    const picked = resolvePayer({ ...ctx, ...(defaultPin ? { defaultPin } : {}) })
-    const byLine = defaultPin ? resolvePayer(ctx) : picked
     const add = (state: CheckState, text: string, fix?: string) => void checks.push({ area: "wallet", state, text: `${agent}: ${text}`, ...(fix ? { fix } : {}) })
-    const paysFrom = picked.ok ? (picked.kind === "embedded" ? "the embedded wallet" : teeName(picked)) : ""
-    const line = `agents.${agent}.wallet = "${terminalText(word, { maxLength: 64 })}"`
-    if (picked.ok && !(byLine.ok && byLine.address === picked.address)) {
-      const now = picked.kind === "tee" && picked.label ? picked.label : undefined
-      add("warn", `pays from ${paysFrom} when a trade names no wallet, by its address: config.toml's line (${line}) is that wallet's old name`, `Change agents.${agent}.wallet in config.toml to ${now ? `"${now}"` : "its name now"} (or its address), so the line says what it pays from.`)
-    } else if (picked.ok) add("ok", `pays from ${paysFrom} when a trade names no wallet (agents.${agent}.wallet)`)
-    else add("warn", picked.message.replace(/ Change it in config\.toml, or name a wallet\.$/, ""), `Edit agents.${agent}.wallet in config.toml, or remove it to pay from the embedded wallet.`)
+    const checked = lines.map(({ chain, line, word }) => {
+      const defaultPin = pinnedAddress(pins, pinKey(agent, line, chain), word)
+      const base = { ...ctx, chain, ...lineFields(line, undefined) }
+      // Followed by the address it was last found at (default-pins.ts), as the core pays: a rename leaves the line's name behind.
+      const picked = resolvePayer({ ...base, ...(defaultPin ? { defaultPin } : {}) })
+      return { chain, line, word, picked, byLine: defaultPin ? resolvePayer(base) : picked }
+    })
+    // The one wallet line is the default on its own wallet's chain: said for the chain it pays on, or, paying nowhere, why.
+    const said = lines[0]!.line.perChain ? checked : [checked.find((c) => c.picked.ok && c.picked.byDefault) ?? checked.find((c) => !c.picked.ok) ?? checked[0]!]
+    for (const { chain, line, word, picked, byLine } of said) {
+      // A Solana-only account's words are as they were; a trade on another chain, or a chain's own line, names its chain.
+      const on = chain === "solana" && !line.perChain ? "" : ` on ${chainName(chain)}`
+      const paysFrom = picked.ok ? (picked.kind === "embedded" ? "the embedded wallet" : teeName(picked)) : ""
+      const shown = `${line.setting} = "${terminalText(word, { maxLength: 64 })}"`
+      if (picked.ok && !(byLine.ok && byLine.address === picked.address)) {
+        const now = picked.kind === "tee" && picked.label ? picked.label : undefined
+        add("warn", `pays from ${paysFrom} when a trade${on} names no wallet, by its address: config.toml's line (${shown}) is that wallet's old name`, `Change ${line.setting} in config.toml to ${now ? `"${now}"` : "its name now"} (or its address), so the line says what it pays from.`)
+      } else if (picked.ok) add("ok", `pays from ${paysFrom} when a trade${on} names no wallet (${line.setting})`)
+      else add("warn", picked.message.replace(/ Change it in config\.toml, or name a wallet\.$/, ""), `Edit ${line.setting} in config.toml, or remove it to pay from the embedded wallet.`)
+    }
   }
   return checks
 }
@@ -1349,6 +1381,19 @@ function rpcCheck(config: Config, env: Record<string, string | undefined>): Chec
   }
 }
 
+/** The candle CLI's own Robinhood Chain RPC, used when no other is named (cli/src/evm-lite.ts DEFAULT_HOOD_RPC_URL). */
+export const CLI_HOOD_RPC_HOST = "rpc.mainnet.chain.robinhood.com"
+
+/**
+ * The RPC a Hood TEE wallet's trades read the chain over, by the CLI's order (cli/src/evm-lite.ts resolveEvmRpcUrl):
+ * `--rpc-url`, which the core never passes for it; else CANDLE_EVM_RPC_URL, which the core sets only from
+ * candle.evmRpcUrl (the person's own never reaches the CLI, as with Solana's); else the CLI's built-in one. It only reads:
+ * Candle sets every nonce and fee, and sends each transaction itself.
+ */
+function evmRpcCheck(config: Config): Check {
+  const via = config.candle.evmRpcUrl ? `${new URL(config.candle.evmRpcUrl).host} (candle.evmRpcUrl)` : `the candle CLI's built-in RPC, ${CLI_HOOD_RPC_HOST}`
+  return { area: "wallet", state: "ok", text: `Hood TEE trades read Robinhood Chain over ${via}` }
+}
 
 /**
  * Onboarding's state, from state/onboarding.json alone, so offline too: finished, or where it
@@ -1485,7 +1530,7 @@ async function lpCheck(config: Config, env: Record<string, string | undefined>, 
   return { area: "candle", state: "skip", text: `couldn't tell whether Candle serves LP: ${run ? lastLine(redactor, run.stdout, run.stderr) || `exit ${run.exitCode}` : "candle lp pools didn't run"}` }
 }
 
-const READ_NAMES: Record<ReadKind, string> = { prices: "prices", linked: "the linked token", pnl: "P&L", pins: "pinned tokens", lists: "Candle's lists", empty: "empty token accounts" }
+const READ_NAMES: Record<ReadKind, string> = { prices: "prices", bridges: "an open bridge", linked: "the linked token", pnl: "P&L", pins: "pinned tokens", lists: "Candle's lists", empty: "empty token accounts" }
 
 /**
  * A running core's use of each key's Candle limit over the last minute, from its status:
@@ -1865,27 +1910,30 @@ export function approvalsChecks(input: { p: Paths; config: Config; rows: readonl
   const autonomy = new Autonomy(p.autonomyState)
   const spend = new DaySpend(byWalletWithoutCard)
   spend.rebuild(rows)
-  // Who pays from each wallet, as the core lists them: the embedded wallet where a key is allowed it, and each Solana TEE wallet bound to a key.
-  const payers = new Map<string, { name: string; agents: string[] }>()
-  const pays = (address: string, name: string, agent: string) => {
-    const w = payers.get(address) ?? { name, agents: [] }
-    w.agents.push(agent)
-    payers.set(address, w)
+  // Who pays from each wallet, as the core lists them: the embedded wallet on each chain where a key is allowed it, and
+  // each TEE wallet bound to a key, Solana's and Hood's. Keyed by address key, as autonomy keys a Hood address.
+  const payers = new Map<string, { address: string; name: string; agents: string[]; quiet?: true }>()
+  const pays = (address: string, name: string, agent: string, quiet?: true) => {
+    const w = payers.get(addressKey(address)) ?? { address, name, agents: [], ...(quiet ? { quiet } : {}) }
+    if (!w.agents.includes(agent)) w.agents.push(agent)
+    payers.set(addressKey(address), w)
   }
   for (const [agent, read] of reads ?? []) {
     if (read.status.wallets.solana && read.status.embeddedWallet !== "denied") pays(read.status.wallets.solana, "embedded", agent)
-    for (const t of read.tee ?? []) if (t.chain === "solana" || t.chain === "hood") pays(t.address, teeName(t), agent)
+    // Every account has one, empty until Hood is used: a payer for a setting made on it, never listed unasked.
+    if (read.status.wallets.evm && read.status.embeddedWallet !== "denied") pays(read.status.wallets.evm, "embedded", agent, true)
+    for (const t of read.tee ?? []) pays(t.address, teeName(t), agent)
   }
   const label = (address: string, name: string) => `${name === "embedded" ? "the embedded wallet" : `TEE wallet ${name}`} (${short(address)})`
   const inside = autonomy.all().filter((e) => e.value.setting === "inside")
   if (inside.length === 0) {
-    const named = [...payers].map(([address, w]) => label(address, w.name))
+    const named = [...payers.values()].filter((w) => !w.quiet).map((w) => label(w.address, w.name))
     const which = named.length ? `every wallet the agents pay from asks every time (${named.join(", ")})` : "every wallet asks every time"
     out.push({ area: "wallet", state: "ok", text: `${which}, so every live trade is a card, as by default. Trading inside limits is turned on wallet by wallet in the view's settings ▾ → approvals` })
   }
   for (const entry of inside) {
     const v = entry.value as Extract<WalletSetting, { setting: "inside" }>
-    const payer = payers.get(entry.wallet)
+    const payer = payers.get(addressKey(entry.wallet))
     const name = payer?.name ?? entry.name ?? short(entry.wallet)
     const used = spend.spent(entry.wallet, now)
     if (reads && !payer) {

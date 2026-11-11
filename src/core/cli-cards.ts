@@ -17,7 +17,7 @@ import { terminalText } from "../shared/terminal-text"
 import type { PayerResult } from "./agent-wallets"
 import { isBaseAsset } from "./assets"
 import type { CandleCli, CliResult } from "./candle-cli"
-import { type CardRow, rowFor } from "./cli-table"
+import { type CardRow, isFlagWord, rowFor, sourceForWords } from "./cli-table"
 import { PRE_BUILD_CODES } from "./cli-trade"
 import type { Mapped, Operation, OperationError } from "./execute"
 import { refusalMessage } from "./execute"
@@ -104,10 +104,11 @@ const flagValue = (argv: readonly string[], flag: string): string | undefined =>
 
 /** argv's positionals after the command words: what isn't a flag or a value flag's value. */
 function positionals(argv: readonly string[], words: number, valueFlags: ReadonlySet<string>): string[] {
+  const entry = sourceForWords(argv)
   const out: string[] = []
   for (let i = words; i < argv.length; i++) {
     const arg = argv[i]!
-    if (arg.startsWith("-")) {
+    if (isFlagWord(entry, arg)) {
       if (valueFlags.has(arg)) i++
       continue
     }

@@ -1,9 +1,9 @@
 // The pins and the person's pick.
 import { afterAll, describe, expect, test } from "bun:test"
-import { mkdtempSync, rmSync, statSync, writeFileSync } from "node:fs"
+import { existsSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
-import { MAX_PINS, placeParam, signalsChoiceParam, ViewState } from "./view-state"
+import { MAX_PINS, placeParam, signalsChoiceParam, chainFilterParam, ViewState } from "./view-state"
 
 const JUP = "JupFake111111111111111111111111111111111111"
 const BONK = "BonkFake11111111111111111111111111111111111"
@@ -29,6 +29,16 @@ describe("pins", () => {
     expect(await s.unpin("Trade")).toBe(true)
     expect(await s.unpin("Trade")).toBe(false)
     expect(new ViewState({ path, now: () => 3 }).pins()).toEqual([])
+  })
+
+  test("a pin kept before pins carried their chain is on its mint's family's chain: a 0x token is Hood's, never Solana's", () => {
+    const path = fresh()
+    const HOOD = `0x${"cd".repeat(20)}`
+    writeFileSync(path, JSON.stringify({ pins: [{ at: "Trade", mint: HOOD }, { at: "Cockpit", mint: JUP }, { at: "Mine", mint: BONK, chain: "base" }] }))
+    expect(new ViewState({ path, now: () => 1 }).pins()).toEqual([
+      { at: "Trade", mint: HOOD, chain: "hood" },
+      { at: "Cockpit", mint: JUP, chain: "solana" },
+    ])
   })
 
   test(`at most ${MAX_PINS}: a fourth names the three, to unpin one`, async () => {
@@ -122,6 +132,49 @@ describe("Signals' choices", () => {
     expect(new ViewState({ path, signalsPath, now: () => 1 }).signals()).toEqual([{ at: "Cockpit", chain: "hood" }])
     writeFileSync(signalsPath, "{not json")
     expect(new ViewState({ path, signalsPath, now: () => 1 }).signals()).toEqual([])
+  })
+})
+
+describe("the chain filter", () => {
+  test("one choice for every pane and view, written 0600 and read back by a new core; all chains is kept as no choice", async () => {
+    const path = fresh()
+    const chainPath = join(path, "..", "chain-filter.json")
+    const s = new ViewState({ path, chainPath, now: () => 1 })
+    expect(s.chain()).toBeNull()
+    expect(await s.setChain("hood")).toBe(true)
+    expect(await s.setChain("hood")).toBe(false)
+    expect(statSync(chainPath).mode & 0o777).toBe(0o600)
+    expect(new ViewState({ path, chainPath, now: () => 2 }).chain()).toBe("hood")
+    expect(await s.setChain(null)).toBe(true)
+    expect(new ViewState({ path, chainPath, now: () => 3 }).chain()).toBeNull()
+  })
+
+  test("a file that doesn't read, or names a chain that isn't on, reads as all chains", () => {
+    const path = fresh()
+    const chainPath = join(path, "..", "chain-filter.json")
+    writeFileSync(chainPath, JSON.stringify({ chain: "base" }))
+    expect(new ViewState({ path, chainPath, now: () => 1 }).chain()).toBeNull()
+    writeFileSync(chainPath, "{not json")
+    expect(new ViewState({ path, chainPath, now: () => 1 }).chain()).toBeNull()
+  })
+
+  test("a Signals pane's own chain isn't the chain filter: every account starts on all chains, and the tabs keep theirs", () => {
+    const path = fresh()
+    const signalsPath = join(path, "..", "signals-filters.json")
+    const chainPath = join(path, "..", "chain-filter.json")
+    writeFileSync(signalsPath, JSON.stringify({ signals: [{ at: "Signals", pattern: "dormancy", chain: "hood" }, { at: "Cockpit", chain: "hood" }] }))
+    const s = new ViewState({ path, signalsPath, chainPath, now: () => 1 })
+    expect(s.chain()).toBeNull()
+    expect(s.signals()).toEqual([{ at: "Signals", pattern: "dormancy", chain: "hood" }, { at: "Cockpit", chain: "hood" }])
+    expect(existsSync(chainPath)).toBe(false)
+  })
+
+  test("a view's chain is checked: a chain that's on, or null for all of them", () => {
+    expect(chainFilterParam("hood")).toEqual({ chain: "hood" })
+    expect(chainFilterParam("solana")).toEqual({ chain: "solana" })
+    expect(chainFilterParam(null)).toEqual({ chain: null })
+    expect("problem" in chainFilterParam("base")).toBe(true)
+    expect("problem" in chainFilterParam(undefined)).toBe(true)
   })
 })
 

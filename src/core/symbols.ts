@@ -3,12 +3,13 @@
 // paper positions) before any read has answered. Only what Candle said; a symbol is display text, never a key.
 import { readFileSync, renameSync, writeFileSync } from "node:fs"
 import { terminalText } from "../shared/terminal-text"
+import { familyOfAddress } from "../shared/chains"
 
 /** At most this many names are kept: the newest learned. */
 export const MAX_SYMBOLS = 2_000
 const WRITE_DELAY_MS = 2_000
 
-const MINT = /^(?:[1-9A-HJ-NP-Za-km-z]{32,44}|0x[0-9a-fA-F]{40})$/
+const MINT = { test: (word: string) => familyOfAddress(word) !== undefined }
 
 export class SymbolBook {
   private readonly names = new Map<string, string>()

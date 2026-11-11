@@ -203,6 +203,18 @@ describe("the chart", () => {
 })
 
 describe("P&L positions", () => {
+  test("on more than one chain, each position ends with its chain; on one, no tag", () => {
+    const full = pnlScene(NOW, "full")
+    const one = texts(pnlPositionLines(full, { width: 76, now: NOW }))
+    expect(one[1]).toMatch(/embedded · agent-b$/)
+    const book = full.agents.find((a) => a.book?.positions.length)!.book!
+    const hood = { ...full, agents: full.agents.map((a) => (a.book === book ? { ...a, book: { ...book, positions: [...book.positions, { ...book.positions[0]!, mint: "0x00000000000000000000000000000000000b0B01", symbol: "KITE", chain: "hood" }] } } : a)) }
+    const mixed = texts(pnlPositionLines(hood, { width: 76, now: NOW }))
+    expect(mixed.find((l) => l.startsWith("KITE"))).toMatch(/\s+hood$/)
+    expect(mixed.find((l) => l.startsWith("CNDL"))).toMatch(/\s+sol$/)
+    expect(mixed.find((l) => l.startsWith("KITE"))!.length).toBeLessThanOrEqual(76)
+  })
+
   test("each open position as Candle books it, by value, with its wallet and agent; a pick that ctrl-t asks about", () => {
     const lines = pnlPositionLines(pnlScene(NOW, "full"), { width: 76, now: NOW })
     const out = texts(lines)

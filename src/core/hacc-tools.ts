@@ -181,7 +181,7 @@ const TOKEN: ToolDef = {
     q: { type: "string", description: "search: a name or ticker." },
   },
   views: {
-    market: { route: "/v1/market/token/:address", params: ["chain"], cacheMs: 10_000, description: "price, liquidity, market cap, volume and the safety check, in one call" },
+    market: { route: "/v1/market/token/:address", params: ["chain"], cacheMs: 10_000, description: "price, liquidity, market cap, volume and the safety check, in one call; on Hood, read its safety (honeypot, taxes, pausable, owner, LP lock) before a buy, since Candle's check doesn't cover Hood: a null field is unknown, never clean" },
     history: {
       route: "/v1/market/token/:address/history",
       params: ["chain", "resolution", "from", "to", "candles"],
@@ -374,7 +374,7 @@ const LAB: ToolDef = {
   name: "hacc_lab",
   plan: "max",
   description:
-    "Hacc's strategy lab (Max): research reports, the account's saved strategies, and replays. Changes: save_strategy and save_version run at once (20 saves a day; the person can undo each, which retires it), retire is a card the person approves, run_replay and cancel_replay are reads that save nothing. Leaves out: the reports are Solana only; edges come from an hourly snapshot over 7 days and are net of a 2.5% cost; a backtest is a model of the past (recorded prices, no competition for the entry): a pass is a reason to paper-trade, not to fund.",
+    "Hacc's strategy lab (Max): research reports, the account's saved strategies, and replays. Changes: save_strategy and save_version run at once (20 saves a day; the person can undo each, which retires it), retire is a card the person approves, run_replay and cancel_replay are reads that save nothing. Leaves out: the reports are Solana only; edges come from an hourly snapshot over 7 days and are net of a 2.5% cost; a backtest is a model of the past (recorded prices, no competition for the entry): a pass isn't proof it will pay live.",
   props: {
     pattern: { type: "string", enum: PATTERNS, description: "edges: one pattern." },
     group_name: { type: "string", description: 'edges: a group\'s name, or "all".' },

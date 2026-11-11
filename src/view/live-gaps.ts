@@ -1,7 +1,7 @@
 // What going live would find missing, for the question that asks first: an agent whose key isn't allowed
 // a wallet to pay from, an agent with no limits of its own here, a wallet with nothing in it. Read from what
-// the view already holds, and said without blocking: `y` still switches. A setup that went straight to paper
-// skipped the wallet step, and nothing else brings it back before the first live trade is refused.
+// the view already holds, and said without blocking: `y` still switches. Setup ends live, so this is asked only of
+// someone switching back from paper; a trade setup left short of a wallet or funds is refused saying how.
 import type { CoreView } from "./store"
 import { shortAddress } from "./format"
 
@@ -20,18 +20,18 @@ export function liveGaps(view: Pick<CoreView, "status" | "wallets" | "portfolio"
     const w = view.wallets?.agents[a.name]
     // Its wallets not read yet: nothing is known to be missing.
     if (w) {
-      const tee = w.payable.tier === "free" ? [] : w.payable.tee.filter((t) => (t.chain === "solana" || t.chain === "hood") && t.active)
-      // Its SOL is asked of the Solana wallets only: a Hood TEE wallet spends ETH or USDG.
-      const pays = [...(w.payable.embedded ? [w.payable.embedded.address] : []), ...tee.filter((t) => t.chain === "solana").map((t) => t.address)]
-      if (pays.length === 0 && tee.length === 0 && w.embeddedWallet === "denied") {
+      // Every chain's: a key denied the embedded wallet that holds an active Hood TEE wallet can pay from it.
+      const tee = w.payable.tier === "free" ? [] : w.payable.tee.filter((t) => t.active)
+      const pays = [...(w.payable.embedded ? [w.payable.embedded.address] : []), ...tee.map((t) => t.address)]
+      if (pays.length === 0 && w.embeddedWallet === "denied") {
         const line = `candle keys update ${w.prefix ?? "<prefix>"} --embedded-wallet allow`
         out.push({ words: `${a.name} can't pay from a wallet yet: its key isn't allowed the embedded wallet. Allow it here, in the pane, as you: ${line}`, ...(w.prefix ? { fill: { label: "allow the embedded wallet", line } } : {}) })
       } else if (pays.length > 0) {
         const held = pays.map((address) => view.portfolio?.wallets.find((p) => p.address === address))
         // Every wallet it pays from read, and each empty: a live buy has nothing to spend.
-        if (held.every((p) => p?.sol && p.sol.amount === 0)) {
+        if (held.every((p) => p?.native && p.native.amount === 0)) {
           const first = held[0]!
-          out.push({ words: `${first.name ?? "the embedded wallet"} holds no SOL, so ${a.name}'s live buys have nothing to spend. Its address is on the Wallets pane (${shortAddress(first.address)}).` })
+          out.push({ words: `${first.name ?? "the embedded wallet"} holds no ${first.nativeSymbol}, so ${a.name}'s live buys have nothing to spend. Its address is on the Wallets pane (${shortAddress(first.address)}).` })
         }
       }
     }

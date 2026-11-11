@@ -19,7 +19,8 @@ import { canonicalJson } from "../shared/canonical-json"
 import { type BotRunSettings, type Definition, entryFromTape, readDefinition, type Sizing } from "../shared/definition"
 import { changes, narrowing } from "../shared/definition-narrow"
 import { BACKTEST_DIFFERS, definitionWords } from "../shared/definition-words"
-import { type BotCheck, type BotProposal, type BotView, type BotBook, routeSlippageBps, sellsNowWords, slippageOnCard } from "./bots"
+import { type BotCheck, type BotProposal, type BotView, type BotBook, payChain, routeSlippageBps, sellsNowWords, slippageOnCard } from "./bots"
+import type { ChainSlug } from "../shared/chains"
 import { type CodeBotBook, type CodeBotProposal, type CodeBotView, codeBotRuns, staysWords } from "./code-bots"
 import type { BotEntry } from "./bots-file"
 import type { Mapped, Operation } from "./execute"
@@ -171,8 +172,11 @@ export interface BotsToolDeps {
   bookOf(name: string, mode: "paper" | "live"): { open: Record<string, unknown>[]; closed: number; realizedUsd: number; valued: boolean }
   /** A bot's recent rows in the Journal's words, newest last, and its skips over the last day, by why. */
   recent(name: string): { events: string[]; skips?: string }
-  /** The wallet an agent pays from; undefined before it's read or when it can't. */
-  payWallet(agent: string, wallet: string): PayWalletInfo | undefined
+  /**
+   * The wallet an agent pays from on `chain`, a rules bot's definition's; with no chain (a bot on both, or a code bot),
+   * on the first chain it pays on. Undefined before it's read or when it can't.
+   */
+  payWallet(agent: string, wallet: string, chain?: ChainSlug): PayWalletInfo | undefined
   /** Candle's fee on a buy, in basis points, for the agent's plan. */
   feeBps(agent: string): number
   /** Who else trades from the wallet: other agents, other bots. The embedded wallet is always shared. */
@@ -240,7 +244,7 @@ export function botRuns(run: Pick<BotRunSettings, "mode">, sizing: Sizing, pays:
   const exits = "Its exits sell without a card on any wallet: you approve them now, with the bot."
   const sells = "on their own, on any wallet: you approve them now"
   if (!pays) return { kind: "unknown", entries: "The wallet that pays hasn't been read yet, so how its buys run is said when it trades.", exits, buys: "said when it trades: the wallet isn't read yet", sells }
-  const wallet = theWallet(pays.name)
+  const wallet = theWallet(pays.name, pays.chain)
   if (pays.setting.setting === "ask") {
     return { kind: "asks", entries: `Its buys ask you each time: ${wallet} asks every time, so each buy is a card you approve or reject within 60 s, and one you miss is skipped.`, exits, amber: `${wallet} asks every time, so each of its buys will wait for you`, buys: "each a card for you within 60 s; one you miss is skipped", sells }
   }
@@ -282,7 +286,7 @@ export function backtestShort(b: Backtest): string {
 export function backtestWords(b: Backtest): string {
   const window = b.from && b.to ? ` (${b.from.slice(0, 10)} to ${b.to.slice(0, 10)})` : ""
   const figures = [b.verdict, b.trades !== undefined ? `${b.trades} trade${b.trades === 1 ? "" : "s"}` : undefined, b.pnlUsd !== undefined ? `P&L ${signed(b.pnlUsd)}` : undefined, b.drawdownPct !== undefined ? `drawdown ${b.drawdownPct.toFixed(1)}%` : undefined].filter(Boolean)
-  return `${b.what}${window}: ${figures.join(", ") || "done"}. A backtest is a model of the past: a pass is a reason to paper-trade, not to fund.`
+  return `${b.what}${window}: ${figures.join(", ") || "done"}. A backtest is a model of the past: a pass isn't proof it will pay live.`
 }
 
 export class BotsTool {
@@ -325,7 +329,7 @@ export class BotsTool {
 
   private readOne(b: BotView): Record<string, unknown> {
     const entry = this.deps.book.entry(b.name)
-    const runs = entry ? botRuns(entry, entry.definition.sizing, this.deps.payWallet(entry.agent, entry.wallet), this.deps.feeBps(entry.agent)) : undefined
+    const runs = entry ? botRuns(entry, entry.definition.sizing, this.deps.payWallet(entry.agent, entry.wallet, payChain(entry.definition)), this.deps.feeBps(entry.agent)) : undefined
     const book = this.deps.bookOf(b.name, b.mode)
     const recent = this.deps.recent(b.name)
     const tested = entry ? this.deps.backtestOf(entry.definition) : undefined
@@ -554,7 +558,7 @@ export class BotsTool {
     } catch (error) {
       return refusedBy(error)
     }
-    const pays = this.deps.payWallet(client.agent, check.run.wallet)
+    const pays = this.deps.payWallet(client.agent, check.run.wallet, payChain(check.definition))
     const runs = botRuns(check.run, check.definition.sizing, pays, this.deps.feeBps(client.agent))
     tested ??= this.deps.backtestOf(check.definition)
     const lab = this.deps.lab(client.agent)
@@ -583,7 +587,7 @@ export class BotsTool {
     // wallet's figures are its alone. The card leads with it where the wallet is shared or asks.
     const shared = check.run.mode === "live" ? this.deps.sharedWith(client.agent, check.run.wallet, name) : []
     const steer = check.run.mode === "live" && (shared.length > 0 || runs.kind === "asks")
-    const why = shared.length ? `${theWallet(check.paysFrom)} is shared with ${sharedWithWords(shared)}` : runs.amber
+    const why = shared.length ? `${theWallet(check.paysFrom, payChain(check.definition))} is shared with ${sharedWithWords(shared)}` : runs.amber
     const warning = steer ? `${why ? `${why[0]!.toUpperCase()}${why.slice(1)}. ` : ""}A wallet of its own is the better way: the bot can lose only what that wallet holds, and its figures are the bot's alone.` : undefined
     const slip = check.run.maxSlippageBps
     const title = live ? `TAKE BOT "${name}" LIVE` : `${saved ? "CHANGE" : "NEW"} BOT "${name}"`
@@ -616,11 +620,11 @@ export class BotsTool {
     const held = book.heldBy(saved)
     if (held && (held.code === "NOT_APPROVED" || held.code === "CHANGED_OUTSIDE")) return undefined
     if (p.run.mode !== saved.mode) return undefined
-    const pays = this.deps.payWallet(client.agent, p.run.wallet)
-    const wallet = pays ? (pays.name === "embedded" ? "embedded" : pays.address) : p.run.wallet
-    if (wallet !== saved.wallet) return undefined
     const read = readDefinition(p.definition)
     if (!read.ok) return undefined
+    const pays = this.deps.payWallet(client.agent, p.run.wallet, payChain(read.definition))
+    const wallet = pays ? (pays.name === "embedded" ? "embedded" : pays.address) : p.run.wallet
+    if (wallet !== saved.wallet) return undefined
     const was: BotRunSettings = { agent: saved.agent, wallet: saved.wallet, mode: saved.mode, ...(saved.maxSlippageBps !== undefined ? { maxSlippageBps: saved.maxSlippageBps } : {}) }
     const now: BotRunSettings = { ...was, ...(p.run.maxSlippageBps !== undefined ? { maxSlippageBps: p.run.maxSlippageBps } : {}) }
     const n = narrowing({ definition: saved.definition, run: was }, { definition: read.definition, run: now }, routeSlippageBps(saved.wallet))
@@ -738,6 +742,7 @@ const SKIP_SHORT: Readonly<Record<string, string>> = {
   already_open: "already held",
   max_concurrent: "no free slot",
   unpriceable: "no price on Candle",
+  not_on_candle: "not on Candle",
   no_budget: "not enough in the wallet",
   sizing_skip: "a sizing rule skipped it",
   sizing_zero: "a stake of nothing",
@@ -749,6 +754,7 @@ const SKIP_SHORT: Readonly<Record<string, string>> = {
   route_failing: "a failing route",
   stale_signal: "heard too late",
   changed: "the bot changed mid-check",
+  wallet_chain: "its wallet's on the other chain",
 }
 
 const DAY_MS = 24 * 60 * 60_000

@@ -22,9 +22,12 @@
 // Nothing here is on the trade path: a card's call and a turn's are counted, never asked, never queued.
 import type { ToolOutcome } from "./candle-mcp"
 
-export type ReadKind = "prices" | "linked" | "pnl" | "pins" | "lists" | "empty"
-/** The order background reads are planned in: what doesn't fit is read less often, from the end. */
-export const READ_ORDER: readonly ReadKind[] = ["prices", "linked", "pnl", "pins", "lists", "empty"]
+export type ReadKind = "prices" | "bridges" | "linked" | "pnl" | "pins" | "lists" | "empty"
+/**
+ * The order background reads are planned in: what doesn't fit is read less often, from the end. An open bridge's
+ * read is second: it says where the person's funds are between two chains.
+ */
+export const READ_ORDER: readonly ReadKind[] = ["prices", "bridges", "linked", "pnl", "pins", "lists", "empty"]
 /** Reads that answer the same for any key on the account, so any agent's key may make them. */
 const ANY_KEY: ReadonlySet<ReadKind> = new Set(["linked", "pins", "lists"])
 

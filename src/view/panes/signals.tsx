@@ -18,6 +18,7 @@ import { C, fit, shortDuration } from "../theme"
 import { clock } from "./activity"
 import { askAbout } from "../ask"
 import { chip, type Line, line } from "./lines"
+import type { ChainSlug } from "../../shared/chains"
 
 /** The `hacc` topic as the core publishes it (core-main.ts): no keys and no rows. */
 export interface HaccTopic {
@@ -34,13 +35,19 @@ export interface SignalsHeld {
   since?: string
 }
 
-/** A pane's choice, without where it is: what the pane draws and the subscription asks for. */
-export type SignalsPick = Omit<SignalsChoice, "at">
+/** A pane's choice, without where it is: what the pane draws and the subscription asks for. `folded`: its chain is the status bar's. */
+export type SignalsPick = Omit<SignalsChoice, "at"> & { folded?: true }
 
-/** The Signals choice kept for `at` (a tab's name, or a popped pane's): the whole tape when none is. */
-export function signalsChoiceOf(choices: readonly SignalsChoice[] | undefined, at: string | undefined): SignalsPick {
-  const { at: _at, ...pick } = choices?.find((c) => c.at === at) ?? { at: "" }
-  return pick
+/**
+ * The Signals choice kept for `at` (a tab's name, or a popped pane's): the whole tape when none is. With `fold`, the
+ * status bar's chain filter is on screen (the account uses more than one chain), and the pane's chain is its:
+ * the chain the tab kept is set aside, and the pane's own chain chip doesn't show.
+ */
+export function signalsChoiceOf(choices: readonly SignalsChoice[] | undefined, at: string | undefined, fold?: { chain?: ChainSlug }): SignalsPick {
+  const { at: _at, ...kept } = choices?.find((c) => c.at === at) ?? { at: "" }
+  if (!fold) return kept
+  const { chain: _kept, ...pick } = kept
+  return { ...pick, ...(fold.chain ? { chain: fold.chain } : {}), folded: true }
 }
 
 /** The subscription's filter for a pick on Hacc's tape: undefined for the whole tape and for your rules. */
@@ -80,7 +87,8 @@ export function signalsChips(pick: SignalsPick, width?: number): { id: SignalsCh
   const pattern = { id: "pattern" as const, text: `${pick.pattern ? patternLabel(pick.pattern) : "pattern"} ▾`, set: !!pick.pattern }
   const chain = { id: "chain" as const, text: `${pick.chain ? CHAIN_NAMES[pick.chain] : "chain"} ▾`, set: !!pick.chain }
   const title = signalsTitle(pick).length
-  let chips = [pattern, chain]
+  // With the status bar's chain filter on screen, the chain is its, and the pane has no chain chip.
+  let chips = pick.folded ? [pattern] : [pattern, chain]
   const fits = (list: typeof chips) => width === undefined || width - ([...list, source].map((c) => c.text).join("    ").length + 10) >= title
   if (!fits(chips)) chips = chips.filter((c) => c.set || c.id === "pattern")
   if (!fits(chips)) chips = chips.filter((c) => c.set)
@@ -375,7 +383,7 @@ export function signalsLines(held: SignalsHeld | undefined, opts: { hacc: HaccTo
 }
 
 /** What `view.signals` is sent for a change to the choice at `at`: the whole choice, each filter kept unless changed. */
-export function signalsParams(at: string, was: SignalsPick, change: { mine?: boolean; pattern?: string | null; chain?: "solana" | "hood" | null }): Record<string, unknown> {
+export function signalsParams(at: string, was: SignalsPick, change: { mine?: boolean; pattern?: string | null; chain?: ChainSlug | null }): Record<string, unknown> {
   const mine = change.mine ?? !!was.mine
   const pattern = change.pattern === undefined ? (was.pattern ?? null) : change.pattern
   const chain = change.chain === undefined ? (was.chain ?? null) : change.chain

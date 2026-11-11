@@ -32,6 +32,8 @@ const colour = (key: string, words: string): SettingDef => ({ file: "theme", key
 const reply = (key: string, words: string): SettingDef => ({ file: "theme", key: `reply.${key}`, type: `a colour, "#rrggbb"`, default: "the base theme's", words, example: `[reply]\n${key} = "#9ecbff"` })
 /** A trigger as triggers.toml keeps it, with `extra` after its keys. */
 const MOON = "MoonFake11111111111111111111111111111111111"
+/** A token on Hood, for a trigger's chain: made up, of the address's shape. */
+const HOOD_TOKEN = "0x00000000000000000000000000000000000b0b01"
 const trigger = (extra = "", again = "false") =>
   `[triggers."MOON < $0.40"]\nagent = "agent-a"\nline = "when MOON < $0.40 sell 50% of MOON"\nexpansion = "when ${MOON} < $0.40 sell 50% of ${MOON}"\non = true\nagain = ${again}\n${extra}`
 /** A rules bot as bots.toml keeps it, with `extra` after its run settings. */
@@ -56,7 +58,7 @@ export const SETTINGS: readonly SettingDef[] = [
     key: "mode",
     type: `"paper" or "live"`,
     default: `"paper"`,
-    words: "The mode a fresh install starts in. Once you switch, the mode you last picked is kept across restarts.",
+    words: "The mode a core starts in before you've switched. A fresh install's setup writes `mode = \"live\"` and ends live unless you picked paper during it; a run of setup again keeps the mode you're on. The default is for a config.toml with no mode line. Once you switch, the mode you last picked is kept across restarts.",
     example: `mode = "live"`,
   },
   {
@@ -88,8 +90,24 @@ export const SETTINGS: readonly SettingDef[] = [
     key: "agents.<name>.wallet",
     type: `"embedded", or a wallet's name or address`,
     default: "the embedded wallet, when the agent's key may pay from it; else its only TEE wallet",
-    words: "The wallet this agent pays from when a trade names none. `from <wallet>` on a trade overrides it, and every card names the wallet that pays.",
+    words: "The wallet this agent pays from when a trade names none. `from <wallet>` on a trade overrides it, and every card names the wallet that pays. One wallet is the default on its own chain; a trade on the other chain pays as if none were set: from the embedded wallet there where the key may pay from it, else from its only TEE wallet there. For a default on each chain, use the `[agents.<name>.wallet]` table instead.",
     example: agent(`wallet = "embedded"`),
+  },
+  {
+    file: "config.toml",
+    key: "agents.<name>.wallet.solana",
+    type: `"embedded", or a Solana wallet's name or address`,
+    default: "the embedded wallet, when the agent's key may pay from it; else its only Solana TEE wallet",
+    words: "This agent's default wallet for a trade on Solana, in place of the one `wallet` line. A trade pays only from a wallet on its own chain, so a Hood wallet here is refused.",
+    example: `[agents.agent-a.wallet]\nsolana = "agent-a-tee"\nhood = "embedded"\n\n${limits("agent-a")}`,
+  },
+  {
+    file: "config.toml",
+    key: "agents.<name>.wallet.hood",
+    type: `"embedded", or a Robinhood Chain wallet's name or address`,
+    default: "the embedded wallet, when the agent's key may pay from it; else its only Hood TEE wallet",
+    words: "This agent's default wallet for a trade on Robinhood Chain (Hood), in place of the one `wallet` line.",
+    example: `[agents.agent-a.wallet]\nhood = "embedded"\n\n${limits("agent-a")}`,
   },
   {
     file: "config.toml",
@@ -233,6 +251,14 @@ export const SETTINGS: readonly SettingDef[] = [
     default: "unset: the CLI profile's own",
     words: "The Solana RPC the Candle Harness gives Candle's CLI, for the commands that use one, such as a TEE wallet's trades.",
     example: `[candle]\nrpcUrl = "https://rpc.example.com"`,
+  },
+  {
+    file: "config.toml",
+    key: "candle.evmRpcUrl",
+    type: "an https address (plain http only for 127.0.0.1 or localhost)",
+    default: "unset: the candle CLI's built-in Robinhood Chain RPC",
+    words: "The Robinhood Chain RPC the Candle Harness gives Candle's CLI, which reads a Hood TEE wallet's balances and decimals over it. Candle sets every nonce and fee and sends each transaction itself, so this RPC only reads.",
+    example: `[candle]\nevmRpcUrl = "https://hood-rpc.example.com"`,
   },
   {
     file: "config.toml",
@@ -486,6 +512,14 @@ export const SETTINGS: readonly SettingDef[] = [
     default: "the mode it was approved in",
     words: "Whether the trigger's trades are paper or live, whatever mode the Candle Harness is in when it fires. It's set when its card is approved; taking one live is a new card.",
     example: trigger(`mode = "live"\n`),
+  },
+  {
+    file: "triggers.toml",
+    key: "triggers.<name>.chain",
+    type: `a chain's name, such as "hood"`,
+    default: "Solana",
+    words: "The chain of the token a trigger watches, where it isn't Solana: its price and market cap are read there. It's set when its card is approved.",
+    example: `[triggers."HTOK < $0.002"]\nagent = "agent-a"\nline = "when ${HOOD_TOKEN} < $0.002 notify"\nexpansion = "when ${HOOD_TOKEN} < $0.002 notify"\non = true\nagain = false\nchain = "hood"\n`,
   },
 
   // bots.toml: written by the Candle Harness when you approve a bot's card, or narrow, pause, stop, resume or remove one.

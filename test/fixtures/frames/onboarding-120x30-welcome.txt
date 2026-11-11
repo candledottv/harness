@@ -17,7 +17,7 @@
  │                          │ │    5  Where to start                                                                  │ 
  │                          │ │                                                                                       │ 
  │                          │ │  ▸ Guided setup                                         every step, about 5 minutes   │ 
- │                          │ │    Straight in              sign in, your agent and its key, then straight to paper   │ 
+ │                          │ │    Straight in            sign in, your agent and its key, then straight to trading   │ 
  │                          │ │                                                                                       │ 
  │                          │ │  Quit any time: setup picks up where you stopped, and never runs a step twice.        │ 
  │                          │ │                                                                                       │ 
@@ -49,7 +49,7 @@
 16: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×26 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 959dab/111419×5 dde2ea/111419×14 ffffff/111419×66 32fe9f/111419×1 ffffff/0b0d10×1
 17: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×26 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×87 32fe9f/111419×1 ffffff/0b0d10×1
 18: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×26 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 32fe9f/1d2430×2 f6f8fb/1d2430×12 ffffff/1d2430×41 959dab/1d2430×28 ffffff/111419×2 32fe9f/111419×1 ffffff/0b0d10×1
-19: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×26 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 32fe9f/111419×2 6cb6ff/111419×11 ffffff/111419×14 959dab/111419×56 ffffff/111419×2 32fe9f/111419×1 ffffff/0b0d10×1
+19: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×26 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 32fe9f/111419×2 6cb6ff/111419×11 ffffff/111419×12 959dab/111419×58 ffffff/111419×2 32fe9f/111419×1 ffffff/0b0d10×1
 20: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×26 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×87 32fe9f/111419×1 ffffff/0b0d10×1
 21: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×26 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 959dab/111419×77 ffffff/111419×8 32fe9f/111419×1 ffffff/0b0d10×1
 22: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×26 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×87 32fe9f/111419×1 ffffff/0b0d10×1

@@ -44,13 +44,48 @@ export function jobState(job: Record<string, unknown>): JobState {
   switch (job.status) {
     case "confirmed":
       return "succeeded"
-    case "failed":
+    case "failed": {
+      // A Hood TEE wallet's trade runs as legs, each signed once the one before it landed, and Candle has recorded a leg
+      // that landed as failed. So a failed job's legs say what may have gone out: an attempted trade leg leaves it
+      // unknown; an attempted approval alone traded nothing, but spent its gas.
+      const legs = sequencedLegs(job)
+      if (legs) {
+        const tried = legs.filter((l) => l.status !== "planned")
+        if (tried.some((l) => l.kind === "trade")) return "unknown"
+        if (tried.length > 0) return "failed"
+      }
       return sent ? "failed" : "refused"
+    }
     case "built":
       return sent ? "unknown" : "pending"
     default:
       return "unknown"
   }
+}
+
+/** A Hood TEE wallet's operation legs on a trade job (`job.operation.legs`), each with its kind and status; undefined on any other job. */
+export function sequencedLegs(job: Record<string, unknown>): { kind: string; status: string }[] | undefined {
+  const legs = record(job.operation)?.legs
+  if (!Array.isArray(legs)) return undefined
+  return legs.flatMap((l) => {
+    const leg = record(l)
+    return typeof leg?.kind === "string" && typeof leg.status === "string" ? [{ kind: leg.kind, status: leg.status }] : []
+  })
+}
+
+/** A failed Hood job's error from its legs, for a read-back that finds it later; undefined for any other job. */
+export function sequencedFailure(job: Record<string, unknown>): { code: string; message: string; retryable: false } | undefined {
+  const legs = sequencedLegs(job)
+  if (!legs || job.status !== "failed") return undefined
+  const tried = legs.filter((l) => l.status !== "planned")
+  const code = typeof job.errorCode === "string" ? job.errorCode : "SWAP_FAILED"
+  if (tried.some((l) => l.kind === "trade")) {
+    return { code, message: "Candle says this Hood trade failed after its trade step was sent, and it may have filled: what the wallet holds says. It isn't sent again.", retryable: false }
+  }
+  if (tried.length > 0) {
+    return { code, message: "Nothing was traded. Candle stopped this Hood trade at its approval step, which may have landed and spent its gas (Candle has recorded a landed step as failed). Asking again builds it fresh, and skips an approval already in place.", retryable: false }
+  }
+  return undefined
 }
 
 /**

@@ -15,7 +15,7 @@
  │   · its wallet           │ │                                                                                       │ 
  │   · limits               │ │  It runs, in the pane:                                                                │ 
  │   · approvals            │ │    candle keys create --label agent-a --tx-limit 50 --reset daily                     │ 
- │   · fund it, or paper    │ │    no vault: approved by you in the pane                                              │ 
+ │   · fund it              │ │    no vault: approved by you in the pane                                              │ 
  │                          │ │    then your approval in the browser, if Candle asks                                  │ 
  │ · The tour               │ │                                                                                       │ 
  │                          │ │    Make the key                                                                       │ 
@@ -47,7 +47,7 @@
 14: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 dde2ea/111419×2 959dab/111419×1 dde2ea/111419×1 959dab/111419×10 ffffff/111419×11 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×87 32fe9f/111419×1 ffffff/0b0d10×1
 15: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 dde2ea/111419×2 959dab/111419×1 dde2ea/111419×1 959dab/111419×6 ffffff/111419×15 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 dde2ea/111419×21 ffffff/111419×64 32fe9f/111419×1 ffffff/0b0d10×1
 16: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 dde2ea/111419×2 959dab/111419×1 dde2ea/111419×1 959dab/111419×9 ffffff/111419×12 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 dde2ea/111419×64 ffffff/111419×21 32fe9f/111419×1 ffffff/0b0d10×1
-17: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 dde2ea/111419×2 959dab/111419×1 dde2ea/111419×1 959dab/111419×17 ffffff/111419×4 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 dde2ea/111419×2 f5a524/111419×37 ffffff/111419×46 32fe9f/111419×1 ffffff/0b0d10×1
+17: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 dde2ea/111419×2 959dab/111419×1 dde2ea/111419×1 959dab/111419×7 ffffff/111419×14 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 dde2ea/111419×2 f5a524/111419×37 ffffff/111419×46 32fe9f/111419×1 ffffff/0b0d10×1
 18: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×26 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 959dab/111419×51 ffffff/111419×34 32fe9f/111419×1 ffffff/0b0d10×1
 19: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 959dab/111419×1 dde2ea/111419×1 959dab/111419×8 ffffff/111419×15 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×87 32fe9f/111419×1 ffffff/0b0d10×1
 20: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×26 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 32fe9f/111419×2 6cb6ff/111419×12 ffffff/111419×71 32fe9f/111419×1 ffffff/0b0d10×1

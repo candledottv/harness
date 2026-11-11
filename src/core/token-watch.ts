@@ -26,6 +26,8 @@ import { terminalText } from "../shared/terminal-text"
 import { baseAssetForMint, followable } from "./assets"
 import type { ToolOutcome } from "./candle-mcp"
 import type { ReadKind } from "./key-budget"
+import { type ChainSlug, maybeChain } from "../shared/chains"
+import { haccCheckWords, haccSafety } from "./hacc-safety"
 
 export const SAMPLE_MS = 5_000
 const MAX_BACKOFF_MS = 60_000
@@ -42,7 +44,7 @@ export const HISTORY_REUSE_MS = 60_000
 const MINUTE_MS = 60_000
 
 /** Hacc's route and query for a token's 1m history from `from`, with its candles (they come only with include_candles). */
-export function historyRequest(chain: "solana" | "hood", mint: string, from: string): { route: string; query: Record<string, string | boolean> } {
+export function historyRequest(chain: ChainSlug, mint: string, from: string): { route: string; query: Record<string, string | boolean> } {
   return { route: `/v1/market/token/${encodeURIComponent(mint)}/history`, query: { resolution: "1m", from, include_candles: true, ...(chain === "hood" ? { chain } : {}) } }
 }
 
@@ -62,9 +64,14 @@ export type HistoryAnswer = { kind: "ok"; body: unknown } | { kind: "refused"; w
 
 export interface TokenView {
   /** The linked token: the one the agent last showed, or the person picked. `by` says which; an older core sends none. */
-  followed: { mint: string; chain: "solana" | "hood"; symbol?: string; since: number; by?: "you" | "agent" } | null
+  followed: { mint: string; chain: ChainSlug; symbol?: string; since: number; by?: "you" | "agent" } | null
   market: { name?: string; symbol?: string; priceUsd: number | null; marketCap: number | null; liquidityUsd: number | null; at: number } | null
   check: { summary: string; flagged: string[]; unknown: string[]; at: number; note?: string } | null
+  /**
+   * Hacc's own safety check, for a token on an EVM chain (Candle's forensics doesn't read Hacc there), in words as Hacc's;
+   * `amber` where a field warrants a look. Absent on Solana, and from an older core.
+   */
+  hacc?: { words: string; amber: boolean; at: number } | null
   /** The core's own price samples, every 5 s while a view is attached. */
   samples: { at: number; usd: number }[]
   /** Hacc's 1m history before the first sample: the first candle's open, then each close at its minute's end. */
@@ -92,7 +99,7 @@ export interface Candle {
 /** A pinned token's data: what the linked one's is, beside it. */
 export interface PinnedToken {
   mint: string
-  chain: "solana" | "hood"
+  chain: ChainSlug
   symbol?: string
   since: number
   market: TokenView["market"]
@@ -155,7 +162,7 @@ export function historyCandles(body: unknown, readAt: number): Candle[] {
     .sort((a, b) => a.at - b.at)
 }
 
-type Chain = "solana" | "hood"
+type Chain = ChainSlug
 
 /** One token the core watches: the linked one, or one a token pane is pinned on. */
 interface Slot {
@@ -173,6 +180,8 @@ interface Slot {
   candles?: Candle[]
   /** When its market was last sampled (or tried), for its pace. */
   sampledAt?: number
+  /** Hacc's check, on an EVM chain. */
+  hacc?: NonNullable<TokenView["hacc"]>
 }
 
 /** What a read is for: a planned background read of the key's budget, or one someone just asked for. */
@@ -182,6 +191,9 @@ const slotKey = (chain: Chain, mint: string) => `${chain}:${mint}`
 
 /** Why a token isn't followed: a base asset, no market on Candle, or another asked for after it (a run of picks). */
 export type FollowOutcome = "ok" | "base" | "no-market" | "superseded"
+
+/** How long Hacc's check of a token is kept before it's read again. */
+export const HACC_CHECK_MS = 60_000
 
 export class TokenWatch {
   /** Every token watched, by chain and mint: the linked one and the pinned ones, each read once however many want it. */
@@ -204,7 +216,7 @@ export class TokenWatch {
     private readonly deps: {
       call: (tool: string, args: Record<string, unknown>, read: WatchRead) => Promise<ToolOutcome>
       /** Hacc's 1m history of a token from `from` (an ISO date), with its candles. Absent, there's none. */
-      history?: (chain: "solana" | "hood", mint: string, from: string) => Promise<HistoryAnswer>
+      history?: (chain: ChainSlug, mint: string, from: string) => Promise<HistoryAnswer>
       now: () => number
       publish: (view: TokenView) => void
       sampleMs?: number
@@ -212,6 +224,8 @@ export class TokenWatch {
       stretch?: (kind: Exclude<WatchRead, "asked">) => number
       /** Candle's on-fire list, from the core's feeds (feeds.ts); absent, none. */
       trending?: () => TokenView["trending"]
+      /** Hacc's market read of an EVM token, for its safety fields; absent, no Hacc check is read. */
+      haccMarket?: (chain: ChainSlug, address: string) => Promise<HistoryAnswer>
     },
   ) {}
 
@@ -229,6 +243,7 @@ export class TokenWatch {
       followed: s ? { mint: s.mint, chain: s.chain, ...(s.symbol ? { symbol: s.symbol } : {}), since: s.since, by: this.by } : null,
       market: s?.market ?? null,
       check: s?.check ?? null,
+      ...(s && maybeChain(s.chain)?.family === "evm" ? { hacc: s.hacc ?? null } : {}),
       samples: [...(s?.samples ?? [])],
       history: [...(s?.history ?? [])],
       historyRead: s?.historyRead ?? null,
@@ -297,8 +312,24 @@ export class TokenWatch {
     }
     slot.check = await this.readCheck(chain, mint, "asked")
     if (this.linked === key) this.publish()
+    await this.readHacc(slot)
     await this.readHistory(slot)
     return "ok"
+  }
+
+  /** Hacc's safety check of an EVM token, kept a minute; a refusal (Free has no Hacc) is said in its words. */
+  private async readHacc(slot: Slot): Promise<void> {
+    if (!this.deps.haccMarket || maybeChain(slot.chain)?.family !== "evm") return
+    if (slot.hacc && this.deps.now() - slot.hacc.at < HACC_CHECK_MS) return
+    const at = this.deps.now()
+    const answer = await this.deps.haccMarket(slot.chain, slot.mint).catch(() => ({ kind: "refused" as const, words: "Hacc didn't answer" }))
+    if (answer.kind === "refused") {
+      slot.hacc = { words: `Hacc's check didn't load (${terminalText(answer.words, { maxLength: 120 })}): not checked, not clean`, amber: false, at }
+    } else {
+      const check = haccSafety(answer.body, at)
+      slot.hacc = check ? { words: terminalText(haccCheckWords(check), { maxLength: 400 }), amber: check.amber.length > 0, at } : { words: "Hacc's answer had no safety check: not checked, not clean", amber: false, at }
+    }
+    if (this.slots.get(slotKey(slot.chain, slot.mint)) === slot) this.publish()
   }
 
   /** The tokens the token panes are pinned on: each watched beside the linked one, at the same 5 s. */
@@ -338,6 +369,7 @@ export class TokenWatch {
     if (this.slots.get(key) !== slot || check?.note === "BUDGET_WAIT") return
     slot.check = check
     this.publish()
+    await this.readHacc(slot)
   }
 
   /** A token's last hour from Hacc, once; a minute-old read of the same token is reused. */

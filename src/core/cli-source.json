@@ -256,7 +256,12 @@
     "transfer": {
       "group": "Trade",
       "summary": "Move funds out of a TEE wallet to your own wallets or its vault, through its bound key",
-      "rows": []
+      "rows": [
+        {
+          "invocation": "status <transfer id|client id> [--json]",
+          "description": "Reads a transfer by its id or your --client-id: built, expired, submitted with its signature, unconfirmed (check the chain or candle activity before using a new client id), or failed (kept for 24 hours; older transfers are in candle activity)."
+        }
+      ]
     },
     "launch": {
       "group": "Trade",
@@ -1018,6 +1023,7 @@
           "--wallet"
         ],
         "boolean": [
+          "--dry-run",
           "--wait",
           "--yes"
         ],
@@ -1078,7 +1084,13 @@
       "unlocks": "never",
       "tty": [
         "stdin"
-      ]
+      ],
+      "actions": {
+        "status": {
+          "unlocks": "never",
+          "tty": []
+        }
+      }
     },
     {
       "command": "launch",
@@ -2739,7 +2751,9 @@
           "--to",
           "--wallet"
         ],
-        "boolean": [],
+        "boolean": [
+          "--yes"
+        ],
         "path": [
           "--keystore"
         ],
@@ -2875,7 +2889,8 @@
           "--yes"
         ],
         "path": [],
-        "pathPositionals": []
+        "pathPositionals": [],
+        "keyPrefixPositional": true
       },
       "identity": "both",
       "json": true,
@@ -2898,7 +2913,8 @@
           "--yes"
         ],
         "path": [],
-        "pathPositionals": []
+        "pathPositionals": [],
+        "keyPrefixPositional": true
       },
       "identity": "owner",
       "json": true,
@@ -2922,7 +2938,8 @@
           "--clear"
         ],
         "path": [],
-        "pathPositionals": []
+        "pathPositionals": [],
+        "keyPrefixPositional": true
       },
       "identity": "owner",
       "json": true,
@@ -2938,7 +2955,8 @@
         "value": [],
         "boolean": [],
         "path": [],
-        "pathPositionals": []
+        "pathPositionals": [],
+        "keyPrefixPositional": true
       },
       "identity": "agent",
       "json": true,
@@ -2978,7 +2996,8 @@
           "--yes"
         ],
         "path": [],
-        "pathPositionals": []
+        "pathPositionals": [],
+        "keyPrefixPositional": true
       },
       "identity": "owner",
       "json": true,
@@ -2996,7 +3015,8 @@
         "value": [],
         "boolean": [],
         "path": [],
-        "pathPositionals": []
+        "pathPositionals": [],
+        "keyPrefixPositional": true
       },
       "identity": "owner",
       "json": true,
@@ -3047,7 +3067,8 @@
         ],
         "boolean": [],
         "path": [],
-        "pathPositionals": []
+        "pathPositionals": [],
+        "keyPrefixPositional": true
       },
       "identity": "agent",
       "json": true,
@@ -3078,7 +3099,10 @@
           "--reject"
         ],
         "path": [],
-        "pathPositionals": []
+        "pathPositionals": [],
+        "keyPrefixValueFlags": [
+          "--to-key"
+        ]
       },
       "identity": "both",
       "json": true,
@@ -3862,13 +3886,19 @@
       "file": "commands/vault-demote.ts",
       "flags": {
         "value": [
+          "--from-block",
           "--keystore",
           "--rpc-url",
-          "--sweep-to"
+          "--sweep-to",
+          "--token"
         ],
         "boolean": [
           "--accept-older-copy",
-          "--emergency"
+          "--accept-unknown-exposure",
+          "--all",
+          "--emergency",
+          "--empty",
+          "--yes"
         ],
         "path": [
           "--keystore"
@@ -4038,7 +4068,9 @@
         "value": [
           "--keystore"
         ],
-        "boolean": [],
+        "boolean": [
+          "--accept-older-copy"
+        ],
         "path": [
           "--keystore"
         ],
@@ -4059,10 +4091,13 @@
       "file": "commands/tee.ts",
       "flags": {
         "value": [
+          "--from-block",
           "--keystore",
-          "--rpc-url"
+          "--rpc-url",
+          "--token"
         ],
         "boolean": [
+          "--accept-older-copy",
           "--emergency"
         ],
         "path": [
@@ -4090,7 +4125,10 @@
         ],
         "boolean": [],
         "path": [],
-        "pathPositionals": []
+        "pathPositionals": [],
+        "keyPrefixValueFlags": [
+          "--to-key"
+        ]
       },
       "identity": "owner",
       "json": true,
@@ -4720,7 +4758,9 @@
       "file": "commands/help.ts",
       "flags": {
         "value": [],
-        "boolean": [],
+        "boolean": [
+          "--more"
+        ],
         "path": [],
         "pathPositionals": []
       },

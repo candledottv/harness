@@ -5,6 +5,7 @@ import { afterAll, afterEach, expect, test } from "bun:test"
 import { statSync } from "node:fs"
 import { cleanupHomes, startTestCore, type TestCore, until } from "../../test/core-fixture"
 import type { TestClient } from "../../test/core-test-client"
+import { HOOD_SWEEP_NOTE } from "./cli-tool"
 import { STOPPED_FOR_GOOD, SWEPT_AND_RETIRED } from "./pane-plan"
 import type { PortfolioView } from "./portfolio-view"
 import { listsEveryTee, StoppedWallets, stoppedNote } from "./stopped-wallets"
@@ -44,7 +45,7 @@ test("a stop that finished: said to be for good, a chip types the sweep, and the
   // Candle no longer lists it; the core does, as stopped, and "active" still shows it.
   await until(() => latest<PortfolioView>(view, "portfolio")?.wallets.some((w) => w.address === TEE) === true)
   const shown = latest<PortfolioView>(view, "portfolio")!.wallets.find((w) => w.address === TEE)!
-  expect(shown).toMatchObject({ kind: "tee", agents: ["momentum"], active: false, stopped: true, sol: null })
+  expect(shown).toMatchObject({ kind: "tee", agents: ["momentum"], active: false, stopped: true, native: null })
   expect(shownWallets([shown], "active").shown).toHaveLength(1)
   expect(statSync(c.p.stoppedWallets).mode & 0o777).toBe(0o600)
 
@@ -198,6 +199,74 @@ test("a listed address that isn't a Solana address is never kept, shown or typed
   expect(w.gone(bad)).toBeUndefined()
 })
 
+test("a Hood TEE wallet stopped in the pane by its 0x address is kept as stopped, and the sweep chip follows, as on Solana", async () => {
+  const HOOD = "0xAbCdEf0123456789aBcDeF0123456789abCDef01"
+  const c = await startTestCore()
+  cores.push(c)
+  const view = await c.view()
+  await view.request("subscribe", { topics: ["portfolio"] })
+  const { client: harness } = await c.harness(view)
+  const asked = await harness.request("tools.call", { name: "candle_cli", args: { command: "tee", subcommand: "disable", args: [HOOD] } })
+  const card = c.core.cards.get(JSON.parse((asked.result as { content: { text: string }[] }).content[0]!.text).cardId)!
+  const approved = (await view.request("cards.approve", { cardId: card.cardId, cardHash: card.cardHash })).result as { ticket: string; ticketId: string }
+  expect((await runPane(c, view, approved, 0)).words).toBe(STOPPED_FOR_GOOD)
+  expect((c.core.operations.get(card.opId)!.result as { pane: { next: unknown } }).pane.next).toEqual([{ label: "sweep it home", line: `candle tee sweep ${HOOD} as momentum` }])
+  await until(() => latest<PortfolioView>(view, "portfolio")?.wallets.some((w) => w.address === HOOD && w.stopped === true) === true)
+  const kept = new StoppedWallets({ file: c.p.stoppedWallets })
+  await kept.load()
+  expect(kept.all().map((w) => [w.address, w.confirmed])).toEqual([[HOOD, true]])
+
+  // The sweep by its 0x address: its card says what a Hood sweep needs, and once it finished the wallet is retired.
+  // Typed by the person, as funds out are: the pane opens at once, and its card carries the note.
+  const sweep = (await view.request("cli.run", { argv: ["tee", "sweep", HOOD] })).result as { ticket: string; ticketId: string; card: { cardId: string } }
+  expect(c.core.cards.get(sweep.card.cardId)!.display.paneNotes).toContain(HOOD_SWEEP_NOTE)
+  expect((await runPane(c, view, sweep, 0)).words).toBe(SWEPT_AND_RETIRED)
+  await until(() => latest<PortfolioView>(view, "portfolio")?.wallets.some((w) => w.address === HOOD) === false)
+  const fund = await view.request("cli.run", { argv: ["vault", "fund", HOOD, "--asset", "ETH", "--amount", "0.001"] })
+  expect(JSON.stringify(fund)).toContain("RETIRED_DESTINATION")
+})
+
+test("a Hood sweep typed with --token before the wallet retires the wallet, never the token", async () => {
+  const HOOD = "0x00000000000000000000000000000000000c0C01"
+  const TOKEN = "0x00000000000000000000000000000000000d0D01"
+  const c = await startTestCore()
+  cores.push(c)
+  const view = await c.view()
+  await view.request("subscribe", { topics: ["portfolio"] })
+  const { client: harness } = await c.harness(view)
+  const asked = await harness.request("tools.call", { name: "candle_cli", args: { command: "tee", subcommand: "disable", args: [HOOD] } })
+  const card = c.core.cards.get(JSON.parse((asked.result as { content: { text: string }[] }).content[0]!.text).cardId)!
+  const approved = (await view.request("cards.approve", { cardId: card.cardId, cardHash: card.cardHash })).result as { ticket: string; ticketId: string }
+  expect((await runPane(c, view, approved, 0)).words).toBe(STOPPED_FOR_GOOD)
+  await until(() => latest<PortfolioView>(view, "portfolio")?.wallets.some((w) => w.address === HOOD && w.stopped === true) === true)
+
+  const sweep = (await view.request("cli.run", { argv: ["tee", "sweep", "--token", TOKEN, HOOD] })).result as { ticket: string; ticketId: string }
+  expect((await runPane(c, view, sweep, 0)).words).toBe(SWEPT_AND_RETIRED)
+  await until(() => latest<PortfolioView>(view, "portfolio")?.wallets.some((w) => w.address === HOOD) === false)
+  const kept = new StoppedWallets({ file: c.p.stoppedWallets })
+  await kept.load()
+  expect(kept.all()).toEqual([])
+  expect(JSON.stringify(await view.request("cli.run", { argv: ["vault", "fund", HOOD, "--asset", "ETH", "--amount", "0.001"] }))).toContain("RETIRED_DESTINATION")
+})
+
+test("a Hood TEE wallet's stop asked for but not confirmed (exit 3) is remembered, with no sweep chip yet; a Solana sweep's card has no Hood words", async () => {
+  const HOOD = "0x00000000000000000000000000000000000b0B01"
+  const c = await startTestCore()
+  cores.push(c)
+  const view = await c.view()
+  const { client: harness } = await c.harness(view)
+  const asked = await harness.request("tools.call", { name: "candle_cli", args: { command: "tee", subcommand: "disable", args: [HOOD] } })
+  const card = c.core.cards.get(JSON.parse((asked.result as { content: { text: string }[] }).content[0]!.text).cardId)!
+  const approved = (await view.request("cards.approve", { cardId: card.cardId, cardHash: card.cardHash })).result as { ticket: string; ticketId: string }
+  expect((await runPane(c, view, approved, 3)).outcome).toBe("pending")
+  expect((c.core.operations.get(card.opId)!.result as { pane: { next?: unknown } }).pane.next).toBeUndefined()
+  const kept = new StoppedWallets({ file: c.p.stoppedWallets })
+  await kept.load()
+  expect(kept.all().map((w) => [w.address, w.confirmed])).toEqual([[HOOD, false]])
+  const solana = (await view.request("cli.run", { argv: ["tee", "sweep", TEE] })).result as { card: { cardId: string } }
+  expect(c.core.cards.get(solana.card.cardId)!.display.paneNotes ?? []).not.toContain(HOOD_SWEEP_NOTE)
+})
+
 test("through a running core: portfolio reads that cut the wallet list off never mark a live TEE wallet they leave out as stopped", async () => {
   const { writeFileSync } = await import("node:fs")
   const { join } = await import("node:path")
@@ -243,11 +312,16 @@ test("a wallet stopped outside the Candle Harness, then stopped in it: the Candl
   expect(w.gone(a)).toBe("retired")
 })
 
-test("a stopped Hood wallet is kept across a core start, matched in any case, and never sent to the Solana chain read", async () => {
+test("a stopped Hood wallet is kept across a core start, matched in any case, and read on Hood, never on Solana", async () => {
   const HOOD = "0xAbCdEf0123456789aBcDeF0123456789abCDef01"
   const read: string[] = []
   const c = await startTestCore(
-    { chainBalance: async (address: string) => (read.push(address), { error: "not read in tests", readAt: Date.now() }) },
+    {
+      chainBalance: async (address: string, chain: string) => {
+        read.push(`${chain}:${address}`)
+        return chain === "hood" ? { lamports: 4_000_000_000_000_000n, tokens: null, tokensError: "only the native balance is read on chain", readAt: Date.now() } : { error: "not read in tests", readAt: Date.now() }
+      },
+    },
     { before: (p) => void Bun.write(p.stoppedWallets, JSON.stringify({ stopped: [{ address: HOOD, label: "hood-desk", agent: "momentum", at: "2026-11-01T00:00:00.000Z", confirmed: true }, { address: TEE, at: "2026-11-01T00:00:00.000Z", confirmed: true }] })) },
   )
   cores.push(c)
@@ -258,8 +332,10 @@ test("a stopped Hood wallet is kept across a core start, matched in any case, an
   expect(kept.gone(HOOD.toLowerCase())).toBe("stopped")
   const view = await c.view()
   await view.request("subscribe", { topics: ["portfolio"] })
-  await until(() => read.includes(TEE))
-  await until(() => latest<PortfolioView>(view, "portfolio")?.wallets.some((w) => w.address === HOOD && w.balanceError !== undefined) === true)
-  expect(latest<PortfolioView>(view, "portfolio")!.wallets.find((w) => w.address === HOOD)).toMatchObject({ stopped: true, balanceError: "Hood balances aren't read yet" })
-  expect(read).not.toContain(HOOD)
+  await until(() => read.includes(`solana:${TEE}`))
+  await until(() => latest<PortfolioView>(view, "portfolio")?.wallets.some((w) => w.address === HOOD && w.native !== null) === true)
+  // Its ETH, in ETH; its tokens said as not read, never as none.
+  expect(latest<PortfolioView>(view, "portfolio")!.wallets.find((w) => w.address === HOOD)).toMatchObject({ stopped: true, chain: "hood", nativeSymbol: "ETH", native: { amount: 0.004 }, balanceError: "only the native balance is read on chain" })
+  expect(read).toContain(`hood:${HOOD}`)
+  expect(read).not.toContain(`solana:${HOOD}`)
 })

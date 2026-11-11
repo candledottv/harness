@@ -15,14 +15,17 @@ import { panesOf, type PaneId } from "./layout"
 import { isTokenPane, openable } from "../shared/panes"
 import type { SkillFolder } from "../core/skill-folders"
 import type { LayoutOp } from "./layout-edit"
+import type { TokenPick } from "../shared/commands"
 import type { LayoutInfo } from "./layout-menu"
 import { BUILT_IN_NAMES, CANDLE_DARK, CANDLE_LIGHT, TERMINAL } from "./theme"
 import type { PnlWindow } from "../core/pnl"
 import { pnlWindowRows } from "./panes/pnl"
+import { chainMenuRows } from "./chain-filter"
 import { LIST_SOURCE_NAMES, LIST_SOURCES, type ListSource } from "./panes/registry"
 import type { AwayView } from "../core/away"
 import { gapLength } from "./panes/away"
 import { shortAddress } from "./format"
+import { type ChainSlug, familyOfAddress, isEvmAddress, requestChain } from "../shared/chains"
 
 /** What picking a row does. */
 export type PaletteRun =
@@ -45,7 +48,7 @@ export type PaletteRun =
   | { kind: "skillsFolder"; folder: string; on: boolean }
   /** Keep-awake (macOS), switched on or off. */
   | { kind: "keepAwake"; on: boolean }
-  | { kind: "link"; mint: string; chain?: "solana" | "hood" }
+  | { kind: "link"; mint: string; chain?: ChainSlug }
   | { kind: "cli"; path: string }
   /** An alias's name on the input line. */
   | { kind: "fill"; text: string }
@@ -54,6 +57,10 @@ export type PaletteRun =
   | { kind: "popOut"; pane: PaneId }
   /** Draw in another theme, kept for next time. */
   | { kind: "theme"; name: string }
+  /** The chain every pane shows, or null for all of them. */
+  | { kind: "chain"; chain: ChainSlug | null }
+  /** One of a refusal's tokens, by its place: its address goes on the line. */
+  | { kind: "pickToken"; index: number }
   /** Signals: its pattern or chain menu, a change to its choice, or its pause. */
   | { kind: "signalsMenu"; which: "pattern" | "chain" }
   | { kind: "signals"; change: { mine?: boolean; pattern?: null; chain?: null } }
@@ -118,6 +125,8 @@ export interface PaletteInput {
   presets: Readonly<Record<string, Preset | undefined>>
   /** The code runner: whether this machine holds it, and each agent's programs (undefined: off). */
   runner?: { held: { ok: true } | { ok: false; why: string; fix: string }; on: Readonly<Record<string, readonly string[] | undefined>> }
+  /** The active agent's Hood chip, where it's offered: the step it types. */
+  hoodWallet?: { line: string }
   /** Token names seen this session, upper-cased, to their mints. */
   tokens: ReadonlyMap<string, string>
   /** The linked token's mint. */
@@ -133,6 +142,10 @@ export interface PaletteInput {
   working: boolean
   /** A refusal offers to ask the agent. */
   ask: boolean
+  /** The chain filter and the chains in use, while that's more than one. */
+  chain?: { current: ChainSlug | null; chains: readonly ChainSlug[] }
+  /** A refusal names a token on more than one chain: each can be put on the line. */
+  pick?: TokenPick
   /** config.toml's aliases, checked, and how many it sets that were left out. */
   aliases: ReadonlyMap<string, string>
   aliasProblems: number
@@ -141,7 +154,7 @@ export interface PaletteInput {
   /** Every theme by name, the one on screen, and where yours go. */
   themes?: { names: readonly string[]; current: string; dir: string }
   /** This tab's Signals choice, and whether its pane is paused. */
-  signals?: { mine?: boolean; pattern?: string; chain?: string; paused: boolean }
+  signals?: { mine?: boolean; pattern?: string; chain?: string; paused: boolean; folded?: true }
   /** The P&L window the core keeps; unset, its default. */
   pnlWindow?: PnlWindow
   /** What the list pane shows, where one is on the tab. */
@@ -215,6 +228,16 @@ function harnessRows(p: PaletteInput): PaletteRow[] {
     const why = def.palette!.why ? undefined : actionWhy(def.id, p)
     rows.push(keyRow(def.id, why ? { why, run: undefined } : {}))
   }
+  // A refusal's tokens on more than one chain: each puts its address on the line in the name's place.
+  for (const [i, t] of (p.pick?.tokens ?? []).entries()) {
+    rows.push({ id: `pick:${i}`, section: "Actions", label: `${p.pick!.word} on ${t.chain}`, words: `put ${shortAddress(t.mint)} on the line, in its name's place`, run: { kind: "pickToken", index: i }, search: "pick token chain address" })
+  }
+  // The chain filter, as the status bar's chip and its menu, only while the account uses more than one chain.
+  if (p.chain) {
+    for (const r of chainMenuRows(p.chain.current, p.chain.chains)) {
+      rows.push({ id: `chain:${r.value ?? "all"}`, section: "Panes", label: r.value ? `show ${r.label} only` : "show all chains", words: r.words, key: "the status bar's chain chip", ...(r.on ? { current: true, why: "every pane shows it now" } : { run: { kind: "chain", chain: r.value } }), search: "chain filter solana hood all chains" })
+    }
+  }
   rows.push({ id: "tour", section: "Actions", label: "the tour", words: "a minute on this screen: your agent, positions, a card, the kill switch, settings ▾ and the palette", key: "setup's step 4", run: { kind: "tour" }, search: "tour help start new onboarding walkthrough guide learn" })
   // The tab bar's settings ▾ is a click; this is the same menu by keys (over SSH with no mouse, the only way in).
   rows.push({ id: "settings", section: "Actions", label: "settings", words: "what's set up once: tabs, layout, theme, model, memory, aliases, the P&L window, approvals, triggers and bots", key: "the tab bar's settings ▾", run: { kind: "settings" }, search: "settings menu preferences options configure setup" })
@@ -273,7 +296,7 @@ function harnessRows(p: PaletteInput): PaletteRow[] {
       rows.push({ id: "signals:source", section: "Panes", label: sg.mine ? "Signals: Hacc's tape" : "Signals: your rules' signals", words: sg.mine ? "every tracked wallet's signals" : "only what your own rules on Hacc fired", key: "its all ▾ chip", run: { kind: "signals", change: { mine: !sg.mine } }, search })
       if (!sg.mine) {
         rows.push({ id: "signals:pattern", section: "Panes", label: "filter Signals by pattern…", words: sg.pattern ? `now ${sg.pattern.replace(/_/g, " ")}` : "one pattern, such as a wallet waking", key: "its pattern ▾ chip", run: { kind: "signalsMenu", which: "pattern" }, search })
-        rows.push({ id: "signals:chain", section: "Panes", label: "filter Signals by chain…", words: sg.chain ? `now ${sg.chain === "hood" ? "Hood" : "Solana"}` : "Solana or Hood", key: "its chain ▾ chip", run: { kind: "signalsMenu", which: "chain" }, search })
+        if (!sg.folded) rows.push({ id: "signals:chain", section: "Panes", label: "filter Signals by chain…", words: sg.chain ? `now ${sg.chain === "hood" ? "Hood" : "Solana"}` : "Solana or Hood", key: "its chain ▾ chip", run: { kind: "signalsMenu", which: "chain" }, search })
         if (sg.pattern || sg.chain) rows.push({ id: "signals:clear", section: "Panes", label: "clear Signals' filters", words: "the whole tape again", run: { kind: "signals", change: { pattern: null, chain: null } }, search })
       }
     }
@@ -304,6 +327,9 @@ function harnessRows(p: PaletteInput): PaletteRow[] {
   rows.push({ id: "wallets:group", section: "Agents", label: "make a wallet group", words: "group <name> add <wallet>, or group <name> prefix bot- for every wallet whose name starts bot-", key: "group …", run: { kind: "fill", text: "group " }, search: "group groups wallets prefix organise bots" })
   rows.push({ id: "wallets:find", section: "Panes", label: "find a wallet", words: "a search line over the Wallets pane, across every group", key: "its ⌕ find chip", ...(p.walletsOnTab ? { run: { kind: "walletsFind" } } : { why: "this tab has no Wallets pane" }), search: "search wallet wallets find group" })
   if (p.walletGroups?.length) rows.push({ id: "wallets:groups", section: "Panes", label: "show one wallet group…", words: `the Wallets pane shows one of ${p.walletGroups.join(", ")}, or every group`, key: "its all groups ▾ chip", run: { kind: "walletsMenu" }, search: "group groups wallets show filter" })
+  if (agent && p.hoodWallet) {
+    rows.push({ id: "hood-wallet", section: "Agents", label: `add a Hood wallet for ${agent}`, words: `a TEE wallet of its own on Robinhood Chain, from your vault: types ${p.hoodWallet.line}`, key: `${chordOf("picker")} · Hood wallet`, run: { kind: "fill", text: p.hoodWallet.line }, search: "hood wallet tee robinhood chain evm add new own" })
+  }
   rows.push({ id: "approvals", section: "Agents", label: "approvals: trading inside limits", words: "which wallets trade inside limits without a card, and every limit with who holds it", key: "settings ▾ · approvals", run: { kind: "approvals" }, search: "autonomy hands off limits without a card wallet figure caps candle" })
   if (agent && p.runner) {
     const on = p.runner.on[agent]
@@ -357,7 +383,7 @@ function harnessRows(p: PaletteInput): PaletteRow[] {
   for (const [name, mint] of p.tokens) {
     if (BASE.has(name)) continue
     const on = mint === p.linked
-    rows.push({ id: `token:${mint}`, section: "Tokens", label: name, words: on ? "linked: the token pane follows it" : "link it: the token pane follows it", key: "a click on its row", ...(on ? { current: true } : {}), run: { kind: "link", mint, ...(mint.startsWith("0x") ? { chain: "hood" as const } : {}) } })
+    rows.push({ id: `token:${mint}`, section: "Tokens", label: name, words: on ? "linked: the token pane follows it" : "link it: the token pane follows it", key: "a click on its row", ...(on ? { current: true } : {}), run: { kind: "link", mint, ...(isEvmAddress(mint) ? { chain: requestChain(mint) } : {}) } })
   }
 
   // Aliases: each puts its name on the input line, for the rest to be typed after it.
@@ -392,9 +418,6 @@ const cliRow = (e: CatalogueEntry): PaletteRow => ({
 
 const SECTION_ORDER: readonly string[] = SECTIONS.map((s) => s.name)
 
-/** A Solana mint, or a Robinhood Chain (EVM) token address. */
-const SOLANA_ADDRESS = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/
-const EVM_ADDRESS = /^0x[0-9a-fA-F]{40}$/
 
 /**
  * A pasted address: the one row, opening it in the token pane. The core links it only where Candle has a
@@ -402,8 +425,7 @@ const EVM_ADDRESS = /^0x[0-9a-fA-F]{40}$/
  */
 function addressRow(query: string, p: PaletteInput): PaletteRow | undefined {
   const mint = query.trim()
-  const hood = EVM_ADDRESS.test(mint)
-  if (!hood && !SOLANA_ADDRESS.test(mint)) return undefined
+  if (familyOfAddress(mint) === undefined) return undefined
   const name = [...p.tokens].find(([, m]) => m === mint)?.[0]
   const on = mint === p.linked
   return {
@@ -412,7 +434,7 @@ function addressRow(query: string, p: PaletteInput): PaletteRow | undefined {
     label: `open ${name ? `${name} · ` : ""}${shortAddress(mint)}`,
     words: on ? "linked: the token pane follows it" : "in the token pane, if Candle has a market for it",
     ...(on ? { current: true as const } : {}),
-    run: { kind: "link", mint, ...(hood ? { chain: "hood" as const } : {}) },
+    run: { kind: "link", mint, ...(isEvmAddress(mint) ? { chain: requestChain(mint) } : {}) },
   }
 }
 

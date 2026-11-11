@@ -106,7 +106,7 @@ const portfolio = (over: Partial<PortfolioView> = {}): PortfolioView => ({
       chain: "solana",
       kind: "embedded",
       agents: ["momentum", "swing"],
-      sol: { amount: 2, usd: 300 },
+      nativeSymbol: "SOL", native: { amount: 2, usd: 300 },
       tokens: [
         { mint: MOON, symbol: "MOON", amount: 12345.678901, usd: 7777.78, buyers: ["swing", "momentum"] },
         { mint: PEPE, symbol: "PEPE", amount: 5, usd: null, buyers: [] },
@@ -173,7 +173,7 @@ test("wallets: each wallet once on one line, with its agents, balances and a ⧉
 test("wallets: a TEE wallet this Candle Harness stopped shows with no balance and a chip that types its sweep; the title names a choice that isn't the default", () => {
   const T = "Tee1111111111111111111111111111111111111111"
   const p = portfolio()
-  const stopped = { ...p, wallets: [...p.wallets, { address: T, chain: "solana", kind: "tee" as const, label: "desk", agents: ["momentum"], active: false, stopped: true as const, sol: null, tokens: null }] }
+  const stopped = { ...p, wallets: [...p.wallets, { address: T, chain: "solana" as const, kind: "tee" as const, label: "desk", agents: ["momentum"], active: false, stopped: true as const, nativeSymbol: "SOL", native: null, tokens: null }] }
   for (const rows of [undefined, 3]) {
     const lines = walletLines(stopped, { mode: "live", now: NOW, width: 120, ...(rows ? { rows } : {}) })
     const at = lines.findIndex((l) => textOf(l).startsWith("desk · TEE"))
@@ -189,23 +189,23 @@ test("wallets: a TEE wallet this Candle Harness stopped shows with no balance an
 test("wallets: a stopped TEE wallet shows what the chain says is still in it; one Candle stopped listing says so; one empty on chain needs no sweep", () => {
   const T = "Tee1111111111111111111111111111111111111111"
   const p = portfolio()
-  const base = { address: T, chain: "solana", kind: "tee" as const, label: "desk", agents: ["momentum"], active: false, stopped: true as const, tokens: null }
+  const base = { address: T, chain: "solana" as const, kind: "tee" as const, label: "desk", agents: ["momentum"], active: false, stopped: true as const, tokens: null }
   const at = (w: Record<string, unknown>) => {
-    const lines = walletLines({ ...p, wallets: [...p.wallets, { ...base, sol: null, ...w }] }, { mode: "live", now: NOW, width: 120 })
+    const lines = walletLines({ ...p, wallets: [...p.wallets, { ...base, nativeSymbol: "SOL", native: null, ...w }] }, { mode: "live", now: NOW, width: 120 })
     const i = lines.findIndex((l) => textOf(l).startsWith("desk · TEE"))
     return [lines[i]!, lines[i + 1]!] as const
   }
-  const [head, funds] = at({ sol: { amount: 0.0412, usd: 6.18 }, heldTokens: 2 })
+  const [head, funds] = at({ nativeSymbol: "SOL", native: { amount: 0.0412, usd: 6.18 }, heldTokens: 2 })
   expect(textOf(head)).toContain("stopped for good")
   expect(textOf(funds)).toContain("0.0412 SOL ≈$6.18 and 2 tokens still in it")
   expect(funds.ref).toBe(`candle tee sweep ${T} as momentum`)
-  const [outsideHead, outside] = at({ stoppedOutside: true, sol: { amount: 0.5, usd: null }, heldTokens: 0 })
+  const [outsideHead, outside] = at({ stoppedOutside: true, nativeSymbol: "SOL", native: { amount: 0.5, usd: null }, heldTokens: 0 })
   expect(textOf(outsideHead)).toContain("no longer listed by Candle")
   expect(textOf(outside)).toContain("stopped outside the Candle Harness, most likely · 0.5 SOL still in it")
   const [, unread] = at({ balanceError: "rpc.example: rate limited" })
   expect(textOf(unread)).toContain("balance not read (rpc.example: rate limited)")
   expect(unread.segs.at(-1)).toMatchObject({ act: "fill" })
-  const [, empty] = at({ sol: { amount: 0, usd: 0 }, heldTokens: 0 })
+  const [, empty] = at({ nativeSymbol: "SOL", native: { amount: 0, usd: 0 }, heldTokens: 0 })
   expect(textOf(empty)).toContain("empty on chain")
   expect(empty.ref).toBeUndefined()
 })
@@ -229,7 +229,7 @@ test("wallets: read, with no agent's key allowed the embedded wallet, it's unrea
   expect(t).toContain("Paper trades need no funds.")
   expect(t).toContain("watcher: read only, no wallet")
   // An allowed key's empty wallet still says where to send funds.
-  const empty = portfolio({ wallets: [{ ...portfolio().wallets[0]!, sol: { amount: 0, usd: 0 }, tokens: [] }] })
+  const empty = portfolio({ wallets: [{ ...portfolio().wallets[0]!, nativeSymbol: "SOL", native: { amount: 0, usd: 0 }, tokens: [] }] })
   expect(join(walletLines(empty, { mode: "live", now: NOW, width: 80 }))).toContain("send SOL to trade live")
 })
 
@@ -263,7 +263,7 @@ test("wallets: each called by the core's name, the embedded wallet's own after i
   const p = portfolio({
     wallets: [
       { ...portfolio().wallets[0]!, label: "main", name: "main" },
-      { address: TEE, chain: "solana", kind: "tee", label: "embedded", name: "embedded", marked: "\"embedded\" already means the account's embedded wallet", agents: ["momentum"], active: true, sol: { amount: 1, usd: 150 }, tokens: [] },
+      { address: TEE, chain: "solana" as const, kind: "tee" as const, label: "embedded", name: "embedded", marked: "\"embedded\" already means the account's embedded wallet", agents: ["momentum"], active: true, nativeSymbol: "SOL", native: { amount: 1, usd: 150 }, tokens: [] },
     ],
   })
   const wide = walletLines(p, { mode: "live", now: NOW, width: 120 })
@@ -282,7 +282,7 @@ test("wallets: each called by the core's name, the embedded wallet's own after i
 test("wallets: a TEE wallet's empty token accounts, as Candle's preview counted them, with `close` once the Candle Harness runs it", () => {
   const T = "Tee1111111111111111111111111111111111111111"
   const p = portfolio()
-  const withTee = { ...p, wallets: [...p.wallets, { address: T, chain: "solana", kind: "tee" as const, label: "desk", agents: ["momentum"], active: true, sol: { amount: 0.5, usd: 75 }, tokens: [] }] }
+  const withTee = { ...p, wallets: [...p.wallets, { address: T, chain: "solana" as const, kind: "tee" as const, label: "desk", agents: ["momentum"], active: true, nativeSymbol: "SOL", native: { amount: 0.5, usd: 75 }, tokens: [] }] }
   const empty = new Map([[T, { count: 3, netSol: "0.00611284", agent: "momentum" }]])
   const at = (lines: Line[]) => lines.findIndex((l) => textOf(l).includes("empty token accounts"))
   // Held until its live check: the words, under the wallet's line, and nothing to press.

@@ -11,9 +11,10 @@ import { paths } from "../paths"
 import { storeNewAgentKey } from "../setup/key-add"
 import type { Card } from "./cards"
 import { pausedStops } from "./classify"
+import { candleConfigDir } from "./candle-mcp"
 import { CLI_ROWS, LP_AGENT_SCOPES, rowFor, SOURCE, unlocksFor } from "./cli-table"
-import { resolveCall } from "./cli-tool"
-import { freshTeeStep, freshTeeStepOf, paneRowNow, prepareKeysCreate, presetDrops, rebindFills, rebindLeft, rebindNote, teeLabelFor } from "./owner-rows"
+import { resolveCall, VAULT_V4_NOTE } from "./cli-tool"
+import { freshTeeStep, freshTeeStepOf, hoodWalletStep, paneRowNow, prepareKeysCreate, presetDrops, rebindFills, rebindLeft, rebindNote, teeLabelFor } from "./owner-rows"
 import { FACTOR_ARGV, type PaneResult, planPane } from "./pane-plan"
 
 afterAll(() => cleanupHomes())
@@ -152,6 +153,13 @@ describe("the card's words", () => {
     expect(freshTeeStepOf(["vault", "new-key", "--chain", "solana", "--label", "momentum-lp-tee"], prefixes)).toBeUndefined()
   })
 
+  test("a key whose prefix starts with \"-\" is promoted to by its label, the agent's name, which vault promote's --to-key takes", () => {
+    const dash = freshTeeStep(1, "momentum-lp", { prefix: "-1Y25FIQ", vaultKey: "cold" })
+    expect(dash.line).toBe("candle vault promote --to-key momentum-lp --label momentum-lp-tee --from cold")
+    expect(freshTeeStepOf(dash.line.split(" ").slice(1), new Map([["momentum-lp", "-1Y25FIQ"]]))).toEqual({ agent: "momentum-lp", label: "momentum-lp-tee" })
+    expect(hoodWalletStep("momentum-lp", { prefix: "-1Y25FIQ", vault: true, evmKeys: ["hk"] }).line).toBe("candle vault promote --to-key momentum-lp --label momentum-lp-hood --from hk")
+  })
+
   test("a rebind says what moves and that nobody's key changes; one that leaves an agent bare offers it a fresh wallet", () => {
     expect(rebindNote([{ name: "tee-one", from: "momentum" }], "momentum-lp (Lpkey123)")).toBe("momentum's TEE wallet tee-one will move to momentum-lp (Lpkey123); momentum keeps its key. The funds don't move.")
     const left = rebindLeft(["momentum", "swing"], { teeCount: (a) => (a === "momentum" ? 0 : 1), embedded: () => "allowed", prefix: (a) => (a === "momentum" ? "Momentum" : "Swingkey") })
@@ -211,6 +219,9 @@ describe("through a running core", () => {
     for (const c of cores.splice(0)) await c.close()
   })
   const tee = { id: "teeA", address: TEE, label: "tee-one", boundKeyPrefix: "Momentum" }
+  const SOL_VAULT_KEY = "ColdVau1t1111111111111111111111111111111111"
+  const EVM_VAULT_KEY = "0x00000000000000000000000000000000000c01d1"
+  const HOOD_TEE = "0x00000000000000000000000000000000000b0B01"
   const LP_PREFIX = "Lpkey123"
 
   async function setup(script: Record<string, unknown> = {}, opts: { mode?: "paper" | "live" } = {}) {
@@ -380,13 +391,107 @@ describe("through a running core", () => {
       await pane.request("pane.report", { stage: "command", exit: 0 })
       return told(s.t, r.card.opId)
     }
-    const step2 = (await typed(`${step1[0]!.line}cold`)).next!
+    const step2 = (await typed(`${(step1[0] as { line: string }).line}cold`)).next!
     expect(step2[0]!.label).toBe("fund momentum-lp's TEE wallet")
-    expect(step2[0]!.line).toEndWith("--asset SOL --amount ")
+    expect(step2[0]).toMatchObject({ line: expect.stringMatching(/--asset SOL --amount $/) })
     // No rebind anywhere, and momentum's key file and wallets are as they were.
     expect(s.runs().filter((a) => a[0] === "tee" && a[1] === "rebind")).toEqual([])
     expect(readFileSync(s.t.p.keyFile("momentum"), "utf8")).toBe(before.key)
     expect(s.t.core.wallets.teeOnKey("Momentum")).toEqual(before.tee)
+  }, 30_000)
+
+  test("an agent with no Hood TEE wallet is offered one: the chip's step follows the vault keys the Candle Harness knows, a new EVM key leads to the promote, and the first one's card says the vault file moves to version 4", async () => {
+    const s = await setup()
+    await s.view.request("subscribe", { topics: ["wallets"] })
+    const offered = () => (s.view.events.filter((e) => e.topic === "wallets").at(-1)?.data as { hoodWallet?: Record<string, { label: string; line: string }> } | undefined)?.hoodWallet ?? {}
+    // The vault keys, as a `vault list` run in the pane tells them: one Solana key, then an EVM one too.
+    const vaultList = async (entries: { address: string; label: string; role: "vault" }[]) => {
+      const r = (await s.view.request("cli.run", { argv: ["vault", "list"] })).result as { ticket: string; ticketId: string }
+      const { pane } = await openPane(s.t, s.view, r)
+      await pane.request("pane.report", { stage: "command", exit: 0, captured: { addresses: entries } })
+    }
+    await vaultList([{ address: SOL_VAULT_KEY, label: "cold", role: "vault" }])
+    await until(() => offered().momentum?.line.includes("new-key") === true)
+    expect(offered().momentum).toEqual({ label: "add a Hood wallet", line: "candle vault new-key --chain evm --label momentum-hood-key" })
+    // The new key, sent: what follows is the promote from it, to momentum's key.
+    const r = (await s.view.request("cli.run", { argv: ["vault", "new-key", "--chain", "evm", "--label", "momentum-hood-key"] })).result as { ticket: string; ticketId: string; card: Card }
+    const made = await openPane(s.t, s.view, r)
+    await made.pane.request("pane.report", { stage: "command", exit: 0 })
+    expect(told(s.t, r.card.opId).next).toEqual([{ label: "add a Hood wallet", line: "candle vault promote --to-key Momentum --label momentum-hood --from momentum-hood-key" }])
+    // Known from the next vault list, the EVM key is the one the chip promotes from; the Solana TEE chip still fills in the Solana key.
+    await vaultList([
+      { address: SOL_VAULT_KEY, label: "cold", role: "vault" },
+      { address: EVM_VAULT_KEY, label: "momentum-hood-key", role: "vault" },
+    ])
+    await until(() => offered().momentum?.line.includes("promote") === true)
+    expect(offered().momentum!.line).toBe("candle vault promote --to-key Momentum --label momentum-hood --from momentum-hood-key")
+    // The promote's card: the account has no Hood TEE wallet yet, so it says the vault file moves to version 4.
+    const promote = await s.call({ command: "vault", subcommand: "promote", args: ["--to-key", "Momentum", "--label", "momentum-hood", "--from", "momentum-hood-key"] })
+    expect(s.t.core.cards.get(promote.cardId)!.display.paneNotes).toContain(VAULT_V4_NOTE)
+    // A Solana promote's card doesn't.
+    const solana = await s.call({ command: "vault", subcommand: "promote", args: ["--to-key", "Momentum", "--label", "momentum-tee-2", "--from", "cold"] })
+    expect(s.t.core.cards.get(solana.cardId)!.display.paneNotes ?? []).not.toContain(VAULT_V4_NOTE)
+  }, 30_000)
+
+  test("a finished Hood promote offers its funding, ETH first: a bridge from the key's Solana TEE wallet with the amount where the cursor waits, the vault key's fund line, and its address to copy", async () => {
+    const hoodTee = { id: "teeH", address: HOOD_TEE, label: "momentum-hood", chain: "hood" as const, boundKeyPrefix: "Momentum" }
+    const cliDir = mkdtempSync(join(tmpdir(), "chrn-owner-cli-"))
+    writeFileSync(join(cliDir, "fake-cli.json"), JSON.stringify({ vault: { passphrase: "pw" }, authKeyPrefix: "Ownerkey", tee: { wallets: [tee] } }))
+    const t = await startTestCore({ env: { ...process.env, CANDLE_CONFIG_DIR: cliDir } }, { keys: { momentum: prefixedKey("Momentum") }, candle: { momentum: { teeWallets: [tee, hoodTee] } }, config: { mode: "live" } })
+    cores.push(t)
+    const view = await t.view()
+    await until(() => t.core.wallets.teeOnKey("Momentum").length === 2)
+    const r = (await view.request("cli.run", { argv: ["vault", "promote", "--to-key", "Momentum", "--label", "momentum-hood", "--from", EVM_VAULT_KEY] })).result as { ticket: string; ticketId: string; card: Card }
+    const { pane } = await openPane(t, view, r)
+    await pane.request("pane.report", { stage: "command", exit: 0 })
+    expect(told(t, r.card.opId).next).toEqual([
+      { label: "bridge ETH", line: `bridge  sol to eth from tee-one into ${HOOD_TEE} as momentum`, cursor: 7 },
+      { label: "fund from vault key", line: `candle vault fund ${HOOD_TEE} --asset ETH --amount ` },
+      { label: "⧉ address", copy: HOOD_TEE },
+    ])
+    // A Solana promote's next step is as it was: SOL from its vault key.
+    const sol = (await view.request("cli.run", { argv: ["vault", "promote", "--to-key", "Momentum", "--label", "tee-one", "--from", "cold"] })).result as { ticket: string; ticketId: string; card: Card }
+    const second = await openPane(t, view, sol)
+    await second.pane.request("pane.report", { stage: "command", exit: 0 })
+    expect(told(t, sol.card.opId).next).toEqual([{ label: "fund momentum's TEE wallet", line: `candle vault fund ${TEE} --asset SOL --amount ` }])
+  }, 30_000)
+
+  test("a Hood promote typed without a label, from a key the vault list hasn't named, offers ETH to the wallet it made: the key's wallets as they were at the press, not after a read while the pane ran", async () => {
+    const cliDir = mkdtempSync(join(tmpdir(), "chrn-owner-cli-"))
+    writeFileSync(join(cliDir, "fake-cli.json"), JSON.stringify({ vault: { passphrase: "pw" }, authKeyPrefix: "Ownerkey", tee: { wallets: [tee] } }))
+    const t = await startTestCore({ env: { ...process.env, CANDLE_CONFIG_DIR: cliDir }, promoteReadAgainMs: 10 }, { keys: { momentum: prefixedKey("Momentum") }, candle: { momentum: { teeWallets: [tee] } }, config: { mode: "live" } })
+    cores.push(t)
+    const view = await t.view()
+    await until(() => t.core.wallets.teeOnKey("Momentum").length === 1)
+    const r = (await view.request("cli.run", { argv: ["vault", "promote", "--from", "hood-cold", "--to-key", "Momentum"] })).result as { ticket: string; ticketId: string; card: Card }
+    const { pane } = await openPane(t, view, r)
+    // While the pane runs, Candle lists the new wallet under the CLI's own label, and a read picks it up.
+    const script = join(candleConfigDir(t.p.stateDir, "momentum"), "fake-candle.json")
+    writeFileSync(script, JSON.stringify({ teeWallets: [tee, { id: "teeH", address: HOOD_TEE, label: "evm-tee-1", chain: "hood", boundKeyPrefix: "Momentum" }] }))
+    await t.core.wallets.refresh("momentum")
+    await pane.request("pane.report", { stage: "command", exit: 0 })
+    expect(told(t, r.card.opId).next).toEqual([
+      { label: "bridge ETH", line: `bridge  sol to eth from tee-one into ${HOOD_TEE} as momentum`, cursor: 7 },
+      { label: "fund from vault key", line: `candle vault fund ${HOOD_TEE} --asset ETH --amount ` },
+      { label: "⧉ address", copy: HOOD_TEE },
+    ])
+  }, 30_000)
+
+  test("the Hood chip shows only where it can make one: on Pro or Max, for an agent with a key and no Hood TEE wallet", async () => {
+    const free = await startTestCore({}, { keys: { momentum: prefixedKey("Momentum") }, candle: { momentum: { tier: "free" } }, config: { mode: "live" } })
+    cores.push(free)
+    const view = await free.view()
+    await view.request("subscribe", { topics: ["wallets"] })
+    await until(() => view.events.some((e) => e.topic === "wallets"))
+    await Bun.sleep(50)
+    expect((view.events.filter((e) => e.topic === "wallets").at(-1)!.data as { hoodWallet?: unknown }).hoodWallet).toBeUndefined()
+    const hood = await startTestCore({}, { keys: { momentum: prefixedKey("Momentum") }, candle: { momentum: { tier: "max", teeWallets: [{ id: "teeH", address: HOOD_TEE, label: "momentum-hood", chain: "hood", boundKeyPrefix: "Momentum" }] } }, config: { mode: "live" } })
+    cores.push(hood)
+    await until(() => hood.core.wallets.teeOnKey("Momentum").length > 0)
+    const hv = await hood.view()
+    await hv.request("subscribe", { topics: ["wallets"] })
+    await until(() => hv.events.some((e) => e.topic === "wallets"))
+    expect((hv.events.filter((e) => e.topic === "wallets").at(-1)!.data as { hoodWallet?: Record<string, unknown> }).hoodWallet?.momentum).toBeUndefined()
   }, 30_000)
 
   test("a keys access card on the LP agent's key says a preset removes LP", async () => {

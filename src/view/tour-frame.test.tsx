@@ -65,7 +65,7 @@ const AGENT = {
   ],
 }
 const AUTONOMY = { wallets: [{ wallet: EMBEDDED, name: "main", kind: "embedded", setting: "ask", usedTodayUsd: 0, agents: ["agent-a"], notes: [] }] } as unknown as AutonomyTopic
-const PORTFOLIO = { readAt: CLOCK, wallets: [{ address: EMBEDDED, chain: "solana", kind: "embedded", name: "main", agents: ["agent-a"], active: true, sol: null, tokens: [] }], readOnly: [], paper: [] }
+const PORTFOLIO = { readAt: CLOCK, wallets: [{ address: EMBEDDED, chain: "solana", kind: "embedded", name: "main", agents: ["agent-a"], active: true, nativeSymbol: "SOL", native: null, tokens: [] }], readOnly: [], paper: [] }
 
 /** A session that answers onboarding's methods as a core would, and keeps what it was asked. */
 class SetupSession extends SceneSession {
@@ -93,7 +93,7 @@ async function draw(width: number, height: number, view: OnboardingView | undefi
     await s.renderOnce()
   }
   await s.renderOnce()
-  await push("status", { agents: [AGENT], activeAgent: "agent-a", mode: "paper", paused: false })
+  await push("status", { agents: [AGENT], activeAgent: "agent-a", mode: "live", paused: false })
   await push("engine", ENGINES)
   await push("autonomy", AUTONOMY)
   await push("portfolio", PORTFOLIO)

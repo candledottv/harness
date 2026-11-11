@@ -14,6 +14,7 @@
 // its slippage limit. These figures value the card, check the limits and size a dollar buy.
 import { BASE_ASSETS, type BaseAsset } from "./assets"
 import type { ToolOutcome } from "./candle-mcp"
+import { type ChainSlug, fixedUsd } from "../shared/chains"
 
 /**
  * How old the portfolio's price for an asset with no mint (ETH on Hood) may be: one refresh of the book and
@@ -77,13 +78,17 @@ export class Pricing {
       const point = this.deps.book.point(priceKey)
       return point && this.deps.now() - point.at <= MAX_PRICE_AGE_MS ? { ...point, source: "portfolio" } : undefined
     }
+    // An asset Candle prices at a fixed figure (USDG's $1): the portfolio carries it only while a wallet holds some, and
+    // it's the same figure then, so no read is spent on it.
+    const fixed = fixedUsd(priceKey)
+    if (fixed !== undefined) return fresh() ?? { usd: fixed, at: this.deps.now(), source: "Candle's fixed price" }
     // Stale (no view attached, or the refresh slowed by the key's budget): the book is read once now.
     if (fresh() === undefined && this.deps.book.refresh) await this.deps.book.refresh().catch(() => {})
     return fresh()
   }
 
   /** A token's USD price now, from a fresh market read. */
-  token(agent: string, chain: "solana" | "hood", mint: string): Promise<PricePoint | undefined> {
+  token(agent: string, chain: ChainSlug, mint: string): Promise<PricePoint | undefined> {
     const now = this.deps.now()
     const key = `${chain}:${mint}`
     const shared = this.recent.get(key)
@@ -97,7 +102,7 @@ export class Pricing {
   }
 
   /** Candle's quote for the exact trade, when the agent's server has the tool; else undefined. */
-  async quote(agent: string, trade: { chain: "solana" | "hood"; mint: string; side: "buy" | "sell"; amountRaw: string; quoteAsset?: string }): Promise<Quote | undefined> {
+  async quote(agent: string, trade: { chain: ChainSlug; mint: string; side: "buy" | "sell"; amountRaw: string; quoteAsset?: string }): Promise<Quote | undefined> {
     if (this.sourceFor(agent) !== "quote") return undefined
     const outcome = await this.deps.call(agent, this.deps.config.quoteTool, { ...trade })
     if (outcome.kind !== "ok") return undefined

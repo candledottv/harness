@@ -9,6 +9,7 @@
 import { readFile, rename, writeFile } from "node:fs/promises"
 import { sameAddress } from "../shared/address-key"
 import { terminalText } from "../shared/terminal-text"
+import { EVM_ADDRESS_SOURCE, SOLANA_ADDRESS_SOURCE } from "../shared/chains"
 
 export interface StoppedWallet {
   address: string
@@ -30,10 +31,7 @@ export interface ListedWallet {
 }
 
 /** A Solana address, or a Hood one: a 0x wallet stopped in the pane is kept across a core start like any other. */
-const ADDRESS = /^(?:[1-9A-HJ-NP-Za-km-z]{32,44}|0x[0-9a-fA-F]{40})$/
-
-/** Whether a stopped wallet is on Hood: its balance isn't read on chain, since the chain read is Solana's. */
-export const onHood = (address: string): boolean => /^0x[0-9a-fA-F]{40}$/.test(address)
+const ADDRESS = new RegExp(`^(?:${SOLANA_ADDRESS_SOURCE}|${EVM_ADDRESS_SOURCE})$`)
 
 /**
  * Whether a portfolio read says which TEE wallets are missing: it must list TEE wallets at all, and its

@@ -1,4 +1,4 @@
- ▲ candle  agent-a ▾  PAPER  today $0.00 / $50.00  live exposure —  live P&L —  ● 0 cards waiting                                                ctrl-x ×2 kill 
+ ▲ candle  agent-a ▾  LIVE  today $0.00 / $50.00  exposure —  P&L —  ● 0 cards waiting                                                           ctrl-x ×2 kill 
  1 Trade  2 Cockpit  3 Research  4 Bots  5 Build   settings ▾                                                                                                   
                                                                                                                                                                 
 ╭─ agent-a ────────────────────────────────────────────────────────── Claude Code · sonnet ▾ ─╮ ╭─ Token · trending ───────────────────────────────────────────╮
@@ -6,23 +6,23 @@
 │   agent-a  Claude Code · sonnet, as candle-harness                                          │ │ takes a few seconds.                                         │
 │   wallet   main, asking every time                                                          │ │                                                              │
 │   limits   Harness $10.00 a trade, $50.00 a day · Candle $50.00 a day (UTC)                 │ │                                                              │
-│   mode     paper; go live from the status bar                                               │ │                                                              │
+│   mode     live: real funds, a card per trade                                               │ │                                                              │
 │                                                                                             │ │                                                              │
 │ Try:                                                                                        │ │                                                              │
 │   · what's the tape saying in the last hour?                                                │ │                                                              │
 │   · check this token before I buy: <paste a mint>                                           │ │                                                              │
-│   · buy $10 of it in paper mode                                                             │ │                                                              │
+│   · buy $10 of it                                                                           │ │                                                              │
 │                                                                                             │ │                                                              │
 │ I act on your messages and your triggers.                                                   │ │                                                              │
 │ Nothing here is financial advice. Signals, backtests and replays describe the past, and     │ │                                                              │
 │ the agent can be wrong: check what matters, and size what you can lose.                     │ ╰─ ⇱ ──────────────────────────────────────────────────────────╯
 │                                                                                             │                                                                 
-│                                                                                             │ ╭─ Positions · paper ────────────────────────── all agents ▾ ──╮
-│                                                                                             │ │ paper, at the quoted price · only paper trades made here     │
-│                                                                                             │ │ No open paper positions.                                     │
+│                                                                                             │ ╭─ Positions ────────────────────────────────── all agents ▾ ──╮
+│                                                                                             │ │ No positions yet.                                            │
 │                                                                                             │ │                                                              │
 │                                                                                             │ │ try: ask the agent "what's moving on Candle?"                │
-│                                                                                             │ │ or type: buy $1 of <token>                                   │
+│                                                                                             │ │                                                              │
+│                                                                                             │ │                                                              │
 │                                                                                             │ │                                                              │
 │                                                                                             │ │                                                              │
 │                                                                                             │ ╰─ ⇱ ──────────────────────────────────────────────────────────╯
@@ -45,7 +45,7 @@
 › type a command or ask the agent                                   ctrl-k palette    ? help    ╰─ ⇱ ──────────────────────────────────────────────────────────╯
 
 --- colours ---
-0: ffffff/0e1115×1 f6f8fb/0e1115×8 ffffff/0e1115×1 6cb6ff/16263a×11 f6f8fb/2a2f3a×7 ffffff/0e1115×1 959dab/0e1115×6 f6f8fb/0e1115×5 959dab/0e1115×9 ffffff/0e1115×2 959dab/0e1115×14 f6f8fb/0e1115×1 ffffff/0e1115×2 959dab/0e1115×10 ffffff/0e1115×2 959dab/0e1115×17 ffffff/0e1115×47 ff5c5c/3a1619×16
+0: ffffff/0e1115×1 f6f8fb/0e1115×8 ffffff/0e1115×1 6cb6ff/16263a×11 0b0d10/3ddc84×6 ffffff/0e1115×1 959dab/0e1115×6 f6f8fb/0e1115×5 959dab/0e1115×9 ffffff/0e1115×2 959dab/0e1115×9 f6f8fb/0e1115×1 ffffff/0e1115×2 959dab/0e1115×5 ffffff/0e1115×2 959dab/0e1115×17 ffffff/0e1115×58 ff5c5c/3a1619×16
 1: ffffff/0b0d10×1 f6f8fb/0b0d10+9×7 ffffff/0b0d10×2 6cb6ff/0b0d10×9 ffffff/0b0d10×2 6cb6ff/0b0d10×10 ffffff/0b0d10×2 6cb6ff/0b0d10×6 ffffff/0b0d10×2 6cb6ff/0b0d10×7 ffffff/0b0d10×2 6cb6ff/16263a×12 ffffff/0b0d10×98
 2: ffffff/0b0d10×160
 3: 32fe9f/111419×2 b392f0/111419×9 32fe9f/111419×58 6cb6ff/16263a×24 32fe9f/111419×2 ffffff/0b0d10×1 252a33/111419×2 b392f0/111419×18 252a33/111419×44
@@ -58,18 +58,18 @@
 10: 32fe9f/111419×1 ffffff/111419×1 959dab/111419×4 ffffff/111419×88 32fe9f/111419×1 ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×62 252a33/111419×1
 11: 32fe9f/111419×1 ffffff/111419×1 dde2ea/111419×44 ffffff/111419×48 32fe9f/111419×1 ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×62 252a33/111419×1
 12: 32fe9f/111419×1 ffffff/111419×1 dde2ea/111419×49 ffffff/111419×43 32fe9f/111419×1 ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×62 252a33/111419×1
-13: 32fe9f/111419×1 ffffff/111419×1 dde2ea/111419×31 ffffff/111419×61 32fe9f/111419×1 ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×62 252a33/111419×1
+13: 32fe9f/111419×1 ffffff/111419×1 dde2ea/111419×17 ffffff/111419×75 32fe9f/111419×1 ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×62 252a33/111419×1
 14: 32fe9f/111419×1 ffffff/111419×93 32fe9f/111419×1 ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×62 252a33/111419×1
 15: 32fe9f/111419×1 ffffff/111419×1 959dab/111419×41 ffffff/111419×51 32fe9f/111419×1 ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×62 252a33/111419×1
 16: 32fe9f/111419×1 ffffff/111419×1 959dab/111419×87 ffffff/111419×5 32fe9f/111419×1 ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×62 252a33/111419×1
 17: 32fe9f/111419×1 ffffff/111419×1 959dab/111419×71 ffffff/111419×21 32fe9f/111419×1 ffffff/0b0d10×1 252a33/111419×2 6cb6ff/16263a×3 252a33/111419×59
 18: 32fe9f/111419×1 ffffff/111419×93 32fe9f/111419×1 ffffff/0b0d10×65
-19: 32fe9f/111419×1 ffffff/111419×93 32fe9f/111419×1 ffffff/0b0d10×1 252a33/111419×2 b392f0/111419×19 252a33/111419×26 6cb6ff/16263a×14 252a33/111419×3
-20: 32fe9f/111419×1 ffffff/111419×93 32fe9f/111419×1 ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 959dab/111419×56 ffffff/111419×5 252a33/111419×1
-21: 32fe9f/111419×1 ffffff/111419×93 32fe9f/111419×1 ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 959dab/111419×24 ffffff/111419×37 252a33/111419×1
-22: 32fe9f/111419×1 ffffff/111419×93 32fe9f/111419×1 ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×62 252a33/111419×1
-23: 32fe9f/111419×1 ffffff/111419×93 32fe9f/111419×1 ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 959dab/111419×45 ffffff/111419×16 252a33/111419×1
-24: 32fe9f/111419×1 ffffff/111419×93 32fe9f/111419×1 ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 959dab/111419×26 ffffff/111419×35 252a33/111419×1
+19: 32fe9f/111419×1 ffffff/111419×93 32fe9f/111419×1 ffffff/0b0d10×1 252a33/111419×2 b392f0/111419×11 252a33/111419×34 6cb6ff/16263a×14 252a33/111419×3
+20: 32fe9f/111419×1 ffffff/111419×93 32fe9f/111419×1 ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 959dab/111419×17 ffffff/111419×44 252a33/111419×1
+21: 32fe9f/111419×1 ffffff/111419×93 32fe9f/111419×1 ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×62 252a33/111419×1
+22: 32fe9f/111419×1 ffffff/111419×93 32fe9f/111419×1 ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 959dab/111419×45 ffffff/111419×16 252a33/111419×1
+23: 32fe9f/111419×1 ffffff/111419×93 32fe9f/111419×1 ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×62 252a33/111419×1
+24: 32fe9f/111419×1 ffffff/111419×93 32fe9f/111419×1 ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×62 252a33/111419×1
 25: 32fe9f/111419×1 ffffff/111419×93 32fe9f/111419×1 ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×62 252a33/111419×1
 26: 32fe9f/111419×1 ffffff/111419×93 32fe9f/111419×1 ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×62 252a33/111419×1
 27: 32fe9f/111419×1 ffffff/111419×93 32fe9f/111419×1 ffffff/0b0d10×1 252a33/111419×2 6cb6ff/16263a×3 252a33/111419×59

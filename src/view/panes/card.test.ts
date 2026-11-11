@@ -7,6 +7,7 @@ import { cardLines } from "./card"
 import { requotable } from "../trade-tab"
 import { C } from "../theme"
 import { textOf } from "./lines"
+import { sequencedFailure } from "../../core/reconcile"
 
 const MOON = "MoonFake11111111111111111111111111111111111"
 const NOW = Date.parse("2026-10-26T14:00:00.000Z")
@@ -195,6 +196,13 @@ test("the countdown reaching 0 folds the card to one line with a re-quote chip, 
   expect(lines.map(textOf)).toEqual(["  ◷ BUY $25.00 of MOON  expired, never ran   ctrl-r re-quote "])
   expect(lines[0]!.segs.some((s) => s.act === "approve")).toBe(false)
   expect(lines[0]!.segs.find((s) => s.act === "requote")).toBeDefined()
+})
+
+test("a filled sell says what Candle's answer gave back, not the card's estimate", () => {
+  const sell = card({ side: "sell", state: "approved", approvedHow: "enter", operation: { state: "succeeded" } }, { headline: "SELL 50% of MOON", spend: undefined, sells: { amount: 1293, asset: "MOON" }, gets: { amount: 0.0000483, asset: "ETH" } })
+  const op = { opId: "op-c1", cardId: "c1", agent: "momentum", kind: "trade", state: "succeeded" as const, result: { received: "≈0.000165 ETH" } }
+  expect(texts(sell, { width: 110, op })[0]).toBe("  ✓ SELL 50% of MOON  filled · ≈0.000165 ETH · approved by Enter")
+  expect(texts(sell, { width: 110 })[0]).toBe("  ✓ SELL 50% of MOON  filled · ≈0.0000483 ETH · approved by Enter")
 })
 
 test("ended cards fold to one line that says what happened", () => {
@@ -661,6 +669,13 @@ describe("a rules bot's card", () => {
   })
 })
 
+test("an approved trade waiting for its Hood TEE wallet's last one says so, never just \"submitting\"", () => {
+  const c = card({ state: "approved", approvedHow: "enter", operation: { state: "submitting" } })
+  const op = { opId: "op-2", cardId: c.cardId, agent: "momentum", state: "submitting", waitingFor: "op-1" }
+  expect(texts(c, { op }).join("\n")).toContain("waits for the wallet's last trade")
+  expect(texts(c, { op: { ...op, waitingFor: undefined } }).join("\n")).not.toContain("waits for the wallet's last trade")
+})
+
 test("a card whose keys are in another pane offers approve without the ⏎ mark, since ⏎ goes to that pane; with the keys here it has it", () => {
   const chipText = (keysElsewhere: boolean) => {
     const lines = cardLines(card(), { now: NOW, focused: false, width: 80, ...(keysElsewhere ? { keysElsewhere: true } : {}) })
@@ -669,4 +684,113 @@ test("a card whose keys are in another pane offers approve without the ⏎ mark,
   expect(chipText(true)).toContain("approve")
   expect(chipText(true)).not.toContain("⏎")
   expect(chipText(false)).toContain("⏎ approve")
+})
+
+describe("a bridge card", () => {
+  const BRIDGE = { route: "bot-1 · TEE (Solana) → bot-1-h · TEE (Hood)", via: "via Relay · no Candle fee · same key, not funds out", arriving: "sent on Solana · arriving on Hood…" }
+  const bridge = (over: Partial<ViewCard> = {}) =>
+    card(
+      { kind: "bridge", tool: "candle_bridge", side: undefined, params: { argv: ["swap", "SOL", "ETH"] }, ...over },
+      { title: "BRIDGE 0.5 SOL → ETH (≈$75.00)", headline: "BRIDGE 0.5 SOL → ETH", gets: { amount: 0.025, asset: "ETH" }, spend: undefined, valueUsd: 75, mint: undefined, mintLabel: undefined, why: "bot-1-h is nearly out of ETH for gas", bridge: BRIDGE },
+    )
+
+  test("open, it's four lines: what and roughly what arrives, the route between the two wallets, how it goes and what it costs, then the chips", () => {
+    const lines = texts(bridge())
+    expect(lines[0]).toMatch(/^▌ BRIDGE 0\.5 SOL → ETH   ≈0\.025 ETH · ≈\$75\.00 +42s$/)
+    expect(lines.slice(1)).toEqual([
+      "▌ momentum · bot-1 · TEE (Solana) → bot-1-h · TEE (Hood)",
+      "▌ via Relay · no Candle fee · same key, not funds out",
+      "▌ why  bot-1-h is nearly out of ETH for gas",
+      "▌  ⏎ approve    ctrl-n reject    ctrl-o details ",
+    ])
+  })
+
+  test("narrow, the route keeps both ends, dropping the agent's name and then each wallet's kind first; how it goes wraps, never cut", () => {
+    for (const width of [48, 40, 30]) {
+      const lines = texts(bridge(), { width })
+      const route = lines[2]!.startsWith("▌ ≈") ? lines[3]! : lines[2]!
+      expect(route).toContain("bot-1")
+      expect(route).toContain("bot-1-h")
+      expect(route).not.toContain("…")
+      expect(lines.join(" ").replace(/▌ /g, "")).toContain("not funds out")
+    }
+  })
+
+  test("on its way, it says where the funds are; once there, what arrived and how long it took; failed, why, in the core's words", () => {
+    const approved = (op: Partial<NonNullable<Parameters<typeof cardLines>[1]["op"]>>) =>
+      texts(bridge({ state: "approved", approvedHow: "enter" }), { width: 110, op: { opId: "op-c1", cardId: "c1", agent: "momentum", kind: "bridge", state: "pending", startedAt: NOW - 24_000, ...op } })
+    expect(approved({ state: "pending" })[0]).toBe("  ◌ BRIDGE 0.5 SOL → ETH  sent on Solana · arriving on Hood… · approved by Enter")
+    expect(approved({ state: "submitting" })[0]).toBe("  ◌ BRIDGE 0.5 SOL → ETH  sending · approved by Enter")
+    expect(approved({ state: "succeeded", settledAt: NOW - 19_000, result: { received: "0.0709 ETH" } })[0]).toBe("  ✓ BRIDGE 0.5 SOL → ETH  arrived in 5.0 s · 0.0709 ETH · approved by Enter")
+    const failed = approved({ state: "failed", error: { code: "BRIDGE_FAILED", message: "The deposit landed and Relay didn't fill it: Relay refunds it to bot-1. Check that wallet's balance." } })
+    expect(failed.join(" ")).toContain("failed")
+    expect(failed.join(" ")).toContain("Relay refunds it to bot-1")
+  })
+
+  test("one the core no longer follows says why and where to look, never that it's being read back", () => {
+    const approved = (op: Partial<NonNullable<Parameters<typeof cardLines>[1]["op"]>>) =>
+      texts(bridge({ state: "approved", approvedHow: "enter" }), { width: 110, op: { opId: "op-c1", cardId: "c1", agent: "momentum", kind: "bridge", state: "unknown", startedAt: NOW - 24_000, ...op } }).join(" ")
+    const uncertain = approved({ error: { code: "BRIDGE_UNCERTAIN", message: "Relay reported a result Candle couldn't tie to one fill. Check the balance of bot-1-h; ctrl-o has the deposit." } })
+    expect(uncertain).not.toContain("reading it back")
+    expect(uncertain).toContain("Check the balance of bot-1-h")
+    const late = approved({ error: { code: "BRIDGE_PAST_TWO_HOURS", message: "No result after two hours." } })
+    expect(late).not.toContain("reading it back")
+    expect(late).toContain("No result after two hours")
+    // With no answer yet, it is being read back.
+    expect(approved({})).toContain("reading it back")
+  })
+})
+
+test("a Hood trade whose job Candle ended says what its error says, never that it's being read back", () => {
+  const job = { status: "failed", errorCode: "SWAP_FAILED", operation: { legs: [{ kind: "approve", status: "confirmed" }, { kind: "trade", status: "failed" }] } }
+  const error = sequencedFailure(job)!
+  const approved = (op: Partial<NonNullable<Parameters<typeof cardLines>[1]["op"]>>) =>
+    texts(card({ state: "approved", approvedHow: "enter" }), { width: 240, op: { opId: "op-c1", cardId: "c1", agent: "momentum", kind: "trade", state: "unknown", startedAt: NOW - 24_000, ...op } }).join(" ")
+  const ended = approved({ result: job, error })
+  expect(ended).not.toContain("reading it back")
+  expect(ended).toContain("may have filled: what the wallet holds says")
+  // With no answer from Candle yet, it is being read back.
+  expect(approved({})).toContain("reading it back")
+})
+
+test("a bridge's details: the route, how it goes, then Relay's quote, the deposit and where it stands, once it's sent", () => {
+  const route = { route: "bot-1 · TEE (Solana) → bot-1-h · TEE (Hood)", via: "via Relay · no Candle fee · same key, not funds out", arriving: "sent on Solana · arriving on Hood…" }
+  const c = card({ kind: "bridge", tool: "candle_bridge", side: undefined }, { headline: "BRIDGE 0.5 SOL → ETH", bridge: route })
+  expect(cardDetails(c)).toContain("route     bot-1 · TEE (Solana) → bot-1-h · TEE (Hood)")
+  expect(cardDetails(c)).toContain("goes      via Relay · no Candle fee · same key, not funds out")
+  const sent = cardDetails(c, {
+    opId: "op-c1",
+    cardId: "c1",
+    agent: "momentum",
+    kind: "bridge",
+    state: "pending",
+    result: { quote: { relayFees: "about $0.048 as Relay reports it", estimatedTime: "about 1s as Relay reports it", minimumReceived: "0.0003 ETH" }, bridge: { depositHash: "5DepositSig" }, bridgeStatus: { phase: "filling", open: "open" } },
+  })
+  expect(sent).toContain("relay     fee about $0.048 as Relay reports it · time about 1s as Relay reports it · at least 0.0003 ETH")
+  expect(sent).toContain("deposit   5DepositSig")
+  expect(sent).toContain("stands    filling · open")
+})
+
+test("a card on Hood says so, dim, at the end of its first line, open or ended; a Solana card, and a bridge across both, don't", () => {
+  const first = (c: Parameters<typeof cardLines>[0]) => cardLines(c, { now: NOW, focused: false, width: 80 })[0]!.segs
+  const hood = card({ chain: "hood" })
+  const open = first(hood)
+  expect(open.map((s) => s.text).join("")).toContain("· on Hood")
+  expect(open.find((s) => s.text.includes("· on Hood"))?.fg).toBe(C.dim)
+  expect(first({ ...hood, state: "rejected" }).map((s) => s.text).join("")).toContain("· on Hood")
+  expect(first(card({ chain: "solana" })).map((s) => s.text).join("")).not.toContain("· on")
+  expect(first(card({ chain: "hood", kind: "bridge" })).map((s) => s.text).join("")).not.toContain("· on Hood")
+})
+
+test("on the 80×24 agent pane, a Hood card with a long symbol keeps its countdown and \"· on Hood\": the symbol is what's cut", () => {
+  const long = (chain: "hood" | "solana", headline: string) => texts(card({ chain }, { headline, gets: undefined, spend: undefined, receives: undefined }), { width: 46 })[0]!
+  const hood = long("hood", "BUY 0.01 ETH of MOONSHOTTOKEN12")
+  expect(hood.length).toBeLessThanOrEqual(46)
+  expect(hood).toMatch(/· on Hood +42s$/)
+  expect(hood).toContain("BUY 0.01 ETH of MOONSHOT")
+  expect(hood).toContain("…")
+  // The same card on Solana fits whole, as it did.
+  const sol = long("solana", "BUY 0.1 SOL of MOONSHOTTOKEN12")
+  expect(sol).toMatch(/^▌ BUY 0\.1 SOL of MOONSHOTTOKEN12 +42s$/)
+  expect(sol.length).toBe(46)
 })

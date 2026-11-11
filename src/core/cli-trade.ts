@@ -2,8 +2,6 @@
 // the agent's key. The CLI signs with the key's own signer from its own store (docs.candle.tv/developers/cli-custody);
 // the Candle Harness never holds one. Read from the CLI's source at agentic 8737c8e (cli/src/commands/swap.ts,
 // cli/src/trading.ts) and docs.candle.tv/developers/cli:
-//   - a Hood TEE wallet's trade is the same argv, ETH or USDG against a 0x token: `candle swap` signs
-//     it one leg at a time (approval, trade, fee) and prints the trade's own answer (swap.ts hoodSwap);
 //   - `candle swap` looks the id up on Candle first and prints what it finds instead of trading
 //     (swap.ts:492-493), then claims the id in a local file (trading.ts:1186). A rerun under the same id
 //     is a read, or OPERATION_ALREADY_STARTED: it never sends twice. So "re-send" runs the same argv;
@@ -17,8 +15,10 @@ import { terminalText } from "../shared/terminal-text"
 import type { CandleCli, CliResult } from "./candle-cli"
 import type { Mapped, Operation, OperationError } from "./execute"
 import { keyLimitFields, refusalMessage, routeWaitFields } from "./execute"
+import { EVM_ADDRESS_SOURCE } from "../shared/chains"
 import type { Journal } from "./journal"
-import { type JobState, jobState, type TradeRead } from "./reconcile"
+import { type JobState, jobState, sequencedFailure, type TradeRead } from "./reconcile"
+import { bridgeFactsOf, type BridgeRead, bridgeStatusOf, mapCliBridge } from "./bridge"
 
 /** What a TEE card runs: `candle <argv>` with the agent's key. The card's hash covers all of it. */
 export interface CliTradeParams {
@@ -52,8 +52,9 @@ export const PRE_BUILD_CODES: ReadonlySet<string> = new Set([
   "QUOTE_EXPIRED",
   "TOKEN_NOT_TRADABLE",
   "USAGE",
-  // Hood TEE wallets (swap.ts hoodSwap): another operation holds the wallet, or the deployment answered
-  // without a sequenced leg. Either way nothing was signed.
+  // A Hood TEE wallet's build (Candle's lib/hood-tee-sequenced.ts): the gas check and the wallet's one-at-a-time
+  // lock refuse before anything is acquired, and a build off the sequenced route is refused before any leg exists.
+  "GAS_INSUFFICIENT",
   "WALLET_BUSY",
   "SEQUENCED_RAIL_REQUIRED",
 ])
@@ -109,21 +110,74 @@ export function swapJobState(job: Record<string, unknown>): JobState {
 
 const stateOf = (kind: Operation["kind"], job: Record<string, unknown>): JobState => (kind === "swap" ? swapJobState(job) : jobState(job))
 
+/** Wei as ETH, exactly, with no trailing zeros: `1234500000000000` is `0.0012345`. */
+export function weiAsEth(wei: string): string | undefined {
+  if (!/^\d{1,40}$/.test(wei)) return undefined
+  const padded = wei.padStart(19, "0")
+  const whole = padded.slice(0, -18).replace(/^0+(?=\d)/, "")
+  const frac = padded.slice(-18).replace(/0+$/, "")
+  return frac ? `${whole}.${frac}` : whole
+}
+
+/** Candle's own `vault fund` line in a GAS_INSUFFICIENT message (Candle's lib/hood-gas-reserve.ts), taken only in its exact shape. */
+const FUND_LINE = new RegExp(`candle vault fund (${EVM_ADDRESS_SOURCE}) --amount (\\d+(?:\\.\\d+)?) --asset ETH`)
+
+/** GAS_INSUFFICIENT in words: the shortfall in ETH, and where ETH comes from. */
+function gasMessage(body: Record<string, unknown>): string {
+  const details = record(body.details) ?? body
+  const message = typeof body.message === "string" ? body.message : ""
+  const fund = FUND_LINE.exec(message)
+  const short = typeof details.shortfallWei === "string" ? weiAsEth(details.shortfallWei) : fund?.[2]
+  const reserve = typeof details.reserveWei === "string" ? weiAsEth(details.reserveWei) : undefined
+  return (
+    `This Hood TEE wallet doesn't hold enough ETH for the trade's gas and the reserve Candle keeps back to sweep it home${reserve ? ` (${reserve} ETH)` : ""}` +
+    `${short ? `: it's ${short} ETH short` : ""}. Nothing was sent. Every trade from it pays gas in ETH, a USDG buy too. ` +
+    (fund ? `Send it ETH, or fund it from its vault key: candle vault fund ${fund[1]} --amount ${fund[2]} --asset ETH.` : "Send it ETH, or fund it from its vault key with candle vault fund <its address> --asset ETH.")
+  )
+}
+
 /** The Candle Harness's own words for the CLI's refusals, where Candle's would mislead. */
 function cliMessage(code: string, body: Record<string, unknown>): string {
   // The CLI appends "use candle swap status <id> before another attempt", which can't work from the
   // user's own terminal: the swap was placed with the agent's key, and a refused attempt isn't stored.
   if (code === "TEE_WALLET_REQUIRED") return "The candle CLI says this key can't pay from that TEE wallet (it isn't bound to this agent's key, or no longer is). Nothing was sent. The Wallets pane lists what each agent can pay from."
   if (code === "SIGNER_UNAVAILABLE") return "This machine doesn't hold the TEE wallet's signer, so the candle CLI couldn't sign. Nothing was sent. candle-harness doctor shows which wallets have one."
-  if (code === "WALLET_BUSY") return "Another Hood trade from this TEE wallet is still open on Candle, and a Hood TEE wallet runs one at a time. Nothing was sent. Ask again once it finishes or its window closes."
   if (code === "USAGE") return "The Candle Harness built a command the candle CLI didn't accept. Nothing was sent. This is a bug in the Candle Harness."
+  // A Hood TEE wallet's refusals (the CLI's swap.ts and Candle's lib/hood-tee-sequenced.ts).
+  if (code === "GAS_INSUFFICIENT") return gasMessage(body)
+  if (code === "WALLET_BUSY") {
+    // Candle's guard on a transaction it couldn't settle (it may have gone out) holds the wallet until Candle resolves it,
+    // which waiting alone doesn't do: said apart from a trade still running, with Candle's operation id to give them.
+    const said = typeof body.message === "string" ? body.message : ""
+    if (/unresolved/i.test(said)) {
+      const op = /operation ([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i.exec(said)?.[1]
+      return `Candle is holding this Hood TEE wallet for an earlier transaction it hasn't settled${op ? ` (its operation ${op})` : ""}, and refuses every new trade from it until it does. Nothing was sent. If it lasts, Candle has to release it: give them that operation id.`
+    }
+    return "This Hood TEE wallet is still running its last trade: Candle runs one at a time on a Hood TEE wallet. Nothing was sent. Try again once that one settles."
+  }
+  if (code === "SEQUENCED_RAIL_REQUIRED") return "Candle trades a Hood TEE wallet only through its step-by-step route, and this candle CLI didn't ask for it. Nothing was sent. Update the candle CLI."
+  if (code === "CHAIN_MISMATCH") return "The wallet and what it trades are on different chains: a trade pays from a wallet on its own chain. Nothing was sent."
+  if (code === "RPC_FAILED") return "The candle CLI couldn't read the chain over its RPC. Nothing was sent. Try again in a moment; candle-harness doctor names the RPC each chain is read over."
+  if (code === "UNRECOGNIZED_TRANSACTION") return "The candle CLI didn't recognise a transaction Candle built for this trade, so it didn't sign it. A step before it may have landed: what Candle holds under the trade's id says, and it's read back."
+  if (code === "QUOTE_EXPIRED") return "The quote expired before the trade was sent. Asking again quotes it fresh."
   const plain = refusalMessage(code, body)
   if (plain) return plain
   const message = typeof body.message === "string" ? body.message.replace(/ Operation \S+; use candle swap status \S+ before another attempt\.$/, "") : code
   return terminalText(message, { maxLength: 500 })
 }
 
-function errorOf(code: string, body: Record<string, unknown>): OperationError {
+/**
+ * A failed Hood job's words from its legs, never Candle's "No leg landed" alone: Candle has recorded a landed leg as
+ * failed. An attempted approval spent gas and traded nothing; an attempted trade leg may have filled.
+ */
+function sequencedWords(job: Record<string, unknown>, error: OperationError): OperationError {
+  const words = sequencedFailure(job)
+  return words ? { ...error, message: words.message } : error
+}
+
+
+/** A CLI refusal as an operation's error, in the Candle Harness's words where Candle's would mislead. */
+export function cliError(code: string, body: Record<string, unknown>): OperationError {
   // A held key needs when Candle's window resets, where the CLI passes it on.
   return { code, message: cliMessage(code, body), retryable: body.retryable === true, ...(code === "KEY_LIMIT_REACHED" ? keyLimitFields(body) : {}), ...(code === "SWAP_ROUTE_FAILING" ? routeWaitFields(body) : {}) }
 }
@@ -135,7 +189,10 @@ function errorOf(code: string, body: Record<string, unknown>): OperationError {
  * own simulation refusing a built trade answers this way.
  */
 function refusedAtBuild(code: string, body: Record<string, unknown>): boolean {
-  return code === "SWAP_FAILED" && body.details === undefined && body.stage === undefined && body.signature === undefined
+  // A Hood trade's legs are signed one by one after the build: "The approval leg failed" is past it, and that leg may
+  // have landed though Candle says it didn't.
+  const legFailed = typeof body.message === "string" && /\bleg failed\b/i.test(body.message)
+  return code === "SWAP_FAILED" && !legFailed && body.details === undefined && body.stage === undefined && body.signature === undefined
 }
 
 /** Jupiter's 6001, slippage exceeded, as Candle's simulation reports it: the price moved between quote and build. */
@@ -178,7 +235,7 @@ export function mapCliTrade(kind: Operation["kind"], run: Pick<CliResult, "exitC
   }
 
   const code = typeof body.code === "string" ? body.code : `CLI_EXIT_${run.exitCode}`
-  const error = errorOf(code, body)
+  const error = cliError(code, body)
   if (run.exitCode === 3) return { state: "unknown", result: body, error, reason: "the candle CLI says it may have landed (exit 3)" }
   if (run.exitCode !== 1 && run.exitCode !== 2) return { state: "unknown", result: body, error, reason: `the candle CLI stopped with exit ${run.exitCode}` }
 
@@ -188,8 +245,8 @@ export function mapCliTrade(kind: Operation["kind"], run: Pick<CliResult, "exitC
     // A job built and never sent, after a refusal raised before the submit: only the CLI could send a
     // TEE wallet's transaction, and it has stopped, so nothing will be.
     if (state === "pending" && PRE_BUILD_CODES.has(code)) return { state: "refused", result: read.job, error }
-    if (state === "unknown" || state === "pending") return { state, result: read.job, error, reason: `${code}, and Candle's job says ${String(read.job.status)}` }
-    return { state, result: read.job, ...(state === "refused" || state === "failed" ? { error } : {}) }
+    if (state === "unknown" || state === "pending") return { state, result: read.job, error: sequencedWords(read.job, error), reason: `${code}, and Candle's job says ${String(read.job.status)}` }
+    return { state, result: read.job, ...(state === "refused" || state === "failed" ? { error: sequencedWords(read.job, error) } : {}) }
   }
   const notFound = read !== undefined && read.detail === "JOB_NOT_FOUND"
   if (notFound && PRE_BUILD_CODES.has(code)) return { state: "refused", result: body, error }
@@ -210,6 +267,7 @@ export class CliTrades {
 
   /** Runs an approved TEE card's argv, exactly, and maps its answer (reading back under the id where needed). */
   async execute(op: Operation): Promise<Mapped> {
+    if (op.kind === "bridge") return this.executeBridge(op)
     const p = op.params as unknown as CliTradeParams
     const run = await this.deps.cli.runExact({ agent: p.agent, argv: p.argv, json: true })
     const clean = { ...run, ...(run.json !== undefined ? { json: this.deps.redactor.value(run.json) } : {}) }
@@ -218,6 +276,29 @@ export class CliTrades {
     }
     const read = needsReadBack(clean) ? await this.read(op) : undefined
     return mapCliTrade(op.kind, clean, read)
+  }
+
+  /** Runs an approved TEE bridge's argv, exactly, and maps its answer: the receipt means the deposit went, and it's followed from there. */
+  private async executeBridge(op: Operation): Promise<Mapped> {
+    const p = op.params as unknown as CliTradeParams
+    const run = await this.deps.cli.runExact({ agent: p.agent, argv: p.argv, json: true })
+    const clean = { ...run, ...(run.json !== undefined ? { json: this.deps.redactor.value(run.json) } : {}) }
+    const code = record(clean.json)?.code
+    if (code === "USAGE") await this.deps.journal.append({ type: "core.bug", mode: op.mode, agent: op.agent, opId: op.opId, what: "candle swap refused the Candle Harness's bridge argv as USAGE", argv: p.argv })
+    const read = !clean.timedOut && (clean.exitCode === 1 || clean.exitCode === 2) && typeof code === "string" ? await this.readBridge(op) : undefined
+    return mapCliBridge(clean, bridgeFactsOf(op.params), read)
+  }
+
+  /** A bridge read by its id: `candle swap status <id> --kind swap --json`, with the key that placed it. */
+  async readBridge(op: Pick<Operation, "agent" | "opId">): Promise<BridgeRead> {
+    const run = await this.deps.cli.runExact({ agent: op.agent, argv: ["swap", "status", op.opId, "--kind", "swap", "--json"], json: true }).catch(() => undefined)
+    if (!run) return { found: false, detail: "unreadable" }
+    if (run.timedOut) return { found: false, detail: "no answer (timeout)" }
+    const body = record(run.json === undefined ? undefined : this.deps.redactor.value(run.json))
+    const status = run.exitCode === 0 ? bridgeStatusOf(body) : undefined
+    if (body && status) return { found: true, body, status }
+    if (typeof body?.code === "string") return { found: false, detail: body.code }
+    return { found: false, detail: "unreadable" }
   }
 
   /** One read of an operation by its id: a trade through Candle's MCP tool, a swap through `candle swap status`. */

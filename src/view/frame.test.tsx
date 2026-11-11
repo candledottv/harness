@@ -641,3 +641,72 @@ test("the core going away is said on the status bar, never left as live figures;
   expect(frame().split("\n")[0]).toContain("exposure $140.00")
   expect(frame().split("\n")[0]).not.toContain("the core stopped")
 })
+
+for (const [width, height] of [
+  [120, 30],
+  [80, 24],
+] as const) {
+  test(`a name on two chains: a chip for each token under the refusal, and a click puts its address on the line, sending nothing, at ${width}×${height}`, async () => {
+    const HOOD = "0x00000000000000000000000000000000000b0B01"
+    const session = new FakeSession()
+    await start(session, width, height)
+    await input(() => session.push("status", status(), true))
+    const sol = { ...card("s1"), state: "rejected" as const }
+    const hood = { ...card("h1"), state: "rejected" as const, params: { mint: HOOD, side: "buy", amount: "0.01" }, display: { ...card("h1").display, mint: HOOD, mintLabel: "MOON" } }
+    await input(() => session.push("cards", [sol, hood], true))
+    await input(() => setup!.mockInput.typeText("buy $5 MOON"))
+    await input(() => setup!.mockInput.pressEnter())
+    expect(underAgent()).toContain("Pick the one you mean, or paste its address.")
+    expect(frame()).toMatch(/Solana · Moon…/)
+    expect(frame()).toMatch(/Hood · 0x0000…/)
+    expect(frame()).not.toContain("ctrl-t ask the agent")
+    if (width >= 120) expect(frame()).toContain("Hood · 0x0000…0B01   puts it on the line")
+    // The panes keep their borders: the message's rows come from the agent pane, whose bottom border sits above them.
+    const rows = frame().split("\n")
+    const chips = rows.findIndex((r) => r.includes("Hood · 0x0000"))
+    expect(rows.slice(0, chips).some((r) => r.startsWith("╰"))).toBe(true)
+    expect(rows.filter((r) => r !== "").at(-1)!.trimEnd().endsWith("╯")).toBe(true)
+    const asked = session.requests.length
+    const at = find("Hood · 0x0000")
+    await input(() => setup!.mockMouse.click(at.x + 2, at.y))
+    await input(() => setup!.mockMouse.moveTo(0, 2))
+    expect(session.requests.length).toBe(asked)
+    expect(underAgent()).toContain("MOON on Hood: its address is on the line. Nothing was sent.")
+    expect(underAgent()).toContain("0b0B01")
+    expect(frame()).not.toMatch(/Solana · Moon…/)
+  })
+}
+
+test("a typed read whose answer the message line would cut opens whole over the frame, scrolls, copies, and closes with a key", async () => {
+  const answer = { ok: true, address: "0x0c970b643b1493893234Ed59C78502c87A93Ca0F", balances: { eth: "0.000208111783316652", usdg: "0" }, reserve: { eth: "0.000017290368", erc20Transfers: 3 }, gas: "ok", lifecycle: "active" }
+  const session = new FakeSession((method) => (method === "cli.run" ? { exitCode: 0, output: answer } : {}))
+  await start(session)
+  await input(() => session.push("status", status(), true))
+  await input(() => setup!.mockInput.typeText("candle tee status 0x0c970b643b1493893234Ed59C78502c87A93Ca0F"))
+  await input(() => setup!.mockInput.pressEnter())
+  await input(() => Bun.sleep(5))
+  const frame = setup!.captureCharFrame()
+  expect(frame).toContain("candle tee status 0x0c97")
+  expect(frame).toMatch(/\u00a0{4}"eth": "0\.000208111783316652"/)
+  // Every field, laid out, where the message line had 200 characters of it on one line.
+  expect(frame).toContain('"erc20Transfers": 3')
+  expect(frame).toContain('"lifecycle": "active"')
+  expect(frame).toContain("⧉ copy it")
+  expect(underAgent()).toContain("candle tee status: its answer is open above · esc closes")
+  await input(async () => {
+    setup!.mockInput.pressEscape()
+    await Bun.sleep(30)
+  })
+  expect(setup!.captureCharFrame()).not.toContain('"erc20Transfers": 3')
+})
+
+test("a typed read's short answer stays on the message line", async () => {
+  const session = new FakeSession((method) => (method === "cli.run" ? { exitCode: 0, output: "no keys yet" } : {}))
+  await start(session)
+  await input(() => session.push("status", status(), true))
+  await input(() => setup!.mockInput.typeText("candle keys list"))
+  await input(() => setup!.mockInput.pressEnter())
+  await input(() => Bun.sleep(5))
+  expect(underAgent()).toContain("candle keys list: no keys yet")
+  expect(setup!.captureCharFrame()).not.toContain("esc or any key closes")
+})

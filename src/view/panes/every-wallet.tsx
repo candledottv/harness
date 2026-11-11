@@ -23,13 +23,20 @@ export interface EveryWalletData {
 
 const wholeUsd = (n: number) => `≈$${Math.round(n).toLocaleString("en-US")}`
 
-/** The account in a line: how many wallets, their SOL and ≈$, and how many trade inside limits. */
+/** Wallets' native balances, each asset on its own (SOL and ETH never add up), and their ≈$ where every one is priced. */
+function nativeWords(ws: readonly EveryWalletData["wallets"][number][]): string {
+  const by = new Map<string, number>()
+  for (const w of ws) by.set(w.nativeSymbol, (by.get(w.nativeSymbol) ?? 0) + (w.native?.amount ?? 0))
+  if (by.size === 0) by.set("SOL", 0)
+  const priced = ws.every((w) => w.stopped || (w.native !== null && w.native.usd !== null))
+  const usd = ws.reduce((n, w) => n + (w.native?.usd ?? 0), 0)
+  return `${[...by].map(([symbol, n]) => `${amount(n)} ${symbol}`).join(" · ")}${priced ? ` ${wholeUsd(usd)}` : ""}`
+}
+
+/** The account in a line: how many wallets, their native balances and ≈$, and how many trade inside limits. */
 function totalsLine(d: EveryWalletData): string {
-  const sol = d.wallets.reduce((n, w) => n + (w.sol?.amount ?? 0), 0)
-  const priced = d.wallets.every((w) => w.stopped || (w.sol !== null && w.sol.usd !== null))
-  const usd = d.wallets.reduce((n, w) => n + (w.sol?.usd ?? 0), 0)
   const inside = d.autonomy.filter((a) => a.setting === "inside" && !a.gone).length
-  return `${d.wallets.length} wallets · ${amount(sol)} SOL${priced ? ` ${wholeUsd(usd)}` : ""} · ${inside} inside limits`
+  return `${d.wallets.length} wallets · ${nativeWords(d.wallets)} · ${inside} inside limits`
 }
 
 /** The list's lines: its head (the search, the count or the picked, the columns), then a line a row. */
@@ -61,11 +68,8 @@ export function everyLines(o: EveryWalletState, d: EveryWalletData, width: numbe
     const lit = i === o.index ? { bg: C.sel } : {}
     at.push(out.length)
     if (r.kind === "group") {
-      const sol = r.wallets.reduce((n, w) => n + (w.sol?.amount ?? 0), 0)
       const inside = r.wallets.filter((w) => settingOf(d.autonomy, w.address) === "inside limits").length
-      const priced = r.wallets.every((w) => w.stopped || (w.sol !== null && w.sol.usd !== null))
-      const usd = r.wallets.reduce((n, w) => n + (w.sol?.usd ?? 0), 0)
-      const words = [r.how, `${r.total} wallet${r.total === 1 ? "" : "s"}`, `${amount(sol)} SOL${priced ? ` ${wholeUsd(usd)}` : ""}`, ...(inside ? [`${inside} inside limits`] : [])].filter(Boolean).join(" · ")
+      const words = [r.how, `${r.total} wallet${r.total === 1 ? "" : "s"}`, nativeWords(r.wallets), ...(inside ? [`${inside} inside limits`] : [])].filter(Boolean).join(" · ")
       out.push(line(""))
       out.push({ segs: [...(picking ? [{ text: `${groupMark(o.picked, r)} `, fg: C.hi }] : []), { text: r.name, fg: C.head }, { text: ` · ${words}`, fg: C.dim }], pick, ...lit })
       return
@@ -73,7 +77,7 @@ export function everyLines(o: EveryWalletState, d: EveryWalletData, width: numbe
     const w = r.wallet
     const mark = picking ? (has(w.address) ? "☑ " : "☐ ") : ""
     const name = r.group === "" ? viewTitle(w) : viewName(w)
-    const balance = w.stopped ? "stopped for good" : `${(w.sol ? amount(w.sol.amount) : "—").padStart(wide ? 7 : 6)} SOL ${(w.sol ? approxUsd(w.sol.usd) : "").padStart(9)}`
+    const balance = w.stopped ? "stopped for good" : `${(w.native ? amount(w.native.amount) : "—").padStart(wide ? 7 : 6)} ${w.nativeSymbol.padEnd(3)} ${(w.native ? approxUsd(w.native.usd) : "").padStart(9)}`
     const tokens = w.tokens === null ? "unread" : `${w.tokens.length} token${w.tokens.length === 1 ? "" : "s"}`
     const setting = settingOf(d.autonomy, w.address)
     const segs: Seg[] = [

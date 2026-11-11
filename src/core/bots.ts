@@ -22,6 +22,7 @@ import { readFileSync, renameSync, writeFileSync } from "node:fs"
 import { type BotRunSettings, botHash, type Definition, type Exit, type LiveMark, readDefinition, refusedLive } from "../shared/definition"
 import { narrowing, slippageProblem } from "../shared/definition-narrow"
 import { definitionWords } from "../shared/definition-words"
+import type { ChainSlug } from "../shared/chains"
 import { refused } from "../shared/rpc"
 import { PLAN_FIX } from "../shared/trigger-grammar"
 import { type BotEntry, type BotRunState, type BotsFileStore, botNameProblem } from "./bots-file"
@@ -174,10 +175,13 @@ export interface BotBookDeps {
   /** The Candle Harness's mode, for the journal's rows: a bot's own is in its run settings. */
   mode(): Mode
   now(): number
-  /** The wallet an agent pays from, by "embedded", a name or an address; undefined before it's read or when it can't pay. */
-  payWallet(agent: string, wallet: string): PayWalletInfo | undefined
-  /** Why the agent can't pay from the wallet, in the payer's own words; undefined when that isn't known yet. */
-  payRefusal?(agent: string, wallet: string): string | undefined
+  /**
+   * The wallet an agent pays from on `chain`, by "embedded", a name or an address; with no chain (a bot on both), on
+   * the first chain it pays on. Undefined before it's read or when it can't pay.
+   */
+  payWallet(agent: string, wallet: string, chain?: ChainSlug): PayWalletInfo | undefined
+  /** Why the agent can't pay from the wallet on `chain`, in the payer's own words; undefined when that isn't known yet. */
+  payRefusal?(agent: string, wallet: string, chain?: ChainSlug): string | undefined
   /** How many positions a bot holds open, paper and live: one whose entries are held keeps the core up only while it holds some. */
   openPositions?(name: string): number
   onChange(): void
@@ -185,6 +189,9 @@ export interface BotBookDeps {
 
 /** What a flatten does once the bot's book is wired: sells every open position, as its exits sell. */
 export type Flattener = (bot: BotEntry, by: { clientId: string; how: "view" | "agent"; agent?: string }) => Promise<{ said: string }>
+
+/** The chain a bot's wallet must pay on: its definition's, or none for a bot on both chains. */
+export const payChain = (d: Definition): ChainSlug | undefined => (d.chain === "any" ? undefined : d.chain)
 
 const RANK: Record<BotRunState, number> = { on: 0, paused: 1, stopped: 2 }
 const stricter = (a: BotRunState, b: BotRunState): BotRunState => (RANK[a] >= RANK[b] ? a : b)
@@ -366,7 +373,7 @@ export class BotBook {
     const r = this.runs(b)
     const v = this.approvedVersion(b.name)
     const refusedMarks = refusedLive(b.definition)
-    const pays = this.deps.payWallet(b.agent, b.wallet)
+    const pays = this.deps.payWallet(b.agent, b.wallet, payChain(b.definition))
     return {
       kind: "rules",
       name: b.name,
@@ -442,8 +449,10 @@ export class BotBook {
     // A bound the bot already runs at stands as it was approved; a new one has a floor.
     const slipProblem = bps !== undefined && bps !== this.entry(p.name)?.maxSlippageBps ? slippageProblem(bps) : undefined
     if (slipProblem) throw refused("INVALID_SLIPPAGE", slipProblem)
-    const pays = this.deps.payWallet(proposer, p.run.wallet)
-    if (!pays) throw refused("WALLET_CANT_PAY", `${this.deps.payRefusal?.(proposer, p.run.wallet) ?? `${proposer} can't pay from "${p.run.wallet}", or its wallets haven't been read yet.`} Nothing was proposed.`)
+    // Its wallet pays on its definition's chain: a Hood bot's from a Hood wallet. A wallet on the other chain is refused here.
+    const chain = payChain(read.definition)
+    const pays = this.deps.payWallet(proposer, p.run.wallet, chain)
+    if (!pays) throw refused("WALLET_CANT_PAY", `${this.deps.payRefusal?.(proposer, p.run.wallet, chain) ?? `${proposer} can't pay from "${p.run.wallet}", or its wallets haven't been read yet.`} Nothing was proposed.`)
     const run: BotRunSettings = { agent: proposer, wallet: pays.name === "embedded" ? "embedded" : pays.address, mode: p.run.mode, ...(bps !== undefined ? { maxSlippageBps: bps } : {}) }
     const saved = this.entry(p.name)
     const now = saved ? this.runState(saved) : "on"

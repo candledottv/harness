@@ -2,14 +2,14 @@
  ✓ 0  ✓ 1  ✓ 2  ▸ 3 Wallet and limits  · 4  · 5                                 
 ╭──────────────────────────────────────────────────────────────── step 3 of 5 ─╮
 │                                                                              │
-│  Fund main, or start on paper                                                │
+│  Fund main                                                                   │
 │                                                                              │
 │  ▸ main  EmbedFake1111111111111111111111111111111111             ⧉ address   │
 │    0 SOL  ⠋ waiting for a deposit                                            │
 │                                                                              │
 │  Send SOL from any wallet of yours. This moves on by itself when it lands.   │
 │                                                                              │
-│    Start on paper  paper trades need no funds; go live from the status bar   │
+│    Fund it later a trade needs SOL in it; its address stays in the Wallet…   │
 │                                                                              │
 │                                                                              │
 │                                                                              │
@@ -28,14 +28,14 @@
 1: 3ddc84/0b0d10×15 f6f8fb/0b0d10×23 959dab/0b0d10×10 ffffff/0b0d10×32
 2: 32fe9f/111419×65 959dab/111419×13 32fe9f/111419×2
 3: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
-4: 32fe9f/111419×1 ffffff/111419×2 b392f0/111419×28 ffffff/111419×48 32fe9f/111419×1
+4: 32fe9f/111419×1 ffffff/111419×2 b392f0/111419×9 ffffff/111419×67 32fe9f/111419×1
 5: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
 6: 32fe9f/111419×1 ffffff/111419×2 32fe9f/1d2430×2 f6f8fb/1d2430×6 dde2ea/1d2430×43 ffffff/1d2430×13 6cb6ff/1d2430×10 ffffff/111419×2 32fe9f/111419×1
 7: 32fe9f/111419×1 ffffff/111419×2 dde2ea/111419×9 f5a524/111419×2 959dab/111419×21 ffffff/111419×44 32fe9f/111419×1
 8: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
 9: 32fe9f/111419×1 ffffff/111419×2 dde2ea/111419×73 ffffff/111419×3 32fe9f/111419×1
 10: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
-11: 32fe9f/111419×1 ffffff/111419×2 32fe9f/111419×2 6cb6ff/111419×14 ffffff/111419×2 959dab/111419×56 ffffff/111419×2 32fe9f/111419×1
+11: 32fe9f/111419×1 ffffff/111419×2 32fe9f/111419×2 6cb6ff/111419×13 ffffff/111419×1 959dab/111419×58 ffffff/111419×2 32fe9f/111419×1
 12: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
 13: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
 14: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1

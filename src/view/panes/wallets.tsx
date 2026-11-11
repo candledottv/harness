@@ -21,6 +21,7 @@
 // token accounts · 0.00446 SOL back"), with `close` once the Candle Harness runs the close (cli-table.ts closeEmptyOn).
 // One line a wallet keeps a word for them, and the line shows under its address.
 import type { WalletsTopic } from "../../core/agent-wallets"
+import { chainName, enabledChains } from "../../shared/chains"
 import type { AutonomyTopic } from "../../core/autonomy"
 import { isCounted } from "../../core/empty-accounts"
 import { type PortfolioView, viewName, viewTitle } from "../../core/portfolio-view"
@@ -84,7 +85,10 @@ export interface WalletsGrouping {
 export const grouping = (g: WalletsGrouping | undefined, choice: WalletsShown | undefined): boolean =>
   g !== undefined && ((g.groups.length > 0 && (choice === undefined || shownGroup(choice) === undefined)) || g.find !== undefined)
 
-export function walletLines(p: PortfolioView | undefined, opts: { mode: "paper" | "live"; now: number; width: number; shownInFull?: string; rows?: number; hidden?: HiddenWallets; inside?: InsideWallets; empty?: EmptyWallets; closeOn?: boolean; grouping?: WalletsGrouping }): Line[] {
+export function walletLines(
+  p: PortfolioView | undefined,
+  opts: { mode: "paper" | "live"; now: number; width: number; shownInFull?: string; rows?: number; hidden?: HiddenWallets; inside?: InsideWallets; empty?: EmptyWallets; closeOn?: boolean; grouping?: WalletsGrouping; hood?: HoodOffers },
+): Line[] {
   if (p && p.readAt !== null && opts.grouping && grouping(opts.grouping, opts.hidden?.choice)) return [...groupedLines(p, opts, opts.grouping), ...hiddenLine(p, opts.hidden)]
   const tail = hiddenLine(p, opts.hidden)
   const lines = [...walletLinesIn(p, opts, false), ...tail]
@@ -105,7 +109,7 @@ function hiddenLine(p: PortfolioView | undefined, hidden: HiddenWallets | undefi
   return segs.length ? [{ segs }] : []
 }
 
-function walletLinesIn(p: PortfolioView | undefined, opts: { mode: "paper" | "live"; now: number; width: number; shownInFull?: string; inside?: InsideWallets; empty?: EmptyWallets; closeOn?: boolean }, compact: boolean): Line[] {
+function walletLinesIn(p: PortfolioView | undefined, opts: { mode: "paper" | "live"; now: number; width: number; shownInFull?: string; inside?: InsideWallets; empty?: EmptyWallets; closeOn?: boolean; hood?: HoodOffers }, compact: boolean): Line[] {
   const out: Line[] = []
   const full = (address: string) => wrap(address, Math.max(10, opts.width - 2)).map((part) => line(`  ${part}`, C.hi))
   const copy: Seg[] = [{ text: " ", fg: C.ink }, chip("⧉", "copy")]
@@ -139,9 +143,18 @@ function walletLinesIn(p: PortfolioView | undefined, opts: { mode: "paper" | "li
   const sweep = stoppedFunds
   // Naming a wallet: `name <wallet> ` on the input line, from its row where there's room, and
   // always under its address once ⧉ shows it in full.
-  const nameFill = (w: PortfolioView["wallets"][number]) => `name ${w.label !== undefined && !w.marked && !/\s/.test(w.label) ? w.label : w.kind === "embedded" && w.label === undefined ? "embedded" : w.address} `
+  // "embedded" alone is Solana's embedded wallet: another chain's is named by its address.
+  const nameFill = (w: PortfolioView["wallets"][number]) => `name ${w.label !== undefined && !w.marked && !/\s/.test(w.label) ? w.label : w.kind === "embedded" && w.label === undefined && w.chain === "solana" ? "embedded" : w.address} `
   const fullNamed = (w: PortfolioView["wallets"][number]): Line[] => [...full(w.address), { segs: [{ text: "  ", fg: C.ink }, { ...chip("name it", "fill"), ref: nameFill(w) }] }]
-  for (const w of p.wallets) {
+  // Wallets on more than one chain go under a heading per chain, Solana first; on one chain the pane is as it was.
+  const mixed = new Set(p.wallets.map((w) => w.chain)).size > 1
+  let lastChain: string | undefined
+  for (const w of mixed ? byChain(p.wallets) : p.wallets) {
+    if (mixed && w.chain !== lastChain) {
+      if (lastChain !== undefined) out.push(line(""))
+      out.push(chainHeading(w.chain))
+      lastChain = w.chain
+    }
     if (w.stopped) {
       // What's cut to keep the ⧉ chip is the agents, as on any wallet's line.
       const tail: Seg[] = [{ text: w.stoppedOutside ? " · no longer listed by Candle" : " · stopped for good", fg: C.look }, ...copy]
@@ -153,14 +166,14 @@ function walletLinesIn(p: PortfolioView | undefined, opts: { mode: "paper" | "li
       continue
     }
     if (compact) {
-      const sol: Seg[] = [{ text: w.sol ? `${amount(w.sol.amount)} SOL` : "SOL —", fg: C.hi }, { text: w.sol ? ` ${approxUsd(w.sol.usd)}` : "", fg: C.dim }]
+      const sol: Seg[] = [{ text: w.native ? `${amount(w.native.amount)} ${w.nativeSymbol}` : `${w.nativeSymbol} —`, fg: C.hi }, { text: w.native ? ` ${approxUsd(w.native.usd)}` : "", fg: C.dim }]
       const stopped: Seg[] = w.active === false ? [{ text: " stopped", fg: C.look }] : []
       // Where it trades inside limits, said in a word when there's room; its use is a line of its own otherwise.
       const segs: Seg[] = [{ text: nameOf(w).padEnd(nameWidth + 2), fg: C.hi }, ...sol, ...stopped]
       const mark: Seg[] = opts.inside?.has(w.address) ? [{ text: " · inside limits", fg: C.good }] : []
       // Empty accounts, in a word where there's room; the whole line shows under its address.
       const empties = opts.empty?.get(w.address)
-      const emptyMark: Seg[] = empties ? [{ text: ` · ${empties.count} empty`, fg: C.dim }] : []
+      const emptyMark: Seg[] = empties ? [{ text: ` · ${empties.count} empty`, fg: C.dim }] : w.needsNative ? [{ text: ` · needs ${w.nativeSymbol}`, fg: C.dim }] : []
       const marks = cells([...segs, ...mark, ...emptyMark, ...copy]) <= opts.width ? [...mark, ...emptyMark] : cells([...segs, ...mark, ...copy]) <= opts.width ? mark : []
       out.push({ segs: [...segs, ...marks, ...copy], ref: w.address })
       if (opts.shownInFull === w.address) out.push(...fullNamed(w), ...emptyLine(w.address, opts.empty, opts.closeOn))
@@ -172,7 +185,7 @@ function walletLinesIn(p: PortfolioView | undefined, opts: { mode: "paper" | "li
     // A name that breaks the Candle Harness's rules is shown as it is, amber: it's taken by address only (the doctor says why).
     const head: Seg[] = [{ text: name, fg: w.marked ? C.look : C.hi }, { text: about, fg: C.dim }, ...(w.active === false ? [{ text: " · stopped", fg: C.look }] : [])]
     const tokens = w.tokens === null ? "tokens unread" : `${w.tokens.length} token${w.tokens.length === 1 ? "" : "s"}`
-    const balance: Seg[] = [{ text: w.sol ? `${amount(w.sol.amount)} SOL` : "SOL —", fg: C.hi }, { text: w.sol ? ` ${approxUsd(w.sol.usd)}` : "", fg: C.dim }, { text: ` · ${tokens}`, fg: C.ink }]
+    const balance: Seg[] = [{ text: w.native ? `${amount(w.native.amount)} ${w.nativeSymbol}` : `${w.nativeSymbol} —`, fg: C.hi }, { text: w.native ? ` ${approxUsd(w.native.usd)}` : "", fg: C.dim }, { text: ` · ${tokens}`, fg: C.ink }]
     // Naming it: a chip that puts `name <wallet> ` on the input line, where it fits.
     const rename: Seg[] = [{ text: " ", fg: C.ink }, { ...chip("name", "fill"), ref: nameFill(w) }]
     const named: Seg[] = [...head, { text: "  ", fg: C.ink }, ...balance, ...rename, ...copy]
@@ -189,18 +202,38 @@ function walletLinesIn(p: PortfolioView | undefined, opts: { mode: "paper" | "li
     // Trading inside limits, and today's use without a card.
     const inside = opts.inside?.get(w.address)
     if (inside) out.push(line(`  inside limits · ${money(inside.usedTodayUsd)} of ${money(inside.perDayUsd)} today`, C.good))
+    // Every trade from it pays gas in its chain's native asset, a stablecoin buy too; said dim, until a trade is refused.
+    if (w.needsNative) out.push(line(`  needs ${w.nativeSymbol} to trade`, C.dim))
     out.push(...emptyLine(w.address, opts.empty, opts.closeOn))
     if (opts.shownInFull === w.address) out.push(...(cells(named) <= opts.width ? full(w.address) : fullNamed(w)))
   }
+  // Where the account is on Hood, each agent with no Hood TEE wallet of its own: a chip that types the next step to one.
+  if (mixed && lastChain === "hood") out.push(...hoodOfferLines(opts.hood ?? [], opts.width))
   return [...out, ...fundLines(p, opts), ...readOnly]
 }
+
+/** Agents the Hood chip is offered for, each with the line it types. */
+export type HoodOffers = readonly { agent: string; line: string }[]
+
+/** An agent with no Hood TEE wallet, and the chip; under the words where both don't fit. */
+function hoodOfferLines(offers: HoodOffers, width: number): Line[] {
+  return offers.flatMap((o): Line[] => {
+    const words = `${o.agent}: no Hood TEE wallet`
+    const add = chip("add a Hood wallet", "fill")
+    if (words.length + 2 + add.text.length <= width) return [{ segs: [{ text: `${words}  `, fg: C.dim }, add], ref: o.line }]
+    return [line(words, C.dim), { segs: [{ text: "  ", fg: C.ink }, add], ref: o.line }]
+  })
+}
+
+/** The wallets topic's Hood offers, as the pane lists them. */
+export const hoodOffers = (topic: Pick<WalletsTopic, "hoodWallet"> | undefined): HoodOffers => Object.entries(topic?.hoodWallet ?? {}).map(([agent, f]) => ({ agent, line: f.line }))
 
 /**
  * Wallets read and holding nothing: where funds go, which the embedded wallet's ⧉ copies, and in paper
  * that none are needed. Candle has no paper balance to show yet.
  */
 function fundLines(p: PortfolioView, opts: { mode: "paper" | "live"; width: number }): Line[] {
-  const empty = p.wallets.every((w) => !w.stopped && (w.sol?.amount ?? 0) === 0 && w.tokens !== null && w.tokens.length === 0)
+  const empty = p.wallets.every((w) => !w.stopped && (w.native?.amount ?? 0) === 0 && w.tokens !== null && w.tokens.length === 0)
   if (!empty || !p.deposit) return []
   const say = (text: string) => wrap(text, Math.max(10, opts.width)).map((t) => line(t, C.dim))
   const paper = opts.mode === "paper" ? say("Paper trades need no funds.") : []
@@ -227,6 +260,16 @@ export function walletsTitle(p: PortfolioView | undefined, now: number, choice?:
 
 type W = PortfolioView["wallets"][number]
 
+/** A chain's heading over its wallets or holdings, where the pane shows more than one chain. */
+export const chainHeading = (chain: string): Line => ({ segs: [{ text: chainName(chain), fg: C.head, bold: true }] })
+
+/** Wallets in chain order (Solana first), each chain's in the order they came. */
+export function byChain<T extends { chain: string }>(ws: readonly T[]): T[] {
+  const order = enabledChains().map((c) => c.slug as string)
+  const rank = (chain: string) => (order.includes(chain) ? order.indexOf(chain) : order.length)
+  return [...ws].sort((a, b) => rank(a.chain) - rank(b.chain))
+}
+
 /**
  * A stopped wallet's second line: what the chain says is still in it, and the chip that types its sweep;
  * one that's empty on chain needs no sweep. One Candle stopped listing says a stop elsewhere does that.
@@ -234,19 +277,21 @@ type W = PortfolioView["wallets"][number]
 function stoppedFunds(w: W): Line {
   const why = w.stoppedOutside ? "stopped outside the Candle Harness, most likely · " : ""
   const sweep = { segs: [chip("sweep it home", "fill")], ref: `candle tee sweep ${w.address}${w.agents.length === 1 ? ` as ${w.agents[0]}` : ""}` }
-  if (w.sol && w.sol.amount === 0 && w.heldTokens === 0) return { segs: [{ text: `  ${why}empty on chain`, fg: C.dim }] }
-  const held = w.sol ? `${amount(w.sol.amount)} SOL${w.sol.usd !== null ? ` ${approxUsd(w.sol.usd)}` : ""}${w.heldTokens ? ` and ${w.heldTokens} token${w.heldTokens === 1 ? "" : "s"}` : ""} still in it${w.heldTokens === undefined && w.balanceError ? ` (tokens not read: ${w.balanceError})` : ""}` : w.balanceError ? `balance not read (${w.balanceError})` : "funds still in it"
+  if (w.native && w.native.amount === 0 && w.heldTokens === 0) return { segs: [{ text: `  ${why}empty on chain`, fg: C.dim }] }
+  const held = w.native ? `${amount(w.native.amount)} ${w.nativeSymbol}${w.native.usd !== null ? ` ${approxUsd(w.native.usd)}` : ""}${w.heldTokens ? ` and ${w.heldTokens} token${w.heldTokens === 1 ? "" : "s"}` : ""} still in it${w.heldTokens === undefined && w.balanceError ? ` (tokens not read: ${w.balanceError})` : ""}` : w.balanceError ? `balance not read (${w.balanceError})` : "funds still in it"
   return { segs: [{ text: `  ${why}${held}  `, fg: C.dim }, ...sweep.segs], ref: sweep.ref }
 }
 
 /** Whole dollars for a group's total: ≈$1,721. */
 const wholeUsd = (n: number | null): string => (n === null ? "" : `≈$${Math.round(n).toLocaleString("en-US")}`)
 
-/** A group's SOL, and its dollars where every wallet's are priced (never a partial sum as the whole). */
-function totals(ws: readonly W[]): { sol: number; usd: number | null } {
-  const sol = ws.reduce((n, w) => n + (w.sol?.amount ?? 0), 0)
-  const priced = ws.every((w) => w.stopped || (w.sol !== null && w.sol.usd !== null))
-  return { sol, usd: priced ? ws.reduce((n, w) => n + (w.sol?.usd ?? 0), 0) : null }
+/** A group's native balances, each asset on its own (SOL and ETH never add up), and its dollars where every wallet's are priced (never a partial sum as the whole). */
+function totals(ws: readonly W[]): { text: string; usd: number | null } {
+  const by = new Map<string, number>()
+  for (const w of ws) by.set(w.nativeSymbol, (by.get(w.nativeSymbol) ?? 0) + (w.native?.amount ?? 0))
+  if (by.size === 0) by.set("SOL", 0)
+  const priced = ws.every((w) => w.stopped || (w.native !== null && w.native.usd !== null))
+  return { text: [...by].map(([symbol, n]) => `${amount(n)} ${symbol}`).join(" · "), usd: priced ? ws.reduce((n, w) => n + (w.native?.usd ?? 0), 0) : null }
 }
 
 /** Columns laid out whole while they fit, the optional ones dropped from the end (the narrow pane drops ≈$ and inside). */
@@ -277,7 +322,7 @@ function groupedLines(p: PortfolioView, opts: { width: number; shownInFull?: str
   const copy: Seg[] = [{ text: " ", fg: C.ink }, chip("⧉", "copy")]
   const inside = (w: W) => opts.inside?.has(w.address) === true
   const full = (address: string) => wrap(address, Math.max(10, opts.width - 2)).map((part) => line(`  ${part}`, C.hi))
-  const nameFill = (w: W) => `name ${w.label !== undefined && !w.marked && !/\s/.test(w.label) ? w.label : w.kind === "embedded" && w.label === undefined ? "embedded" : w.address} `
+  const nameFill = (w: W) => `name ${w.label !== undefined && !w.marked && !/\s/.test(w.label) ? w.label : w.kind === "embedded" && w.label === undefined && w.chain === "solana" ? "embedded" : w.address} `
   const after = (w: W): Line[] => [
     ...(opts.shownInFull === w.address ? [...full(w.address), { segs: [{ text: "  ", fg: C.ink }, { ...chip("name it", "fill"), ref: nameFill(w) }] }, ...emptyLine(w.address, opts.empty, opts.closeOn)] : []),
     ...(w.stopped ? [stoppedFunds(w)] : []),
@@ -286,11 +331,11 @@ function groupedLines(p: PortfolioView, opts: { width: number; shownInFull?: str
   // group's count) nothing, then SOL and ≈$, so the three line up.
   const sums = list.groups.map((x) => totals(x.wallets))
   const nameW = Math.max(8, ...list.groups.map((x) => x.name.length), ...list.top.map((w) => viewName(w).length))
-  const solW = Math.max(0, ...sums.map((t) => amount(t.sol).length), ...list.top.map((w) => (w.sol ? amount(w.sol.amount).length : 1)))
-  const usdW = Math.max(0, ...sums.map((t) => wholeUsd(t.usd).length), ...list.top.map((w) => (w.sol ? wholeUsd(w.sol.usd).length : 0)))
+  const solW = Math.max(0, ...sums.map((t) => t.text.length), ...list.top.map((w) => `${w.native ? amount(w.native.amount) : "—"} ${w.nativeSymbol}`.length))
+  const usdW = Math.max(0, ...sums.map((t) => wholeUsd(t.usd).length), ...list.top.map((w) => (w.native ? wholeUsd(w.native.usd).length : 0)))
   for (const w of list.top) {
-    const segs: Seg[] = [{ text: `  ${viewName(w).padEnd(nameW)}`, fg: w.marked ? C.look : C.hi }, { text: "   ", fg: C.ink }, { text: `  ${(w.sol ? amount(w.sol.amount) : "—").padStart(solW)} SOL`, fg: C.hi }]
-    const usd: Seg[] = w.sol ? [{ text: ` ${wholeUsd(w.sol.usd).padStart(usdW)}`, fg: C.dim }] : []
+    const segs: Seg[] = [{ text: `  ${viewName(w).padEnd(nameW)}`, fg: w.marked ? C.look : C.hi }, { text: "   ", fg: C.ink }, { text: `  ${`${w.native ? amount(w.native.amount) : "—"} ${w.nativeSymbol}`.padStart(solW)}`, fg: C.hi }]
+    const usd: Seg[] = w.native ? [{ text: ` ${wholeUsd(w.native.usd).padStart(usdW)}`, fg: C.dim }] : []
     const mark: Seg[] = inside(w) ? [{ text: "  inside limits", fg: C.good }] : []
     const tail: Seg[] = [{ text: "  ", fg: C.ink }, ...copy]
     const cells = (x: readonly Seg[]) => x.reduce((n, seg) => n + seg.text.length, 0)
@@ -298,7 +343,7 @@ function groupedLines(p: PortfolioView, opts: { width: number; shownInFull?: str
     const fitted =
       cells([...segs, ...tail]) <= opts.width
         ? fitColumns(segs, [usd, mark, [{ text: "  embedded", fg: C.dim }]], tail, opts.width)
-        : fitColumns([{ ...segs[0]!, text: viewName(w) }, { text: `  ${w.sol ? amount(w.sol.amount) : "—"} SOL`, fg: C.hi }], [w.sol ? [{ text: ` ${wholeUsd(w.sol.usd)}`, fg: C.dim }] : []], tail, opts.width)
+        : fitColumns([{ ...segs[0]!, text: viewName(w) }, { text: `  ${w.native ? amount(w.native.amount) : "—"} ${w.nativeSymbol}`, fg: C.hi }], [w.native ? [{ text: ` ${wholeUsd(w.native.usd)}`, fg: C.dim }] : []], tail, opts.width)
     out.push({ segs: fitted, ref: w.address, pick: { id: walletRowId("", w.address), mint: "" } })
     out.push(...after(w))
   }
@@ -317,10 +362,10 @@ function groupedLines(p: PortfolioView, opts: { width: number; shownInFull?: str
 }
 
 /** A group's line: ▸ folded or ▾ open, its name, how many wallets, their SOL and ≈$, and how many trade inside limits. */
-function heading(grp: ListGroup<W>, open: boolean, finding: boolean, t: { sol: number; usd: number | null }, c: { nameW: number; solW: number; usdW: number; width: number; inside: number }): Line {
+function heading(grp: ListGroup<W>, open: boolean, finding: boolean, t: { text: string; usd: number | null }, c: { nameW: number; solW: number; usdW: number; width: number; inside: number }): Line {
   const pick = { id: headingId(grp.key), mint: "" }
   if (finding) return { segs: [{ text: `▾ ${grp.name}`, fg: C.head }, { text: `  ${grp.wallets.length} of ${grp.total} shown`, fg: C.dim }], pick }
-  const must: Seg[] = [{ text: `${open ? "▾" : "▸"} `, fg: C.dim }, { text: grp.name.padEnd(c.nameW), fg: C.head }, { text: String(grp.total).padStart(3), fg: C.ink }, { text: `  ${amount(t.sol).padStart(c.solW)} SOL`, fg: C.hi }]
+  const must: Seg[] = [{ text: `${open ? "▾" : "▸"} `, fg: C.dim }, { text: grp.name.padEnd(c.nameW), fg: C.head }, { text: String(grp.total).padStart(3), fg: C.ink }, { text: `  ${t.text.padStart(c.solW)}`, fg: C.hi }]
   const optional: Seg[][] = [[{ text: ` ${wholeUsd(t.usd).padStart(c.usdW)}`, fg: C.dim }], c.inside ? [{ text: `  ${c.inside} inside`, fg: C.good }] : []]
   return { segs: fitColumns(must, optional, [], c.width), pick }
 }
@@ -328,14 +373,14 @@ function heading(grp: ListGroup<W>, open: boolean, finding: boolean, t: { sol: n
 /** An open group's wallet, one line: its name, SOL, ≈$, whether it trades inside limits, and ⧉. */
 function walletRow(grp: ListGroup<W>, w: W, all: readonly W[], width: number, inside: boolean, copy: readonly Seg[], empty?: number): Line {
   const nameW = Math.max(...all.map((x) => viewName(x).length))
-  const solW = Math.max(...all.map((x) => (x.sol ? amount(x.sol.amount).length : 1)))
-  const usdW = Math.max(...all.map((x) => (x.sol ? approxUsd(x.sol.usd).length : 0)))
+  const solW = Math.max(...all.map((x) => (x.native ? amount(x.native.amount).length : 1)))
+  const usdW = Math.max(...all.map((x) => (x.native ? approxUsd(x.native.usd).length : 0)))
   const name = viewName(w)
   const must: Seg[] = [{ text: `  ${name.padEnd(nameW)}`, fg: w.marked ? C.look : C.hi }]
   if (w.stopped) must.push({ text: "  stopped for good", fg: C.look })
-  else must.push({ text: `  ${(w.sol ? amount(w.sol.amount) : "—").padStart(solW)} SOL`, fg: C.hi }, ...(w.active === false ? [{ text: " stopped", fg: C.look }] : []))
+  else must.push({ text: `  ${(w.native ? amount(w.native.amount) : "—").padStart(solW)} ${w.nativeSymbol}`, fg: C.hi }, ...(w.active === false ? [{ text: " stopped", fg: C.look }] : []))
   // Empty accounts last, in a word: the column the row gives up first (the whole line is under its address).
-  const optional: Seg[][] = w.stopped ? [] : [[{ text: `  ${(w.sol ? approxUsd(w.sol.usd) : "").padStart(usdW)}`, fg: C.dim }], [{ text: inside ? "  inside" : "        ", fg: C.good }], empty ? [{ text: `  ${empty} empty`, fg: C.dim }] : []]
+  const optional: Seg[][] = w.stopped ? [] : [[{ text: `  ${(w.native ? approxUsd(w.native.usd) : "").padStart(usdW)}`, fg: C.dim }], [{ text: inside ? "  inside" : "        ", fg: C.good }], empty ? [{ text: `  ${empty} empty`, fg: C.dim }] : w.needsNative ? [{ text: `  needs ${w.nativeSymbol}`, fg: C.dim }] : []]
   return { segs: fitColumns(must, optional, [{ text: "  ", fg: C.ink }, ...copy], width), ref: w.address, pick: { id: walletRowId(grp.key, w.address), mint: "" } }
 }
 

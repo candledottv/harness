@@ -119,6 +119,26 @@ describe("the desk", () => {
     expect(autonomy.get(EMBEDDED)).toMatchObject({ perTradeUsd: 3 })
   })
 
+  test("the embedded EVM wallet is its own: \"embedded\" is Solana's, \"embedded on Hood\" or its address in any case is Hood's", async () => {
+    const EVM = "0x00000000000000000000000000000000000Fa4e1"
+    const { d, autonomy, proposed } = desk({}, [
+      { address: EMBEDDED, name: "embedded", kind: "embedded", agents: ["agent-a"] },
+      { address: EVM, name: "embedded on Hood", kind: "embedded", agents: ["agent-a"], chain: "hood" },
+    ])
+    await d.set({ clientId: "v1", popped: false }, { wallet: "embedded", setting: "inside", perTradeUsd: 1, perDayUsd: 5 })
+    expect(autonomy.get(EVM)).toEqual(ASK)
+    expect(await d.set({ clientId: "v1", popped: false }, { wallet: "Embedded on Hood", setting: "inside", perTradeUsd: 2, perDayUsd: 6 })).toMatchObject({ wallet: EVM, name: "embedded on Hood" })
+    expect(autonomy.get(EVM.toLowerCase())).toMatchObject({ perTradeUsd: 2 })
+    await d.set({ clientId: "v1", popped: false }, { wallet: EVM.toLowerCase(), setting: "inside", perTradeUsd: 3, perDayUsd: 6 })
+    expect(autonomy.get(EVM)).toMatchObject({ perTradeUsd: 3 })
+    expect(autonomy.get(EMBEDDED)).toMatchObject({ perTradeUsd: 1 })
+    expect(d.view().wallets.map((w) => ({ name: w.name, chain: w.chain }))).toEqual([{ name: "embedded", chain: undefined }, { name: "embedded on Hood", chain: "hood" }])
+    // The agent's narrowing names it the same way, and its words say which.
+    await d.propose(AGENT, { wallet: "embedded on Hood", setting: "ask" })
+    expect(proposed[0]).toMatchObject({ params: { wallet: EVM }, title: "LESS AUTONOMY · embedded on Hood: ask every time" })
+    await expect(d.propose(AGENT, { wallet: "embedded on Hood", setting: "inside", perTradeUsd: 9, perDayUsd: 9 })).rejects.toMatchObject({ message: expect.stringContaining("without a card on the embedded wallet on Hood") })
+  })
+
   test("refused from a popped view, for a wallet no agent pays from, and for a figure that isn't a positive dollar amount", async () => {
     const { d, autonomy } = desk()
     expect(await code(d.set({ clientId: "v2", popped: true }, { wallet: "embedded", setting: "inside", perTradeUsd: 1, perDayUsd: 5 }))).toBe("MAIN_VIEW_ONLY")

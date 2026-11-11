@@ -1,6 +1,6 @@
 // A stopped TEE wallet's balance, read on chain: SOL, and how many token accounts still hold something.
 import { expect, test } from "bun:test"
-import { readChainBalance } from "./chain-balance"
+import { readChainBalance, readEvmBalance } from "./chain-balance"
 
 const ADDRESS = "StopA111111111111111111111111111111111111111"
 const tokenAccount = (amount: string) => ({ account: { data: { parsed: { info: { tokenAmount: { amount } } } } } })
@@ -58,4 +58,17 @@ test("an RPC's own error text reaches no terminal with its escape sequences", as
   const tokens = await readChainBalance({ url: "https://rpc.example", address: ADDRESS, now: 1, fetch: rpc({ getBalance: { result: { value: 1 } }, "getTokenAccountsByOwner:Tokenk": { error: { message: hostile } } }) })
   expect("tokensError" in tokens && tokens.tokensError).toContain("rate limited")
   expect("tokensError" in tokens && tokens.tokensError).not.toContain("\u001b")
+})
+
+test("a stopped EVM wallet's native balance, in wei, over the chain's RPC; its tokens said as not read, never none", async () => {
+  const HOOD = "0xAbCdEf0123456789aBcDeF0123456789abCDef01"
+  const calls: { url: string; method: string; params: unknown[] }[] = []
+  const read = await readEvmBalance({ url: "https://hood-rpc.example", address: HOOD, now: 7, fetch: rpc({ eth_getBalance: { result: "0xe35fa931a000" } }, calls) })
+  expect(read).toEqual({ lamports: 250_000_000_000_000n, tokens: null, tokensError: "only the native balance is read on chain", readAt: 7 })
+  expect(calls).toEqual([{ url: "https://hood-rpc.example", method: "eth_getBalance", params: [HOOD, "latest"] }])
+  // Refused, malformed, or not https: why, and nothing made up.
+  expect(await readEvmBalance({ url: "https://hood-rpc.example", address: HOOD, now: 1, fetch: rpc({ eth_getBalance: { error: { message: "rate limited" } } }) })).toEqual({ error: "hood-rpc.example: rate limited", readAt: 1 })
+  expect(await readEvmBalance({ url: "https://hood-rpc.example", address: HOOD, now: 1, fetch: rpc({ eth_getBalance: { result: "12" } }) })).toEqual({ error: "hood-rpc.example: the RPC's answer had no balance", readAt: 1 })
+  const plain = await readEvmBalance({ url: "http://hood-rpc.example", address: HOOD, now: 1, fetch: rpc({}) })
+  expect("error" in plain && plain.error).toContain("isn't https")
 })

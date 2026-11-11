@@ -17,7 +17,7 @@
 // launcher SIGUSR1 a second later and the launcher ends `candle` with SIGTERM. A hangup (the pane
 // closed) does the same, then reports `stopped`.
 import { readSync, writeSync } from "node:fs"
-import { rpcToEnv, RPC_URL_ENV } from "../core/candle-cli"
+import { EVM_RPC_URL_ENV, rpcToEnv, RPC_URL_ENV } from "../core/candle-cli"
 import { type CoreConnection, connectCore } from "../core/client"
 import { asSentence, type Captured, isPositionalPath, typedPath, vaultListCount, wrapForPane } from "../core/pane-plan"
 import { restoreLoginEnv } from "../main"
@@ -27,6 +27,7 @@ import { terminalText } from "../shared/terminal-text"
 import { StderrRelay } from "./owner-confirm"
 
 import { PANE_SOCKET_ENV, PANE_TICKET_ENV } from "../view/pane-process"
+import { EVM_ADDRESS_SOURCE, LOOSE_SOLANA_ADDRESS_SOURCE } from "../shared/chains"
 
 export { PANE_SOCKET_ENV, PANE_TICKET_ENV }
 
@@ -50,6 +51,8 @@ export interface Redeemed {
   apiKey?: string
   /** The CLI profile the Candle Harness acts as: `candle` runs as it, as the core's runs do. */
   profile?: string
+  /** The EVM RPC from config (candle.evmRpcUrl): `candle` gets it as CANDLE_EVM_RPC_URL, as the core's runs do. */
+  evmRpcUrl?: string
   /** Onboarding's harness sign-in: the harness's own command from the fixed list, as the person. */
   harness?: string
   /** Said before a harness's sign-in runs: what to type there (Pi's /login). */
@@ -57,7 +60,7 @@ export interface Redeemed {
 }
 
 const CODE = /^[A-Z][A-Z0-9_]{0,63}$/
-const ADDRESS = /^(0x[0-9a-fA-F]{40}|[0-9A-Za-z]{32,44})$/
+const ADDRESS = new RegExp(`^(${EVM_ADDRESS_SOURCE}|${LOOSE_SOLANA_ADDRESS_SOURCE})$`)
 
 /**
  * A capture row's one reading, from the command's piped stdout. A new
@@ -74,7 +77,8 @@ export async function captureOf(redeemed: Pick<Redeemed, "capture" | "newAgent" 
   }
   // A refusal in --json goes to the stdout the pane pipes, so it would show nothing (keys create would end
   // "Didn't finish" with no reason on screen). Its words are said; the key, when there is one, never is.
-  if (redeemed.capture !== "code" && typeof parsed?.key !== "string") sayRefusal(parsed)
+  const refused = capturedRefusal(redeemed.capture, parsed)
+  if (refused) tell(`${BOLD}The CLI said:${RESET} ${refused}\r\n`)
   if (redeemed.capture === "code") return typeof parsed?.code === "string" && CODE.test(parsed.code) ? { code: parsed.code } : undefined
   if (redeemed.capture === "addresses") {
     if (!Array.isArray(parsed?.entries)) return undefined
@@ -124,16 +128,21 @@ export function refusalWords(parsed: Record<string, unknown> | undefined): strin
   return words.length > 600 ? `${words.slice(0, 599)}…` : words
 }
 
-function sayRefusal(parsed: Record<string, unknown> | undefined): void {
-  const words = refusalWords(parsed)
-  if (words) tell(`${BOLD}The CLI said:${RESET} ${words}\r\n`)
+/**
+ * The refusal a captured row's pane says, in the CLI's words; none for a success. A key is never said. `vault
+ * status` answers a code when it works too, so only its `ok: false` is a refusal.
+ */
+export function capturedRefusal(capture: string | undefined, parsed: Record<string, unknown> | undefined): string | undefined {
+  if (typeof parsed?.key === "string") return undefined
+  if (capture === "code" && parsed?.ok !== false) return undefined
+  return refusalWords(parsed)
 }
 
 /** Variables `candle` never gets from the pane: ours, and the ones that change who it runs as. The person's CANDLE_KEYRING_PASSPHRASE stays, so the CLI can open its file store where there's no keychain. */
 const STRIPPED = /^(CANDLE_(HARNESS|TUI)_.*|CANDLE_API_KEY|CANDLE_DEVICE_TOKEN)$/
 
 /** `candle`'s environment: the pane's own, less what's stripped, plus the agent's key for an agent's row. */
-export function candleEnv(env: Record<string, string | undefined>, redeemed: Pick<Redeemed, "identity" | "apiKey" | "profile" | "harness">): Record<string, string> {
+export function candleEnv(env: Record<string, string | undefined>, redeemed: Pick<Redeemed, "identity" | "apiKey" | "profile" | "harness" | "evmRpcUrl">): Record<string, string> {
   const out: Record<string, string> = {}
   for (const [key, value] of Object.entries(env)) if (value !== undefined && !STRIPPED.test(key)) out[key] = value
   restoreLoginEnv(out)
@@ -144,6 +153,7 @@ export function candleEnv(env: Record<string, string | undefined>, redeemed: Pic
   }
   out.CANDLE_NO_UPDATE_NOTIFIER = "1"
   if (redeemed.profile) out.CANDLE_PROFILE = redeemed.profile
+  if (redeemed.evmRpcUrl) out[EVM_RPC_URL_ENV] = redeemed.evmRpcUrl
   if (redeemed.identity === "agent" && redeemed.apiKey) out.CANDLE_API_KEY = redeemed.apiKey
   return out
 }

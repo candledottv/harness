@@ -1,6 +1,7 @@
 // Every CLI command with its rule, checked against what was read from the CLI's own source.
 import { describe, expect, test } from "bun:test"
-import { allowedFlags, CLI_ROWS, FORBIDDEN_FLAGS, LP_AGENT_SCOPES, PANE_RULES, rowFor, runsInPane, SOURCE, sourceFor, unlocksFor } from "./cli-table"
+import { allowedFlags, CLI_ROWS, FORBIDDEN_FLAGS, LP_AGENT_SCOPES, PANE_RULES, repeats, rowFor, runsInPane, SOURCE, sourceFor, unlocksFor } from "./cli-table"
+import { resolveCall } from "./cli-tool"
 import { OWNER_STOPS } from "./owner-rows"
 
 const baseOf = (path: string) => {
@@ -227,6 +228,27 @@ describe("the read at 0.13.5", () => {
     // Paths, so never the agent's: an image goes up by image upload's card first.
     expect(sourceFor("agent", "profile")!.flags!.path).toEqual(["--avatar-file", "--banner-file"])
     expect(allowedFlags(sourceFor("agent", "profile")!).value.has("--avatar-file")).toBe(false)
+  })
+
+  test("0.13.19's words the handler finds itself: swap's --dry-run before its parse, transfer's status as its first argument", () => {
+    expect(sourceFor("swap", null)!.flags!.boolean).toEqual(["--dry-run", "--wait", "--yes"])
+    expect(rowFor("swap")!.byFlags!(new Map([["--dry-run", true]]))).toEqual({ rule: "read", route: "cli" })
+    expect(rowFor("swap")!.byFlags!(new Map())).toBeUndefined()
+    expect(sourceFor("transfer", null)!.actions).toEqual({ status: { unlocks: "never", tty: [] } })
+    expect(rowFor("transfer status")).toMatchObject({ rule: "read", route: "cli", identity: "agent", takes: 1 })
+  })
+
+  test("a Hood wallet's flags, read where tee sweep, tee disable and vault demote hand a 0x address on (tee-evm.ts)", () => {
+    const sweep = allowedFlags(sourceFor("tee", "sweep")!)
+    expect([...sweep.value].sort()).toEqual(["--from-block", "--token"])
+    expect(repeats("tee sweep", "--token")).toBe(true)
+    // The older copy's acceptance is the user's, never the agent's.
+    expect(sourceFor("tee", "sweep")!.flags!.boolean).toContain("--accept-older-copy")
+    expect(sweep.boolean.has("--accept-older-copy")).toBe(false)
+    expect(allowedFlags(sourceFor("tee", "disable")!).boolean.has("--accept-older-copy")).toBe(false)
+    expect(sourceFor("vault", "demote")!.flags!.value).toEqual(expect.arrayContaining(["--from-block", "--token"]))
+    const HOOD = `0x${"ab".repeat(20)}`
+    expect(resolveCall({ command: "tee", subcommand: "sweep", args: [HOOD, "--token", `0x${"cd".repeat(20)}`, "--token", `0x${"ef".repeat(20)}`, "--from-block", "123"] }, { defaultAgent: "a", agents: new Set(["a"]) })).toMatchObject({ ok: true })
   })
 })
 

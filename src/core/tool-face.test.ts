@@ -212,11 +212,15 @@ describe("paper", () => {
         expect(out.body.error.message).toBe(`${name} is what trades spend, not a token to buy or sell: convert it with a swap (candle_swap). Nothing was sent.`)
       }
       expect((parse(await face.call(client, "candle_trade", { mint: SOL, side: "buy", amount: "1" }))).body.error.code).toBe("BASE_ASSET")
+      // Hood's USDG and WETH by address, in any case.
+      for (const mint of ["0x5fc5360d0400a0fd4f2af552add042d716f1d168", "0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73"]) {
+        expect((parse(await face.call(client, "candle_trade", { mint, side: "buy", amount: "1" }))).body.error.code).toBe("BASE_ASSET")
+      }
     }
     expect(s.sent).toEqual([])
     expect(live.sent).toEqual([])
     // Each refusal leaves its row, as every paper refusal does.
-    expect(s.journal.rows().filter((r) => r.type === "tool.refused" && r.code === "BASE_ASSET")).toHaveLength(8)
+    expect(s.journal.rows().filter((r) => r.type === "tool.refused" && r.code === "BASE_ASSET")).toHaveLength(12)
     await s.face.call(HARNESS, "candle_trade", { mint: BASE_ASSETS.CNDL.priceKey!, side: "buy", amount: "0.1" })
     expect(s.sent).toHaveLength(1)
   })
@@ -463,7 +467,7 @@ describe("Candle's MCP card tools", () => {
       })),
     )
     for (const t of tools.slice(0, 4)) expect(t.inputSchema.properties).toHaveProperty("reason")
-    expect((tools[4]!.inputSchema.properties!.kind as { enum: string[] }).enum).toEqual(["trade", "launch", "swap", "stake", "claim", "public", "upload", "lessaccess", "lp", "close", "hacc", "autonomy", "trigger", "bot"])
+    expect((tools[4]!.inputSchema.properties!.kind as { enum: string[] }).enum).toEqual(["trade", "launch", "swap", "bridge", "stake", "claim", "public", "upload", "lessaccess", "lp", "close", "hacc", "autonomy", "trigger", "bot"])
     expect(offeredTools(["candle_launch_token", "candle_delete_post"].map((name) => ({ name }))).map((t) => t.name)).toEqual(["candle_launch_token", "candle_delete_post"])
   })
 })

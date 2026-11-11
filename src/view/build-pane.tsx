@@ -58,6 +58,8 @@ export interface BuildAsk {
   error?: string
   /** Opened again from harness ▾: a harness's choice, not the first open. */
   again?: boolean
+  /** The folder has been typed in: until then, a path typed from its start ("/…" or "~…") takes the default's place. */
+  edited?: boolean
 }
 
 /** A process a harness left running after it exited (Codex's app-server): listed with a stop chip, never stopped unasked. */
@@ -497,6 +499,11 @@ export function useBuild(input: {
 
   const key = useCallback(
     (k: { name: string; ctrl?: boolean; meta?: boolean; sequence?: string }): boolean => {
+      // ctrl-u clears the line being typed in, as it clears the input line.
+      if (stage === "ask" && k.ctrl && !k.meta && k.name === "u" && (ask.field === "folder" || ask.field === "command")) {
+        const field = ask.field
+        return setAsk((a) => ({ ...a, [field]: "", ...(field === "folder" ? { edited: true } : {}), error: undefined })), true
+      }
       if (k.ctrl || k.meta) return false
       const enter = k.name === "return" || k.name === "enter" || k.name === "kpenter"
       if (stage === "ask") {
@@ -514,9 +521,17 @@ export function useBuild(input: {
         if (enter) return void submit(), true
         const typing = ask.field === "folder" ? "folder" : ask.field === "command" ? "command" : undefined
         if (!typing) return false
-        if (k.name === "backspace") return setAsk((a) => ({ ...a, [typing]: a[typing].slice(0, -1), error: undefined })), true
+        if (k.name === "backspace") return setAsk((a) => ({ ...a, [typing]: a[typing].slice(0, -1), ...(typing === "folder" ? { edited: true } : {}), error: undefined })), true
         const ch = k.sequence ?? ""
-        if (ch.length === 1 && ch >= " " && ch !== "\u007f") return setAsk((a) => ({ ...a, [typing]: (a[typing] + ch).slice(0, 400), error: undefined })), true
+        if (ch.length === 1 && ch >= " " && ch !== "\u007f")
+          return (
+            setAsk((a) => {
+              // A whole path typed over the folder offered, never added to its end ("~/candle-bots/srv/bots").
+              const fresh = typing === "folder" && !a.edited && (ch === "/" || ch === "~")
+              return { ...a, [typing]: fresh ? ch : (a[typing] + ch).slice(0, 400), ...(typing === "folder" ? { edited: true } : {}), error: undefined }
+            }),
+            true
+          )
         return false
       }
       if ((stage === "written" || stage === "ready" || stage === "exited") && enter) {

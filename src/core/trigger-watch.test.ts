@@ -3,7 +3,7 @@
 // nothing heard late, once per token per cooldown, filters checked by the core), personal signals by rule and
 // Hacc's asset read, P&L, fills, cards and replays, schedules and sleep, and nothing fired twice across a restart.
 import { afterAll, afterEach, describe, expect, test } from "bun:test"
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs"
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { Redactor } from "../shared/redact"
@@ -16,7 +16,8 @@ import type { WalletsTopic } from "./agent-wallets"
 import { AliasFile, LineReader } from "./line-reader"
 import type { SignalRow } from "./signal-stream"
 import { TokenNames } from "./token-names"
-import { HEARTBEAT_MS, LEVEL_READS_PER_BEAT, nextOnDays, TAPE_FRESH_MS, TriggerWatch } from "./trigger-watch"
+import { enableTestChain, TEST_CHAIN } from "../shared/chains"
+import { HEARTBEAT_MS, LEVEL_READS_PER_BEAT, levelChain, nextOnDays, TAPE_FRESH_MS, TriggerWatch } from "./trigger-watch"
 import { type FireCause, TriggerBook, type TriggerBookDeps } from "./triggers"
 import { TriggersFileStore } from "./triggers-file"
 
@@ -44,6 +45,8 @@ interface Rig {
   watch: TriggerWatch
   prices: Map<string, { priceUsd?: number | null; marketCap?: number | null }>
   marketCalls: string[]
+  /** Each market read as chain:mint. */
+  marketOn: string[]
   hacc: { calls: { route: string; query: Record<string, unknown> }[]; answer: (route: string, query: Record<string, unknown>) => HaccAnswer }
   positions: { mint: string; wallet: string; quantity: number; costBasisUsd: number }[]
   pnl: { usd: number | null; reads: number; byWindow: Record<string, number | null>; asked: (string | undefined)[] }
@@ -66,6 +69,7 @@ async function rig(o: { firer?: boolean; dir?: string } = {}): Promise<Rig> {
     clock: { now: T0 },
     prices: new Map(),
     marketCalls: [],
+    marketOn: [],
     hacc: { calls: [], answer: () => ok({ signals: [] }) },
     positions: [],
     pnl: { usd: null, reads: 0, byWindow: {}, asked: [] },
@@ -102,8 +106,9 @@ async function rig(o: { firer?: boolean; dir?: string } = {}): Promise<Rig> {
     r.watch = new TriggerWatch({
       book: r.book,
       clock: { now: () => r.clock.now, schedule: () => () => {} },
-      market: async (_chain, mint) => {
+      market: async (chain, mint) => {
         r.marketCalls.push(mint)
+        r.marketOn.push(`${chain}:${mint}`)
         const p = r.prices.get(mint)
         if (!p) return { kind: "error", code: "MARKET_NOT_FOUND", retryable: false, body: {} } satisfies ToolOutcome
         return { kind: "ok", result: { success: true, market: { mint, priceUsd: p.priceUsd ?? null, marketCap: p.marketCap ?? null } } }
@@ -158,6 +163,33 @@ function signal(r: Rig, patch: Partial<SignalRow> & Record<string, unknown> = {}
 }
 
 describe("levels", () => {
+  test("a level on a Hood token keeps its chain: stored with the trigger, read on Hood, and said by its firing", async () => {
+    const HOOD = "0x00000000000000000000000000000000000b0b41"
+    const r = await rig()
+    const name = await r.save(`when ${HOOD} < $0.002 notify`)
+    expect(r.book.entries()[0]).toMatchObject({ name, chain: "hood" })
+    expect(readFileSync(join(r.dir, "triggers.toml"), "utf8")).toContain('chain = "hood"')
+    r.prices.set(HOOD, { priceUsd: 0.0015 })
+    await beatAt(r, HEARTBEAT_MS)
+    expect(r.marketOn).toEqual([`hood:${HOOD}`])
+    expect(firedRows(r)[0]).toMatchObject({ name, cause: { by: "level", what: "price", mint: HOOD, chain: "hood" } })
+    // A Solana token's keeps none in the file, as before.
+    await r.save("when JUP < $0.40 notify")
+    expect(r.book.entries().find((t) => t.line.includes("JUP"))!.chain).toBeUndefined()
+  })
+
+  test("a level is read on its stored chain, never one guessed again from its address", () => {
+    const off = enableTestChain()
+    try {
+      const TOKEN = "0x00000000000000000000000000000000000b0b42"
+      expect(levelChain({ chain: TEST_CHAIN }, TOKEN)).toBe(TEST_CHAIN)
+      expect(levelChain({}, TOKEN)).toBe("hood")
+      expect(levelChain({}, JUP)).toBe("solana")
+    } finally {
+      off()
+    }
+  })
+
   test("a stop fires once on a reading under it, journalled before its command is proposed, and switches off", async () => {
     const r = await rig()
     const name = await r.save("when JUP < $0.40 sell 50% of JUP")
@@ -411,6 +443,92 @@ describe("Hacc's tape", () => {
     await r.watch.onTape([signal(r, { created_at: new Date(T0 + 500).toISOString() })])
     expect(r.fired).toEqual([])
     expect(missedRows(r)[0]).toMatchObject({ class: "tape", signals: 1 })
+  })
+
+  test("a tape trigger on Hood: its market-cap filter reads the row's token on the row's own chain, and its firing says the chain", async () => {
+    const HOOD = "0x00000000000000000000000000000000000b0b44"
+    const r = await rig()
+    await r.save("when confluence mcap < 500k chain hood notify")
+    r.clock.now += 1_000
+    r.prices.set(HOOD, { priceUsd: 0.002, marketCap: 300_000 })
+    await r.watch.onTape([signal(r, { asset_address: HOOD, asset_chain: "hood" }), signal(r)])
+    expect(r.marketOn).toEqual([`hood:${HOOD}`])
+    expect(r.fired.map((f) => f.cause)).toEqual([expect.objectContaining({ by: "tape", mint: HOOD, chain: "hood" })])
+  })
+
+  test("a notify trigger on a Hood token Candle doesn't list takes Hacc's market cap for its filter, and its firing says so", async () => {
+    const HOOD = "0x00000000000000000000000000000000000b0b46"
+    const r = await rig()
+    const name = await r.save("when new_ticker mcap < 500k chain hood notify")
+    r.clock.now += 1_000
+    r.hacc.answer = (route) => (route === `/v1/market/token/${HOOD}` ? ok({ chain: "hood", market: { address: HOOD, market_cap: 120_000 } }) : ok({ signals: [] }))
+    const row = signal(r, { pattern: "new_ticker", asset_address: HOOD, asset_chain: "hood" })
+    await r.watch.onTape([row])
+    expect(r.marketOn).toEqual([`hood:${HOOD}`])
+    expect(r.hacc.calls).toEqual([{ route: `/v1/market/token/${HOOD}`, query: { chain: "hood" } }])
+    expect(r.fired.map((f) => f.cause)).toEqual([{ by: "tape", mint: HOOD, chain: "hood", signalId: row.id, pattern: "new_ticker", signalAt: row.created_at, marketCap: { usd: 120_000, from: "hacc" } }])
+    expect(firedRows(r)[0]).toMatchObject({ name })
+    expect(String(firedRows(r)[0]!.words)).toContain("market cap $120K from Hacc: Candle doesn't list it")
+    // Over the filter on Hacc's figure: not fired, and nothing skipped, as any token over it.
+    r.hacc.answer = (route) => (route.startsWith("/v1/market/token/") ? ok({ market: { address: "0x00000000000000000000000000000000000b0b47", market_cap: 900_000 } }) : ok({ signals: [] }))
+    await r.watch.onTape([signal(r, { pattern: "new_ticker", asset_address: "0x00000000000000000000000000000000000b0b47", asset_chain: "hood" })])
+    await r.watch.flushSkips()
+    expect(r.fired).toHaveLength(1)
+    expect(r.journal.rows().filter((x) => x.type === "trigger.skipped")).toEqual([])
+  })
+
+  test("a trigger that trades keeps to Candle's market cap: a token Candle doesn't list is skipped with why, and Hacc isn't asked", async () => {
+    const r = await rig()
+    const name = await r.save("when new_ticker mcap < 500k buy $2 of it")
+    r.clock.now += 1_000
+    const row = signal(r, { pattern: "new_ticker" })
+    await r.watch.onTape([row])
+    expect(r.fired).toEqual([])
+    expect(r.hacc.calls.filter((c) => c.route.startsWith("/v1/market/token/"))).toEqual([])
+    await r.watch.flushSkips()
+    const skipped = r.journal.rows().filter((x) => x.type === "trigger.skipped")
+    expect(skipped).toHaveLength(1)
+    expect(skipped[0]).toMatchObject({ name, agent: "agent-a", reason: "not_on_candle", count: 1, signals: [row.id], mints: [BONK] })
+    expect(String(skipped[0]!.words)).toBe("Candle doesn't list BONK, and a trigger that trades goes by Candle's market cap only, so its market-cap filter can't pass")
+  })
+
+  test("skips are gathered per reason with a count, and the trigger's watch words say the day's tally, across a restart too", async () => {
+    const r = await rig()
+    const name = await r.save("when new_ticker mcap < 500k notify")
+    r.clock.now += 1_000
+    // BONK isn't on Candle; JUP is, with no market cap; Hacc gives neither one.
+    r.prices.set(JUP, { priceUsd: 0.4, marketCap: null })
+    await r.watch.onTape([signal(r, { pattern: "new_ticker" })])
+    r.clock.now += 20 * 60_000
+    await r.watch.onTape([signal(r, { pattern: "new_ticker" }), signal(r, { pattern: "new_ticker", asset_address: JUP })])
+    expect(r.fired).toEqual([])
+    await r.watch.flushSkips()
+    const skipped = r.journal.rows().filter((x) => x.type === "trigger.skipped")
+    expect(skipped.map((x) => [x.reason, x.count])).toEqual([
+      ["not_on_candle", 2],
+      ["no_market_cap", 1],
+    ])
+    expect(String(skipped[0]!.words)).toBe("2 signals, the last because Candle doesn't list BONK and Hacc gave none for it, so its market-cap filter can't pass")
+    expect(String(skipped[1]!.words)).toBe("Candle doesn't know JUP's market cap and Hacc gave none for it, so its market-cap filter can't pass")
+    const watching = () => r.book.view().triggers.find((t) => t.name === name)!.watching
+    expect(watching()).toBe("watches Hacc's tape for new_ticker · skipped 3 in the last day: 2 not on Candle, 1 no market cap")
+    await r.restart()
+    expect(watching()).toBe("watches Hacc's tape for new_ticker · skipped 3 in the last day: 2 not on Candle, 1 no market cap")
+    // Over a day on, the tally's gone.
+    r.clock.now += 24 * 60 * 60_000 + 60_000
+    expect(watching()).toBe("watches Hacc's tape for new_ticker")
+  })
+
+  test("a row whose address doesn't fit the chain Hacc says fires no tape trigger, filtered to that chain or not, and reads nothing", async () => {
+    const EVM_TOKEN = "0x00000000000000000000000000000000000b0b45"
+    const r = await rig()
+    await r.save("when confluence mcap < 500k chain solana notify")
+    await r.save("when confluence notify as \"any-chain\"")
+    r.clock.now += 1_000
+    r.prices.set(EVM_TOKEN, { priceUsd: 0.002, marketCap: 300_000 })
+    await r.watch.onTape([signal(r, { asset_address: EVM_TOKEN, asset_chain: "solana" }), signal(r, { asset_chain: "hood" })])
+    expect(r.marketOn).toEqual([])
+    expect(r.fired).toEqual([])
   })
 
   test("chain and group from the row; a market cap from Candle, where Hacc's filter would pass an unknown one; age from Hacc's filtered tape", async () => {

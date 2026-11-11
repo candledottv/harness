@@ -5,6 +5,7 @@ import { join } from "node:path"
 import { Redactor } from "../shared/redact"
 import { Journal, type JournalInput } from "./journal"
 import { DEFAULT_KINDS, type JournalEntry, type JournalQuery, journalRows, queryJournal, queryProblem, ROW_KINDS, tookWords } from "./journal-query"
+import { sequencedFailure } from "./reconcile"
 
 const JUP = "JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN"
 const MOON = "MoonFake11111111111111111111111111111111111"
@@ -64,6 +65,28 @@ async function buy(t: Awaited<ReturnType<typeof journalAt>>, n: number, opts: { 
 }
 
 const texts = (es: readonly JournalEntry[]) => es.map((e) => e.text)
+
+describe("the chain filter", () => {
+  test("each entry about a token carries its chain; a query for one chain keeps its entries and those about no token", async () => {
+    const HOOD = "0x00000000000000000000000000000000000b0B01"
+    const t = await journalAt()
+    await buy(t, 1)
+    t.tick(1_000)
+    await t.add({ type: "card.created", mode: "live", agent: "momentum", cardId: "card_h", opId: "op_h", role: "harness", kind: "trade", tool: "candle_trade", params: { mint: HOOD, side: "buy", amount: "0.01" }, mint: HOOD, side: "buy", chain: "hood", wallet: "0xEmbed", title: "buy" })
+    t.tick(1_000)
+    await t.add({ type: "kill.on", mode: "live", by: "v1" })
+    const all = await queryJournal({ kinds: ["trades", "cards", "kill"] }, deps(t.j))
+    expect(all.entries.map((e) => [e.mint ? (e.mint === HOOD ? "HOOD" : "JUP") : "none", e.chain])).toEqual([
+      ["none", undefined],
+      ["HOOD", "hood"],
+      ["JUP", "solana"],
+    ])
+    const hood = await queryJournal({ kinds: ["trades", "cards", "kill"], chain: "hood" }, deps(t.j))
+    expect(hood.entries.map((e) => e.chain)).toEqual([undefined, "hood"])
+    expect(queryProblem({ chain: "base" })).toBeDefined()
+    expect(queryProblem({ chain: "hood" })).toBeUndefined()
+  })
+})
 
 describe("the kind table", () => {
   test("names every row type the core and engines write", () => {
@@ -204,6 +227,25 @@ describe("rows in words", () => {
     const [e] = (await queryJournal({}, deps(t.j))).entries
     expect(e!.text).toContain("· re-sent by the Candle Harness once: the core restarted mid-sell and Candle had no record of it ·")
     expect(e!.text).toContain("· filled in")
+  })
+
+  test("an operation the core reads no further says what its error says, never that it's being read back", async () => {
+    const t = await journalAt()
+    const job = { status: "failed", errorCode: "SWAP_FAILED", operation: { legs: [{ kind: "approve", status: "confirmed" }, { kind: "trade", status: "failed" }] } }
+    const error = sequencedFailure(job)!
+    await t.add({ type: "card.created", mode: "live", agent: "momentum", cardId: "card_h", opId: "op_h", role: "harness", kind: "trade", tool: "candle_trade", params: { mint: JUP, side: "buy", amount: "0.006" }, mint: JUP, side: "buy", wallet: "Embed1111", headline: "Buy 0.006 ETH of JUP", title: "buy" })
+    await t.add({ type: "operation.unknown", mode: "live", agent: "momentum", opId: "op_h", cardId: "card_h", result: job, error })
+    await t.add({ type: "card.created", mode: "live", agent: "momentum", cardId: "card_b", opId: "op_b", role: "harness", kind: "bridge", tool: "candle_bridge", params: { from: "SOL", to: "ETH", amount: "0.5" }, headline: "BRIDGE 0.5 SOL → ETH", title: "bridge" })
+    await t.add({ type: "operation.unknown", mode: "live", agent: "momentum", opId: "op_b", cardId: "card_b", error: { code: "BRIDGE_PAST_TWO_HOURS", message: "No result after two hours. Check the balance of bot-1-h." } })
+    await t.add({ type: "card.created", mode: "live", agent: "momentum", cardId: "card_o", opId: "op_o", role: "harness", kind: "trade", tool: "candle_trade", params: { mint: JUP, side: "buy", amount: "0.006" }, mint: JUP, side: "buy", wallet: "Embed1111", headline: "Buy 0.006 SOL of JUP", title: "buy" })
+    await t.add({ type: "operation.unknown", mode: "live", agent: "momentum", opId: "op_o", cardId: "card_o", reason: "no answer" })
+    const texts = (await queryJournal({}, deps(t.j))).entries.map((e) => e.text)
+    const [hood, bridge, open] = ["Buy 0.006 ETH", "BRIDGE", "Buy 0.006 SOL"].map((h) => texts.find((x) => x.includes(h))!)
+    expect(hood).not.toContain("being read back")
+    expect(hood).toContain("may have filled")
+    expect(bridge).not.toContain("being read back")
+    expect(bridge).toContain("Check the balance of bot-1-h")
+    expect(open).toContain("no answer: being read back")
   })
 
   test("a trade the core ran without a card says so, never that the person approved it", async () => {

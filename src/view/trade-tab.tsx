@@ -24,6 +24,7 @@ import { C } from "./theme"
 import { runnableCards } from "./triggers-view"
 import type { BuildFolder, DaemonView } from "./build-view"
 import { isTokenPane, type TokenPane } from "../shared/panes"
+import { signalsFold } from "./chain-filter"
 
 /** How long a closed card stays inline, and how many do. */
 const CLOSED_SHOWN_MS = 5 * 60_000
@@ -317,7 +318,7 @@ export function TabBody(p: TabBodyProps) {
   const area: Rect = { x: 0, y: p.top, w: p.width, h: p.height }
   const tabAt = p.tabName
   // What this tab's Signals pane shows: the core keeps it by the tab, for every view.
-  const signals = signalsChoiceOf(p.view.views?.signals, tabAt)
+  const signals = signalsChoiceOf(p.view.views?.signals, tabAt, signalsFold(p.view))
   const popChip = p.onPopOut !== undefined
   const onTab = panesOf(p.layout.root)
   const linesOf = (id: Exclude<PaneId, "agent">, rect: Rect, rows?: number) =>

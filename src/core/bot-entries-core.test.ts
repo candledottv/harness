@@ -14,9 +14,11 @@ import { candleConfigDir } from "./candle-mcp"
 import { startCore } from "./core-main"
 import type { JournalRow } from "./journal"
 import type { SignalRow } from "./signal-stream"
+import { BASE_ASSETS } from "./assets"
 
 const FAKE_WALLET = "WalletFake111111111111111111111111111111111"
 const MOON = "MoonFake11111111111111111111111111111111111"
+const PEPE = "PepeFake11111111111111111111111111111111111"
 // A $1.50 stake with Candle's fee is under a $2.00 figure; $3.00 is over it.
 const INSIDE = { wallet: "embedded", setting: "inside", perTradeUsd: 2, perDayUsd: 4 }
 const LIMITS = { perTradeUsd: 10, perDayUsd: 50 }
@@ -194,6 +196,41 @@ describe("a bot's entry, through the wallet's figures", () => {
     await c.core.botEntries.onTape([signal()])
     await until(() => trades(c.p).length === 2)
     expect(rows(c.core.journal.rows(), "card.created").map((r) => r.bot).sort()).toEqual(["conf", "conf-two"])
+  })
+
+  test("the budget is checked in what the buy spends: a Candle-launched token's own pair asset, whatever the spend asset", async () => {
+    // USDC as the spend asset, and a wallet holding SOL and no USDC.
+    const { c, view } = await core({ config: { trade: { spendAsset: "USDC" } } })
+    await view.request("subscribe", { topics: ["portfolio"] })
+    await until(() => JSON.stringify(lastOf(view, "portfolio") ?? {}).includes(FAKE_WALLET))
+    await save(c)
+    // MOON was launched on Candle against SOL: its buy spends SOL, which the wallet holds.
+    await c.core.botEntries.onTape([signal()])
+    await until(() => trades(c.p).length === 1)
+    await c.core.botEntries.flush()
+    expect(rows(c.core.journal.rows(), "bot.skipped")).toEqual([])
+    // PEPE trades on a venue against the spend asset: its buy spends USDC, which the wallet doesn't hold.
+    await c.core.botEntries.onTape([{ ...signal(), asset_address: PEPE } as SignalRow])
+    const short = () => rows(c.core.journal.rows(), "bot.skipped").find((r) => r.reason === "no_budget")
+    for (let i = 0; i < 100 && !short(); i++) {
+      await c.core.botEntries.flush()
+      await Bun.sleep(20)
+    }
+    expect(short()?.words).toContain("of USDC")
+    expect(trades(c.p)).toHaveLength(1)
+  })
+
+  test("a spend asset whose row Candle sent without its amount or decimals isn't known to be short: the buy isn't skipped for it", async () => {
+    const { c, view } = await core({ config: { trade: { spendAsset: "USDC" } }, candle: { momentum: { solanaRows: [{ chain: "solana", mint: BASE_ASSETS.USDC.priceKey, amountRaw: null, decimals: 6 }] } } })
+    await view.request("subscribe", { topics: ["portfolio"] })
+    await until(() => JSON.stringify(lastOf(view, "portfolio") ?? {}).includes(FAKE_WALLET))
+    await save(c)
+    await c.core.botEntries.onTape([{ ...signal(), asset_address: PEPE } as SignalRow])
+    for (let i = 0; i < 50; i++) {
+      await c.core.botEntries.flush()
+      await Bun.sleep(20)
+    }
+    expect(rows(c.core.journal.rows(), "bot.skipped").filter((r) => r.reason === "no_budget")).toEqual([])
   })
 })
 

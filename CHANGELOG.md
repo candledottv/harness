@@ -2,6 +2,41 @@
 
 What changed in each version of Candle Harness (called the Candle TUI before 0.3.0). Versions follow [semantic versioning](https://semver.org), and each release is listed on [GitHub](https://github.com/candledottv/harness/releases).
 
+## 0.6.0 (unreleased)
+
+Robinhood Chain, and the Harness starts live.
+
+### Robinhood Chain
+
+- **Both of Hood's wallets trade.** The account's embedded wallet on Hood is listed, valued and traded like Solana's, percent sells included. Each agent can have Hood TEE wallets of its own: the `add a Hood wallet` chip makes an EVM vault key where there's none and promotes it to the agent's key, then offers ETH to fund it (a bridge, `vault fund`, or its address). A Hood TEE wallet trades one at a time: a second approved trade waits in the Harness and is sent when the first settles. Stop and sweep take its `0x` address.
+- **Bridges, on a card.** `bridge 0.5 sol to eth`, or the agent's `candle_bridge`, moves funds between Solana and Hood: embedded to embedded, or between one key's own TEE wallets (`from <wallet> into <wallet>`). The card says the route, "less Relay's fee", and the arrival, followed by Candle's status. A bridge isn't spend, a fill or P&L.
+- **Typed trades on Hood:** `eth` and `usdg` spend on Hood (a dollar buy pays in ETH). A token name seen on both chains isn't traded by name: chips on the message line put either address on the line.
+- **A chain filter.** `all chains ▾` beside the agent chip shows Solana, Hood or both, once the account has wallets on both chains; every listing pane follows it. Wallets and Positions go under chain headings, each wallet in its own asset, and a Hood card says "· on Hood". Trending lists New, Graduated and On Fire on Hood.
+- **Hacc's safety check on Hood** in the token pane (Pro and Max), each field said as Hacc's.
+- **Approvals on Hood:** the embedded wallet on Hood has its own two figures in `settings ▾` → approvals; ETH and USDG buys count at their dollar value, USDG at Candle's $1.
+- **A default wallet per chain:** `[agents.<name>.wallet] solana = …, hood = …`; the single `wallet` line still works. `candle.evmRpcUrl` sets the Hood RPC.
+- **Bots and triggers on Hood:** `chain = "hood"` in `bots.toml`, code bots' trades with their chain, and price, market-cap and tape triggers on Hood. A trigger records the signals it skipped, and why ("not on Candle", "no market cap").
+- **EVM private keys** pasted into the input line are refused when they belong to one of your wallets, or sit next to words like "private key".
+
+### Fixes
+
+- **A key whose prefix starts with "-"** (about 1 in 32) no longer stops setup at the wallet step: the Harness reads such a prefix as the CLI does, and names the key by its label where `vault promote` needs it.
+- **The fund step** says it's reading the wallet's balance until it has, rather than "0 SOL".
+- **ctrl-] in the Build tab** always leaves the harness, even with an ended command pane left.
+- **A code bot that ended by itself** stays ended across a restart.
+- **A percent sell right after a buy** is sized from what the wallet holds now; a filled sell or swap shows what Candle's answer gave back.
+- **`⧉ copy it`** copies a CLI answer that parses as JSON; a refused `vault status` says why in its pane.
+- **The go-live check and the doctor count Hood wallets.** A key denied the embedded wallet that holds an active Hood TEE wallet isn't told it can't pay; a Hood TEE wallet, or the embedded wallet on Hood, set to trade inside limits is shown with the agents that pay from it.
+- **LP's hold reason** says what still blocks it: Candle serves LP, but no key preset grants `lp:write` yet.
+
+### Setup
+
+- **Setup ends in live on a fresh install.** Funded at the deposit step, or going on with **Fund it later**, the Harness opens live; so does Straight in. A fresh `config.toml` says `mode = "live"`. A trade from a wallet that can't cover it is refused before anything is sent: it says the wallet doesn't hold enough SOL (ETH on Hood), and to send some to its address in the Wallets pane, or trade less. A trade from a key not yet allowed a wallet is refused with the line that allows it. Paper is still there, from the status bar or by typing `paper`.
+- **Running setup again keeps your mode.** Adding an agent, guided or Straight in, never switches the Harness to live: paper picked from the status bar or by typing `paper` (during a first setup too, even while already on paper), or an older install's `config.toml` that says `mode = "paper"`, stays paper, for every agent. The fund step and the summary after setup say so, and how to go live from the status bar.
+- **The summary after setup** says "a card per trade" only when the wallet asks every time.
+- **The agent's greeting doesn't suggest paper.** Its examples and its first lines are about trading; paper is still in help and the status bar.
+- **The agent doesn't steer you to paper.** Live, its instructions say the Harness is live and not to suggest paper trading or a rehearsal unless you ask; they explain paper only when you've switched to it. A strategy-lab or backtest pass is read as "not proof it will pay live", never as a reason to paper-trade.
+
 ## 0.5.6 (2026-11-10)
 
 Fixes from Candle's review of 0.5.5, and Hood TEE wallets trade. The review's fixes change what can pay only to narrow it (the second below); Hood TEE wallets, below, are a new wallet an agent can pay from.

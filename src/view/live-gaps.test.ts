@@ -9,7 +9,7 @@ const view = (over: { agent?: Record<string, unknown>; wallets?: Record<string, 
   ({
     status: { agents: [agent(over.agent)], activeAgent: "agent-a", mode: "paper", paused: false },
     ...(over.wallets ? { wallets: { agents: { "agent-a": over.wallets }, account: [], boundTo: {} } } : {}),
-    ...(over.sol !== undefined ? { portfolio: { wallets: [{ address: W, chain: "solana", kind: "embedded", name: "main", agents: ["agent-a"], sol: over.sol === null ? null : { amount: over.sol, usd: null } }] } } : {}),
+    ...(over.sol !== undefined ? { portfolio: { wallets: [{ address: W, chain: "solana", kind: "embedded", name: "main", agents: ["agent-a"], nativeSymbol: "SOL", native: over.sol === null ? null : { amount: over.sol, usd: null } }] } } : {}),
   }) as never
 
 const allowed = { payable: { embedded: { address: W, chain: "solana" }, tee: [], readAt: 1, unreadable: [] }, embeddedWallet: "allowed", prefix: "FakeKey1" }

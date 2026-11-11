@@ -82,6 +82,8 @@ test("a funds-out step that exits with an error never says nothing went out, sin
   expect(sent.outcome).toBe("didnt_finish")
   expect(sent.words).toBe("didn't finish (exit 1): refused, answered no, or failed partway. Check the wallet or the signature before sending again.")
   expect(paneOutcome({ stage: "command", exit: 1 }, { fundsOut: false }).words).toBe("didn't finish: the CLI's own line above says why (a wrong passphrase, a refusal, or no at its prompt).")
+  // A captured row's refusal (vault status with no vault) is named, beside the CLI's words in the pane.
+  expect(paneOutcome({ stage: "command", exit: 1, captured: { code: "VAULT_MISSING" } }, { fundsOut: false }).words).toBe("didn't finish: the CLI refused it (VAULT_MISSING); its words are in the pane.")
 })
 
 test("a batch rename: its --dry-run is a preview step before the command, and what it says", () => {

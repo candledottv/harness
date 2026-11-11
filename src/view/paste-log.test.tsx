@@ -1,7 +1,7 @@
 // The long-paste check: with CANDLE_HARNESS_PASTE_LOG set, each paste the terminal
 // delivers is logged whole, so a script can diff it against what was pasted. Off unless set.
 import { afterAll, expect, test } from "bun:test"
-import { generateKeyPairSync } from "node:crypto"
+import { generateKeyPairSync, randomBytes } from "node:crypto"
 import { mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
@@ -59,6 +59,17 @@ test("a wallet's private key, a recovery phrase or one of the Candle Harness's o
   expect(rows.map((r) => r.text)).toEqual([undefined, undefined, undefined, undefined, undefined, "plain words"])
   expect(rows.map((r) => r.length)).toEqual([...secrets.map((s) => s.length), 11])
   expect(statSync(file).mode & 0o777).toBe(0o600)
+})
+
+test("a key named just before it keeps no text; a drain report with a transaction hash keeps its text", () => {
+  const file = join(dir, "named.jsonl")
+  const log = pasteLogger({ CANDLE_HARNESS_PASTE_LOG: file })!
+  const tx = "0x5c504ed432cb51138bcf09aa5e8a410dd4a1e204ef84bfed1be16dfba1b22060"
+  const report = `someone asked for my private key, then ${tx} drained my wallet`
+  log(`my private key is 0X${randomBytes(32).toString("hex")}`)
+  log(report)
+  const rows = readFileSync(file, "utf8").trim().split("\n").map((l) => JSON.parse(l))
+  expect(rows.map((r) => r.text)).toEqual([undefined, report])
 })
 
 test("the App hands a bracketed 4 KB paste over whole, and puts it on the input line", async () => {

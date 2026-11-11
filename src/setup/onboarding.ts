@@ -31,8 +31,10 @@ export type OnboardingStep = (typeof ONBOARDING_STEPS)[number]
 /** The steps that leave nothing to read back: done when the person went past them. */
 const PASSED_ONLY: ReadonlySet<OnboardingStep> = new Set(["welcome", "engine", "limits", "approvals", "fund", "tour", "start"])
 /**
- * Straight in: sign in, the model and its test message, the key, then the Candle Harness on paper.
- * The other steps are skipped, not done: there's no vault, and the wallet waits for live.
+ * Straight in: sign in, the model and its test message, the key, then the Candle Harness: live on a fresh install, else
+ * in the mode it was in.
+ * The other steps are skipped, not done: there's no vault, and a trade is refused until the key is allowed a
+ * wallet and it holds funds, each refusal saying how.
  */
 const STRAIGHT_IN: ReadonlySet<OnboardingStep> = new Set(["signIn", "engine", "key"])
 
@@ -83,6 +85,11 @@ export interface OnboardingFacts {
   vaultKey?: string
   /** Candle's code when the last `keys create` made no key (such as `AGENT_WALLET_NOT_DELEGATED` on a new account). */
   keyRefused?: string
+  /**
+   * Setup ends on paper: the person picked paper before this run (the status bar, or an older install's config.toml),
+   * and a run of setup keeps the mode it finds. Without it, setup ends live.
+   */
+  keepsPaper?: true
 }
 
 export interface StepProgress {

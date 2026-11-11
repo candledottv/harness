@@ -5,6 +5,7 @@
 
 import { addressKey as keyOf } from "../shared/address-key"
 import { terminalText } from "../shared/terminal-text"
+import { EVM_ADDRESS_SOURCE, SOLANA_ADDRESS_SOURCE } from "../shared/chains"
 
 /** Where an address was seen. "you": the person's own message this turn, which no tool vouches for. */
 export type Source = "candle" | "hacc" | "web" | "shell" | "file" | "you"
@@ -15,11 +16,11 @@ export type GateResult = { ok: boolean; labelled: { address: string; source: Sou
 const RANK: Record<Source, number> = { candle: 0, hacc: 1, web: 2, shell: 3, file: 4, you: 5 }
 
 const BASE58 = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
-const BASE58_WORD = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/
+const BASE58_WORD = new RegExp(`^${SOLANA_ADDRESS_SOURCE}$`)
 // Whole words only: an address glued to letters or digits on either side is part of something else
 // (a longer id, a hash), not an address.
 const WORD = /[0-9A-Za-z]+/g
-const EVM = /(?<![0-9A-Za-z])0x[0-9a-fA-F]{40}(?![0-9A-Za-z])/g
+const EVM = new RegExp(`(?<![0-9A-Za-z])${EVM_ADDRESS_SOURCE}(?![0-9A-Za-z])`, "g")
 
 /** Bytes a base58 string decodes to: one zero byte per leading "1", then the number's own bytes. */
 function base58Length(s: string): number {

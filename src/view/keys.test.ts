@@ -225,6 +225,14 @@ describe("modes and agents", () => {
     expect(run([{ type: "clickMode", now: 0 }]).effects).toEqual([{ type: "mode", mode: "paper" }])
   })
 
+  test("the mode it's already in, typed, says so and is still sent as a pick the core keeps, never as a switch", () => {
+    const paper = ctx({ mode: "paper" })
+    const again = run([...type("paper"), enter()], paper)
+    expect(again.state.message?.text).toBe("Already in paper mode.")
+    expect(again.effects).toEqual([{ type: "mode", mode: "paper", kept: true }])
+    expect(run([...type("live"), enter()]).effects).toEqual([{ type: "mode", mode: "live", kept: true }])
+  })
+
   test("the agent picker, by click then keys, and the agent command", () => {
     expect(run([{ type: "clickAgent", now: 0 }, key("down"), enter()]).effects).toEqual([{ type: "setAgent", agent: "swing" }])
     expect(run([...type("agent swing"), enter()]).effects).toEqual([{ type: "setAgent", agent: "swing" }])
@@ -279,6 +287,46 @@ describe("the input line", () => {
     const r = run([...type("half typed"), { type: "clickFill", text: "candle tee disable Tee1 as momentum", now: 0 }])
     expect(r.state).toMatchObject({ input: "candle tee disable Tee1 as momentum", cursor: "candle tee disable Tee1 as momentum".length })
     expect(r.effects).toEqual([])
+  })
+
+  test("a name on two chains: the refusal keeps each token, and picking one puts its address in the name's place on the line, sending nothing", () => {
+    const HOOD = "0x00000000000000000000000000000000000b0B01"
+    const both = ctx({ commands: { agents: ["momentum"], knownTokens: new Map(), onTwoChains: new Map([["MOON", [{ chain: "Solana", mint: MOON }, { chain: "Hood", mint: HOOD }]]]) } })
+    const refused = run([...type("buy $5 MOON"), enter()], both)
+    expect(refused.state.message).toMatchObject({ level: "error", pick: { word: "MOON", tokens: [{ chain: "Solana", mint: MOON }, { chain: "Hood", mint: HOOD }] } })
+    expect(refused.state.message?.text).toContain("Pick the one you mean, or paste its address.")
+    // No offer to ask the agent: the choice is between two known tokens.
+    expect(refused.state.message?.ask).toBeUndefined()
+    expect(refused.state.input).toBe("buy $5 MOON")
+    const picked = run([...type("buy $5 MOON"), enter(), { type: "clickPick", index: 1, now: 0 }], both)
+    expect(picked.state.input).toBe(`buy $5 ${HOOD}`)
+    expect(picked.state.cursor).toBe(picked.state.input.length)
+    expect(picked.effects).toEqual([])
+    expect(picked.state.message).toMatchObject({ level: "info", text: "MOON on Hood: its address is on the line. Nothing was sent." })
+    // A $ before the name goes with it, and any case of the name is found.
+    expect(run([...type("buy 0.1 sol $moon"), enter(), { type: "clickPick", index: 0, now: 0 }], both).state.input).toBe(`buy 0.1 sol ${MOON}`)
+    // The palette's row does the same.
+    const viaPalette = run([...type("buy $5 MOON"), enter(), key("k", 0, { ctrl: true }), ...type("moon on hood"), enter()], both)
+    expect(viaPalette.state.input).toBe(`buy $5 ${HOOD}`)
+    expect(viaPalette.effects).toEqual([])
+    // With the name gone from the line since, the address goes at its end; with nothing on offer, a pick does nothing.
+    const edited = run([...type("buy $5 MOON"), enter(), ...Array(4).fill(key("backspace")), { type: "clickPick", index: 1, now: 0 }], both)
+    expect(edited.state.input).toBe(`buy $5 ${HOOD}`)
+    expect(run([{ type: "clickPick", index: 0, now: 0 }]).state).toEqual(INITIAL_UI)
+  })
+
+  test("a picked token takes the token word's own place: not a pay word of the same name, and a sentence's full stop goes with it, so ⏎ makes the card", () => {
+    const HOOD = "0x00000000000000000000000000000000000b0B01"
+    const SOL_ETH = "EthWrap111111111111111111111111111111111111"
+    const both = ctx({ commands: { agents: ["momentum"], knownTokens: new Map(), onTwoChains: new Map([["ETH", [{ chain: "Solana", mint: SOL_ETH }, { chain: "Hood", mint: HOOD }]], ["MOON", [{ chain: "Solana", mint: MOON }, { chain: "Hood", mint: HOOD }]]]) } })
+    expect(run([...type("buy 0.01 eth ETH"), enter(), { type: "clickPick", index: 0, now: 0 }], both).state.input).toBe(`buy 0.01 eth ${SOL_ETH}`)
+    expect(run([...type("buy 0.01 eth ETH from embedded"), enter(), { type: "clickPick", index: 0, now: 0 }], both).state.input).toBe(`buy 0.01 eth ${SOL_ETH} from embedded`)
+    const sentence = run([...type("Buy $1 of MOON."), enter(), { type: "clickPick", index: 1, now: 0 }], both)
+    expect(sentence.state.input).toBe(`Buy $1 of ${HOOD}`)
+    expect(sentence.state.message?.text).toBe("MOON on Hood: its address is on the line. Nothing was sent.")
+    const sent = run([...type("Buy $1 of MOON."), enter(), { type: "clickPick", index: 1, now: 0 }, enter()], both)
+    expect(sent.effects).toEqual([{ type: "command", command: { kind: "trade", tool: "candle_trade", args: { mint: HOOD, side: "buy", amountUsd: "1" }, echo: `Buy $1 of ${HOOD}` }, line: `Buy $1 of ${HOOD}` }])
+    expect(run([...type("Sell 50% of $moon!"), enter(), { type: "clickPick", index: 0, now: 0 }], both).state.input).toBe(`Sell 50% of ${MOON}`)
   })
 
   test("ctrl-t, or the refusal's chip, sends a line refused for an unknown name to the agent as typed", () => {
@@ -653,4 +701,34 @@ test("the list pane's ◂ ▸ go round Candle's four lists and Hacc's tape, On F
   const rows = paletteFound(INITIAL_UI, ctx({ panes: { ...nav, order: [...nav.order], group: [] } }), "final stretch").filter((r) => r.id.startsWith("lists:"))
   expect(rows.map((r) => r.label)).toContain("pick from Final Stretch")
   expect(paletteFound(INITIAL_UI, ctx(), "final stretch").some((r) => r.id.startsWith("lists:"))).toBe(false)
+})
+
+describe("the chain filter", () => {
+  const two = (current: "solana" | "hood" | null = null) => ctx({ chain: { current, chains: ["solana", "hood"] } })
+  test("the chip opens its menu on the choice that's on; ↓ and ⏎ pick another, which goes to the core; esc closes", () => {
+    const opened = run([{ type: "clickChain", x: 13, now: 0 }], two())
+    expect(opened.state.overlay).toEqual({ kind: "chainMenu", index: 0, x: 13 })
+    const picked = run([{ type: "clickChain", x: 13, now: 0 }, key("down"), key("down"), key("return")], two())
+    expect(picked.effects).toEqual([{ type: "chain", chain: "hood" }])
+    expect(picked.state.overlay).toBeUndefined()
+    expect(run([{ type: "clickChain", now: 0 }, key("escape")], two()).state.overlay).toBeUndefined()
+    // A click on a row picks it; the one already on is said, not sent.
+    expect(run([{ type: "clickChain", now: 0 }, { type: "pickChainMenu", index: 1, now: 0 }], two()).effects).toEqual([{ type: "chain", chain: "solana" }])
+    const same = run([{ type: "clickChain", now: 0 }, { type: "pickChainMenu", index: 2, now: 0 }], two("hood"))
+    expect(same.effects).toEqual([])
+    expect(same.state.message?.text).toBe("Every pane shows Hood only already.")
+    // A second click on the chip closes it.
+    expect(run([{ type: "clickChain", now: 0 }, { type: "clickChain", now: 0 }], two()).state.overlay).toBeUndefined()
+  })
+
+  test("with one chain in use there's no menu, and the palette has no chain rows", () => {
+    const one = ctx({ chain: { current: null, chains: ["solana"] } })
+    expect(run([{ type: "clickChain", now: 0 }], one).state.overlay).toBeUndefined()
+    expect(paletteFound(INITIAL_UI, one, "chain").some((r) => r.id.startsWith("chain:"))).toBe(false)
+    const rows = paletteFound(INITIAL_UI, two(), "chain").filter((r) => r.id.startsWith("chain:"))
+    expect(rows.map((r) => r.label)).toEqual(["show all chains", "show Solana only", "show Hood only"])
+    expect(rows[0]!.current).toBe(true)
+    const viaPalette = run([key("k", 0, { ctrl: true }), ...type("show hood only"), enter()], two())
+    expect(viaPalette.effects).toEqual([{ type: "chain", chain: "hood" }])
+  })
 })

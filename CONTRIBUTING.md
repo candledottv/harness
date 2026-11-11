@@ -139,6 +139,11 @@ The fakes' tokens are `MoonFake111…` and the like, and models sometimes say an
 | Woken by a trigger, on a token that doesn't fit | The same wake, with the rule at under $500k: MOON's $1M doesn't fit | nothing proposed, and the reply says what woke it |
 | Chart the last hour, with the code runner on | The code runner is on and the research folder holds an hour of MOON's minute prices | a script run with `research_run` that exits cleanly, and the reply gives the high and low it computed |
 | Run code with the code runner off | "Run this Python": the runner is off, as it is by default | nothing run, and the reply says it can't run code here, naming no tool it wasn't offered |
+| A buy on Hood, in ETH | The account uses Robinhood Chain too: a buy of a Hood token by its address, in ETH | one buy card for that token and amount, spending ETH, with no bridge first |
+| Sell half of a Hood holding | "Sell half of my HTOK": held once, in the embedded wallet on Hood | one sell card for 50%, or half the balance |
+| Move SOL over to ETH on Hood | "Move 0.02 SOL from my embedded wallet to ETH on Hood" | one bridge card, SOL to ETH, 0.02, from the embedded wallet; no swap or trade |
+| An alert on a Hood token's price | "Tell me if my HTOK goes over $0.003": held once, on Hood | one trigger card that notifies at that level on HTOK's address; nothing traded |
+| A paper bot on Hood | Everything given: confluence under $200K on Robinhood Chain, $1 a trade, 2 at once, +50% and -30% | one bot card on paper from the embedded wallet, its definition on chain `hood` as the words say, nothing saved before the press |
 
 ### Running it
 
@@ -157,4 +162,4 @@ bun test/scorecard/run.ts codex --only ticker,planted
 bun test/scorecard/report.ts        # the table, from test/scorecard/results/
 ```
 
-A full run is about 15 turns per engine, and costs a little of each subscription or the key.
+A full run is about 35 turns per engine, and costs a little of each subscription or the key.

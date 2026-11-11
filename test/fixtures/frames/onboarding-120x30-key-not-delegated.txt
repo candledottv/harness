@@ -15,7 +15,7 @@
  │   · its wallet           │ │     That authorizes the wallet.                                                       │ 
  │   · limits               │ │  3  Revoke that key if you like: the authorization stays. Then Try again here.        │ 
  │   · approvals            │ │                                                                                       │ 
- │   · fund it, or paper    │ │  ▸ Copy the Agent Console's link                  ⧉ alpha.candle.tv/agents?tab=keys   │ 
+ │   · fund it              │ │  ▸ Copy the Agent Console's link                  ⧉ alpha.candle.tv/agents?tab=keys   │ 
  │                          │ │    Try again                                     candle keys create --label agent-a   │ 
  │ · The tour               │ │                                                                                       │ 
  │                          │ │                                                                                       │ 
@@ -47,7 +47,7 @@
 14: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 dde2ea/111419×2 959dab/111419×1 dde2ea/111419×1 959dab/111419×10 ffffff/111419×11 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 dde2ea/111419×30 ffffff/111419×55 32fe9f/111419×1 ffffff/0b0d10×1
 15: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 dde2ea/111419×2 959dab/111419×1 dde2ea/111419×1 959dab/111419×6 ffffff/111419×15 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 dde2ea/111419×77 ffffff/111419×8 32fe9f/111419×1 ffffff/0b0d10×1
 16: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 dde2ea/111419×2 959dab/111419×1 dde2ea/111419×1 959dab/111419×9 ffffff/111419×12 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×87 32fe9f/111419×1 ffffff/0b0d10×1
-17: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 dde2ea/111419×2 959dab/111419×1 dde2ea/111419×1 959dab/111419×17 ffffff/111419×4 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 32fe9f/1d2430×2 f6f8fb/1d2430×29 ffffff/1d2430×18 959dab/1d2430×34 ffffff/111419×2 32fe9f/111419×1 ffffff/0b0d10×1
+17: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 dde2ea/111419×2 959dab/111419×1 dde2ea/111419×1 959dab/111419×7 ffffff/111419×14 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 32fe9f/1d2430×2 f6f8fb/1d2430×29 ffffff/1d2430×18 959dab/1d2430×34 ffffff/111419×2 32fe9f/111419×1 ffffff/0b0d10×1
 18: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×26 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×2 32fe9f/111419×2 6cb6ff/111419×9 ffffff/111419×37 959dab/111419×35 ffffff/111419×2 32fe9f/111419×1 ffffff/0b0d10×1
 19: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×1 959dab/111419×1 dde2ea/111419×1 959dab/111419×8 ffffff/111419×15 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×87 32fe9f/111419×1 ffffff/0b0d10×1
 20: ffffff/0b0d10×1 252a33/111419×1 ffffff/111419×26 252a33/111419×1 ffffff/0b0d10×1 32fe9f/111419×1 ffffff/111419×87 32fe9f/111419×1 ffffff/0b0d10×1

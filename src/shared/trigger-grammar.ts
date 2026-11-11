@@ -29,6 +29,7 @@
 import { PATTERNS } from "../core/hacc-tools"
 import { short } from "../core/wallet-names"
 import { type Command, type CommandContext, parseCommand, tokenOf } from "./commands"
+import { type ChainSlug, EVM_ADDRESS_SOURCE, SOLANA_ADDRESS_SOURCE } from "./chains"
 
 /** What every place a trigger shows says on Free, and the command that upgrades the plan. */
 export const PLAN_WORDS = "Triggers need a Pro or Max plan"
@@ -60,7 +61,7 @@ export interface TapeFilters {
   minAgeMinutes?: number
   maxAgeMinutes?: number
   group?: string
-  chain?: "solana" | "hood"
+  chain?: ChainSlug
 }
 
 /**
@@ -686,7 +687,7 @@ export function renderCommand(c: Extract<Command, { kind: "trade" } | { kind: "c
 export function defaultName(conditionText: string): string {
   // A mint goes by its first and last four, so the name stays readable: "Moon…1111 < $0.40". A rule's name loses
   // its quotes (`mine whales`), since a trigger's name can't hold one.
-  conditionText = conditionText.replace(/\b[1-9A-HJ-NP-Za-km-z]{32,44}\b|\b0x[0-9a-fA-F]{40}\b/g, short).replace(/["\\]/g, "")
+  conditionText = conditionText.replace(new RegExp(`\\b${SOLANA_ADDRESS_SOURCE}\\b|\\b${EVM_ADDRESS_SOURCE}\\b`, "g"), short).replace(/["\\]/g, "")
   if (conditionText.length <= MAX_NAME) return conditionText
   const cut = conditionText.slice(0, MAX_NAME + 1)
   const at = cut.lastIndexOf(" ")

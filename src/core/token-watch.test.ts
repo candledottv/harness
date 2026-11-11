@@ -500,3 +500,59 @@ test("Hacc's 1m candles kept whole for the pane's two-minute candles; a missing 
   expect(historyCandles({ candles: [{ at: "2026-10-29T02:48:00Z", open: 2, close: 3 }] }, Date.parse("2026-10-30T00:00:00Z"))).toEqual([{ at: Date.parse("2026-10-29T02:48:00Z"), open: 2, high: 3, low: 2, close: 3 }])
   expect(historyCandles({ candles: [{ at: "nope", close: 1 }] }, Date.now())).toEqual([])
 })
+
+describe("Hacc's check on a Hood token", () => {
+  const HTOK = "0x00000000000000000000000000000000000b0B01"
+  const safety = (set: Record<string, unknown>) => ({ chain: "hood", market: {}, safety: { honeypot: null, cannot_buy: null, cannot_sell_all: null, buy_tax_pct: null, sell_tax_pct: null, transfer_tax_pct: null, mintable: null, transfer_pausable: null, hidden_owner: null, can_take_back_ownership: null, blacklisted: null, is_proxy: null, open_source: null, owner_pct: null, creator_pct: null, lp_locked_pct: null, honeypot_with_same_creator: null, ...set } })
+  function hoodRig(hacc: (chain: string, address: string) => Promise<{ kind: "ok"; body: unknown } | { kind: "refused"; words: string }>) {
+    let clock = 1_000_000
+    const asked: string[] = []
+    const published: TokenView[] = []
+    const watch = new TokenWatch({
+      call: async (tool, args) =>
+        tool === "candle_get_market" && args.mint === HTOK
+          ? { kind: "ok", result: { success: true, market: { chain: "hood", mint: HTOK, metadata: { symbol: "HTOK" }, priceUsd: 0.0000443, marketCap: 44_000, liquidityUsd: 18_000 } } }
+          : tool === "candle_token_forensics"
+            ? { kind: "ok", result: { success: true, forensics: { safety: { summary: "incomplete", flags: {} } } } }
+            : { kind: "error", code: "MARKET_NOT_FOUND", retryable: false, body: {} },
+      now: () => clock,
+      publish: (v) => published.push(v),
+      haccMarket: async (chain, address) => {
+        asked.push(`${chain}:${address}`)
+        return hacc(chain, address)
+      },
+    })
+    return { watch, asked, published, tick: (ms: number) => (clock += ms) }
+  }
+
+  test("read once a Hood token is followed, said as Hacc's, kept a minute, read again after", async () => {
+    const r = hoodRig(async () => ({ kind: "ok", body: safety({ honeypot: false, buy_tax_pct: 0, sell_tax_pct: 0, lp_locked_pct: 92 }) }))
+    expect(await r.watch.link(HTOK, "hood", "agent")).toBe("ok")
+    expect(r.asked).toEqual([`hood:${HTOK}`])
+    expect(r.watch.view().hacc).toMatchObject({ words: "Hacc: no honeypot, 0% buy and sell tax, LP locked 92% (13 more not said by Hacc)", amber: false })
+    await r.watch.recheck()
+    expect(r.asked).toHaveLength(1)
+    r.tick(60_000)
+    await r.watch.recheck()
+    expect(r.asked).toHaveLength(2)
+  })
+
+  test("amber where Hacc says a honeypot; a fresh token's all-null answer is unchecked, never clean", async () => {
+    const hp = hoodRig(async () => ({ kind: "ok", body: safety({ honeypot: true }) }))
+    await hp.watch.link(HTOK, "hood", "agent")
+    expect(hp.watch.view().hacc?.amber).toBe(true)
+    expect(hp.watch.view().hacc?.words).toStartWith("Hacc: a honeypot")
+    const fresh = hoodRig(async () => ({ kind: "ok", body: safety({}) }))
+    await fresh.watch.link(HTOK, "hood", "agent")
+    expect(fresh.watch.view().hacc).toMatchObject({ amber: false, words: "Hacc has no check for this token yet: not checked, not clean" })
+  })
+
+  test("a refusal (Free, or Hacc down) is said in its words, as not checked; a Solana token isn't read on Hacc for it", async () => {
+    const free = hoodRig(async () => ({ kind: "refused", words: "Hacc's check needs a Pro or Max plan" }))
+    await free.watch.link(HTOK, "hood", "agent")
+    expect(free.watch.view().hacc?.words).toBe("Hacc's check didn't load (Hacc's check needs a Pro or Max plan): not checked, not clean")
+    const sol = rig()
+    await sol.watch.link(MOON, "solana", "agent")
+    expect(sol.watch.view().hacc).toBeUndefined()
+  })
+})

@@ -5,7 +5,7 @@
 import { afterAll, afterEach, expect, test } from "bun:test"
 import { mkdirSync, statSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
-import { cleanupHomes, startTestCore, type TestCore, testConfig, testHome, until } from "../../test/core-fixture"
+import { cleanupHomes, prefixedKey, startTestCore, type TestCore, testConfig, testHome, until } from "../../test/core-fixture"
 import { connectTestClient } from "../../test/core-test-client"
 import { PROTOCOL_VERSION } from "../shared/rpc"
 import type { BotProposal, BotsTopic } from "./bots"
@@ -197,3 +197,22 @@ test("the doctor reads a running core's bots: each one's mode, state and wallet,
   const offline = (await botChecks(c.p, false)).map((x) => `${x.state} ${x.area}: ${x.text}`)
   expect(offline).toEqual(["warn bot: 1 bot on in bots.toml, and no core is running, so none enters, and their exits don't sell what they hold"])
 })
+
+test("a rules bot on Hood pays from a Hood TEE wallet of its agent's key; a Solana bot on that wallet is refused when it's made", async () => {
+  const HOOD_TEE = "0x00000000000000000000000000000000000E7e01"
+  const tee = { id: "teeH", address: HOOD_TEE, label: "hood-tee", boundKeyPrefix: "Momentum", chain: "hood" as const, wei: "2500000000000000" }
+  const c = await startTestCore({}, { keys: { momentum: prefixedKey("Momentum"), swing: prefixedKey("Swingkey") }, candle: { momentum: { teeWallets: [tee] }, swing: { teeWallets: [tee] } } })
+  cores.push(c)
+  const hood: BotProposal = { name: "hood-small", definition: { ...DEFINITION, chain: "hood" }, run: { agent: "momentum", wallet: HOOD_TEE, mode: "live" } }
+  const saved = await save(c, hood)
+  expect(saved).toMatchObject({ name: "hood-small" })
+  expect(c.core.bots.view().bots[0]).toMatchObject({ name: "hood-small", wallet: HOOD_TEE, paysFrom: "hood-tee" })
+  let message = ""
+  try {
+    c.core.bots.check({ ...hood, name: "solana-small", definition: DEFINITION }, "momentum")
+  } catch (e) {
+    message = (e as Error).message
+  }
+  expect(message).toContain("is a Hood wallet, and this trade is on Solana")
+  expect(message).toEndWith("Nothing was proposed.")
+}, 30_000)

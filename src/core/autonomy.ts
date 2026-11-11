@@ -15,6 +15,7 @@
 import { randomBytes } from "node:crypto"
 import { readFileSync } from "node:fs"
 import { chmod, rename, writeFile } from "node:fs/promises"
+import { addressKey, type ChainSlug, chainName, sameAddress } from "../shared/chains"
 import { invalidParams, refused } from "../shared/rpc"
 import type { Mode } from "./classify"
 import type { Mapped, Operation } from "./execute"
@@ -95,24 +96,27 @@ function entryFrom(raw: unknown): AutonomyEntry | undefined {
 export class Autonomy {
   private readonly entries = new Map<string, AutonomyEntry>()
 
-  /** Opens the setting as the last core left it. An entry that doesn't read is dropped, so that wallet asks. */
+  /**
+   * Opens the setting as the last core left it. An entry that doesn't read is dropped, so that wallet asks. Entries are
+   * found by address key: an EVM wallet's address is the same one in any case.
+   */
   constructor(private readonly path: string) {
     try {
       const saved = JSON.parse(readFileSync(path, "utf8")) as { wallets?: unknown }
       for (const raw of Array.isArray(saved.wallets) ? saved.wallets : []) {
         const entry = entryFrom(raw)
-        if (entry) this.entries.set(entry.wallet, entry)
+        if (entry) this.entries.set(addressKey(entry.wallet), entry)
       }
     } catch {}
   }
 
   /** The wallet's setting: "ask" unless the person set it otherwise. */
   get(wallet: string): WalletSetting {
-    return this.entries.get(wallet)?.value ?? ASK
+    return this.entries.get(addressKey(wallet))?.value ?? ASK
   }
 
   entry(wallet: string): AutonomyEntry | undefined {
-    return this.entries.get(wallet)
+    return this.entries.get(addressKey(wallet))
   }
 
   all(): AutonomyEntry[] {
@@ -122,7 +126,7 @@ export class Autonomy {
   /** Sets one wallet and saves the file; the caller has checked who may. Returns what it was. */
   async set(wallet: string, value: WalletSetting, by: string, now: number, name?: string): Promise<WalletSetting> {
     const from = this.get(wallet)
-    this.entries.set(wallet, { wallet, ...(name ? { name } : {}), value, at: new Date(now).toISOString(), by })
+    this.entries.set(addressKey(wallet), { wallet, ...(name ? { name } : {}), value, at: new Date(now).toISOString(), by })
     const temp = `${this.path}.tmp-${randomBytes(6).toString("base64url")}`
     await writeFile(temp, `${JSON.stringify({ wallets: this.all() })}\n`, { mode: 0o600, flag: "wx" })
     await chmod(temp, 0o600)
@@ -136,19 +140,29 @@ export class Autonomy {
 /** A wallet the agents pay from, as the desk sees it: by address, with its name and who pays from it. */
 export interface PayWallet {
   address: string
-  /** "embedded", or a TEE wallet's label (else its short address). */
+  /** "embedded" (`embeddedName`, "embedded on Hood" for the embedded EVM wallet), or a TEE wallet's label (else its short address). */
   name: string
   kind: "embedded" | "tee"
   agents: string[]
   /** A TEE wallet bound to its agent's key that Candle doesn't list as able to sign yet. */
   cantSign?: true
+  /** The chain it pays on, for a wallet not on Solana. */
+  chain?: ChainSlug
 }
+
+/**
+ * The embedded wallet's name on a chain: "embedded" on Solana, as it's always been called, and "embedded on Hood" for the
+ * account's embedded EVM wallet, so the two are told apart in the approvals menu and by the agent.
+ */
+export const embeddedName = (chain: ChainSlug): string => (chain === "solana" ? "embedded" : `embedded on ${chainName(chain)}`)
 
 /** One wallet on the `autonomy` topic. */
 export interface AutonomyWallet {
   wallet: string
   name: string
   kind?: "embedded" | "tee"
+  /** The chain it pays on, for a wallet not on Solana. */
+  chain?: ChainSlug
   setting: "ask" | "inside"
   perTradeUsd?: number
   perDayUsd?: number
@@ -189,11 +203,15 @@ export interface AutonomyDeskDeps {
   onChange: () => void
 }
 
-const matches = (w: PayWallet, word: string) =>
-  word === w.address || (w.kind === "embedded" ? word.toLowerCase() === "embedded" : word.toLowerCase() === w.name.toLowerCase())
+/** A wallet by its address (any case, for an EVM one), "embedded" for Solana's, "embedded on Hood" for the EVM one, or a TEE wallet's label. */
+const matches = (w: PayWallet, word: string) => sameAddress(word, w.address) || word.toLowerCase() === w.name.toLowerCase()
 
-/** The person's own words for a wallet: "the embedded wallet", or a TEE wallet's name. */
-const walletWords = (name: string) => (name === "embedded" ? "the embedded wallet" : name)
+/** The embedded wallet in words, "the embedded wallet" (on Hood), from its name (`embeddedName`); undefined for any other wallet. */
+export const embeddedWords = (name: string): string | undefined =>
+  name === "embedded" ? "the embedded wallet" : name.startsWith("embedded on ") ? `the embedded wallet on ${name.slice("embedded on ".length)}` : undefined
+
+/** The person's own words for a wallet: "the embedded wallet" (on Hood), or a TEE wallet's name. */
+const walletWords = (name: string) => embeddedWords(name) ?? name
 
 export class AutonomyDesk {
   constructor(private readonly deps: AutonomyDeskDeps) {}
@@ -204,7 +222,7 @@ export class AutonomyDesk {
    */
   async set(from: { clientId: string; popped: boolean }, params: Record<string, unknown>): Promise<{ wallet: string; name: string; was: WalletSetting; now: WalletSetting }> {
     if (from.popped) throw refused("MAIN_VIEW_ONLY", "Autonomy is set in the main window's settings ▾ → approvals, not from a popped pane.")
-    if (typeof params.wallet !== "string" || params.wallet.length === 0 || params.wallet.length > 64) throw invalidParams("wallet names a wallet by address, \"embedded\" or a TEE wallet's label.")
+    if (typeof params.wallet !== "string" || params.wallet.length === 0 || params.wallet.length > 64) throw invalidParams("wallet names a wallet by address, \"embedded\", \"embedded on Hood\" or a TEE wallet's label.")
     const parsed = parseSetting(params)
     if (!parsed.ok) throw invalidParams(parsed.message)
     const { list } = this.deps.wallets()
@@ -288,9 +306,9 @@ export class AutonomyDesk {
 
   view(): AutonomyTopic {
     const { list, read } = this.deps.wallets()
-    const out: AutonomyWallet[] = list.map((w) => ({ ...this.walletView(w.address, w.name, w.agents, w.kind), ...(w.cantSign ? { cantSign: true as const } : {}) }))
+    const out: AutonomyWallet[] = list.map((w) => ({ ...this.walletView(w.address, w.name, w.agents, w.kind), ...(w.chain ? { chain: w.chain } : {}), ...(w.cantSign ? { cantSign: true as const } : {}) }))
     for (const e of this.deps.autonomy.all()) {
-      if (!list.some((w) => w.address === e.wallet)) out.push({ ...this.walletView(e.wallet, e.name ?? e.wallet, []), ...(read ? { gone: true as const } : {}) })
+      if (!list.some((w) => sameAddress(w.address, e.wallet))) out.push({ ...this.walletView(e.wallet, e.name ?? e.wallet, []), ...(read ? { gone: true as const } : {}) })
     }
     return { read, wallets: out }
   }

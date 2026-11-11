@@ -79,6 +79,16 @@ test("a code bot's chips: its log only where the Candle Harness keeps one, start
   expect(botChips(waiting, book, 70)).toContain("retry")
 })
 
+test("a code bot whose process ended on its own, or was stopped, is on but not running: a dim dot, not counted on", () => {
+  for (const state of ["ended", "down"] as const) {
+    const ended = { ...momentum, process: { ...momentum.process!, state, words: "ended on its own at 02:58 (exit 0)" } }
+    const row = botListLines(ended, BOTS_CODE.books!.momentum, 70)
+    expect(row[0]!.segs[0]).toEqual({ text: "○ ", fg: C.dim })
+    const only = { ...BOTS_CODE, bots: [], code: [ended, { ...relay, mode: "paper" as const }] }
+    expect(botsCountWords(only)).toBe("1 on · 1 live")
+  }
+})
+
 test("a code bot that crashed and isn't started again: a red dot in the list, and counted as crashed, not on", () => {
   const crashed = { ...momentum, process: { ...momentum.process!, state: "gave_up" as const, words: "crashed 5 times in 10 min, so it isn't started again" } }
   const row = botListLines(crashed, BOTS_CODE.books!.momentum, 70)

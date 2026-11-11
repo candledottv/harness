@@ -18,7 +18,7 @@ beforeAll(async () => {
 })
 afterAll(() => rmSync(dir, { recursive: true, force: true }))
 
-function cli(opts: { rpcUrl?: string; parentEnv?: Record<string, string | undefined> } = {}) {
+function cli(opts: { rpcUrl?: string; evmRpcUrl?: string; parentEnv?: Record<string, string | undefined> } = {}) {
   const configDir = mkdtempSync(join(dir, "cfg-"))
   const parentEnv = {
     PATH: process.env.PATH,
@@ -32,6 +32,7 @@ function cli(opts: { rpcUrl?: string; parentEnv?: Record<string, string | undefi
   const runner = new CandleCli({
     cliPath: bin,
     ...(opts.rpcUrl ? { rpcUrl: opts.rpcUrl } : {}),
+    ...(opts.evmRpcUrl ? { evmRpcUrl: opts.evmRpcUrl } : {}),
     keyFor: (agent) => (agent === "momentum" ? KEY : undefined),
     parentEnv,
   })
@@ -91,6 +92,18 @@ describe("candleCli.run", () => {
     await expect(runner.run({ args: ["portfolio", "--rpc-url", "https://evil.example"] })).rejects.toThrow(/rpc-url/)
     await expect(runner.run({ args: ["portfolio", "--rpc-url=https://evil.example"] })).rejects.toThrow(/rpc-url/)
     expect(runs()).toHaveLength(2)
+  })
+
+  test("the EVM RPC from config reaches every run in the CLI's own variable, never as --rpc-url; the person's own doesn't pass", async () => {
+    const evm = `https://hood-rpc.example.com/v2/${"e".repeat(24)}`
+    const { runner, runs } = cli({ evmRpcUrl: evm, rpcUrl: "https://rpc.example.com/solana", parentEnv: { CANDLE_EVM_RPC_URL: "https://the-persons-own.example" } })
+    await runner.run({ agent: "momentum", args: ["swap", "ETH", "0x" + "4d".repeat(20), "--amount", "0.01"], json: true, withRpcUrl: true })
+    expect(runs()[0].env.CANDLE_EVM_RPC_URL).toBe(evm)
+    expect(runs()[0].env.CANDLE_SOLANA_RPC_URL).toBe("https://rpc.example.com/solana")
+    expect(JSON.stringify(runs()[0].argv)).not.toContain("hood-rpc")
+    const none = cli({ parentEnv: { CANDLE_EVM_RPC_URL: "https://the-persons-own.example" } })
+    await none.runner.run({ args: ["portfolio"] })
+    expect(none.runs()[0].env.CANDLE_EVM_RPC_URL).toBeUndefined()
   })
 
   test("saved arguments that went through the journal's redactor still run against the configured address, key and all", async () => {

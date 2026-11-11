@@ -9,6 +9,7 @@ import { isTestName, shownBotName } from "./bot-name"
 import { existsSync } from "node:fs"
 import { short } from "../core/wallet-names"
 import { Redactor } from "./redact"
+import { EVM_ADDRESS_SOURCE, SOLANA_ADDRESS_SOURCE } from "./chains"
 
 export type NotifyMode = "auto" | "native" | "osc" | "bell" | "off"
 export type Notifier = "native" | "osc" | "bell"
@@ -110,7 +111,7 @@ export function cleanNotificationText(s: string): string {
   return Array.from(cleaned).slice(0, MAX_CODE_POINTS).join("")
 }
 
-const ADDRESS = /(?<![A-Za-z0-9])(?:[1-9A-HJ-NP-Za-km-z]{32,44}|0x[0-9a-fA-F]{40})(?![A-Za-z0-9])/g
+const ADDRESS = new RegExp(`(?<![A-Za-z0-9])(?:${SOLANA_ADDRESS_SOURCE}|${EVM_ADDRESS_SOURCE})(?![A-Za-z0-9])`, "g")
 const redactor = new Redactor()
 
 /** A notification's words: keys redacted, every address short ("7xKX…3fQa"), then cleaned. */

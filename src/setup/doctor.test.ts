@@ -15,6 +15,9 @@ import { aliasesChecks, budgetWords, type Check, layoutsChecks, nameChecks, onbo
 
 /** Made-up keys of the real shape (a kind, then 43 characters), built so no key-shaped text sits in the source. */
 const LIVE = ["cndl", "live", ""].join("_")
+/** An agent's wallet lines in config.toml: the one line, or a table per chain. */
+const walletLines = (agent: string, w: string | Record<string, string> | undefined): string =>
+  w === undefined ? "" : typeof w === "string" ? `[agents.${agent}]\nwallet = "${w}"\n` : `[agents.${agent}.wallet]\n${Object.entries(w).map(([c, v]) => `${c} = "${v}"`).join("\n")}\n`
 const fakeKey = (kind: "live" | "test", prefix: string, fill: string) => `${["cndl", kind, ""].join("_")}${prefix}${fill.repeat(35)}`
 const MOMENTUM_KEY = fakeKey("live", "Momentum", "m")
 const SWING_KEY = fakeKey("live", "Swingkey", "s")
@@ -66,7 +69,8 @@ interface Setup {
   tee?: { wallets: { id: string; address: string; label?: string; boundKeyPrefix: string; active?: boolean }[]; signers?: Record<string, string> }
   lpEnabled?: boolean
   /** Each agent's default wallet, by agent. */
-  wallets?: Record<string, string>
+  /** Each agent's one wallet line, or its line per chain. */
+  wallets?: Record<string, string | Record<string, string>>
   rpcUrl?: string
   /** The fake CLI's vault: missing, or opened by a passphrase. */
   vault?: { missing?: boolean; passphrase?: string }
@@ -102,7 +106,7 @@ async function setup(s: Setup = {}): Promise<{ env: Record<string, string>; p: P
     `[candle]\ncliPath = "${candle}"\n${s.rpcUrl ? `rpcUrl = "${s.rpcUrl}"\n` : ""}${s.profile ? `profile = "${s.profile}"\n` : ""}[engine.claude]\npath = "${claude}"\n` +
       (["codex", "grok", "opencode", "pi"] as const).map((e) => `[engine.${e}]\npath = "${s.engines?.[e] ?? join(dir, `no-${e}`)}"\n`).join("") +
       `[hacc]\nenabled = ${s.hacc ? "true" : "false"}\n` +
-      Object.keys(agents).map((a) => `${s.wallets?.[a] ? `[agents.${a}]\nwallet = "${s.wallets[a]}"\n` : ""}[agents.${a}.limits]\nperTradeUsd = 10\nperDayUsd = 50\n`).join(""),
+      Object.keys(agents).map((a) => `${walletLines(a, s.wallets?.[a])}[agents.${a}.limits]\nperTradeUsd = 10\nperDayUsd = 50\n`).join(""),
   )
   mkdirSync(p.keysDir, { recursive: true, mode: 0o700 })
   for (const [agent, key] of Object.entries(agents)) writeFileSync(p.keyFile(agent), `${key}\n`, { mode: 0o600 })
@@ -571,10 +575,10 @@ describe("TEE wallets", () => {
     const HOOD = { id: "teeid9", address: "0x00000000000000000000000000000000000Ho0d1", label: "hood-bot", boundKeyPrefix: "Momentum", chain: "hood" as const }
     const here = (signers?: Record<string, string>) => setup({ candle: { momentum: { teeWallets: [HOOD], tier: "max" }, swing: { teeWallets: [HOOD], tier: "max" } }, tee: { wallets: [HOOD], ...(signers ? { signers } : {}) } })
     const checks = await runDoctor({ env: (await here()).env })
-    expect(find(checks, "wallet", /^momentum: Hood TEE wallet hood-bot \(0x00…o0d1\) is active, and its signer is on this machine$/)).toMatchObject({ state: "ok" })
+    expect(find(checks, "wallet", /^momentum: Hood TEE wallet hood-bot \(0x0000…o0d1\) is active, and its signer is on this machine$/)).toMatchObject({ state: "ok" })
     expect(checks.some((c) => /later release/.test(c.text))).toBe(false)
     const off = await runDoctor({ env: (await here({})).env })
-    expect(find(off, "wallet", /^momentum: Hood TEE wallet hood-bot \(0x00…o0d1\)'s signer isn't on this machine/)).toMatchObject({ state: "warn" })
+    expect(find(off, "wallet", /^momentum: Hood TEE wallet hood-bot \(0x0000…o0d1\)'s signer isn't on this machine/)).toMatchObject({ state: "warn" })
   })
 
   test("a signer that isn't on this machine, and a wallet stopped on Candle's side", async () => {
@@ -597,6 +601,39 @@ describe("TEE wallets", () => {
     const check = find(bad, "wallet", /^swing: swing's default wallet \(agents\.swing\.wallet = "bot-wallet"\) can't pay: it's bound to momentum's key/)!
     expect(check.state).toBe("warn")
     expect(check.fix).toContain("config.toml")
+  })
+
+  test("a default per chain: each chain's line said for its chain; a Hood TEE wallet's RPC named, its signer read, and no ETH warned", async () => {
+    const HOOD_TEE = { id: "teeid7", address: "0x" + "7a".repeat(20), label: "hood-desk", boundKeyPrefix: "Momentum", chain: "hood" as const }
+    const { env } = await setup({
+      candle: { momentum: { teeWallets: [TEE, HOOD_TEE], tier: "max" }, swing: { teeWallets: [TEE, HOOD_TEE], tier: "max" } },
+      tee: { wallets: [TEE, HOOD_TEE] },
+      wallets: { momentum: { solana: "bot-wallet", hood: "hood-desk" } },
+    })
+    const checks = await runDoctor({ env })
+    expect(find(checks, "wallet", /^momentum: pays from bot-wallet when a trade on Solana names no wallet \(agents\.momentum\.wallet\.solana\)$/)).toMatchObject({ state: "ok" })
+    // The Hood TEE wallet pays for a Hood trade named by nothing.
+    expect(find(checks, "wallet", /^momentum: pays from hood-desk when a trade on Hood names no wallet \(agents\.momentum\.wallet\.hood\)$/)).toMatchObject({ state: "ok" })
+    expect(find(checks, "wallet", /^Hood TEE trades read Robinhood Chain over/)!.text).toBe("Hood TEE trades read Robinhood Chain over the candle CLI's built-in RPC, rpc.mainnet.chain.robinhood.com")
+    // The key's list names it `evm`, the portfolio `hood`: one Hood wallet either way, its signer read as Solana's are.
+    expect(find(checks, "wallet", /^momentum: Hood TEE wallet hood-desk \(0x7a7a…7a7a\) is active, and its signer is on this machine$/)).toMatchObject({ state: "ok" })
+    expect(checks.some((c) => c.text.includes("later release"))).toBe(false)
+    // With no ETH, Candle refuses every trade from it for gas.
+    // The bridge typed as the wallet's own chip types it: from the key's Solana TEE wallet, as the agent, so it lands here.
+    const noEth = find(checks, "wallet", /^momentum: Hood TEE wallet hood-desk \(0x7a7a…7a7a\) holds no ETH/)!
+    expect(noEth.state).toBe("warn")
+    expect(noEth.fix).toBe(`Send ETH to ${HOOD_TEE.address}, or bridge some from the key's Solana TEE wallet (type bridge 0.05 sol to eth from bot-wallet as momentum).`)
+    // A key with no Solana TEE wallet has nothing to bridge from that lands here: only the address.
+    const alone = await setup({ candle: { momentum: { teeWallets: [HOOD_TEE], tier: "max" }, swing: { teeWallets: [HOOD_TEE], tier: "max" } }, tee: { wallets: [HOOD_TEE] } })
+    const aloneFix = find(await runDoctor({ env: alone.env }), "wallet", /^momentum: Hood TEE wallet hood-desk \(0x7a7a…7a7a\) holds no ETH/)!.fix
+    expect(aloneFix).toBe(`Send ETH to ${HOOD_TEE.address}.`)
+    const funded = await setup({
+      candle: { momentum: { teeWallets: [TEE, { ...HOOD_TEE, wei: "20000000000000000" }], tier: "max" }, swing: { teeWallets: [TEE], tier: "max" } },
+      tee: { wallets: [TEE, HOOD_TEE] },
+    })
+    const after = await runDoctor({ env: funded.env })
+    expect(after.some((c) => c.text.includes("holds no ETH"))).toBe(false)
+    expect(find(after, "wallet", /^momentum: Hood TEE wallet hood-desk \(0x7a7a…7a7a\) is active/)).toMatchObject({ state: "ok" })
   })
 
   test("a default named by a wallet's old name: it still pays, by the address it was last found at, and the line to change is named", async () => {
@@ -1123,7 +1160,7 @@ describe("hands off and the last session", () => {
       { area: "wallet", state: "ok", text: "every wallet asks every time, so every live trade is a card, as by default. Trading inside limits is turned on wallet by wallet in the view's settings ▾ → approvals" },
       { area: "limits", state: "ok", text: LOSS },
     ])
-    const reads = new Map([["a", { status: { embeddedWallet: "allowed" as const, wallets: { solana: EMB }, keyLimit: { usd: 10, reset: "daily" } }, tee: [{ address: TEE, label: "tee-one", chain: "solana" }] }]])
+    const reads = new Map([["a", { status: { embeddedWallet: "allowed" as const, wallets: { solana: EMB }, keyLimit: { usd: 10, reset: "daily" } }, tee: [{ address: TEE, label: "tee-one", chain: "solana" as const }] }]])
     expect(approvalsChecks({ p, config, rows: [], now, reads })[0]!.text).toStartWith("every wallet the agents pay from asks every time (the embedded wallet (Wall…1111), TEE wallet tee-one (TeeW…2222)), so every live trade is a card")
   })
 
@@ -1141,7 +1178,7 @@ describe("hands off and the last session", () => {
     const { approvalsChecks, CONSOLE_KEYS } = await import("./doctor")
     const { p, config } = await home({ wallets: [inside(EMB, "embedded", 1.5, 5), inside(OLD, "old-tee", 1, 2)] })
     const reads = new Map([
-      ["a", { status: { embeddedWallet: "allowed" as const, wallets: { solana: EMB }, keyLimit: { usd: 10, reset: "daily" } }, tee: [{ address: TEE, label: "tee-one", chain: "solana" }] }],
+      ["a", { status: { embeddedWallet: "allowed" as const, wallets: { solana: EMB }, keyLimit: { usd: 10, reset: "daily" } }, tee: [{ address: TEE, label: "tee-one", chain: "solana" as const }] }],
       ["b", { status: { embeddedWallet: "allowed" as const, wallets: { solana: EMB } } }],
     ])
     const checks = approvalsChecks({ p, config, rows: spendRows(), now, reads })
@@ -1156,6 +1193,19 @@ describe("hands off and the last session", () => {
     ])
     expect(checks[1]!.fix).toBe(`Lower the wallet's figure in the view's settings ▾ → approvals, or raise a's limits in ${p.configFile}.`)
     expect(checks[3]!.fix).toBe(`The owner sets a cap on the key in Candle's Agent Console, on its Agents tab (${CONSOLE_KEYS}), or makes a new key with one: \`candle keys create --access write --embedded-wallet allow --tx-limit <usd>\`.`)
+  })
+
+  test("a Hood TEE wallet and the embedded wallet on Hood set to trade inside limits are paid from, by address key; the empty one on Hood is never listed unasked", async () => {
+    const { approvalsChecks } = await import("./doctor")
+    const HOOD_TEE = "0x00000000000000000000000000000000000Ho0d1"
+    const HOOD_EMB = "0x00000000000000000000000000000000000EEEE2"
+    const { p, config } = await home({ wallets: [inside(HOOD_TEE.toLowerCase(), "hood-bot", 1, 2), inside(HOOD_EMB.toLowerCase(), "embedded on Hood", 1, 2)] })
+    const reads = new Map([["a", { status: { embeddedWallet: "allowed" as const, wallets: { solana: EMB, evm: HOOD_EMB }, keyLimit: { usd: 10, reset: "daily" } }, tee: [{ address: HOOD_TEE, label: "hood-bot", chain: "hood" as const }] }]])
+    const texts = approvalsChecks({ p, config, rows: [], now, reads }).map((c) => c.text)
+    expect(texts.filter((t) => t.includes("trades inside limits, paid from by a"))).toHaveLength(2)
+    expect(texts.some((t) => t.includes("no agent pays from it now"))).toBe(false)
+    const { p: p2 } = await home()
+    expect(approvalsChecks({ p: p2, config, rows: [], now, reads })[0]!.text).toStartWith("every wallet the agents pay from asks every time (the embedded wallet (Wall…1111), TEE wallet hood-bot (0x0000…o0d1)), so")
   })
 
   test("a held key and when it lifts: Candle's cap until its reset, a stopped key for 5 minutes, sells included; a lifted hold says nothing", async () => {
@@ -1233,7 +1283,7 @@ describe("wallet names", () => {
     const EMB = "Embd3333333333333333333333333333333333333333"
     const TEE = "TeeA1111111111111111111111111111111111111111"
     writeFileSync(p.walletsFile, `[names]\n"${TEE}" = "mine"\n"oops" = "x"\n`)
-    const read = { status: { wallets: { solana: EMB } }, tee: [{ id: "a", address: TEE, label: "embedded", chain: "solana", active: true }], portfolio: undefined }
+    const read = { status: { wallets: { solana: EMB } }, tee: [{ id: "a", address: TEE, label: "embedded", chain: "solana" as const, active: true }], portfolio: undefined }
     const checks = await nameChecks(p, { agents: { "agent-a": {} } } as never, new Map([["agent-a", read as never]]))
     expect(checks.map((c) => `${c.state}: ${c.text}`)).toEqual([
       "warn: wallets.toml line 3: \"oops\" isn't an address: each name is \"<address>\" = \"<name>\": the Candle Harness won't write wallets.toml until it's fixed",
@@ -1251,7 +1301,7 @@ describe("wallet names", () => {
     const EMB = "Embd3333333333333333333333333333333333333333"
     const TEE = "TeeA1111111111111111111111111111111111111111"
     writeFileSync(p.walletsFile, `[groups.bots]\nprefix = "bot-"\n\n[groups.hot]\nwallets = ["bot-gone"]\n\n[groups.pair]\nwallets = ["bot-01", "embedded"]\n`)
-    const read = { status: { wallets: { solana: EMB } }, tee: [{ id: "a", address: TEE, label: "bot-01", chain: "solana", active: true }, { id: "b", address: "TeeB1111111111111111111111111111111111111111", label: "hot", chain: "solana", active: true }], portfolio: undefined }
+    const read = { status: { wallets: { solana: EMB } }, tee: [{ id: "a", address: TEE, label: "bot-01", chain: "solana" as const, active: true }, { id: "b", address: "TeeB1111111111111111111111111111111111111111", label: "hot", chain: "solana" as const, active: true }], portfolio: undefined }
     const checks = await nameChecks(p, { agents: { "agent-a": {} } } as never, new Map([["agent-a", read as never]]))
     expect(checks.map((c) => `${c.state}: ${c.text}`)).toEqual([
       "warn: the group hot is named like a wallet (a wallet is called hot), so it's hard to tell apart from it",

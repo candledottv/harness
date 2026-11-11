@@ -7,6 +7,7 @@ import type { OnboardingView } from "../setup/onboarding"
 import type { KeyUse, Pace, ReadKind } from "../core/key-budget"
 import type { WalletsShown } from "../core/wallets-shown"
 import type { WalletsTopic } from "../core/agent-wallets"
+import { chainName, familyOfAddress, requestChain } from "../shared/chains"
 import type { TriggersTopic } from "../core/triggers"
 import type { BotsTopic } from "../core/bots"
 import type { AutonomyTopic } from "../core/autonomy"
@@ -27,6 +28,7 @@ import type { ActivityEntry } from "../core/trade-log"
 import type { EngineTopic } from "./panes/engines"
 import type { MemoryTopic } from "./panes/memory"
 import { type HaccTopic, heldSignals, type SignalsHeld } from "./panes/signals"
+import type { ChainSlug } from "../shared/chains"
 
 export interface AgentStatusView {
   name: string
@@ -187,6 +189,8 @@ export interface CardDisplayView {
   modeDiffers?: string
   /** Once expired it's asked for again, never re-quoted. */
   askAgain?: boolean
+  /** A bridge's route between the account's two wallets, how it goes, and what it says on its way. */
+  bridge?: { route: string; via: string; arriving: string }
 }
 
 export interface ViewCard {
@@ -196,6 +200,8 @@ export interface ViewCard {
   kind: string
   tool: string
   agent: string
+  /** The chain it acts on, where it acts on one. */
+  chain?: ChainSlug
   state: string
   expiresAt: string
   side?: "buy" | "sell" | "swap"
@@ -211,8 +217,8 @@ export interface ViewCard {
   route?: string
   /** The card that replaced it: a wallet re-quote, or the kill switch's fresh price for a sell. */
   replacedBy?: string
-  /** Who proposed it, by role: `build` for a code bot the Build pane's harness proposed. */
-  origin?: { role?: string }
+  /** Who proposed it, by role: `build` for a code bot the Build pane's harness proposed; `bot` names a bot's own trade. */
+  origin?: { role?: string; bot?: { name: string; kind?: "rules" | "code"; act?: "entry" | "exit" } }
 }
 
 export interface ViewOperation {
@@ -237,6 +243,8 @@ export interface ViewOperation {
   paper?: boolean
   /** A swap whose first leg landed, with its hash, and whose second failed. */
   partial?: { leg1: string }
+  /** Approved, and waiting for its Hood TEE wallet's last trade (one runs at a time there): nothing sent yet. */
+  waitingFor?: string
 }
 
 /** A pane step's outcome in words, once it has one. */
@@ -246,10 +254,19 @@ export function paneWords(op: ViewOperation | undefined): string | undefined {
 }
 
 /** A pane step's next steps: chips that put a command on the input line. */
-export function paneNext(op: ViewOperation | undefined): { label: string; line: string }[] {
+export function paneNext(op: ViewOperation | undefined): PaneNextStep[] {
   const next = (op?.result as { pane?: { next?: unknown } } | undefined)?.pane?.next
-  return Array.isArray(next) ? next.filter((n): n is { label: string; line: string } => typeof n?.label === "string" && typeof n?.line === "string") : []
+  if (!Array.isArray(next)) return []
+  return next.flatMap((n: { label?: unknown; line?: unknown; cursor?: unknown; copy?: unknown }): PaneNextStep[] => {
+    if (typeof n?.label !== "string") return []
+    if (typeof n.copy === "string") return [{ label: n.label, copy: n.copy }]
+    if (typeof n.line !== "string") return []
+    return [{ label: n.label, line: n.line, ...(typeof n.cursor === "number" && Number.isInteger(n.cursor) && n.cursor >= 0 && n.cursor <= n.line.length ? { cursor: n.cursor } : {}) }]
+  })
 }
+
+/** A finished pane's next step, as its chip offers it: a line to put on the input line, or a value to copy. */
+export type PaneNextStep = { label: string; line: string; cursor?: number } | { label: string; copy: string }
 
 /** Operations Candle hasn't answered for, oldest first: the user can re-send or abandon each. */
 export function unanswered(view: Pick<CoreView, "operations">): ViewOperation[] {
@@ -309,8 +326,10 @@ export interface CoreView {
   away?: AwayView
   /** What each agent can pay from: `from <wallet>` and the wallet chips in a card's details. */
   wallets?: WalletsTopic
-  /** Token names seen this session (upper-cased) to their mints: the only names a typed trade resolves. */
+  /** Token names seen this session (upper-cased) to their mints: the only names a typed trade resolves. A name seen on two chains isn't here. */
   knownTokens: Map<string, string>
+  /** Each name's newest mint on each address family it was seen on: a name on two chains is never traded by name. */
+  tokenChains?: Map<string, Map<string, string>>
   /** Each agent's engine and model, and each engine's check: the chip and the picker. */
   engine?: EngineTopic
   /** Each agent's memory: the chip's count and the memory overlay. */
@@ -346,9 +365,34 @@ export const EMPTY_VIEW: CoreView = { connected: false, cards: [], seenAt: {}, o
 
 const MAX_ACTIVITY = 200
 
-function learnToken(known: Map<string, string>, symbol: string | undefined, mint: string | undefined): Map<string, string> {
-  if (!symbol || !mint || known.get(symbol.toUpperCase()) === mint) return known
-  return new Map(known).set(symbol.toUpperCase(), mint)
+type Names = Pick<CoreView, "knownTokens" | "tokenChains">
+
+/**
+ * A name read for a mint: the newest mint on its address family stands. A name seen on two chains (a Solana mint and a
+ * Hood one) leaves `knownTokens`, so a typed line never picks one of them by which was seen last.
+ */
+function learnToken(names: Names, symbol: string | undefined, mint: string | undefined): Names {
+  // Only the two maps, never what else `names` holds: the caller spreads the answer over a view.
+  const same: Names = { knownTokens: names.knownTokens, ...(names.tokenChains ? { tokenChains: names.tokenChains } : {}) }
+  if (!symbol || !mint) return same
+  const name = symbol.toUpperCase()
+  const family = familyOfAddress(mint) ?? "other"
+  const had = names.tokenChains?.get(name)
+  if (had?.get(family) === mint && (had.size > 1 || names.knownTokens.get(name) === mint)) return same
+  const chains = new Map(had ?? []).set(family, mint)
+  const knownTokens = new Map(names.knownTokens)
+  if (chains.size > 1) knownTokens.delete(name)
+  else knownTokens.set(name, mint)
+  return { knownTokens, tokenChains: new Map(names.tokenChains ?? []).set(name, chains) }
+}
+
+/** Each name seen on two chains, with its mint and chain on each: what a typed line says instead of trading one. */
+export function namesOnTwoChains(view: Pick<CoreView, "tokenChains">): Map<string, { chain: string; mint: string }[]> {
+  const out = new Map<string, { chain: string; mint: string }[]>()
+  for (const [name, chains] of view.tokenChains ?? []) {
+    if (chains.size > 1) out.set(name, [...chains.values()].map((mint) => ({ chain: chainName(requestChain(mint)), mint })))
+  }
+  return out
 }
 
 /** `together`: one of a snapshot's cards, which all show at once, so none slid in under another. */
@@ -362,7 +406,7 @@ function withCard(view: CoreView, card: ViewCard, now: number, together = false)
     ...(!together && !(card.cardId in view.seenAt) && card.state === "awaiting_approval" && view.cards.some((c) => c.cardId !== card.cardId && c.state === "awaiting_approval")
       ? { behind: { ...view.behind, [card.cardId]: true as const } }
       : {}),
-    knownTokens: learnToken(view.knownTokens, card.display?.mintLabel, card.display?.mint),
+    ...learnToken(view, card.display?.mintLabel, card.display?.mint),
   }
 }
 
@@ -458,18 +502,18 @@ export function applyEvent(view: CoreView, event: CoreEventParams, now: number):
     }
     case "portfolio": {
       const portfolio = data as unknown as PortfolioView
-      let known = view.knownTokens
+      let known: Names = view
       for (const w of portfolio?.wallets ?? []) for (const t of w.tokens ?? []) known = learnToken(known, t.symbol, t.mint)
       for (const book of Object.values(portfolio?.paper ?? {})) for (const p of book) known = learnToken(known, p.symbol, p.mint)
-      return { ...view, portfolio, knownTokens: known }
+      return { ...view, portfolio, knownTokens: known.knownTokens, ...(known.tokenChains ? { tokenChains: known.tokenChains } : {}) }
     }
     case "market": {
       const market = data as unknown as TokenView
-      let known = view.knownTokens
+      let known: Names = view
       if (market?.followed) known = learnToken(known, market.followed.symbol, market.followed.mint)
       for (const row of market?.trending?.rows ?? []) known = learnToken(known, row.symbol, row.mint)
       for (const p of market?.pinned ?? []) known = learnToken(known, p.symbol, p.mint)
-      return { ...view, market, knownTokens: known }
+      return { ...view, market, knownTokens: known.knownTokens, ...(known.tokenChains ? { tokenChains: known.tokenChains } : {}) }
     }
     case "views":
       return { ...view, views: data as unknown as ViewsTopic }

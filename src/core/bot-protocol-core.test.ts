@@ -5,7 +5,7 @@
 import { afterAll, afterEach, expect, test } from "bun:test"
 import { existsSync, readFileSync } from "node:fs"
 import { join } from "node:path"
-import { AGENT_KEY, cleanupHomes, startTestCore, type TestCore, testConfig, testHome, until } from "../../test/core-fixture"
+import { AGENT_KEY, cleanupHomes, prefixedKey, startTestCore, type TestCore, testConfig, testHome, until } from "../../test/core-fixture"
 import { type FakeHacc, startFakeHacc } from "../../test/fake-hacc"
 import { connectTestClient, type TestClient } from "../../test/core-test-client"
 import { PROTOCOL_VERSION } from "../shared/rpc"
@@ -593,4 +593,49 @@ test("the card desk itself holds a second sell of a code bot's position while on
   expect(cards.get(two.card.cardId)!.display.cardBecause).toContain("another sell of this position is still in flight")
   await until(() => c.core.operations.get(one.card.opId)?.state === "succeeded")
   expect(sells(c.p).map((s) => s.args.percent)).toEqual([60])
+}, 30_000)
+
+test("a code bot on a Hood TEE wallet: a buy names its chain, checked against the token's address; a Solana token is refused before anything is recorded, in the payer's words; a Hood buy is recorded on Hood", async () => {
+  const HOOD_TEE = "0x00000000000000000000000000000000000E7e01"
+  const TOKEN = "0x00000000000000000000000000000000000b0B31"
+  const tee = { id: "teeH", address: HOOD_TEE, label: "hood-tee", boundKeyPrefix: "Momentum", chain: "hood" as const, wei: "2500000000000000" }
+  const script = { teeWallets: [tee], ethUsd: 2_000, markets: [{ mint: TOKEN, symbol: "HTOK", priceUsd: 0.002, chain: "hood" }] }
+  const { c, view, build } = await core({}, { keys: { momentum: prefixedKey("Momentum"), swing: prefixedKey("Swingkey") }, candle: { momentum: script, swing: script } })
+  await until(() => lastOf<AutonomyTopic>(view, "autonomy")?.wallets.some((w) => w.wallet === HOOD_TEE) === true)
+  const { client } = await bot(c, view, build, { ...LIVE, name: "hood-bot", wallet: HOOD_TEE })
+  expect(c.core.codeBots.entry("hood-bot")).toMatchObject({ wallet: HOOD_TEE })
+  // A chain the address can't be on, and a chain that isn't one: refused at the request, nothing recorded.
+  const wrongFamily = await client.request("bot.buy", { request: rid(), mint: TOKEN, amountUsd: 1, chain: "solana" })
+  expect(wrongFamily.error?.data?.code).toBe("INVALID_PARAMS")
+  expect(wrongFamily.error?.message).toContain("isn't an address on Solana")
+  expect((await client.request("bot.buy", { request: rid(), mint: TOKEN, amountUsd: 1, chain: "base" })).error?.data?.code).toBe("INVALID_PARAMS")
+  // A Solana token, from a wallet on Hood: the payer's words, before anything is recorded; the id stays free.
+  const id = rid()
+  const solana = await client.request("bot.buy", { request: id, mint: MOON, amountUsd: 1 })
+  expect(solana.error?.data?.code).toBe("WALLET_CHAIN")
+  expect(solana.error?.message).toContain("is a Hood wallet, and this trade is on Solana")
+  expect(c.core.journal.rows().filter((r) => r.type === "bot.request")).toEqual([])
+  // A Hood token: recorded on Hood.
+  await client.request("bot.buy", { request: rid(), mint: TOKEN, amountUsd: 1, chain: "hood" })
+  await until(() => c.core.journal.rows().some((r) => r.type === "bot.request"))
+  expect(c.core.journal.rows().find((r) => r.type === "bot.request")).toMatchObject({ name: "hood-bot", side: "buy", mint: TOKEN, chain: "hood", wallet: HOOD_TEE })
+}, 30_000)
+
+test("a live code bot's own sell of a Hood token from the embedded wallet reads that wallet on Hood, and sells what its book holds", async () => {
+  const TOKEN = "0x00000000000000000000000000000000000b0B32"
+  const held = "1000000000000000000000"
+  const script = { evmWei: "5000000000000000000", ethUsd: 2_000, evmTokens: [{ mint: TOKEN, amountRaw: held, decimals: 18 }], markets: [{ mint: TOKEN, symbol: "HTOK", priceUsd: 0.002, chain: "hood" }] }
+  const { c, view, build } = await core({}, { candle: { momentum: script, swing: script } })
+  const { client } = await bot(c, view, build, { ...LIVE, name: "hood-embedded" })
+  // Its buy, as the journal holds one of the bot's that filled: 1,000 HTOK from the embedded wallet on Hood.
+  const base = { mode: "live" as const, agent: "momentum", cardId: "card_hc1", opId: "op_hc1" }
+  await c.core.journal.append({ type: "card.created", ...base, bot: "hood-embedded", botKind: "code", botAct: "entry", side: "buy", mint: TOKEN, route: "embedded", chain: "hood" })
+  await c.core.journal.append({ type: "card.approved", ...base, how: "bot-entry", usd: 2 })
+  await c.core.journal.append({ type: "operation.succeeded", ...base, fill: { side: "buy", mint: TOKEN, chain: "hood", wallet: "embedded", asset: "ETH", tokensRaw: held, assetRaw: "1000000000000000", measured: "chain", tokenDecimals: 18 } })
+  const positions = result<{ positions: { id: string; chain?: string }[] }>(await client.request("bot.positions", {}))
+  expect(positions.positions).toEqual([expect.objectContaining({ id: "op_hc1", chain: "hood" })])
+  const sold = result<{ state: string; words: string; code?: string }>(await client.request("bot.sell", { request: rid(), position: "op_hc1" }))
+  expect(sold.code).toBeUndefined()
+  expect(c.core.journal.rows().find((r) => r.type === "bot.request" && r.side === "sell")).toMatchObject({ mint: TOKEN, position: "op_hc1", words: expect.stringContaining("sells 100% of the wallet's") })
+  await until(() => trades(c.p).some((t) => t.args.mint === TOKEN && t.args.side === "sell"))
 }, 30_000)

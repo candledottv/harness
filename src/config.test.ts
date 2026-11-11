@@ -302,6 +302,24 @@ perDayUsd = 50
   }
 })
 
+test("an agent's default per chain: a table of chains, each a wallet; a key that isn't a chain is refused", () => {
+  const { config, warnings } = loadConfig(withConfig(`[agents.momentum.wallet]\nsolana = " bot-wallet "\nhood = "embedded"\n[agents.momentum.limits]\nperTradeUsd = 10\nperDayUsd = 50\n`))
+  expect(warnings).toEqual([])
+  expect(config.agents.momentum!.walletOn).toEqual({ solana: "bot-wallet", hood: "embedded" })
+  expect(config.agents.momentum!.wallet).toBeUndefined()
+  // One chain alone is fine: the other pays from its embedded wallet.
+  expect(loadConfig(withConfig(`[agents.momentum.wallet]\nhood = "embedded"\n[agents.momentum.limits]\nperTradeUsd = 10\nperDayUsd = 50\n`)).config.agents.momentum!.walletOn).toEqual({ hood: "embedded" })
+  const wrong = configError(withConfig(`[agents.momentum.wallet]\nbase = "x"\nhood = 3\n[agents.momentum.limits]\nperTradeUsd = 10\nperDayUsd = 50\n`)).problems.join("\n")
+  expect(wrong).toContain(`agents.momentum.wallet.base isn't a chain: use solana or hood`)
+  expect(wrong).toContain(`agents.momentum.wallet.hood is 3; use "embedded", or a wallet's name or address on Hood`)
+})
+
+test("an evmRpcUrl must be one the CLI takes, as rpcUrl", () => {
+  expect(configError(withConfig(`[candle]\nevmRpcUrl = "http://rpc.example.com"\n${ONE_AGENT}`)).problems.join("\n")).toContain("candle.evmRpcUrl")
+  expect(loadConfig(withConfig(`[candle]\nevmRpcUrl = "https://hood.example.com/k"\n${ONE_AGENT}`)).config.candle.evmRpcUrl).toBe("https://hood.example.com/k")
+  expect(loadConfig(withConfig(ONE_AGENT)).config.candle.evmRpcUrl).toBeUndefined()
+})
+
 test("an agent's preset: unset is Quant's start, quant, trader or bare; anything else is refused", () => {
   const { config, warnings } = loadConfig(withConfig(`[agents.momentum]\npreset = "trader"\n[agents.momentum.limits]\nperTradeUsd = 10\nperDayUsd = 50\n[agents.swing.limits]\nperTradeUsd = 10\nperDayUsd = 50\n`))
   expect(warnings).toEqual([])

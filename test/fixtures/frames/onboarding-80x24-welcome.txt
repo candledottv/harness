@@ -18,7 +18,7 @@
 │    5  Where to start                                                         │
 │                                                                              │
 │  ▸ Guided setup                                every step, about 5 minutes   │
-│    Straight in     sign in, your agent and its key, then straight to paper   │
+│    Straight in   sign in, your agent and its key, then straight to trading   │
 │                                                                              │
 ╰──────────────────────────────────────────────────────────────────────────────╯
  ↑/↓ moves · ⏎ or a click picks · esc back                      ctrl-c ×2 quits 
@@ -44,7 +44,7 @@
 17: 32fe9f/111419×1 ffffff/111419×2 959dab/111419×5 dde2ea/111419×14 ffffff/111419×57 32fe9f/111419×1
 18: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
 19: 32fe9f/111419×1 ffffff/111419×2 32fe9f/1d2430×2 f6f8fb/1d2430×12 ffffff/1d2430×32 959dab/1d2430×28 ffffff/111419×2 32fe9f/111419×1
-20: 32fe9f/111419×1 ffffff/111419×2 32fe9f/111419×2 6cb6ff/111419×11 ffffff/111419×5 959dab/111419×56 ffffff/111419×2 32fe9f/111419×1
+20: 32fe9f/111419×1 ffffff/111419×2 32fe9f/111419×2 6cb6ff/111419×11 ffffff/111419×3 959dab/111419×58 ffffff/111419×2 32fe9f/111419×1
 21: 32fe9f/111419×1 ffffff/111419×78 32fe9f/111419×1
 22: 32fe9f/111419×80
 23: 959dab/0e1115×42 ffffff/0e1115×22 959dab/0e1115×16

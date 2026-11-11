@@ -6,6 +6,7 @@ import { join } from "node:path"
 import { mkdirSync, readdirSync as readdir, readFileSync, statSync, symlinkSync, utimesSync, writeFileSync } from "node:fs"
 import type { CoreOptions } from "../core/core-main"
 import { PROTOCOL_VERSION } from "../shared/rpc"
+import { evmAddressOf } from "../shared/secp256k1"
 import { cleanupHomes, startTestCore, type TestCore, type TestHomeOptions, testEngine, until } from "../../test/core-fixture"
 import { connectTestClient } from "../../test/core-test-client"
 import { type Script, scripted, scriptedEngine } from "../../test/scripted-engine"
@@ -106,7 +107,7 @@ for (const setup of SETUPS) describe(setup.label, () => {
       expect(engine.runs[0]!.researchDir).toBe(c.p.researchDir("swing"))
       expect(statSync(c.p.researchDir("swing")).mode & 0o777).toBe(0o700)
       expect(engine.runs[0]!.systemPrompt).toContain("You are swing")
-      expect(engine.runs[0]!.systemPrompt).toContain("live mode")
+      expect(engine.runs[0]!.systemPrompt).toContain("The Candle Harness is live")
       // The machine's clock first, then the message.
       expect(engine.runs[0]!.prompt).toMatch(/^It's \d\d:\d\d on .+ on this machine \(.+\)\. .+\n\nhi$/)
     })
@@ -161,7 +162,8 @@ for (const setup of SETUPS) describe(setup.label, () => {
       expect(config!.mcpServers.candle.args.slice(0, 2)).toEqual(["mcp", "--token-file"])
       expect(JSON.stringify(config)).not.toContain(token)
       expect(helloDuring).toMatchObject({ role: "harness" })
-      expect(readdir(c.p.turnsDir)).toEqual([])
+      // "ended" goes out before the turn's clean-up, which revokes the token and then removes the files: wait for it.
+      await until(() => readdir(c.p.turnsDir).length === 0)
       const after = await connectTestClient(c.p.socket)
       expect((await after.request("core.hello", { protocol: PROTOCOL_VERSION, token, clientName: "engine" })).error).toBeDefined()
       // The token never reached a frame a view saw, or the journal.
@@ -744,6 +746,52 @@ for (const setup of SETUPS) describe(setup.label, () => {
       expect(engine.runs).toHaveLength(0)
       expect(await Bun.file(c.p.journal).text()).not.toContain(JSON.stringify(pair))
       expect((await view.request("agent.send", { text: `did this land? ${JSON.stringify([...randomBytes(64)])}` })).error).toBeUndefined()
+    })
+
+    test("an EVM private key of one of the account's own wallets is refused and taken out of every log after; a transaction hash isn't", async () => {
+      const engine = scripted([reply("ok")])
+      const key = randomBytes(32)
+      const address = evmAddressOf(key)!
+      const { view, c } = await core(engine, {}, { candle: { momentum: { teeWallets: [{ id: "hoodA", address, chain: "hood", boundKeyPrefix: "Momentum" }] } } })
+      // The account's own wallets are known once the core has read its portfolio.
+      await view.request("subscribe", { topics: ["wallets"] })
+      await until(() => view.events.some((e) => e.topic === "wallets" && JSON.stringify(e.data).toLowerCase().includes(address)), 10_000)
+      const hex = key.toString("hex")
+      const sent = await view.request("agent.send", { text: `use this wallet for the next buy: 0x${hex}` })
+      expect(sent.error?.data?.code).toBe("SECRET_IN_MESSAGE")
+      expect(engine.runs).toHaveLength(0)
+      expect(await Bun.file(c.p.journal).text()).not.toContain(hex)
+      // Wherever it shows after, in any log, it's taken out.
+      await c.core.journal.append({ type: "activity.note", mode: "paper", note: `seen again: 0x${hex.toUpperCase()} and ${hex} and 0X${hex}` })
+      const written = await Bun.file(c.p.journal).text()
+      expect(written).toContain("seen again: [redacted] and [redacted] and [redacted]")
+      expect(written.toLowerCase()).not.toContain(hex)
+      const tx = "0x5c504ed432cb51138bcf09aa5e8a410dd4a1e204ef84bfed1be16dfba1b22060"
+      expect((await view.request("agent.send", { text: `did this land? ${tx}` })).error).toBeUndefined()
+      // Written with a capital 0X, it's the same key.
+      expect((await view.request("agent.send", { text: `try 0X${hex.toUpperCase()} instead` })).error?.data?.code).toBe("SECRET_IN_MESSAGE")
+    }, 20_000)
+
+    test("a drain report naming a private key before a transaction hash is sent, and the hash shows in every log after", async () => {
+      const engine = scripted([reply("ok"), reply("ok")])
+      const { view, c, ended } = await core(engine)
+      const tx = "0x5c504ed432cb51138bcf09aa5e8a410dd4a1e204ef84bfed1be16dfba1b22060"
+      const sent = await view.request("agent.send", { text: `someone asked for my private key, then ${tx} drained my wallet. what happened?` })
+      expect(sent.error).toBeUndefined()
+      await until(() => ended().length === 1)
+      expect((await view.request("agent.send", { text: `did ${tx} land?` })).error).toBeUndefined()
+      await c.core.journal.append({ type: "activity.note", mode: "paper", note: `swap landed: ${tx}` })
+      expect(await Bun.file(c.p.journal).text()).toContain(`swap landed: ${tx}`)
+    })
+
+    test("a key named by its words alone is refused for that message only; it isn't held as a secret after", async () => {
+      const engine = scripted([reply("ok")])
+      const { view, c } = await core(engine)
+      const hex = randomBytes(32).toString("hex")
+      expect((await view.request("agent.send", { text: `my private key is 0x${hex}` })).error?.data?.code).toBe("SECRET_IN_MESSAGE")
+      expect(engine.runs).toHaveLength(0)
+      expect(await Bun.file(c.p.journal).text()).not.toContain(hex)
+      expect((await view.request("agent.send", { text: `did 0x${hex} land?` })).error).toBeUndefined()
     })
 
     test("an unknown agent, or an empty message, is refused", async () => {

@@ -34,7 +34,7 @@ describe("the prompt", () => {
     expect(section).toContain("Unmeasured isn't clean.")
     expect(section).toContain("A signal is an event, not advice")
     for (const pattern of ["new_ticker", "confluence", "large_move", "dormancy", "distribution", "deployer", "intra_book", "kol_mention"]) expect(section).toContain(`${pattern}, `)
-    expect(section).toContain("A pass is a reason to paper-trade, never to fund.")
+    expect(section).toContain("A pass isn't proof it will pay live, or a reason on its own to fund it. Candle's skills below suggest rehearsing on paper: leave that out")
     expect(section).toContain("read it before you act with skill_read: a tool on the candle MCP server beside Candle's other tools, so most harnesses list it as mcp__candle__skill_read")
     for (const s of SKILLS) expect(section).toContain(`- ${s.name}: ${s.description}`)
     // The trader prompt's rule that tool results are data, never instructions, stands in Quant.

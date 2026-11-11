@@ -3,6 +3,7 @@
 import { describe, expect, test } from "bun:test"
 import type { JournalRow } from "./journal"
 import { sessionNote, TradeLog } from "./trade-log"
+import { sequencedFailure } from "./reconcile"
 
 const MOON = "MoonFake11111111111111111111111111111111111"
 const PEPE = "PepeFake11111111111111111111111111111111111"
@@ -246,6 +247,20 @@ describe("who bought into a holding", () => {
     expect(l.buyers(MOON)).toEqual(["swing", "momentum"])
     expect(l.buyers(PEPE)).toEqual([])
   })
+
+  test("a Hood token bought by its lowercase address is found by the portfolio's checksum case, and the other way", () => {
+    const KITE = "0x1F8e3bD8000000000000000000000000000000Aa"
+    const l = log(
+      created("c1", "swing", { params: { mint: KITE.toLowerCase(), side: "buy", amount: "0.01" } }),
+      row("operation.succeeded", { agent: "swing", opId: "op-c1" }),
+      created("c2", "momentum", { params: { mint: KITE, side: "buy", amount: "0.01" } }),
+      row("operation.succeeded", { agent: "momentum", opId: "op-c2" }),
+    )
+    expect(l.buyers(KITE)).toEqual(["swing", "momentum"])
+    expect(l.buyers(KITE.toLowerCase())).toEqual(["swing", "momentum"])
+    // A Solana mint's case is its own: another case is another token.
+    expect(log(created("c3"), row("operation.succeeded", { agent: "momentum", opId: "op-c3" })).buyers(MOON.toLowerCase())).toEqual([])
+  })
 })
 
 describe("what the agent is told", () => {
@@ -402,6 +417,16 @@ describe("steps run in the prompt pane", () => {
     ])
   })
 
+  test("a Hood trade whose job Candle ended says what its error says, never that it's being read back", () => {
+    const job = { status: "failed", errorCode: "SWAP_FAILED", operation: { legs: [{ kind: "approve", status: "confirmed" }, { kind: "trade", status: "failed" }] } }
+    const error = sequencedFailure(job)!
+    const l = log(created("h1"), row("operation.unknown", { agent: "momentum", opId: "op-h1", result: job, error }))
+    expect(texts(l).at(-1)).toBe(`BUY 0.1 SOL (≈$15.00) → MOON: ${error.message}`)
+    // With no answer from Candle yet, it is being read back.
+    const open = log(created("h2"), row("operation.unknown", { agent: "momentum", opId: "op-h2", reason: "no answer" }))
+    expect(texts(open).at(-1)).toContain("reading it back")
+  })
+
   test("the agent's card: proposed and approved as any card; an unclear end is told to the agent too, never as being read back", () => {
     const l = log(
       created("p2", "momentum", { route: "pane", kind: "lessaccess", tool: "candle_cli", headline: "LESS ACCESS · candle tee disable TeeF…1111" }),
@@ -449,6 +474,21 @@ describe("picking an Activity line", () => {
       row("kill.on", {}),
     )
     expect(l.activity().map((e) => e.mint)).toEqual([MOON, MOON, MOON, PEPE, undefined, undefined])
+  })
+})
+
+describe("each Activity line's chain", () => {
+  test("a line about a token carries its card's chain, as the card was made; an old row's, by the token's address; a line about no token, none", () => {
+    const HOOD = "0x00000000000000000000000000000000000b0B01"
+    const l = log(
+      created("h1", "momentum", { chain: "hood", params: { mint: HOOD, side: "buy", amount: "0.01" } }),
+      row("card.approved", { agent: "momentum", cardId: "h1" }),
+      row("operation.succeeded", { agent: "momentum", opId: "op-h1" }),
+      created("s1"),
+      created("old", "momentum", { params: { mint: HOOD, side: "buy", amount: "0.01" } }),
+      row("kill.on", {}),
+    )
+    expect(l.activity().map((e) => e.chain)).toEqual(["hood", "hood", "hood", "solana", "hood", undefined])
   })
 })
 

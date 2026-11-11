@@ -32,6 +32,14 @@ describe("the first run's screens", () => {
     expect(printed.some((l) => l.includes(".bashrc"))).toBe(true)
     for (const l of printed) expect(PATH_LINE.test(l), l).toBe(true)
   })
+  // The fund screen shows one of two ways, as the wallet is empty or already holds SOL (a second agent on the same wallet).
+  test("the fund screen is matched empty or funded, as the kept frames draw it", () => {
+    const frames = join(import.meta.dir, "../../test/fixtures/frames")
+    for (const name of ["onboarding-120x30-fund.txt", "onboarding-80x24-fund.txt", "onboarding-120x30-fund-funded.txt"]) {
+      const frame = readFileSync(join(frames, name), "utf8").split("--- colours ---")[0]!
+      for (const w of SCREENS.fund) expect(frame.includes(w), `"${w}" isn't in ${name}`).toBe(true)
+    }
+  })
   test("each pick is a row the code draws", () => {
     for (const w of Object.values(PICKS)) expect(src.includes(w), `"${w}" isn't drawn anywhere in src/`).toBe(true)
   })
