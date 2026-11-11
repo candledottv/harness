@@ -4,7 +4,7 @@
 // another's wallet.
 import { expect, test } from "bun:test"
 import type { AgentStatus } from "./agent-status"
-import { AgentWallets, parseProfileWallets, parseTradingWallets, portfolioTee, resolvePayer, type WalletDeps, walletsNote } from "./agent-wallets"
+import { AgentWallets, joinTee, parseProfileWallets, parseTradingWallets, portfolioTee, resolvePayer, type WalletDeps, walletsNote } from "./agent-wallets"
 import type { ToolOutcome } from "./candle-mcp"
 
 const EMBEDDED = "WalletFake111111111111111111111111111111111"
@@ -72,7 +72,10 @@ function wallets(f: Fixture = {}) {
         call: async (tool, args): Promise<ToolOutcome> => {
           calls.push({ agent, tool, args })
           if (tool === "candle_get_trading_wallets") {
-            const t = f.trading?.[agent]
+            const given = f.trading?.[agent]
+            // A function answers each page by the cursor it's asked for; undefined from it is a failed read.
+            const t = typeof given === "function" ? (given as (args: Record<string, unknown>) => unknown)(args) : given
+            if (t === undefined && typeof given === "function") return { kind: "error", code: "UPSTREAM", retryable: true, body: {} }
             return t === undefined ? { kind: "error", code: "UNKNOWN_TOOL", retryable: false, body: {} } : { kind: "ok", result: t }
           }
           const answer = profiles[agent]
@@ -189,7 +192,7 @@ test("the trading read says what may trade: inactive there is unable to sign; a 
   const off = wallets({ trading: trading([{ id: T1.id, address: T1.address, chain: "solana", active: false, walletKind: "tee" }]) })
   await off.book.refresh("momentum")
   expect(off.book.payable("momentum").tee).toMatchObject([{ address: T1.address, active: false, cantSign: true }])
-  const more = wallets({ trading: trading([{ id: T2.id, address: T2.address, chain: "solana", active: true, walletKind: "tee" }, { id: "emb", address: EMBEDDED, chain: "solana", active: true, walletKind: "embedded" }]) })
+  const more = wallets({ trading: trading([{ id: T1.id, address: T1.address, chain: "solana", active: true, walletKind: "tee" }, { id: T2.id, address: T2.address, chain: "solana", active: true, walletKind: "tee" }, { id: "emb", address: EMBEDDED, chain: "solana", active: true, walletKind: "embedded" }]) })
   await more.book.refresh("momentum")
   expect(more.book.payable("momentum").tee.map((t) => [t.address, t.active])).toEqual([[T1.address, true], [T2.address, true]])
   expect(more.book.boundTo(T2.address)).toBe("momentum")
@@ -597,4 +600,44 @@ test("a default that is a name for the Solana embedded wallet pays for a Hood tr
   const { ctx } = twoChains("hood")
   expect(resolvePayer({ ...ctx, defaultWallet: "embedded", defaultPin: EMBEDDED })).toMatchObject({ ok: true, kind: "embedded", chain: "hood" })
   expect(resolvePayer({ ...ctx, chain: "solana", defaultWallet: "embedded", defaultPin: ctx.evm })).toMatchObject({ ok: true, kind: "embedded", chain: "solana" })
+})
+
+test("the key's list joins the portfolio by address, not id: another id, an EVM address in another case; a Solana address only exactly, and never a Hood entry", () => {
+  const portfolio = { tee: [{ id: "p-sol", address: T1.address, label: "Bot Wallet", active: true }], hood: { tee: [{ id: "p-hood", address: HOOD.address.toLowerCase(), label: "hood-bot", active: true }] } }
+  // An older server, with no trading read to rewrite the ids: the key's list names each wallet by an id of its own.
+  const rows = [
+    { id: "k-sol", address: T1.address, chain: "solana", spendCapable: true },
+    { id: "k-hood", address: HOOD.address, chain: "evm", spendCapable: true },
+  ]
+  expect(joinTee(rows, portfolio)).toEqual([
+    { id: "p-sol", address: T1.address, label: "Bot Wallet", chain: "solana", active: true },
+    { id: "p-hood", address: HOOD.address, label: "hood-bot", chain: "hood", active: true },
+  ])
+  // A Solana address in another case is another wallet: base58 tells cases apart, so it isn't the portfolio's.
+  const otherCase = T1.address.toLowerCase()
+  expect(joinTee([{ id: "k-x", address: otherCase, chain: "solana", spendCapable: false }], portfolio)).toEqual([{ id: "k-x", address: otherCase, chain: "solana", active: false, cantSign: true }])
+  // A Solana row never takes a Hood entry's place, whatever its address reads as.
+  const odd = HOOD.address.toUpperCase().replace("0X", "0x")
+  expect(joinTee([{ id: "k-y", address: odd, chain: "solana", spendCapable: false }], portfolio)).toEqual([{ id: "k-y", address: odd, chain: "solana", active: false, cantSign: true }])
+})
+
+test("the trading read is read to its last page, and a complete one decides: a wallet it leaves out can't pay; a read cut short decides nothing for the wallets it didn't reach", async () => {
+  const profiles = { momentum: { keyPrefix: "Momentum", walletScope: "selected", wallets: [profileRow(T1), profileRow(T2)] } }
+  const row = (w: { id: string; address: string }) => ({ id: w.id, address: w.address, chain: "solana", active: true, walletKind: "tee" })
+  // Two pages: T1 on the first, T2 on the second, reached by the first page's cursor.
+  const paged = wallets({ profiles, trading: { momentum: (args: Record<string, unknown>) => (args.cursor === "c1" ? { page: [row(T2)], isDone: true } : { page: [row(T1)], isDone: false, continueCursor: "c1" }) } })
+  await paged.book.refresh("momentum")
+  expect(paged.book.payable("momentum").tee.map((t) => [t.address, t.active])).toEqual([[T1.address, true], [T2.address, true]])
+  expect(paged.calls.filter((c) => c.tool === "candle_get_trading_wallets").map((c) => c.args)).toEqual([{}, { cursor: "c1" }])
+  // Complete, and T2 isn't in it: the key's list said it could pay, the trading read says otherwise, and the trading read wins.
+  const left = wallets({ profiles, trading: { momentum: { page: [row(T1)], isDone: true } } })
+  await left.book.refresh("momentum")
+  expect(left.book.payable("momentum").tee.map((t) => ({ address: t.address, active: t.active, cantSign: t.cantSign }))).toEqual([
+    { address: T1.address, active: true, cantSign: undefined },
+    { address: T2.address, active: false, cantSign: true },
+  ])
+  // The second page fails: T2 wasn't reached, so the key's list's answer stands for it.
+  const cut = wallets({ profiles, trading: { momentum: (args: Record<string, unknown>) => (args.cursor === "c1" ? undefined : { page: [row(T1)], isDone: false, continueCursor: "c1" }) } })
+  await cut.book.refresh("momentum")
+  expect(cut.book.payable("momentum").tee.map((t) => [t.address, t.active])).toEqual([[T1.address, true], [T2.address, true]])
 })

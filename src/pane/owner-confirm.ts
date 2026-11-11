@@ -8,28 +8,42 @@
 // on stderr, prompts included, passes through as it comes.
 import { terminalText } from "../shared/terminal-text"
 
-/** What the person needs from a pending confirm: never its secret id, which the CLI keeps to itself. */
+/**
+ * What the person needs from a pending confirm: never its secret id, which the CLI keeps to itself. `withheld` names the
+ * host of a link that isn't Candle's, which isn't shown; `url` is then empty.
+ */
 export interface OwnerConfirmPending {
   userCode: string
   url: string
   expiresIn: number
   summary: string
+  withheld?: string
 }
 
 const USER_CODE = /^[A-Z0-9]{2,12}(-[A-Z0-9]{2,12}){0,3}$/
 
-/** A link the pane may show: https, or http on this machine only. */
-function safeUrl(value: unknown): string | undefined {
-  if (typeof value !== "string" || value.length > 600 || /[\x00-\x20\x7f]/.test(value)) return undefined
+/** Candle's site, where its confirm page is: the site itself or one of its own subdomains. */
+const candleHost = (host: string) => host === "candle.tv" || host.endsWith(".candle.tv")
+
+/**
+ * A link the pane may show: https on Candle's site, or http on this machine (a developer's own Candle). Any other is
+ * withheld, by its host where it has one: the page asks for the account owner's approval, and a link elsewhere could
+ * collect it for someone else.
+ */
+function confirmUrl(value: unknown): { url: string } | { withheld: string } {
+  const elsewhere = { withheld: "an address that isn't a web page" }
+  if (typeof value !== "string" || value.length > 600 || /[\x00-\x20\x7f]/.test(value)) return elsewhere
   let url: URL
   try {
     url = new URL(value)
   } catch {
-    return undefined
+    return elsewhere
   }
+  if (url.protocol !== "https:" && url.protocol !== "http:") return elsewhere
+  const host = terminalText(url.hostname, { maxLength: 80 })
   const local = url.hostname === "localhost" || url.hostname === "127.0.0.1" || url.hostname === "[::1]"
-  if (url.protocol !== "https:" && !(url.protocol === "http:" && local)) return undefined
-  return url.toString()
+  if (url.protocol === "https:" ? candleHost(url.hostname) || local : local) return { url: url.toString() }
+  return { withheld: host }
 }
 
 /** The pending line's fields, or undefined for any other line. */
@@ -44,16 +58,22 @@ export function parsePendingLine(line: string): OwnerConfirmPending | undefined 
   if (!body || body.pending !== true || body.code !== "OWNER_CONFIRM_REQUIRED" || typeof body.ownerConfirm !== "object" || body.ownerConfirm === null) return undefined
   const oc = body.ownerConfirm
   const userCode = typeof oc.userCode === "string" && USER_CODE.test(oc.userCode) ? oc.userCode : undefined
-  const url = safeUrl(oc.verificationUriComplete)
-  if (!userCode || !url) return undefined
+  if (!userCode) return undefined
+  const link = confirmUrl(oc.verificationUriComplete)
   const expiresIn = typeof oc.expiresIn === "number" && Number.isFinite(oc.expiresIn) && oc.expiresIn > 0 ? oc.expiresIn : 300
   const summary = typeof oc.summary === "string" ? terminalText(oc.summary, { maxLength: 300 }) : ""
-  return { userCode, url, expiresIn, summary }
+  return "url" in link ? { userCode, url: link.url, expiresIn, summary } : { userCode, url: "", expiresIn, summary, withheld: link.withheld }
 }
 
 /** The CLI's own words for a pending confirm, as it prints them without --json. */
 export function pendingWords(p: OwnerConfirmPending): string {
   const minutes = Math.max(1, Math.round(p.expiresIn / 60))
+  if (p.withheld !== undefined) {
+    return [
+      `This asks for your approval in the browser${p.summary ? `: ${p.summary}` : "."}`,
+      `Its link isn't on Candle's site (${p.withheld}), so it isn't shown. Don't approve it: the step ends unapproved when its code expires (${minutes} minute${minutes === 1 ? "" : "s"}), and nothing changes.`,
+    ].join("\n").concat("\n")
+  }
   return [
     `This needs your approval in the browser${p.summary ? `: ${p.summary}` : "."}`,
     `Open ${p.url}`,
