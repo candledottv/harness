@@ -1472,15 +1472,15 @@ async function coreEmpty(p: Paths): Promise<Record<string, EmptyState> | undefin
   }
 }
 
-/** Whether Candle serves LP yet: the Candle Harness's LP cards wait until it does and they're checked live. */
+/** Whether Candle serves LP yet: the LP cards also wait on a key preset that grants lp:write, which none has yet. */
 async function lpCheck(config: Config, env: Record<string, string | undefined>, keys: Map<string, string>, redactor: Redactor): Promise<Check> {
   const [agent, key] = [...keys][0]!
   const cli = new CandleCli({ cliPath: config.candle.cliPath, rpcUrl: undefined, keyFor: () => key, parentEnv: env, profile: () => config.candle.profile })
   // CNDL's pools: Candle's own token, public, and the likeliest to have one.
   const run = await cli.run({ agent, args: ["lp", "pools", BASE_ASSETS.CNDL.priceKey!], json: true, timeoutMs: 30_000 }).catch(() => undefined)
   const body = record(run?.json)
-  if (run?.exitCode === 1 && body?.code === "LP_NOT_ENABLED") return { area: "candle", state: "ok", text: "Candle doesn't serve LP yet (LP_NOT_ENABLED), so the Candle Harness's LP cards stay \"coming\"" }
-  if (run?.exitCode === 0 && body && body.ok !== false) return { area: "candle", state: "ok", text: "Candle serves LP now (candle lp pools answered); the Candle Harness's LP cards switch on in a release after they're checked live" }
+  if (run?.exitCode === 1 && body?.code === "LP_NOT_ENABLED") return { area: "candle", state: "ok", text: "Candle doesn't serve LP here (LP_NOT_ENABLED); the Candle Harness's LP cards also need a key preset with lp:write, which none has yet" }
+  if (run?.exitCode === 0 && body && body.ok !== false) return { area: "candle", state: "ok", text: "Candle serves LP now (candle lp pools answered); the Candle Harness's LP cards wait on a key preset that grants lp:write, which none has yet" }
   return { area: "candle", state: "skip", text: `couldn't tell whether Candle serves LP: ${run ? lastLine(redactor, run.stdout, run.stderr) || `exit ${run.exitCode}` : "candle lp pools didn't run"}` }
 }
 

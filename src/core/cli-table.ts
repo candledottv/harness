@@ -167,7 +167,7 @@ export const SOURCE = source as {
 export const LP_AGENT_SCOPES: readonly string[] = [...SOURCE.presets.readwrite.scopes, "lp:write"]
 
 const STAKE_NOTE = "From the embedded wallet: candle_stake, candle_unstake or candle_finish_unstake, as a one-press card. From a TEE wallet: this command with --wallet <the TEE wallet's label or address>, a one-press card."
-const LP_HELD = "Candle hasn't switched LP on for agent keys yet, and it needs a key with lp:write, which no preset has. candle-harness doctor says when Candle serves LP."
+const LP_HELD = "Candle serves LP now (LP_ENABLED, on since 2026-11-06), but no key preset grants lp:write yet, which these cards need. candle-harness doctor says where LP stands."
 const STAKE_ROW = (stops: boolean): CardRow => ({ kind: "stake", idFlag: "--client-stake-id", readBack: "rerun", stops, wallet: "tee" })
 const LP_ROW = (stops: boolean): CardRow => ({ kind: "lp", idFlag: "--client-trade-id", readBack: "rerun", stops, wallet: "tee", held: LP_HELD })
 /** A row's pane, as written in the table: the factor step comes from the source read unless a row says otherwise. */

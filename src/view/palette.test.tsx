@@ -349,7 +349,7 @@ describe("the palette on screen", () => {
     expect(frame().split("\n").find((r) => rowOf(r, "lp add"))).toContain("card · coming")
     // The whole reason, wrapped over the detail lines, so a narrow pane doesn't cut it.
     const text = frame().replace(/[│\s]+/g, " ")
-    expect(text).toContain("coming: Candle hasn't switched LP on for agent keys yet, and it needs a key with lp:write, which no preset has. candle-harness doctor says when Candle serves LP.")
+    expect(text).toContain("coming: Candle serves LP now (LP_ENABLED, on since 2026-11-06), but no key preset grants lp:write yet, which these cards need. candle-harness doctor says where LP stands.")
   })
 
   test("a row that runs in the prompt pane says its rule in words; at 80 columns the detail line does", async () => {
