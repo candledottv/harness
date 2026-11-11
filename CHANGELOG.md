@@ -16,7 +16,7 @@ Robinhood Chain, and the Harness starts live.
 - **Approvals on Hood:** the embedded wallet on Hood has its own two figures in `settings ▾` → approvals; ETH and USDG buys count at their dollar value, USDG at Candle's $1.
 - **A default wallet per chain:** `[agents.<name>.wallet] solana = …, hood = …`; the single `wallet` line still works. `candle.evmRpcUrl` sets the Hood RPC.
 - **Bots and triggers on Hood:** `chain = "hood"` in `bots.toml`, code bots' trades with their chain, and price, market-cap and tape triggers on Hood. A trigger records the signals it skipped, and why ("not on Candle", "no market cap").
-- **EVM private keys** pasted into the input line are refused when they belong to one of your wallets, or sit next to words like "private key".
+- **EVM private keys** pasted into the input line are refused when they belong to one of your wallets, or sit next to words like "private key". The diagnostic paste log keeps no text of any paste holding a bare 32-byte hex value.
 
 ### Fixes
 
