@@ -304,6 +304,7 @@ export async function runDoctor(opts: DoctorOptions): Promise<Check[]> {
   if ([...reads.values()].some((r) => r.tee?.some((t) => maybeChain(t.chain)?.family === "evm"))) add(evmRpcCheck(config))
   if (cliOk) for (const check of await emptyAccountChecks({ p, config, env, keys, reads, coreUp, now })) add(check)
   if (cliOk) add(await lpCheck(config, env, keys, redactor))
+  for (const check of perpsChecks(config, reads, prefixes, owned)) add(check)
   const plans = new Map([...reads].map(([agent, r]) => [agent, r.status.tier]))
   for (const check of await haccChecks({ p, config, keys, plans, now, ...(opts.haccHost ? { host: opts.haccHost } : {}) })) add(check)
   return handsOff(reads)
@@ -862,6 +863,39 @@ function withdrawKeys(prefixes: Map<string, string>, owned: Map<string, KeyRow>)
   }))
 }
 
+/**
+ * Whether each agent can do perps writes (config.toml's perps.writes, and the CLI's own preconditions): its key holds
+ * perps:write, an EVM TEE wallet is promoted onto it and active, and that wallet's signer is on this machine. Said for an
+ * agent whose key has perps:write, or for every agent while the setting is on; otherwise nothing, since perps isn't theirs.
+ * A key that also holds perps:withdraw is named: the Candle Harness never makes one, and a withdrawal needs no card from it.
+ */
+export function perpsChecks(config: Config, reads: Map<string, TeeRead>, prefixes: Map<string, string>, owned: Map<string, KeyRow> | undefined): Check[] {
+  const out: Check[] = []
+  for (const [agent, prefix] of prefixes) {
+    const row = owned?.get(prefix)
+    const scopes = row && typeof row.revokedAt !== "number" && Array.isArray(row.scopes) ? row.scopes.filter((s): s is string => typeof s === "string") : undefined
+    const hasWrite = scopes?.includes("perps:write")
+    if (!config.perps.writes && !hasWrite) continue
+    const say = (state: CheckState, text: string, fix?: string) => out.push({ area: "perps", state, text: `${agent}: ${text}`, ...(fix ? { fix } : {}) })
+    if (scopes?.includes("perps:withdraw")) {
+      say("warn", "its key holds perps:withdraw: it can withdraw from Hyperliquid with its own key, outside any card or the prompt pane", "Make a Trade perps key without it: `candle keys create --access trade-perps` in your own terminal, then revoke this one.")
+    }
+    if (owned === undefined) say("skip", `couldn't read whether its key holds perps:write (the key list wasn't read), and perps.writes is ${config.perps.writes ? "on" : "off"}`)
+    else if (!hasWrite) say("warn", `perps.writes is on, but its key lacks perps:write, so every perps card is refused (SCOPE_MISSING)`, "Make a new agent with `candle keys create --access trade-perps` (account:read and perps:write); an existing key can't gain it by a preset.")
+    const read = reads.get(agent)
+    const evm = (read?.tee ?? []).filter((t) => maybeChain(t.chain)?.family === "evm" && t.active)
+    if (read?.tee === undefined) say("skip", "couldn't read its TEE wallets, so whether an EVM TEE wallet is promoted onto its key is unknown")
+    else if (evm.length === 0) say("warn", "no active EVM TEE wallet is promoted onto its key, so perps has no account to trade", "`candle vault new-key --chain evm`, then `candle vault promote --from <cold> --to-key <prefix>` (candle tee new is Solana only).")
+    else {
+      const here = evm.filter((t) => read.signers?.[t.id] === "stored")
+      if (read.signers === undefined) say("skip", `${evm.map((t) => teeName(t)).join(", ")}: whether its signer is on this machine wasn't read`)
+      else if (here.length === 0) say("warn", `its EVM TEE wallet ${evm.map((t) => teeName(t)).join(", ")} has no signer on this machine, so a perps write from here fails (SIGNER_UNAVAILABLE)`, "Perps trades from the machine that promoted the wallet, or give the key a signer here: `candle tee signer new --key <prefix>`.")
+      else say("ok", `ready for perps writes: its key holds perps:write, EVM TEE wallet ${here.map((t) => teeName(t)).join(", ")} is promoted onto it, and its signer is on this machine${config.perps.writes ? "" : " (perps.writes is off: set it true in config.toml to use them)"}`)
+    }
+  }
+  return out
+}
+
 type KeyRow = Record<string, unknown> & { keyPrefix: string }
 
 /** The owner's key list by prefix, or undefined (with a check saying why) when the CLI can't read it. */
@@ -1121,6 +1155,8 @@ interface TeeRead {
   /** The TEE wallets its key holds, joined to the portfolio; undefined when that couldn't be read. */
   tee: TeeWallet[] | undefined
   portfolio: unknown
+  /** `candle wallets`'s per-wallet signer answer ("stored": its signer is on this machine), when it was asked and answered. */
+  signers?: Record<string, unknown>
 }
 
 /** One agent's TEE wallets: the plan, active, and its signer on this machine. */
@@ -1200,7 +1236,7 @@ async function teeChecks(input: {
       )
     }
   }
-  return { checks, read: { status, tee, portfolio } }
+  return { checks, read: { status, tee, portfolio, ...(signers ? { signers } : {}) } }
 }
 
 /** Each agent's default wallet, when set, still pays; read once every agent's wallets are. */
