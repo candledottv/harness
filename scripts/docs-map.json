@@ -387,7 +387,7 @@
       "id": "perps-writes",
       "name": "Perps: closing and protecting",
       "page": "trading",
-      "what": "With perps.writes on, closing a position, cancelling an order, take-profit and stop-loss, the cancel-all timer and flatten are one-press cards from the EVM TEE wallet. Turning the key's reduce-only on runs at once. Off, they're held.",
+      "what": "With perps.writes on, closing a position, cancelling an order, take-profit and stop-loss, the cancel-all timer and flatten are one-press cards from the EVM TEE wallet. Turning the key's reduce-only on is a card-free narrowing, held with the rest while perps.writes is off.",
       "cli": ["perps close","perps cancel","perps tpsl","perps schedule-cancel","perps flatten","perps reduce-only on"],
       "settings": ["config.toml perps.writes"]
     },
