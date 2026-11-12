@@ -94,7 +94,13 @@ describe("the table", () => {
     const on = describeTool(true)
     const cardLine = (text: string) => text.split("\n").find((l) => l.startsWith("Becomes a one-press card for the user, run with your key"))!
     expect(cardLine(off)).not.toContain("perps close")
-    expect(off).toContain(PERPS_HELD.replace(/\.$/, "").slice(0, 40))
+    const laterLine = (text: string) => text.split("\n").find((l) => l.startsWith("Later (perps writes)"))!
+    // Off, the rows are said once, under Later, and reduce-only on isn't offered as a one-press narrowing.
+    expect(laterLine(off)).toContain("close")
+    expect(laterLine(off)).toContain("reduce-only on")
+    expect(off).not.toContain("perps reduce-only on")
+    expect(laterLine(on)).not.toContain("close")
+    expect(on).toContain("perps reduce-only on")
     expect(cardLine(on)).toContain("perps close")
     expect(cardLine(on)).toContain("--remove-sl")
     expect(on).not.toContain("perps.writes = true")

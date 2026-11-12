@@ -3,7 +3,7 @@
 // scripts/read-cli-source.ts), with the rule the agent meets, whether it can do it now, and the
 // plain-English request the pane puts on the input line. The docs site's reference/cli-parity page is written from it too.
 import { paneRowNow } from "./owner-rows"
-import { CLI_ROWS, type CliRow, type CliRule, type HelpTopic, PANE_RULES, SOURCE, unlocksFor } from "./cli-table"
+import { CLI_ROWS, type CliRow, heldNow, PERPS_HELD, type CliRule, type HelpTopic, PANE_RULES, SOURCE, unlocksFor } from "./cli-table"
 
 export type Availability = "now" | "coming" | "never"
 
@@ -135,23 +135,24 @@ function howOf(row: CliRow): string | undefined {
 }
 
 /** Now: a CLI read or narrowing, done another way (`via`), a CLI card row that isn't held, or an owner row in the prompt pane. */
-function availability(row: CliRow): Availability {
+function availability(row: CliRow, perpsWrites: boolean): Availability {
   if (row.rule === "never") return "never"
-  return row.route === "cli" || row.via !== undefined || (row.card !== undefined && row.card.held === undefined) || paneRowNow(row.rule, row.route) ? "now" : "coming"
+  if (row.needs !== undefined && heldNow(row, perpsWrites)) return "coming"
+  return row.route === "cli" || row.via !== undefined || (row.card !== undefined && !heldNow(row, perpsWrites)) || paneRowNow(row.rule, row.route) ? "now" : "coming"
 }
 
 /** A held row's reason, or perps trading's; every row still coming says why. */
 function whyComing(row: CliRow): { why?: string } {
-  const held = row.held ?? row.card?.held ?? (row.route === "later" && row.path.startsWith("perps ") ? PERPS_LATER : undefined)
+  const held = row.held ?? row.card?.held ?? (row.needs !== undefined ? PERPS_HELD : undefined) ?? (row.route === "later" && row.path.startsWith("perps ") ? PERPS_LATER : undefined)
   return held ? { why: held } : {}
 }
 
-function build(): CatalogueEntry[] {
+function build(perpsWrites: boolean): CatalogueEntry[] {
   const entries = CLI_ROWS.map((row): CatalogueEntry => {
     const word = row.path.split(" ")[0]!
     const line = helpLine(SOURCE.help, row.path)
     const description = firstSentence(line.description)
-    const when = availability(row)
+    const when = availability(row, perpsWrites)
     return {
       path: row.path,
       group: SOURCE.help[word]?.group ?? "",
@@ -175,13 +176,19 @@ function build(): CatalogueEntry[] {
   return entries.map((e, i) => ({ e, i })).sort((a, b) => rank(a.e) - rank(b.e) || a.i - b.i).map(({ e }) => e)
 }
 
-export const CATALOGUE: readonly CatalogueEntry[] = build()
+/** The catalogue with perps.writes off: the default, and what a row's request and path lookups go by. */
+export const CATALOGUE: readonly CatalogueEntry[] = build(false)
+const WITH_PERPS_WRITES: readonly CatalogueEntry[] = build(true)
+
+/** The catalogue as config.toml's perps.writes has it: the perps card rows are "now" with it on, "coming" with it off. */
+export const catalogueFor = (perpsWrites: boolean): readonly CatalogueEntry[] => (perpsWrites ? WITH_PERPS_WRITES : CATALOGUE)
 
 /** The entries matching every word of the search, in the path, the line, the group, the rule (in words too) or when. */
-export function searchCatalogue(query: string): readonly CatalogueEntry[] {
+export function searchCatalogue(query: string, perpsWrites = false): readonly CatalogueEntry[] {
   const words = query.toLowerCase().split(/\s+/).filter(Boolean)
-  if (words.length === 0) return CATALOGUE
-  return CATALOGUE.filter((e) => {
+  const all = catalogueFor(perpsWrites)
+  if (words.length === 0) return all
+  return all.filter((e) => {
     const text = `${e.path} ${e.description} ${e.group} ${e.ruleLabel} ${e.how ?? ""} ${e.availability}`.toLowerCase()
     return words.every((w) => text.includes(w))
   })

@@ -134,6 +134,8 @@ export interface PaletteInput {
   /** The tab's token pane and whether it's pinned; undefined when the tab has none. */
   pin?: { pinned: boolean; symbol?: string }
   mode?: "paper" | "live"
+  /** config.toml's perps.writes: on, the perps card rows are listed as now. */
+  perpsWrites?: boolean
   paused: boolean
   /** A card Enter would approve, ctrl-n reject and ctrl-o open. */
   card: boolean
@@ -457,7 +459,7 @@ export function paletteRows(p: PaletteInput, query: string): PaletteRow[] {
   const hit = new Set(found.filter(inLabel).map((r) => r.section))
   const rank = (section: string) => (named(section) ? 0 : hit.has(section) ? 1 : 2) * SECTION_ORDER.length + SECTION_ORDER.indexOf(section)
   const own = [...found].sort((a, b) => rank(a.section) - rank(b.section) || Number(inLabel(b)) - Number(inLabel(a)))
-  return [...own, ...searchCatalogue(query).map(cliRow)]
+  return [...own, ...searchCatalogue(query, p.perpsWrites === true).map(cliRow)]
 }
 
 /** Every row there is, for the count beside the search. */

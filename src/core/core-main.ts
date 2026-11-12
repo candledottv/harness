@@ -2130,6 +2130,7 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
       ...(Object.keys(config.agents).length === 0 ? { setup: true } : {}),
       mode,
       walletsShown,
+      perpsWrites: config.perps.writes,
       paused: paused(),
       typedTrades: config.cards.typedTrades,
       headless: opts.headless,

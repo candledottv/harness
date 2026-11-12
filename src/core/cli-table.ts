@@ -37,6 +37,8 @@ export interface CliRow {
   card?: CardRow
   /** Held "coming" with why, for a row that isn't a card (`transfer`). */
   held?: string
+  /** A row that isn't a card but runs only while this config.toml setting is true (`perps reduce-only on`). */
+  needs?: "perps.writes"
   /** The palette's request for the agent, where the CLI's help line wouldn't read as one ("buy 30 days" reads as a trade). */
   ask?: string
   /** How it runs in the prompt pane: every owner, ceremony and funds-out row, and the few others that prompt. */
@@ -190,7 +192,12 @@ const STAKE_NOTE = "From the embedded wallet: candle_stake, candle_unstake or ca
 const LP_HELD = "Candle serves LP now (LP_ENABLED, on since 2026-11-06), but no key preset grants lp:write yet, which these cards need. candle-harness doctor says where LP stands."
 const STAKE_ROW = (stops: boolean): CardRow => ({ kind: "stake", idFlag: "--client-stake-id", readBack: "rerun", stops, wallet: "tee" })
 /** Why a perps write is held until the person turns it on. */
-export const PERPS_HELD = "Perps writes are off until you set perps.writes = true in config.toml. Perps reads work."
+export const PERPS_HELD = "Off until perps.writes = true in config.toml."
+/** Whether a row is held now: a card's hold, or a `needs` setting, unless `perps.writes` is on. */
+export function heldNow(row: CliRow, perpsWrites: boolean): boolean {
+  if (row.needs === "perps.writes") return !perpsWrites
+  return row.card?.held !== undefined && !(row.card.lifts === "perps.writes" && perpsWrites)
+}
 const PERPS_ROW = (extra: Partial<CardRow> = {}): CardRow => ({ kind: "perps", readBack: "none", stops: false, wallet: "evm-tee", held: PERPS_HELD, lifts: "perps.writes", ...extra })
 /** `--key` naming another key than this one needs the owner's device token, which no agent key holds. */
 const otherKey = (flags: Map<string, string | true>): { rule: CliRule; route: Route } | undefined => {
@@ -309,7 +316,7 @@ const ROWS: readonly RowInput[] = [
   r("perps leverage", "card", "later", "agent"),
   // The key's own reduce-only flag: reading it, or turning it on for this key, which only narrows. Another key's is the owner's.
   r("perps reduce-only", "read", "cli", "agent", { byFlags: otherKey, partly: "another key's: coming", takes: 0 }),
-  r("perps reduce-only on", "less-access", "cli", "agent", { byFlags: otherKey, partly: "another key's: coming", takes: 0 }),
+  r("perps reduce-only on", "less-access", "cli", "agent", { needs: "perps.writes", byFlags: otherKey, partly: "another key's: coming", takes: 0 }),
   r("perps reduce-only off", "owner", "later", "owner"),
   never("perps watch", "The core watches perps risk itself; --on-warn and --on-critical run commands.", "agent"),
   // Account

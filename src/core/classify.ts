@@ -37,7 +37,7 @@ export type CallClass =
 const READ: ToolClass = { class: "read" }
 const card = (kind: CardKind, idKey: IdKey = "coreOpId"): ToolClass => ({ class: "card", kind, idKey })
 const notYet = (reason: string): ToolClass => ({ class: "refused", code: "NOT_YET_SUPPORTED", reason, listed: false })
-const PERPS = notYet("Candle's perps write tools aren't in the Candle Harness. With perps.writes on, close, cancel, tpsl, schedule-cancel and flatten are candle_cli cards (candle perps <command>), and reduce-only on runs at once; opening positions and moving funds come later. Perps reads work.")
+const PERPS = notYet("Perps writes are candle_cli cards, not this tool. Perps reads work.")
 const TRANSFER: ToolClass = {
   class: "refused",
   code: "TRANSFER_USER_ONLY",

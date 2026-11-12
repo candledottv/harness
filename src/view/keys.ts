@@ -539,6 +539,8 @@ export interface UiContext {
   /** Keep-awake, as the core says: shown in the palette where this machine has it (macOS). */
   keepAwake?: { on: boolean; available: boolean; active: boolean; failed?: string }
   walletsShown?: WalletsShown
+  /** config.toml's perps.writes, as the core says: the palette's commands show the perps card rows as now or coming. */
+  perpsWrites?: boolean
   /** Every wallet on the account and what each is called, for the overlay of every wallet. */
   allWallets?: PortfolioView["wallets"]
   walletNames?: readonly WalletNameEntry[]
@@ -1045,6 +1047,7 @@ export function paletteInput(state: UiState, ctx: UiContext): PaletteInput {
     ...(ctx.linked ? { linked: ctx.linked } : {}),
     ...(ctx.pin ? { pin: ctx.pin } : {}),
     ...(ctx.mode ? { mode: ctx.mode } : {}),
+    ...(ctx.perpsWrites ? { perpsWrites: true } : {}),
     paused: ctx.paused === true,
     card: focusedCard(state, ctx) !== undefined,
     requotable: ctx.requotable !== undefined,

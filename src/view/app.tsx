@@ -783,6 +783,7 @@ export function App({ session, onQuit, restartCore, now = Date.now, tickMs = 250
       ...(v.skills ? { skillFolders: v.skills.folders } : {}),
       ...(v.status?.keepAwake ? { keepAwake: v.status.keepAwake } : {}),
       ...(v.status?.walletsShown !== undefined ? { walletsShown: v.status.walletsShown } : {}),
+      ...(v.status?.perpsWrites ? { perpsWrites: true } : {}),
       ...(v.portfolio ? { allWallets: v.portfolio.wallets } : {}),
       ...(v.wallets?.names ? { walletNames: v.wallets.names } : {}),
       ...(v.autonomy ? { autonomy: v.autonomy } : {}),

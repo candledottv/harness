@@ -157,6 +157,7 @@ export function PoppedApp({ session, pane, onQuit, now = Date.now, tickMs = 250,
       journal: journalContext(v, { width, height }),
       ...(v.wallets?.groups ? { walletGroups: v.wallets.groups } : {}),
       ...(v.status?.walletsShown !== undefined ? { walletsShown: v.status.walletsShown } : {}),
+      ...(v.status?.perpsWrites ? { perpsWrites: true } : {}),
     }
   }
 

@@ -22,7 +22,7 @@ import type { CliCardRequest, CliCards } from "./cli-cards"
 import type { CardKind } from "./classify"
 import { type Destination, notAsked, prepareFundsOut } from "./destinations"
 import { versionAtLeast } from "./candle-mcp"
-import { allowedFlags, CLI_ROWS, type CliRow, canonicalCommand, LP_AGENT_SCOPES, type CliRule, dashPrefixValue, type Identity, isFlagWord, MIN_CANDLE_CLI, type Route, needsVault, repeats, rowFor, runsInPane, SOURCE, type SourceEntry, sourceFor } from "./cli-table"
+import { allowedFlags, CLI_ROWS, type CliRow, canonicalCommand, heldNow, LP_AGENT_SCOPES, PERPS_HELD, type CliRule, dashPrefixValue, type Identity, isFlagWord, MIN_CANDLE_CLI, type Route, needsVault, repeats, rowFor, runsInPane, SOURCE, type SourceEntry, sourceFor } from "./cli-table"
 import type { Mapped, Operation } from "./execute"
 import type { Journal } from "./journal"
 import { paneRowNow, positionals, prepareKeysCreate, presetDrops, REAL_IN_PAPER, rebindFills, rebindNote } from "./owner-rows"
@@ -199,15 +199,15 @@ function paneNow(call: ResolvedCall): boolean {
   return runsInPane(call.row, call.rule) && (call.row.pane?.needsPrompt !== undefined || paneRowNow(call.rule, call.route))
 }
 
-/** Whether a card row is held now: its hold, unless the setting that lifts it is on (`perps.writes`). */
-export function heldNow(row: CliRow, perpsWrites: boolean): boolean {
-  return row.card?.held !== undefined && !(row.card.lifts === "perps.writes" && perpsWrites)
-}
+export { heldNow }
 
 /** The held card rows, grouped by why: "lp add, lp remove, lp claim (Candle hasn't …)". */
 function heldByReason(perpsWrites: boolean): string {
   const groups = new Map<string, string[]>()
-  for (const row of CLI_ROWS) if (row.card?.held !== undefined && heldNow(row, perpsWrites)) groups.set(row.card.held, [...(groups.get(row.card.held) ?? []), `${row.path}${row.via ? " from a TEE wallet" : ""}`])
+  for (const row of CLI_ROWS) {
+    // A perps row off is under "Later (perps writes)", said once, not here.
+    if (row.card?.held !== undefined && row.card.lifts === undefined && heldNow(row, perpsWrites)) groups.set(row.card.held, [...(groups.get(row.card.held) ?? []), `${row.path}${row.via ? " from a TEE wallet" : ""}`])
+  }
   return [...groups].map(([why, paths]) => `${paths.join(", ")} (${why.replace(/\.$/, "")})`).join("; ")
 }
 
@@ -246,20 +246,20 @@ export function describeTool(perpsWrites = false): string {
   const lines = [
     "Runs one command of the user's Candle CLI (candle) through the Candle Harness, with no shell. Use it for what Candle's MCP tools don't cover. Give the command word, the subcommand, and the rest as a list of arguments; --json and the RPC URL are added for you.",
     `Runs at once (read): ${group((r) => r.rule === "read" && r.route === "cli" && !r.pane?.needsPrompt).join(", ")}.`,
-    `Becomes a one-press card for the user (it only narrows access): ${group((r) => r.rule === "less-access" && r.route === "cli" && !r.pane?.needsPrompt).join(", ")}. Also keys access --access read, keys update --embedded-wallet deny, keys wallets scope --scope selected.`,
+    `Becomes a one-press card for the user (it only narrows access): ${group((r) => r.rule === "less-access" && r.route === "cli" && !r.pane?.needsPrompt && !heldNow(r, perpsWrites)).join(", ")}. Also keys access --access read, keys update --embedded-wallet deny, keys wallets scope --scope selected.`,
     `Asks for the user's vault passphrase at the CLI's own prompt, so it becomes ${PANE}: ${group((r) => r.pane?.needsPrompt !== undefined).join(", ")}. From any pane you learn only how it ended. Pass the TEE wallet's address, not its label.`,
     `Owner steps, the user's to approve: propose one only when the user asks for it. Each becomes ${PANE}, where the user gives their vault factor and answers the CLI's own prompts: ${group((r) => r.rule === "owner" && paneRowNow(r.rule, r.route)).join(", ")}. Also keys access widening, keys update --embedded-wallet allow, tee status --verify.`,
     `At the CLI's own prompt, the user's alone: propose one only when the user asks for it. Each becomes ${PANE}, where the user types or is shown a secret (a private key, the 24 words, a passphrase, an API key) or names a file; you never learn what it showed: ${group((r) => r.rule === "ceremony" && paneRowNow(r.rule, r.route)).join(", ")}. Also vault status --unlock. Never put a secret in args: secrets set takes the name only, and wallets import no key. Never ask the user for a path a step takes (vault backup's --to, a file to sign or verify): propose it without one, and the pane asks them.`,
     `Moving funds out, the user's alone: propose one only when the user asks for it in their own message this turn, naming where it goes and how much (a sweep: the wallet and everything), and name the destination as they did. Send the asset they named (SOL when they name none; a token by the mint they gave in full) from the wallet they named, if they named one. Each becomes ${PANE}, where the CLI asks for the vault passphrase itself and prints the destination for a typed confirm: ${group((r) => r.rule === "funds-out" && paneRowNow(r.rule, r.route)).join(", ")}, and vault fund. Their arguments: vault transfer <to> --amount <n> --asset SOL|<mint> --from <vault key or TEE wallet label>, with --amount max for all of that asset only when the user asks to send everything; tee sweep <TEE wallet address>; external sweep <external key label> --to <vault key label>; vault fund <TEE wallet address or external key label> --amount <n> --asset SOL|USDC. A destination that looks like one of the user's own but isn't is refused; a new address shows amber on the card, and the user's click on it is the approval. Pass a TEE wallet by its address; a vault key by its label or address.`,
     "keys create makes a new agent in the Candle Harness: name it with --label <agent-name>; it's Write unless you pass --access or --scopes, never one that moves funds, and its embedded wallet starts denied (allowing it is keys update, a second owner step). --tx-limit <usd> sets Candle's own cap on the key, reset daily unless --reset says otherwise: offer one on every new agent, an LP agent too. An existing key can't gain lp:write: for LP, make a new agent with --scopes " +
       `${LP_AGENT_SCOPES.join(",")} and a name such as <agent>-lp; the Candle Harness then offers it a fresh TEE wallet from the vault, promoted to its key and funded, one step at a time. Never rebind or change another agent's key to do it.`,
-    `Becomes a one-press card for the user, run with your key: ${group((r) => r.card !== undefined && !heldNow(r, perpsWrites)).map((p) => (p.startsWith("stake ") ? `${p} --wallet <TEE wallet>` : p === "image upload" ? `${p} <a file in your research folder>` : p)).join(", ")}. The Candle Harness adds the id and --yes where the command takes them; never pass --client-trade-id, --client-stake-id or --client-id.${perpsWrites ? " A perps card trades from an EVM TEE wallet on your key: name it with --wallet, or leave it out for your default on Hood. Removing a stop-loss (tpsl --remove-sl) is the user's to type, never yours to propose." : ""}`,
+    `Becomes a one-press card for the user, run with your key: ${group((r) => r.card !== undefined && !heldNow(r, perpsWrites)).map((p) => (p.startsWith("stake ") ? `${p} --wallet <TEE wallet>` : p === "image upload" ? `${p} <a file in your research folder>` : p)).join(", ")}. The Candle Harness adds the id and --yes where the command takes them; never pass --client-trade-id, --client-stake-id${perpsWrites ? " or --client-id" : ""}.${perpsWrites ? " A perps card trades from an EVM TEE wallet on your key: name it with --wallet, or leave it out for your default on Hood. Removing a stop-loss (tpsl --remove-sl) is the user's to type, never yours to propose." : ""}`,
     `Use the MCP tool instead: ${gathered(CLI_ROWS.filter((r) => r.rule === "mcp" && !perpsRead(r)), (r) => r.mcpTool ?? "").map(([tool, paths]) => `${parents(paths).join(", ")} → ${tool}`).join("; ")}${perpsReads.length ? `; perps ${perpsReads.join(", ")} → candle_perps_<that word>` : ""}.`,
     `Done another way: ${CLI_ROWS.filter((r) => r.via !== undefined).map((r) => `${r.path} → ${r.via}`).join(", ")}.`,
     `Coming, held until each is checked live: ${heldByReason(perpsWrites)}. A TEE wallet allowed to launch still can't launch through the Candle Harness until then: say so rather than ask for a launch's details.`,
     ...(group((r) => r.route === "pane" && !paneRowNow(r.rule, r.route)).length ? [`Coming: ${group((r) => r.route === "pane" && !paneRowNow(r.rule, r.route)).join(", ")}.`] : []),
     ...gathered(CLI_ROWS.filter((r) => r.held !== undefined), (r) => r.held ?? "").map(([why, paths]) => `Not in the Candle Harness: ${paths.join(", ")}. ${why}`),
-    `Later (perps that opens risk or moves funds): ${parents(group((r) => r.route === "later" && r.rule !== "never" && r.rule !== "mcp" && r.held === undefined)).join(", ")}.`,
+    `Later (perps writes): ${parents(group((r) => ((r.route === "later" && r.rule !== "never" && r.rule !== "mcp" && r.held === undefined) || ((r.card?.lifts !== undefined || r.needs !== undefined) && heldNow(r, perpsWrites))))).map((p) => p.replace(/^perps /, "")).join(", ")}.`,
     `Never through the agent: ${parents(group((r) => r.rule === "never")).join(", ")}.`,
     "Never pass --profile, --api-url, --yes, --rpc-url, --json, file paths (but image upload's, inside your research folder) or --flag=value: they're refused. Moving funds or changing access the user didn't ask for is never yours to start.",
   ]
@@ -374,6 +374,7 @@ export class CliTool {
       }
     }
     if (call.route !== "cli" || (call.rule !== "read" && call.rule !== "less-access")) return this.refuse(client, "NOT_YET", notYet(call), command)
+    if (call.row.needs !== undefined && heldNow(call.row, this.deps.perpsWrites?.() ?? false)) return this.refuse(client, "NOT_YET", `candle ${call.row.path} is coming: ${PERPS_HELD} Nothing was run.`, command)
 
     if (call.rule === "read") return this.output(await this.run(call), this.final(call))
 
@@ -469,6 +470,7 @@ export class CliTool {
       return (await this.deps.approveInstant(viewClientId, card, "typed")) as Record<string, unknown>
     }
     if (call.route !== "cli" || (call.rule !== "read" && call.rule !== "less-access")) throw refused("NOT_YET", notYet(call))
+    if (call.row.needs !== undefined && heldNow(call.row, this.deps.perpsWrites?.() ?? false)) throw refused("NOT_YET", `candle ${call.row.path} is coming: ${PERPS_HELD} Nothing was run.`)
     await this.deps.journal.append({ type: "cli.typed", mode: this.deps.mode(), ...(call.agent ? { agent: call.agent } : {}), by: viewClientId, argv: call.argv, rule: call.rule })
     // Read before it runs: once the key is revoked, the wallets it held are no agent's.
     const warning = call.rule === "less-access" ? this.strands(call) : undefined
