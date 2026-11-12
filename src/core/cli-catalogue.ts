@@ -118,8 +118,8 @@ function firstSentence(text: string): string {
 /** Lower-cases a sentence's first letter, but not an acronym's ("API keys", "CNDL"). */
 const lowerFirst = (text: string): string => (/^[A-Z][a-z]/.test(text) ? text[0]!.toLowerCase() + text.slice(1) : text)
 
-/** Why a perps write is still coming: perps reads are in, perps trading isn't yet. */
-export const PERPS_LATER = "Perps trading comes in a later release. For now the Candle Harness reads perps markets, positions and risk, and doesn't trade them."
+/** Why a perps write is still coming: reads and what lowers risk are in; opening risk and moving funds aren't yet. */
+export const PERPS_LATER = "Perps trading comes in a later release. For now the Candle Harness reads perps markets, positions and risk, and with perps.writes on closes and protects positions, but doesn't open them or move funds."
 
 /**
  * A prompt-pane row's rule in words: the factor step first (an owner row the CLI runs without

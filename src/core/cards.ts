@@ -638,7 +638,7 @@ export class CardBook implements CardDesk {
 
     // Paused refuses whatever spends or publishes at once, before anything is read from Candle.
     const row = input.cli?.row ?? input.pane?.row.path
-    const words = input.pane?.words
+    const words = input.pane?.words ?? input.cli?.words
     if (pausedStops({ kind, tool, ...(given.side === "buy" ? { side: "buy" as const } : {}), ...(row ? { row } : {}), ...(words ? { words } : {}) }) && this.deps.paused()) {
       await this.refuse(client, agent, tool, "PAUSED", pausedMessage({ kind }))
     }
@@ -1918,8 +1918,9 @@ export class CardBook implements CardDesk {
     const plan = await planCliRow(request, {
       agent,
       opId,
-      payer: (word) =>
-        this.deps.wallets?.payer(agent, word, { chain: "solana" }) ?? { ok: false, code: "WALLET_NOT_PAYABLE", message: `${agent} can pay only from the embedded wallet in this build.`, canPayFrom: [] },
+      payer: (word, chain = "solana") =>
+        this.deps.wallets?.payer(agent, word, { chain }) ?? { ok: false, code: "WALLET_NOT_PAYABLE", message: `${agent} can pay only from the embedded wallet in this build.`, canPayFrom: [] },
+      typed: client.role === "view",
       price: async (assetOrMint) => (isBaseAsset(assetOrMint) ? this.deps.pricing.asset(agent, assetOrMint) : this.deps.pricing.token(agent, "solana", assetOrMint)),
       readStaking: () => this.readCandle(agent, "candle_get_staking"),
       dryRun: (argv) => rows.dryRun(agent, this.cliArgs(argv, { rpcUrl: request.rpcUrl })),

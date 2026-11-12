@@ -7,12 +7,15 @@
 //   - the core mints the id and puts it on the row's id flag; the CLI makes it durable (on Candle, or in
 //     its own operations folder), so the same argv again resumes or reads, and never sends twice;
 //   - `--yes` wherever the command takes one: without it the CLI stops at its prompt;
+//   - a perps write (cli/src/commands/perps.ts, perps-manage.ts) is signed by the EVM TEE wallet through Candle's
+//     relay and posted to Hyperliquid by the CLI. Only `close` takes an id, a cloid; the rest read back as the user's call;
 //   - `image upload` has no id. It's the one row the agent may give a path to, and only a file in its
 //     own research folder. The file is copied into the core's state folder when the card is made, so
 //     what's uploaded is exactly what the card showed, and its SHA-256 is checked again before the run.
 import { createHash } from "node:crypto"
 import { chmod, copyFile, mkdir, open, readdir, readFile, realpath, rm, stat } from "node:fs/promises"
 import { basename, extname, isAbsolute, join, relative, sep } from "node:path"
+import type { ChainSlug } from "../shared/chains"
 import { terminalText } from "../shared/terminal-text"
 import type { PayerResult } from "./agent-wallets"
 import { isBaseAsset } from "./assets"
@@ -31,7 +34,13 @@ const payerName = (payer: { address: string; label?: string }) => payerNameOf(un
 
 /** Candle's largest hosted image (cli/src/commands/image.ts, MAX_IMAGE_BYTES). */
 export const MAX_IMAGE_BYTES = 10 * 1024 * 1024
-const ID_FLAGS = ["--client-trade-id", "--client-stake-id"]
+const ID_FLAGS = ["--client-trade-id", "--client-stake-id", "--client-id"]
+/** A Hyperliquid client order id (cli/src/hyperliquid.ts, HYPERLIQUID_CLOID_RE). */
+const CLOID = /^0x[0-9a-fA-F]{32}$/
+/** A perps market's name as Hyperliquid lists it: "BTC", "kPEPE". */
+const COIN = /^[A-Za-z0-9]{1,20}$/
+/** The card's id as a cloid: `0x` and its 32 hex digits. */
+export const cloidOf = (opId: string): string => `0x${opId.replace(/-/g, "").toLowerCase()}`
 const EMBEDDED_WORDS = new Set(["main", "embedded"])
 
 /** What a CLI card row runs: `candle <argv>` with the agent's key. The card's hash covers all of it. */
@@ -72,8 +81,10 @@ export interface CliPlanContext {
   agent: string
   /** The card's id, minted by the card book. */
   opId: string
-  /** Which wallet pays, by the agent's word (AgentWallets.payer on Solana). */
-  payer: (word: string | undefined) => PayerResult
+  /** Which wallet pays, by the agent's word (AgentWallets.payer, on Solana unless a chain is named). */
+  payer: (word: string | undefined, chain?: ChainSlug) => PayerResult
+  /** The person typed it; otherwise the agent asked. */
+  typed?: boolean
   /** A base asset's or a token's USD price, read now. */
   price: (assetOrMint: string) => Promise<{ usd: number; at: number } | undefined>
   /** Candle's staking read, for a stake card's figures. */
@@ -156,7 +167,19 @@ export async function planCliRow(request: CliCardRequest, ctx: CliPlanContext): 
   let tee: CliPlan["tee"]
   let walletName = ""
 
-  if (spec.wallet !== "none") {
+  if (spec.wallet === "evm-tee") {
+    const word = flagValue(words, "--wallet")
+    const named = word !== undefined && !EMBEDDED_WORDS.has(word) ? word : undefined
+    const teeOnly = () => ctx.refuse("EVM_TEE_WALLET_REQUIRED", `candle ${row} trades Hyperliquid from an EVM TEE wallet on the key: name it with --wallet <its label or address>. The embedded wallet has no perps account. Nothing was sent.`)
+    if (word !== undefined && named === undefined) await teeOnly()
+    const payer = ctx.payer(named, "hood")
+    if (!payer.ok) return ctx.refuse(payer.code, payer.message, { canPayFrom: payer.canPayFrom })
+    if (payer.kind !== "tee") return teeOnly()
+    wallet = payer.address
+    tee = { address: payer.address, ...(payer.label ? { label: payer.label } : {}) }
+    walletName = payerName(payer)
+    argv = word === undefined ? [...argv, "--wallet", payer.address] : withFlag(argv, "--wallet", payer.address)
+  } else if (spec.wallet !== "none") {
     const word = flagValue(words, "--wallet")
     const named = word !== undefined && !EMBEDDED_WORDS.has(word) ? word : undefined
     // From the embedded wallet, a staking row or a launch is Candle's own tool, which the agent calls.
@@ -185,9 +208,10 @@ export async function planCliRow(request: CliCardRequest, ctx: CliPlanContext): 
     plan = planned
   } else if (spec.kind === "lp") plan = await planLp(action!, args, words, walletName, ctx)
   else if (spec.kind === "launch") plan = await planLaunch(argv, words, walletName, ctx)
+  else if (spec.kind === "perps") plan = await planPerps(action!, args, words, walletName, ctx)
   else plan = planClose(words, walletName, ctx.emptyOf?.(wallet))
 
-  if (spec.idFlag) argv.push(spec.idFlag, ctx.opId)
+  if (spec.idFlag) argv.push(spec.idFlag, spec.idFlag === "--client-id" ? cloidOf(ctx.opId) : ctx.opId)
   if (request.yes) argv.push("--yes")
   return { ...plan, argv, rpcUrl: request.rpcUrl, wallet, ...(tee ? { tee } : {}) }
 }
@@ -307,6 +331,82 @@ async function planLaunch(argv: readonly string[], words: readonly string[], wal
   }
 }
 
+/**
+ * A perps write that only lowers the account's risk (cli/src/commands/perps.ts, perps-manage.ts). The CLI checks
+ * each build against its own read of Hyperliquid before anything is signed; the card says what it does in the
+ * CLI's words, with the gaps the CLI names: a TP/SL change cancels the old leg first, and a cancel-all timer takes
+ * protection with it.
+ */
+async function planPerps(action: string, args: string[], words: readonly string[], walletName: string, ctx: CliPlanContext): Promise<Omit<CliPlan, "argv" | "rpcUrl" | "wallet" | "tee">> {
+  const invalid = (message: string) => ctx.refuse("INVALID_PERPS", `${message} Nothing was sent.`)
+  const noRerun = "It has no id, so a re-send asks Hyperliquid again: read candle perps orders and positions first."
+  const coinOf = async (usage: string): Promise<string> => {
+    if (args.length !== 1 || !COIN.test(args[0]!)) await invalid(usage)
+    return args[0]!
+  }
+  if (action === "close") {
+    const coin = await coinOf("candle perps close takes one market, such as BTC, and --size <n> or --pct <1-100>, or neither to close all of it.")
+    const size = flagValue(words, "--size")
+    const pct = flagValue(words, "--pct")
+    if (size !== undefined && pct !== undefined) await invalid("candle perps close takes --size or --pct, not both.")
+    if (size !== undefined && !positive(size)) await invalid("--size is a positive decimal, in the market's own units.")
+    if (pct !== undefined && (!positive(pct) || Number(pct) > 100)) await invalid("--pct is from 1 to 100.")
+    const how = size !== undefined ? grouped(size) : pct !== undefined ? `${pct}%` : "ALL"
+    const headline = `CLOSE ${coin} ${how}`
+    return {
+      title: `${headline} · reduce-only · ${walletName}`,
+      headline,
+      preview: `a reduce-only market close of ${size !== undefined ? `${grouped(size)} ${coin}` : pct !== undefined ? `${pct}% of the ${coin} position, rounded down to the market's size step` : `the whole ${coin} position`}; it can't open or grow one`,
+      resendNote: "Re-send runs it again under the same cloid: the CLI reports the first close and signs nothing new.",
+    }
+  }
+  if (action === "cancel") {
+    if (args.length !== 1 || !CLOID.test(args[0]!)) await invalid("candle perps cancel takes one order's cloid, 0x and 32 hex digits, as candle perps orders lists it.")
+    const headline = `CANCEL PERPS ORDER ${short(args[0]!)}`
+    return { title: `${headline} · ${walletName}`, headline, preview: "cancels one order Candle built; a TP/SL leg cancelled this way leaves the position without it", resendNote: noRerun }
+  }
+  if (action === "tpsl") {
+    const coin = await coinOf("candle perps tpsl takes one market, such as BTC, and the legs to attach, change or remove.")
+    const tp = flagValue(words, "--take-profit")
+    const sl = flagValue(words, "--stop-loss")
+    const removeTp = words.includes("--remove-tp")
+    const removeSl = words.includes("--remove-sl")
+    if (tp === undefined && sl === undefined && !removeTp && !removeSl) await invalid("candle perps tpsl needs --take-profit, --stop-loss, --remove-tp or --remove-sl.")
+    if ((tp !== undefined && removeTp) || (sl !== undefined && removeSl)) await invalid("A leg is set or removed, not both.")
+    for (const price of [tp, sl]) if (price !== undefined && !positive(price)) await invalid("A take-profit or stop-loss is a positive price.")
+    // Taking a stop off a position is the person's to type: from the agent it would leave the position unprotected on one press.
+    if (removeSl && !ctx.typed) await invalid("Removing a stop-loss is yours to type, not the agent's to propose: type candle perps tpsl with --remove-sl in the Candle Harness.")
+    const parts = [tp !== undefined ? `TP ${grouped(tp)}` : undefined, sl !== undefined ? `SL ${grouped(sl)}` : undefined, removeTp ? "remove TP" : undefined, removeSl ? "remove SL" : undefined].filter(Boolean)
+    const headline = `TP/SL ${coin} ${parts.join(", ")}`
+    const gap = tp !== undefined || sl !== undefined ? "a leg that's already there is cancelled before the new one goes on: a short gap with no protection" : undefined
+    const unprotected = removeSl ? "the position is left with no stop-loss" : undefined
+    return {
+      title: `${headline} · ${walletName}`,
+      headline,
+      preview: ["legs are sized to the position now; legs Candle didn't build are left alone", gap, unprotected].filter(Boolean).join(" · "),
+      resendNote: noRerun,
+    }
+  }
+  if (action === "schedule-cancel") {
+    const clear = words.includes("--clear")
+    if (clear ? args.length !== 0 : args.length !== 1 || !/^\d+$/.test(args[0]!) || Number(args[0]) < 5) await invalid("candle perps schedule-cancel takes a number of seconds, at least 5, or --clear.")
+    const headline = clear ? "CLEAR PERPS CANCEL-ALL TIMER" : `PERPS CANCEL-ALL IN ${args[0]}s`
+    return {
+      title: `${headline} · ${walletName}`,
+      headline,
+      preview: clear ? "clears Hyperliquid's cancel-all timer on the wallet; open orders stay" : "when it fires, Hyperliquid cancels every open order on the wallet, take-profit and stop-loss legs too; positions stay open · 10 a day",
+      resendNote: noRerun,
+    }
+  }
+  if (args.length !== 0) await invalid("candle perps flatten takes no market: it reaches every main-perp order and position on the wallet.")
+  return {
+    title: `FLATTEN ALL PERPS · ${walletName}`,
+    headline: "FLATTEN ALL PERPS",
+    preview: "cancels every open main-perp order, then closes every main-perp position at market, up to 100 signed steps; spot, HIP-3 and vaults aren't reached",
+    resendNote: "A re-send flattens what's left: it reads Hyperliquid again first.",
+  }
+}
+
 function planClose(words: readonly string[], walletName: string, empty: EmptyState | undefined): Omit<CliPlan, "argv" | "rpcUrl" | "wallet" | "tee"> {
   const keep = words.filter((w, i) => words[i - 1] === "--keep")
   const kept = keep.length ? ` · keeps ${keep.map(short).join(", ")}` : ""
@@ -391,6 +491,17 @@ const NOTHING_SENT: Record<CardRow["kind"], ReadonlySet<string>> = {
   lp: new Set([...BEFORE_ANYTHING, "LP_NOT_ENABLED"]),
   launch: new Set(BEFORE_ANYTHING),
   close: new Set([...BEFORE_ANYTHING, "AGENT_WALLET_MISSING"]),
+  // Raised before the relay signs (cli/src/commands/perps.ts, runPerpsWrite); a refusal from Hyperliquid itself changed nothing.
+  perps: new Set([...BEFORE_ANYTHING, "TEE_WALLET_REQUIRED", "PERPS_UNAVAILABLE", "PERPS_BUILD_REFUSED", "PERPS_CLIENT_ID_UNSUPPORTED", "PERPS_VENUE_REFUSED", "PERPS_SCHEDULE_CANCEL_REJECTED"]),
+}
+
+/**
+ * tpsl and flatten are plans of several signed steps (cli/src/hyperliquid-manage.ts): only what's raised while the
+ * plan is made, before its one confirm, is sure to have sent nothing. A later step's error may follow a sent one.
+ */
+const PLAN_NOTHING_SENT: Record<string, ReadonlySet<string>> = {
+  "perps tpsl": new Set(["TEE_WALLET_REQUIRED", "VALIDATION_FAILED", "PERPS_NO_POSITION", "PERPS_ORDER_NOT_FOUND", "PERPS_TPSL_CONFLICT"]),
+  "perps flatten": new Set(["TEE_WALLET_REQUIRED"]),
 }
 
 /** Whether an exit-0 answer says it went through, by kind. */
@@ -409,7 +520,21 @@ function wentThrough(kind: CardRow["kind"], body: Record<string, unknown>): Mapp
     }
     case "close":
       return closeState(body)
+    case "perps":
+      return perpsState(body)
   }
+}
+
+/**
+ * A perps write's answer (cli/src/commands/perps.ts, perps-manage.ts): one action's `{ success: true, … }`, or a
+ * plan's `{ operation, complete: true, steps }` (tpsl, flatten). A close read back under its cloid is the first close's
+ * build, `replayed`, whose venue state the CLI doesn't settle: unknown, read with candle perps orders.
+ */
+function perpsState(body: Record<string, unknown>): Mapped["state"] {
+  if (body.replayed === true) return "unknown"
+  if (body.success === true && body.submitted !== false) return "succeeded"
+  if (typeof body.operation === "string" && body.complete === true) return "succeeded"
+  return "unknown"
 }
 
 /**
@@ -450,7 +575,7 @@ export function mapCliRow(row: string, run: Pick<CliResult, "exitCode" | "timedO
   const code = typeof body.code === "string" ? body.code : `CLI_EXIT_${run.exitCode}`
   const error = errorOf(code, body)
   if (run.exitCode === 3) return { state: "unknown", result: body, error, reason: "the candle CLI says it may have gone through (exit 3)" }
-  if ((run.exitCode === 1 || run.exitCode === 2) && NOTHING_SENT[kind].has(code)) return { state: "refused", result: body, error }
+  if ((run.exitCode === 1 || run.exitCode === 2) && (PLAN_NOTHING_SENT[row] ?? NOTHING_SENT[kind]).has(code)) return { state: "refused", result: body, error }
   return { state: "unknown", result: body, error, reason: `${code}: it may have gone through` }
 }
 

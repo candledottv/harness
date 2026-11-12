@@ -295,6 +295,15 @@ export const SETTINGS: readonly SettingDef[] = [
   },
   {
     file: "config.toml",
+    key: "perps.writes",
+    type: "true or false",
+    default: "false",
+    words:
+      "Perps writes from the EVM TEE wallet: closing, cancelling, take-profit and stop-loss, the cancel-all timer and flatten, each a one-press card. Off, they're held \"coming\" and perps reads still work. Setting it back to false holds them again.",
+    example: `[perps]\nwrites = true`,
+  },
+  {
+    file: "config.toml",
     key: "pnl.window",
     type: `"24h", "midnight", "session", or a time of day such as "18:00"`,
     default: `"24h"`,

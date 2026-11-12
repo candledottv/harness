@@ -51,6 +51,7 @@ test("a minimal config fills in the defaults", () => {
     candle: { mcp: { route: "cli", path: "candle-mcp" }, cliPath: "candle", rpcUrl: undefined, profile: undefined },
     wallets: { show: "active" },
     hacc: { enabled: true },
+    perps: { writes: false },
     pnl: { window: "24h" },
     skills: { from: [] },
     core: { keepAwake: false },

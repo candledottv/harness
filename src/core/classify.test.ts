@@ -134,11 +134,11 @@ describe("the table", () => {
     }
   })
 
-  test("perps writes come later", () => {
+  test("Candle's perps write tools aren't offered: perps writes go through candle_cli", () => {
     for (const name of PERPS_WRITES) {
       const verdict = classify(name, {}, "live")
       expect(verdict).toMatchObject({ class: "refused", code: "NOT_YET_SUPPORTED" })
-      expect(verdict.class === "refused" && verdict.reason).toContain("perps come later")
+      expect(verdict.class === "refused" && verdict.reason).toContain("candle_cli")
     }
   })
 

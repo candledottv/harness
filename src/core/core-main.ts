@@ -1490,6 +1490,7 @@ export async function startCore(opts: CoreOptions): Promise<RunningCore> {
       onAccessChanged: refreshWallets,
       cliCards: new CliCards({ cli: candleCli, redactor, journal: j, stage: uploads, now }),
       typedCards: () => config.cards.typedTrades,
+      perpsWrites: () => config.perps.writes,
       approveInstant: (viewClientId, card, how = "instant") => cards.approve(viewClientId, card.cardId, (card as Card).cardHash, how),
       // Owner rows: a new agent's name must be free; a rebind's card names who a wallet moves from and to.
       configured: () => new Set(Object.keys(config.agents)),

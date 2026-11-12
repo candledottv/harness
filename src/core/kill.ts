@@ -37,7 +37,7 @@ const IN_FLIGHT: ReadonlySet<OperationState> = new Set(["submitting", "pending",
 /** The kinds whose open cards the report lists as kept: what moves value or takes something down. */
 /** A trade card that sells: the kill switch keeps it, at a fresh price. */
 const isSell = (card: Card) => card.kind === "trade" && card.side === "sell"
-const KEPT: ReadonlySet<string> = new Set(["trade", "swap", "launch", "stake", "claim", "public", "lp", "close"])
+const KEPT: ReadonlySet<string> = new Set(["trade", "swap", "launch", "stake", "claim", "public", "lp", "close", "perps"])
 /** Candle's own stops (docs.candle.tv/developers/agent-trading, "Errors"): the report names them when it has seen one. */
 const CANDLE_STOPS = new Set(["PROFILE_PAUSED", "RISK_LIMIT_REACHED"])
 

@@ -467,7 +467,7 @@ describe("Candle's MCP card tools", () => {
       })),
     )
     for (const t of tools.slice(0, 4)) expect(t.inputSchema.properties).toHaveProperty("reason")
-    expect((tools[4]!.inputSchema.properties!.kind as { enum: string[] }).enum).toEqual(["trade", "launch", "swap", "bridge", "stake", "claim", "public", "upload", "lessaccess", "lp", "close", "hacc", "autonomy", "trigger", "bot"])
+    expect((tools[4]!.inputSchema.properties!.kind as { enum: string[] }).enum).toEqual(["trade", "launch", "swap", "bridge", "stake", "claim", "public", "upload", "lessaccess", "lp", "close", "perps", "hacc", "autonomy", "trigger", "bot"])
     expect(offeredTools(["candle_launch_token", "candle_delete_post"].map((name) => ({ name }))).map((t) => t.name)).toEqual(["candle_launch_token", "candle_delete_post"])
   })
 })

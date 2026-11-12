@@ -476,7 +476,7 @@ export const DESCRIPTION_BASIS: Readonly<Record<string, readonly string[]>> = {
  * every other kind, the CLI's card rows included (without them the agent couldn't read an upload's
  * URL or a less-access result). Only a trade or a launch the core doesn't hold is read from Candle.
  */
-const OPERATION_KINDS = ["trade", "launch", "swap", "bridge", "stake", "claim", "public", "upload", "lessaccess", "lp", "close", "hacc", "autonomy", "trigger", "bot"]
+const OPERATION_KINDS = ["trade", "launch", "swap", "bridge", "stake", "claim", "public", "upload", "lessaccess", "lp", "close", "perps", "hacc", "autonomy", "trigger", "bot"]
 const CANDLE_READS = new Set(["trade", "launch"])
 
 /**
