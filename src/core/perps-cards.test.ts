@@ -35,7 +35,7 @@ const PERPS_READ = {
   positions: { rows: [{ coin: "SOL", side: "long", size: "12.5" }] },
 }
 
-function ctx(opts: { payer?: PayerResult; typed?: boolean; perps?: "failed" | typeof PERPS_READ } = {}): CliPlanContext & { chains: (string | undefined)[] } {
+function ctx(opts: { payer?: PayerResult; typed?: boolean; perps?: "failed" | { orders: Record<string, unknown>; positions: Record<string, unknown> } } = {}): CliPlanContext & { chains: (string | undefined)[] } {
   const chains: (string | undefined)[] = []
   return {
     chains,
@@ -162,6 +162,18 @@ describe("the flatten card", () => {
   })
   test("is refused, nothing sent, when Hyperliquid's list can't be read: the card is the only gate", async () => {
     expect(await refusal(planCliRow(request(["perps", "flatten"]), ctx({ perps: "failed" })))).toBe("PERPS_READ_FAILED")
+  })
+  test("refuses an OK positions response whose direct venue read failed", async () => {
+    const positions = { rows: [], accountLine: null, risk: { level: "unknown", reason: "PERPS_READ_FAILED" } }
+    expect(await refusal(planCliRow(request(["perps", "flatten"]), ctx({ perps: { orders: { open: [] }, positions } })))).toBe("PERPS_READ_FAILED")
+  })
+  test("refuses unknown risk with no account line even without a read-failed reason", async () => {
+    const positions = { rows: [], accountLine: null, risk: { level: "unknown" } }
+    expect(await refusal(planCliRow(request(["perps", "flatten"]), ctx({ perps: { orders: { open: [] }, positions } })))).toBe("PERPS_READ_FAILED")
+  })
+  test("refuses a read-failed reason even when the response has an account line", async () => {
+    const positions = { rows: [], accountLine: {}, risk: { level: "unknown", reason: "PERPS_READ_FAILED" } }
+    expect(await refusal(planCliRow(request(["perps", "flatten"]), ctx({ perps: { orders: { open: [] }, positions } })))).toBe("PERPS_READ_FAILED")
   })
 })
 

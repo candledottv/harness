@@ -406,7 +406,10 @@ async function planPerps(action: string, args: string[], words: readonly string[
   if (args.length !== 0) await invalid("candle perps flatten takes no market: it reaches every main-perp order and position on the wallet.")
   // The card is the only gate, so it lists each order and position the run will touch, read now.
   const touched = ctx.readPerps ? await ctx.readPerps(wallet) : undefined
-  if (touched === undefined || touched.orders === undefined || touched.positions === undefined) {
+  const risk = record(touched?.positions?.risk)
+  // Positions stays an OK tool response when its direct venue read failed.
+  if (touched === undefined || touched.orders === undefined || touched.positions === undefined ||
+    risk?.reason === "PERPS_READ_FAILED" || (risk?.level === "unknown" && touched.positions.accountLine === null)) {
     return ctx.refuse("PERPS_READ_FAILED", `candle perps flatten's card lists every open order and position it will touch, and Hyperliquid's could not be read just now. Try again, or read candle perps orders and positions first. Nothing was sent.`)
   }
   const orders = listOrders(touched.orders)
