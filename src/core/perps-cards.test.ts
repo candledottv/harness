@@ -10,10 +10,12 @@ import { SETTINGS } from "../config-settings"
 import { paths } from "../paths"
 import type { PayerResult } from "./agent-wallets"
 import { classify, pausedStops } from "./classify"
+import { catalogueFor, searchCatalogue } from "./cli-catalogue"
 import { type CliCardRequest, type CliPlanContext, cloidOf, mapCliRow, planCliRow, UploadStage } from "./cli-cards"
 import { FORBIDDEN_FLAGS, PERPS_HELD, rowFor } from "./cli-table"
 import { describeTool, heldNow, resolveCall } from "./cli-tool"
 import { prepareKeysCreate } from "./owner-rows"
+import { perpsJournalEntry } from "./perps-journal"
 
 const EVM_TEE = "0x00000000000000000000000000000000000e7ee1"
 const OP_ID = "0f8fad5b-d9cb-469f-a165-70867728950e"
@@ -116,6 +118,34 @@ describe("the table", () => {
     const verdict = classify("candle_perps_close", {}, "live")
     expect(verdict.class).toBe("refused")
     expect(verdict.class === "refused" && verdict.reason).toContain("candle_cli")
+  })
+})
+
+describe("the commands pane and palette", () => {
+  const entry = (path: string, perpsWrites: boolean) => catalogueFor(perpsWrites).find((e) => e.path === path)!
+  test("with perps.writes off the lowering rows are coming, with why; on, they're now", () => {
+    for (const path of ["perps close", "perps cancel", "perps tpsl", "perps schedule-cancel", "perps flatten", "perps reduce-only on"]) {
+      expect(entry(path, false).availability).toBe("coming")
+      expect(entry(path, false).why).toBe(PERPS_HELD)
+      expect(entry(path, true).availability).toBe("now")
+      expect(entry(path, true).why).toBeUndefined()
+    }
+  })
+  test("opening risk and moving funds are coming either way; reads are now either way", () => {
+    for (const path of ["perps open", "perps deposit", "perps withdraw", "perps leverage", "perps reduce-only off"]) {
+      expect(entry(path, false).availability).toBe("coming")
+      expect(entry(path, true).availability).toBe("coming")
+    }
+    expect(entry("perps reduce-only", true).availability).toBe("now")
+    expect(entry("perps reduce-only", false).availability).toBe("now")
+  })
+  test("the palette search follows the setting", () => {
+    expect(searchCatalogue("perps flatten", false).find((e) => e.path === "perps flatten")!.availability).toBe("coming")
+    expect(searchCatalogue("perps flatten", true).find((e) => e.path === "perps flatten")!.availability).toBe("now")
+  })
+  test("reduce-only on is refused as not yet while the setting is off, and the description doesn't offer it", () => {
+    expect(describeTool(false)).not.toContain("perps reduce-only on")
+    expect(rowFor("perps reduce-only on")!.needs).toBe("perps.writes")
   })
 })
 
@@ -241,5 +271,27 @@ describe("keys and the setting", () => {
     expect(load("[perps]\nwrites = true\n").config.perps).toEqual({ writes: true })
     expect(() => load(`[perps]\nwrites = "yes"\n`)).toThrow("perps.writes")
     expect(SETTINGS.find((s) => s.key === "perps.writes")).toMatchObject({ file: "config.toml", default: "false" })
+  })
+})
+
+describe("the journal's perps entry", () => {
+  test("a close carries the coin, percent and cloid it ran with, and the fill and fee the answer gives", () => {
+    const argv = ["perps", "close", "BTC", "--pct", "50", "--wallet", EVM_TEE, "--client-id", CLOID, "--yes"]
+    expect(perpsJournalEntry("perps close", argv, { success: true, side: "sell", size: "0.5", avgPx: "61000.5", fee: "0.31" })).toEqual({
+      row: "perps close",
+      coin: "BTC",
+      cloid: CLOID,
+      pct: "50",
+      side: "sell",
+      size: "0.5",
+      fill: "61000.5",
+      fee: "0.31",
+    })
+  })
+  test("a cancel's cloid is the one it named; fields the answer lacks are left out, never guessed", () => {
+    expect(perpsJournalEntry("perps cancel", ["perps", "cancel", CLOID, "--wallet", EVM_TEE, "--yes"], { success: true })).toEqual({ row: "perps cancel", cloid: CLOID })
+  })
+  test("a flatten has no coin: it is the row alone", () => {
+    expect(perpsJournalEntry("perps flatten", ["perps", "flatten", "--wallet", EVM_TEE, "--yes"], { operation: "flatten", complete: true })).toEqual({ row: "perps flatten" })
   })
 })

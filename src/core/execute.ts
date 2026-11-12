@@ -9,6 +9,7 @@ import type { ToolOutcome } from "./candle-mcp"
 import type { Card } from "./cards"
 import { pausedMessage, pausedStops, resultWasPaper } from "./classify"
 import { rowFor } from "./cli-table"
+import { perpsJournalEntry } from "./perps-journal"
 import { type Fill, readFill, receivedOf, swapReceived } from "./fill"
 import type { Journal, JournalRow } from "./journal"
 import type { Side } from "./limits"
@@ -991,6 +992,8 @@ export class Operations {
       opId: op.opId,
       cardId: op.cardId,
       ...(mapped.result !== undefined ? { result: mapped.result } : {}),
+      // A perps card: coin, size, cloid, side, fill and fee in one place, from the argv it ran and the CLI's answer.
+      ...(typeof op.params.row === "string" && op.params.row.startsWith("perps ") && Array.isArray(op.params.argv) ? { perps: perpsJournalEntry(op.params.row, op.params.argv as string[], mapped.result) } : {}),
       ...(mapped.error ? { error: mapped.error } : {}),
       ...(mapped.paper ? { paper: true, note: "The live wallet had nothing to sell, so Candle closed the paper position instead." } : {}),
       ...(mapped.partial ? { partial: mapped.partial } : {}),
