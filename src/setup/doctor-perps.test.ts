@@ -1,4 +1,4 @@
-// The doctor's perps line (spec docs/specs/perps-writes.md §5, Phase 0): the key's perps:write, an EVM TEE wallet promoted
+// The doctor's perps line: the key's perps:write, an EVM TEE wallet promoted
 // onto it, and its signer on this machine.
 import { describe, expect, test } from "bun:test"
 import type { Config } from "../config"
