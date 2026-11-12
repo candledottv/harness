@@ -1877,8 +1877,8 @@ export class CardBook implements CardDesk {
   }
 
   /** A read that only fills in a card's figures: undefined when it fails. */
-  private async readCandle(agent: string, tool: string): Promise<Record<string, unknown> | undefined> {
-    const outcome = await this.deps.candle?.(agent, tool, {})
+  private async readCandle(agent: string, tool: string, params: Record<string, unknown> = {}): Promise<Record<string, unknown> | undefined> {
+    const outcome = await this.deps.candle?.(agent, tool, params)
     return outcome?.kind === "ok" ? record(outcome.result) : undefined
   }
 
@@ -1923,6 +1923,11 @@ export class CardBook implements CardDesk {
       typed: client.role === "view",
       price: async (assetOrMint) => (isBaseAsset(assetOrMint) ? this.deps.pricing.asset(agent, assetOrMint) : this.deps.pricing.token(agent, "solana", assetOrMint)),
       readStaking: () => this.readCandle(agent, "candle_get_staking"),
+      // A perps wallet's resting orders and positions, by its address: a flatten card lists them.
+      readPerps: async (wallet) => {
+        const [orders, positions] = await Promise.all([this.readCandle(agent, "candle_perps_orders", { wallet }), this.readCandle(agent, "candle_perps_positions", { wallet })])
+        return { orders, positions }
+      },
       dryRun: (argv) => rows.dryRun(agent, this.cliArgs(argv, { rpcUrl: request.rpcUrl })),
       researchDir: rows.researchDir(agent),
       ...(rows.emptyOf ? { emptyOf: rows.emptyOf } : {}),

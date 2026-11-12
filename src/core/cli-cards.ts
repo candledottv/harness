@@ -89,6 +89,11 @@ export interface CliPlanContext {
   price: (assetOrMint: string) => Promise<{ usd: number; at: number } | undefined>
   /** Candle's staking read, for a stake card's figures. */
   readStaking: () => Promise<Record<string, unknown> | undefined>
+  /**
+   * A perps wallet's open orders and positions, read now from Candle's perps reads, for a flatten card to list what
+   * it will touch. Undefined when a read failed: the card is refused rather than shown without its list.
+   */
+  readPerps?: (wallet: string) => Promise<{ orders: Record<string, unknown> | undefined; positions: Record<string, unknown> | undefined } | undefined>
   /** A dry run through the CLI when the card is made (a TEE wallet's launch). */
   dryRun: (argv: string[]) => Promise<CliResult>
   researchDir: string
@@ -208,7 +213,7 @@ export async function planCliRow(request: CliCardRequest, ctx: CliPlanContext): 
     plan = planned
   } else if (spec.kind === "lp") plan = await planLp(action!, args, words, walletName, ctx)
   else if (spec.kind === "launch") plan = await planLaunch(argv, words, walletName, ctx)
-  else if (spec.kind === "perps") plan = await planPerps(action!, args, words, walletName, ctx)
+  else if (spec.kind === "perps") plan = await planPerps(action!, args, words, walletName, wallet, ctx)
   else plan = planClose(words, walletName, ctx.emptyOf?.(wallet))
 
   if (spec.idFlag) argv.push(spec.idFlag, spec.idFlag === "--client-id" ? cloidOf(ctx.opId) : ctx.opId)
@@ -337,7 +342,7 @@ async function planLaunch(argv: readonly string[], words: readonly string[], wal
  * CLI's words, with the gaps the CLI names: a TP/SL change cancels the old leg first, and a cancel-all timer takes
  * protection with it.
  */
-async function planPerps(action: string, args: string[], words: readonly string[], walletName: string, ctx: CliPlanContext): Promise<Omit<CliPlan, "argv" | "rpcUrl" | "wallet" | "tee">> {
+async function planPerps(action: string, args: string[], words: readonly string[], walletName: string, wallet: string, ctx: CliPlanContext): Promise<Omit<CliPlan, "argv" | "rpcUrl" | "wallet" | "tee">> {
   const invalid = (message: string) => ctx.refuse("INVALID_PERPS", `${message} Nothing was sent.`)
   const noRerun = "It has no id, so a re-send asks Hyperliquid again: read candle perps orders and positions first."
   const coinOf = async (usage: string): Promise<string> => {
@@ -399,12 +404,43 @@ async function planPerps(action: string, args: string[], words: readonly string[
     }
   }
   if (args.length !== 0) await invalid("candle perps flatten takes no market: it reaches every main-perp order and position on the wallet.")
+  // The card is the only gate, so it lists each order and position the run will touch, read now.
+  const touched = ctx.readPerps ? await ctx.readPerps(wallet) : undefined
+  if (touched === undefined || touched.orders === undefined || touched.positions === undefined) {
+    return ctx.refuse("PERPS_READ_FAILED", `candle perps flatten's card lists every open order and position it will touch, and Hyperliquid's could not be read just now. Try again, or read candle perps orders and positions first. Nothing was sent.`)
+  }
+  const orders = listOrders(touched.orders)
+  const positions = listPositions(touched.positions)
+  const listing = `${orders.length ? `cancels ${orders.length} open order${orders.length === 1 ? "" : "s"}: ${orders.join("; ")}` : "no open orders"} · ${positions.length ? `closes ${positions.length} position${positions.length === 1 ? "" : "s"} at market: ${positions.join("; ")}` : "no open positions"}`
   return {
     title: `FLATTEN ALL PERPS · ${walletName}`,
     headline: "FLATTEN ALL PERPS",
-    preview: "cancels every open main-perp order, then closes every main-perp position at market, up to 100 signed steps; spot, HIP-3 and vaults aren't reached",
+    preview: `${listing} · main perps only, up to 100 signed steps; spot, HIP-3 and vaults aren't reached; read just now, and it reads again when it runs`,
     resendNote: "A re-send flattens what's left: it reads Hyperliquid again first.",
   }
+}
+
+/** The first array of objects found under one of these keys of a perps read. */
+function rowsOf(body: Record<string, unknown>, keys: readonly string[]): Record<string, unknown>[] {
+  for (const key of keys) {
+    const value = body[key]
+    if (Array.isArray(value)) return value.map(record).filter((r): r is Record<string, unknown> => r !== undefined)
+  }
+  return []
+}
+const text = (value: unknown): string | undefined => (typeof value === "string" || typeof value === "number" ? terminalText(String(value), { maxLength: 24 }) : undefined)
+const firstText = (row: Record<string, unknown>, keys: readonly string[]): string | undefined => keys.map((k) => text(row[k])).find((v) => v !== undefined && v !== "")
+
+/** Each open order, in a line: "BTC buy 0.1 @ 60000". Candle's own actions are in the read too; only orders resting on the venue are listed. */
+function listOrders(body: Record<string, unknown>): string[] {
+  return rowsOf(body, ["openOrders", "open", "orders", "rows"])
+    .filter((o) => o.status === undefined || o.status === "open" || o.status === "resting")
+    .map((o) => [firstText(o, ["coin", "market", "symbol"]) ?? "?", firstText(o, ["side"]), firstText(o, ["size", "sz", "origSz"]), firstText(o, ["price", "limitPx", "px"]) ? `@ ${firstText(o, ["price", "limitPx", "px"])}` : undefined].filter(Boolean).join(" "))
+}
+
+/** Each open position, in a line: "ETH long 2.5". */
+function listPositions(body: Record<string, unknown>): string[] {
+  return rowsOf(body, ["rows", "positions"]).map((p) => [firstText(p, ["coin", "market", "symbol"]) ?? "?", firstText(p, ["side"]), firstText(p, ["size", "sz", "szi"])].filter(Boolean).join(" "))
 }
 
 function planClose(words: readonly string[], walletName: string, empty: EmptyState | undefined): Omit<CliPlan, "argv" | "rpcUrl" | "wallet" | "tee"> {
@@ -491,7 +527,10 @@ const NOTHING_SENT: Record<CardRow["kind"], ReadonlySet<string>> = {
   lp: new Set([...BEFORE_ANYTHING, "LP_NOT_ENABLED"]),
   launch: new Set(BEFORE_ANYTHING),
   close: new Set([...BEFORE_ANYTHING, "AGENT_WALLET_MISSING"]),
-  // Raised before the relay signs (cli/src/commands/perps.ts, runPerpsWrite); a refusal from Hyperliquid itself changed nothing.
+  // Most are raised before the relay signs (cli/src/commands/perps.ts, runPerpsWrite). PERPS_VENUE_REFUSED and
+  // PERPS_SCHEDULE_CANCEL_REJECTED are raised after the action was signed and posted, when Hyperliquid answers `err`
+  // (perps.ts, 421-433): counted as refused only because close, cancel and schedule-cancel are one action, so an `err`
+  // means that action did not take effect. tpsl and flatten are several steps and use PLAN_NOTHING_SENT instead.
   perps: new Set([...BEFORE_ANYTHING, "TEE_WALLET_REQUIRED", "PERPS_UNAVAILABLE", "PERPS_BUILD_REFUSED", "PERPS_CLIENT_ID_UNSUPPORTED", "PERPS_VENUE_REFUSED", "PERPS_SCHEDULE_CANCEL_REJECTED"]),
 }
 

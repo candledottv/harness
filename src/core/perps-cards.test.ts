@@ -28,7 +28,12 @@ class Refused extends Error {
 const tee: PayerResult = { ok: true, kind: "tee", address: EVM_TEE, id: "tee_1", label: "hl-one", chain: "hood" }
 const embedded: PayerResult = { ok: true, kind: "embedded", address: "0x00000000000000000000000000000000000e3b01", chain: "hood" }
 
-function ctx(opts: { payer?: PayerResult; typed?: boolean } = {}): CliPlanContext & { chains: (string | undefined)[] } {
+const PERPS_READ = {
+  orders: { orders: [{ coin: "BTC", side: "buy", size: "0.1", price: "60000" }, { coin: "ETH", side: "sell", size: "2", price: "4000" }] },
+  positions: { rows: [{ coin: "SOL", side: "long", size: "12.5" }] },
+}
+
+function ctx(opts: { payer?: PayerResult; typed?: boolean; perps?: "failed" | typeof PERPS_READ } = {}): CliPlanContext & { chains: (string | undefined)[] } {
   const chains: (string | undefined)[] = []
   return {
     chains,
@@ -39,6 +44,7 @@ function ctx(opts: { payer?: PayerResult; typed?: boolean } = {}): CliPlanContex
       return opts.payer ?? tee
     },
     ...(opts.typed ? { typed: true } : {}),
+    readPerps: async () => (opts.perps === "failed" ? undefined : (opts.perps ?? PERPS_READ)),
     price: async () => undefined,
     readStaking: async () => undefined,
     dryRun: async () => ({ exitCode: 0, stdout: "", stderr: "", timedOut: false }),
@@ -110,6 +116,22 @@ describe("the table", () => {
     const verdict = classify("candle_perps_close", {}, "live")
     expect(verdict.class).toBe("refused")
     expect(verdict.class === "refused" && verdict.reason).toContain("candle_cli")
+  })
+})
+
+describe("the flatten card", () => {
+  test("lists every resting order and position it will touch, read when the card is made", async () => {
+    const plan = await planCliRow(request(["perps", "flatten"]), ctx())
+    expect(plan.preview).toContain("cancels 2 open orders: BTC buy 0.1 @ 60000; ETH sell 2 @ 4000")
+    expect(plan.preview).toContain("closes 1 position at market: SOL long 12.5")
+  })
+  test("says so when there is nothing to touch", async () => {
+    const plan = await planCliRow(request(["perps", "flatten"]), ctx({ perps: { orders: { orders: [] }, positions: { rows: [] } } }))
+    expect(plan.preview).toContain("no open orders")
+    expect(plan.preview).toContain("no open positions")
+  })
+  test("is refused, nothing sent, when Hyperliquid's list can't be read: the card is the only gate", async () => {
+    expect(await refusal(planCliRow(request(["perps", "flatten"]), ctx({ perps: "failed" })))).toBe("PERPS_READ_FAILED")
   })
 })
 
