@@ -287,18 +287,33 @@ describe("keys and the setting", () => {
 })
 
 describe("the journal's perps entry", () => {
-  test("a close carries the coin, percent and cloid it ran with, and the fill and fee the answer gives", () => {
+  test("a close carries the coin, percent and cloid it ran with, and the venue's filled size and price", () => {
     const argv = ["perps", "close", "BTC", "--pct", "50", "--wallet", EVM_TEE, "--client-id", CLOID, "--yes"]
-    expect(perpsJournalEntry("perps close", argv, { success: true, side: "sell", size: "0.5", avgPx: "61000.5", fee: "0.31" })).toEqual({
+    const result = {
+      success: true,
+      perpOrderId: "order_1",
+      kind: "close",
+      cloid: CLOID,
+      exchange: { status: "ok", response: { type: "order", data: { statuses: [{ filled: { totalSz: "0.5", avgPx: "61000.5", oid: 123 } }] } } },
+    }
+    expect(perpsJournalEntry("perps close", argv, result)).toEqual({
       row: "perps close",
       coin: "BTC",
       cloid: CLOID,
       pct: "50",
-      side: "sell",
       size: "0.5",
       fill: "61000.5",
-      fee: "0.31",
     })
+  })
+  test("finds a fill after a non-fill status and replaces the requested size with the filled size", () => {
+    const argv = ["perps", "close", "BTC", "--size", "1", "--client-id", CLOID, "--yes"]
+    const exchange = { response: { data: { statuses: [{ resting: { oid: 123 } }, { filled: { totalSz: "0.5", avgPx: "61000.5", oid: 124 } }] } } }
+    expect(perpsJournalEntry("perps close", argv, { success: true, cloid: CLOID, exchange })).toEqual({ row: "perps close", coin: "BTC", cloid: CLOID, size: "0.5", fill: "61000.5" })
+  })
+  test("without a venue fill, keeps requested size and ignores unsupported top-level fill and fee fields", () => {
+    const argv = ["perps", "close", "BTC", "--size", "1", "--client-id", CLOID, "--yes"]
+    const exchange = { response: { data: { statuses: [{ resting: { oid: 123 } }] } } }
+    expect(perpsJournalEntry("perps close", argv, { success: true, exchange, size: "0.5", avgPx: "61000.5", fee: "0.31" })).toEqual({ row: "perps close", coin: "BTC", cloid: CLOID, size: "1" })
   })
   test("a cancel's cloid is the one it named; fields the answer lacks are left out, never guessed", () => {
     expect(perpsJournalEntry("perps cancel", ["perps", "cancel", CLOID, "--wallet", EVM_TEE, "--yes"], { success: true })).toEqual({ row: "perps cancel", cloid: CLOID })
