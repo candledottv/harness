@@ -110,7 +110,8 @@ const ACCESS: Record<string, keyof typeof SOURCE.presets> = {
   "trade-perps": "tradeperps",
 }
 
-const MOVES_FUNDS = ["transfer:write", "transfer:bound"]
+/** Scopes that let a key send funds out: a transfer, or a Hyperliquid withdrawal to the key's own wallets (`perps:withdraw`). */
+const MOVES_FUNDS = ["transfer:write", "transfer:bound", "perps:withdraw"]
 
 /** How often a key's Candle cap resets, as `keys create --reset` takes it. */
 const RESETS = ["daily", "weekly", "monthly", "never"]

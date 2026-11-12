@@ -93,6 +93,8 @@ export interface Config {
   wallets: { show: WalletsShown }
   /** Hacc, Candle's market data engine: off hides every Hacc tool and closes the stream. Its host isn't configurable. */
   hacc: { enabled: boolean }
+  /** Perps writes through candle_cli: off, each perps card row is held "coming" (cli-table.ts, PERPS_HELD). Unset is off. */
+  perps: { writes: boolean }
   /** The P&L window a fresh install starts on; the window last picked is kept in state (core/pnl.ts). */
   pnl: { window: PnlWindow }
   /**
@@ -142,6 +144,7 @@ const KNOWN: Readonly<Record<string, readonly string[]>> = {
   wallets: known("wallets"),
   pnl: known("pnl"),
   hacc: known("hacc"),
+  perps: known("perps"),
   core: known("core"),
   build: known("build"),
   notify: known("notify"),
@@ -400,6 +403,14 @@ export function parseConfig(source: string, file: string, opts: { setup?: boolea
     else problems.push(`hacc.enabled is ${show(haccTable.enabled)}; it must be true or false`)
   }
 
+  const perpsTable = table(raw, "perps", "")
+  unknownKeys(perpsTable, KNOWN.perps!, "perps.")
+  let perpsWrites = false
+  if (perpsTable.writes !== undefined) {
+    if (typeof perpsTable.writes === "boolean") perpsWrites = perpsTable.writes
+    else problems.push(`perps.writes is ${show(perpsTable.writes)}; it must be true or false`)
+  }
+
   const pnlTable = table(raw, "pnl", "")
   unknownKeys(pnlTable, KNOWN.pnl!, "pnl.")
   let pnlWindow: PnlWindow = DEFAULT_WINDOW
@@ -475,6 +486,7 @@ export function parseConfig(source: string, file: string, opts: { setup?: boolea
       candle: { mcp: { route, path: mcpPath }, cliPath, rpcUrl, ...(evmRpcUrl ? { evmRpcUrl } : {}), profile },
       wallets: { show: walletsShow },
       hacc: { enabled: haccEnabled },
+      perps: { writes: perpsWrites },
       pnl: { window: pnlWindow },
       skills: { from: skillsFrom },
       core: { keepAwake },

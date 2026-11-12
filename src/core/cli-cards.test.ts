@@ -285,6 +285,12 @@ describe("paper, the kill switch and limits", () => {
       "lp remove": false,
       "lp claim": false,
       "wallets close-empty": false,
+      "perps close": false,
+      "perps cancel": false,
+      "perps tpsl": false,
+      // Unread argv errs towards stopping: setting the cancel-all timer stops, its --clear is kept (perps-cards.test.ts).
+      "perps schedule-cancel": true,
+      "perps flatten": false,
     })
   })
 

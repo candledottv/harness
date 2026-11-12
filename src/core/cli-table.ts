@@ -37,6 +37,8 @@ export interface CliRow {
   card?: CardRow
   /** Held "coming" with why, for a row that isn't a card (`transfer`). */
   held?: string
+  /** A row that isn't a card but runs only while this config.toml setting is true (`perps reduce-only on`). */
+  needs?: "perps.writes"
   /** The palette's request for the agent, where the CLI's help line wouldn't read as one ("buy 30 days" reads as a trade). */
   ask?: string
   /** How it runs in the prompt pane: every owner, ceremony and funds-out row, and the few others that prompt. */
@@ -100,9 +102,12 @@ export type Unlocks = "always" | "if-vault" | "if-tee-and-vault" | "never"
  */
 export interface CardRow {
   /** The card's kind: what the kill switch, the limits, the journal and the session block go by. */
-  kind: "stake" | "upload" | "lp" | "launch" | "close"
-  /** The flag the core puts the card's id on. The CLI keeps the id durable: on Candle, or in its own operations folder. */
-  idFlag?: "--client-stake-id" | "--client-trade-id"
+  kind: "stake" | "upload" | "lp" | "launch" | "close" | "perps"
+  /**
+   * The flag the core puts the card's id on. The CLI keeps the id durable: on Candle, or in its own operations folder.
+   * `--client-id` is a perps order's cloid, `0x` and 32 hex digits: the card's id without its dashes.
+   */
+  idFlag?: "--client-stake-id" | "--client-trade-id" | "--client-id"
   /**
    * How a lost answer is read back. rerun: the same argv again, which the CLI turns into a read or a
    * resume under the same id; only within the card's lifetime, since a run that never started would
@@ -111,12 +116,19 @@ export interface CardRow {
   readBack: "rerun" | "launch" | "none"
   /** Paused, the kill switch stops it, since it spends or publishes; otherwise it's kept. */
   stops: boolean
-  /** Which wallet pays: a TEE wallet named by --wallet (the embedded wallet's form is Candle's own tool), either, or none. */
-  wallet: "tee" | "either" | "none"
+  /** A row that stops, but not with this flag: `perps schedule-cancel --clear` clears a timer and sends nothing. */
+  keptWith?: string
+  /**
+   * Which wallet pays: a TEE wallet named by --wallet (the embedded wallet's form is Candle's own tool), either, or none.
+   * evm-tee: an EVM TEE wallet, Hyperliquid's account, named by --wallet or the agent's default on Hood.
+   */
+  wallet: "tee" | "either" | "none" | "evm-tee"
   /** Built on the card path, and held "coming" until it's checked live, with why. */
   held?: string
   /** A row that takes either wallet, but never from the embedded one with an agent's key: why (close-empty's transfer:write). */
   embeddedHeld?: string
+  /** The config.toml setting that lifts `held` once it's true (`perps.writes`); off, the row stays held. */
+  lifts?: "perps.writes"
 }
 
 export interface SourceEntry {
@@ -179,6 +191,19 @@ export const LP_AGENT_SCOPES: readonly string[] = [...SOURCE.presets.readwrite.s
 const STAKE_NOTE = "From the embedded wallet: candle_stake, candle_unstake or candle_finish_unstake, as a one-press card. From a TEE wallet: this command with --wallet <the TEE wallet's label or address>, a one-press card."
 const LP_HELD = "Candle serves LP now (LP_ENABLED, on since 2026-11-06), but no key preset grants lp:write yet, which these cards need. candle-harness doctor says where LP stands."
 const STAKE_ROW = (stops: boolean): CardRow => ({ kind: "stake", idFlag: "--client-stake-id", readBack: "rerun", stops, wallet: "tee" })
+/** Why a perps write is held until the person turns it on. */
+export const PERPS_HELD = "Off until perps.writes = true in config.toml."
+/** Whether a row is held now: a card's hold, or a `needs` setting, unless `perps.writes` is on. */
+export function heldNow(row: CliRow, perpsWrites: boolean): boolean {
+  if (row.needs === "perps.writes") return !perpsWrites
+  return row.card?.held !== undefined && !(row.card.lifts === "perps.writes" && perpsWrites)
+}
+const PERPS_ROW = (extra: Partial<CardRow> = {}): CardRow => ({ kind: "perps", readBack: "none", stops: false, wallet: "evm-tee", held: PERPS_HELD, lifts: "perps.writes", ...extra })
+/** `--key` naming another key than this one needs the owner's device token, which no agent key holds. */
+const otherKey = (flags: Map<string, string | true>): { rule: CliRule; route: Route } | undefined => {
+  const key = flags.get("--key")
+  return key !== undefined && key !== "self" ? { rule: "owner", route: "later" } : undefined
+}
 const LP_ROW = (stops: boolean): CardRow => ({ kind: "lp", idFlag: "--client-trade-id", readBack: "rerun", stops, wallet: "tee", held: LP_HELD })
 /** A row's pane, as written in the table: the factor step comes from the source read unless a row says otherwise. */
 type PaneInput = Partial<PaneSpec>
@@ -259,7 +284,7 @@ const ROWS: readonly RowInput[] = [
   r("lp add", "card", "card", "agent", { card: LP_ROW(true) }),
   r("lp remove", "card", "card", "agent", { card: LP_ROW(false) }),
   r("lp claim", "card", "card", "agent", { card: LP_ROW(false) }),
-  // Perps: reads through Candle's MCP tools; the statuses and every write wait for the perps phase.
+  // Perps: reads through Candle's MCP tools and the statuses; what lowers risk is a card; opening risk and moving funds come later.
   mcp("perps markets", "candle_perps_markets"),
   mcp("perps market", "candle_perps_market"),
   mcp("perps book", "candle_perps_book"),
@@ -278,16 +303,20 @@ const ROWS: readonly RowInput[] = [
   r("perps withdraw status", "read", "cli", "agent"),
   r("perps setup", "card", "later", "agent"),
   r("perps open", "card", "later", "agent"),
-  r("perps close", "card", "later", "agent"),
-  r("perps cancel", "card", "later", "agent"),
+  // What only lowers the risk on the account: one-press cards from the EVM TEE wallet, held until perps.writes is on.
+  // A close takes the card's id as its cloid, so the same argv again reports the first close and signs nothing.
+  r("perps close", "card", "card", "agent", { card: PERPS_ROW({ idFlag: "--client-id", readBack: "rerun" }), takes: 1 }),
+  r("perps cancel", "card", "card", "agent", { card: PERPS_ROW(), takes: 1 }),
   r("perps modify", "card", "later", "agent"),
   r("perps margin", "card", "later", "agent"),
-  r("perps tpsl", "card", "later", "agent"),
-  r("perps schedule-cancel", "card", "later", "agent"),
-  r("perps flatten", "card", "later", "agent"),
+  r("perps tpsl", "card", "card", "agent", { card: PERPS_ROW(), takes: 1 }),
+  // Setting the timer cancels every open order on the wallet, its protection too, so the kill switch stops it; clearing it is kept.
+  r("perps schedule-cancel", "card", "card", "agent", { card: PERPS_ROW({ stops: true, keptWith: "--clear" }), takes: 1 }),
+  r("perps flatten", "card", "card", "agent", { card: PERPS_ROW(), takes: 0 }),
   r("perps leverage", "card", "later", "agent"),
-  r("perps reduce-only", "card", "later", "agent"),
-  r("perps reduce-only on", "less-access", "later", "agent"),
+  // The key's own reduce-only flag: reading it, or turning it on for this key, which only narrows. Another key's is the owner's.
+  r("perps reduce-only", "read", "cli", "agent", { byFlags: otherKey, partly: "another key's: coming", takes: 0 }),
+  r("perps reduce-only on", "less-access", "cli", "agent", { needs: "perps.writes", byFlags: otherKey, partly: "another key's: coming", takes: 0 }),
   r("perps reduce-only off", "owner", "later", "owner"),
   never("perps watch", "The core watches perps risk itself; --on-warn and --on-critical run commands.", "agent"),
   // Account
@@ -707,6 +736,9 @@ export const FORBIDDEN_FLAGS = new Set([
   "--to",
   "--out",
   "--bundle",
+  // A perps write's dry run and its sign-only form: the card runs the write itself, and a signed action is never handed out.
+  "--no-submit",
+  "--sign-only",
 ])
 
 /**

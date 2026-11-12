@@ -18,7 +18,7 @@ export type Mode = "paper" | "live"
  * `owner`, `ceremony`, `funds-out` and `read`: cards that run in the prompt pane, by
  * their row's rule. A read only becomes a card there when it asks at the CLI's own prompt (`tee fund`).
  */
-export type CardKind = "trade" | "swap" | "bridge" | "lessaccess" | "launch" | "stake" | "claim" | "public" | "upload" | "lp" | "close" | "owner" | "ceremony" | "funds-out" | "hacc" | "autonomy" | "trigger" | "bot" | "read" | "unknown"
+export type CardKind = "trade" | "swap" | "bridge" | "lessaccess" | "launch" | "stake" | "claim" | "public" | "upload" | "lp" | "close" | "perps" | "owner" | "ceremony" | "funds-out" | "hacc" | "autonomy" | "trigger" | "bot" | "read" | "unknown"
 /** The id field a tool already has, or `coreOpId` for a tool with none (the core keeps the id). */
 export type IdKey = "clientTradeId" | "clientSwapId" | "clientLaunchId" | "clientStakeId" | "coreOpId"
 
@@ -37,7 +37,7 @@ export type CallClass =
 const READ: ToolClass = { class: "read" }
 const card = (kind: CardKind, idKey: IdKey = "coreOpId"): ToolClass => ({ class: "card", kind, idKey })
 const notYet = (reason: string): ToolClass => ({ class: "refused", code: "NOT_YET_SUPPORTED", reason, listed: false })
-const PERPS = notYet("Perps trading isn't in the Candle Harness yet: perps come later. Perps reads work.")
+const PERPS = notYet("Perps writes are candle_cli cards, not this tool. Perps reads work.")
 const TRANSFER: ToolClass = {
   class: "refused",
   code: "TRANSFER_USER_ONLY",
@@ -342,7 +342,13 @@ export function pausedStops(card: { kind: CardKind; tool: string; side?: Side; r
   if (card.tool === "candle_cli" && card.row !== undefined) {
     if (card.kind === "ceremony") return ceremonyStops(card.row, card.words ?? paneArgv(card.params))
     if (card.kind === "funds-out") return FUNDS_OUT_STOPS.has(card.row)
-    return rowFor(card.row)?.card?.stops === true || (card.kind === "owner" && OWNER_STOPS.has(card.row))
+    const spec = rowFor(card.row)?.card
+    // A row kept with one flag (`perps schedule-cancel --clear`): by the words proposed or the argv the card runs; unread, it stops.
+    if (spec?.keptWith !== undefined) {
+      const argv = card.words ?? cliArgv(card.params)
+      return argv === undefined || !argv.includes(spec.keptWith)
+    }
+    return spec?.stops === true || (card.kind === "owner" && OWNER_STOPS.has(card.row))
   }
   switch (card.kind) {
     case "trade":
@@ -358,6 +364,12 @@ export function pausedStops(card: { kind: CardKind; tool: string; side?: Side; r
     default:
       return false
   }
+}
+
+/** The argv a CLI card row's params run. */
+function cliArgv(params: unknown): string[] | undefined {
+  const argv = (params as { argv?: unknown } | undefined)?.argv
+  return Array.isArray(argv) ? (argv as string[]) : undefined
 }
 
 /** The command a pane card's params will run: its last step's argv. */
@@ -381,6 +393,8 @@ export function pausedMessage(card: { kind: CardKind }): string {
       return "Image uploads are paused by the kill switch. Sells, unstakes and claims still work; resume to upload."
     case "lp":
       return "Adding liquidity is paused by the kill switch. Removing it and claiming LP fees still work; resume to add."
+    case "perps":
+      return "Setting a perps cancel-all timer is paused by the kill switch. Closing, cancelling, TP/SL, flatten and clearing the timer still work; resume to set it."
     case "owner":
       return "Owner steps that widen access or spend are paused by the kill switch. Narrowing access and sending funds home still work; resume to do it."
     case "ceremony":

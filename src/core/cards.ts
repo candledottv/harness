@@ -638,7 +638,7 @@ export class CardBook implements CardDesk {
 
     // Paused refuses whatever spends or publishes at once, before anything is read from Candle.
     const row = input.cli?.row ?? input.pane?.row.path
-    const words = input.pane?.words
+    const words = input.pane?.words ?? input.cli?.words
     if (pausedStops({ kind, tool, ...(given.side === "buy" ? { side: "buy" as const } : {}), ...(row ? { row } : {}), ...(words ? { words } : {}) }) && this.deps.paused()) {
       await this.refuse(client, agent, tool, "PAUSED", pausedMessage({ kind }))
     }
@@ -1877,8 +1877,8 @@ export class CardBook implements CardDesk {
   }
 
   /** A read that only fills in a card's figures: undefined when it fails. */
-  private async readCandle(agent: string, tool: string): Promise<Record<string, unknown> | undefined> {
-    const outcome = await this.deps.candle?.(agent, tool, {})
+  private async readCandle(agent: string, tool: string, params: Record<string, unknown> = {}): Promise<Record<string, unknown> | undefined> {
+    const outcome = await this.deps.candle?.(agent, tool, params)
     return outcome?.kind === "ok" ? record(outcome.result) : undefined
   }
 
@@ -1918,10 +1918,16 @@ export class CardBook implements CardDesk {
     const plan = await planCliRow(request, {
       agent,
       opId,
-      payer: (word) =>
-        this.deps.wallets?.payer(agent, word, { chain: "solana" }) ?? { ok: false, code: "WALLET_NOT_PAYABLE", message: `${agent} can pay only from the embedded wallet in this build.`, canPayFrom: [] },
+      payer: (word, chain = "solana") =>
+        this.deps.wallets?.payer(agent, word, { chain }) ?? { ok: false, code: "WALLET_NOT_PAYABLE", message: `${agent} can pay only from the embedded wallet in this build.`, canPayFrom: [] },
+      typed: client.role === "view",
       price: async (assetOrMint) => (isBaseAsset(assetOrMint) ? this.deps.pricing.asset(agent, assetOrMint) : this.deps.pricing.token(agent, "solana", assetOrMint)),
       readStaking: () => this.readCandle(agent, "candle_get_staking"),
+      // A perps wallet's resting orders and positions, by its address: a flatten card lists them.
+      readPerps: async (wallet) => {
+        const [orders, positions] = await Promise.all([this.readCandle(agent, "candle_perps_orders", { wallet }), this.readCandle(agent, "candle_perps_positions", { wallet })])
+        return { orders, positions }
+      },
       dryRun: (argv) => rows.dryRun(agent, this.cliArgs(argv, { rpcUrl: request.rpcUrl })),
       researchDir: rows.researchDir(agent),
       ...(rows.emptyOf ? { emptyOf: rows.emptyOf } : {}),

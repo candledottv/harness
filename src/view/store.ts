@@ -86,6 +86,8 @@ export interface StatusView {
   debugLoseNextReply?: boolean
   /** Which wallets the panes show (wallets-shown.ts); a core from before it means "all". */
   walletsShown?: WalletsShown
+  /** config.toml's perps.writes: the commands palette lists the perps card rows as now (on) or coming (off); a core from before it sends none. */
+  perpsWrites?: boolean
   /** Each key's Candle limit and use, and the background reads slowed to fit; a core from before it sends none. */
   budget?: { keys: KeyUse[]; pace: Partial<Record<ReadKind, Pace>> }
 }

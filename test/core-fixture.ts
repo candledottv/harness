@@ -49,6 +49,8 @@ export function testConfig(candle: string, overrides: Partial<Config> = {}): Con
     wallets: { show: "active" },
     // Off unless a test turns it on with the fake Hacc (`haccHost`), so no test core reaches the real one.
     hacc: { enabled: false },
+    // Off, as on a fresh install: a test that runs a perps card turns it on.
+    perps: { writes: false },
     pnl: { window: "24h" },
     skills: { from: [] },
     ...overrides,
