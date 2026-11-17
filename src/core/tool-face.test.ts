@@ -6,8 +6,10 @@ import { join } from "node:path"
 import { traderPrompt } from "../engine/prompt"
 import { SHIM_INSTRUCTIONS } from "../mcp/shim"
 import { Redactor } from "../shared/redact"
+import sourceContracts from "../../test/fixtures/candle-source-contracts.json"
+import toolFixture from "../../test/fixtures/candle-tools.json"
 import { BASE_ASSETS } from "./assets"
-import type { ToolOutcome } from "./candle-mcp"
+import { toOutcome, type ToolOutcome } from "./candle-mcp"
 import type { Mode } from "./classify"
 import { Journal } from "./journal"
 import { CANDLE_ANSWER_BUDGET, type CardDesk, type CardView, cardAnswer, candleFits, type FaceClient, numbersFromText, offeredTools, paperDollars, ToolFace, withReason, withScreenNotes } from "./tool-face"
@@ -25,7 +27,7 @@ function parse(result: { content: { text: string }[]; isError?: boolean }) {
   return { body: JSON.parse(result.content[0]!.text), isError: result.isError === true, extra: result.content.slice(1).map((c) => JSON.parse(c.text)) }
 }
 
-async function setup(opts: { mode?: Mode; answers?: Record<string, ToolOutcome>; sizing?: ConstructorParameters<typeof ToolFace>[0]["sizing"]; turns?: Map<string, { ended: boolean; mode?: Mode }>; pricing?: Promise<void> } = {}) {
+async function setup(opts: { mode?: Mode; answers?: Record<string, ToolOutcome>; sizing?: ConstructorParameters<typeof ToolFace>[0]["sizing"]; turns?: Map<string, { ended: boolean; mode?: Mode }>; pricing?: Promise<void>; oldLaunchServer?: boolean } = {}) {
   // With turns to tell apart, the wallet trades inside limits: every trade card runs at once.
   const inside = opts.turns !== undefined
   const dir = await mkdtemp(join(tmpdir(), "chrn-face-"))
@@ -80,7 +82,7 @@ async function setup(opts: { mode?: Mode; answers?: Record<string, ToolOutcome>;
     },
   }
   let mode: Mode = opts.mode ?? "live"
-  const face = new ToolFace({ pool, cards: desk, journal, mode: () => mode, ...(opts.sizing ? { sizing: opts.sizing } : {}), ...(opts.turns ? { turn: (tokenId: string) => opts.turns!.get(tokenId) } : {}) })
+  const face = new ToolFace({ pool, cards: desk, journal, mode: () => mode, schemaOf: (_agent, name) => opts.oldLaunchServer ? { properties: {} } : toolFixture.tools.find((t) => t.name === name)?.inputSchema, ...(opts.sizing ? { sizing: opts.sizing } : {}), ...(opts.turns ? { turn: (tokenId: string) => opts.turns!.get(tokenId) } : {}) })
   return { face, desk, sent, cards, proposed, journal, ran, withdrawn, setMode: (m: Mode) => (mode = m) }
 }
 
@@ -107,6 +109,82 @@ describe("reads", () => {
       body: { error: { code: "CANDLE_NO_ANSWER" } },
       isError: true,
     })
+  })
+})
+
+describe("current MCP contracts", () => {
+  test("launch checks relay MCP/SDK admission outcomes without making a spend card, in either mode", async () => {
+    for (const row of sourceContracts.rows.filter((r) => r.surface === "mcp" && r.id.startsWith("mcp-launch"))) {
+      const outcome = row.outcome as { body: Record<string, unknown>; isError: boolean }
+      const body = outcome.body
+      for (const mode of ["paper", "live"] as const) {
+        const s = await setup({ mode, answers: { candle_launch_token: toOutcome({ content: [{ type: "text", text: JSON.stringify(body) }], isError: outcome.isError }) } })
+        const r = parse(await s.face.call(HARNESS, "candle_launch_token", row.args!))
+        expect(r.body).toEqual(body)
+        expect(r.isError).toBe(outcome.isError)
+        expect(s.sent).toEqual([{ agent: HARNESS.agent, name: "candle_launch_token", args: row.args! }])
+        expect(s.cards).toEqual([])
+        expect(s.journal.rows().filter((r) => r.type === "card.created")).toEqual([])
+      }
+    }
+  })
+
+  test("signal records preserve their measured-record disclaimer and pagination through the face", async () => {
+    for (const row of sourceContracts.rows.filter((r) => r.id.startsWith("candle_signal_"))) {
+      const outcome = row.outcome as { body: Record<string, unknown>; isError: boolean }
+      const s = await setup({ answers: { [row.tool!]: toOutcome({ content: [{ type: "text", text: JSON.stringify(outcome.body) }], isError: outcome.isError }) } })
+      const result = parse(await s.face.call(HARNESS, row.tool!, row.args!))
+      expect(result.body).toEqual(outcome.body)
+      expect(result.body.measure).toBe("Measured record, not a forecast.")
+      expect(result.body.next_before).toBeNull()
+      expect(s.sent).toEqual([{ agent: HARNESS.agent, name: row.tool!, args: row.args! }])
+      expect(s.cards).toEqual([])
+    }
+  })
+
+  test("market quote assets and paused/split launch refusals reach the agent without reinterpretation", async () => {
+    for (const state of ["paused", "split"]) {
+      const body = { success: true, market: { mint: MOON, quoteAsset: "usdc", quoteAssets: ["usdc", "sol"], quoteState: { paused: state === "paused", split: state === "split", launchBlocked: true, refusal: state === "paused" ? "QUOTE_PAUSED" : "QUOTE_SPLIT" } } }
+      const s = await setup({ answers: { candle_get_market: { kind: "ok", result: body } } })
+      expect(parse(await s.face.call(HARNESS, "candle_get_market", { mint: MOON })).body).toEqual(body)
+      expect(s.cards).toEqual([])
+    }
+  })
+
+  test("old server schemas refuse check/quote before they can be stripped and become a default-pair launch", async () => {
+    const s = await setup({ oldLaunchServer: true })
+    for (const name of ["candle_launch_token", "candle_launch_and_seed"]) {
+      for (const args of [{ check: true }, { quote: "USDC", dryRun: true }, { quote: "USDC" }]) {
+        expect(parse(await s.face.call(HARNESS, name, args))).toMatchObject({ isError: true, body: { error: { code: "UPDATE_CANDLE" } } })
+      }
+    }
+    expect(s.sent).toEqual([])
+    expect(s.cards).toEqual([])
+  })
+
+  test("signals, receipts and perps reads use only the requesting agent's child; perps writes remain held", async () => {
+    const s = await setup()
+    for (const name of ["candle_signal_scorecard", "candle_signal_records", "candle_signal_record", "candle_get_swap_receipt", "candle_perps_orders", "candle_perps_positions"]) {
+      const args = name.startsWith("candle_perps") ? { wallet: "embedded" } : {}
+      await s.face.call(HARNESS, name, args)
+      expect(s.sent.at(-1)).toEqual({ agent: HARNESS.agent, name, args })
+    }
+    const before = s.sent.length
+    expect(parse(await s.face.call(HARNESS, "candle_perps_cancel", { wallet: "embedded" }))).toMatchObject({ isError: true, body: { error: { code: "NOT_YET_SUPPORTED" } } })
+    expect(parse(await s.face.call(HARNESS, "candle_recover_operation", { operationId: "held-op" }))).toMatchObject({ isError: true, body: { error: { code: "NOT_YET_SUPPORTED" } } })
+    expect(s.sent).toHaveLength(before)
+    expect(s.cards).toEqual([])
+  })
+
+  test("Hood guard reads preserve held reasons and reject mixed identifiers before forwarding", async () => {
+    const result = { success: true, state: "held", clearingCondition: "verified receipt for exact prior leg", next: "read again; do not resend" }
+    const s = await setup({ answers: { candle_get_operation: { kind: "ok", result } } })
+    expect(parse(await s.face.call(HARNESS, "candle_get_operation", { operationId: "held-op" })).body).toEqual(result)
+    expect(s.sent).toEqual([{ agent: HARNESS.agent, name: "candle_get_operation", args: { operationId: "held-op" } }])
+    for (const args of [{ operationId: "" }, { operationId: "held-op", clientId: "other" }, { operationId: "held-op", kind: "swap" }]) {
+      expect(parse(await s.face.call(HARNESS, "candle_get_operation", args))).toMatchObject({ isError: true, body: { error: { code: "MCP_VALIDATION" } } })
+    }
+    expect(s.sent).toHaveLength(1)
   })
 })
 

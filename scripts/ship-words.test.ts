@@ -3,7 +3,7 @@
 // workfile outside the repo, since a reader gets the repo and the docs and nothing else. The docs site's pages are
 // held to the same words by its own test, and the feature map by scripts/docs-map.test.ts.
 import { describe, expect, test } from "bun:test"
-import { existsSync, readFileSync } from "node:fs"
+import { existsSync, readdirSync, readFileSync } from "node:fs"
 import { join } from "node:path"
 import { BUILD_WORDS } from "./docs-map"
 import { repoFiles } from "./repo-files"
@@ -37,8 +37,9 @@ describe("what ships", () => {
     expect(hits(shippedFiles())).toEqual([])
   })
 
-  test("the docs folder is gone: the guide lives on docs.candle.tv", () => {
-    expect(existsSync(join(ROOT, "docs"))).toBe(false)
+  test("the user guide lives on docs.candle.tv; local docs hold only internal specs", () => {
+    const dir = join(ROOT, "docs")
+    expect(existsSync(dir) ? readdirSync(dir).filter((name) => name !== "specs") : []).toEqual([])
   })
 
   test("each kind of build word is caught, and the agent's own notes aren't", () => {

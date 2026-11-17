@@ -1,10 +1,10 @@
 {
   "about": "Read from the Candle CLI's source by scripts/read-cli-source.ts, as text, never imported or run: the dispatch table, each handler's own parseArgs flags (and flags it lifts out before the parse, as value flags), --json, its identity from what it calls, whether it unlocks the vault and which streams it needs to be a terminal (following its calls into other files), and the access presets' scopes.",
   "source": {
-    "repo": "candledottv/cli",
+    "repo": "candledottv/candle-monorepo",
     "path": "packages/cli/src",
-    "commit": "3121617d06ad6714ad94fa011b256c375189fed3",
-    "cliVersion": "0.13.20"
+    "commit": "940055a9819283d721a313e9e39003f566663e6f",
+    "cliVersion": "0.13.28"
   },
   "aliases": {
     "wallet": "wallets"
@@ -29,6 +29,7 @@
     "spend",
     "quant",
     "lab",
+    "signals",
     "plan",
     "plans",
     "keys",
@@ -94,8 +95,20 @@
           "description": "Quote, confirm and swap on Solana or Hood, or bridge between them"
         },
         {
-          "invocation": "status <id> [--kind trade|swap|launch] [--wait]",
-          "description": "Read an operation without resending it; --wait follows a bridge until it ends"
+          "invocation": "status <id> [--kind trade|swap|launch] [--wait] | status --operation <operationId> [--wait]",
+          "description": "Read without resending; --wait follows a bridge. --operation reads a Hood TEE guard; add --wait to follow all legs for up to ten minutes (0 completed, 1 failed, 3 partial or unresolved). held is the wallet-hold field; a leg's legacyHeld is history, not a lock"
+        },
+        {
+          "invocation": "recover --operation <operationId> [--hash <0x…>]",
+          "description": "Recover a legacy leg by verified transaction proof; a hash is only a locator"
+        },
+        {
+          "invocation": "cancel --operation <operationId>",
+          "description": "Release a Hood TEE trade or swap operation this key opened and never signed a leg of (0 released or already ended, 3 a leg may have been signed: do not repeat the trade, 1 any other refusal)"
+        },
+        {
+          "invocation": "receipt <hash> | receipt --client-swap-id <id>",
+          "description": "Re-read a one-shot swap's settlement from chain (a swap made through MCP or the SDK); reads only"
         }
       ]
     },
@@ -123,27 +136,31 @@
     },
     "lp": {
       "group": "Trade",
-      "summary": "Meteora DAMM v2 liquidity from a TEE wallet: pools, add, positions, remove, claim",
+      "summary": "Meteora DAMM v2 liquidity from a TEE or the embedded wallet: pools, add, positions, remove, claim, status",
       "rows": [
         {
           "invocation": "pools <token> [--page <n>]",
           "description": "Pools listing a token: liquidity, fee, 24h volume, estimated yield"
         },
         {
-          "invocation": "add <pool> --amount <n> <token> --wallet <tee> [--position <nft>]",
+          "invocation": "add <pool> --amount <n> <token> --wallet <tee>|embedded [--position <nft>]",
           "description": "Open a position, or add to one; the other side follows the pool's ratio"
         },
         {
-          "invocation": "positions [--wallet <tee>]",
-          "description": "Every position across your TEE wallets"
+          "invocation": "positions [--wallet <tee>|embedded]",
+          "description": "Every position across your TEE wallets, or the embedded wallet's"
         },
         {
-          "invocation": "remove <position> --percent <n> [--wallet <tee>]",
+          "invocation": "remove <position> --percent <n> [--wallet <tee>|embedded]",
           "description": "Withdraw; at 100% also claims fees and closes the position"
         },
         {
-          "invocation": "claim <position> [--wallet <tee>]",
+          "invocation": "claim <position> [--wallet <tee>|embedded]",
           "description": "Claim fees and any rewards"
+        },
+        {
+          "invocation": "status <clientTradeId>",
+          "description": "An operation's state; settles one that may still land (exit 3 while it may)"
         }
       ]
     },
@@ -255,11 +272,11 @@
     },
     "transfer": {
       "group": "Trade",
-      "summary": "Move funds out of a TEE wallet to your own wallets or its vault, through its bound key",
+      "summary": "Move funds out of the embedded wallet (Candle signs) or a TEE wallet to your own wallets or its vault, through its bound key",
       "rows": [
         {
           "invocation": "status <transfer id|client id> [--json]",
-          "description": "Reads a transfer by its id or your --client-id: built, expired, submitted with its signature, unconfirmed (check the chain or candle activity before using a new client id), or failed (kept for 24 hours; older transfers are in candle activity)."
+          "description": "From the embedded wallet --client-id names the transfer too (the CLI picks one when it is absent and prints it before it sends): a repeat of a sent transfer replays its answer and sends nothing, a repeat of a transfer that may have landed is refused, and candle transfer status <id> reads it; a failure that is not a definite refusal (no answer, a timeout, a 5xx, TRANSFER_FAILED) exits 3 and names the id, so read it, or check candle activity or the chain, before sending again."
         }
       ]
     },
@@ -451,6 +468,24 @@
         }
       ]
     },
+    "signals": {
+      "group": "Account",
+      "summary": "hacc's daily scorecard and each signal's measured record, read-only",
+      "rows": [
+        {
+          "invocation": "scorecard [--date YYYY-MM-DD]",
+          "description": "The latest daily scorecard, or one day's"
+        },
+        {
+          "invocation": "records [--source <source>] [--before <id>] [--limit n]",
+          "description": "Per-signal records, newest first; --before takes the previous page's next_before"
+        },
+        {
+          "invocation": "record <source> <source-id>",
+          "description": "One signal's record: the signal id for pattern, chain:mint for launch_read"
+        }
+      ]
+    },
     "plan": {
       "group": "Account",
       "summary": "Pro or Max for 30 days, paid by x402 from a vault key; signup and auto-renew",
@@ -511,19 +546,19 @@
           "description": "The profile's own key gives up the embedded wallet, with no prompt. A key can never allow itself: the owner does that with keys update"
         },
         {
-          "invocation": "stop <prefix>",
-          "description": "Pause one key with the device token; reversible with keys resume"
+          "invocation": "stop <prefix|label>",
+          "description": "Pause one key with the device token (starting it again is done in the signed-in console)"
         },
         {
-          "invocation": "resume <prefix>",
-          "description": "Resume a stopped key with the device token"
+          "invocation": "resume <prefix|label>",
+          "description": "Resume a stopped key in the signed-in console, because the server refuses a device token here (LOOSEN_REQUIRES_SESSION)"
         },
         {
           "invocation": "rotate <prefix|label> ([--grace <duration> | --now] [--force] [--yes] | --finish)",
-          "description": "Give a key a new secret, keeping its prefix, label, access, limits, wallets and history. The old secret works through --grace (default 1h, at most 24h) or stops at once with --now; --finish ends an open window early. The profile's own key is replaced in the keychain; update CANDLE_API_KEY and other copies yourself. --force rotates again while a window is open"
+          "description": "Give a key a new secret, keeping its prefix, label, access, limits, wallets and history. The old secret works through --grace (default 1h, at most 24h) or stops at once with --now; --finish ends an open window early. The profile's own key is replaced in the keychain; update CANDLE_API_KEY or CANDLE_API_KEY_FILE yourself and restart MCP. --force rotates again while a window is open"
         },
         {
-          "invocation": "revoke <prefix>",
+          "invocation": "revoke <prefix|label>",
           "description": "Revoke an API key permanently"
         },
         {
@@ -587,7 +622,7 @@
         },
         {
           "invocation": "close-empty [--wallet embedded|<tee address|label>] [--keep <mint>]... [--client-trade-id <id>] [--preview] [--yes]",
-          "description": "Close a wallet's empty token accounts and return their rent to it, after a preview: the embedded wallet (transfer:write), or a TEE wallet bound to this key, signed by its key signer (swap:write). --preview prints what would close (one JSON document on stdout under --json) and closes nothing"
+          "description": "Close a wallet's empty token accounts and return their rent to it, after a preview: the embedded wallet (swap:write or transfer:write), or a TEE wallet bound to this key, signed by its key signer (swap:write). --preview prints what would close (one JSON document on stdout under --json) and closes nothing"
         }
       ]
     },
@@ -716,8 +751,8 @@
       "summary": "Dedicated TEE wallet keys for agents: seal, delegate, fund, sweep",
       "rows": [
         {
-          "invocation": "check <address|id|label>... [--label-prefix <p>] [--sign] [--max <n>] [--rpc-url <url>]",
-          "description": "Check payable membership, record parity and this machine's signer without spending. --sign builds a tiny SOL/USDC quote, checks spend, signs and simulates; never broadcasts (default cap 10). Needs swap:write"
+          "invocation": "check <address|id|label>... [--label-prefix <p>] [--chain solana|hood] [--sign] [--max <n>] [--rpc-url <url>]",
+          "description": "Check payable membership, record parity and this machine's signer without spending. Each wallet is checked on its own chain; --chain checks every wallet against one chain (CHAIN_MISMATCH otherwise). --sign builds a tiny SOL/USDC quote on a Solana wallet, checks spend, signs and simulates; never broadcasts (default cap 10). A Hood wallet skips sign: a Hood build holds the wallet. Needs swap:write"
         },
         {
           "invocation": "new [--label <name>]",
@@ -1044,11 +1079,67 @@
       "file": "commands/swap.ts",
       "flags": {
         "value": [
-          "--kind"
+          "--kind",
+          "--operation"
         ],
         "boolean": [
           "--wait"
         ],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "agent",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
+    },
+    {
+      "command": "swap",
+      "subcommand": "recover",
+      "handler": "swapRecover",
+      "file": "commands/swap.ts",
+      "flags": {
+        "value": [
+          "--hash",
+          "--operation"
+        ],
+        "boolean": [],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "agent",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
+    },
+    {
+      "command": "swap",
+      "subcommand": "receipt",
+      "handler": "swapReceipt",
+      "file": "commands/swap.ts",
+      "flags": {
+        "value": [
+          "--client-swap-id"
+        ],
+        "boolean": [],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "agent",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
+    },
+    {
+      "command": "swap",
+      "subcommand": "cancel",
+      "handler": "swapCancel",
+      "file": "commands/swap.ts",
+      "flags": {
+        "value": [
+          "--operation"
+        ],
+        "boolean": [],
         "path": [],
         "pathPositionals": []
       },
@@ -1126,6 +1217,7 @@
           "--pool-fee-from",
           "--pool-fee-minutes",
           "--pool-open",
+          "--quote",
           "--quote-asset",
           "--rpc-url",
           "--staker-allocation-bps",
@@ -1966,6 +2058,60 @@
       "tty": []
     },
     {
+      "command": "signals",
+      "subcommand": "scorecard",
+      "handler": "signalsScorecard",
+      "file": "commands/signals.ts",
+      "flags": {
+        "value": [
+          "--date"
+        ],
+        "boolean": [],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "agent",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
+    },
+    {
+      "command": "signals",
+      "subcommand": "records",
+      "handler": "signalsRecords",
+      "file": "commands/signals.ts",
+      "flags": {
+        "value": [
+          "--before",
+          "--limit",
+          "--source"
+        ],
+        "boolean": [],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "agent",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
+    },
+    {
+      "command": "signals",
+      "subcommand": "record",
+      "handler": "signalsRecord",
+      "file": "commands/signals.ts",
+      "flags": {
+        "value": [],
+        "boolean": [],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "agent",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
+    },
+    {
       "command": "plan",
       "subcommand": "buy",
       "handler": "planBuy",
@@ -2159,6 +2305,22 @@
       "tty": [
         "stdin"
       ]
+    },
+    {
+      "command": "lp",
+      "subcommand": "status",
+      "handler": "lpStatus",
+      "file": "commands/lp.ts",
+      "flags": {
+        "value": [],
+        "boolean": [],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "agent",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
     },
     {
       "command": "perps",
@@ -2803,7 +2965,7 @@
         "path": [],
         "pathPositionals": []
       },
-      "identity": "both",
+      "identity": "owner",
       "json": true,
       "unlocks": "never",
       "tty": []
@@ -3032,7 +3194,8 @@
         "value": [],
         "boolean": [],
         "path": [],
-        "pathPositionals": []
+        "pathPositionals": [],
+        "keyPrefixPositional": true
       },
       "identity": "owner",
       "json": true,
@@ -3048,7 +3211,8 @@
         "value": [],
         "boolean": [],
         "path": [],
-        "pathPositionals": []
+        "pathPositionals": [],
+        "keyPrefixPositional": true
       },
       "identity": "owner",
       "json": true,
@@ -3809,7 +3973,10 @@
         "path": [
           "--keystore"
         ],
-        "pathPositionals": []
+        "pathPositionals": [],
+        "keyPrefixValueFlags": [
+          "--to-key"
+        ]
       },
       "identity": "both",
       "json": true,
@@ -3840,7 +4007,10 @@
           "--keystore",
           "--pairs-from"
         ],
-        "pathPositionals": []
+        "pathPositionals": [],
+        "keyPrefixValueFlags": [
+          "--to-key"
+        ]
       },
       "identity": "both",
       "json": true,
@@ -3968,6 +4138,7 @@
       "file": "trading-checks.ts",
       "flags": {
         "value": [
+          "--chain",
           "--label-prefix",
           "--max",
           "--rpc-url"

@@ -94,6 +94,12 @@ export const TOOL_CLASSES: Readonly<Record<string, ToolClass>> = {
   candle_execution_status: READ,
   candle_get_operation: READ,
   candle_get_fees: READ,
+  candle_get_swap_receipt: READ,
+  candle_signal_scorecard: READ,
+  candle_signal_records: READ,
+  candle_signal_record: READ,
+  // Recovery changes persisted operation state; keep the CLI's owner-only hold.
+  candle_recover_operation: notYet("Recovery changes a Hood TEE operation's state. Run candle swap recover in your own terminal; read its state with candle_get_operation and operationId."),
   // New in server 0.10.29: a launch with first buys, checked and priced, building and reserving nothing.
   candle_atomic_launch_dry_run: READ,
   // New in server 0.10.30: a token's OHLC bars (keyless), the key's paper book and paper P&L, and the
@@ -207,8 +213,8 @@ export const CARD_TOOL_ARGS: Readonly<Record<string, readonly string[]>> = {
   candle_trade: ["mint", "side", "amount", "percent", "quoteAsset", "maxSlippageBps", "clientTradeId", "paper", "deferExecution"],
   candle_swap: ["from", "to", "amount", "amountRaw", "maxSlippageBps", "clientSwapId"],
   candle_set_profile_wallets: ["keyPrefix", "walletIds"],
-  candle_launch_token: ["clientLaunchId", "name", "symbol", "imageUrl", "bannerUrl", "description", "chain", "quoteAsset", "mode", "creatorFeeBps", "stakerAllocationBps", "poolOpen", "expPoolShape", "dexVersion", "visibility", "dryRun", "socials", "curve", "poolFee", "launchRules", "buyAmount"],
-  candle_launch_and_seed: ["clientLaunchId", "name", "symbol", "imageUrl", "bannerUrl", "description", "chain", "quoteAsset", "mode", "creatorFeeBps", "stakerAllocationBps", "poolOpen", "expPoolShape", "dexVersion", "visibility", "dryRun", "socials", "curve", "poolFee", "launchRules", "devBuy"],
+  candle_launch_token: ["quote", "check", "clientLaunchId", "name", "symbol", "imageUrl", "bannerUrl", "description", "chain", "quoteAsset", "mode", "creatorFeeBps", "stakerAllocationBps", "poolOpen", "expPoolShape", "dexVersion", "visibility", "dryRun", "socials", "curve", "poolFee", "launchRules", "buyAmount"],
+  candle_launch_and_seed: ["quote", "check", "clientLaunchId", "name", "symbol", "imageUrl", "bannerUrl", "description", "chain", "quoteAsset", "mode", "creatorFeeBps", "stakerAllocationBps", "poolOpen", "expPoolShape", "dexVersion", "visibility", "dryRun", "socials", "curve", "poolFee", "launchRules", "devBuy"],
   candle_stake: ["payer", "linkedWalletId", "clientStakeId", "dryRun", "amountRaw"],
   candle_unstake: ["payer", "linkedWalletId", "clientStakeId", "dryRun", "amountRaw"],
   candle_finish_unstake: ["payer", "linkedWalletId", "clientStakeId", "dryRun", "withdrawal"],
@@ -281,6 +287,7 @@ export function classify(tool: string, args: Record<string, unknown>, mode: Mode
   const known = TOOL_CLASSES[tool]!
   // Candle's own descriptions say "dry-run first": a dry run is a read, so it never makes a card. Only
   // boolean true: anything else Candle's schema refuses, or reads as a real call.
+  if ((tool === "candle_launch_token" || tool === "candle_launch_and_seed") && args.check === true) return READ
   if (DRY_RUN_TOOLS.has(tool) && args.dryRun === true) return READ
   if (known.class === "card" && LIVE_ONLY.has(known.kind) && mode === "paper") {
     return { class: "refused", code: "NO_PAPER_FORM", reason: "This is paper mode, and this has no paper form: switch to live to do it.", listed: true }

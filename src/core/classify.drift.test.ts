@@ -1,7 +1,14 @@
 // The drift check: a tool Candle adds fails this until someone decides what it is. The same check runs
 // against the real server's tools/list when the core starts (unclassifiedTools).
 import { expect, test } from "bun:test"
+import { createHash } from "node:crypto"
+import { canonicalJson } from "../shared/canonical-json"
+import npmRelease from "../../test/fixtures/candle-cli-release/cli-v0.13.28-npm.json"
 import fixture from "../../test/fixtures/candle-tools.json"
+import released from "../../test/fixtures/candle-cli-release/cli-v0.13.24-tools.json"
+import releaseManifest from "../../test/fixtures/candle-cli-release/cli-v0.13.24-latest.json"
+import { MIN_CANDLE_CLI } from "./cli-table"
+import { MIN_CANDLE_MCP, versionAtLeast } from "./candle-mcp"
 import { DESCRIPTION_BASIS, GET_OPERATION_DESCRIPTION, withReason } from "./tool-face"
 import { argumentDrift, CARD_TOOL_ARGS, classificationDrift, classify, HARNESS_TOOL_ARGS, unclassifiedTools, unknownArgument } from "./classify"
 
@@ -88,4 +95,30 @@ test("the agent is offered Candle's trade tool without the arguments the Candle 
   expect(offered.find((t) => t.name === "candle_swap")!.description).toContain("kind: swap")
   // A tool with nothing to add keeps Candle's words.
   expect(offered.find((t) => t.name === "candle_stake")!.description).toBe(fixture.tools.find((t) => t.name === "candle_stake")!.description!)
+})
+
+
+test("the signed native bootstrap is authentic but below the current CLI minimum; its public subset remains classified", () => {
+  expect(versionAtLeast(released.cliVersion, MIN_CANDLE_CLI)).toBe(false)
+  expect(released.cliTag).toBe(`cli-v${releaseManifest.version}`)
+  expect(released.binary.sha256).toBe(releaseManifest.assets["linux-x64"].sha256)
+  expect(released.argv).toEqual(["mcp", "--read-only"])
+  expect(versionAtLeast(released.serverInfo.version, MIN_CANDLE_MCP)).toBe(true)
+  expect(unclassifiedTools(released.toolNames)).toEqual([])
+  for (const name of released.toolNames) expect(classify(name, {}, "live")).toEqual({ class: "read" })
+})
+
+
+test("the published npm CLI meets the minimum and its recorded public definitions match the source fixture", () => {
+  expect(npmRelease.cliVersion).toBe(MIN_CANDLE_CLI)
+  expect(npmRelease.package.version).toBe(MIN_CANDLE_CLI)
+  expect(npmRelease.package.name).toBe("@candledottv/cli")
+  expect(npmRelease.serverInfo.version).toBe(fixture.serverInfo.version)
+  expect(npmRelease.argv).toEqual(["mcp", "--read-only"])
+  expect(unclassifiedTools(npmRelease.toolNames)).toEqual([])
+  for (const name of npmRelease.toolNames) {
+    const tool = fixture.tools.find((t) => t.name === name)
+    expect(tool).toBeDefined()
+    expect(createHash("sha256").update(canonicalJson(tool)).digest("hex")).toBe(npmRelease.toolSha256[name as keyof typeof npmRelease.toolSha256])
+  }
 })

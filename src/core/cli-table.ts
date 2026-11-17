@@ -83,12 +83,8 @@ export interface PaneSpec {
   positionals?: number
 }
 
-/**
- * The oldest CLI the Candle Harness runs on: the one its command table was read from (cli-source.json), which
- * bundles MCP server 0.10.31. One CLI: the one it was checked against. 0.13.20 is the first that waits for
- * Candle's browser confirm on an owner step; an older one is refused it once Candle turns the confirm on.
- */
-export const MIN_CANDLE_CLI = "0.13.20"
+/** The runtime minimum and command-table target. Signed native bootstrap pins live separately in install.sh. */
+export const MIN_CANDLE_CLI = "0.13.28"
 
 /** The rules that run in the prompt pane. */
 export const PANE_RULES: ReadonlySet<CliRule> = new Set(["owner", "ceremony", "funds-out"])
@@ -244,7 +240,18 @@ const ROWS: readonly RowInput[] = [
     byFlags: (flags) => (flags.has("--dry-run") ? { rule: "read", route: "cli" } : undefined),
     partly: "--dry-run (reads; a Solana TEE wallet's pair): now",
   }),
+  // --operation reads a Hood TEE guard's operation, and --wait follows every leg (0.13.26); held is the wallet-hold
+  // field, and a leg's legacyHeld is history, not a lock.
   r("swap status", "read", "cli", "agent"),
+  // Re-reads a one-shot swap's settlement from chain by hash or --client-swap-id (a swap made through MCP or the SDK): reads only.
+  r("swap receipt", "read", "cli", "agent", { note: "It reads a one-shot swap's settlement from chain and sends nothing." }),
+  // Both move an operation's state on Candle's side, so neither runs from the Candle Harness yet: the user runs them.
+  r("swap recover", "owner", "later", "agent", {
+    held: "It settles a legacy Hood leg from a verified transaction proof; a hash is only a locator. Run it in your own terminal.",
+  }),
+  r("swap cancel", "owner", "later", "agent", {
+    held: "It releases a Hood TEE trade or swap operation this key opened and never signed a leg of: exit 0 released or already ended, 3 a leg may have been signed (don't repeat the trade), 1 any other refusal. Run it in your own terminal.",
+  }),
   // Funds go out by the owner's vault-signed routes only.
   r("transfer", "funds-out", "later", "agent", {
     held: "It needs a Withdraw key, and every agent key in the Candle Harness is Write, which can't move funds. Send from a TEE wallet whose key is in this machine's vault with candle vault transfer, or sweep a disabled one home with candle tee sweep.",
@@ -279,8 +286,14 @@ const ROWS: readonly RowInput[] = [
   r("lab edges", "mcp", "cli", "agent", { mcpTool: "hacc_lab", note: LAB_NOTE }),
   // The token card for one contract (0.13.5): Candle's candle_token_card, which the Candle Harness reads already.
   mcp("scan", "candle_token_card"),
+  // hacc's daily scorecard and each signal's measured record (0.13.24): reads, over the key.
+  r("signals scorecard", "read", "cli", "agent"),
+  r("signals records", "read", "cli", "agent"),
+  r("signals record", "read", "cli", "agent", { takes: 2 }),
   r("lp pools", "read", "cli", "agent"),
   r("lp positions", "read", "cli", "agent"),
+  // An LP operation's state by its client trade id: it settles one that may still land (exit 3 while it may).
+  r("lp status", "read", "cli", "agent", { takes: 1 }),
   r("lp add", "card", "card", "agent", { card: LP_ROW(true) }),
   r("lp remove", "card", "card", "agent", { card: LP_ROW(false) }),
   r("lp claim", "card", "card", "agent", { card: LP_ROW(false) }),

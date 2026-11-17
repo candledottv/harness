@@ -159,11 +159,24 @@ describe("starting the children", () => {
     const { pool } = setup()
     await pool.start()
     const tools = pool.for("momentum").tools()
-    // 0.10.31's 95, less the four listed only to a key that may edit its profile (the fake leaves them out).
-    expect(tools).toHaveLength(91)
+    // Conditional profile tools remain hidden unless the key may edit.
+    expect(tools).toHaveLength(fixture.tools.filter((t) => !('listedAfterKeyCheck' in t)).length)
     expect(tools.find((t) => t.name === "candle_trade")!.inputSchema).toEqual(
       fixture.tools.find((t) => t.name === "candle_trade")!.inputSchema as never,
     )
+  })
+
+  test("launch checks through the child transport never write a launch to its ledger", async () => {
+    const { pool, stateDir } = setup()
+    await pool.start()
+    for (const tool of ["candle_launch_token", "candle_launch_and_seed"]) {
+      const ready = await pool.for("momentum").call(tool, { check: true })
+      expect(ready).toMatchObject({ kind: "ok", result: { check: true, works: true } })
+      const paused = await pool.for("momentum").call(tool, { check: true, quote: "ACME" })
+      expect(paused).toMatchObject({ kind: "error", body: { check: true, works: false, quote: { executionEnabled: false } } })
+    }
+    expect(existsSync(join(candleConfigDir(stateDir, "momentum"), "fake-candle-ledger.json"))).toBe(false)
+    expect(calls(stateDir, "momentum")).toHaveLength(4)
   })
 
   test("stop leaves nothing running", async () => {

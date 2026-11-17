@@ -7,7 +7,8 @@
 #   curl -fsSL https://github.com/candledottv/harness/releases/latest/download/install.sh | bash -s -- --to v1.0.0
 #   bash install.sh --from ./release-folder        # a release you downloaded yourself
 #
-# The Candle Harness needs the Candle CLI (CLI_TAG below). With none, this offers to install it, and only on a yes:
+# The Candle Harness needs CLI_MIN_VERSION. CLI_TAG pins a separately verified binary bootstrap;
+# an older bootstrap is offered only as a signature verifier, on a yes, with the runtime gap stated:
 # Candle's own release files for that version, checked against the SHA-256s this script carries before
 # anything is put in place, so no cosign is needed. Those SHA-256s were taken from files whose Candle
 # signature scripts/pin-cli.ts verified with cosign; the candle's own `candle verify` run here after them
@@ -33,23 +34,27 @@ UNSIGNED_OK=0
 # SHA-256 of each of its release files this script may install. scripts/pin-cli.ts writes this block
 # from Candle's own latest.json, and scripts/install.test.ts holds it to the doctor's minimum.
 # BEGIN CLI PINS
-CLI_TAG='cli-v0.13.20'
-CLI_IDENTITY='https://github.com/candledottv/cli/.github/workflows/release.yaml@refs/tags/cli-v0.13.20'
+CLI_TAG='cli-v0.13.24'
+CLI_IDENTITY='https://github.com/candledottv/cli/.github/workflows/release.yaml@refs/tags/cli-v0.13.24'
 cli_pin() {
   case "$1" in
-    candle-darwin-arm64) echo 'db1ad6665c80bc076b48f21a70d1dc25411c265f2c12636a3c3a7cc8c868d70f' ;;
-    candle-darwin-x64) echo 'd8f61c0c9d811231a497ba783934b873c937e4abf35fbc0a81be02fc3c934e8d' ;;
-    candle-linux-arm64) echo '130aa317c3870e042338aae090654cad2b66fbb662132c123e6e64fc70b516b0' ;;
-    candle-linux-x64) echo '475fcc7212a56ca65651170cec157e794db95ebc6becf539135a222ef4cff49b' ;;
-    candle-fido2-darwin-arm64) echo 'a49f09bb6e5131282f0194fabf6585941c03485219da03e43c6818f1bed566b5' ;;
-    candle-fido2-darwin-x64) echo '8405279384ecf231a5739ef9154556e4eca2a26684f4ab684366a422508a7255' ;;
-    candle-fido2-linux-arm64) echo 'dfb8ccb4299938f88a9a178d097a8dd2e472ecb0ff1f56080887caad85f146e2' ;;
-    candle-fido2-linux-x64) echo '839c9288cf9cb95d5dc22e9bb128395322c748377a23d704361843cc9e25b5bd' ;;
+    candle-darwin-arm64) echo 'b60ce01d285137eea548c9f5a8dabe40e0cb065d12d654ea767076775abac07a' ;;
+    candle-darwin-x64) echo '699b6a17f462d2804dda29c759544d24b71207f22ef3ae0c5a2b410c13eaef0b' ;;
+    candle-linux-arm64) echo 'a6376ca384a99dcc744d2f3ebab6db671f3b5d5d4ee8880fe655886e9fe1b966' ;;
+    candle-linux-x64) echo 'accfd4feab28be2380cdf5c79cb0353c3f70481b0ef401d8e2f31ca9cd7a7654' ;;
+    candle-fido2-darwin-arm64) echo 'b3042850e0ed9bf251f334bd5373957ed460da603950a996863b2af9e64f0785' ;;
+    candle-fido2-darwin-x64) echo '51fe11c5ac0d29253714922d5e9073877917d8f211402da51aef8f13860a8de4' ;;
+    candle-fido2-linux-arm64) echo '5773998c4fb8adde54f8e0bb17775b124dbdc0e388afa2258bded6c537dba259' ;;
+    candle-fido2-linux-x64) echo 'c5b3e074ef6a4334dae2892942b2c3c7ac5735a923ee2ec9a4442ecf9d255e29' ;;
     *) echo '' ;;
   esac
 }
 # END CLI PINS
 CLI_VERSION="${CLI_TAG#cli-v}"
+# npm and signed native binaries are separate release channels. Never offer an older bootstrap
+# as the required CLI, or invent native checksums from an npm package.
+CLI_MIN_VERSION='0.13.28'
+CLI_MIN_TAG="cli-v${CLI_MIN_VERSION}"
 
 VERSION_TAG=""
 FROM_DIR=""
@@ -308,30 +313,43 @@ install_cli() {
 
 cli_note=""
 if [ -z "$candle_path" ]; then
-  echo "The Candle CLI isn't installed, and the Candle Harness needs it (${CLI_VERSION})."
+  echo "The Candle CLI isn't installed, and the Candle Harness needs it (${CLI_MIN_VERSION})."
   if [ "$SKIP_CLI" -eq 0 ]; then
+    if ! at_least "$CLI_VERSION" "$CLI_MIN_VERSION"; then
+      echo "The signed CLI ${CLI_VERSION} can verify this download, but cannot run this Harness. Runtime requires ${CLI_MIN_VERSION}: npm install -g @candledottv/cli@${CLI_MIN_VERSION}."
+    fi
     echo "This can install Candle's CLI ${CLI_VERSION} into ${BIN_DIR}, from Candle's release on GitHub, checked against the SHA-256s this installer carries for it."
-    if ask "Install the Candle CLI now?"; then install_cli; fi
+    if at_least "$CLI_VERSION" "$CLI_MIN_VERSION"; then
+      if ask "Install the Candle CLI now?"; then install_cli; fi
+    else
+      if ask "Install the signed CLI signature verifier now?"; then install_cli; fi
+    fi
   fi
-  if [ -z "$candle_path" ]; then
+  if [ -z "$candle_path" ] || ! at_least "$candle_version" "$CLI_MIN_VERSION"; then
     # This installer's own route, pinned and checked, rather than a pipe to another script.
-    cli_note="Install the Candle CLI before running the Candle Harness: run this installer again with --yes, which installs Candle's CLI ${CLI_VERSION}, checked against the SHA-256s it carries."
+    if at_least "$CLI_VERSION" "$CLI_MIN_VERSION"; then
+      cli_note="Install the Candle CLI before running the Candle Harness: run this installer again with --yes, which installs Candle's CLI ${CLI_VERSION}, checked against the SHA-256s it carries."
+    else
+      cli_note="The signed CLI bootstrap is ${CLI_VERSION}, below required ${CLI_MIN_VERSION}. Install the published npm CLI first: npm install -g @candledottv/cli@${CLI_MIN_VERSION}, then run this installer again."
+    fi
   fi
-elif [ -z "$candle_version" ] || ! at_least "$candle_version" "$CLI_VERSION"; then
-  echo "Your Candle CLI (${candle_path}) is ${candle_version:-an unknown version}; the Candle Harness needs ${CLI_VERSION}."
-  if [ "$SKIP_CLI" -eq 0 ] && ask "Run candle update --to ${CLI_TAG} now?"; then
+elif [ -z "$candle_version" ] || ! at_least "$candle_version" "$CLI_MIN_VERSION"; then
+  echo "Your Candle CLI (${candle_path}) is ${candle_version:-an unknown version}; the Candle Harness needs ${CLI_MIN_VERSION}."
+  if [ "$SKIP_CLI" -eq 0 ] && ask "Run candle update --to ${CLI_MIN_TAG} now?"; then
     # The CLI's own updater, signed and checked by the CLI itself; for Homebrew or npm it says what to run.
-    "$candle_path" update --to "$CLI_TAG" </dev/null || true
+    "$candle_path" update --to "$CLI_MIN_TAG" </dev/null || true
     candle_version="$(version_of "$candle_path")"
   fi
-  if [ -z "$candle_version" ] || ! at_least "$candle_version" "$CLI_VERSION"; then
-    cli_note="Update the Candle CLI to ${CLI_VERSION} before running the Candle Harness: candle update --to ${CLI_TAG}"
+  if [ -z "$candle_version" ] || ! at_least "$candle_version" "$CLI_MIN_VERSION"; then
+    cli_note="Update the Candle CLI to ${CLI_MIN_VERSION} before running the Candle Harness: npm install -g @candledottv/cli@${CLI_MIN_VERSION}"
   fi
 else
   echo "The Candle CLI ${candle_version} is already installed, at ${candle_path}."
 fi
-candle_ready=0
-if [ -n "$candle_path" ] && [ -n "$candle_version" ] && at_least "$candle_version" "$CLI_VERSION"; then candle_ready=1; fi
+# Verifying a release file does not authorize running this Harness with an older CLI.
+# Keep the established verifier floor while enforcing the newer runtime minimum above.
+candle_verify_ready=0
+if [ -n "$candle_path" ] && [ -n "$candle_version" ] && at_least "$candle_version" "$CLI_VERSION"; then candle_verify_ready=1; fi
 
 # 4. The release: latest.json names its version and tag, both checked before they pin anything.
 fetch "$release_source" latest.json "$tmp/latest.json" || fail "couldn't fetch latest.json from ${release_source}"
@@ -361,7 +379,7 @@ expected_manifest="$(printf '%s' "$manifest" | sed -n "s/.*\"${asset}\"[^}]*\"sh
 verified_by=""
 if [ -f "$tmp/no-bundle" ]; then
   [ "$UNSIGNED_OK" = "1" ] || fail "the release has no signature for ${asset}; nothing installed"
-elif [ "$candle_ready" -eq 1 ]; then
+elif [ "$candle_verify_ready" -eq 1 ]; then
   out="$("$candle_path" verify "$tmp/$asset" --bundle "$tmp/$asset.sigstore.json" --identity "$identity" --issuer "$ISSUER" 2>&1)" \
     || { echo "$out" >&2; fail "${asset} isn't signed by ${identity}; nothing installed"; }
   verified_by="candle verify"
@@ -376,8 +394,8 @@ elif command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
 fi
 if [ -z "$verified_by" ]; then
   if [ "$UNSIGNED_OK" != "1" ]; then
-    if [ -z "$candle_path" ]; then why="The Candle CLI wasn't installed"; else why="The Candle CLI here is ${candle_version:-an unknown version}, older than ${CLI_VERSION}"; fi
-    fail "${why}, and nothing else here can check ${asset}'s signature, so nothing was installed. The Candle CLI ${CLI_VERSION} checks it: run this again and answer yes (or pass --yes)"
+    if [ -z "$candle_path" ]; then why="The Candle CLI wasn't installed"; else why="The Candle CLI here is ${candle_version:-an unknown version}, older than ${CLI_MIN_VERSION}"; fi
+    fail "${why}, and nothing else here can check ${asset}'s signature, so nothing was installed. The Candle CLI ${CLI_MIN_VERSION} checks it: install @candledottv/cli@${CLI_MIN_VERSION} first, then run this again"
   fi
   echo "Warning: ${asset}'s signature wasn't checked (CANDLE_HARNESS_INSTALL_UNSIGNED_FOR_TESTING=1, for testing only); its checksum matched."
 fi

@@ -459,7 +459,9 @@ In the Candle Harness a write becomes an approval card first, so the answers are
 - error.code CARD_REJECTED, CARD_EXPIRED or CARD_WITHDRAWN: the card ended without running. Final: don't propose it again unless the user asks.
 - error.code OUTCOME_UNKNOWN: Candle couldn't confirm it, which isn't proof that nothing moved. The user resolves it in the Candle Harness: don't propose it again.
 
-Pass \`clientId\`, the id the write's answer gave, and \`kind\`, the kind that answer gave. Every card the Candle Harness holds is read here, a swap included. A trade or a launch it doesn't hold is read from Candle. A swap it doesn't hold can't be read by its id (OPERATION_NOT_HELD). Never send a write under a new id to find out what happened: a new id is a second trade, swap or launch.`
+Pass \`clientId\`, the id the write's answer gave, and \`kind\`, the kind that answer gave. Every card the Candle Harness holds is read here, a swap included. A trade or a launch it doesn't hold is read from Candle. A swap it doesn't hold can't be read by its id (OPERATION_NOT_HELD). Never send a write under a new id to find out what happened: a new id is a second trade, swap or launch.
+
+For a Hood TEE guard operation, pass only \`operationId\`; this reads Candle directly on this agent’s key, preserving held state and its clearing condition. It is exclusive with clientId and kind.`
 
 /**
  * The words of Candle's own descriptions that the notes above answer. A recorded description that stops saying
@@ -766,6 +768,15 @@ export class ToolFace {
 
     if (name === "candle_get_operation") return this.getOperation(client, args, child)
 
+    // Old servers strip unknown check/quote fields. A check must never become a launch,
+    // nor a selected pair silently become SOL. Require the connected server's schema.
+    if ((name === "candle_launch_token" || name === "candle_launch_and_seed") && (args.check !== undefined || args.quote !== undefined)) {
+      const properties = this.deps.schemaOf?.(client.agent, name)?.properties
+      const supports = (key: string, type: string) => (properties?.[key] as { type?: string } | undefined)?.type === type
+      if ((args.check !== undefined && !supports("check", "boolean")) || (args.quote !== undefined && !supports("quote", "string"))) {
+        return refusal("UPDATE_CANDLE", "This Candle server does not support launch checks and quote selection. Run candle update. Nothing was sent.")
+      }
+    }
     if (verdict.class === "read") return relay(await child().call(name, args))
 
     if (verdict.class === "paper") {
@@ -932,6 +943,12 @@ export class ToolFace {
   }
 
   private async getOperation(client: FaceClient, args: Record<string, unknown>, child: () => ReturnType<AgentChildren["for"]>): Promise<ToolResult> {
+    if (args.operationId !== undefined) {
+      if (typeof args.operationId !== "string" || !args.operationId.trim() || args.clientId !== undefined || args.kind !== undefined) {
+        return refusal("MCP_VALIDATION", "operationId must be a nonempty string, exclusive with clientId and kind.")
+      }
+      return relay(await child().call("candle_get_operation", { operationId: args.operationId }))
+    }
     const { clientId, kind } = args
     if (typeof clientId !== "string" || clientId.length === 0) return refusal("MCP_VALIDATION", "clientId must be a string.")
     if (typeof kind !== "string" || !OPERATION_KINDS.includes(kind)) return refusal("MCP_VALIDATION", `kind is one of ${OPERATION_KINDS.join(", ")}.`)

@@ -1,0 +1,654 @@
+{
+  "about": "Synthetic response stubs exercised through the actual MCP/SDK source, with network disabled. No deployed behavior is claimed. Embedded perps stops at a local refusal before build/sign/send.",
+  "source": {
+    "repo": "candledottv/candle-monorepo",
+    "commit": "940055a9819283d721a313e9e39003f566663e6f"
+  },
+  "rows": [
+    {
+      "id": "mcp-launch-available",
+      "surface": "mcp",
+      "tool": "candle_launch_token",
+      "args": {
+        "check": true
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/launch/preflight"
+        }
+      ],
+      "outcome": {
+        "body": {
+          "success": true,
+          "key": {
+            "keyPrefix": "FakeKey1",
+            "scopes": [
+              "launch:write"
+            ],
+            "tier": "pro",
+            "selfLaunch": false,
+            "embeddedWalletPermission": "allowed"
+          },
+          "switches": {
+            "headlessLaunch": true,
+            "agentTrading": true,
+            "teeLaunchBuys": false
+          },
+          "embedded": {
+            "solana": {
+              "address": "WalletFake111111111111111111111111111111111",
+              "delegated": true
+            }
+          },
+          "wallets": [],
+          "check": true,
+          "walletWorks": true,
+          "works": true
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "sdk-launch-available",
+      "surface": "sdk",
+      "tool": "candle_launch_token",
+      "args": {
+        "check": true
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/launch/preflight"
+        }
+      ],
+      "outcome": {
+        "body": {
+          "success": true,
+          "key": {
+            "keyPrefix": "FakeKey1",
+            "scopes": [
+              "launch:write"
+            ],
+            "tier": "pro",
+            "selfLaunch": false,
+            "embeddedWalletPermission": "allowed"
+          },
+          "switches": {
+            "headlessLaunch": true,
+            "agentTrading": true,
+            "teeLaunchBuys": false
+          },
+          "embedded": {
+            "solana": {
+              "address": "WalletFake111111111111111111111111111111111",
+              "delegated": true
+            }
+          },
+          "wallets": [],
+          "check": true,
+          "walletWorks": true,
+          "works": true
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "mcp-launch-paused",
+      "surface": "mcp",
+      "tool": "candle_launch_token",
+      "args": {
+        "check": true,
+        "quote": "ACME"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/launch/preflight?quote=ACME"
+        }
+      ],
+      "outcome": {
+        "body": {
+          "success": true,
+          "key": {
+            "keyPrefix": "FakeKey1",
+            "scopes": [
+              "launch:write"
+            ],
+            "tier": "pro",
+            "selfLaunch": false,
+            "embeddedWalletPermission": "allowed"
+          },
+          "switches": {
+            "headlessLaunch": true,
+            "agentTrading": true,
+            "teeLaunchBuys": false
+          },
+          "embedded": {
+            "solana": {
+              "address": "WalletFake111111111111111111111111111111111",
+              "delegated": true
+            }
+          },
+          "wallets": [],
+          "quote": {
+            "requested": "ACME",
+            "ok": false,
+            "executionEnabled": false,
+            "disclosure": "Issuer may pause transfers.",
+            "checks": [
+              {
+                "check": "paused",
+                "status": "refuse",
+                "code": "QUOTE_PAUSED",
+                "message": "Quote token is paused."
+              }
+            ]
+          },
+          "check": true,
+          "walletWorks": true,
+          "works": false
+        },
+        "isError": true
+      }
+    },
+    {
+      "id": "sdk-launch-paused",
+      "surface": "sdk",
+      "tool": "candle_launch_token",
+      "args": {
+        "check": true,
+        "quote": "ACME"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/launch/preflight?quote=ACME"
+        }
+      ],
+      "outcome": {
+        "body": {
+          "success": true,
+          "key": {
+            "keyPrefix": "FakeKey1",
+            "scopes": [
+              "launch:write"
+            ],
+            "tier": "pro",
+            "selfLaunch": false,
+            "embeddedWalletPermission": "allowed"
+          },
+          "switches": {
+            "headlessLaunch": true,
+            "agentTrading": true,
+            "teeLaunchBuys": false
+          },
+          "embedded": {
+            "solana": {
+              "address": "WalletFake111111111111111111111111111111111",
+              "delegated": true
+            }
+          },
+          "wallets": [],
+          "quote": {
+            "requested": "ACME",
+            "ok": false,
+            "executionEnabled": false,
+            "disclosure": "Issuer may pause transfers.",
+            "checks": [
+              {
+                "check": "paused",
+                "status": "refuse",
+                "code": "QUOTE_PAUSED",
+                "message": "Quote token is paused."
+              }
+            ]
+          },
+          "check": true,
+          "walletWorks": true,
+          "works": false
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "mcp-launch-split",
+      "surface": "mcp",
+      "tool": "candle_launch_token",
+      "args": {
+        "check": true,
+        "quote": "ACME"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/launch/preflight?quote=ACME"
+        }
+      ],
+      "outcome": {
+        "body": {
+          "success": true,
+          "key": {
+            "keyPrefix": "FakeKey1",
+            "scopes": [
+              "launch:write"
+            ],
+            "tier": "pro",
+            "selfLaunch": false,
+            "embeddedWalletPermission": "allowed"
+          },
+          "switches": {
+            "headlessLaunch": true,
+            "agentTrading": true,
+            "teeLaunchBuys": false
+          },
+          "embedded": {
+            "solana": {
+              "address": "WalletFake111111111111111111111111111111111",
+              "delegated": true
+            }
+          },
+          "wallets": [],
+          "quote": {
+            "requested": "ACME",
+            "ok": false,
+            "executionEnabled": false,
+            "disclosure": "Issuer may pause transfers.",
+            "checks": [
+              {
+                "check": "split",
+                "status": "refuse",
+                "code": "QUOTE_SPLIT",
+                "message": "Quote token is in a split hold."
+              }
+            ]
+          },
+          "check": true,
+          "walletWorks": true,
+          "works": false
+        },
+        "isError": true
+      }
+    },
+    {
+      "id": "sdk-launch-split",
+      "surface": "sdk",
+      "tool": "candle_launch_token",
+      "args": {
+        "check": true,
+        "quote": "ACME"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/launch/preflight?quote=ACME"
+        }
+      ],
+      "outcome": {
+        "body": {
+          "success": true,
+          "key": {
+            "keyPrefix": "FakeKey1",
+            "scopes": [
+              "launch:write"
+            ],
+            "tier": "pro",
+            "selfLaunch": false,
+            "embeddedWalletPermission": "allowed"
+          },
+          "switches": {
+            "headlessLaunch": true,
+            "agentTrading": true,
+            "teeLaunchBuys": false
+          },
+          "embedded": {
+            "solana": {
+              "address": "WalletFake111111111111111111111111111111111",
+              "delegated": true
+            }
+          },
+          "wallets": [],
+          "quote": {
+            "requested": "ACME",
+            "ok": false,
+            "executionEnabled": false,
+            "disclosure": "Issuer may pause transfers.",
+            "checks": [
+              {
+                "check": "split",
+                "status": "refuse",
+                "code": "QUOTE_SPLIT",
+                "message": "Quote token is in a split hold."
+              }
+            ]
+          },
+          "check": true,
+          "walletWorks": true,
+          "works": false
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "mcp-launch-old-server",
+      "surface": "mcp",
+      "tool": "candle_launch_token",
+      "args": {
+        "check": true,
+        "quote": "ACME"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/launch/preflight?quote=ACME"
+        }
+      ],
+      "outcome": {
+        "body": {
+          "success": false,
+          "error": {
+            "code": "QUOTE_CHECK_UNAVAILABLE",
+            "message": "The server did not return a valid check for the requested quote."
+          }
+        },
+        "isError": true
+      }
+    },
+    {
+      "id": "sdk-launch-old-server",
+      "surface": "sdk",
+      "tool": "candle_launch_token",
+      "args": {
+        "check": true,
+        "quote": "ACME"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/launch/preflight?quote=ACME"
+        }
+      ],
+      "outcome": {
+        "body": {
+          "error": {
+            "code": "QUOTE_CHECK_UNAVAILABLE"
+          }
+        },
+        "isError": true
+      }
+    },
+    {
+      "id": "mcp-launch-conflict",
+      "surface": "mcp",
+      "tool": "candle_launch_token",
+      "args": {
+        "check": true,
+        "dryRun": true
+      },
+      "requests": [],
+      "outcome": {
+        "body": {
+          "success": false,
+          "error": {
+            "code": "VALIDATION_FAILED",
+            "message": "Pass check or dryRun, never both.",
+            "field": "check"
+          }
+        },
+        "isError": true
+      }
+    },
+    {
+      "id": "sdk-launch-conflict",
+      "surface": "sdk",
+      "tool": "candle_launch_token",
+      "args": {
+        "check": true,
+        "dryRun": true
+      },
+      "requests": [],
+      "outcome": {
+        "body": {
+          "error": {
+            "code": "VALIDATION_FAILED"
+          }
+        },
+        "isError": true
+      }
+    },
+    {
+      "id": "candle_signal_scorecard",
+      "surface": "mcp",
+      "tool": "candle_signal_scorecard",
+      "args": {},
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/v1/public/scorecard"
+        }
+      ],
+      "outcome": {
+        "body": {
+          "records": [],
+          "next_before": null,
+          "measure": "Measured record, not a forecast."
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "candle_signal_records",
+      "surface": "mcp",
+      "tool": "candle_signal_records",
+      "args": {
+        "source": "pattern",
+        "before": 12,
+        "limit": 5
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/v1/public/signal-records?source=pattern&before=12&limit=5"
+        }
+      ],
+      "outcome": {
+        "body": {
+          "records": [],
+          "next_before": null,
+          "measure": "Measured record, not a forecast."
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "candle_signal_record",
+      "surface": "mcp",
+      "tool": "candle_signal_record",
+      "args": {
+        "source": "pattern",
+        "source_id": "fake-signal"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/v1/public/signal-records/pattern/fake-signal"
+        }
+      ],
+      "outcome": {
+        "body": {
+          "records": [],
+          "next_before": null,
+          "measure": "Measured record, not a forecast."
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "fixed-13",
+      "surface": "mcp+sdk",
+      "input": {
+        "quote": "USDC"
+      },
+      "outcome": {
+        "ok": true,
+        "args": {
+          "quoteAsset": "usdc",
+          "chain": "solana"
+        }
+      }
+    },
+    {
+      "id": "fixed-14",
+      "surface": "mcp+sdk",
+      "input": {
+        "quote": "ETH"
+      },
+      "outcome": {
+        "ok": true,
+        "args": {
+          "quoteAsset": "eth",
+          "chain": "hood"
+        }
+      }
+    },
+    {
+      "id": "fixed-15",
+      "surface": "mcp+sdk",
+      "input": {
+        "quote": "ACME"
+      },
+      "outcome": {
+        "ok": false,
+        "code": "QUOTE_LAUNCH_UNAVAILABLE"
+      }
+    },
+    {
+      "id": "fixed-16",
+      "surface": "mcp+sdk",
+      "input": {
+        "quote": "USDC",
+        "chain": "hood"
+      },
+      "outcome": {
+        "ok": false,
+        "code": "CHAIN_MISMATCH"
+      }
+    },
+    {
+      "id": "fixed-17",
+      "surface": "mcp+sdk",
+      "input": {
+        "quote": "SOL",
+        "quoteAsset": "sol"
+      },
+      "outcome": {
+        "ok": false,
+        "code": "VALIDATION_FAILED"
+      }
+    },
+    {
+      "id": "perps-tee-no-pem",
+      "surface": "mcp",
+      "tool": "candle_perps_cancel",
+      "args": {
+        "wallet": "perps",
+        "cloid": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/wallets/trading"
+        }
+      ],
+      "outcome": {
+        "body": {
+          "success": false,
+          "error": {
+            "code": "SIGNER_UNAVAILABLE",
+            "message": "Set CANDLE_KEY_SIGNER_PEM_FILE to the key signer PEM (candle tee signer new --out <pem>) to sign perps actions."
+          }
+        },
+        "isError": true
+      }
+    },
+    {
+      "id": "perps-unknown-wallet",
+      "surface": "mcp",
+      "tool": "candle_perps_cancel",
+      "args": {
+        "wallet": "missing",
+        "cloid": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/wallets/trading"
+        }
+      ],
+      "outcome": {
+        "body": {
+          "success": false,
+          "error": {
+            "code": "TEE_WALLET_REQUIRED",
+            "message": "Name exactly one EVM TEE wallet: perps"
+          }
+        },
+        "isError": true
+      }
+    },
+    {
+      "id": "perps-embedded-no-pem",
+      "surface": "mcp",
+      "tool": "candle_perps_cancel",
+      "args": {
+        "wallet": "embedded",
+        "cloid": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/wallets/embedded"
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/agent/perps/cancel"
+        }
+      ],
+      "outcome": {
+        "body": {
+          "success": false,
+          "error": {
+            "code": "FIXTURE_BUILD_STOP",
+            "message": "Local stub stops before any build or sign."
+          }
+        },
+        "isError": true
+      }
+    },
+    {
+      "id": "perps-embedded-denied",
+      "surface": "mcp",
+      "tool": "candle_perps_cancel",
+      "args": {
+        "wallet": "embedded",
+        "cloid": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/wallets/embedded"
+        }
+      ],
+      "outcome": {
+        "body": {
+          "success": false,
+          "error": {
+            "code": "AGENT_WALLET_MISSING",
+            "message": "Embedded EVM wallet unavailable"
+          }
+        },
+        "isError": true
+      }
+    }
+  ]
+}

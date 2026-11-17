@@ -26,7 +26,7 @@ bun test                      # everything but the live tests
 bun run test:live <file>      # one live test file (*.live.test.ts)
 ```
 
-**Nothing in `bun test` reaches Candle, Hacc or a model.** The tests run against stand-ins in `test/`: a fake Candle MCP server and a fake `candle` CLI (`fake-candle-mcp.ts`, `fake-candle-cli.ts`), a fake Hacc (`fake-hacc.ts`), a fake model server (`fake-model.ts`) and fake harnesses. The fakes answer in the shapes recorded from the real services, kept in `test/fixtures/candle-recorded/` and `test/fixtures/hacc-recorded/` with made-up addresses, ids and figures, and tests hold the fakes to those recordings. `test/record-candle.ts` and `test/record-hacc.ts` record fresh shapes; `scripts/scrub-recordings.ts` turns a recording into fixtures and refuses anything it can't place. Raw recordings go in `test/fixtures/raw/`, which git ignores.
+**Nothing in `bun test` reaches Candle, Hacc or a model.** The tests run against stand-ins in `test/`: a fake Candle MCP server and a fake `candle` CLI (`fake-candle-mcp.ts`, `fake-candle-cli.ts`), a fake Hacc (`fake-hacc.ts`), a fake model server (`fake-model.ts`) and fake harnesses. The fakes answer in the shapes recorded from the real services, kept in `test/fixtures/candle-recorded/` and `test/fixtures/hacc-recorded/` with made-up addresses, ids and figures, and tests hold the fakes to those recordings. `test/record-candle.ts` and `test/record-hacc.ts` record fresh shapes; `scripts/scrub-recordings.ts` turns a recording into fixtures and refuses anything it can't place. Raw recordings go in `test/fixtures/raw/`, which git ignores. For only the released CLI’s handshake and tools/list, use `test/record-candle.ts --tools-only --route cli --cli <verified-cli-wrapper>` with a Read key through hidden stdin; this mode makes no tools/call and cannot be combined with a paper trade.
 
 **Live tests** start real harnesses (Claude Code, Codex, Grok, OpenCode, Pi) or need a real terminal, and some use a model. A plain `bun test`, and `bun test <file>`, skip them. Each file says what it needs at the top.
 
@@ -48,7 +48,7 @@ Comments cite where a rule comes from, so it can be checked:
 
 - `docs.candle.tv/...` is a page of Candle's docs, with a section name in quotes where it helps.
 - `cli/src/...`, or `commands/<name>.ts` alone, is Candle CLI's source: [`candledottv/cli`](https://github.com/candledottv/cli)'s `packages/cli/src/` at the commit `src/core/cli-source.json` names (earlier releases lived at `cli/src/` in `candledottv/agentic`, and a citation with a commit, `candledottv/agentic@<sha>`, is to that). Line numbers are at that commit.
-- `mcp/src/...` is the source of Candle's MCP server (`candle mcp`): `candledottv/cli`'s `packages/mcp/src/` (earlier, `mcp/src/` in `candledottv/agentic`).
+- `mcp/src/...` is the source of Candle's MCP server (`candle mcp`): `candledottv/candle-monorepo`'s `packages/mcp/src/` (earlier, `mcp/src/` in `candledottv/agentic`).
 
 ## What the checks hold
 
@@ -61,6 +61,7 @@ Some checks keep the code, the docs and the outside world in step:
 | `bun scripts/read-cli-source.ts` | Re-reads the CLI's source, as text, into `src/core/cli-source.json` when the pinned CLI moves. `bun scripts/pin-cli.ts cli-v<version>` pins `install.sh` to that CLI release, once cosign has verified Candle's signature on every file it pins (it needs `cosign` on PATH). |
 | `bun scripts/skills-check.ts` | `skills/` is exactly Candle's skills at the commit `skills/SOURCE` names. |
 | `scripts/docs-map.json` | Every user-facing feature is on one docs page, and every key, pane, tab, tool, palette row, doctor area, command and setting the code has belongs to a feature. |
+| `bun scripts/read-mcp-source.ts <source>` / `bun scripts/read-candle-contracts.ts <source>` | Records unreleased MCP tools and MCP/SDK contracts from an exact clean source checkout, in memory with network disabled. These source fixtures do not verify a release; use the existing read-only recorder after pinning a signed CLI. |
 | `bun scripts/docs-pages.ts <dir>` | The reference pages in a checkout of Candle's docs site (its `harness` folder) match the code. `--write <dir> --release v<version>` writes them. |
 | `scripts/ship-words.test.ts` | Every tracked file, comments and test names included, reads on its own: no stage, plan, decision or person from how the Candle Harness was built, and no pointer to a file outside the repo. A comment says why in its own words. |
 | `bun scripts/doc-images.ts --shade dark <dir>` | The docs site's pictures (its `public/harness` folder) match the kept frames; `--readme` checks the README's moving picture. Add `--write` to draw them. |

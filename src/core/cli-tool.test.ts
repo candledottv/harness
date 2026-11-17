@@ -25,10 +25,13 @@ describe("a key prefix that starts with \"-\"", () => {
     expect(resolve("portfolio", undefined, ["-1Y25FIQ"])).toMatchObject({ ok: false, code: "FLAG_NOT_ALLOWED" })
   })
 
-  test("is a value only after a flag the CLI takes one for: tee rebind's --to-key, never vault promote's", () => {
+  test("is a value only after a flag the CLI takes one for: --to-key on tee rebind and vault promote, never portfolio's", () => {
     const rebind = resolve("tee", "rebind", ["tee-one", "--to-key", "-1Y25FIQ"])
     expect(rebind.ok && rebind.call.argv).toEqual(["tee", "rebind", "tee-one", "--to-key", "-1Y25FIQ"])
-    expect(resolve("vault", "promote", ["--from", "cold", "--to-key", "-1Y25FIQ"])).toMatchObject({ ok: false, code: "BAD_ARGS", message: "--to-key needs a value." })
+    // vault promote takes --to-key since the CLI read at 0.13.28.
+    const promote = resolve("vault", "promote", ["--from", "cold", "--to-key", "-1Y25FIQ"])
+    expect(promote.ok && promote.call.argv).toEqual(["vault", "promote", "--from", "cold", "--to-key", "-1Y25FIQ"])
+    expect(resolve("portfolio", undefined, ["--to-key", "-1Y25FIQ"])).toMatchObject({ ok: false, code: "FLAG_NOT_ALLOWED" })
   })
 })
 
@@ -43,7 +46,7 @@ describe("refusals", () => {
   test("a word given as the subcommand of a command that has none says to put it in args (help keys)", () => {
     expect(resolve("help", "keys")).toEqual({ ok: false, code: "NOT_IN_MAP", message: 'candle help has no subcommands: pass "keys" in args instead (candle help keys).' })
     expect(resolve("help", undefined, ["keys"])).toMatchObject({ ok: true })
-    expect(resolve("rm", "rf")).toMatchObject({ ok: false, code: "NOT_IN_MAP", message: "candle rm isn't a command in candle 0.13.20, the CLI the Candle Harness was checked against." })
+    expect(resolve("rm", "rf")).toMatchObject({ ok: false, code: "NOT_IN_MAP", message: "candle rm isn't a command in candle 0.13.28, the CLI the Candle Harness was checked against." })
   })
 
   test("flags that change who or where it runs, --yes and --rpc-url are refused, even where the command declares them", () => {
@@ -307,10 +310,10 @@ describe("candle_cli through the core", () => {
     writeFileSync(join(s.dir, "fake-cli.json"), JSON.stringify({ version: "0.13.5" }))
     const out = await s.call({ command: "tee", subcommand: "fund", args: ["Wallet1", "--amount", "0.1"] })
     expect(out.error.code).toBe("CLI_TOO_OLD")
-    expect(out.error.message).toBe("candle 0.13.5 is older than the Candle Harness needs (0.13.20): run candle update, then ask again. Nothing was run.")
+    expect(out.error.message).toBe("candle 0.13.5 is older than the Candle Harness needs (0.13.28): run candle update, then ask again. Nothing was run.")
     expect((await s.view.request("cli.run", { argv: ["update"] })).result).toMatchObject({ kind: "pane" })
     // Updated, the next step goes, with no restart.
-    writeFileSync(join(s.dir, "fake-cli.json"), JSON.stringify({ version: "0.13.20" }))
+    writeFileSync(join(s.dir, "fake-cli.json"), JSON.stringify({ version: "0.13.28" }))
     expect((await s.call({ command: "tee", subcommand: "fund", args: ["Wallet1", "--amount", "0.1"] })).error.code).toBe("APPROVAL_REQUIRED")
   })
 

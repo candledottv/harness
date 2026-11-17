@@ -1,0 +1,35 @@
+{
+  "source": {
+    "repo": "candledottv/candle-monorepo",
+    "commit": "940055a9819283d721a313e9e39003f566663e6f",
+    "cliVersion": "0.13.28",
+    "method": "in-memory tools/list; local eligibility stub; no tool calls"
+  },
+  "fixedPairs": [
+    {
+      "id": "sol",
+      "address": "So11111111111111111111111111111111111111112",
+      "chain": "solana"
+    },
+    {
+      "id": "usdc",
+      "address": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+      "chain": "solana"
+    },
+    {
+      "id": "cndl",
+      "address": "9dXSV8VWuYvGfTzqvkBeoFwH9ihVTybDuWo5VaJPCNDL",
+      "chain": "solana"
+    },
+    {
+      "id": "eth",
+      "address": "0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73",
+      "chain": "hood"
+    },
+    {
+      "id": "usdg",
+      "address": "0x5fc5360d0400a0fd4f2af552add042d716f1d168",
+      "chain": "hood"
+    }
+  ]
+}
