@@ -17,7 +17,9 @@ const SHIPPED = readFileSync(join(ROOT, "install.sh"), "utf8")
 const SCRIPT = testCopy(SHIPPED)
 const ISSUER = "https://token.actions.githubusercontent.com"
 const PREFIX = "https://github.com/candledottv/harness/.github/workflows/release.yaml@refs/tags/v"
-const CLI_IDENTITY = `https://github.com/candledottv/cli/.github/workflows/release.yaml@refs/tags/cli-v${MIN_CANDLE_CLI}`
+const CLI_BINARY_VERSION = /^CLI_TAG='cli-v([^']+)'/m.exec(SHIPPED)![1]!
+const CLI_IDENTITY = `https://github.com/candledottv/cli/.github/workflows/release.yaml@refs/tags/cli-v${CLI_BINARY_VERSION}`
+const BOOTSTRAP_SCRIPT = SCRIPT.replace(`CLI_MIN_VERSION='${MIN_CANDLE_CLI}'`, `CLI_MIN_VERSION='${CLI_BINARY_VERSION}'`)
 const PLATFORM = `${process.platform}-${process.arch === "arm64" ? "arm64" : "x64"}`
 const ASSET = binaryName(PLATFORM)
 // What install.sh runs from the system, linked into the tests' PATH so no real candle, cosign or gh is found.
@@ -423,8 +425,8 @@ describe("a good install", () => {
     expect(r.code).toBe(0)
     expect(r.out).toContain("signature wasn't checked (CANDLE_HARNESS_INSTALL_UNSIGNED_FOR_TESTING=1, for testing only)")
     expect(existsSync(join(s.home, ".local", "bin", "candle-harness"))).toBe(true)
-    // No CLI: the way to one is this installer's own checked route, never a pipe to another script.
-    expect(r.out).toContain("run this installer again with --yes, which installs Candle's CLI")
+    // The npm minimum is newer than the signed native bootstrap; installation is an explicit user step.
+    expect(r.out).toContain(`npm install -g @candledottv/cli@${MIN_CANDLE_CLI}`)
     expect(r.out).not.toContain("| bash")
   })
 })
@@ -478,7 +480,7 @@ describe("a download cut short", () => {
 
   test("the pins and constants stay at the top level, one to a line, where the workflow and the pin script read them", () => {
     const top = SHIPPED.slice(0, SHIPPED.indexOf("\nmain() {\n"))
-    for (const line of ["REPOSITORY='candledottv/harness'", "TAG_PREFIX='v'", `IDENTITY_PREFIX='${PREFIX}'`, "UNSIGNED_OK=0", "# BEGIN CLI PINS", `CLI_TAG='cli-v${MIN_CANDLE_CLI}'`, `CLI_IDENTITY='${CLI_IDENTITY}'`, "# END CLI PINS"]) {
+    for (const line of ["REPOSITORY='candledottv/harness'", "TAG_PREFIX='v'", `IDENTITY_PREFIX='${PREFIX}'`, "UNSIGNED_OK=0", "# BEGIN CLI PINS", `CLI_TAG='cli-v${CLI_BINARY_VERSION}'`, `CLI_IDENTITY='${CLI_IDENTITY}'`, "# END CLI PINS", `CLI_MIN_VERSION='${MIN_CANDLE_CLI}'`]) {
       expect(top.split("\n")).toContain(line)
     }
     expect(top).toMatch(/\n    candle-linux-x64\) echo '[0-9a-f]{64}' ;;\n/)
@@ -561,12 +563,13 @@ describe("refusals leave the machine unchanged", () => {
     release(s, "1.2.3")
     const r = refused(s, ["--from", s.release])
     expect(r.out).toContain(`The Candle CLI isn't installed, and the Candle Harness needs it (${MIN_CANDLE_CLI}).`)
-    expect(r.out).toContain("Install the Candle CLI now?")
+    expect(r.out).toContain(`npm install -g @candledottv/cli@${MIN_CANDLE_CLI}`)
+    expect(r.out).toContain("Install the signed CLI signature verifier now?")
     expect(r.out).toContain("No: there's no terminal to answer on")
     expect(r.out).toContain("The Candle CLI wasn't installed, and nothing else here can check")
     const s2 = scene()
     release(s2, "1.2.3")
-    expect(refused(s2, ["--from", s2.release], { tty: answer(s2, "n") }).out).toContain("Install the Candle CLI now? [y/N]")
+    expect(refused(s2, ["--from", s2.release], { tty: answer(s2, "n") }).out).toContain("Install the signed CLI signature verifier now? [y/N]")
   })
 
   test("a folder that isn't the user's", () => {
@@ -606,12 +609,35 @@ function cliRelease(s: Scene, opts: { signedAs?: string; tamper?: boolean } = {}
     writeFileSync(join(dir, `${name}.sigstore.json`), bundle(bytes, opts.signedAs ?? CLI_IDENTITY))
     pins += `    ${name}) echo '${sha256(bytes)}' ;;\n`
   }
-  const script = SCRIPT.replace(/cli_pin\(\) \{\n  case "\$1" in\n[\s\S]*?    \*\) echo '' ;;/, `cli_pin() {\n  case "$1" in\n${pins}    *) echo '' ;;`)
+  const script = BOOTSTRAP_SCRIPT.replace(/cli_pin\(\) \{\n  case "\$1" in\n[\s\S]*?    \*\) echo '' ;;/, `cli_pin() {\n  case "$1" in\n${pins}    *) echo '' ;;`)
   expect(script).not.toBe(SCRIPT)
   return { dir, script }
 }
 
 describe("the Candle CLI first", () => {
+  test("the published npm minimum qualifies; the older native pin is never offered as sufficient", () => {
+    const s = scene()
+    release(s, "1.2.3")
+    const bin = join(s.home, "bin")
+    candleIn(bin, MIN_CANDLE_CLI)
+    const ready = run(s, ["--from", s.release], { path: [bin] })
+    expect(ready.code).toBe(0)
+    expect(ready.out).toContain(`The Candle CLI ${MIN_CANDLE_CLI} is already installed`)
+    expect(ready.out).not.toContain("Run candle update")
+    const bootstrap = scene()
+    release(bootstrap, "1.2.3")
+    const cli = cliRelease(bootstrap)
+    const script = cli.script.replace(`CLI_MIN_VERSION='${CLI_BINARY_VERSION}'`, `CLI_MIN_VERSION='${MIN_CANDLE_CLI}'`)
+    const verified = run(bootstrap, ["--from", bootstrap.release, "--yes"], { script, env: { CANDLE_HARNESS_CLI_RELEASE_DIR: cli.dir } })
+    expect(verified.code).toBe(0)
+    expect(verified.out).toContain("Install the signed CLI signature verifier now?")
+    expect(verified.out).toContain(`can verify this download, but cannot run this Harness`)
+    expect(verified.out).toContain(`below required ${MIN_CANDLE_CLI}`)
+    expect(verified.out).toContain(`npm install -g @candledottv/cli@${MIN_CANDLE_CLI}`)
+    expect(verified.out).not.toContain(`The Candle CLI ${CLI_BINARY_VERSION} is already installed`)
+    expect(verifyCalls(bootstrap)).toHaveLength(3)
+  })
+
   test("none, and a yes: Candle's files checked against the pins, installed, then the Candle Harness verified by that candle", () => {
     const s = scene()
     release(s, "1.2.3")
@@ -619,7 +645,7 @@ describe("the Candle CLI first", () => {
     const r = run(s, ["--from", s.release], { tty: answer(s, "y"), script: cli.script, env: { CANDLE_HARNESS_CLI_RELEASE_DIR: cli.dir } })
     expect(r.code).toBe(0)
     const bin = join(s.home, ".local", "bin")
-    expect(r.out).toContain(`Installed the Candle CLI ${MIN_CANDLE_CLI} to ${bin}/candle, checked against the SHA-256s this installer carries for Candle's release.`)
+    expect(r.out).toContain(`Installed the Candle CLI ${CLI_BINARY_VERSION} to ${bin}/candle, checked against the SHA-256s this installer carries for Candle's release.`)
     // It never claims a signature check the candle made of itself.
     expect(r.out).not.toContain("Candle's signature")
     expect(r.out).not.toContain("Candle's own signature")
@@ -638,7 +664,7 @@ describe("the Candle CLI first", () => {
     const cli = cliRelease(s)
     const r = run(s, ["--from", s.release], { script: cli.script, env: { CANDLE_HARNESS_INSTALL_TTY: "", CANDLE_TUI_INSTALL_TTY: answer(s, "y"), CANDLE_TUI_CLI_RELEASE_DIR: cli.dir } })
     expect(r.code).toBe(0)
-    expect(r.out).toContain(`Installed the Candle CLI ${MIN_CANDLE_CLI}`)
+    expect(r.out).toContain(`Installed the Candle CLI ${CLI_BINARY_VERSION}`)
     expect(r.out.split("\n").filter((l) => l.includes("deprecated") && l.includes("CANDLE_TUI_"))).toEqual(["Note: CANDLE_TUI_CLI_RELEASE_DIR CANDLE_TUI_INSTALL_TTY read under the CANDLE_HARNESS_ name; the CANDLE_TUI_ names are deprecated."])
     // Set both ways, the new one is read and nothing is said.
     const s2 = scene()
@@ -662,7 +688,7 @@ describe("the Candle CLI first", () => {
     release(s, "1.2.3")
     const cli = cliRelease(s, { tamper: true })
     const r = refused(s, ["--from", s.release, "--yes"], { script: cli.script, env: { CANDLE_HARNESS_CLI_RELEASE_DIR: cli.dir } })
-    expect(r.out).toContain(`isn't the file Candle released as cli-v${MIN_CANDLE_CLI}`)
+    expect(r.out).toContain(`isn't the file Candle released as cli-v${CLI_BINARY_VERSION}`)
   })
 
   test("a CLI file signed as anything but Candle's release installs nothing", () => {
@@ -680,7 +706,7 @@ describe("the Candle CLI first", () => {
     const r = run(s, ["--from", s.release, "--yes"], { script: cli.script, env: { CANDLE_HARNESS_CLI_RELEASE_DIR: cli.dir } })
     expect(r.code).not.toBe(0)
     const bin = join(s.home, ".local", "bin")
-    expect(r.out).toContain(`isn't signed by ${PREFIX}1.2.3; candle-harness wasn't installed. The Candle CLI ${MIN_CANDLE_CLI} this run installed stays at ${bin}/candle`)
+    expect(r.out).toContain(`isn't signed by ${PREFIX}1.2.3; candle-harness wasn't installed. The Candle CLI ${CLI_BINARY_VERSION} this run installed stays at ${bin}/candle`)
     expect(r.out.toLowerCase()).not.toContain("nothing installed")
     expect(r.out.toLowerCase()).not.toContain("nothing was installed")
     expect(snapshot(s.home).map((l) => l.split(" ")[0])).toEqual([".local", ".local/bin", ".local/bin/candle", ".local/bin/candle-fido2"])
@@ -690,7 +716,7 @@ describe("the Candle CLI first", () => {
     const s = scene()
     const cli = cliRelease(s)
     release(s, "1.2.3")
-    const r = refused(s, ["--from", s.release, "--yes"], { env: { CANDLE_HARNESS_CLI_RELEASE_DIR: cli.dir } })
+    const r = refused(s, ["--from", s.release, "--yes"], { script: BOOTSTRAP_SCRIPT, env: { CANDLE_HARNESS_CLI_RELEASE_DIR: cli.dir } })
     expect(r.out).toContain("isn't the file Candle released")
   })
 
@@ -845,15 +871,15 @@ describe("what install.sh is pinned to", () => {
     expect(resolveWith({ GITHUB_EVENT_NAME: "push", GITHUB_REF: "refs/tags/v1.2.3", GITHUB_REF_NAME: "v1.2.3" }).output).toBe("tag=v1.2.3\nversion=1.2.3\n")
   })
 
-  test("the CLI the doctor needs, at the SHA-256s Candle published for it", () => {
-    expect(SCRIPT).toContain(`CLI_TAG='cli-v${MIN_CANDLE_CLI}'`)
+  test("the native bootstrap retains the SHA-256s and identity of its own published release", () => {
+    expect(SCRIPT).toContain(`CLI_TAG='cli-v${CLI_BINARY_VERSION}'`)
     expect(SCRIPT).toContain(`CLI_IDENTITY='${CLI_IDENTITY}'`)
-    const latest = JSON.parse(readFileSync(join(ROOT, "test", "fixtures", "candle-cli-release", `cli-v${MIN_CANDLE_CLI}-latest.json`), "utf8")) as {
+    const latest = JSON.parse(readFileSync(join(ROOT, "test", "fixtures", "candle-cli-release", `cli-v${CLI_BINARY_VERSION}-latest.json`), "utf8")) as {
       tag: string
       assets: Record<string, { name: string; sha256: string }>
       helpers: Record<string, { name: string; sha256: string }>
     }
-    expect(latest.tag).toBe(`cli-v${MIN_CANDLE_CLI}`)
+    expect(latest.tag).toBe(`cli-v${CLI_BINARY_VERSION}`)
     for (const platform of PLATFORMS) {
       for (const file of [latest.assets[platform], latest.helpers[platform]]) {
         expect(file).toBeDefined()

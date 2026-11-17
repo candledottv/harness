@@ -66,27 +66,58 @@ Generated with `bun scripts/docs-pages.ts --write <source>/apps/docs/src/content
 Checked with the same script without `--write`, the docs app's seven parity/link tests, and
 `git apply --unidiff-zero --check --reverse` against the generated worktree. The docs site is a different
 repository; this patch in the single Harness PR does not publish it. Next owner:
-Candle local-Claude (`claude@candle.tv`), for a companion docs PR/review on candle-monorepo.
+Sonnet Engineer, dispatched by orchestrator 2 at 09:20Z for the companion docs PR/review on candle-monorepo.
 
-## Release dependency: do not close BE-3685 yet
+## npm release verification and runtime minimum
 
-`install.sh` and `MIN_CANDLE_CLI` now pin CLI 0.13.24, the newest public release on
-2026-11-17 (`releases/latest/download/latest.json`). All eight assets/helpers were independently
-verified with `scripts/pin-cli.ts`'s `verifyRelease` and checksum-verified cosign 2.5.2; the
-installed pin block and fixture match that verified manifest. The linux-x64 binary's checksum
-matched the pin, `--version` reported 0.13.24, and its supported `mcp --read-only` mode completed
-a real MCP initialize/tools-list handshake (server 0.10.32, 19 public tools). That recording is
-`../candle-cli-release/cli-v0.13.24-tools.json`. No API key or tool calls were used. Normal
-keyed MCP startup requires a real Read key; no fake credential was used to bypass it.
+`@candledottv/cli@0.13.28` is published. On 2026-11-17 the registry tarball matched
+both its SHA-512 integrity and SHA-1 shasum; npm 10.9.2 `audit signatures` verified the
+registry signature. With Node 20.19.0 the published bundle reports CLI 0.13.28 and its
+keyless `mcp --read-only` handshake reports MCP 0.10.33 and 19 public tools. Every recorded
+public tool definition hashes identically to the current source fixture. The package
+identity, integrity, signer key id, entry hash and public tool hashes are recorded in
+`../candle-cli-release/cli-v0.13.28-npm.json`. No API key, tool calls or production writes
+were used for this public-subset recording.
 
-CLI 0.13.28 latest.json still returns 404, including from the supported pin script with
-cosign available. The worker GitHub wrapper does not permit `candledottv/cli`. This does not
-establish that no private release exists. The source parity target remains 0.13.28; the
-verified 0.13.24 installer pin does not satisfy that target's release gate.
+`MIN_CANDLE_CLI` and `install.sh`'s `CLI_MIN_VERSION` now require 0.13.28. Installer
+readiness and update guidance use that requirement. `CLI_TAG` and its checksums still name
+the independently verified native 0.13.24 binaries: npm publication does not provide native
+checksums or Sigstore bundles, and the native 0.13.28 `latest.json` still returns HTTP 404.
+The older native CLI can verify a downloaded Harness signature under the existing trust
+chain, but the installer explicitly says it cannot run this Harness and directs the user
+to `npm install -g @candledottv/cli@0.13.28`. It never presents the native bootstrap as
+meeting the runtime minimum. No npm command runs automatically, and native signature
+verification is unchanged. Publishing remains a separately authorized human step.
 
-Next owner: Andrew, the CLI release owner, to provide/publish the signed CLI 0.13.28 release
-through an authorized release session. Then the assigned Harness engineer runs
-`bun scripts/pin-cli.ts cli-v0.13.28` with cosign, updates `MIN_CANDLE_CLI` and its compatibility
-fixtures/tests together, and records tools/list through that verified release using the existing
-read-only recorder. Source fixture generation above is not a substitute for this release check.
-Harness publishing remains Andrew's separately approved release step; no tag is created by this PR.
+To reproduce npm verification in a scratch directory (no package scripts):
+
+```sh
+npm install --ignore-scripts --no-audit --no-fund --save-exact @candledottv/cli@0.13.28
+npm audit signatures
+node node_modules/@candledottv/cli/dist/index.js --version
+```
+
+## Remaining full Read-key recording
+
+A full released-CLI tools/list recording requires an approved Read key. This runtime has
+no `CANDLE_HARNESS_TEST_KEY_FILE` configured and no agent API key in its injected environment.
+The throwaway wallet and invite pass are not a Read key; no login bypass or replacement
+credential was used. The source fixture and the public npm recording are deliberately
+labeled and do not claim to satisfy the full Read-key gate.
+
+The existing recorder now supports a CLI-only tools/list mode. On the authorized test
+machine, supply its Read key through the recorder's existing hidden input (never argv or a
+board comment), with a wrapper that runs the verified npm bundle as `candle`:
+
+```sh
+bun test/record-candle.ts --tools-only --route cli --cli <verified-cli-wrapper> --out test/fixtures/raw/cli-0.13.28
+```
+
+This mode performs initialize/tools-list and the MCP server's normal read-only profile
+eligibility check, with no tools/call or optional paper trade. Scrub the raw recording
+using `scripts/scrub-recordings.ts` before committing it; preserve the separately marked
+conditional profile-tool definitions when reconciling the full fixture.
+
+Next owner: orchestrator 2 to route this capture to the authorized Read-key holder (or make
+an approved test-key file available to the assigned runtime). Do not paste a key into the
+card. The Read-key gate remains open until that recording is delivered and checked.

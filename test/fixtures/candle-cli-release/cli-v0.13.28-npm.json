@@ -1,0 +1,66 @@
+{
+  "about": "Published npm CLI 0.13.28: SHA-512 integrity and SHA-1 shasum matched the registry tarball; npm 10.9.2 audit signatures verified its registry signature. Node 20.19.0 --version and keyless mcp --read-only initialize/tools-list recorded on 2026-11-17, with empty private config, no API key and no tool calls. This is the public subset, not the required full Read-key recording. npm registry signatures do not supply native binary checksums or Sigstore bundles.",
+  "cliVersion": "0.13.28",
+  "channel": "npm",
+  "package": {
+    "name": "@candledottv/cli",
+    "version": "0.13.28",
+    "tarball": "https://registry.npmjs.org/@candledottv/cli/-/cli-0.13.28.tgz",
+    "integrity": "sha512-Svu4QIcvtVa7FexNpCrnKsoauKxmm84imQDeYnBQHLKG8f/Xzg7rnYwOAIDD7QI4Ogo7OgBs9/SmUHafkcWMaQ==",
+    "shasum": "5318cb74668239a62f5cc9cd245035845f107ef6",
+    "registryKeyIds": [
+      "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U"
+    ]
+  },
+  "entrySha256": "fabca4e3132883cbd1769989a5d563b9b83112c9a46e7354a48dd05e46bfd8ec",
+  "serverInfo": {
+    "name": "candle-mcp",
+    "version": "0.10.33"
+  },
+  "argv": [
+    "mcp",
+    "--read-only"
+  ],
+  "toolNames": [
+    "candle_token_page_about",
+    "candle_token_page_burns",
+    "candle_token_page_history",
+    "candle_token_page_updates",
+    "candle_token_page_comments",
+    "candle_get_market",
+    "candle_token_forensics",
+    "candle_token_clusters",
+    "candle_token_card",
+    "candle_token_history",
+    "candle_get_price_history",
+    "candle_token_events",
+    "candle_get_feed",
+    "candle_get_agent_profile",
+    "candle_list_agent_posts",
+    "candle_get_agent_positions",
+    "candle_list_agents",
+    "candle_get_plans",
+    "candle_resolve_token"
+  ],
+  "toolSha256": {
+    "candle_token_page_about": "d39b114c7c32e07937a0b40871c24b31ce04d177dc980bb4f26b35615967d16b",
+    "candle_token_page_burns": "af6bb3e8b36fa3298401623ff14007fc3fe283f23a761aa4aa249c465dd1e202",
+    "candle_token_page_history": "5b3e38e8052c6681d637f2964e51d45b950a36a308f38428787e9e3cf4af64b3",
+    "candle_token_page_updates": "cdbbd652644efd074586616888e60af2ee6e156e64ee4db31a05de1bd0202cd2",
+    "candle_token_page_comments": "231a3554859914d84f78b5fa971ca72f7e1a31332f14995621e65d5577fa51ec",
+    "candle_get_market": "bed7738b962650c9a17e1089fb2fd3f9562fdd67885552476380cc9cc4b4a46b",
+    "candle_token_forensics": "573ff192f17d2f246080c8e6ddcc10b6e90433e845f4afda87c110b749fe5802",
+    "candle_token_clusters": "a8a200aaf7b67d9fe1e21be78f5db4219b52d3dbb08b80059ad78df5764755ab",
+    "candle_token_card": "a029c69e38ee1f0da7d14bcfb5e9c0868a6971c291c91e8672610e8d1add0891",
+    "candle_token_history": "b1f017dc33422dd5bc2938ad1e6274ec419c01e6e6304b7c9250069deaaeb95b",
+    "candle_get_price_history": "3de3b9797215d41eb05cd60d8a379b8a0ff173ee61ed70c2d9ae8040a8d283c5",
+    "candle_token_events": "e131b973aea1763567576c4261cc4109d8b3fc18f1cde4e85fbfcbf5b9f51f66",
+    "candle_get_feed": "fa5874197111407338ae9de6e2c15eb1dc895f8c5f7a18f74a662e0d8b4bcbbb",
+    "candle_get_agent_profile": "f474e1d0a4d5dc304843c70662be21dafe2d987809ee56be1d1b31250fe92e3e",
+    "candle_list_agent_posts": "17330c262b9e658cc8b09348122297b3abd6797b7be8aef5fbdb7d47507fbca5",
+    "candle_get_agent_positions": "729494636b04688bdbd86ab70136e989e0b0d068a5a91c5aab10b177ae516f6d",
+    "candle_list_agents": "197cb8f7bee024b7fd30af53e35762e7288a82a2b47e870a125456f36eb85c6a",
+    "candle_get_plans": "58b75917cabf02261bd7686f7a8117ad590b9fac699aa157c529dbd2723c6018",
+    "candle_resolve_token": "40a79ecb1064b8a088cd6b6abb36419d24e298c7c05891373fdc02d61ff5dd57"
+  }
+}

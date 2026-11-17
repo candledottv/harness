@@ -43,3 +43,20 @@ test("each key's reads are recorded, wallets by that key's own prefix, and no ke
     expect(text).not.toContain(KEY_B)
   }
 }, 60_000)
+
+
+test("tools-only records the released-CLI handshake without any tools/call", async () => {
+  const candle = await fakeCandle()
+  const out = mkdtempSync("/tmp/chrn-rec-list-")
+  outs.push(out)
+  const run = Bun.spawn(["bun", join(import.meta.dir, "record-candle.ts"), "--out", out, "--cli", candle, "--tools-only", "--route", "cli"], {
+    stdin: new Blob([`read ${KEY_A}\n`]), stdout: "pipe", stderr: "pipe",
+  })
+  expect(await run.exited).toBe(0)
+  const files = readdirSync(out)
+  expect(files).toEqual(["cli-read-handshake.json"])
+  const handshake = JSON.parse(readFileSync(join(out, files[0]!), "utf8"))
+  expect(handshake.status.state).toBe("ready")
+  expect(handshake.tools.length).toBeGreaterThan(90)
+  expect(readFileSync(join(out, files[0]!), "utf8")).not.toContain(KEY_A)
+})

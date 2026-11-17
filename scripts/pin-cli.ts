@@ -1,6 +1,6 @@
 // Pins install.sh to a Candle CLI release: the tag, the identity Candle
 // signs it as, and the SHA-256 of each file install.sh may install, from Candle's own latest.json. Run it
-// when the Candle Harness's minimum CLI moves (src/setup/doctor.ts MIN_CANDLE_CLI), after reading that CLI fresh:
+// when the signed native CLI release moves. The runtime minimum may move separately after an npm release:
 //   bun scripts/pin-cli.ts cli-v0.13.9
 // latest.json carries no signature of its own, and these pins are all install.sh trusts the CLI by: the
 // candle it installs is only checked against them (its own `candle verify` can't vouch for itself). So
@@ -118,5 +118,5 @@ if (import.meta.main) {
     download: async (name) => new Uint8Array(await (await read(name)).arrayBuffer()),
     cosign: (args) => spawnSync("cosign", args, { stdio: "inherit" }).status === 0,
   })
-  console.log(`install.sh pinned to ${tag}, every file verified with cosign. Move MIN_CANDLE_CLI to match.`)
+  console.log(`install.sh pinned to ${tag}, every file verified with cosign. Check the runtime minimum separately; never lower it to match an older native bootstrap.`)
 }

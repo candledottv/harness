@@ -83,13 +83,8 @@ export interface PaneSpec {
   positionals?: number
 }
 
-/**
- * The oldest CLI the Candle Harness runs on: the newest one Candle has released and install.sh pins (0.13.24).
- * The command table is read from a newer source (cli-source.json, 0.13.28), so a command added after 0.13.24
- * is refused on it until the pin moves. 0.13.20 was the first that waits for Candle's browser confirm on an
- * owner step; an older one is refused it once Candle turns the confirm on.
- */
-export const MIN_CANDLE_CLI = "0.13.24"
+/** The runtime minimum and command-table target. Signed native bootstrap pins live separately in install.sh. */
+export const MIN_CANDLE_CLI = "0.13.28"
 
 /** The rules that run in the prompt pane. */
 export const PANE_RULES: ReadonlySet<CliRule> = new Set(["owner", "ceremony", "funds-out"])

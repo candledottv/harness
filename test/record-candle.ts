@@ -6,6 +6,7 @@
 // Built here, run there:
 //   bun build --compile --target=bun-darwin-arm64 test/record-candle.ts --outfile dist/record-candle-darwin-arm64
 //   ./record-candle [--out DIR] [--cli PATH] [--package PATH] [--paper-mint MINT]
+//   ./record-candle --tools-only --route cli --cli PATH   initialize/tools-list only, no tools/call
 //
 // For every key and every route it can start (A: `candle mcp`; B: `candle-mcp`), it records the
 // handshake, tools/list (descriptions included) and one call each of the core's reads. It adds the reads
@@ -24,12 +25,17 @@ const SOL_MINT = "So11111111111111111111111111111111111111112"
 
 const { values: opts } = parseArgs({
   options: {
+    "tools-only": { type: "boolean", default: false },
+    route: { type: "string" },
     out: { type: "string" },
     cli: { type: "string", default: "candle" },
     package: { type: "string", default: "candle-mcp" },
     "paper-mint": { type: "string" },
   },
 })
+
+if (opts.route !== undefined && opts.route !== "cli" && opts.route !== "package") throw new Error("--route is cli or package")
+if (opts["tools-only"] && opts["paper-mint"]) throw new Error("--tools-only cannot be combined with --paper-mint")
 
 const out = resolve(opts.out ?? `candle-recordings-${new Date().toISOString().replace(/[:.]/g, "-")}`)
 mkdirSync(out, { recursive: true, mode: 0o700 })
@@ -122,13 +128,14 @@ if (keys.length === 0) {
 }
 console.log(`Recording into ${out}`)
 
-for (const route of ["cli", "package"] as const) {
+for (const route of (opts.route ? [opts.route] : ["cli", "package"]) as McpRoute[]) {
   const running: { label: string; child: CandleMcpChild; configDir: string }[] = []
   for (const { label, key } of keys) {
     const started = await startChild(route, label, key)
     if (!started) continue
     running.push({ label, ...started })
     const { child } = started
+    if (opts["tools-only"]) continue
     await record(route, label, child, "candle_get_market", { chain: "solana", mint: SOL_MINT })
     await record(route, label, child, "candle_resolve_token", { mint: SOL_MINT })
     await record(route, label, child, "candle_get_wallets", {})
