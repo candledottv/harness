@@ -310,10 +310,10 @@ describe("candle_cli through the core", () => {
     writeFileSync(join(s.dir, "fake-cli.json"), JSON.stringify({ version: "0.13.5" }))
     const out = await s.call({ command: "tee", subcommand: "fund", args: ["Wallet1", "--amount", "0.1"] })
     expect(out.error.code).toBe("CLI_TOO_OLD")
-    expect(out.error.message).toBe("candle 0.13.5 is older than the Candle Harness needs (0.13.20): run candle update, then ask again. Nothing was run.")
+    expect(out.error.message).toBe("candle 0.13.5 is older than the Candle Harness needs (0.13.24): run candle update, then ask again. Nothing was run.")
     expect((await s.view.request("cli.run", { argv: ["update"] })).result).toMatchObject({ kind: "pane" })
     // Updated, the next step goes, with no restart.
-    writeFileSync(join(s.dir, "fake-cli.json"), JSON.stringify({ version: "0.13.20" }))
+    writeFileSync(join(s.dir, "fake-cli.json"), JSON.stringify({ version: "0.13.24" }))
     expect((await s.call({ command: "tee", subcommand: "fund", args: ["Wallet1", "--amount", "0.1"] })).error.code).toBe("APPROVAL_REQUIRED")
   })
 
