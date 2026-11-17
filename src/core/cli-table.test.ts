@@ -12,7 +12,7 @@ const baseOf = (path: string) => {
 describe("the table and the source", () => {
   test("it was read from the pinned CLI source", () => {
     // packages/cli of candledottv/candle-monorepo at the staging commit that carries CLI 0.13.28.
-    expect(SOURCE.source).toMatchObject({ repo: "candledottv/candle-monorepo", commit: "957e77f33", cliVersion: "0.13.28" })
+    expect(SOURCE.source).toMatchObject({ repo: "candledottv/candle-monorepo", commit: "940055a9819283d721a313e9e39003f566663e6f", cliVersion: "0.13.28" })
     expect(SOURCE.commands.length).toBe(171)
     expect((SOURCE as { unread?: string[] }).unread).toEqual([])
   })

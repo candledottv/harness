@@ -1,0 +1,111 @@
+diff --git a/apps/docs/harness-version.json b/apps/docs/harness-version.json
+index 10a8aa123..29e3995c9 100644
+--- a/apps/docs/harness-version.json
++++ b/apps/docs/harness-version.json
+@@ -2 +2 @@
+-  "version": "0.6.0"
++  "version": "0.6.1"
+diff --git a/apps/docs/src/content/docs/harness/reference/cli-parity.md b/apps/docs/src/content/docs/harness/reference/cli-parity.md
+index 32c4e8901..d5a14288c 100644
+--- a/apps/docs/src/content/docs/harness/reference/cli-parity.md
++++ b/apps/docs/src/content/docs/harness/reference/cli-parity.md
+@@ -6 +6 @@ description: "Every command of Candle's CLI, and how the Candle Harness and its
+-<!-- candle-harness 0.6.0. Written by scripts/docs-pages.ts in candledottv/harness from its code: don't edit it here, run that again. -->
++<!-- candle-harness 0.6.1. Written by scripts/docs-pages.ts in candledottv/harness from its code: don't edit it here, run that again. -->
+@@ -12 +12 @@ In the Candle Harness, `ctrl-k` opens the palette, which lists the same commands
+-This page covers `candle` 0.13.20, grouped as `candle help` groups its commands.
++This page covers `candle` 0.13.28, grouped as `candle help` groups its commands.
+@@ -51,3 +51,6 @@ Whatever the rule, the agent never sees a passphrase, a recovery phrase or a key
+-| `candle swap status` | Read an operation without resending it | read | now |
+-| `candle transfer` | Move funds out of the embedded wallet (Candle signs, as MCP candle_transfer) or out of a TEE wallet to your own wallets or its vault, through its bound key | funds out | now: from the embedded wallet, with a `transfer:write` key (`--to` a plain address; `--client-id` replays a sent transfer and is refused while one may have landed; after a failure that may have landed, read it with `candle transfer status` or check `candle activity` or the chain before sending again). coming: from a TEE wallet it needs a Withdraw key, and every agent key in the Candle Harness is Write, which can't move funds. Send from a TEE wallet whose key is in this machine's vault with candle vault transfer, or sweep a disabled one home with candle tee sweep. |
+-| `candle transfer status` | Reads a transfer by its id or your --client-id: built, expired, submitted with its signature, unconfirmed (check the chain or candle activity before using a new client id), or failed (kept for 24 hours; older transfers are in candle activity) | read | now |
++| `candle swap status` | Read without resending | read | now |
++| `candle swap receipt` | Re-read a one-shot swap's settlement from chain (a swap made through MCP or the SDK) | read | now |
++| `candle swap recover` | Recover a legacy leg by verified transaction proof | owner step | coming: It settles a legacy Hood leg from a verified transaction proof; a hash is only a locator. Run it in your own terminal. |
++| `candle swap cancel` | Release a Hood TEE trade or swap operation this key opened and never signed a leg of (0 released or already ended, 3 a leg may have been signed: do not repeat the trade, 1 any other refusal) | owner step | coming: It releases a Hood TEE trade or swap operation this key opened and never signed a leg of: exit 0 released or already ended, 3 a leg may have been signed (don't repeat the trade), 1 any other refusal. Run it in your own terminal. |
++| `candle transfer` | Move funds out of the embedded wallet (Candle signs) or a TEE wallet to your own wallets or its vault, through its bound key | funds out | coming: It needs a Withdraw key, and every agent key in the Candle Harness is Write, which can't move funds. Send from a TEE wallet whose key is in this machine's vault with candle vault transfer, or sweep a disabled one home with candle tee sweep. |
++| `candle transfer status` | From the embedded wallet --client-id names the transfer too (the CLI picks one when it is absent and prints it before it sends): a repeat of a sent transfer replays its answer and sends nothing, a repeat of a transfer that may have landed is refused, and candle transfer status <id> reads it | read | now |
+@@ -59 +62,2 @@ Whatever the rule, the agent never sees a passphrase, a recovery phrase or a key
+-| `candle lp positions` | Every position across your TEE wallets | read | now |
++| `candle lp positions` | Every position across your TEE wallets, or the embedded wallet's | read | now |
++| `candle lp status` | An operation's state | read | now |
+@@ -74,2 +78,2 @@ Whatever the rule, the agent never sees a passphrase, a recovery phrase or a key
+-| `candle perps thresholds set` | Show this key's risk thresholds | owner step | coming: Perps trading comes in a later release. For now the Candle Harness reads perps markets, positions and risk, and doesn't trade them. |
+-| `candle perps deposit` | Move funds onto the Hyperliquid account through Relay, from the key's Solana or Hood TEE wallet (swap:write) | card | coming: Perps trading comes in a later release. For now the Candle Harness reads perps markets, positions and risk, and doesn't trade them. |
++| `candle perps thresholds set` | Show this key's risk thresholds | owner step | coming: Perps trading comes in a later release. For now the Candle Harness reads perps markets, positions and risk, and with perps.writes on closes and protects positions, but doesn't open them or move funds. |
++| `candle perps deposit` | Move funds onto the Hyperliquid account through Relay, from the key's Solana or Hood TEE wallet (swap:write) | card | coming: Perps trading comes in a later release. For now the Candle Harness reads perps markets, positions and risk, and with perps.writes on closes and protects positions, but doesn't open them or move funds. |
+@@ -77 +81 @@ Whatever the rule, the agent never sees a passphrase, a recovery phrase or a key
+-| `candle perps withdraw` | Move USDC from the Hyperliquid account to this key's own Solana or Hood TEE wallet through Relay (perps:withdraw) | funds out | coming: Perps trading comes in a later release. For now the Candle Harness reads perps markets, positions and risk, and doesn't trade them. |
++| `candle perps withdraw` | Move USDC from the Hyperliquid account to this key's own Solana or Hood TEE wallet through Relay (perps:withdraw) | funds out | coming: Perps trading comes in a later release. For now the Candle Harness reads perps markets, positions and risk, and with perps.writes on closes and protects positions, but doesn't open them or move funds. |
+@@ -79,13 +83,13 @@ Whatever the rule, the agent never sees a passphrase, a recovery phrase or a key
+-| `candle perps setup` | After the first deposit has landed, approve Candle's builder fee once | card | coming: Perps trading comes in a later release. For now the Candle Harness reads perps markets, positions and risk, and doesn't trade them. |
+-| `candle perps open` | Market (IOC) without --price, limit with it | card | coming: Perps trading comes in a later release. For now the Candle Harness reads perps markets, positions and risk, and doesn't trade them. |
+-| `candle perps close` | Reduce-only IOC close of all or part of a position | card | coming: Perps trading comes in a later release. For now the Candle Harness reads perps markets, positions and risk, and doesn't trade them. |
+-| `candle perps cancel` | Cancel an order Candle built, by its cloid | card | coming: Perps trading comes in a later release. For now the Candle Harness reads perps markets, positions and risk, and doesn't trade them. |
+-| `candle perps modify` | Change a resting order Candle built | card | coming: Perps trading comes in a later release. For now the Candle Harness reads perps markets, positions and risk, and doesn't trade them. |
+-| `candle perps margin` | Add isolated margin (positive only), or set the coin's margin mode keeping its leverage unless --leverage names one | card | coming: Perps trading comes in a later release. For now the Candle Harness reads perps markets, positions and risk, and doesn't trade them. |
+-| `candle perps tpsl` | Attach, change or remove position take-profit / stop-loss legs, sized to the position now | card | coming: Perps trading comes in a later release. For now the Candle Harness reads perps markets, positions and risk, and doesn't trade them. |
+-| `candle perps schedule-cancel` | Set (at least 5 s ahead) or clear Hyperliquid's cancel-all timer | card | coming: Perps trading comes in a later release. For now the Candle Harness reads perps markets, positions and risk, and doesn't trade them. |
+-| `candle perps flatten` | Cancel every open main-perp order, then close every main-perp position, then read again | card | coming: Perps trading comes in a later release. For now the Candle Harness reads perps markets, positions and risk, and doesn't trade them. |
+-| `candle perps leverage` | Set a market's leverage and margin mode | card | coming: Perps trading comes in a later release. For now the Candle Harness reads perps markets, positions and risk, and doesn't trade them. |
+-| `candle perps reduce-only` | Read or set the key's reduce-only restriction | card | coming: Perps trading comes in a later release. For now the Candle Harness reads perps markets, positions and risk, and doesn't trade them. |
+-| `candle perps reduce-only on` | Read or set the key's reduce-only restriction | narrows access | coming: Perps trading comes in a later release. For now the Candle Harness reads perps markets, positions and risk, and doesn't trade them. |
+-| `candle perps reduce-only off` | Read or set the key's reduce-only restriction | owner step | coming: Perps trading comes in a later release. For now the Candle Harness reads perps markets, positions and risk, and doesn't trade them. |
++| `candle perps setup` | After the first deposit has landed, approve Candle's builder fee once | card | coming: Perps trading comes in a later release. For now the Candle Harness reads perps markets, positions and risk, and with perps.writes on closes and protects positions, but doesn't open them or move funds. |
++| `candle perps open` | Market (IOC) without --price, limit with it | card | coming: Perps trading comes in a later release. For now the Candle Harness reads perps markets, positions and risk, and with perps.writes on closes and protects positions, but doesn't open them or move funds. |
++| `candle perps close` | Reduce-only IOC close of all or part of a position | card | coming: Off until perps.writes = true in config.toml. |
++| `candle perps cancel` | Cancel an order Candle built, by its cloid | card | coming: Off until perps.writes = true in config.toml. |
++| `candle perps modify` | Change a resting order Candle built | card | coming: Perps trading comes in a later release. For now the Candle Harness reads perps markets, positions and risk, and with perps.writes on closes and protects positions, but doesn't open them or move funds. |
++| `candle perps margin` | Add isolated margin (positive only), or set the coin's margin mode keeping its leverage unless --leverage names one | card | coming: Perps trading comes in a later release. For now the Candle Harness reads perps markets, positions and risk, and with perps.writes on closes and protects positions, but doesn't open them or move funds. |
++| `candle perps tpsl` | Attach, change or remove position take-profit / stop-loss legs, sized to the position now | card | coming: Off until perps.writes = true in config.toml. |
++| `candle perps schedule-cancel` | Set (at least 5 s ahead) or clear Hyperliquid's cancel-all timer | card | coming: Off until perps.writes = true in config.toml. |
++| `candle perps flatten` | Cancel every open main-perp order, then close every main-perp position, then read again | card | coming: Off until perps.writes = true in config.toml. |
++| `candle perps leverage` | Set a market's leverage and margin mode | card | coming: Perps trading comes in a later release. For now the Candle Harness reads perps markets, positions and risk, and with perps.writes on closes and protects positions, but doesn't open them or move funds. |
++| `candle perps reduce-only` | Read or set the key's reduce-only restriction | read | now; another key's: coming |
++| `candle perps reduce-only on` | Read or set the key's reduce-only restriction | narrows access | coming: Off until perps.writes = true in config.toml. |
++| `candle perps reduce-only off` | Read or set the key's reduce-only restriction | owner step | coming: Perps trading comes in a later release. For now the Candle Harness reads perps markets, positions and risk, and with perps.writes on closes and protects positions, but doesn't open them or move funds. |
+@@ -101,0 +106,3 @@ Whatever the rule, the agent never sees a passphrase, a recovery phrase or a key
++| `candle signals scorecard` | The latest daily scorecard, or one day's | read | now |
++| `candle signals records` | Per-signal records, newest first | read | now |
++| `candle signals record` | One signal's record: the signal id for pattern, chain:mint for launch_read | read | now |
+@@ -130,2 +137,2 @@ Whatever the rule, the agent never sees a passphrase, a recovery phrase or a key
+-| `candle keys stop` | Pause one key with the device token | narrows access | now |
+-| `candle keys resume` | Refused for a device token (`LOOSEN_REQUIRES_SESSION`); resume in the signed-in console | owner step | console only |
++| `candle keys stop` | Pause one key with the device token (starting it again is done in the signed-in console) | narrows access | now |
++| `candle keys resume` | Resume a stopped key in the signed-in console, because the server refuses a device token here (LOOSEN_REQUIRES_SESSION) | owner step | now (the factor first) |
+@@ -148 +155 @@ Whatever the rule, the agent never sees a passphrase, a recovery phrase or a key
+-| `candle wallets close-empty` | Close a wallet's empty token accounts and return their rent to it, after a preview: the embedded wallet (swap:write or transfer:write), or a TEE wallet bound to this key, signed by its key signer (swap:write) | card | now; from the embedded wallet or a TEE wallet |
++| `candle wallets close-empty` | Close a wallet's empty token accounts and return their rent to it, after a preview: the embedded wallet (swap:write or transfer:write), or a TEE wallet bound to this key, signed by its key signer (swap:write) | card | now; from a TEE wallet; the embedded wallet's needs transfer:write, which an agent key doesn't have |
+diff --git a/apps/docs/src/content/docs/harness/reference/config.md b/apps/docs/src/content/docs/harness/reference/config.md
+index 2f18048f2..fedf7e278 100644
+--- a/apps/docs/src/content/docs/harness/reference/config.md
++++ b/apps/docs/src/content/docs/harness/reference/config.md
+@@ -6 +6 @@ description: "Every setting in config.toml, layouts.toml, wallets.toml, triggers
+-<!-- candle-harness 0.6.0. Written by scripts/docs-pages.ts in candledottv/harness from its code: don't edit it here, run that again. -->
++<!-- candle-harness 0.6.1. Written by scripts/docs-pages.ts in candledottv/harness from its code: don't edit it here, run that again. -->
+@@ -438,0 +439,11 @@ enabled = false
++### `perps.writes`
++
++**Takes:** true or false · **Default:** `false`
++
++Perps writes from the EVM TEE wallet: closing, cancelling, take-profit and stop-loss, the cancel-all timer and flatten, each a one-press card. Off, they're held "coming" and perps reads still work. Setting it back to false holds them again.
++
++```toml
++[perps]
++writes = true
++```
++
+diff --git a/apps/docs/src/content/docs/harness/reference/keys.md b/apps/docs/src/content/docs/harness/reference/keys.md
+index 4cf8d79fb..28951a122 100644
+--- a/apps/docs/src/content/docs/harness/reference/keys.md
++++ b/apps/docs/src/content/docs/harness/reference/keys.md
+@@ -6 +6 @@ description: "Every key in the Candle Harness, where it works and what it does."
+-<!-- candle-harness 0.6.0. Written by scripts/docs-pages.ts in candledottv/harness from its code: don't edit it here, run that again. -->
++<!-- candle-harness 0.6.1. Written by scripts/docs-pages.ts in candledottv/harness from its code: don't edit it here, run that again. -->
+diff --git a/apps/docs/src/content/docs/harness/reference/typed-commands.md b/apps/docs/src/content/docs/harness/reference/typed-commands.md
+index 013097eb9..f3eb069ab 100644
+--- a/apps/docs/src/content/docs/harness/reference/typed-commands.md
++++ b/apps/docs/src/content/docs/harness/reference/typed-commands.md
+@@ -6 +6 @@ description: "What you can type on the Candle Harness's input line, with an exam
+-<!-- candle-harness 0.6.0. Written by scripts/docs-pages.ts in candledottv/harness from its code: don't edit it here, run that again. -->
++<!-- candle-harness 0.6.1. Written by scripts/docs-pages.ts in candledottv/harness from its code: don't edit it here, run that again. -->

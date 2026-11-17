@@ -9,6 +9,7 @@
 // is attached; approving it late proposes a fresh one at the current price, and the late one never
 // runs.
 import { ownHeldFloor } from "./fill"
+import { launchSelection } from "./launch-quote"
 import { tokenLabel } from "../shared/token-label"
 import { createHash, randomBytes, randomUUID } from "node:crypto"
 import { CORE_HOWS } from "../shared/approved-how"
@@ -1593,7 +1594,7 @@ export class CardBook implements CardDesk {
    * A launch from the embedded wallet: candle_launch_token, or candle_launch_and_seed
    * with a seed. Dry-run first under the card's own id, which writes nothing on Candle's side
    * (docs.candle.tv/developers/headless-launch, "Dry run"); a refusal there makes no card. The image goes by URL
-   * only: a dry run naming a file would publish it before the press. A seed is a buy:
+   * only: uploading a file has its own explicit card, separate from launch checks. A seed is a buy:
    * valued now and held to the Candle Harness limits.
    */
   private async planLaunch(client: FaceClient, agent: string, tool: string, given: Record<string, unknown>, status: AgentStatus | undefined, opId: string): Promise<Planned> {
@@ -1607,6 +1608,9 @@ export class CardBook implements CardDesk {
         "The Candle Harness launches with image URLs only, so the dry run can show the card without publishing anything. Upload the file first with candle image upload (its own card: the upload is public and permanent), then pass the URL it returns as imageUrl or bannerUrl. Nothing was sent.",
       )
     }
+    const selection = launchSelection(given)
+    if (!selection.ok) return this.refuse(client, agent, tool, selection.code, selection.message)
+    given = selection.args
     const { dryRun: _d, paper: _p, clientLaunchId: _id, ...rest } = given
     const chain: ChainSlug = isChainSlug(given.chain) ? given.chain : "solana"
     const wallet = await this.payingWallet(client, agent, tool, status, chain)

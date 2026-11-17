@@ -175,7 +175,7 @@ export async function planCliRow(request: CliCardRequest, ctx: CliPlanContext): 
   if (spec.wallet === "evm-tee") {
     const word = flagValue(words, "--wallet")
     const named = word !== undefined && !EMBEDDED_WORDS.has(word) ? word : undefined
-    const teeOnly = () => ctx.refuse("EVM_TEE_WALLET_REQUIRED", `candle ${row} trades Hyperliquid from an EVM TEE wallet on the key: name it with --wallet <its label or address>. The embedded wallet has no perps account. Nothing was sent.`)
+    const teeOnly = () => ctx.refuse("EVM_TEE_WALLET_REQUIRED", `candle ${row} trades Hyperliquid from an EVM TEE wallet on the key: name it with --wallet <its label or address>. Embedded perps writes are not enabled in the Candle Harness. Nothing was sent.`)
     if (word !== undefined && named === undefined) await teeOnly()
     const payer = ctx.payer(named, "hood")
     if (!payer.ok) return ctx.refuse(payer.code, payer.message, { canPayFrom: payer.canPayFrom })

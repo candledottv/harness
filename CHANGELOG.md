@@ -4,14 +4,16 @@ What changed in each version of Candle Harness (called the Candle TUI before 0.3
 
 ## 0.6.1 (unreleased)
 
-The command table follows the Candle CLI to 0.13.28.
+The command table and source contracts follow Candle CLI 0.13.28 and MCP 0.10.33. The source/build version is 0.6.1; release pinning remains an open dependency.
 
 ### Candle CLI
 
 - **The table was read again from the CLI's source** (0.13.28, up from 0.13.20), and `candle_cli` now knows seven more commands: `swap receipt` (re-reads a one-shot swap's settlement from chain, a read), `signals scorecard`, `signals records` and `signals record` (hacc's daily scorecard and each signal's record, reads), and `lp status` (an LP operation's state by its client trade id, a read). `swap recover` and `swap cancel` are held with why: each moves a Hood TEE operation's state on Candle's side, so you run them in your own terminal (cancel exits 0 released, 3 a leg may have been signed, 1 refused).
 - **`swap status --operation <id>`** reads a Hood TEE guard's operation, and `--wait` follows every leg for up to ten minutes (exit 0 completed, 1 failed, 3 partial or unresolved).
 - **Flags and words the CLI changed.** `launch` takes `--quote`; `tee check` takes `--chain solana|hood`; LP's add, positions, remove and claim take `--wallet embedded`; `keys stop`, `resume` and `revoke` take a prefix or a label; `vault promote` takes `--to-key`; `transfer` from the embedded wallet takes `--client-id`. A resumed key is resumed in the signed-in console, since the server refuses a device token there.
-- **Commands newer than the CLI you have are refused**, as before: the check is against 0.13.28, and `install.sh` still pins 0.13.20 until Candle's next CLI release is pinned (`scripts/pin-cli.ts` needs `cosign`).
+- **Launch quote selection and checks.** Both launch tools accept `check: true` as a read, in live or paper mode, without creating a card. Fixed quote symbols and addresses bind the seed's asset and chain; unsupported quotes and conflicting selections refuse before a preview or card. An older server that does not list these controls is refused before forwarding them.
+- **Current MCP contracts.** The offline source recorder refreshes all 100 tools, including signal scorecard/records/record and swap receipt reads. Hood guard operations can be read with `operationId`, preserving held reasons; recovery stays an owner step. Twenty-two local MCP/SDK scenarios cover quote admission, paused/split and old-server answers, fixed quote selection, and perps wallet selection before signer checks. Perps writes keep the Harness's existing TEE-only policy.
+- **Reference update prepared.** The generated reference pages and docs version pin are supplied as a tested patch in `test/fixtures/parity-0.13.28/`, with the remaining release/docs owners recorded. `install.sh` and the minimum CLI remain at the verified 0.13.20 release until an authorized owner supplies the signed 0.13.28 artifacts; this catch-up is not ready to release until that pin is verified.
 
 ## 0.6.0 (unreleased)
 

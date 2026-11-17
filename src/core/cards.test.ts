@@ -929,6 +929,30 @@ describe("Candle's MCP card tools", () => {
       expect(card.cardHash).toBe(hashCard({ kind: "launch", tool: "candle_launch_token", params: card.params, opId: card.opId, account: "acct_fake", agent: "momentum", wallet: WALLET, mode: "live" }))
     })
 
+    test("quote selection binds the seed's pair, value and chain before the preview or spend", async () => {
+      const s = await setup({ candle: scripted({ "candle_launch_and_seed:dry": seedDryRun }) })
+      const card = await s.propose(launch({ quote: "USDC", devBuy: "5" }), { tool: "candle_launch_and_seed" })
+      expect(card.params).toMatchObject({ quoteAsset: "usdc", chain: "solana", devBuy: "5" })
+      expect(card.params).not.toHaveProperty("quote")
+      expect(card.display.spend).toEqual({ amount: 5, asset: "USDC" })
+      expect(card.display.valueUsd).toBe(5)
+      expect(s.candleCalls[0]!.args).toMatchObject({ quoteAsset: "usdc", chain: "solana", dryRun: true })
+      expect(card.display.title).toContain("5 USDC")
+    })
+
+    test("a new quote or a mismatched selection makes no launch card or preview request", async () => {
+      const s = await setup()
+      for (const [extra, code] of [
+        [{ quote: "ACME" }, "QUOTE_LAUNCH_UNAVAILABLE"],
+        [{ quote: "USDC", chain: "hood" }, "CHAIN_MISMATCH"],
+        [{ quote: "SOL", quoteAsset: "sol" }, "VALIDATION_FAILED"],
+      ] as const) {
+        expect((await refusal(s.propose(launch(extra), { tool: "candle_launch_token" }))).code).toBe(code)
+      }
+      expect(s.candleCalls).toEqual([])
+      expect(s.book.list()).toEqual([])
+    })
+
     test("a local image file is refused before anything is sent (by URL only)", async () => {
       for (const field of ["imagePath", "bannerPath"]) {
         const s = await setup({ candle: scripted({ "candle_launch_token:dry": launchDryRun() }) })

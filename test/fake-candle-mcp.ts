@@ -21,6 +21,7 @@ import { Server } from "@modelcontextprotocol/sdk/server/index.js"
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js"
 import fixture from "./fixtures/candle-tools.json"
+import sourceContracts from "./fixtures/candle-source-contracts.json"
 // The lists', P&L's and perps' recorded shapes, bundled so the compiled fake carries them.
 import feedFinalStretch from "./fixtures/candle-recorded/feeds-pnl/feed-finalstretch-all-fields.json"
 import feedGraduated from "./fixtures/candle-recorded/feeds-pnl/feed-graduated-all-fields.json"
@@ -568,6 +569,12 @@ function answer(name: string, args: Record<string, unknown>, behaviour: Behaviou
     }
     case "candle_launch_token":
     case "candle_launch_and_seed": {
+      if (args.check === true) {
+        const state = args.dryRun === true ? "conflict" : args.quote === undefined ? "available" : "paused"
+        const row = sourceContracts.rows.find((r) => r.id === `mcp-launch-${state}`)!
+        const outcome = row.outcome as { body: unknown; isError: boolean }
+        return text(outcome.body, outcome.isError)
+      }
       const id = String(args.clientLaunchId ?? crypto.randomUUID())
       // The headless dry run's body (docs.candle.tv/developers/headless-launch, "Dry run"); candle_launch_and_seed wraps it.
       if (args.dryRun === true) {
