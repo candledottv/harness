@@ -57,6 +57,8 @@ export const PRE_BUILD_CODES: ReadonlySet<string> = new Set([
   "GAS_INSUFFICIENT",
   "WALLET_BUSY",
   "SEQUENCED_RAIL_REQUIRED",
+  // A sell the quote prices at zero: the CLI refuses it after the build and before any signature, releasing a Hood hold.
+  "SELL_PAYS_ZERO",
 ])
 
 /** The words a TEE trade runs, before `--json` and `--rpc-url` (CandleCli.finalArgs adds those). */
@@ -159,6 +161,7 @@ function cliMessage(code: string, body: Record<string, unknown>): string {
   if (code === "CHAIN_MISMATCH") return "The wallet and what it trades are on different chains: a trade pays from a wallet on its own chain. Nothing was sent."
   if (code === "RPC_FAILED") return "The candle CLI couldn't read the chain over its RPC. Nothing was sent. Try again in a moment; candle-harness doctor names the RPC each chain is read over."
   if (code === "UNRECOGNIZED_TRANSACTION") return "The candle CLI didn't recognise a transaction Candle built for this trade, so it didn't sign it. A step before it may have landed: what Candle holds under the trade's id says, and it's read back."
+  if (code === "SELL_PAYS_ZERO") return "This sell is too small to pay anything: Candle's quote for it is zero, so it would take the tokens and return nothing. Nothing was sent. Sell a larger amount."
   if (code === "QUOTE_EXPIRED") return "The quote expired before the trade was sent. Asking again quotes it fresh."
   const plain = refusalMessage(code, body)
   if (plain) return plain
