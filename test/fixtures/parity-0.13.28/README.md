@@ -97,13 +97,25 @@ npm audit signatures
 node node_modules/@candledottv/cli/dist/index.js --version
 ```
 
-## Remaining full Read-key recording
+## Released-CLI Read-key recording
 
-A full released-CLI tools/list recording requires an approved Read key. This runtime has
-no `CANDLE_HARNESS_TEST_KEY_FILE` configured and no agent API key in its injected environment.
-The throwaway wallet and invite pass are not a Read key; no login bypass or replacement
-credential was used. The source fixture and the public npm recording are deliberately
-labeled and do not claim to satisfy the full Read-key gate.
+The released-CLI Read-key capture was supplied on 2026-11-17 by the authorized staging
+test session. Its reviewed recorder checked CLI 0.13.28 before starting `candle mcp`;
+the handshake reports the distinct MCP version 0.10.33. It performed initialize and
+tools/list only against staging.api.candle.tv, using an account:read key that was revoked
+immediately afterwards. No tools/call or transaction was performed. The supplied attachment
+SHA-256 is `2f8418f8393543271f142a353574e904b0dc5e5e310dbcd95d90f812f3c669df`.
+
+`../candle-cli-release/cli-v0.13.28-read-handshake.json` contains the scrubbed full recording
+and its provenance, with separate CLI and MCP version pins. The existing scrubber normalized
+the startup banner; every tool definition is unchanged. All 96 definitions match the source
+fixture exactly, including the three signal tools. The only four source tools absent from
+the capture are the conditional profile-edit tools marked listedAfterKeyCheck. They remain
+explicitly source-only; this capture does not pretend that the Read key could list them.
+Listing tool definitions does not grant permission to call writes. The contract tests hold
+the captured definitions, conditional gap, classification and card arguments to the source.
+
+To repeat the capture on an authorized test machine:
 
 The existing recorder now supports a CLI-only tools/list mode. On the authorized test
 machine, supply its Read key through the recorder's existing hidden input (never argv or a
@@ -118,6 +130,17 @@ eligibility check, with no tools/call or optional paper trade. Scrub the raw rec
 using `scripts/scrub-recordings.ts` before committing it; preserve the separately marked
 conditional profile-tool definitions when reconciling the full fixture.
 
-Next owner: orchestrator 2 to route this capture to the authorized Read-key holder (or make
-an approved test-key file available to the assigned runtime). Do not paste a key into the
-card. The Read-key gate remains open until that recording is delivered and checked.
+The delivered Read-key fixture is ready for independent review. Do not paste a key into a
+card. Harness implementation does not mint keys or borrow another session's credentials.
+
+## Relay calldata ownership
+
+The follow-up source change in candle-monorepo #3880, at
+`6f61eaf272c7585e15fe3b6b257772ab0125fcf7`, adds Hood router selectors
+`0xcd6e13f7` / `0xf9e4bab4` and trailer lengths `[0, 32]` to the CLI/shared Relay
+constants. A tracked-file search of Harness found no copy of those constants, router
+addresses, calldata builders or old-calldata assertions. Harness invokes Candle's CLI/API
+for execution and retains its own card and operation gates; it does not decode or sign
+Relay router calldata. No Harness constant or assertion needs changing for that source
+change. The recorded source snapshot above retains its original SHA and is not relabeled
+as including later commits.

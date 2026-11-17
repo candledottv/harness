@@ -4,7 +4,7 @@ What changed in each version of Candle Harness (called the Candle TUI before 0.3
 
 ## 0.6.1 (unreleased)
 
-The command table and source contracts follow Candle CLI 0.13.28 and MCP 0.10.33. The source/build version is 0.6.1; release pinning remains an open dependency.
+The command table and source contracts follow Candle CLI 0.13.28 and MCP 0.10.33. The source/build version is 0.6.1; publishing remains a separate release step.
 
 ### Candle CLI
 
@@ -13,7 +13,7 @@ The command table and source contracts follow Candle CLI 0.13.28 and MCP 0.10.33
 - **Flags and words the CLI changed.** `launch` takes `--quote`; `tee check` takes `--chain solana|hood`; LP's add, positions, remove and claim take `--wallet embedded`; `keys stop`, `resume` and `revoke` take a prefix or a label; `vault promote` takes `--to-key`; `transfer` from the embedded wallet takes `--client-id`. A resumed key is resumed in the signed-in console, since the server refuses a device token there.
 - **Launch quote selection and checks.** Both launch tools accept `check: true` as a read, in live or paper mode, without creating a card. Fixed quote symbols and addresses bind the seed's asset and chain; unsupported quotes and conflicting selections refuse before a preview or card. An older server that does not list these controls is refused before forwarding them.
 - **Current MCP contracts.** The offline source recorder refreshes all 100 tools, including signal scorecard/records/record and swap receipt reads. Hood guard operations can be read with `operationId`, preserving held reasons; recovery stays an owner step. Twenty-two local MCP/SDK scenarios cover quote admission, paused/split and old-server answers, fixed quote selection, and perps wallet selection before signer checks. Perps writes keep the Harness's existing TEE-only policy.
-- **Reference update prepared.** The generated reference pages and docs version pin are supplied as a tested patch in `test/fixtures/parity-0.13.28/`, with the remaining release/docs owners recorded. The runtime minimum and installer requirement are 0.13.28, verified against the published npm package (registry signature, tarball integrity, CLI version and MCP 0.10.33 public tool definitions). The separately signed native bootstrap remains 0.13.24 while its 0.13.28 binary manifest is unavailable; it is offered explicitly as a file-signature verifier, with the npm 0.13.28 runtime requirement stated. It is never described as sufficient to run the Harness. A full released-CLI Read-key tools/list recording is still required; the keyless public recording does not replace it.
+- **Reference update prepared.** The generated reference pages and docs version pin are supplied as a tested patch in `test/fixtures/parity-0.13.28/`, with the remaining docs owner recorded. The runtime minimum and installer requirement are 0.13.28, verified against the published npm package (registry signature, tarball integrity, CLI version and MCP 0.10.33 public tool definitions). The separately signed native bootstrap remains 0.13.24 while its 0.13.28 binary manifest is unavailable; it is offered explicitly as a file-signature verifier, with the npm 0.13.28 runtime requirement stated. It is never described as sufficient to run the Harness. The released CLI's staging Read-key tools/list recording now verifies 96 definitions against the source fixture, with separate CLI 0.13.28 and MCP 0.10.33 pins. The four conditional profile-edit tools remain marked source-only. No tool calls or transactions were used for that capture.
 
 ## 0.6.0 (unreleased)
 
