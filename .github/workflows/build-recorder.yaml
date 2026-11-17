@@ -1,0 +1,70 @@
+name: build-recorder
+
+# Reproducible darwin-arm64 build of test/record-candle.ts with bun 1.4.4.
+# Manual only. No secrets, no publish step: the output is a workflow artifact.
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Commit SHA (or ref) of the harness to build
+        required: true
+        default: 4a3fef4c91fec890d7ec76b098fa57ce4aab5c3f
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ inputs.ref }}
+          persist-credentials: false
+
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: 1.4.4
+
+      - name: Check bun version
+        run: |
+          [ "$(bun --version)" = "1.4.4" ] || { echo "expected bun 1.4.4, got $(bun --version)"; exit 1; }
+
+      - name: Install
+        run: bun install --frozen-lockfile
+
+      - name: Compile twice and compare
+        env:
+          REF: ${{ inputs.ref }}
+        run: |
+          set -euo pipefail
+          short="$(git rev-parse --short=8 HEAD)"
+          out="record-candle-${short}"
+          mkdir -p dist build1 build2
+          bun build --compile --target=bun-darwin-arm64 test/record-candle.ts --outfile "build1/${out}"
+          bun build --compile --target=bun-darwin-arm64 test/record-candle.ts --outfile "build2/${out}"
+          h1="$(sha256sum "build1/${out}" | awk '{print $1}')"
+          h2="$(sha256sum "build2/${out}" | awk '{print $1}')"
+          echo "build1 $h1"
+          echo "build2 $h2"
+          if [ "$h1" != "$h2" ]; then
+            echo "::error::two builds differ, not reproducible"
+            exit 1
+          fi
+          kind="$(file -b "build1/${out}")"
+          echo "file: $kind"
+          case "$kind" in *Mach-O*arm64*) ;; *) echo "::error::not a Mach-O arm64 binary: $kind"; exit 1;; esac
+          cp "build1/${out}" "dist/${out}"
+          chmod 755 "dist/${out}"
+          (cd dist && sha256sum "${out}" > SHA256SUMS)
+          echo "ref $(git rev-parse HEAD) (input: ${REF}), bun $(bun --version), ${kind}" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          cat dist/SHA256SUMS >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: record-candle-darwin-arm64
+          path: dist/
+          if-no-files-found: error
