@@ -595,6 +595,9 @@ const VIEW_ACTIONS = new Set(VIEW_TOOL.inputSchema.properties.action.enum)
 /** An ask the view is sent is small: a tree or a theme's colours, never more. */
 const VIEW_ARGS_MAX = 8 * 1024
 
+/** The tools that take `hide` (server 0.10.34): candle_atomic_launch_dry_run is a read and is not listed. */
+const HIDE_TOOLS = new Set(["candle_trade", "candle_swap", "candle_launch_token", "candle_launch_and_seed"])
+
 export class ToolFace {
   constructor(
     private readonly deps: {
@@ -776,6 +779,12 @@ export class ToolFace {
       if ((args.check !== undefined && !supports("check", "boolean")) || (args.quote !== undefined && !supports("quote", "string"))) {
         return refusal("UPDATE_CANDLE", "This Candle server does not support launch checks and quote selection. Run candle update. Nothing was sent.")
       }
+    }
+    // The same for hide (per-order hide, MCP 0.10.34): a server that predates it strips the field and the order
+    // is public. Keeping an order out of the stream is the whole ask, so it is refused before anything is sent.
+    if (args.hide !== undefined && args.hide !== false && HIDE_TOOLS.has(name)) {
+      const hide = this.deps.schemaOf?.(client.agent, name)?.properties?.hide as { type?: string } | undefined
+      if (hide?.type !== "boolean") return refusal("UPDATE_CANDLE", "This Candle server does not support hide, so the order would be public. Run candle update, or ask again without hide. Nothing was sent.")
     }
     if (verdict.class === "read") return relay(await child().call(name, args))
 

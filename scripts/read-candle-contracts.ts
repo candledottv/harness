@@ -128,6 +128,109 @@ try {
     assert.equal(outcome.body.error.code, codes[which])
     rows.push({ id: `perps-${which}`, surface: "mcp", tool: "candle_perps_cancel", args, requests, outcome })
   }
+  // Per-order hide (BE-3675, #3871): the echo check and the refusal paths, MCP and SDK. A body without
+  // `hide` is public, so a request that asked for hide must see the API's `hide: true` echo.
+  const { Client } = await import("@modelcontextprotocol/sdk/client/index.js")
+  const { InMemoryTransport } = await import("@modelcontextprotocol/sdk/inMemory.js")
+  const { createCandleMcpServer } = await load("mcp/src/server.ts")
+  type Stub = (path: string, body: Record<string, unknown>) => unknown
+  const hideStub = (echo: { dry: boolean; live: boolean }): Stub => (path, body) => {
+    if (path === "/api/v1/launch/headless/dry-run") return { success: true, works: true, ...(echo.dry ? { hide: true } : {}) }
+    if (path === "/api/v1/launch/headless") return { success: true, mint: "FakeMint1111", ...(echo.live ? { hide: true } : {}) }
+    if (path === "/api/v1/agent/swap") return { success: true, payload: { hashes: ["fakehash"], expectedOutRaw: "1", outDecimals: 6 }, ...(echo.live ? { hide: true } : {}) }
+    throw new Error(`unexpected local request: ${path} ${JSON.stringify(body)}`)
+  }
+  const seen = (requests: { method: string; path: string; body: Record<string, unknown> }[]) =>
+    requests.map((r) => ({ method: r.method, path: r.path, hide: r.body.hide ?? null }))
+  const swapArgs = { from: "SOL", to: "USDC", amount: "0.5", clientSwapId: "fixture-swap-1" }
+  const swapSdk = { from: "SOL", to: "USDC", amountRaw: "500000000", clientSwapId: "fixture-swap-1" }
+  const launchArgs = { name: "Fixture Token", symbol: "FIXT", chain: "solana", imageUrl: "https://example.test/fixture.png", clientLaunchId: "fixture-launch-1" }
+  const hideCases: { id: string; tool: string; args: Record<string, unknown>; echo: { dry: boolean; live: boolean } }[] = [
+    { id: "swap-public", tool: "candle_swap", args: swapArgs, echo: { dry: false, live: false } },
+    { id: "swap-hide-echoed", tool: "candle_swap", args: { ...swapArgs, hide: true }, echo: { dry: false, live: true } },
+    { id: "swap-hide-unconfirmed", tool: "candle_swap", args: { ...swapArgs, hide: true }, echo: { dry: false, live: false } },
+    { id: "launch-public", tool: "candle_launch_token", args: launchArgs, echo: { dry: false, live: false } },
+    { id: "launch-hide-echoed", tool: "candle_launch_token", args: { ...launchArgs, hide: true }, echo: { dry: true, live: true } },
+    { id: "launch-hide-dry-run-no-echo", tool: "candle_launch_token", args: { ...launchArgs, hide: true }, echo: { dry: false, live: true } },
+    { id: "launch-hide-live-no-echo", tool: "candle_launch_token", args: { ...launchArgs, hide: true }, echo: { dry: true, live: false } },
+    { id: "launch-dry-run-hide-echoed", tool: "candle_launch_token", args: { ...launchArgs, hide: true, dryRun: true }, echo: { dry: true, live: false } },
+  ]
+  for (const c of hideCases) {
+    for (const surface of ["mcp", "sdk"] as const) {
+      const requests: { method: string; path: string; body: Record<string, unknown> }[] = []
+      const stub = hideStub(c.echo)
+      const fetcher = async (url: string, init?: RequestInit) => {
+        assert.ok(String(url).startsWith(cfg.apiUrl))
+        const path = String(url).slice(cfg.apiUrl.length)
+        const body = init?.body ? JSON.parse(String(init.body)) : {}
+        requests.push({ method: init?.method ?? "GET", path, body })
+        return new Response(JSON.stringify(stub(path, body)), { status: 200 })
+      }
+      let outcome: { body: any; isError: boolean }
+      if (surface === "mcp") {
+        globalThis.fetch = fetcher as unknown as typeof fetch
+        const server = createCandleMcpServer({}, cfg)
+        const client = new Client({ name: "harness-source-recorder", version: "1" })
+        const [a, b] = InMemoryTransport.createLinkedPair()
+        await server.connect(b)
+        await client.connect(a)
+        try {
+          const r: any = await client.callTool({ name: c.tool, arguments: c.args })
+          outcome = { body: JSON.parse(r.content[0].text), isError: r.isError === true }
+        } finally {
+          globalThis.fetch = (() => { throw new Error("contract recording may not access the network") }) as unknown as typeof fetch
+          await client.close()
+          await server.close()
+        }
+      } else {
+        const client = new CandleClient({ ...cfg, fetch: fetcher, maxRetries: 0 })
+        try {
+          const { amount: _amount, ...sdkArgs } = c.args
+          const body = c.tool === "candle_swap"
+            ? await client.swap({ ...swapSdk, ...(c.args.hide ? { hide: true } : {}) } as never)
+            : c.args.dryRun ? await client.dryRunLaunch(sdkArgs as never) : await client.launch(sdkArgs as never)
+          outcome = { body, isError: false }
+        } catch (e: any) { outcome = { body: { error: { code: e.code } }, isError: true } }
+      }
+      const asked = c.args.hide === true
+      const refused = outcome.isError
+      const expectRefusal = asked && (c.id === "swap-hide-unconfirmed" || c.id === "launch-hide-live-no-echo" || c.id === "launch-hide-dry-run-no-echo")
+      assert.equal(refused, expectRefusal, `${surface}-${c.id}`)
+      if (expectRefusal) assert.ok(JSON.stringify(outcome.body).includes("HIDE_NOT_CONFIRMED"), `${surface}-${c.id} names HIDE_NOT_CONFIRMED`)
+      // A public order never sends the field; a dry run that did not echo stops a live launch before it is sent.
+      if (!asked) assert.ok(requests.every((r) => r.body.hide === undefined))
+      if (c.id === "launch-hide-dry-run-no-echo") assert.deepEqual(requests.map((r) => r.path), ["/api/v1/launch/headless/dry-run"])
+      rows.push({ id: `hide-${surface}-${c.id}`, surface, tool: c.tool, args: c.args, requests: seen(requests), outcome })
+    }
+  }
+  {
+    // hide:"maybe" is refused before any request, and hide with paper is refused in MCP.
+    const requests: unknown[] = []
+    const never = async () => { requests.push("unexpected"); throw new Error("a refusal must not request anything") }
+    const client = new CandleClient({ ...cfg, fetch: never, maxRetries: 0 })
+    let sdkOutcome
+    try { sdkOutcome = { body: await client.swap({ ...swapSdk, hide: "maybe" } as never), isError: false } }
+    catch (e: any) { sdkOutcome = { body: { error: { code: e.code } }, isError: true } }
+    assert.equal(sdkOutcome.isError, true)
+    assert.deepEqual(requests, [])
+    rows.push({ id: "hide-sdk-swap-unreadable", surface: "sdk", tool: "candle_swap", args: { ...swapSdk, hide: "maybe" }, requests, outcome: sdkOutcome })
+    globalThis.fetch = never as unknown as typeof fetch
+    const server = createCandleMcpServer({}, cfg)
+    const mcp = new Client({ name: "harness-source-recorder", version: "1" })
+    const [a, b] = InMemoryTransport.createLinkedPair()
+    await server.connect(b)
+    await mcp.connect(a)
+    const args = { mint: "FakeMint1111", side: "buy", amount: "0.1", paper: true, hide: true, clientTradeId: "fixture-trade-1" }
+    let r: any
+    try { r = await mcp.callTool({ name: "candle_trade", arguments: args }) } finally {
+      globalThis.fetch = (() => { throw new Error("contract recording may not access the network") }) as unknown as typeof fetch
+      await mcp.close(); await server.close()
+    }
+    const outcome = { body: JSON.parse(r.content[0].text), isError: r.isError === true }
+    assert.equal(outcome.isError, true)
+    assert.deepEqual(requests, [])
+    rows.push({ id: "hide-mcp-trade-paper", surface: "mcp", tool: "candle_trade", args, requests, outcome })
+  }
   writeFileSync(join(import.meta.dir, "../test/fixtures/candle-source-contracts.json"), `${JSON.stringify({ about: "Synthetic response stubs exercised through the actual MCP/SDK source, with network disabled. No deployed behavior is claimed. Embedded perps stops at a local refusal before build/sign/send.", source: { repo: "candledottv/candle-monorepo", commit }, rows }, null, 2)}\n`)
   console.log(`Recorded ${rows.length} offline MCP/SDK scenarios from ${commit}.`)
 } finally { globalThis.fetch = originalFetch }

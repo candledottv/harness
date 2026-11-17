@@ -210,11 +210,11 @@ export const TOOL_CLASSES: Readonly<Record<string, ToolClass>> = {
  * each list equal to the recorded schema's, so a new argument fails the build as a new tool does.
  */
 export const CARD_TOOL_ARGS: Readonly<Record<string, readonly string[]>> = {
-  candle_trade: ["mint", "side", "amount", "percent", "quoteAsset", "maxSlippageBps", "clientTradeId", "paper", "deferExecution"],
-  candle_swap: ["from", "to", "amount", "amountRaw", "maxSlippageBps", "clientSwapId"],
+  candle_trade: ["mint", "side", "amount", "percent", "quoteAsset", "maxSlippageBps", "clientTradeId", "paper", "deferExecution", "hide"],
+  candle_swap: ["from", "to", "amount", "amountRaw", "maxSlippageBps", "clientSwapId", "hide"],
   candle_set_profile_wallets: ["keyPrefix", "walletIds"],
-  candle_launch_token: ["quote", "check", "clientLaunchId", "name", "symbol", "imageUrl", "bannerUrl", "description", "chain", "quoteAsset", "mode", "creatorFeeBps", "stakerAllocationBps", "poolOpen", "expPoolShape", "dexVersion", "visibility", "dryRun", "socials", "curve", "poolFee", "launchRules", "buyAmount"],
-  candle_launch_and_seed: ["quote", "check", "clientLaunchId", "name", "symbol", "imageUrl", "bannerUrl", "description", "chain", "quoteAsset", "mode", "creatorFeeBps", "stakerAllocationBps", "poolOpen", "expPoolShape", "dexVersion", "visibility", "dryRun", "socials", "curve", "poolFee", "launchRules", "devBuy"],
+  candle_launch_token: ["quote", "check", "clientLaunchId", "name", "symbol", "imageUrl", "bannerUrl", "description", "chain", "quoteAsset", "mode", "creatorFeeBps", "stakerAllocationBps", "poolOpen", "expPoolShape", "dexVersion", "visibility", "dryRun", "hide", "socials", "curve", "poolFee", "launchRules", "buyAmount"],
+  candle_launch_and_seed: ["quote", "check", "clientLaunchId", "name", "symbol", "imageUrl", "bannerUrl", "description", "chain", "quoteAsset", "mode", "creatorFeeBps", "stakerAllocationBps", "poolOpen", "expPoolShape", "dexVersion", "visibility", "dryRun", "hide", "socials", "curve", "poolFee", "launchRules", "devBuy"],
   candle_stake: ["payer", "linkedWalletId", "clientStakeId", "dryRun", "amountRaw"],
   candle_unstake: ["payer", "linkedWalletId", "clientStakeId", "dryRun", "amountRaw"],
   candle_finish_unstake: ["payer", "linkedWalletId", "clientStakeId", "dryRun", "withdrawal"],

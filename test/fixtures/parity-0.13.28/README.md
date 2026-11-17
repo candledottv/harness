@@ -1,6 +1,6 @@
 # CLI 0.13.28 catch-up evidence
 
-Harness 0.6.1 targets Candle CLI 0.13.28 and MCP 0.10.33 from
+Harness 0.6.1 targets Candle CLI 0.13.28 (MCP 0.10.33 released, 0.10.34 in source) from
 `candledottv/candle-monorepo@940055a9819283d721a313e9e39003f566663e6f`.
 This is source parity, not proof of a published release or deployed server behavior.
 
@@ -144,3 +144,12 @@ for execution and retains its own card and operation gates; it does not decode o
 Relay router calldata. No Harness constant or assertion needs changing for that source
 change. The recorded source snapshot above retains its original SHA and is not relabeled
 as including later commits.
+
+## Per-order hide, MCP 0.10.34 (BE-3709)
+
+`candle-tools.json`, `launch-quotes.json` and `candle-source-contracts.json` are re-recorded at
+`candledottv/candle-monorepo@a6a801ac679b9879bae979e09d0e8ac8b881c313` (SDK 0.6.23, MCP 0.10.34, CLI 0.13.28), with the
+same two scripts. `scripts/read-candle-contracts.ts` now also records 18 `hide-*` scenarios through the real MCP
+server (in memory) and SDK client against local stubs. The released CLI 0.13.28 ships MCP 0.10.33, so its
+recordings are compared with `../candle-cli-release/source-mcp-0.10.33-tools.json` (the previous source fixture).
+#3871 (hide) and #3880 (Relay Hood router calldata, no Harness copy) are the changes since the snapshot above.

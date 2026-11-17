@@ -129,6 +129,40 @@ describe("current MCP contracts", () => {
     }
   })
 
+  test("hide reaches Candle's tool unchanged on a card, an unconfirmed hide is relayed as Candle's error, and a public order carries none", async () => {
+    const rows = sourceContracts.rows.filter((r) => r.surface === "mcp" && r.id.startsWith("hide-mcp-") && r.tool !== "candle_launch_token")
+    expect(rows.map((r) => r.id)).toEqual(["hide-mcp-swap-public", "hide-mcp-swap-hide-echoed", "hide-mcp-swap-hide-unconfirmed", "hide-mcp-trade-paper"])
+    const s = await setup()
+    const hidden = parse(await s.face.call(HARNESS, "candle_swap", { from: "SOL", to: "USDC", amount: "0.5", hide: true }))
+    expect(hidden.isError).toBe(false)
+    expect(s.proposed.map((p) => p.args)).toEqual([{ from: "SOL", to: "USDC", amount: "0.5", hide: true }])
+    const open = await setup()
+    await open.face.call(HARNESS, "candle_swap", { from: "SOL", to: "USDC", amount: "0.5" })
+    expect(open.proposed.map((p) => "hide" in p.args)).toEqual([false])
+    // Candle's refusals, as recorded from the source, come back as they are, whichever the tool.
+    for (const row of rows.filter((r) => (r.outcome as { isError: boolean }).isError)) {
+      const outcome = row.outcome as { body: Record<string, unknown>; isError: boolean }
+      expect(toOutcome({ content: [{ type: "text", text: JSON.stringify(outcome.body) }], isError: true })).toMatchObject({ kind: "error", body: outcome.body })
+    }
+  })
+
+  test("hide on a server that predates it is refused before anything is sent, since the field would be stripped and the order public", async () => {
+    const s = await setup({ oldLaunchServer: true })
+    for (const [name, args] of [
+      ["candle_trade", { mint: MOON, side: "buy", amount: "0.1", hide: true }],
+      ["candle_swap", { from: "SOL", to: "USDC", amount: "0.5", hide: true }],
+      ["candle_launch_token", { name: "Fake", symbol: "FAKE", imageUrl: "https://x", hide: true }],
+      ["candle_launch_and_seed", { name: "Fake", symbol: "FAKE", imageUrl: "https://x", hide: true }],
+    ] as const) {
+      expect(parse(await s.face.call(HARNESS, name, args))).toMatchObject({ isError: true, body: { error: { code: "UPDATE_CANDLE" } } })
+    }
+    expect(s.sent).toEqual([])
+    expect(s.cards).toEqual([])
+    // hide: false is the public default and needs nothing from the server; a public launch is as it was.
+    const open = parse(await s.face.call(HARNESS, "candle_launch_token", { name: "Fake", symbol: "FAKE", imageUrl: "https://x", hide: false }))
+    expect(open.isError).toBe(false)
+  })
+
   test("signal records preserve their measured-record disclaimer and pagination through the face", async () => {
     for (const row of sourceContracts.rows.filter((r) => r.id.startsWith("candle_signal_"))) {
       const outcome = row.outcome as { body: Record<string, unknown>; isError: boolean }
