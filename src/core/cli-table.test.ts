@@ -11,9 +11,9 @@ const baseOf = (path: string) => {
 
 describe("the table and the source", () => {
   test("it was read from the pinned CLI source", () => {
-    // candledottv/cli at cli-v0.13.20.
-    expect(SOURCE.source).toMatchObject({ repo: "candledottv/cli", commit: "3121617d06ad6714ad94fa011b256c375189fed3", cliVersion: "0.13.20" })
-    expect(SOURCE.commands.length).toBe(164)
+    // packages/cli of candledottv/candle-monorepo at the staging commit that carries CLI 0.13.28.
+    expect(SOURCE.source).toMatchObject({ repo: "candledottv/candle-monorepo", commit: "957e77f33", cliVersion: "0.13.28" })
+    expect(SOURCE.commands.length).toBe(171)
     expect((SOURCE as { unread?: string[] }).unread).toEqual([])
   })
 
@@ -51,7 +51,7 @@ describe("the table and the source", () => {
       const source = parts.length === 3 ? sourceFor(parts[0]!, parts[1]!) : baseOf(row.path)
       return source?.identity === "both" || source?.identity === "none"
     }).map((row) => `${row.path}=${row.identity}`)
-    expect(explicit).toContain("auth status=owner")
+    // auth status was decided by the source at 0.13.28 (owner), so it left this list.
     expect(explicit).toContain("doctor=owner")
     expect(explicit).toContain("keys access=owner")
     expect(explicit).toContain("portfolio=agent")
@@ -63,7 +63,7 @@ describe("the table and the source", () => {
     for (const p of ["agent positions=agent", "token comments=agent", "plan auto-renew=owner", "plan auto-renew on=owner", "plan auto-renew off=owner"]) expect(explicit).toContain(p)
     // 0.13.11: a signer's state reads by --key, as its siblings run.
     expect(explicit).toContain("tee signer status=agent")
-    expect(explicit.length).toBe(69)
+    expect(explicit.length).toBe(68)
   })
 
   test("the CLI route lets the agent read and narrow access only", () => {
@@ -217,8 +217,9 @@ describe("the read at 0.13.5", () => {
   test("the changed rows: launch's whole flag list, --check a read, and the new terminal needs of auth login and setup", () => {
     const launch = sourceFor("launch", null)!
     expect(launch.flags!.value).toContain("--staker-allocation-bps")
-    // 27 at 0.13.5, 0.13.9's three --fee-wallet flags, and 0.13.18's six for an allowlisted launch's caps and window.
-    expect(launch.flags!.value.length).toBe(36)
+    // 27 at 0.13.5, 0.13.9's three --fee-wallet flags, 0.13.18's six for an allowlisted launch's caps and window, and 0.13.26's --quote.
+    expect(launch.flags!.value.length).toBe(37)
+    expect(launch.flags!.value).toContain("--quote")
     // 0.13.11 adds --require-fee-wallet.
     expect(launch.flags!.boolean).toEqual(["--check", "--dry-run", "--require-fee-wallet", "--yes"])
     expect(rowFor("launch")!.byFlags!(new Map([["--check", true]]))).toEqual({ rule: "read", route: "cli" })

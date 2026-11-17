@@ -221,7 +221,7 @@ test("the CLI's version against the one the Candle Harness was checked against",
   const newer = await setup({ cliVersion: "0.14.0" })
   const check = find(await runDoctor({ env: newer.env, online: false }), "candle", /0\.14\.0/)
   expect(check).toMatchObject({ state: "warn" })
-  expect(check!.text).toBe("the candle CLI is 0.14.0; the Candle Harness was checked against 0.13.20, so commands newer than that are refused")
+  expect(check!.text).toBe("the candle CLI is 0.14.0; the Candle Harness was checked against 0.13.28, so commands newer than that are refused")
 })
 
 test("no config: before setup, says where to start as a warning, with no key in it, and still checks the tools", async () => {
