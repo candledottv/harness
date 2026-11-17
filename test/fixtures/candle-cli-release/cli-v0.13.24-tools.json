@@ -1,0 +1,38 @@
+{
+  "about": "Keyless public subset via candle mcp --read-only: MCP initialize/tools-list through the verified released CLI 0.13.24 linux-x64 binary, 2026-11-17. All release assets/helpers were checksum and Sigstore verified with scripts/pin-cli.ts verifyRelease and cosign 2.5.2; this binary matched that verified checksum. No API key, tool calls, real profiles, signer, or production writes. Private/keyed tools are intentionally absent; a full tools/list refresh still needs a Read key.",
+  "cliVersion": "0.13.24",
+  "cliTag": "cli-v0.13.24",
+  "binary": {
+    "name": "candle-linux-x64",
+    "sha256": "accfd4feab28be2380cdf5c79cb0353c3f70481b0ef401d8e2f31ca9cd7a7654"
+  },
+  "serverInfo": {
+    "name": "candle-mcp",
+    "version": "0.10.32"
+  },
+  "argv": [
+    "mcp",
+    "--read-only"
+  ],
+  "toolNames": [
+    "candle_token_page_about",
+    "candle_token_page_burns",
+    "candle_token_page_history",
+    "candle_token_page_updates",
+    "candle_token_page_comments",
+    "candle_get_market",
+    "candle_token_forensics",
+    "candle_token_clusters",
+    "candle_token_card",
+    "candle_token_history",
+    "candle_get_price_history",
+    "candle_token_events",
+    "candle_get_feed",
+    "candle_get_agent_profile",
+    "candle_list_agent_posts",
+    "candle_get_agent_positions",
+    "candle_list_agents",
+    "candle_get_plans",
+    "candle_resolve_token"
+  ]
+}

@@ -70,10 +70,19 @@ Candle local-Claude (`claude@candle.tv`), for a companion docs PR/review on cand
 
 ## Release dependency: do not close BE-3685 yet
 
-`install.sh` and `MIN_CANDLE_CLI` still pin the verified CLI 0.13.20 release. The public
-0.13.28 latest.json request returned 404 on 2026-11-17; the worker GitHub wrapper does not
-permit `candledottv/cli`. This does not establish that no private release exists. No checksum
-or signing identity was invented and no verification was bypassed.
+`install.sh` and `MIN_CANDLE_CLI` now pin CLI 0.13.24, the newest public release on
+2026-11-17 (`releases/latest/download/latest.json`). All eight assets/helpers were independently
+verified with `scripts/pin-cli.ts`'s `verifyRelease` and checksum-verified cosign 2.5.2; the
+installed pin block and fixture match that verified manifest. The linux-x64 binary's checksum
+matched the pin, `--version` reported 0.13.24, and its supported `mcp --read-only` mode completed
+a real MCP initialize/tools-list handshake (server 0.10.32, 19 public tools). That recording is
+`../candle-cli-release/cli-v0.13.24-tools.json`. No API key or tool calls were used. Normal
+keyed MCP startup requires a real Read key; no fake credential was used to bypass it.
+
+CLI 0.13.28 latest.json still returns 404, including from the supported pin script with
+cosign available. The worker GitHub wrapper does not permit `candledottv/cli`. This does not
+establish that no private release exists. The source parity target remains 0.13.28; the
+verified 0.13.24 installer pin does not satisfy that target's release gate.
 
 Next owner: Andrew, the CLI release owner, to provide/publish the signed CLI 0.13.28 release
 through an authorized release session. Then the assigned Harness engineer runs

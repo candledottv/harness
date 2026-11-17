@@ -2,6 +2,10 @@
 // against the real server's tools/list when the core starts (unclassifiedTools).
 import { expect, test } from "bun:test"
 import fixture from "../../test/fixtures/candle-tools.json"
+import released from "../../test/fixtures/candle-cli-release/cli-v0.13.24-tools.json"
+import releaseManifest from "../../test/fixtures/candle-cli-release/cli-v0.13.24-latest.json"
+import { MIN_CANDLE_CLI } from "./cli-table"
+import { MIN_CANDLE_MCP, versionAtLeast } from "./candle-mcp"
 import { DESCRIPTION_BASIS, GET_OPERATION_DESCRIPTION, withReason } from "./tool-face"
 import { argumentDrift, CARD_TOOL_ARGS, classificationDrift, classify, HARNESS_TOOL_ARGS, unclassifiedTools, unknownArgument } from "./classify"
 
@@ -88,4 +92,15 @@ test("the agent is offered Candle's trade tool without the arguments the Candle 
   expect(offered.find((t) => t.name === "candle_swap")!.description).toContain("kind: swap")
   // A tool with nothing to add keeps Candle's words.
   expect(offered.find((t) => t.name === "candle_stake")!.description).toBe(fixture.tools.find((t) => t.name === "candle_stake")!.description!)
+})
+
+
+test("the verified installer release starts a compatible keyless MCP subset, all classified as reads", () => {
+  expect(released.cliVersion).toBe(MIN_CANDLE_CLI)
+  expect(released.cliTag).toBe(`cli-v${MIN_CANDLE_CLI}`)
+  expect(released.binary.sha256).toBe(releaseManifest.assets["linux-x64"].sha256)
+  expect(released.argv).toEqual(["mcp", "--read-only"])
+  expect(versionAtLeast(released.serverInfo.version, MIN_CANDLE_MCP)).toBe(true)
+  expect(unclassifiedTools(released.toolNames)).toEqual([])
+  for (const name of released.toolNames) expect(classify(name, {}, "live")).toEqual({ class: "read" })
 })
