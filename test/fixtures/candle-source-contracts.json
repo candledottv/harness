@@ -2,7 +2,7 @@
   "about": "Synthetic response stubs exercised through the actual MCP/SDK source, with network disabled. No deployed behavior is claimed. Embedded perps stops at a local refusal before build/sign/send.",
   "source": {
     "repo": "candledottv/candle-monorepo",
-    "commit": "940055a9819283d721a313e9e39003f566663e6f"
+    "commit": "a6a801ac679b9879bae979e09d0e8ac8b881c313"
   },
   "rows": [
     {
@@ -645,6 +645,535 @@
           "error": {
             "code": "AGENT_WALLET_MISSING",
             "message": "Embedded EVM wallet unavailable"
+          }
+        },
+        "isError": true
+      }
+    },
+    {
+      "id": "hide-mcp-swap-public",
+      "surface": "mcp",
+      "tool": "candle_swap",
+      "args": {
+        "from": "SOL",
+        "to": "USDC",
+        "amount": "0.5",
+        "clientSwapId": "fixture-swap-1"
+      },
+      "requests": [
+        {
+          "method": "POST",
+          "path": "/api/v1/agent/swap",
+          "hide": null
+        }
+      ],
+      "outcome": {
+        "body": {
+          "clientSwapId": "fixture-swap-1",
+          "success": true,
+          "payload": {
+            "hashes": [
+              "fakehash"
+            ],
+            "expectedOutRaw": "1",
+            "outDecimals": 6
+          }
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "hide-sdk-swap-public",
+      "surface": "sdk",
+      "tool": "candle_swap",
+      "args": {
+        "from": "SOL",
+        "to": "USDC",
+        "amount": "0.5",
+        "clientSwapId": "fixture-swap-1"
+      },
+      "requests": [
+        {
+          "method": "POST",
+          "path": "/api/v1/agent/swap",
+          "hide": null
+        }
+      ],
+      "outcome": {
+        "body": {
+          "hashes": [
+            "fakehash"
+          ],
+          "expectedOutRaw": "1",
+          "outDecimals": 6
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "hide-mcp-swap-hide-echoed",
+      "surface": "mcp",
+      "tool": "candle_swap",
+      "args": {
+        "from": "SOL",
+        "to": "USDC",
+        "amount": "0.5",
+        "clientSwapId": "fixture-swap-1",
+        "hide": true
+      },
+      "requests": [
+        {
+          "method": "POST",
+          "path": "/api/v1/agent/swap",
+          "hide": true
+        }
+      ],
+      "outcome": {
+        "body": {
+          "clientSwapId": "fixture-swap-1",
+          "success": true,
+          "payload": {
+            "hashes": [
+              "fakehash"
+            ],
+            "expectedOutRaw": "1",
+            "outDecimals": 6
+          },
+          "hide": true
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "hide-sdk-swap-hide-echoed",
+      "surface": "sdk",
+      "tool": "candle_swap",
+      "args": {
+        "from": "SOL",
+        "to": "USDC",
+        "amount": "0.5",
+        "clientSwapId": "fixture-swap-1",
+        "hide": true
+      },
+      "requests": [
+        {
+          "method": "POST",
+          "path": "/api/v1/agent/swap",
+          "hide": true
+        }
+      ],
+      "outcome": {
+        "body": {
+          "hashes": [
+            "fakehash"
+          ],
+          "expectedOutRaw": "1",
+          "outDecimals": 6
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "hide-mcp-swap-hide-unconfirmed",
+      "surface": "mcp",
+      "tool": "candle_swap",
+      "args": {
+        "from": "SOL",
+        "to": "USDC",
+        "amount": "0.5",
+        "clientSwapId": "fixture-swap-1",
+        "hide": true
+      },
+      "requests": [
+        {
+          "method": "POST",
+          "path": "/api/v1/agent/swap",
+          "hide": true
+        }
+      ],
+      "outcome": {
+        "body": {
+          "clientSwapId": "fixture-swap-1",
+          "error": "HIDE_NOT_CONFIRMED: candle_swap asked for hide, but the API did not confirm it. Its server may predate hide, so the order may have been placed publicly. Read the order back before sending another.",
+          "api": {
+            "success": true,
+            "payload": {
+              "hashes": [
+                "fakehash"
+              ],
+              "expectedOutRaw": "1",
+              "outDecimals": 6
+            }
+          }
+        },
+        "isError": true
+      }
+    },
+    {
+      "id": "hide-sdk-swap-hide-unconfirmed",
+      "surface": "sdk",
+      "tool": "candle_swap",
+      "args": {
+        "from": "SOL",
+        "to": "USDC",
+        "amount": "0.5",
+        "clientSwapId": "fixture-swap-1",
+        "hide": true
+      },
+      "requests": [
+        {
+          "method": "POST",
+          "path": "/api/v1/agent/swap",
+          "hide": true
+        }
+      ],
+      "outcome": {
+        "body": {
+          "error": {
+            "code": "HIDE_NOT_CONFIRMED"
+          }
+        },
+        "isError": true
+      }
+    },
+    {
+      "id": "hide-mcp-launch-public",
+      "surface": "mcp",
+      "tool": "candle_launch_token",
+      "args": {
+        "name": "Fixture Token",
+        "symbol": "FIXT",
+        "chain": "solana",
+        "imageUrl": "https://example.test/fixture.png",
+        "clientLaunchId": "fixture-launch-1"
+      },
+      "requests": [
+        {
+          "method": "POST",
+          "path": "/api/v1/launch/headless",
+          "hide": null
+        }
+      ],
+      "outcome": {
+        "body": {
+          "success": true,
+          "mint": "FakeMint1111"
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "hide-sdk-launch-public",
+      "surface": "sdk",
+      "tool": "candle_launch_token",
+      "args": {
+        "name": "Fixture Token",
+        "symbol": "FIXT",
+        "chain": "solana",
+        "imageUrl": "https://example.test/fixture.png",
+        "clientLaunchId": "fixture-launch-1"
+      },
+      "requests": [
+        {
+          "method": "POST",
+          "path": "/api/v1/launch/headless",
+          "hide": null
+        }
+      ],
+      "outcome": {
+        "body": {
+          "success": true,
+          "mint": "FakeMint1111",
+          "clientLaunchId": "fixture-launch-1"
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "hide-mcp-launch-hide-echoed",
+      "surface": "mcp",
+      "tool": "candle_launch_token",
+      "args": {
+        "name": "Fixture Token",
+        "symbol": "FIXT",
+        "chain": "solana",
+        "imageUrl": "https://example.test/fixture.png",
+        "clientLaunchId": "fixture-launch-1",
+        "hide": true
+      },
+      "requests": [
+        {
+          "method": "POST",
+          "path": "/api/v1/launch/headless/dry-run",
+          "hide": true
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/launch/headless",
+          "hide": true
+        }
+      ],
+      "outcome": {
+        "body": {
+          "success": true,
+          "mint": "FakeMint1111",
+          "hide": true
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "hide-sdk-launch-hide-echoed",
+      "surface": "sdk",
+      "tool": "candle_launch_token",
+      "args": {
+        "name": "Fixture Token",
+        "symbol": "FIXT",
+        "chain": "solana",
+        "imageUrl": "https://example.test/fixture.png",
+        "clientLaunchId": "fixture-launch-1",
+        "hide": true
+      },
+      "requests": [
+        {
+          "method": "POST",
+          "path": "/api/v1/launch/headless/dry-run",
+          "hide": true
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/launch/headless",
+          "hide": true
+        }
+      ],
+      "outcome": {
+        "body": {
+          "success": true,
+          "mint": "FakeMint1111",
+          "hide": true,
+          "clientLaunchId": "fixture-launch-1"
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "hide-mcp-launch-hide-dry-run-no-echo",
+      "surface": "mcp",
+      "tool": "candle_launch_token",
+      "args": {
+        "name": "Fixture Token",
+        "symbol": "FIXT",
+        "chain": "solana",
+        "imageUrl": "https://example.test/fixture.png",
+        "clientLaunchId": "fixture-launch-1",
+        "hide": true
+      },
+      "requests": [
+        {
+          "method": "POST",
+          "path": "/api/v1/launch/headless/dry-run",
+          "hide": true
+        }
+      ],
+      "outcome": {
+        "body": {
+          "error": "HIDE_NOT_CONFIRMED: candle_launch_token asked for hide, but the API's dry run did not confirm it. Its server has not enabled hide yet. The dry run published nothing and no launch was sent; retry without hide, or after the API enables it."
+        },
+        "isError": true
+      }
+    },
+    {
+      "id": "hide-sdk-launch-hide-dry-run-no-echo",
+      "surface": "sdk",
+      "tool": "candle_launch_token",
+      "args": {
+        "name": "Fixture Token",
+        "symbol": "FIXT",
+        "chain": "solana",
+        "imageUrl": "https://example.test/fixture.png",
+        "clientLaunchId": "fixture-launch-1",
+        "hide": true
+      },
+      "requests": [
+        {
+          "method": "POST",
+          "path": "/api/v1/launch/headless/dry-run",
+          "hide": true
+        }
+      ],
+      "outcome": {
+        "body": {
+          "error": {
+            "code": "HIDE_NOT_CONFIRMED"
+          }
+        },
+        "isError": true
+      }
+    },
+    {
+      "id": "hide-mcp-launch-hide-live-no-echo",
+      "surface": "mcp",
+      "tool": "candle_launch_token",
+      "args": {
+        "name": "Fixture Token",
+        "symbol": "FIXT",
+        "chain": "solana",
+        "imageUrl": "https://example.test/fixture.png",
+        "clientLaunchId": "fixture-launch-1",
+        "hide": true
+      },
+      "requests": [
+        {
+          "method": "POST",
+          "path": "/api/v1/launch/headless/dry-run",
+          "hide": true
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/launch/headless",
+          "hide": true
+        }
+      ],
+      "outcome": {
+        "body": {
+          "error": "HIDE_NOT_CONFIRMED: candle_launch_token asked for hide, but the API did not confirm it. Its server may predate hide, so the order may have been placed publicly. Read the order back before sending another.",
+          "api": "{\"success\":true,\"mint\":\"FakeMint1111\"}"
+        },
+        "isError": true
+      }
+    },
+    {
+      "id": "hide-sdk-launch-hide-live-no-echo",
+      "surface": "sdk",
+      "tool": "candle_launch_token",
+      "args": {
+        "name": "Fixture Token",
+        "symbol": "FIXT",
+        "chain": "solana",
+        "imageUrl": "https://example.test/fixture.png",
+        "clientLaunchId": "fixture-launch-1",
+        "hide": true
+      },
+      "requests": [
+        {
+          "method": "POST",
+          "path": "/api/v1/launch/headless/dry-run",
+          "hide": true
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/launch/headless",
+          "hide": true
+        }
+      ],
+      "outcome": {
+        "body": {
+          "error": {
+            "code": "HIDE_NOT_CONFIRMED"
+          }
+        },
+        "isError": true
+      }
+    },
+    {
+      "id": "hide-mcp-launch-dry-run-hide-echoed",
+      "surface": "mcp",
+      "tool": "candle_launch_token",
+      "args": {
+        "name": "Fixture Token",
+        "symbol": "FIXT",
+        "chain": "solana",
+        "imageUrl": "https://example.test/fixture.png",
+        "clientLaunchId": "fixture-launch-1",
+        "hide": true,
+        "dryRun": true
+      },
+      "requests": [
+        {
+          "method": "POST",
+          "path": "/api/v1/launch/headless/dry-run",
+          "hide": true
+        }
+      ],
+      "outcome": {
+        "body": {
+          "success": true,
+          "works": true,
+          "hide": true
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "hide-sdk-launch-dry-run-hide-echoed",
+      "surface": "sdk",
+      "tool": "candle_launch_token",
+      "args": {
+        "name": "Fixture Token",
+        "symbol": "FIXT",
+        "chain": "solana",
+        "imageUrl": "https://example.test/fixture.png",
+        "clientLaunchId": "fixture-launch-1",
+        "hide": true,
+        "dryRun": true
+      },
+      "requests": [
+        {
+          "method": "POST",
+          "path": "/api/v1/launch/headless/dry-run",
+          "hide": true
+        }
+      ],
+      "outcome": {
+        "body": {
+          "success": true,
+          "works": true,
+          "hide": true
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "hide-sdk-swap-unreadable",
+      "surface": "sdk",
+      "tool": "candle_swap",
+      "args": {
+        "from": "SOL",
+        "to": "USDC",
+        "amountRaw": "500000000",
+        "clientSwapId": "fixture-swap-1",
+        "hide": "maybe"
+      },
+      "requests": [],
+      "outcome": {
+        "body": {
+          "error": {
+            "code": "VALIDATION_FAILED"
+          }
+        },
+        "isError": true
+      }
+    },
+    {
+      "id": "hide-mcp-trade-paper",
+      "surface": "mcp",
+      "tool": "candle_trade",
+      "args": {
+        "mint": "FakeMint1111",
+        "side": "buy",
+        "amount": "0.1",
+        "paper": true,
+        "hide": true,
+        "clientTradeId": "fixture-trade-1"
+      },
+      "requests": [],
+      "outcome": {
+        "body": {
+          "clientTradeId": "fixture-trade-1",
+          "success": false,
+          "error": {
+            "code": "MCP_VALIDATION",
+            "message": "hide cannot be combined with paper; a paper trade is never in the public stream"
           }
         },
         "isError": true

@@ -5,6 +5,7 @@ import { createHash } from "node:crypto"
 import { canonicalJson } from "../shared/canonical-json"
 import npmRelease from "../../test/fixtures/candle-cli-release/cli-v0.13.28-npm.json"
 import fixture from "../../test/fixtures/candle-tools.json"
+import releasedSource from "../../test/fixtures/candle-cli-release/source-mcp-0.10.33-tools.json"
 import released from "../../test/fixtures/candle-cli-release/cli-v0.13.24-tools.json"
 import releaseManifest from "../../test/fixtures/candle-cli-release/cli-v0.13.24-latest.json"
 import { MIN_CANDLE_CLI } from "./cli-table"
@@ -109,15 +110,15 @@ test("the signed native bootstrap is authentic but below the current CLI minimum
 })
 
 
-test("the published npm CLI meets the minimum and its recorded public definitions match the source fixture", () => {
+test("the published npm CLI meets the minimum and its recorded public definitions match the source it was built from", () => {
   expect(npmRelease.cliVersion).toBe(MIN_CANDLE_CLI)
   expect(npmRelease.package.version).toBe(MIN_CANDLE_CLI)
   expect(npmRelease.package.name).toBe("@candledottv/cli")
-  expect(npmRelease.serverInfo.version).toBe(fixture.serverInfo.version)
+  expect(npmRelease.serverInfo.version).toBe(releasedSource.serverInfo.version)
   expect(npmRelease.argv).toEqual(["mcp", "--read-only"])
   expect(unclassifiedTools(npmRelease.toolNames)).toEqual([])
   for (const name of npmRelease.toolNames) {
-    const tool = fixture.tools.find((t) => t.name === name)
+    const tool = releasedSource.tools.find((t) => t.name === name)
     expect(tool).toBeDefined()
     expect(createHash("sha256").update(canonicalJson(tool)).digest("hex")).toBe(npmRelease.toolSha256[name as keyof typeof npmRelease.toolSha256])
   }

@@ -37,3 +37,34 @@ test("SDK and MCP checks issue one GET; a paused or split quote is not admitted 
     else expect(s.body).toEqual(m.body)
   }
 })
+
+test("per-order hide: the echo is required, a dry run that lacks it stops a hidden launch, and a public order sends no hide", () => {
+  const rows = contracts.rows.filter((r) => r.id.startsWith("hide-"))
+  expect(rows).toHaveLength(18)
+  const asked = (r: (typeof rows)[number]) => (r.args as { hide?: unknown }).hide === true
+  for (const row of rows.filter((r) => r.requests && r.requests.length > 0)) {
+    const sent = row.requests as { path: string; hide: true | null }[]
+    // Only a request that asked for hide sends the field, and it sends exactly `true`.
+    expect(sent.every((q) => q.hide === (asked(row) ? true : null))).toBe(true)
+  }
+  const refused = rows.filter((r) => (r.outcome as { isError: boolean }).isError).map((r) => r.id).sort()
+  expect(refused).toEqual([
+    "hide-mcp-launch-hide-dry-run-no-echo", "hide-mcp-launch-hide-live-no-echo", "hide-mcp-swap-hide-unconfirmed", "hide-mcp-trade-paper",
+    "hide-sdk-launch-hide-dry-run-no-echo", "hide-sdk-launch-hide-live-no-echo", "hide-sdk-swap-hide-unconfirmed", "hide-sdk-swap-unreadable",
+  ])
+  // MCP and SDK refuse the same cases; the MCP names HIDE_NOT_CONFIRMED in its text, the SDK in its error code.
+  for (const id of ["launch-hide-dry-run-no-echo", "launch-hide-live-no-echo", "swap-hide-unconfirmed"]) {
+    expect(JSON.stringify(contracts.rows.find((r) => r.id === `hide-mcp-${id}`)!.outcome)).toContain("HIDE_NOT_CONFIRMED")
+    expect(contracts.rows.find((r) => r.id === `hide-sdk-${id}`)!.outcome).toMatchObject({ isError: true, body: { error: { code: "HIDE_NOT_CONFIRMED" } } })
+  }
+  // A hidden launch is dry-run first: without the echo nothing is launched; with it, dry run then live.
+  for (const surface of ["mcp", "sdk"]) {
+    expect(contracts.rows.find((r) => r.id === `hide-${surface}-launch-hide-dry-run-no-echo`)!.requests!.map((q) => q.path)).toEqual(["/api/v1/launch/headless/dry-run"])
+    expect(contracts.rows.find((r) => r.id === `hide-${surface}-launch-hide-echoed`)!.requests!.map((q) => q.path)).toEqual(["/api/v1/launch/headless/dry-run", "/api/v1/launch/headless"])
+    // The public launch is unchanged: one live request, no hide, no dry run.
+    expect(contracts.rows.find((r) => r.id === `hide-${surface}-launch-public`)!.requests!.map((q) => q.path)).toEqual(["/api/v1/launch/headless"])
+  }
+  // The unreadable hide and the hide with paper are refused before any request.
+  expect(contracts.rows.find((r) => r.id === "hide-sdk-swap-unreadable")!.requests).toEqual([])
+  expect(contracts.rows.find((r) => r.id === "hide-mcp-trade-paper")!.requests).toEqual([])
+})
