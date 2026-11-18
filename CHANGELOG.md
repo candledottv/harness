@@ -4,7 +4,13 @@ What changed in each version of Candle Harness (called the Candle TUI before 0.3
 
 ## 0.6.3 (unreleased)
 
-Hyperliquid spot, as Candle's CLI, API and pre-sign check take it (candle-monorepo `7916d4836`; the CLI there is still 0.13.29, its MCP server 0.10.34 and the SDK 0.6.23, none of them bumped for spot yet). The source/build version is 0.6.3; publishing remains a separate release step.
+Hyperliquid spot, as Candle's CLI, API and pre-sign check take it (candle-monorepo `0b0ecb5b0`; the CLI there is 0.13.30, its MCP server 0.10.35 and the SDK 0.6.24). The source/build version is 0.6.3; publishing remains a separate release step.
+
+### Published CLI 0.13.30, MCP 0.10.35 and SDK 0.6.24
+
+- **Every source fixture is re-read at `0b0ecb5b0`**, the commit that bumped the three packages for builder-deployed (HIP-3) markets and is now live on npm (`@candledottv/cli` 0.13.30, `@candledottv/mcp` 0.10.35, `@candledottv/agent-sdk` 0.6.24). Between `7916d4836` and it the CLI, MCP and SDK source changed only in their version strings and the SDK changelog, so the command table, the 103-tool list and the launch pairs differ only in the commit and versions they name.
+- **The builder-dex scenarios run again at that commit:** the MCP/SDK contracts (94 offline scenarios, the `dex:COIN` ones among them), the 25 refusal and disclosure rows (`dex:COIN` names, per-dex universes, the terms before each order), and the 59 spot rows all pass against the released source. They are offline, against synthetic venue data; nothing is sent to production, whose API takes `dex:COIN` only from the 09:00Z promote.
+- The signed CLI release pin (`install.sh`) and the runtime minimum (0.13.28) don't move: they follow the signed native release, not npm. Candle's transfer commands (#3928) aren't in this release, so they aren't covered here.
 
 ### Hyperliquid spot
 

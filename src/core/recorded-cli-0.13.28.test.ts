@@ -58,7 +58,7 @@ test("only the four conditional profile tools remain source-only, with no classi
 })
 
 test("the current source differs from the released 0.10.33 by per-order hide, builder-dex perps and three new reads", () => {
-  expect(current.serverInfo).toEqual({ name: "candle-mcp", version: "0.10.34" })
+  expect(current.serverInfo).toEqual({ name: "candle-mcp", version: "0.10.35" })
   expect(current.tools.map((t) => t.name).filter((n) => !source.tools.some((t) => t.name === n)).sort()).toEqual([...NEWER_THAN_RELEASE].sort())
   expect(current.tools).toHaveLength(source.tools.length + NEWER_THAN_RELEASE.length)
   // The atomic launch dry run is a read and takes hide too, to check the echo before a hidden launch.

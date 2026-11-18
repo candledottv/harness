@@ -46,7 +46,7 @@ describe("refusals", () => {
   test("a word given as the subcommand of a command that has none says to put it in args (help keys)", () => {
     expect(resolve("help", "keys")).toEqual({ ok: false, code: "NOT_IN_MAP", message: 'candle help has no subcommands: pass "keys" in args instead (candle help keys).' })
     expect(resolve("help", undefined, ["keys"])).toMatchObject({ ok: true })
-    expect(resolve("rm", "rf")).toMatchObject({ ok: false, code: "NOT_IN_MAP", message: "candle rm isn't a command in candle 0.13.29, the CLI the Candle Harness was checked against." })
+    expect(resolve("rm", "rf")).toMatchObject({ ok: false, code: "NOT_IN_MAP", message: "candle rm isn't a command in candle 0.13.30, the CLI the Candle Harness was checked against." })
   })
 
   test("flags that change who or where it runs, --yes and --rpc-url are refused, even where the command declares them", () => {

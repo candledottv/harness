@@ -71,7 +71,7 @@ describe("the TEE wallet reads at server 0.10.25", () => {
   })
 
   test("the source tool list includes signal and receipt reads, conditional profile tools, and the table agrees", () => {
-    expect(fixture.serverInfo.version).toBe("0.10.34")
+    expect(fixture.serverInfo.version).toBe("0.10.35")
     expect(fixture.tools).toHaveLength(103)
     expect(fixture.tools.filter((t) => "listedAfterKeyCheck" in t).map((t) => t.name)).toEqual(["candle_update_profile", "candle_upload_profile_image", "candle_create_post", "candle_delete_post"])
     expect(classificationDrift(fixture.tools.map((t) => t.name))).toEqual([])
