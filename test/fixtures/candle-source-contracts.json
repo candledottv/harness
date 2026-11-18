@@ -1,8 +1,8 @@
 {
-  "about": "Synthetic response stubs exercised through the actual MCP/SDK source, with network disabled. No deployed behavior is claimed. Embedded perps stops at a local refusal before build/sign/send.",
+  "about": "Synthetic response stubs exercised through the actual MCP/SDK source, with network disabled. No deployed behavior is claimed. Embedded perps stops at a local refusal before build/sign/send. Builder-dex (HIP-3) rows read a synthetic Hyperliquid with made-up dexes and addresses; api-gate rows run the API gate source on the same universes.",
   "source": {
     "repo": "candledottv/candle-monorepo",
-    "commit": "7354c785aeb02f0cf0aa5cfcad076b6f820f5779"
+    "commit": "578db6462d65842c0fdbaf08a37aedf405decee5"
   },
   "rows": [
     {
@@ -1177,6 +1177,3638 @@
           }
         },
         "isError": true
+      }
+    },
+    {
+      "id": "hip3-mcp-markets-main",
+      "surface": "mcp",
+      "tool": "candle_perps_markets",
+      "args": {
+        "all": true
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/perps/config"
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "metaAndAssetCtxs"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "predictedFundings"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "perpsAtOpenInterestCap"
+          }
+        }
+      ],
+      "outcome": {
+        "body": {
+          "success": true,
+          "network": "mainnet",
+          "gate": {
+            "minOpenInterestUsd": 1000000,
+            "source": "server",
+            "dexOpensRefused": [
+              "halt"
+            ]
+          },
+          "warnings": [],
+          "markets": [
+            {
+              "coin": "BTC",
+              "asset": 0,
+              "markPx": "60000",
+              "oraclePx": "60000",
+              "midPx": "60000",
+              "fundingRate": "0.0000125",
+              "fundingAprPct": "10.95",
+              "predictedFundingRate": null,
+              "nextFundingTime": null,
+              "openInterest": "100",
+              "openInterestUsd": "6000000.00",
+              "dayNotionalVolumeUsd": "5000000",
+              "prevDayPx": "60000",
+              "change24hPct": "0.0",
+              "maxLeverage": 40,
+              "onlyIsolated": false,
+              "isDelisted": false,
+              "atOpenInterestCap": false,
+              "candle": {
+                "tradeable": true,
+                "reason": null
+              },
+              "dex": "",
+              "terms": {
+                "dex": "",
+                "dexName": null,
+                "deployer": null,
+                "oracleSource": "validators",
+                "oracleSetters": [],
+                "marginMode": "cross",
+                "collateral": "USDC",
+                "feeMultiplier": "1",
+                "takerFeePct": "0.045",
+                "makerFeePct": "0.015",
+                "feeWarning": null
+              }
+            }
+          ]
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "hip3-sdk-markets-main",
+      "surface": "sdk",
+      "tool": "candle_perps_markets",
+      "args": {
+        "all": true
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/perps/config"
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "metaAndAssetCtxs"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "predictedFundings"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "perpsAtOpenInterestCap"
+          }
+        }
+      ],
+      "outcome": {
+        "body": {
+          "success": true,
+          "network": "mainnet",
+          "gate": {
+            "minOpenInterestUsd": 1000000,
+            "source": "server",
+            "dexOpensRefused": [
+              "halt"
+            ]
+          },
+          "warnings": [],
+          "markets": [
+            {
+              "coin": "BTC",
+              "asset": 0,
+              "markPx": "60000",
+              "oraclePx": "60000",
+              "midPx": "60000",
+              "fundingRate": "0.0000125",
+              "fundingAprPct": "10.95",
+              "predictedFundingRate": null,
+              "nextFundingTime": null,
+              "openInterest": "100",
+              "openInterestUsd": "6000000.00",
+              "dayNotionalVolumeUsd": "5000000",
+              "prevDayPx": "60000",
+              "change24hPct": "0.0",
+              "maxLeverage": 40,
+              "onlyIsolated": false,
+              "isDelisted": false,
+              "atOpenInterestCap": false,
+              "candle": {
+                "tradeable": true,
+                "reason": null
+              },
+              "dex": "",
+              "terms": {
+                "dex": "",
+                "dexName": null,
+                "deployer": null,
+                "oracleSource": "validators",
+                "oracleSetters": [],
+                "marginMode": "cross",
+                "collateral": "USDC",
+                "feeMultiplier": "1",
+                "takerFeePct": "0.045",
+                "makerFeePct": "0.015",
+                "feeWarning": null
+              }
+            }
+          ]
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "hip3-mcp-markets-xyz",
+      "surface": "mcp",
+      "tool": "candle_perps_markets",
+      "args": {
+        "dex": "xyz",
+        "all": true
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/perps/config"
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "predictedFundings"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "perpsAtOpenInterestCap"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "perpDexs"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "metaAndAssetCtxs",
+            "dex": "xyz"
+          }
+        }
+      ],
+      "outcome": {
+        "body": {
+          "success": true,
+          "network": "mainnet",
+          "gate": {
+            "minOpenInterestUsd": 1000000,
+            "source": "server",
+            "dexOpensRefused": [
+              "halt"
+            ]
+          },
+          "warnings": [],
+          "markets": [
+            {
+              "coin": "xyz:GOLD",
+              "asset": 110001,
+              "markPx": "2500",
+              "oraclePx": "2500",
+              "midPx": "2500",
+              "fundingRate": "0.0000125",
+              "fundingAprPct": "10.95",
+              "predictedFundingRate": null,
+              "nextFundingTime": null,
+              "openInterest": "1000",
+              "openInterestUsd": "2500000.00",
+              "dayNotionalVolumeUsd": "5000000",
+              "prevDayPx": "2500",
+              "change24hPct": "0.0",
+              "maxLeverage": 20,
+              "onlyIsolated": true,
+              "isDelisted": false,
+              "atOpenInterestCap": null,
+              "candle": {
+                "tradeable": true,
+                "reason": null
+              },
+              "dex": "xyz",
+              "terms": {
+                "dex": "xyz",
+                "dexName": "XYZ Fixture",
+                "deployer": "0x00000000000000000000000000000000000000d1",
+                "oracleSource": "deployer",
+                "oracleSetters": [
+                  "0x00000000000000000000000000000000000000a1"
+                ],
+                "marginMode": "isolated",
+                "collateral": "USDC",
+                "feeMultiplier": "3",
+                "takerFeePct": "0.135",
+                "makerFeePct": "0.045",
+                "feeWarning": "xyz:GOLD charges 3x the main exchange's fee (its deployer sets it), above Candle's 2x warning line"
+              }
+            },
+            {
+              "coin": "xyz:OLD",
+              "asset": 110002,
+              "markPx": "1",
+              "oraclePx": "1",
+              "midPx": "1",
+              "fundingRate": "0.0000125",
+              "fundingAprPct": "10.95",
+              "predictedFundingRate": null,
+              "nextFundingTime": null,
+              "openInterest": "0",
+              "openInterestUsd": "0.00",
+              "dayNotionalVolumeUsd": "5000000",
+              "prevDayPx": "1",
+              "change24hPct": "0.0",
+              "maxLeverage": 5,
+              "onlyIsolated": false,
+              "isDelisted": true,
+              "atOpenInterestCap": null,
+              "candle": {
+                "tradeable": false,
+                "reason": "delisted"
+              },
+              "dex": "xyz",
+              "terms": {
+                "dex": "xyz",
+                "dexName": "XYZ Fixture",
+                "deployer": "0x00000000000000000000000000000000000000d1",
+                "oracleSource": "deployer",
+                "oracleSetters": [
+                  "0x00000000000000000000000000000000000000a1"
+                ],
+                "marginMode": "cross",
+                "collateral": "USDC",
+                "feeMultiplier": "1",
+                "takerFeePct": "0.045",
+                "makerFeePct": "0.015",
+                "feeWarning": null
+              }
+            },
+            {
+              "coin": "xyz:TSLA",
+              "asset": 110000,
+              "markPx": "250",
+              "oraclePx": "250",
+              "midPx": "250",
+              "fundingRate": "0.0000125",
+              "fundingAprPct": "10.95",
+              "predictedFundingRate": null,
+              "nextFundingTime": null,
+              "openInterest": "10000",
+              "openInterestUsd": "2500000.00",
+              "dayNotionalVolumeUsd": "5000000",
+              "prevDayPx": "250",
+              "change24hPct": "0.0",
+              "maxLeverage": 10,
+              "onlyIsolated": false,
+              "isDelisted": false,
+              "atOpenInterestCap": null,
+              "candle": {
+                "tradeable": true,
+                "reason": null
+              },
+              "dex": "xyz",
+              "terms": {
+                "dex": "xyz",
+                "dexName": "XYZ Fixture",
+                "deployer": "0x00000000000000000000000000000000000000d1",
+                "oracleSource": "deployer",
+                "oracleSetters": [
+                  "0x00000000000000000000000000000000000000a1"
+                ],
+                "marginMode": "cross",
+                "collateral": "USDC",
+                "feeMultiplier": "1.5",
+                "takerFeePct": "0.0675",
+                "makerFeePct": "0.0225",
+                "feeWarning": null
+              }
+            }
+          ],
+          "dexes": [
+            {
+              "index": 1,
+              "name": "xyz",
+              "fullName": "XYZ Fixture",
+              "deployer": "0x00000000000000000000000000000000000000d1",
+              "oracleUpdater": null,
+              "oracleSetters": [
+                "0x00000000000000000000000000000000000000a1"
+              ],
+              "collateral": "USDC",
+              "tradeable": true
+            }
+          ]
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "hip3-sdk-markets-xyz",
+      "surface": "sdk",
+      "tool": "candle_perps_markets",
+      "args": {
+        "dex": "xyz",
+        "all": true
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/perps/config"
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "predictedFundings"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "perpsAtOpenInterestCap"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "perpDexs"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "metaAndAssetCtxs",
+            "dex": "xyz"
+          }
+        }
+      ],
+      "outcome": {
+        "body": {
+          "success": true,
+          "network": "mainnet",
+          "gate": {
+            "minOpenInterestUsd": 1000000,
+            "source": "server",
+            "dexOpensRefused": [
+              "halt"
+            ]
+          },
+          "warnings": [],
+          "markets": [
+            {
+              "coin": "xyz:GOLD",
+              "asset": 110001,
+              "markPx": "2500",
+              "oraclePx": "2500",
+              "midPx": "2500",
+              "fundingRate": "0.0000125",
+              "fundingAprPct": "10.95",
+              "predictedFundingRate": null,
+              "nextFundingTime": null,
+              "openInterest": "1000",
+              "openInterestUsd": "2500000.00",
+              "dayNotionalVolumeUsd": "5000000",
+              "prevDayPx": "2500",
+              "change24hPct": "0.0",
+              "maxLeverage": 20,
+              "onlyIsolated": true,
+              "isDelisted": false,
+              "atOpenInterestCap": null,
+              "candle": {
+                "tradeable": true,
+                "reason": null
+              },
+              "dex": "xyz",
+              "terms": {
+                "dex": "xyz",
+                "dexName": "XYZ Fixture",
+                "deployer": "0x00000000000000000000000000000000000000d1",
+                "oracleSource": "deployer",
+                "oracleSetters": [
+                  "0x00000000000000000000000000000000000000a1"
+                ],
+                "marginMode": "isolated",
+                "collateral": "USDC",
+                "feeMultiplier": "3",
+                "takerFeePct": "0.135",
+                "makerFeePct": "0.045",
+                "feeWarning": "xyz:GOLD charges 3x the main exchange's fee (its deployer sets it), above Candle's 2x warning line"
+              }
+            },
+            {
+              "coin": "xyz:OLD",
+              "asset": 110002,
+              "markPx": "1",
+              "oraclePx": "1",
+              "midPx": "1",
+              "fundingRate": "0.0000125",
+              "fundingAprPct": "10.95",
+              "predictedFundingRate": null,
+              "nextFundingTime": null,
+              "openInterest": "0",
+              "openInterestUsd": "0.00",
+              "dayNotionalVolumeUsd": "5000000",
+              "prevDayPx": "1",
+              "change24hPct": "0.0",
+              "maxLeverage": 5,
+              "onlyIsolated": false,
+              "isDelisted": true,
+              "atOpenInterestCap": null,
+              "candle": {
+                "tradeable": false,
+                "reason": "delisted"
+              },
+              "dex": "xyz",
+              "terms": {
+                "dex": "xyz",
+                "dexName": "XYZ Fixture",
+                "deployer": "0x00000000000000000000000000000000000000d1",
+                "oracleSource": "deployer",
+                "oracleSetters": [
+                  "0x00000000000000000000000000000000000000a1"
+                ],
+                "marginMode": "cross",
+                "collateral": "USDC",
+                "feeMultiplier": "1",
+                "takerFeePct": "0.045",
+                "makerFeePct": "0.015",
+                "feeWarning": null
+              }
+            },
+            {
+              "coin": "xyz:TSLA",
+              "asset": 110000,
+              "markPx": "250",
+              "oraclePx": "250",
+              "midPx": "250",
+              "fundingRate": "0.0000125",
+              "fundingAprPct": "10.95",
+              "predictedFundingRate": null,
+              "nextFundingTime": null,
+              "openInterest": "10000",
+              "openInterestUsd": "2500000.00",
+              "dayNotionalVolumeUsd": "5000000",
+              "prevDayPx": "250",
+              "change24hPct": "0.0",
+              "maxLeverage": 10,
+              "onlyIsolated": false,
+              "isDelisted": false,
+              "atOpenInterestCap": null,
+              "candle": {
+                "tradeable": true,
+                "reason": null
+              },
+              "dex": "xyz",
+              "terms": {
+                "dex": "xyz",
+                "dexName": "XYZ Fixture",
+                "deployer": "0x00000000000000000000000000000000000000d1",
+                "oracleSource": "deployer",
+                "oracleSetters": [
+                  "0x00000000000000000000000000000000000000a1"
+                ],
+                "marginMode": "cross",
+                "collateral": "USDC",
+                "feeMultiplier": "1.5",
+                "takerFeePct": "0.0675",
+                "makerFeePct": "0.0225",
+                "feeWarning": null
+              }
+            }
+          ],
+          "dexes": [
+            {
+              "index": 1,
+              "name": "xyz",
+              "fullName": "XYZ Fixture",
+              "deployer": "0x00000000000000000000000000000000000000d1",
+              "oracleUpdater": null,
+              "oracleSetters": [
+                "0x00000000000000000000000000000000000000a1"
+              ],
+              "collateral": "USDC",
+              "tradeable": true
+            }
+          ]
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "hip3-mcp-markets-all",
+      "surface": "mcp",
+      "tool": "candle_perps_markets",
+      "args": {
+        "dex": "all",
+        "all": true
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/perps/config"
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "metaAndAssetCtxs"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "predictedFundings"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "perpsAtOpenInterestCap"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "perpDexs"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "metaAndAssetCtxs",
+            "dex": "xyz"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "metaAndAssetCtxs",
+            "dex": "usdt"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "metaAndAssetCtxs",
+            "dex": "halt"
+          }
+        }
+      ],
+      "outcome": {
+        "body": {
+          "success": true,
+          "network": "mainnet",
+          "gate": {
+            "minOpenInterestUsd": 1000000,
+            "source": "server",
+            "dexOpensRefused": [
+              "halt"
+            ]
+          },
+          "warnings": [],
+          "markets": [
+            {
+              "coin": "BTC",
+              "asset": 0,
+              "markPx": "60000",
+              "oraclePx": "60000",
+              "midPx": "60000",
+              "fundingRate": "0.0000125",
+              "fundingAprPct": "10.95",
+              "predictedFundingRate": null,
+              "nextFundingTime": null,
+              "openInterest": "100",
+              "openInterestUsd": "6000000.00",
+              "dayNotionalVolumeUsd": "5000000",
+              "prevDayPx": "60000",
+              "change24hPct": "0.0",
+              "maxLeverage": 40,
+              "onlyIsolated": false,
+              "isDelisted": false,
+              "atOpenInterestCap": false,
+              "candle": {
+                "tradeable": true,
+                "reason": null
+              },
+              "dex": "",
+              "terms": {
+                "dex": "",
+                "dexName": null,
+                "deployer": null,
+                "oracleSource": "validators",
+                "oracleSetters": [],
+                "marginMode": "cross",
+                "collateral": "USDC",
+                "feeMultiplier": "1",
+                "takerFeePct": "0.045",
+                "makerFeePct": "0.015",
+                "feeWarning": null
+              }
+            },
+            {
+              "coin": "halt:OIL",
+              "asset": 130000,
+              "markPx": "80",
+              "oraclePx": "80",
+              "midPx": "80",
+              "fundingRate": "0.0000125",
+              "fundingAprPct": "10.95",
+              "predictedFundingRate": null,
+              "nextFundingTime": null,
+              "openInterest": "100000",
+              "openInterestUsd": "8000000.00",
+              "dayNotionalVolumeUsd": "5000000",
+              "prevDayPx": "80",
+              "change24hPct": "0.0",
+              "maxLeverage": 10,
+              "onlyIsolated": false,
+              "isDelisted": false,
+              "atOpenInterestCap": null,
+              "candle": {
+                "tradeable": false,
+                "reason": "dexOpensRefused"
+              },
+              "dex": "halt",
+              "terms": {
+                "dex": "halt",
+                "dexName": "Halted Fixture",
+                "deployer": "0x00000000000000000000000000000000000000d3",
+                "oracleSource": "deployer",
+                "oracleSetters": [
+                  "0x00000000000000000000000000000000000000d3"
+                ],
+                "marginMode": "cross",
+                "collateral": "USDC",
+                "feeMultiplier": "1",
+                "takerFeePct": "0.045",
+                "makerFeePct": "0.015",
+                "feeWarning": null
+              }
+            },
+            {
+              "coin": "usdt:SPX",
+              "asset": 120000,
+              "markPx": "6000",
+              "oraclePx": "6000",
+              "midPx": "6000",
+              "fundingRate": "0.0000125",
+              "fundingAprPct": "10.95",
+              "predictedFundingRate": null,
+              "nextFundingTime": null,
+              "openInterest": "1000",
+              "openInterestUsd": "6000000.00",
+              "dayNotionalVolumeUsd": "5000000",
+              "prevDayPx": "6000",
+              "change24hPct": "0.0",
+              "maxLeverage": 25,
+              "onlyIsolated": false,
+              "isDelisted": false,
+              "atOpenInterestCap": null,
+              "candle": {
+                "tradeable": false,
+                "reason": "collateral"
+              },
+              "dex": "usdt",
+              "terms": {
+                "dex": "usdt",
+                "dexName": "USDT Fixture",
+                "deployer": "0x00000000000000000000000000000000000000d2",
+                "oracleSource": "deployer",
+                "oracleSetters": [
+                  "0x00000000000000000000000000000000000000a2"
+                ],
+                "marginMode": "cross",
+                "collateral": "USDT0",
+                "feeMultiplier": "1",
+                "takerFeePct": "0.045",
+                "makerFeePct": "0.015",
+                "feeWarning": null
+              }
+            },
+            {
+              "coin": "xyz:GOLD",
+              "asset": 110001,
+              "markPx": "2500",
+              "oraclePx": "2500",
+              "midPx": "2500",
+              "fundingRate": "0.0000125",
+              "fundingAprPct": "10.95",
+              "predictedFundingRate": null,
+              "nextFundingTime": null,
+              "openInterest": "1000",
+              "openInterestUsd": "2500000.00",
+              "dayNotionalVolumeUsd": "5000000",
+              "prevDayPx": "2500",
+              "change24hPct": "0.0",
+              "maxLeverage": 20,
+              "onlyIsolated": true,
+              "isDelisted": false,
+              "atOpenInterestCap": null,
+              "candle": {
+                "tradeable": true,
+                "reason": null
+              },
+              "dex": "xyz",
+              "terms": {
+                "dex": "xyz",
+                "dexName": "XYZ Fixture",
+                "deployer": "0x00000000000000000000000000000000000000d1",
+                "oracleSource": "deployer",
+                "oracleSetters": [
+                  "0x00000000000000000000000000000000000000a1"
+                ],
+                "marginMode": "isolated",
+                "collateral": "USDC",
+                "feeMultiplier": "3",
+                "takerFeePct": "0.135",
+                "makerFeePct": "0.045",
+                "feeWarning": "xyz:GOLD charges 3x the main exchange's fee (its deployer sets it), above Candle's 2x warning line"
+              }
+            },
+            {
+              "coin": "xyz:OLD",
+              "asset": 110002,
+              "markPx": "1",
+              "oraclePx": "1",
+              "midPx": "1",
+              "fundingRate": "0.0000125",
+              "fundingAprPct": "10.95",
+              "predictedFundingRate": null,
+              "nextFundingTime": null,
+              "openInterest": "0",
+              "openInterestUsd": "0.00",
+              "dayNotionalVolumeUsd": "5000000",
+              "prevDayPx": "1",
+              "change24hPct": "0.0",
+              "maxLeverage": 5,
+              "onlyIsolated": false,
+              "isDelisted": true,
+              "atOpenInterestCap": null,
+              "candle": {
+                "tradeable": false,
+                "reason": "delisted"
+              },
+              "dex": "xyz",
+              "terms": {
+                "dex": "xyz",
+                "dexName": "XYZ Fixture",
+                "deployer": "0x00000000000000000000000000000000000000d1",
+                "oracleSource": "deployer",
+                "oracleSetters": [
+                  "0x00000000000000000000000000000000000000a1"
+                ],
+                "marginMode": "cross",
+                "collateral": "USDC",
+                "feeMultiplier": "1",
+                "takerFeePct": "0.045",
+                "makerFeePct": "0.015",
+                "feeWarning": null
+              }
+            },
+            {
+              "coin": "xyz:TSLA",
+              "asset": 110000,
+              "markPx": "250",
+              "oraclePx": "250",
+              "midPx": "250",
+              "fundingRate": "0.0000125",
+              "fundingAprPct": "10.95",
+              "predictedFundingRate": null,
+              "nextFundingTime": null,
+              "openInterest": "10000",
+              "openInterestUsd": "2500000.00",
+              "dayNotionalVolumeUsd": "5000000",
+              "prevDayPx": "250",
+              "change24hPct": "0.0",
+              "maxLeverage": 10,
+              "onlyIsolated": false,
+              "isDelisted": false,
+              "atOpenInterestCap": null,
+              "candle": {
+                "tradeable": true,
+                "reason": null
+              },
+              "dex": "xyz",
+              "terms": {
+                "dex": "xyz",
+                "dexName": "XYZ Fixture",
+                "deployer": "0x00000000000000000000000000000000000000d1",
+                "oracleSource": "deployer",
+                "oracleSetters": [
+                  "0x00000000000000000000000000000000000000a1"
+                ],
+                "marginMode": "cross",
+                "collateral": "USDC",
+                "feeMultiplier": "1.5",
+                "takerFeePct": "0.0675",
+                "makerFeePct": "0.0225",
+                "feeWarning": null
+              }
+            }
+          ],
+          "dexes": [
+            {
+              "index": 1,
+              "name": "xyz",
+              "fullName": "XYZ Fixture",
+              "deployer": "0x00000000000000000000000000000000000000d1",
+              "oracleUpdater": null,
+              "oracleSetters": [
+                "0x00000000000000000000000000000000000000a1"
+              ],
+              "collateral": "USDC",
+              "tradeable": true
+            },
+            {
+              "index": 2,
+              "name": "usdt",
+              "fullName": "USDT Fixture",
+              "deployer": "0x00000000000000000000000000000000000000d2",
+              "oracleUpdater": "0x00000000000000000000000000000000000000a2",
+              "oracleSetters": [
+                "0x00000000000000000000000000000000000000a2"
+              ],
+              "collateral": "USDT0",
+              "tradeable": false
+            },
+            {
+              "index": 3,
+              "name": "halt",
+              "fullName": "Halted Fixture",
+              "deployer": "0x00000000000000000000000000000000000000d3",
+              "oracleUpdater": null,
+              "oracleSetters": [
+                "0x00000000000000000000000000000000000000d3"
+              ],
+              "collateral": "USDC",
+              "tradeable": false
+            }
+          ]
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "hip3-sdk-markets-all",
+      "surface": "sdk",
+      "tool": "candle_perps_markets",
+      "args": {
+        "dex": "all",
+        "all": true
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/perps/config"
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "metaAndAssetCtxs"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "predictedFundings"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "perpsAtOpenInterestCap"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "perpDexs"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "metaAndAssetCtxs",
+            "dex": "xyz"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "metaAndAssetCtxs",
+            "dex": "usdt"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "metaAndAssetCtxs",
+            "dex": "halt"
+          }
+        }
+      ],
+      "outcome": {
+        "body": {
+          "success": true,
+          "network": "mainnet",
+          "gate": {
+            "minOpenInterestUsd": 1000000,
+            "source": "server",
+            "dexOpensRefused": [
+              "halt"
+            ]
+          },
+          "warnings": [],
+          "markets": [
+            {
+              "coin": "BTC",
+              "asset": 0,
+              "markPx": "60000",
+              "oraclePx": "60000",
+              "midPx": "60000",
+              "fundingRate": "0.0000125",
+              "fundingAprPct": "10.95",
+              "predictedFundingRate": null,
+              "nextFundingTime": null,
+              "openInterest": "100",
+              "openInterestUsd": "6000000.00",
+              "dayNotionalVolumeUsd": "5000000",
+              "prevDayPx": "60000",
+              "change24hPct": "0.0",
+              "maxLeverage": 40,
+              "onlyIsolated": false,
+              "isDelisted": false,
+              "atOpenInterestCap": false,
+              "candle": {
+                "tradeable": true,
+                "reason": null
+              },
+              "dex": "",
+              "terms": {
+                "dex": "",
+                "dexName": null,
+                "deployer": null,
+                "oracleSource": "validators",
+                "oracleSetters": [],
+                "marginMode": "cross",
+                "collateral": "USDC",
+                "feeMultiplier": "1",
+                "takerFeePct": "0.045",
+                "makerFeePct": "0.015",
+                "feeWarning": null
+              }
+            },
+            {
+              "coin": "halt:OIL",
+              "asset": 130000,
+              "markPx": "80",
+              "oraclePx": "80",
+              "midPx": "80",
+              "fundingRate": "0.0000125",
+              "fundingAprPct": "10.95",
+              "predictedFundingRate": null,
+              "nextFundingTime": null,
+              "openInterest": "100000",
+              "openInterestUsd": "8000000.00",
+              "dayNotionalVolumeUsd": "5000000",
+              "prevDayPx": "80",
+              "change24hPct": "0.0",
+              "maxLeverage": 10,
+              "onlyIsolated": false,
+              "isDelisted": false,
+              "atOpenInterestCap": null,
+              "candle": {
+                "tradeable": false,
+                "reason": "dexOpensRefused"
+              },
+              "dex": "halt",
+              "terms": {
+                "dex": "halt",
+                "dexName": "Halted Fixture",
+                "deployer": "0x00000000000000000000000000000000000000d3",
+                "oracleSource": "deployer",
+                "oracleSetters": [
+                  "0x00000000000000000000000000000000000000d3"
+                ],
+                "marginMode": "cross",
+                "collateral": "USDC",
+                "feeMultiplier": "1",
+                "takerFeePct": "0.045",
+                "makerFeePct": "0.015",
+                "feeWarning": null
+              }
+            },
+            {
+              "coin": "usdt:SPX",
+              "asset": 120000,
+              "markPx": "6000",
+              "oraclePx": "6000",
+              "midPx": "6000",
+              "fundingRate": "0.0000125",
+              "fundingAprPct": "10.95",
+              "predictedFundingRate": null,
+              "nextFundingTime": null,
+              "openInterest": "1000",
+              "openInterestUsd": "6000000.00",
+              "dayNotionalVolumeUsd": "5000000",
+              "prevDayPx": "6000",
+              "change24hPct": "0.0",
+              "maxLeverage": 25,
+              "onlyIsolated": false,
+              "isDelisted": false,
+              "atOpenInterestCap": null,
+              "candle": {
+                "tradeable": false,
+                "reason": "collateral"
+              },
+              "dex": "usdt",
+              "terms": {
+                "dex": "usdt",
+                "dexName": "USDT Fixture",
+                "deployer": "0x00000000000000000000000000000000000000d2",
+                "oracleSource": "deployer",
+                "oracleSetters": [
+                  "0x00000000000000000000000000000000000000a2"
+                ],
+                "marginMode": "cross",
+                "collateral": "USDT0",
+                "feeMultiplier": "1",
+                "takerFeePct": "0.045",
+                "makerFeePct": "0.015",
+                "feeWarning": null
+              }
+            },
+            {
+              "coin": "xyz:GOLD",
+              "asset": 110001,
+              "markPx": "2500",
+              "oraclePx": "2500",
+              "midPx": "2500",
+              "fundingRate": "0.0000125",
+              "fundingAprPct": "10.95",
+              "predictedFundingRate": null,
+              "nextFundingTime": null,
+              "openInterest": "1000",
+              "openInterestUsd": "2500000.00",
+              "dayNotionalVolumeUsd": "5000000",
+              "prevDayPx": "2500",
+              "change24hPct": "0.0",
+              "maxLeverage": 20,
+              "onlyIsolated": true,
+              "isDelisted": false,
+              "atOpenInterestCap": null,
+              "candle": {
+                "tradeable": true,
+                "reason": null
+              },
+              "dex": "xyz",
+              "terms": {
+                "dex": "xyz",
+                "dexName": "XYZ Fixture",
+                "deployer": "0x00000000000000000000000000000000000000d1",
+                "oracleSource": "deployer",
+                "oracleSetters": [
+                  "0x00000000000000000000000000000000000000a1"
+                ],
+                "marginMode": "isolated",
+                "collateral": "USDC",
+                "feeMultiplier": "3",
+                "takerFeePct": "0.135",
+                "makerFeePct": "0.045",
+                "feeWarning": "xyz:GOLD charges 3x the main exchange's fee (its deployer sets it), above Candle's 2x warning line"
+              }
+            },
+            {
+              "coin": "xyz:OLD",
+              "asset": 110002,
+              "markPx": "1",
+              "oraclePx": "1",
+              "midPx": "1",
+              "fundingRate": "0.0000125",
+              "fundingAprPct": "10.95",
+              "predictedFundingRate": null,
+              "nextFundingTime": null,
+              "openInterest": "0",
+              "openInterestUsd": "0.00",
+              "dayNotionalVolumeUsd": "5000000",
+              "prevDayPx": "1",
+              "change24hPct": "0.0",
+              "maxLeverage": 5,
+              "onlyIsolated": false,
+              "isDelisted": true,
+              "atOpenInterestCap": null,
+              "candle": {
+                "tradeable": false,
+                "reason": "delisted"
+              },
+              "dex": "xyz",
+              "terms": {
+                "dex": "xyz",
+                "dexName": "XYZ Fixture",
+                "deployer": "0x00000000000000000000000000000000000000d1",
+                "oracleSource": "deployer",
+                "oracleSetters": [
+                  "0x00000000000000000000000000000000000000a1"
+                ],
+                "marginMode": "cross",
+                "collateral": "USDC",
+                "feeMultiplier": "1",
+                "takerFeePct": "0.045",
+                "makerFeePct": "0.015",
+                "feeWarning": null
+              }
+            },
+            {
+              "coin": "xyz:TSLA",
+              "asset": 110000,
+              "markPx": "250",
+              "oraclePx": "250",
+              "midPx": "250",
+              "fundingRate": "0.0000125",
+              "fundingAprPct": "10.95",
+              "predictedFundingRate": null,
+              "nextFundingTime": null,
+              "openInterest": "10000",
+              "openInterestUsd": "2500000.00",
+              "dayNotionalVolumeUsd": "5000000",
+              "prevDayPx": "250",
+              "change24hPct": "0.0",
+              "maxLeverage": 10,
+              "onlyIsolated": false,
+              "isDelisted": false,
+              "atOpenInterestCap": null,
+              "candle": {
+                "tradeable": true,
+                "reason": null
+              },
+              "dex": "xyz",
+              "terms": {
+                "dex": "xyz",
+                "dexName": "XYZ Fixture",
+                "deployer": "0x00000000000000000000000000000000000000d1",
+                "oracleSource": "deployer",
+                "oracleSetters": [
+                  "0x00000000000000000000000000000000000000a1"
+                ],
+                "marginMode": "cross",
+                "collateral": "USDC",
+                "feeMultiplier": "1.5",
+                "takerFeePct": "0.0675",
+                "makerFeePct": "0.0225",
+                "feeWarning": null
+              }
+            }
+          ],
+          "dexes": [
+            {
+              "index": 1,
+              "name": "xyz",
+              "fullName": "XYZ Fixture",
+              "deployer": "0x00000000000000000000000000000000000000d1",
+              "oracleUpdater": null,
+              "oracleSetters": [
+                "0x00000000000000000000000000000000000000a1"
+              ],
+              "collateral": "USDC",
+              "tradeable": true
+            },
+            {
+              "index": 2,
+              "name": "usdt",
+              "fullName": "USDT Fixture",
+              "deployer": "0x00000000000000000000000000000000000000d2",
+              "oracleUpdater": "0x00000000000000000000000000000000000000a2",
+              "oracleSetters": [
+                "0x00000000000000000000000000000000000000a2"
+              ],
+              "collateral": "USDT0",
+              "tradeable": false
+            },
+            {
+              "index": 3,
+              "name": "halt",
+              "fullName": "Halted Fixture",
+              "deployer": "0x00000000000000000000000000000000000000d3",
+              "oracleUpdater": null,
+              "oracleSetters": [
+                "0x00000000000000000000000000000000000000d3"
+              ],
+              "collateral": "USDC",
+              "tradeable": false
+            }
+          ]
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "hip3-mcp-markets-all-tradeable",
+      "surface": "mcp",
+      "tool": "candle_perps_markets",
+      "args": {
+        "dex": "all"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/perps/config"
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "metaAndAssetCtxs"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "predictedFundings"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "perpsAtOpenInterestCap"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "perpDexs"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "metaAndAssetCtxs",
+            "dex": "xyz"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "metaAndAssetCtxs",
+            "dex": "usdt"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "metaAndAssetCtxs",
+            "dex": "halt"
+          }
+        }
+      ],
+      "outcome": {
+        "body": {
+          "success": true,
+          "network": "mainnet",
+          "gate": {
+            "minOpenInterestUsd": 1000000,
+            "source": "server",
+            "dexOpensRefused": [
+              "halt"
+            ]
+          },
+          "warnings": [],
+          "markets": [
+            {
+              "coin": "BTC",
+              "asset": 0,
+              "markPx": "60000",
+              "oraclePx": "60000",
+              "midPx": "60000",
+              "fundingRate": "0.0000125",
+              "fundingAprPct": "10.95",
+              "predictedFundingRate": null,
+              "nextFundingTime": null,
+              "openInterest": "100",
+              "openInterestUsd": "6000000.00",
+              "dayNotionalVolumeUsd": "5000000",
+              "prevDayPx": "60000",
+              "change24hPct": "0.0",
+              "maxLeverage": 40,
+              "onlyIsolated": false,
+              "isDelisted": false,
+              "atOpenInterestCap": false,
+              "candle": {
+                "tradeable": true,
+                "reason": null
+              },
+              "dex": "",
+              "terms": {
+                "dex": "",
+                "dexName": null,
+                "deployer": null,
+                "oracleSource": "validators",
+                "oracleSetters": [],
+                "marginMode": "cross",
+                "collateral": "USDC",
+                "feeMultiplier": "1",
+                "takerFeePct": "0.045",
+                "makerFeePct": "0.015",
+                "feeWarning": null
+              }
+            },
+            {
+              "coin": "xyz:GOLD",
+              "asset": 110001,
+              "markPx": "2500",
+              "oraclePx": "2500",
+              "midPx": "2500",
+              "fundingRate": "0.0000125",
+              "fundingAprPct": "10.95",
+              "predictedFundingRate": null,
+              "nextFundingTime": null,
+              "openInterest": "1000",
+              "openInterestUsd": "2500000.00",
+              "dayNotionalVolumeUsd": "5000000",
+              "prevDayPx": "2500",
+              "change24hPct": "0.0",
+              "maxLeverage": 20,
+              "onlyIsolated": true,
+              "isDelisted": false,
+              "atOpenInterestCap": null,
+              "candle": {
+                "tradeable": true,
+                "reason": null
+              },
+              "dex": "xyz",
+              "terms": {
+                "dex": "xyz",
+                "dexName": "XYZ Fixture",
+                "deployer": "0x00000000000000000000000000000000000000d1",
+                "oracleSource": "deployer",
+                "oracleSetters": [
+                  "0x00000000000000000000000000000000000000a1"
+                ],
+                "marginMode": "isolated",
+                "collateral": "USDC",
+                "feeMultiplier": "3",
+                "takerFeePct": "0.135",
+                "makerFeePct": "0.045",
+                "feeWarning": "xyz:GOLD charges 3x the main exchange's fee (its deployer sets it), above Candle's 2x warning line"
+              }
+            },
+            {
+              "coin": "xyz:TSLA",
+              "asset": 110000,
+              "markPx": "250",
+              "oraclePx": "250",
+              "midPx": "250",
+              "fundingRate": "0.0000125",
+              "fundingAprPct": "10.95",
+              "predictedFundingRate": null,
+              "nextFundingTime": null,
+              "openInterest": "10000",
+              "openInterestUsd": "2500000.00",
+              "dayNotionalVolumeUsd": "5000000",
+              "prevDayPx": "250",
+              "change24hPct": "0.0",
+              "maxLeverage": 10,
+              "onlyIsolated": false,
+              "isDelisted": false,
+              "atOpenInterestCap": null,
+              "candle": {
+                "tradeable": true,
+                "reason": null
+              },
+              "dex": "xyz",
+              "terms": {
+                "dex": "xyz",
+                "dexName": "XYZ Fixture",
+                "deployer": "0x00000000000000000000000000000000000000d1",
+                "oracleSource": "deployer",
+                "oracleSetters": [
+                  "0x00000000000000000000000000000000000000a1"
+                ],
+                "marginMode": "cross",
+                "collateral": "USDC",
+                "feeMultiplier": "1.5",
+                "takerFeePct": "0.0675",
+                "makerFeePct": "0.0225",
+                "feeWarning": null
+              }
+            }
+          ],
+          "dexes": [
+            {
+              "index": 1,
+              "name": "xyz",
+              "fullName": "XYZ Fixture",
+              "deployer": "0x00000000000000000000000000000000000000d1",
+              "oracleUpdater": null,
+              "oracleSetters": [
+                "0x00000000000000000000000000000000000000a1"
+              ],
+              "collateral": "USDC",
+              "tradeable": true
+            },
+            {
+              "index": 2,
+              "name": "usdt",
+              "fullName": "USDT Fixture",
+              "deployer": "0x00000000000000000000000000000000000000d2",
+              "oracleUpdater": "0x00000000000000000000000000000000000000a2",
+              "oracleSetters": [
+                "0x00000000000000000000000000000000000000a2"
+              ],
+              "collateral": "USDT0",
+              "tradeable": false
+            },
+            {
+              "index": 3,
+              "name": "halt",
+              "fullName": "Halted Fixture",
+              "deployer": "0x00000000000000000000000000000000000000d3",
+              "oracleUpdater": null,
+              "oracleSetters": [
+                "0x00000000000000000000000000000000000000d3"
+              ],
+              "collateral": "USDC",
+              "tradeable": false
+            }
+          ]
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "hip3-sdk-markets-all-tradeable",
+      "surface": "sdk",
+      "tool": "candle_perps_markets",
+      "args": {
+        "dex": "all"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/perps/config"
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "metaAndAssetCtxs"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "predictedFundings"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "perpsAtOpenInterestCap"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "perpDexs"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "metaAndAssetCtxs",
+            "dex": "xyz"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "metaAndAssetCtxs",
+            "dex": "usdt"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "metaAndAssetCtxs",
+            "dex": "halt"
+          }
+        }
+      ],
+      "outcome": {
+        "body": {
+          "success": true,
+          "network": "mainnet",
+          "gate": {
+            "minOpenInterestUsd": 1000000,
+            "source": "server",
+            "dexOpensRefused": [
+              "halt"
+            ]
+          },
+          "warnings": [],
+          "markets": [
+            {
+              "coin": "BTC",
+              "asset": 0,
+              "markPx": "60000",
+              "oraclePx": "60000",
+              "midPx": "60000",
+              "fundingRate": "0.0000125",
+              "fundingAprPct": "10.95",
+              "predictedFundingRate": null,
+              "nextFundingTime": null,
+              "openInterest": "100",
+              "openInterestUsd": "6000000.00",
+              "dayNotionalVolumeUsd": "5000000",
+              "prevDayPx": "60000",
+              "change24hPct": "0.0",
+              "maxLeverage": 40,
+              "onlyIsolated": false,
+              "isDelisted": false,
+              "atOpenInterestCap": false,
+              "candle": {
+                "tradeable": true,
+                "reason": null
+              },
+              "dex": "",
+              "terms": {
+                "dex": "",
+                "dexName": null,
+                "deployer": null,
+                "oracleSource": "validators",
+                "oracleSetters": [],
+                "marginMode": "cross",
+                "collateral": "USDC",
+                "feeMultiplier": "1",
+                "takerFeePct": "0.045",
+                "makerFeePct": "0.015",
+                "feeWarning": null
+              }
+            },
+            {
+              "coin": "xyz:GOLD",
+              "asset": 110001,
+              "markPx": "2500",
+              "oraclePx": "2500",
+              "midPx": "2500",
+              "fundingRate": "0.0000125",
+              "fundingAprPct": "10.95",
+              "predictedFundingRate": null,
+              "nextFundingTime": null,
+              "openInterest": "1000",
+              "openInterestUsd": "2500000.00",
+              "dayNotionalVolumeUsd": "5000000",
+              "prevDayPx": "2500",
+              "change24hPct": "0.0",
+              "maxLeverage": 20,
+              "onlyIsolated": true,
+              "isDelisted": false,
+              "atOpenInterestCap": null,
+              "candle": {
+                "tradeable": true,
+                "reason": null
+              },
+              "dex": "xyz",
+              "terms": {
+                "dex": "xyz",
+                "dexName": "XYZ Fixture",
+                "deployer": "0x00000000000000000000000000000000000000d1",
+                "oracleSource": "deployer",
+                "oracleSetters": [
+                  "0x00000000000000000000000000000000000000a1"
+                ],
+                "marginMode": "isolated",
+                "collateral": "USDC",
+                "feeMultiplier": "3",
+                "takerFeePct": "0.135",
+                "makerFeePct": "0.045",
+                "feeWarning": "xyz:GOLD charges 3x the main exchange's fee (its deployer sets it), above Candle's 2x warning line"
+              }
+            },
+            {
+              "coin": "xyz:TSLA",
+              "asset": 110000,
+              "markPx": "250",
+              "oraclePx": "250",
+              "midPx": "250",
+              "fundingRate": "0.0000125",
+              "fundingAprPct": "10.95",
+              "predictedFundingRate": null,
+              "nextFundingTime": null,
+              "openInterest": "10000",
+              "openInterestUsd": "2500000.00",
+              "dayNotionalVolumeUsd": "5000000",
+              "prevDayPx": "250",
+              "change24hPct": "0.0",
+              "maxLeverage": 10,
+              "onlyIsolated": false,
+              "isDelisted": false,
+              "atOpenInterestCap": null,
+              "candle": {
+                "tradeable": true,
+                "reason": null
+              },
+              "dex": "xyz",
+              "terms": {
+                "dex": "xyz",
+                "dexName": "XYZ Fixture",
+                "deployer": "0x00000000000000000000000000000000000000d1",
+                "oracleSource": "deployer",
+                "oracleSetters": [
+                  "0x00000000000000000000000000000000000000a1"
+                ],
+                "marginMode": "cross",
+                "collateral": "USDC",
+                "feeMultiplier": "1.5",
+                "takerFeePct": "0.0675",
+                "makerFeePct": "0.0225",
+                "feeWarning": null
+              }
+            }
+          ],
+          "dexes": [
+            {
+              "index": 1,
+              "name": "xyz",
+              "fullName": "XYZ Fixture",
+              "deployer": "0x00000000000000000000000000000000000000d1",
+              "oracleUpdater": null,
+              "oracleSetters": [
+                "0x00000000000000000000000000000000000000a1"
+              ],
+              "collateral": "USDC",
+              "tradeable": true
+            },
+            {
+              "index": 2,
+              "name": "usdt",
+              "fullName": "USDT Fixture",
+              "deployer": "0x00000000000000000000000000000000000000d2",
+              "oracleUpdater": "0x00000000000000000000000000000000000000a2",
+              "oracleSetters": [
+                "0x00000000000000000000000000000000000000a2"
+              ],
+              "collateral": "USDT0",
+              "tradeable": false
+            },
+            {
+              "index": 3,
+              "name": "halt",
+              "fullName": "Halted Fixture",
+              "deployer": "0x00000000000000000000000000000000000000d3",
+              "oracleUpdater": null,
+              "oracleSetters": [
+                "0x00000000000000000000000000000000000000d3"
+              ],
+              "collateral": "USDC",
+              "tradeable": false
+            }
+          ]
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "hip3-mcp-markets-bad-dex",
+      "surface": "mcp",
+      "tool": "candle_perps_markets",
+      "args": {
+        "dex": "x-y"
+      },
+      "requests": [],
+      "outcome": {
+        "body": {
+          "success": false,
+          "error": {
+            "code": "MCP_VALIDATION",
+            "message": "[\n  {\n    \"validation\": \"regex\",\n    \"code\": \"invalid_string\",\n    \"message\": \"Invalid\",\n    \"path\": [\n      \"dex\"\n    ]\n  }\n]"
+          }
+        },
+        "isError": true
+      }
+    },
+    {
+      "id": "hip3-sdk-markets-bad-dex",
+      "surface": "sdk",
+      "tool": "candle_perps_markets",
+      "args": {
+        "dex": "x-y"
+      },
+      "requests": [],
+      "outcome": {
+        "body": {
+          "success": false,
+          "error": {
+            "code": "PERPS_USAGE",
+            "message": "dex must be a builder dex name such as xyz, or all."
+          }
+        },
+        "isError": true
+      }
+    },
+    {
+      "id": "hip3-mcp-market-tsla",
+      "surface": "mcp",
+      "tool": "candle_perps_market",
+      "args": {
+        "coin": "xyz:TSLA"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/perps/config"
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "perpDexs"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "predictedFundings"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "perpsAtOpenInterestCap"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "metaAndAssetCtxs",
+            "dex": "xyz"
+          }
+        }
+      ],
+      "outcome": {
+        "body": {
+          "success": true,
+          "network": "mainnet",
+          "gate": {
+            "minOpenInterestUsd": 1000000,
+            "source": "server",
+            "dexOpensRefused": [
+              "halt"
+            ]
+          },
+          "warnings": [],
+          "market": {
+            "coin": "xyz:TSLA",
+            "asset": 110000,
+            "markPx": "250",
+            "oraclePx": "250",
+            "midPx": "250",
+            "fundingRate": "0.0000125",
+            "fundingAprPct": "10.95",
+            "predictedFundingRate": null,
+            "nextFundingTime": null,
+            "openInterest": "10000",
+            "openInterestUsd": "2500000.00",
+            "dayNotionalVolumeUsd": "5000000",
+            "prevDayPx": "250",
+            "change24hPct": "0.0",
+            "maxLeverage": 10,
+            "onlyIsolated": false,
+            "isDelisted": false,
+            "atOpenInterestCap": null,
+            "candle": {
+              "tradeable": true,
+              "reason": null
+            },
+            "dex": "xyz",
+            "terms": {
+              "dex": "xyz",
+              "dexName": "XYZ Fixture",
+              "deployer": "0x00000000000000000000000000000000000000d1",
+              "oracleSource": "deployer",
+              "oracleSetters": [
+                "0x00000000000000000000000000000000000000a1"
+              ],
+              "marginMode": "cross",
+              "collateral": "USDC",
+              "feeMultiplier": "1.5",
+              "takerFeePct": "0.0675",
+              "makerFeePct": "0.0225",
+              "feeWarning": null
+            },
+            "szDecimals": 3,
+            "maxPriceDecimals": 3,
+            "priceRule": "at most 5 significant figures",
+            "minOrderUsd": 10,
+            "impactBidPx": "250",
+            "impactAskPx": "250",
+            "premium": "0",
+            "marginTiers": [
+              {
+                "lowerBoundUsd": "0",
+                "maxLeverage": 10
+              }
+            ]
+          }
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "hip3-sdk-market-tsla",
+      "surface": "sdk",
+      "tool": "candle_perps_market",
+      "args": {
+        "coin": "xyz:TSLA"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/perps/config"
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "perpDexs"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "predictedFundings"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "perpsAtOpenInterestCap"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "metaAndAssetCtxs",
+            "dex": "xyz"
+          }
+        }
+      ],
+      "outcome": {
+        "body": {
+          "success": true,
+          "network": "mainnet",
+          "gate": {
+            "minOpenInterestUsd": 1000000,
+            "source": "server",
+            "dexOpensRefused": [
+              "halt"
+            ]
+          },
+          "warnings": [],
+          "market": {
+            "coin": "xyz:TSLA",
+            "asset": 110000,
+            "markPx": "250",
+            "oraclePx": "250",
+            "midPx": "250",
+            "fundingRate": "0.0000125",
+            "fundingAprPct": "10.95",
+            "predictedFundingRate": null,
+            "nextFundingTime": null,
+            "openInterest": "10000",
+            "openInterestUsd": "2500000.00",
+            "dayNotionalVolumeUsd": "5000000",
+            "prevDayPx": "250",
+            "change24hPct": "0.0",
+            "maxLeverage": 10,
+            "onlyIsolated": false,
+            "isDelisted": false,
+            "atOpenInterestCap": null,
+            "candle": {
+              "tradeable": true,
+              "reason": null
+            },
+            "dex": "xyz",
+            "terms": {
+              "dex": "xyz",
+              "dexName": "XYZ Fixture",
+              "deployer": "0x00000000000000000000000000000000000000d1",
+              "oracleSource": "deployer",
+              "oracleSetters": [
+                "0x00000000000000000000000000000000000000a1"
+              ],
+              "marginMode": "cross",
+              "collateral": "USDC",
+              "feeMultiplier": "1.5",
+              "takerFeePct": "0.0675",
+              "makerFeePct": "0.0225",
+              "feeWarning": null
+            },
+            "szDecimals": 3,
+            "maxPriceDecimals": 3,
+            "priceRule": "at most 5 significant figures",
+            "minOrderUsd": 10,
+            "impactBidPx": "250",
+            "impactAskPx": "250",
+            "premium": "0",
+            "marginTiers": [
+              {
+                "lowerBoundUsd": "0",
+                "maxLeverage": 10
+              }
+            ]
+          }
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "hip3-mcp-market-gold",
+      "surface": "mcp",
+      "tool": "candle_perps_market",
+      "args": {
+        "coin": "xyz:GOLD"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/perps/config"
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "perpDexs"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "predictedFundings"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "perpsAtOpenInterestCap"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "metaAndAssetCtxs",
+            "dex": "xyz"
+          }
+        }
+      ],
+      "outcome": {
+        "body": {
+          "success": true,
+          "network": "mainnet",
+          "gate": {
+            "minOpenInterestUsd": 1000000,
+            "source": "server",
+            "dexOpensRefused": [
+              "halt"
+            ]
+          },
+          "warnings": [],
+          "market": {
+            "coin": "xyz:GOLD",
+            "asset": 110001,
+            "markPx": "2500",
+            "oraclePx": "2500",
+            "midPx": "2500",
+            "fundingRate": "0.0000125",
+            "fundingAprPct": "10.95",
+            "predictedFundingRate": null,
+            "nextFundingTime": null,
+            "openInterest": "1000",
+            "openInterestUsd": "2500000.00",
+            "dayNotionalVolumeUsd": "5000000",
+            "prevDayPx": "2500",
+            "change24hPct": "0.0",
+            "maxLeverage": 20,
+            "onlyIsolated": true,
+            "isDelisted": false,
+            "atOpenInterestCap": null,
+            "candle": {
+              "tradeable": true,
+              "reason": null
+            },
+            "dex": "xyz",
+            "terms": {
+              "dex": "xyz",
+              "dexName": "XYZ Fixture",
+              "deployer": "0x00000000000000000000000000000000000000d1",
+              "oracleSource": "deployer",
+              "oracleSetters": [
+                "0x00000000000000000000000000000000000000a1"
+              ],
+              "marginMode": "isolated",
+              "collateral": "USDC",
+              "feeMultiplier": "3",
+              "takerFeePct": "0.135",
+              "makerFeePct": "0.045",
+              "feeWarning": "xyz:GOLD charges 3x the main exchange's fee (its deployer sets it), above Candle's 2x warning line"
+            },
+            "szDecimals": 4,
+            "maxPriceDecimals": 2,
+            "priceRule": "at most 5 significant figures",
+            "minOrderUsd": 10,
+            "impactBidPx": "2500",
+            "impactAskPx": "2500",
+            "premium": "0",
+            "marginTiers": [
+              {
+                "lowerBoundUsd": "0",
+                "maxLeverage": 20
+              }
+            ]
+          }
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "hip3-sdk-market-gold",
+      "surface": "sdk",
+      "tool": "candle_perps_market",
+      "args": {
+        "coin": "xyz:GOLD"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/perps/config"
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "perpDexs"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "predictedFundings"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "perpsAtOpenInterestCap"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "metaAndAssetCtxs",
+            "dex": "xyz"
+          }
+        }
+      ],
+      "outcome": {
+        "body": {
+          "success": true,
+          "network": "mainnet",
+          "gate": {
+            "minOpenInterestUsd": 1000000,
+            "source": "server",
+            "dexOpensRefused": [
+              "halt"
+            ]
+          },
+          "warnings": [],
+          "market": {
+            "coin": "xyz:GOLD",
+            "asset": 110001,
+            "markPx": "2500",
+            "oraclePx": "2500",
+            "midPx": "2500",
+            "fundingRate": "0.0000125",
+            "fundingAprPct": "10.95",
+            "predictedFundingRate": null,
+            "nextFundingTime": null,
+            "openInterest": "1000",
+            "openInterestUsd": "2500000.00",
+            "dayNotionalVolumeUsd": "5000000",
+            "prevDayPx": "2500",
+            "change24hPct": "0.0",
+            "maxLeverage": 20,
+            "onlyIsolated": true,
+            "isDelisted": false,
+            "atOpenInterestCap": null,
+            "candle": {
+              "tradeable": true,
+              "reason": null
+            },
+            "dex": "xyz",
+            "terms": {
+              "dex": "xyz",
+              "dexName": "XYZ Fixture",
+              "deployer": "0x00000000000000000000000000000000000000d1",
+              "oracleSource": "deployer",
+              "oracleSetters": [
+                "0x00000000000000000000000000000000000000a1"
+              ],
+              "marginMode": "isolated",
+              "collateral": "USDC",
+              "feeMultiplier": "3",
+              "takerFeePct": "0.135",
+              "makerFeePct": "0.045",
+              "feeWarning": "xyz:GOLD charges 3x the main exchange's fee (its deployer sets it), above Candle's 2x warning line"
+            },
+            "szDecimals": 4,
+            "maxPriceDecimals": 2,
+            "priceRule": "at most 5 significant figures",
+            "minOrderUsd": 10,
+            "impactBidPx": "2500",
+            "impactAskPx": "2500",
+            "premium": "0",
+            "marginTiers": [
+              {
+                "lowerBoundUsd": "0",
+                "maxLeverage": 20
+              }
+            ]
+          }
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "hip3-mcp-market-delisted",
+      "surface": "mcp",
+      "tool": "candle_perps_market",
+      "args": {
+        "coin": "xyz:OLD"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/perps/config"
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "perpDexs"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "predictedFundings"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "perpsAtOpenInterestCap"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "metaAndAssetCtxs",
+            "dex": "xyz"
+          }
+        }
+      ],
+      "outcome": {
+        "body": {
+          "success": true,
+          "network": "mainnet",
+          "gate": {
+            "minOpenInterestUsd": 1000000,
+            "source": "server",
+            "dexOpensRefused": [
+              "halt"
+            ]
+          },
+          "warnings": [],
+          "market": {
+            "coin": "xyz:OLD",
+            "asset": 110002,
+            "markPx": "1",
+            "oraclePx": "1",
+            "midPx": "1",
+            "fundingRate": "0.0000125",
+            "fundingAprPct": "10.95",
+            "predictedFundingRate": null,
+            "nextFundingTime": null,
+            "openInterest": "0",
+            "openInterestUsd": "0.00",
+            "dayNotionalVolumeUsd": "5000000",
+            "prevDayPx": "1",
+            "change24hPct": "0.0",
+            "maxLeverage": 5,
+            "onlyIsolated": false,
+            "isDelisted": true,
+            "atOpenInterestCap": null,
+            "candle": {
+              "tradeable": false,
+              "reason": "delisted"
+            },
+            "dex": "xyz",
+            "terms": {
+              "dex": "xyz",
+              "dexName": "XYZ Fixture",
+              "deployer": "0x00000000000000000000000000000000000000d1",
+              "oracleSource": "deployer",
+              "oracleSetters": [
+                "0x00000000000000000000000000000000000000a1"
+              ],
+              "marginMode": "cross",
+              "collateral": "USDC",
+              "feeMultiplier": "1",
+              "takerFeePct": "0.045",
+              "makerFeePct": "0.015",
+              "feeWarning": null
+            },
+            "szDecimals": 2,
+            "maxPriceDecimals": 4,
+            "priceRule": "at most 5 significant figures",
+            "minOrderUsd": 10,
+            "impactBidPx": "1",
+            "impactAskPx": "1",
+            "premium": "0",
+            "marginTiers": [
+              {
+                "lowerBoundUsd": "0",
+                "maxLeverage": 5
+              }
+            ]
+          }
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "hip3-sdk-market-delisted",
+      "surface": "sdk",
+      "tool": "candle_perps_market",
+      "args": {
+        "coin": "xyz:OLD"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/perps/config"
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "perpDexs"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "predictedFundings"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "perpsAtOpenInterestCap"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "metaAndAssetCtxs",
+            "dex": "xyz"
+          }
+        }
+      ],
+      "outcome": {
+        "body": {
+          "success": true,
+          "network": "mainnet",
+          "gate": {
+            "minOpenInterestUsd": 1000000,
+            "source": "server",
+            "dexOpensRefused": [
+              "halt"
+            ]
+          },
+          "warnings": [],
+          "market": {
+            "coin": "xyz:OLD",
+            "asset": 110002,
+            "markPx": "1",
+            "oraclePx": "1",
+            "midPx": "1",
+            "fundingRate": "0.0000125",
+            "fundingAprPct": "10.95",
+            "predictedFundingRate": null,
+            "nextFundingTime": null,
+            "openInterest": "0",
+            "openInterestUsd": "0.00",
+            "dayNotionalVolumeUsd": "5000000",
+            "prevDayPx": "1",
+            "change24hPct": "0.0",
+            "maxLeverage": 5,
+            "onlyIsolated": false,
+            "isDelisted": true,
+            "atOpenInterestCap": null,
+            "candle": {
+              "tradeable": false,
+              "reason": "delisted"
+            },
+            "dex": "xyz",
+            "terms": {
+              "dex": "xyz",
+              "dexName": "XYZ Fixture",
+              "deployer": "0x00000000000000000000000000000000000000d1",
+              "oracleSource": "deployer",
+              "oracleSetters": [
+                "0x00000000000000000000000000000000000000a1"
+              ],
+              "marginMode": "cross",
+              "collateral": "USDC",
+              "feeMultiplier": "1",
+              "takerFeePct": "0.045",
+              "makerFeePct": "0.015",
+              "feeWarning": null
+            },
+            "szDecimals": 2,
+            "maxPriceDecimals": 4,
+            "priceRule": "at most 5 significant figures",
+            "minOrderUsd": 10,
+            "impactBidPx": "1",
+            "impactAskPx": "1",
+            "premium": "0",
+            "marginTiers": [
+              {
+                "lowerBoundUsd": "0",
+                "maxLeverage": 5
+              }
+            ]
+          }
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "hip3-mcp-market-usdt",
+      "surface": "mcp",
+      "tool": "candle_perps_market",
+      "args": {
+        "coin": "usdt:SPX"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/perps/config"
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "perpDexs"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "predictedFundings"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "perpsAtOpenInterestCap"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "metaAndAssetCtxs",
+            "dex": "usdt"
+          }
+        }
+      ],
+      "outcome": {
+        "body": {
+          "success": true,
+          "network": "mainnet",
+          "gate": {
+            "minOpenInterestUsd": 1000000,
+            "source": "server",
+            "dexOpensRefused": [
+              "halt"
+            ]
+          },
+          "warnings": [],
+          "market": {
+            "coin": "usdt:SPX",
+            "asset": 120000,
+            "markPx": "6000",
+            "oraclePx": "6000",
+            "midPx": "6000",
+            "fundingRate": "0.0000125",
+            "fundingAprPct": "10.95",
+            "predictedFundingRate": null,
+            "nextFundingTime": null,
+            "openInterest": "1000",
+            "openInterestUsd": "6000000.00",
+            "dayNotionalVolumeUsd": "5000000",
+            "prevDayPx": "6000",
+            "change24hPct": "0.0",
+            "maxLeverage": 25,
+            "onlyIsolated": false,
+            "isDelisted": false,
+            "atOpenInterestCap": null,
+            "candle": {
+              "tradeable": false,
+              "reason": "collateral"
+            },
+            "dex": "usdt",
+            "terms": {
+              "dex": "usdt",
+              "dexName": "USDT Fixture",
+              "deployer": "0x00000000000000000000000000000000000000d2",
+              "oracleSource": "deployer",
+              "oracleSetters": [
+                "0x00000000000000000000000000000000000000a2"
+              ],
+              "marginMode": "cross",
+              "collateral": "USDT0",
+              "feeMultiplier": "1",
+              "takerFeePct": "0.045",
+              "makerFeePct": "0.015",
+              "feeWarning": null
+            },
+            "szDecimals": 2,
+            "maxPriceDecimals": 4,
+            "priceRule": "at most 5 significant figures",
+            "minOrderUsd": 10,
+            "impactBidPx": "6000",
+            "impactAskPx": "6000",
+            "premium": "0",
+            "marginTiers": [
+              {
+                "lowerBoundUsd": "0",
+                "maxLeverage": 25
+              }
+            ]
+          }
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "hip3-sdk-market-usdt",
+      "surface": "sdk",
+      "tool": "candle_perps_market",
+      "args": {
+        "coin": "usdt:SPX"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/perps/config"
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "perpDexs"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "predictedFundings"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "perpsAtOpenInterestCap"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "metaAndAssetCtxs",
+            "dex": "usdt"
+          }
+        }
+      ],
+      "outcome": {
+        "body": {
+          "success": true,
+          "network": "mainnet",
+          "gate": {
+            "minOpenInterestUsd": 1000000,
+            "source": "server",
+            "dexOpensRefused": [
+              "halt"
+            ]
+          },
+          "warnings": [],
+          "market": {
+            "coin": "usdt:SPX",
+            "asset": 120000,
+            "markPx": "6000",
+            "oraclePx": "6000",
+            "midPx": "6000",
+            "fundingRate": "0.0000125",
+            "fundingAprPct": "10.95",
+            "predictedFundingRate": null,
+            "nextFundingTime": null,
+            "openInterest": "1000",
+            "openInterestUsd": "6000000.00",
+            "dayNotionalVolumeUsd": "5000000",
+            "prevDayPx": "6000",
+            "change24hPct": "0.0",
+            "maxLeverage": 25,
+            "onlyIsolated": false,
+            "isDelisted": false,
+            "atOpenInterestCap": null,
+            "candle": {
+              "tradeable": false,
+              "reason": "collateral"
+            },
+            "dex": "usdt",
+            "terms": {
+              "dex": "usdt",
+              "dexName": "USDT Fixture",
+              "deployer": "0x00000000000000000000000000000000000000d2",
+              "oracleSource": "deployer",
+              "oracleSetters": [
+                "0x00000000000000000000000000000000000000a2"
+              ],
+              "marginMode": "cross",
+              "collateral": "USDT0",
+              "feeMultiplier": "1",
+              "takerFeePct": "0.045",
+              "makerFeePct": "0.015",
+              "feeWarning": null
+            },
+            "szDecimals": 2,
+            "maxPriceDecimals": 4,
+            "priceRule": "at most 5 significant figures",
+            "minOrderUsd": 10,
+            "impactBidPx": "6000",
+            "impactAskPx": "6000",
+            "premium": "0",
+            "marginTiers": [
+              {
+                "lowerBoundUsd": "0",
+                "maxLeverage": 25
+              }
+            ]
+          }
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "hip3-mcp-market-halted",
+      "surface": "mcp",
+      "tool": "candle_perps_market",
+      "args": {
+        "coin": "halt:OIL"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/perps/config"
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "perpDexs"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "predictedFundings"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "perpsAtOpenInterestCap"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "metaAndAssetCtxs",
+            "dex": "halt"
+          }
+        }
+      ],
+      "outcome": {
+        "body": {
+          "success": true,
+          "network": "mainnet",
+          "gate": {
+            "minOpenInterestUsd": 1000000,
+            "source": "server",
+            "dexOpensRefused": [
+              "halt"
+            ]
+          },
+          "warnings": [],
+          "market": {
+            "coin": "halt:OIL",
+            "asset": 130000,
+            "markPx": "80",
+            "oraclePx": "80",
+            "midPx": "80",
+            "fundingRate": "0.0000125",
+            "fundingAprPct": "10.95",
+            "predictedFundingRate": null,
+            "nextFundingTime": null,
+            "openInterest": "100000",
+            "openInterestUsd": "8000000.00",
+            "dayNotionalVolumeUsd": "5000000",
+            "prevDayPx": "80",
+            "change24hPct": "0.0",
+            "maxLeverage": 10,
+            "onlyIsolated": false,
+            "isDelisted": false,
+            "atOpenInterestCap": null,
+            "candle": {
+              "tradeable": false,
+              "reason": "dexOpensRefused"
+            },
+            "dex": "halt",
+            "terms": {
+              "dex": "halt",
+              "dexName": "Halted Fixture",
+              "deployer": "0x00000000000000000000000000000000000000d3",
+              "oracleSource": "deployer",
+              "oracleSetters": [
+                "0x00000000000000000000000000000000000000d3"
+              ],
+              "marginMode": "cross",
+              "collateral": "USDC",
+              "feeMultiplier": "1",
+              "takerFeePct": "0.045",
+              "makerFeePct": "0.015",
+              "feeWarning": null
+            },
+            "szDecimals": 2,
+            "maxPriceDecimals": 4,
+            "priceRule": "at most 5 significant figures",
+            "minOrderUsd": 10,
+            "impactBidPx": "80",
+            "impactAskPx": "80",
+            "premium": "0",
+            "marginTiers": [
+              {
+                "lowerBoundUsd": "0",
+                "maxLeverage": 10
+              }
+            ]
+          }
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "hip3-sdk-market-halted",
+      "surface": "sdk",
+      "tool": "candle_perps_market",
+      "args": {
+        "coin": "halt:OIL"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/perps/config"
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "perpDexs"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "predictedFundings"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "perpsAtOpenInterestCap"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "metaAndAssetCtxs",
+            "dex": "halt"
+          }
+        }
+      ],
+      "outcome": {
+        "body": {
+          "success": true,
+          "network": "mainnet",
+          "gate": {
+            "minOpenInterestUsd": 1000000,
+            "source": "server",
+            "dexOpensRefused": [
+              "halt"
+            ]
+          },
+          "warnings": [],
+          "market": {
+            "coin": "halt:OIL",
+            "asset": 130000,
+            "markPx": "80",
+            "oraclePx": "80",
+            "midPx": "80",
+            "fundingRate": "0.0000125",
+            "fundingAprPct": "10.95",
+            "predictedFundingRate": null,
+            "nextFundingTime": null,
+            "openInterest": "100000",
+            "openInterestUsd": "8000000.00",
+            "dayNotionalVolumeUsd": "5000000",
+            "prevDayPx": "80",
+            "change24hPct": "0.0",
+            "maxLeverage": 10,
+            "onlyIsolated": false,
+            "isDelisted": false,
+            "atOpenInterestCap": null,
+            "candle": {
+              "tradeable": false,
+              "reason": "dexOpensRefused"
+            },
+            "dex": "halt",
+            "terms": {
+              "dex": "halt",
+              "dexName": "Halted Fixture",
+              "deployer": "0x00000000000000000000000000000000000000d3",
+              "oracleSource": "deployer",
+              "oracleSetters": [
+                "0x00000000000000000000000000000000000000d3"
+              ],
+              "marginMode": "cross",
+              "collateral": "USDC",
+              "feeMultiplier": "1",
+              "takerFeePct": "0.045",
+              "makerFeePct": "0.015",
+              "feeWarning": null
+            },
+            "szDecimals": 2,
+            "maxPriceDecimals": 4,
+            "priceRule": "at most 5 significant figures",
+            "minOrderUsd": 10,
+            "impactBidPx": "80",
+            "impactAskPx": "80",
+            "premium": "0",
+            "marginTiers": [
+              {
+                "lowerBoundUsd": "0",
+                "maxLeverage": 10
+              }
+            ]
+          }
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "hip3-mcp-market-unknown-dex",
+      "surface": "mcp",
+      "tool": "candle_perps_market",
+      "args": {
+        "coin": "nope:TSLA"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/perps/config"
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "perpDexs"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "predictedFundings"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "perpsAtOpenInterestCap"
+          }
+        }
+      ],
+      "outcome": {
+        "body": {
+          "success": false,
+          "error": {
+            "code": "PERPS_MARKET_NOT_FOUND",
+            "message": "nope is not a Hyperliquid builder dex.",
+            "retryable": false
+          }
+        },
+        "isError": true
+      }
+    },
+    {
+      "id": "hip3-sdk-market-unknown-dex",
+      "surface": "sdk",
+      "tool": "candle_perps_market",
+      "args": {
+        "coin": "nope:TSLA"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/perps/config"
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "perpDexs"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "predictedFundings"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "perpsAtOpenInterestCap"
+          }
+        }
+      ],
+      "outcome": {
+        "body": {
+          "success": false,
+          "error": {
+            "code": "PERPS_MARKET_NOT_FOUND",
+            "message": "nope is not a Hyperliquid builder dex."
+          }
+        },
+        "isError": true
+      }
+    },
+    {
+      "id": "hip3-mcp-market-malformed",
+      "surface": "mcp",
+      "tool": "candle_perps_market",
+      "args": {
+        "coin": "xyz:TS-LA"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/perps/config"
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "predictedFundings"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "perpsAtOpenInterestCap"
+          }
+        }
+      ],
+      "outcome": {
+        "body": {
+          "success": false,
+          "error": {
+            "code": "PERPS_MARKET_NOT_FOUND",
+            "message": "xyz:TS-LA is not a market on that Hyperliquid builder dex.",
+            "retryable": false
+          }
+        },
+        "isError": true
+      }
+    },
+    {
+      "id": "hip3-sdk-market-malformed",
+      "surface": "sdk",
+      "tool": "candle_perps_market",
+      "args": {
+        "coin": "xyz:TS-LA"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/perps/config"
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "predictedFundings"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "perpsAtOpenInterestCap"
+          }
+        }
+      ],
+      "outcome": {
+        "body": {
+          "success": false,
+          "error": {
+            "code": "PERPS_MARKET_NOT_FOUND",
+            "message": "xyz:TS-LA is not a market on that Hyperliquid builder dex."
+          }
+        },
+        "isError": true
+      }
+    },
+    {
+      "id": "hip3-mcp-market-main",
+      "surface": "mcp",
+      "tool": "candle_perps_market",
+      "args": {
+        "coin": "BTC"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/perps/config"
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "metaAndAssetCtxs"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "predictedFundings"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "perpsAtOpenInterestCap"
+          }
+        }
+      ],
+      "outcome": {
+        "body": {
+          "success": true,
+          "network": "mainnet",
+          "gate": {
+            "minOpenInterestUsd": 1000000,
+            "source": "server",
+            "dexOpensRefused": [
+              "halt"
+            ]
+          },
+          "warnings": [],
+          "market": {
+            "coin": "BTC",
+            "asset": 0,
+            "markPx": "60000",
+            "oraclePx": "60000",
+            "midPx": "60000",
+            "fundingRate": "0.0000125",
+            "fundingAprPct": "10.95",
+            "predictedFundingRate": null,
+            "nextFundingTime": null,
+            "openInterest": "100",
+            "openInterestUsd": "6000000.00",
+            "dayNotionalVolumeUsd": "5000000",
+            "prevDayPx": "60000",
+            "change24hPct": "0.0",
+            "maxLeverage": 40,
+            "onlyIsolated": false,
+            "isDelisted": false,
+            "atOpenInterestCap": false,
+            "candle": {
+              "tradeable": true,
+              "reason": null
+            },
+            "dex": "",
+            "terms": {
+              "dex": "",
+              "dexName": null,
+              "deployer": null,
+              "oracleSource": "validators",
+              "oracleSetters": [],
+              "marginMode": "cross",
+              "collateral": "USDC",
+              "feeMultiplier": "1",
+              "takerFeePct": "0.045",
+              "makerFeePct": "0.015",
+              "feeWarning": null
+            },
+            "szDecimals": 5,
+            "maxPriceDecimals": 1,
+            "priceRule": "at most 5 significant figures",
+            "minOrderUsd": 10,
+            "impactBidPx": "60000",
+            "impactAskPx": "60000",
+            "premium": "0",
+            "marginTiers": [
+              {
+                "lowerBoundUsd": "0",
+                "maxLeverage": 40
+              }
+            ]
+          }
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "hip3-sdk-market-main",
+      "surface": "sdk",
+      "tool": "candle_perps_market",
+      "args": {
+        "coin": "BTC"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/perps/config"
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "metaAndAssetCtxs"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "predictedFundings"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "hyperliquid:/info",
+          "body": {
+            "type": "perpsAtOpenInterestCap"
+          }
+        }
+      ],
+      "outcome": {
+        "body": {
+          "success": true,
+          "network": "mainnet",
+          "gate": {
+            "minOpenInterestUsd": 1000000,
+            "source": "server",
+            "dexOpensRefused": [
+              "halt"
+            ]
+          },
+          "warnings": [],
+          "market": {
+            "coin": "BTC",
+            "asset": 0,
+            "markPx": "60000",
+            "oraclePx": "60000",
+            "midPx": "60000",
+            "fundingRate": "0.0000125",
+            "fundingAprPct": "10.95",
+            "predictedFundingRate": null,
+            "nextFundingTime": null,
+            "openInterest": "100",
+            "openInterestUsd": "6000000.00",
+            "dayNotionalVolumeUsd": "5000000",
+            "prevDayPx": "60000",
+            "change24hPct": "0.0",
+            "maxLeverage": 40,
+            "onlyIsolated": false,
+            "isDelisted": false,
+            "atOpenInterestCap": false,
+            "candle": {
+              "tradeable": true,
+              "reason": null
+            },
+            "dex": "",
+            "terms": {
+              "dex": "",
+              "dexName": null,
+              "deployer": null,
+              "oracleSource": "validators",
+              "oracleSetters": [],
+              "marginMode": "cross",
+              "collateral": "USDC",
+              "feeMultiplier": "1",
+              "takerFeePct": "0.045",
+              "makerFeePct": "0.015",
+              "feeWarning": null
+            },
+            "szDecimals": 5,
+            "maxPriceDecimals": 1,
+            "priceRule": "at most 5 significant figures",
+            "minOrderUsd": 10,
+            "impactBidPx": "60000",
+            "impactAskPx": "60000",
+            "premium": "0",
+            "marginTiers": [
+              {
+                "lowerBoundUsd": "0",
+                "maxLeverage": 40
+              }
+            ]
+          }
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "hip3-gate-open-halt-halt:OIL",
+      "surface": "api-gate",
+      "universe": "halt",
+      "coin": "halt:OIL",
+      "config": "open",
+      "outcome": {
+        "ok": false,
+        "code": "PERPS_MARKET_REFUSED",
+        "limit": "dexOpensRefused",
+        "message": "New positions on builder dex halt are paused by Candle operations; closing stays open",
+        "status": 403
+      }
+    },
+    {
+      "id": "hip3-gate-closing-halt-halt:OIL",
+      "surface": "api-gate",
+      "universe": "halt",
+      "coin": "halt:OIL",
+      "config": "closing",
+      "outcome": {
+        "ok": true,
+        "market": {
+          "asset": 130000,
+          "coin": "halt:OIL",
+          "dex": "halt",
+          "maxLeverage": 10,
+          "onlyIsolated": false,
+          "terms": {
+            "dex": "halt",
+            "dexName": "Halted Fixture",
+            "deployer": "0x00000000000000000000000000000000000000d3",
+            "oracleSource": "deployer",
+            "oracleSetters": [
+              "0x00000000000000000000000000000000000000d3"
+            ],
+            "marginMode": "cross",
+            "collateral": "USDC",
+            "feeMultiplier": "1",
+            "takerFeePct": "0.045",
+            "makerFeePct": "0.015",
+            "feeWarning": null
+          }
+        }
+      }
+    },
+    {
+      "id": "hip3-gate-open-xyz-xyz:TSLA",
+      "surface": "api-gate",
+      "universe": "xyz",
+      "coin": "xyz:TSLA",
+      "config": "open",
+      "outcome": {
+        "ok": true,
+        "market": {
+          "asset": 110000,
+          "coin": "xyz:TSLA",
+          "dex": "xyz",
+          "maxLeverage": 10,
+          "onlyIsolated": false,
+          "terms": {
+            "dex": "xyz",
+            "dexName": "XYZ Fixture",
+            "deployer": "0x00000000000000000000000000000000000000d1",
+            "oracleSource": "deployer",
+            "oracleSetters": [
+              "0x00000000000000000000000000000000000000a1"
+            ],
+            "marginMode": "cross",
+            "collateral": "USDC",
+            "feeMultiplier": "1.5",
+            "takerFeePct": "0.0675",
+            "makerFeePct": "0.0225",
+            "feeWarning": null
+          }
+        }
+      }
+    },
+    {
+      "id": "hip3-gate-closing-xyz-xyz:TSLA",
+      "surface": "api-gate",
+      "universe": "xyz",
+      "coin": "xyz:TSLA",
+      "config": "closing",
+      "outcome": {
+        "ok": true,
+        "market": {
+          "asset": 110000,
+          "coin": "xyz:TSLA",
+          "dex": "xyz",
+          "maxLeverage": 10,
+          "onlyIsolated": false,
+          "terms": {
+            "dex": "xyz",
+            "dexName": "XYZ Fixture",
+            "deployer": "0x00000000000000000000000000000000000000d1",
+            "oracleSource": "deployer",
+            "oracleSetters": [
+              "0x00000000000000000000000000000000000000a1"
+            ],
+            "marginMode": "cross",
+            "collateral": "USDC",
+            "feeMultiplier": "1.5",
+            "takerFeePct": "0.0675",
+            "makerFeePct": "0.0225",
+            "feeWarning": null
+          }
+        }
+      }
+    },
+    {
+      "id": "hip3-gate-open-xyz-xyz:GOLD",
+      "surface": "api-gate",
+      "universe": "xyz",
+      "coin": "xyz:GOLD",
+      "config": "open",
+      "outcome": {
+        "ok": true,
+        "market": {
+          "asset": 110001,
+          "coin": "xyz:GOLD",
+          "dex": "xyz",
+          "maxLeverage": 20,
+          "onlyIsolated": true,
+          "terms": {
+            "dex": "xyz",
+            "dexName": "XYZ Fixture",
+            "deployer": "0x00000000000000000000000000000000000000d1",
+            "oracleSource": "deployer",
+            "oracleSetters": [
+              "0x00000000000000000000000000000000000000a1"
+            ],
+            "marginMode": "isolated",
+            "collateral": "USDC",
+            "feeMultiplier": "3",
+            "takerFeePct": "0.135",
+            "makerFeePct": "0.045",
+            "feeWarning": "xyz:GOLD charges 3x the main exchange's fee (its deployer sets it), above Candle's 2x warning line"
+          }
+        }
+      }
+    },
+    {
+      "id": "hip3-gate-closing-xyz-xyz:GOLD",
+      "surface": "api-gate",
+      "universe": "xyz",
+      "coin": "xyz:GOLD",
+      "config": "closing",
+      "outcome": {
+        "ok": true,
+        "market": {
+          "asset": 110001,
+          "coin": "xyz:GOLD",
+          "dex": "xyz",
+          "maxLeverage": 20,
+          "onlyIsolated": true,
+          "terms": {
+            "dex": "xyz",
+            "dexName": "XYZ Fixture",
+            "deployer": "0x00000000000000000000000000000000000000d1",
+            "oracleSource": "deployer",
+            "oracleSetters": [
+              "0x00000000000000000000000000000000000000a1"
+            ],
+            "marginMode": "isolated",
+            "collateral": "USDC",
+            "feeMultiplier": "3",
+            "takerFeePct": "0.135",
+            "makerFeePct": "0.045",
+            "feeWarning": "xyz:GOLD charges 3x the main exchange's fee (its deployer sets it), above Candle's 2x warning line"
+          }
+        }
+      }
+    },
+    {
+      "id": "hip3-gate-open-xyz-xyz:OLD",
+      "surface": "api-gate",
+      "universe": "xyz",
+      "coin": "xyz:OLD",
+      "config": "open",
+      "outcome": {
+        "ok": false,
+        "code": "PERPS_MARKET_REFUSED",
+        "limit": "market",
+        "message": "xyz:OLD is delisted",
+        "status": 403
+      }
+    },
+    {
+      "id": "hip3-gate-closing-xyz-xyz:OLD",
+      "surface": "api-gate",
+      "universe": "xyz",
+      "coin": "xyz:OLD",
+      "config": "closing",
+      "outcome": {
+        "ok": false,
+        "code": "PERPS_MARKET_REFUSED",
+        "limit": "market",
+        "message": "xyz:OLD is delisted",
+        "status": 403
+      }
+    },
+    {
+      "id": "hip3-gate-open-usdt-usdt:SPX",
+      "surface": "api-gate",
+      "universe": "usdt",
+      "coin": "usdt:SPX",
+      "config": "open",
+      "outcome": {
+        "ok": false,
+        "code": "PERPS_MARKET_REFUSED",
+        "limit": "collateral",
+        "message": "usdt is collateralised in USDT0; Candle trades builder dexes collateralised in USDC only, until Hyperliquid spot is supported",
+        "status": 403
+      }
+    },
+    {
+      "id": "hip3-gate-closing-usdt-usdt:SPX",
+      "surface": "api-gate",
+      "universe": "usdt",
+      "coin": "usdt:SPX",
+      "config": "closing",
+      "outcome": {
+        "ok": false,
+        "code": "PERPS_MARKET_REFUSED",
+        "limit": "collateral",
+        "message": "usdt is collateralised in USDT0; Candle trades builder dexes collateralised in USDC only, until Hyperliquid spot is supported",
+        "status": 403
+      }
+    },
+    {
+      "id": "hip3-gate-open-xyz-xyz:TS-LA",
+      "surface": "api-gate",
+      "universe": "xyz",
+      "coin": "xyz:TS-LA",
+      "config": "open",
+      "outcome": {
+        "ok": false,
+        "code": "VALIDATION_FAILED",
+        "limit": "market",
+        "message": "coin must be a market name such as BTC, or a builder-dex market such as xyz:TSLA",
+        "status": 400
+      }
+    },
+    {
+      "id": "hip3-gate-closing-xyz-xyz:TS-LA",
+      "surface": "api-gate",
+      "universe": "xyz",
+      "coin": "xyz:TS-LA",
+      "config": "closing",
+      "outcome": {
+        "ok": false,
+        "code": "VALIDATION_FAILED",
+        "limit": "market",
+        "message": "coin must be a market name such as BTC, or a builder-dex market such as xyz:TSLA",
+        "status": 400
+      }
+    },
+    {
+      "id": "hip3-gate-open-main-xyz:TSLA",
+      "surface": "api-gate",
+      "universe": "main",
+      "coin": "xyz:TSLA",
+      "config": "open",
+      "outcome": {
+        "ok": false,
+        "code": "PERPS_MARKET_REFUSED",
+        "limit": "market",
+        "message": "xyz:TSLA is not on this market list",
+        "status": 403
+      }
+    },
+    {
+      "id": "hip3-gate-closing-main-xyz:TSLA",
+      "surface": "api-gate",
+      "universe": "main",
+      "coin": "xyz:TSLA",
+      "config": "closing",
+      "outcome": {
+        "ok": false,
+        "code": "PERPS_MARKET_REFUSED",
+        "limit": "market",
+        "message": "xyz:TSLA is not on this market list",
+        "status": 403
+      }
+    },
+    {
+      "id": "hip3-gate-open-main-BTC",
+      "surface": "api-gate",
+      "universe": "main",
+      "coin": "BTC",
+      "config": "open",
+      "outcome": {
+        "ok": true,
+        "market": {
+          "asset": 0,
+          "coin": "BTC",
+          "dex": "",
+          "maxLeverage": 40,
+          "onlyIsolated": false,
+          "terms": {
+            "dex": "",
+            "dexName": null,
+            "deployer": null,
+            "oracleSource": "validators",
+            "oracleSetters": [],
+            "marginMode": "cross",
+            "collateral": "USDC",
+            "feeMultiplier": "1",
+            "takerFeePct": "0.045",
+            "makerFeePct": "0.015",
+            "feeWarning": null
+          }
+        }
+      }
+    },
+    {
+      "id": "hip3-gate-closing-main-BTC",
+      "surface": "api-gate",
+      "universe": "main",
+      "coin": "BTC",
+      "config": "closing",
+      "outcome": {
+        "ok": true,
+        "market": {
+          "asset": 0,
+          "coin": "BTC",
+          "dex": "",
+          "maxLeverage": 40,
+          "onlyIsolated": false,
+          "terms": {
+            "dex": "",
+            "dexName": null,
+            "deployer": null,
+            "oracleSource": "validators",
+            "oracleSetters": [],
+            "marginMode": "cross",
+            "collateral": "USDC",
+            "feeMultiplier": "1",
+            "takerFeePct": "0.045",
+            "makerFeePct": "0.015",
+            "feeWarning": null
+          }
+        }
       }
     },
     {
