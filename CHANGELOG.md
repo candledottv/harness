@@ -53,6 +53,7 @@ The command table and source contracts follow Candle CLI 0.13.28 and MCP 0.10.33
 
 ### Candle CLI
 
+- **A sell that quotes zero is refused, not unknown.** The CLI now fails a Hood sell whose build pays zero with `SELL_PAYS_ZERO` before signing; Harness reports it as refused, with nothing sent, instead of reading the trade back.
 - **The table was read again from the CLI's source** (0.13.28, up from 0.13.20), and `candle_cli` now knows seven more commands: `swap receipt` (re-reads a one-shot swap's settlement from chain, a read), `signals scorecard`, `signals records` and `signals record` (hacc's daily scorecard and each signal's record, reads), and `lp status` (an LP operation's state by its client trade id, a read). `swap recover` and `swap cancel` are held with why: each moves a Hood TEE operation's state on Candle's side, so you run them in your own terminal (cancel exits 0 released, 3 a leg may have been signed, 1 refused).
 - **`swap status --operation <id>`** reads a Hood TEE guard's operation, and `--wait` follows every leg for up to ten minutes (exit 0 completed, 1 failed, 3 partial or unresolved).
 - **Flags and words the CLI changed.** `launch` takes `--quote`; `tee check` takes `--chain solana|hood`; LP's add, positions, remove and claim take `--wallet embedded`; `keys stop`, `resume` and `revoke` take a prefix or a label; `vault promote` takes `--to-key`; `transfer` from the embedded wallet takes `--client-id`. A resumed key is resumed in the signed-in console, since the server refuses a device token there.

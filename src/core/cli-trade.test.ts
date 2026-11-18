@@ -399,6 +399,11 @@ describe("outcome rules (mapCliTrade)", () => {
       const m = mapCliTrade("trade", run(1, { code, message: "This token settles in usdg, not ETH" }), none)
       expect([code, m.state]).toEqual([code, "refused"])
     }
+    // A zero-quote sell is refused before any signature, in the Candle Harness's words.
+    const dust = mapCliTrade("trade", run(1, { code: "SELL_PAYS_ZERO", message: "This sell is too small to pay anything" }), none)
+    expect(dust.state).toBe("refused")
+    expect(dust.error).toMatchObject({ code: "SELL_PAYS_ZERO", retryable: false })
+    expect(dust.error?.message).toContain("Nothing was sent. Sell a larger amount.")
     expect(mapCliTrade("trade", run(1, { code: "WALLET_BUSY", message: "This wallet is running sequenced operation op1" }), none).error?.message).toContain("Candle runs one at a time on a Hood TEE wallet")
     // Candle's guard on a transaction it couldn't settle: never "try again once it settles", which never comes by itself.
     const guarded = mapCliTrade("trade", run(1, { code: "WALLET_BUSY", message: "This wallet has an unresolved transaction (operation 5ef8256a-1176-4d36-aa6d-cce49b133eb2); it may have been broadcast. Do not repeat the trade; read the job status. Operation d76694a1-6a1c-4011-b914-af25c31b2fbb; use candle swap status d76694a1-6a1c-4011-b914-af25c31b2fbb before another attempt." }), none)
