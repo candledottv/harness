@@ -11,7 +11,7 @@ import releaseManifest from "../../test/fixtures/candle-cli-release/cli-v0.13.24
 import { MIN_CANDLE_CLI } from "./cli-table"
 import { MIN_CANDLE_MCP, versionAtLeast } from "./candle-mcp"
 import { DESCRIPTION_BASIS, GET_OPERATION_DESCRIPTION, withReason } from "./tool-face"
-import { argumentDrift, CARD_TOOL_ARGS, classificationDrift, classify, HARNESS_TOOL_ARGS, unclassifiedTools, unknownArgument } from "./classify"
+import { argumentDrift, CARD_TOOL_ARGS, classificationDrift, classify, HARNESS_TOOL_ARGS, TOOL_CLASSES, unclassifiedTools, unknownArgument } from "./classify"
 
 const names = fixture.tools.map((t) => t.name)
 
@@ -121,5 +121,14 @@ test("the published npm CLI meets the minimum and its recorded public definition
     const tool = releasedSource.tools.find((t) => t.name === name)
     expect(tool).toBeDefined()
     expect(createHash("sha256").update(canonicalJson(tool)).digest("hex")).toBe(npmRelease.toolSha256[name as keyof typeof npmRelease.toolSha256])
+  }
+})
+
+test("the three perp position page reads (BE-3756) are reads in the table and in the source list, and not yet in the released CLI's", () => {
+  const names = ["candle_get_agent_perp_round", "candle_get_agent_open_orders", "candle_get_perp_candles"]
+  for (const name of names) {
+    expect(TOOL_CLASSES[name]).toEqual({ class: "read" })
+    expect(fixture.tools.some((t) => t.name === name)).toBe(true)
+    expect(npmRelease.toolNames).not.toContain(name)
   }
 })

@@ -2,7 +2,7 @@
   "about": "Synthetic response stubs exercised through the actual MCP/SDK source, with network disabled. No deployed behavior is claimed. Embedded perps stops at a local refusal before build/sign/send.",
   "source": {
     "repo": "candledottv/candle-monorepo",
-    "commit": "a6a801ac679b9879bae979e09d0e8ac8b881c313"
+    "commit": "7354c785aeb02f0cf0aa5cfcad076b6f820f5779"
   },
   "rows": [
     {
@@ -1177,6 +1177,738 @@
           }
         },
         "isError": true
+      }
+    },
+    {
+      "id": "perp-pages-mcp-round-closed",
+      "surface": "mcp",
+      "tool": "candle_get_agent_perp_round",
+      "args": {
+        "profileId": "fixture-agent",
+        "roundId": "rnd_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/fixture-agent/perps/rounds/rnd_0123456789abcdef",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "body": {
+          "success": true,
+          "seq": 7,
+          "round": {
+            "id": "rnd_0123456789abcdef",
+            "coin": "BTC",
+            "dex": null,
+            "side": "long",
+            "outcome": "won",
+            "leverage": {
+              "value": 20,
+              "type": "cross"
+            },
+            "openedMs": 1760000000000,
+            "closedMs": 1760003600000,
+            "durationMs": 3600000,
+            "size": {
+              "peak": "0.5",
+              "current": "0"
+            },
+            "entryAvgPx": "100.0",
+            "exitAvgPx": "110.0",
+            "markPx": null,
+            "liquidationPx": "95.5",
+            "initialMarginUsd": 2.5,
+            "returnOnMargin": 0.4,
+            "realizedUsd": 5,
+            "unrealizedUsd": null,
+            "fundingUsd": -0.01,
+            "hyperliquidFeesUsd": 0.02,
+            "builderFeesUsd": 0.005,
+            "pnlUsd": 4.965,
+            "fills": [
+              {
+                "time": 1760000000000,
+                "side": "buy",
+                "role": "open",
+                "dir": "Open Long",
+                "px": "100.0",
+                "sz": "0.5",
+                "positionAfter": "0.5",
+                "feeUsd": 0.01,
+                "closedPnlUsd": 0,
+                "liquidated": false,
+                "hash": "0x1111111111111111111111111111111111111111111111111111111111111111"
+              },
+              {
+                "time": 1760003600000,
+                "side": "sell",
+                "role": "close",
+                "dir": "Close Long",
+                "px": "110.0",
+                "sz": "0.5",
+                "positionAfter": "0",
+                "feeUsd": 0.01,
+                "closedPnlUsd": 5,
+                "liquidated": false,
+                "hash": "0x2222222222222222222222222222222222222222222222222222222222222222"
+              }
+            ],
+            "funding": [
+              {
+                "time": 1760001800000,
+                "usd": -0.01,
+                "rate": "0.0000125",
+                "hash": "0x3333333333333333333333333333333333333333333333333333333333333333"
+              }
+            ],
+            "complete": true,
+            "asOfMs": 1760003700000
+          }
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "perp-pages-sdk-round-closed",
+      "surface": "sdk",
+      "tool": "candle_get_agent_perp_round",
+      "args": {
+        "profileId": "fixture-agent",
+        "roundId": "rnd_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/fixture-agent/perps/rounds/rnd_0123456789abcdef",
+          "credential": true
+        }
+      ],
+      "outcome": {
+        "body": {
+          "id": "rnd_0123456789abcdef",
+          "coin": "BTC",
+          "dex": null,
+          "side": "long",
+          "outcome": "won",
+          "leverage": {
+            "value": 20,
+            "type": "cross"
+          },
+          "openedMs": 1760000000000,
+          "closedMs": 1760003600000,
+          "durationMs": 3600000,
+          "size": {
+            "peak": "0.5",
+            "current": "0"
+          },
+          "entryAvgPx": "100.0",
+          "exitAvgPx": "110.0",
+          "markPx": null,
+          "liquidationPx": "95.5",
+          "initialMarginUsd": 2.5,
+          "returnOnMargin": 0.4,
+          "realizedUsd": 5,
+          "unrealizedUsd": null,
+          "fundingUsd": -0.01,
+          "hyperliquidFeesUsd": 0.02,
+          "builderFeesUsd": 0.005,
+          "pnlUsd": 4.965,
+          "fills": [
+            {
+              "time": 1760000000000,
+              "side": "buy",
+              "role": "open",
+              "dir": "Open Long",
+              "px": "100.0",
+              "sz": "0.5",
+              "positionAfter": "0.5",
+              "feeUsd": 0.01,
+              "closedPnlUsd": 0,
+              "liquidated": false,
+              "hash": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "time": 1760003600000,
+              "side": "sell",
+              "role": "close",
+              "dir": "Close Long",
+              "px": "110.0",
+              "sz": "0.5",
+              "positionAfter": "0",
+              "feeUsd": 0.01,
+              "closedPnlUsd": 5,
+              "liquidated": false,
+              "hash": "0x2222222222222222222222222222222222222222222222222222222222222222"
+            }
+          ],
+          "funding": [
+            {
+              "time": 1760001800000,
+              "usd": -0.01,
+              "rate": "0.0000125",
+              "hash": "0x3333333333333333333333333333333333333333333333333333333333333333"
+            }
+          ],
+          "complete": true,
+          "asOfMs": 1760003700000,
+          "seq": 7
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "perp-pages-mcp-round-open-builder-dex",
+      "surface": "mcp",
+      "tool": "candle_get_agent_perp_round",
+      "args": {
+        "profileId": "fixture-agent",
+        "roundId": "open:xyz:TSLA"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/fixture-agent/perps/rounds/open%3Axyz%3ATSLA",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "body": {
+          "success": true,
+          "seq": 7,
+          "round": {
+            "id": "open:xyz:TSLA",
+            "coin": "xyz:TSLA",
+            "dex": "xyz",
+            "side": "long",
+            "outcome": "won",
+            "leverage": {
+              "value": 20,
+              "type": "cross"
+            },
+            "openedMs": 1760000000000,
+            "closedMs": 1760003600000,
+            "durationMs": 3600000,
+            "size": {
+              "peak": "0.5",
+              "current": "0"
+            },
+            "entryAvgPx": "100.0",
+            "exitAvgPx": "110.0",
+            "markPx": null,
+            "liquidationPx": "95.5",
+            "initialMarginUsd": 2.5,
+            "returnOnMargin": 0.4,
+            "realizedUsd": 5,
+            "unrealizedUsd": null,
+            "fundingUsd": -0.01,
+            "hyperliquidFeesUsd": 0.02,
+            "builderFeesUsd": 0.005,
+            "pnlUsd": 4.965,
+            "fills": [
+              {
+                "time": 1760000000000,
+                "side": "buy",
+                "role": "open",
+                "dir": "Open Long",
+                "px": "100.0",
+                "sz": "0.5",
+                "positionAfter": "0.5",
+                "feeUsd": 0.01,
+                "closedPnlUsd": 0,
+                "liquidated": false,
+                "hash": "0x1111111111111111111111111111111111111111111111111111111111111111"
+              },
+              {
+                "time": 1760003600000,
+                "side": "sell",
+                "role": "close",
+                "dir": "Close Long",
+                "px": "110.0",
+                "sz": "0.5",
+                "positionAfter": "0",
+                "feeUsd": 0.01,
+                "closedPnlUsd": 5,
+                "liquidated": false,
+                "hash": "0x2222222222222222222222222222222222222222222222222222222222222222"
+              }
+            ],
+            "funding": [
+              {
+                "time": 1760001800000,
+                "usd": -0.01,
+                "rate": "0.0000125",
+                "hash": "0x3333333333333333333333333333333333333333333333333333333333333333"
+              }
+            ],
+            "complete": true,
+            "asOfMs": 1760003700000
+          }
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "perp-pages-sdk-round-open-builder-dex",
+      "surface": "sdk",
+      "tool": "candle_get_agent_perp_round",
+      "args": {
+        "profileId": "fixture-agent",
+        "roundId": "open:xyz:TSLA"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/fixture-agent/perps/rounds/open%3Axyz%3ATSLA",
+          "credential": true
+        }
+      ],
+      "outcome": {
+        "body": {
+          "id": "open:xyz:TSLA",
+          "coin": "xyz:TSLA",
+          "dex": "xyz",
+          "side": "long",
+          "outcome": "won",
+          "leverage": {
+            "value": 20,
+            "type": "cross"
+          },
+          "openedMs": 1760000000000,
+          "closedMs": 1760003600000,
+          "durationMs": 3600000,
+          "size": {
+            "peak": "0.5",
+            "current": "0"
+          },
+          "entryAvgPx": "100.0",
+          "exitAvgPx": "110.0",
+          "markPx": null,
+          "liquidationPx": "95.5",
+          "initialMarginUsd": 2.5,
+          "returnOnMargin": 0.4,
+          "realizedUsd": 5,
+          "unrealizedUsd": null,
+          "fundingUsd": -0.01,
+          "hyperliquidFeesUsd": 0.02,
+          "builderFeesUsd": 0.005,
+          "pnlUsd": 4.965,
+          "fills": [
+            {
+              "time": 1760000000000,
+              "side": "buy",
+              "role": "open",
+              "dir": "Open Long",
+              "px": "100.0",
+              "sz": "0.5",
+              "positionAfter": "0.5",
+              "feeUsd": 0.01,
+              "closedPnlUsd": 0,
+              "liquidated": false,
+              "hash": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "time": 1760003600000,
+              "side": "sell",
+              "role": "close",
+              "dir": "Close Long",
+              "px": "110.0",
+              "sz": "0.5",
+              "positionAfter": "0",
+              "feeUsd": 0.01,
+              "closedPnlUsd": 5,
+              "liquidated": false,
+              "hash": "0x2222222222222222222222222222222222222222222222222222222222222222"
+            }
+          ],
+          "funding": [
+            {
+              "time": 1760001800000,
+              "usd": -0.01,
+              "rate": "0.0000125",
+              "hash": "0x3333333333333333333333333333333333333333333333333333333333333333"
+            }
+          ],
+          "complete": true,
+          "asOfMs": 1760003700000,
+          "seq": 7
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "perp-pages-mcp-open-orders",
+      "surface": "mcp",
+      "tool": "candle_get_agent_open_orders",
+      "args": {
+        "profileId": "fixture-agent"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/fixture-agent/open-orders",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "body": {
+          "success": true,
+          "orders": [
+            {
+              "coin": "xyz:TSLA",
+              "dex": "xyz",
+              "kind": "limit",
+              "side": "buy",
+              "limitPx": "90.0",
+              "triggerPx": null,
+              "triggerCondition": null,
+              "size": "0.5",
+              "originalSize": "0.5",
+              "reduceOnly": false,
+              "isPositionTpsl": false,
+              "orderType": "Limit",
+              "placedAtMs": 1760000100000
+            },
+            {
+              "coin": "xyz:TSLA",
+              "dex": "xyz",
+              "kind": "take_profit",
+              "side": "sell",
+              "limitPx": null,
+              "triggerPx": "120.0",
+              "triggerCondition": "Price above 120",
+              "size": "0.5",
+              "originalSize": "0.5",
+              "reduceOnly": true,
+              "isPositionTpsl": true,
+              "orderType": "Take Profit Market",
+              "placedAtMs": 1760000100000
+            },
+            {
+              "coin": "xyz:TSLA",
+              "dex": "xyz",
+              "kind": "stop_loss",
+              "side": "sell",
+              "limitPx": null,
+              "triggerPx": "95.0",
+              "triggerCondition": "Price below 95",
+              "size": "0.5",
+              "originalSize": "0.5",
+              "reduceOnly": true,
+              "isPositionTpsl": true,
+              "orderType": "Stop Market",
+              "placedAtMs": 1760000100000
+            }
+          ],
+          "readAt": 1760003700000,
+          "stale": false,
+          "dexes": [
+            "xyz"
+          ],
+          "seq": 7
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "perp-pages-sdk-open-orders",
+      "surface": "sdk",
+      "tool": "candle_get_agent_open_orders",
+      "args": {
+        "profileId": "fixture-agent"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/fixture-agent/open-orders",
+          "credential": true
+        }
+      ],
+      "outcome": {
+        "body": {
+          "orders": [
+            {
+              "coin": "xyz:TSLA",
+              "dex": "xyz",
+              "kind": "limit",
+              "side": "buy",
+              "limitPx": "90.0",
+              "triggerPx": null,
+              "triggerCondition": null,
+              "size": "0.5",
+              "originalSize": "0.5",
+              "reduceOnly": false,
+              "isPositionTpsl": false,
+              "orderType": "Limit",
+              "placedAtMs": 1760000100000
+            },
+            {
+              "coin": "xyz:TSLA",
+              "dex": "xyz",
+              "kind": "take_profit",
+              "side": "sell",
+              "limitPx": null,
+              "triggerPx": "120.0",
+              "triggerCondition": "Price above 120",
+              "size": "0.5",
+              "originalSize": "0.5",
+              "reduceOnly": true,
+              "isPositionTpsl": true,
+              "orderType": "Take Profit Market",
+              "placedAtMs": 1760000100000
+            },
+            {
+              "coin": "xyz:TSLA",
+              "dex": "xyz",
+              "kind": "stop_loss",
+              "side": "sell",
+              "limitPx": null,
+              "triggerPx": "95.0",
+              "triggerCondition": "Price below 95",
+              "size": "0.5",
+              "originalSize": "0.5",
+              "reduceOnly": true,
+              "isPositionTpsl": true,
+              "orderType": "Stop Market",
+              "placedAtMs": 1760000100000
+            }
+          ],
+          "readAt": 1760003700000,
+          "stale": false,
+          "dexes": [
+            "xyz"
+          ],
+          "seq": 7
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "perp-pages-mcp-open-orders-none",
+      "surface": "mcp",
+      "tool": "candle_get_agent_open_orders",
+      "args": {
+        "profileId": "fixture-agent"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/fixture-agent/open-orders",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "body": {
+          "success": true,
+          "orders": [],
+          "readAt": 1760003700000,
+          "stale": false,
+          "dexes": [],
+          "seq": 7
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "perp-pages-sdk-open-orders-none",
+      "surface": "sdk",
+      "tool": "candle_get_agent_open_orders",
+      "args": {
+        "profileId": "fixture-agent"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/fixture-agent/open-orders",
+          "credential": true
+        }
+      ],
+      "outcome": {
+        "body": {
+          "orders": [],
+          "readAt": 1760003700000,
+          "stale": false,
+          "dexes": [],
+          "seq": 7
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "perp-pages-mcp-candles-default",
+      "surface": "mcp",
+      "tool": "candle_get_perp_candles",
+      "args": {
+        "coin": "BTC"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/perps-candles/BTC",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "body": {
+          "success": true,
+          "coin": "BTC",
+          "interval": "1h",
+          "readAt": 1760003700000,
+          "stale": false,
+          "candles": [
+            {
+              "t": 1760000000000,
+              "o": "100.0",
+              "h": "101.5",
+              "l": "99.5",
+              "c": "101.0",
+              "v": "12.5"
+            },
+            {
+              "t": 1760003600000,
+              "o": "101.0",
+              "h": "111.0",
+              "l": "100.5",
+              "c": "110.0",
+              "v": "30.1"
+            }
+          ]
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "perp-pages-sdk-candles-default",
+      "surface": "sdk",
+      "tool": "candle_get_perp_candles",
+      "args": {
+        "coin": "BTC"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/perps-candles/BTC",
+          "credential": true
+        }
+      ],
+      "outcome": {
+        "body": {
+          "coin": "BTC",
+          "interval": "1h",
+          "readAt": 1760003700000,
+          "stale": false,
+          "candles": [
+            {
+              "t": 1760000000000,
+              "o": "100.0",
+              "h": "101.5",
+              "l": "99.5",
+              "c": "101.0",
+              "v": "12.5"
+            },
+            {
+              "t": 1760003600000,
+              "o": "101.0",
+              "h": "111.0",
+              "l": "100.5",
+              "c": "110.0",
+              "v": "30.1"
+            }
+          ]
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "perp-pages-mcp-candles-builder-dex",
+      "surface": "mcp",
+      "tool": "candle_get_perp_candles",
+      "args": {
+        "coin": "xyz:TSLA",
+        "interval": "15m",
+        "count": 2,
+        "end": 1760003600000
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/perps-candles/xyz%3ATSLA?interval=15m&count=2&end=1760003600000",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "body": {
+          "success": true,
+          "coin": "xyz:TSLA",
+          "interval": "15m",
+          "readAt": 1760003700000,
+          "stale": false,
+          "candles": [
+            {
+              "t": 1760000000000,
+              "o": "100.0",
+              "h": "101.5",
+              "l": "99.5",
+              "c": "101.0",
+              "v": "12.5"
+            },
+            {
+              "t": 1760003600000,
+              "o": "101.0",
+              "h": "111.0",
+              "l": "100.5",
+              "c": "110.0",
+              "v": "30.1"
+            }
+          ]
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "perp-pages-sdk-candles-builder-dex",
+      "surface": "sdk",
+      "tool": "candle_get_perp_candles",
+      "args": {
+        "coin": "xyz:TSLA",
+        "interval": "15m",
+        "count": 2,
+        "end": 1760003600000
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/perps-candles/xyz%3ATSLA?interval=15m&count=2&end=1760003600000",
+          "credential": true
+        }
+      ],
+      "outcome": {
+        "body": {
+          "coin": "xyz:TSLA",
+          "interval": "15m",
+          "readAt": 1760003700000,
+          "stale": false,
+          "candles": [
+            {
+              "t": 1760000000000,
+              "o": "100.0",
+              "h": "101.5",
+              "l": "99.5",
+              "c": "101.0",
+              "v": "12.5"
+            },
+            {
+              "t": 1760003600000,
+              "o": "101.0",
+              "h": "111.0",
+              "l": "100.5",
+              "c": "110.0",
+              "v": "30.1"
+            }
+          ]
+        },
+        "isError": false
       }
     }
   ]

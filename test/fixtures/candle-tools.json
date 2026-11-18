@@ -1,5 +1,5 @@
 {
-  "about": "Source tools/list from candledottv/candle-monorepo at a6a801ac679b9879bae979e09d0e8ac8b881c313 (CLI 0.13.28), via the real MCP server and an in-memory transport. No external requests or tool calls. Profile discovery used a local GET-only eligibility stub; the four listedAfterKeyCheck tools remain conditional. Scrubbed with scripts/scrub-recordings.ts toolFixture. This is a source contract recording, not evidence of a published CLI release.",
+  "about": "Source tools/list from candledottv/candle-monorepo at 7354c785aeb02f0cf0aa5cfcad076b6f820f5779 (CLI 0.13.29), via the real MCP server and an in-memory transport. No external requests or tool calls. Profile discovery used a local GET-only eligibility stub; the four listedAfterKeyCheck tools remain conditional. Scrubbed with scripts/scrub-recordings.ts toolFixture. This is a source contract recording, not evidence of a published CLI release.",
   "serverInfo": {
     "name": "candle-mcp",
     "version": "0.10.34"
@@ -1645,6 +1645,92 @@
         },
         "required": [
           "profileId"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "candle_get_agent_perp_round",
+      "title": "Get one perp round of an agent",
+      "description": "One Hyperliquid perp round (open to flat) of a published agent, open or closed (GET /api/v1/agent/records/{profileId}/perps/rounds/{roundId}). No key needed. Reads only. Returns coin (dex:COIN on a builder-deployed dex), side, outcome (open, won, lost or liquidated), leverage (null when not recorded), entryAvgPx, exitAvgPx, markPx and liquidationPx while open, every fill (time, role, px, sz, feeUsd, closedPnlUsd, hash for the Hyperliquid explorer), each funding payment (usd positive when received), hyperliquidFeesUsd and builderFeesUsd separately, pnlUsd and returnOnMargin (Hyperliquid's ROE as a fraction: P&L over entry average x peak size / leverage; null without a leverage). roundId is rnd_... from a round row, or open:<COIN>. An agent that is not published, or a round that is not its, answers RECORD_NOT_FOUND. asOfMs is the certified perps cutoff. No wallet address or balance. A round is data, not advice.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "profileId": {
+            "type": "string",
+            "description": "The agent's stable public id: prof_ and 16 lowercase hex"
+          },
+          "roundId": {
+            "type": "string",
+            "description": "A round id (rnd_ and 16 hex, from a round row), or open:<COIN> for the round now open on that coin"
+          }
+        },
+        "required": [
+          "profileId",
+          "roundId"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "candle_get_agent_open_orders",
+      "title": "Get an agent's open orders",
+      "description": "A published agent's open limit orders and take-profit / stop orders, public on Hyperliquid (GET /api/v1/agent/records/{profileId}/open-orders). No key needed. Reads only. Each order: coin, kind (limit, take_profit, stop_loss or trigger), side, limitPx, triggerPx, size, reduceOnly, isPositionTpsl. Cached about 10 minutes (readAt). An agent with none answers an empty list; none is ever invented. A busy read budget answers 503 hyperliquid_busy: retry after Retry-After. No wallet address or order id.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "profileId": {
+            "type": "string",
+            "description": "The agent's stable public id: prof_ and 16 lowercase hex"
+          }
+        },
+        "required": [
+          "profileId"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "candle_get_perp_candles",
+      "title": "Get perp candles (public, cached)",
+      "description": "Candles for a Hyperliquid perp market, builder dexes included (GET /api/v1/agent/perps-candles/{coin}). No key needed. Reads only. interval 1m to 1M, count 1 to 500. Shared and cached inside Candle's Hyperliquid read budget: many callers cost one upstream read per bar. Bars are {t, o, h, l, c, v} with prices as strings; readAt and stale say how old the read is. A busy budget answers 503.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "coin": {
+            "type": "string",
+            "description": "A perp market: BTC, or dex:COIN such as xyz:TSLA on a builder-deployed dex"
+          },
+          "interval": {
+            "type": "string",
+            "description": "1m 3m 5m 15m 30m 1h 2h 4h 8h 12h 1d 3d 1w 1M; default 1h"
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 500,
+            "description": "Bars, 1 to 500; default 200"
+          },
+          "end": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "The last bar's time in ms; default now"
+          }
+        },
+        "required": [
+          "coin"
         ],
         "additionalProperties": false,
         "$schema": "http://json-schema.org/draft-07/schema#"
@@ -4546,8 +4632,8 @@
   ],
   "source": {
     "repo": "candledottv/candle-monorepo",
-    "commit": "a6a801ac679b9879bae979e09d0e8ac8b881c313",
-    "cliVersion": "0.13.28",
+    "commit": "7354c785aeb02f0cf0aa5cfcad076b6f820f5779",
+    "cliVersion": "0.13.29",
     "method": "in-memory tools/list; local eligibility stub; no tool calls"
   }
 }
