@@ -3,7 +3,7 @@
   "source": {
     "repo": "candledottv/candle-monorepo",
     "path": "packages/cli/src",
-    "commit": "ceda02328bd91d2160ebf76942e92a1706f323c2",
+    "commit": "df74deb0d9cf0f9e67842dfa4e1086035288557e",
     "cliVersion": "0.13.30"
   },
   "aliases": {

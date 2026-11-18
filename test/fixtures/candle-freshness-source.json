@@ -1,0 +1,4000 @@
+{
+  "about": "Offline perps freshness contracts from exact merged source. Every time is an hour and minute of one made-up day, and every figure is made up. api-source rows are answers built by Candle's pure perps source (profile bundle, board publish, positions and record composition) from one made-up wallet's stored facts: the provisional read between certified hours, the certified hour that replaces it, and the delayed and unavailable rules. The wallet's address is hashed inside that source and is in no row. mcp, sdk and cli rows read the same positions answer through the registered tool, the SDK and `candle agent positions` over an intercepted fetch. docs rows are the public page's own freshness line (its three copies agree) and the SDK changelog entry, read as text. The database, the perps jobs, the venue and the keyed API route are not executed, and no deployed behavior is claimed.",
+  "source": {
+    "repo": "candledottv/candle-monorepo",
+    "commit": "df74deb0d9cf0f9e67842dfa4e1086035288557e",
+    "versions": {
+      "cli": "0.13.30",
+      "mcp": "0.10.35",
+      "sdk": "0.6.24"
+    }
+  },
+  "rules": {
+    "staleMs": 7200000,
+    "unavailableMs": 10800000,
+    "provisionalMaxAgeMs": 900000,
+    "provisionalBaseMaxMs": 21600000
+  },
+  "profile": "prof_0123456789abcdef",
+  "day": "2027-01-12",
+  "rows": [
+    {
+      "id": "certified-api",
+      "scenario": "certified",
+      "buildAt": "10:10",
+      "surface": "api-source",
+      "says": "10:10, no provisional read yet: the 10:02 certified figures, with no provisional mark.",
+      "evidence": "pure API source on made-up stored facts; the database, the perps jobs and the keyed route are not executed",
+      "outcome": {
+        "read": {
+          "kind": "certified",
+          "certifiedCutoff": "10:02",
+          "provisionalRead": null
+        },
+        "positions": {
+          "success": true,
+          "publishedBuildId": "build_fixture_01",
+          "asOfMs": 1799748120000,
+          "spotAsOfMs": 1799748480000,
+          "perpsAsOfMs": 1799748120000,
+          "perpsSnapshotId": "ps1_f09f943da81b3c70d11cd4a55be76913",
+          "perpsPartial": false,
+          "portfolioValueUsd": 532,
+          "portfolioPartial": false,
+          "hiddenDust": 0,
+          "unpriced": 0,
+          "positions": [
+            {
+              "kind": "spot",
+              "mint": "MintFake11111111111111111111111111111111111",
+              "chain": "solana",
+              "symbol": "FAKE",
+              "quantity": 50,
+              "valueUsd": 500,
+              "unrealizedUsd": 100,
+              "origin": "bought",
+              "unrealizedPct": 25
+            },
+            {
+              "kind": "perp",
+              "coin": "ETH",
+              "side": "long",
+              "size": "1",
+              "leverage": {
+                "value": 5,
+                "type": "cross"
+              },
+              "entryPx": "100",
+              "markPx": "110",
+              "positionValueUsd": "110",
+              "marginUsedUsd": "22",
+              "unrealizedPnlUsd": "10",
+              "returnOnEquity": "0.50",
+              "liquidationPx": "82",
+              "liquidationDistance": 0.2545,
+              "fundingNetUsd": "0",
+              "level": "ok"
+            }
+          ],
+          "seq": 1
+        },
+        "record": {
+          "success": true,
+          "record": {
+            "profileId": "prof_0123456789abcdef",
+            "minClosesForRate": 10,
+            "totalPnlUsd": 109.95,
+            "unrealizedUsd": 110,
+            "totals": {
+              "realizedNetUsd": -0.05,
+              "wins": 0,
+              "losses": 0,
+              "counted": 0,
+              "perpsRealizedUsd": 0,
+              "perpsFundingUsd": 0,
+              "perpsFeesUsd": 0.05,
+              "perpsUnrealizedUsd": 10,
+              "perpsNetUsd": 9.95,
+              "perpsPartial": false,
+              "perpsAsOfMs": 1799748120000,
+              "perpsSnapshotId": "ps1_f09f943da81b3c70d11cd4a55be76913"
+            },
+            "perpsRealizedUsd": 0,
+            "perpsFundingUsd": 0,
+            "perpsFeesUsd": 0.05,
+            "perpsUnrealizedUsd": 10,
+            "perpsNetUsd": 9.95,
+            "perpsPartial": false,
+            "perpsAsOfMs": 1799748120000,
+            "perpsSnapshotId": "ps1_f09f943da81b3c70d11cd4a55be76913",
+            "winRatePct": null,
+            "perpRounds": [],
+            "perpsTopCloses": []
+          }
+        }
+      }
+    },
+    {
+      "id": "certified-mcp",
+      "scenario": "certified",
+      "buildAt": "10:10",
+      "surface": "mcp",
+      "args": {
+        "profileId": "prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/positions",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "body": {
+          "success": true,
+          "publishedBuildId": "build_fixture_01",
+          "asOfMs": 1799748120000,
+          "spotAsOfMs": 1799748480000,
+          "perpsAsOfMs": 1799748120000,
+          "perpsSnapshotId": "ps1_f09f943da81b3c70d11cd4a55be76913",
+          "perpsPartial": false,
+          "portfolioValueUsd": 532,
+          "portfolioPartial": false,
+          "hiddenDust": 0,
+          "unpriced": 0,
+          "positions": [
+            {
+              "kind": "spot",
+              "mint": "MintFake11111111111111111111111111111111111",
+              "chain": "solana",
+              "symbol": "FAKE",
+              "quantity": 50,
+              "valueUsd": 500,
+              "unrealizedUsd": 100,
+              "origin": "bought",
+              "unrealizedPct": 25
+            },
+            {
+              "kind": "perp",
+              "coin": "ETH",
+              "side": "long",
+              "size": "1",
+              "leverage": {
+                "value": 5,
+                "type": "cross"
+              },
+              "entryPx": "100",
+              "markPx": "110",
+              "positionValueUsd": "110",
+              "marginUsedUsd": "22",
+              "unrealizedPnlUsd": "10",
+              "returnOnEquity": "0.50",
+              "liquidationPx": "82",
+              "liquidationDistance": 0.2545,
+              "fundingNetUsd": "0",
+              "level": "ok"
+            }
+          ],
+          "seq": 1
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "certified-sdk",
+      "scenario": "certified",
+      "buildAt": "10:10",
+      "surface": "sdk",
+      "args": {
+        "profileId": "prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/positions",
+          "credential": true
+        }
+      ],
+      "outcome": {
+        "body": {
+          "publishedBuildId": "build_fixture_01",
+          "asOfMs": 1799748120000,
+          "spotAsOfMs": 1799748480000,
+          "perpsAsOfMs": 1799748120000,
+          "perpsSnapshotId": "ps1_f09f943da81b3c70d11cd4a55be76913",
+          "perpsPartial": false,
+          "portfolioValueUsd": 532,
+          "portfolioPartial": false,
+          "hiddenDust": 0,
+          "unpriced": 0,
+          "positions": [
+            {
+              "kind": "spot",
+              "mint": "MintFake11111111111111111111111111111111111",
+              "chain": "solana",
+              "symbol": "FAKE",
+              "quantity": 50,
+              "valueUsd": 500,
+              "unrealizedUsd": 100,
+              "origin": "bought",
+              "unrealizedPct": 25
+            },
+            {
+              "kind": "perp",
+              "coin": "ETH",
+              "side": "long",
+              "size": "1",
+              "leverage": {
+                "value": 5,
+                "type": "cross"
+              },
+              "entryPx": "100",
+              "markPx": "110",
+              "positionValueUsd": "110",
+              "marginUsedUsd": "22",
+              "unrealizedPnlUsd": "10",
+              "returnOnEquity": "0.50",
+              "liquidationPx": "82",
+              "liquidationDistance": 0.2545,
+              "fundingNetUsd": "0",
+              "level": "ok"
+            }
+          ],
+          "seq": 1
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "certified-cli",
+      "scenario": "certified",
+      "buildAt": "10:10",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent positions prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/positions",
+          "credential": false
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/open-orders",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "lines": [
+          "Portfolio $532.00",
+          "Updated Jan 12 10:02Z",
+          "Perps as of Jan 12 10:02Z (certified hourly)",
+          "",
+          "Kind                Position  Amount  Value                    P&L                   Details",
+          "------------------  --------  ------  -----------------------  --------------------  ---------------------------------------------",
+          "token               FAKE      50      $500.00                  +$100.00 (+25.0%)     –",
+          "perp 5x Long cross  ETH       1       $110.00 (margin $22.00)  +$10.00 (+50.0% ROE)  liq $82.00 (25.4% away); funding earned $0.00"
+        ]
+      }
+    },
+    {
+      "id": "certified-cli-json",
+      "scenario": "certified",
+      "buildAt": "10:10",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent positions prof_0123456789abcdef --json"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/positions",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "body": {
+          "success": true,
+          "publishedBuildId": "build_fixture_01",
+          "asOfMs": 1799748120000,
+          "spotAsOfMs": 1799748480000,
+          "perpsAsOfMs": 1799748120000,
+          "perpsSnapshotId": "ps1_f09f943da81b3c70d11cd4a55be76913",
+          "perpsPartial": false,
+          "portfolioValueUsd": 532,
+          "portfolioPartial": false,
+          "hiddenDust": 0,
+          "unpriced": 0,
+          "positions": [
+            {
+              "kind": "spot",
+              "mint": "MintFake11111111111111111111111111111111111",
+              "chain": "solana",
+              "symbol": "FAKE",
+              "quantity": 50,
+              "valueUsd": 500,
+              "unrealizedUsd": 100,
+              "origin": "bought",
+              "unrealizedPct": 25
+            },
+            {
+              "kind": "perp",
+              "coin": "ETH",
+              "side": "long",
+              "size": "1",
+              "leverage": {
+                "value": 5,
+                "type": "cross"
+              },
+              "entryPx": "100",
+              "markPx": "110",
+              "positionValueUsd": "110",
+              "marginUsedUsd": "22",
+              "unrealizedPnlUsd": "10",
+              "returnOnEquity": "0.50",
+              "liquidationPx": "82",
+              "liquidationDistance": 0.2545,
+              "fundingNetUsd": "0",
+              "level": "ok"
+            }
+          ],
+          "seq": 1
+        }
+      }
+    },
+    {
+      "id": "provisional-api",
+      "scenario": "provisional",
+      "buildAt": "10:24",
+      "surface": "api-source",
+      "says": "10:24, a provisional read at 10:22 on the 10:02 cutoff: its time, marked provisional, with the certified cutoff under it; the 10:15 close is already in the figures.",
+      "evidence": "pure API source on made-up stored facts; the database, the perps jobs and the keyed route are not executed",
+      "outcome": {
+        "read": {
+          "kind": "provisional",
+          "certifiedCutoff": "10:02",
+          "provisionalRead": {
+            "on": "10:02",
+            "state": "10:22",
+            "used": true
+          }
+        },
+        "positions": {
+          "success": true,
+          "publishedBuildId": "build_fixture_02",
+          "asOfMs": 1799749320000,
+          "spotAsOfMs": 1799749320000,
+          "perpsAsOfMs": 1799749320000,
+          "perpsSnapshotId": "ps1_e4bd85285c380a9490bf8c112cbbc2ac",
+          "perpsPartial": false,
+          "perpsProvisional": true,
+          "perpsCertifiedAsOfMs": 1799748120000,
+          "portfolioValueUsd": 517.2,
+          "portfolioPartial": false,
+          "hiddenDust": 0,
+          "unpriced": 0,
+          "positions": [
+            {
+              "kind": "spot",
+              "mint": "MintFake11111111111111111111111111111111111",
+              "chain": "solana",
+              "symbol": "FAKE",
+              "quantity": 50,
+              "valueUsd": 500,
+              "unrealizedUsd": 100,
+              "origin": "bought",
+              "unrealizedPct": 25
+            },
+            {
+              "kind": "perp",
+              "coin": "ETH",
+              "side": "long",
+              "size": "0.5",
+              "leverage": {
+                "value": 5,
+                "type": "cross"
+              },
+              "entryPx": "100",
+              "markPx": "112",
+              "positionValueUsd": "56",
+              "marginUsedUsd": "11.2",
+              "unrealizedPnlUsd": "6",
+              "returnOnEquity": "0.60",
+              "liquidationPx": "82",
+              "liquidationDistance": 0.2679,
+              "fundingNetUsd": "0",
+              "level": "ok"
+            }
+          ],
+          "seq": 2
+        },
+        "record": {
+          "success": true,
+          "record": {
+            "profileId": "prof_0123456789abcdef",
+            "minClosesForRate": 10,
+            "totalPnlUsd": 111.92,
+            "unrealizedUsd": 106,
+            "totals": {
+              "realizedNetUsd": 5.92,
+              "wins": 0,
+              "losses": 0,
+              "counted": 0,
+              "perpsRealizedUsd": 6,
+              "perpsFundingUsd": 0,
+              "perpsFeesUsd": 0.08,
+              "perpsUnrealizedUsd": 6,
+              "perpsNetUsd": 11.92,
+              "perpsPartial": false,
+              "perpsAsOfMs": 1799749320000,
+              "perpsSnapshotId": "ps1_e4bd85285c380a9490bf8c112cbbc2ac",
+              "perpsProvisional": true,
+              "perpsCertifiedAsOfMs": 1799748120000
+            },
+            "perpsRealizedUsd": 6,
+            "perpsFundingUsd": 0,
+            "perpsFeesUsd": 0.08,
+            "perpsUnrealizedUsd": 6,
+            "perpsNetUsd": 11.92,
+            "perpsPartial": false,
+            "perpsAsOfMs": 1799749320000,
+            "perpsSnapshotId": "ps1_e4bd85285c380a9490bf8c112cbbc2ac",
+            "perpsProvisional": true,
+            "perpsCertifiedAsOfMs": 1799748120000,
+            "winRatePct": null,
+            "perpRounds": [],
+            "perpsTopCloses": []
+          }
+        }
+      }
+    },
+    {
+      "id": "provisional-mcp",
+      "scenario": "provisional",
+      "buildAt": "10:24",
+      "surface": "mcp",
+      "args": {
+        "profileId": "prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/positions",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "body": {
+          "success": true,
+          "publishedBuildId": "build_fixture_02",
+          "asOfMs": 1799749320000,
+          "spotAsOfMs": 1799749320000,
+          "perpsAsOfMs": 1799749320000,
+          "perpsSnapshotId": "ps1_e4bd85285c380a9490bf8c112cbbc2ac",
+          "perpsPartial": false,
+          "perpsProvisional": true,
+          "perpsCertifiedAsOfMs": 1799748120000,
+          "portfolioValueUsd": 517.2,
+          "portfolioPartial": false,
+          "hiddenDust": 0,
+          "unpriced": 0,
+          "positions": [
+            {
+              "kind": "spot",
+              "mint": "MintFake11111111111111111111111111111111111",
+              "chain": "solana",
+              "symbol": "FAKE",
+              "quantity": 50,
+              "valueUsd": 500,
+              "unrealizedUsd": 100,
+              "origin": "bought",
+              "unrealizedPct": 25
+            },
+            {
+              "kind": "perp",
+              "coin": "ETH",
+              "side": "long",
+              "size": "0.5",
+              "leverage": {
+                "value": 5,
+                "type": "cross"
+              },
+              "entryPx": "100",
+              "markPx": "112",
+              "positionValueUsd": "56",
+              "marginUsedUsd": "11.2",
+              "unrealizedPnlUsd": "6",
+              "returnOnEquity": "0.60",
+              "liquidationPx": "82",
+              "liquidationDistance": 0.2679,
+              "fundingNetUsd": "0",
+              "level": "ok"
+            }
+          ],
+          "seq": 2
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "provisional-sdk",
+      "scenario": "provisional",
+      "buildAt": "10:24",
+      "surface": "sdk",
+      "args": {
+        "profileId": "prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/positions",
+          "credential": true
+        }
+      ],
+      "outcome": {
+        "body": {
+          "publishedBuildId": "build_fixture_02",
+          "asOfMs": 1799749320000,
+          "spotAsOfMs": 1799749320000,
+          "perpsAsOfMs": 1799749320000,
+          "perpsSnapshotId": "ps1_e4bd85285c380a9490bf8c112cbbc2ac",
+          "perpsPartial": false,
+          "perpsProvisional": true,
+          "perpsCertifiedAsOfMs": 1799748120000,
+          "portfolioValueUsd": 517.2,
+          "portfolioPartial": false,
+          "hiddenDust": 0,
+          "unpriced": 0,
+          "positions": [
+            {
+              "kind": "spot",
+              "mint": "MintFake11111111111111111111111111111111111",
+              "chain": "solana",
+              "symbol": "FAKE",
+              "quantity": 50,
+              "valueUsd": 500,
+              "unrealizedUsd": 100,
+              "origin": "bought",
+              "unrealizedPct": 25
+            },
+            {
+              "kind": "perp",
+              "coin": "ETH",
+              "side": "long",
+              "size": "0.5",
+              "leverage": {
+                "value": 5,
+                "type": "cross"
+              },
+              "entryPx": "100",
+              "markPx": "112",
+              "positionValueUsd": "56",
+              "marginUsedUsd": "11.2",
+              "unrealizedPnlUsd": "6",
+              "returnOnEquity": "0.60",
+              "liquidationPx": "82",
+              "liquidationDistance": 0.2679,
+              "fundingNetUsd": "0",
+              "level": "ok"
+            }
+          ],
+          "seq": 2
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "provisional-cli",
+      "scenario": "provisional",
+      "buildAt": "10:24",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent positions prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/positions",
+          "credential": false
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/open-orders",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "lines": [
+          "Portfolio $517.20",
+          "Updated Jan 12 10:22Z",
+          "Perps as of Jan 12 10:22Z (provisional; certified to Jan 12 10:02Z, corrected hourly)",
+          "",
+          "Kind                Position  Amount  Value                   P&L                  Details",
+          "------------------  --------  ------  ----------------------  -------------------  ---------------------------------------------",
+          "token               FAKE      50      $500.00                 +$100.00 (+25.0%)    –",
+          "perp 5x Long cross  ETH       0.5     $56.00 (margin $11.20)  +$6.00 (+60.0% ROE)  liq $82.00 (26.8% away); funding earned $0.00"
+        ]
+      }
+    },
+    {
+      "id": "provisional-cli-json",
+      "scenario": "provisional",
+      "buildAt": "10:24",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent positions prof_0123456789abcdef --json"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/positions",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "body": {
+          "success": true,
+          "publishedBuildId": "build_fixture_02",
+          "asOfMs": 1799749320000,
+          "spotAsOfMs": 1799749320000,
+          "perpsAsOfMs": 1799749320000,
+          "perpsSnapshotId": "ps1_e4bd85285c380a9490bf8c112cbbc2ac",
+          "perpsPartial": false,
+          "perpsProvisional": true,
+          "perpsCertifiedAsOfMs": 1799748120000,
+          "portfolioValueUsd": 517.2,
+          "portfolioPartial": false,
+          "hiddenDust": 0,
+          "unpriced": 0,
+          "positions": [
+            {
+              "kind": "spot",
+              "mint": "MintFake11111111111111111111111111111111111",
+              "chain": "solana",
+              "symbol": "FAKE",
+              "quantity": 50,
+              "valueUsd": 500,
+              "unrealizedUsd": 100,
+              "origin": "bought",
+              "unrealizedPct": 25
+            },
+            {
+              "kind": "perp",
+              "coin": "ETH",
+              "side": "long",
+              "size": "0.5",
+              "leverage": {
+                "value": 5,
+                "type": "cross"
+              },
+              "entryPx": "100",
+              "markPx": "112",
+              "positionValueUsd": "56",
+              "marginUsedUsd": "11.2",
+              "unrealizedPnlUsd": "6",
+              "returnOnEquity": "0.60",
+              "liquidationPx": "82",
+              "liquidationDistance": 0.2679,
+              "fundingNetUsd": "0",
+              "level": "ok"
+            }
+          ],
+          "seq": 2
+        }
+      }
+    },
+    {
+      "id": "provisional-next-build-api",
+      "scenario": "provisional-next-build",
+      "buildAt": "10:34",
+      "surface": "api-source",
+      "says": "10:34, the next board build: the provisional time moved 10 minutes on, the certified cutoff did not.",
+      "evidence": "pure API source on made-up stored facts; the database, the perps jobs and the keyed route are not executed",
+      "outcome": {
+        "read": {
+          "kind": "provisional",
+          "certifiedCutoff": "10:02",
+          "provisionalRead": {
+            "on": "10:02",
+            "state": "10:32",
+            "used": true
+          }
+        },
+        "positions": {
+          "success": true,
+          "publishedBuildId": "build_fixture_03",
+          "asOfMs": 1799749920000,
+          "spotAsOfMs": 1799749920000,
+          "perpsAsOfMs": 1799749920000,
+          "perpsSnapshotId": "ps1_86a07e8ccb4c1a1a61675c5adf631380",
+          "perpsPartial": false,
+          "perpsProvisional": true,
+          "perpsCertifiedAsOfMs": 1799748120000,
+          "portfolioValueUsd": 517.8,
+          "portfolioPartial": false,
+          "hiddenDust": 0,
+          "unpriced": 0,
+          "positions": [
+            {
+              "kind": "spot",
+              "mint": "MintFake11111111111111111111111111111111111",
+              "chain": "solana",
+              "symbol": "FAKE",
+              "quantity": 50,
+              "valueUsd": 500,
+              "unrealizedUsd": 100,
+              "origin": "bought",
+              "unrealizedPct": 25
+            },
+            {
+              "kind": "perp",
+              "coin": "ETH",
+              "side": "long",
+              "size": "0.5",
+              "leverage": {
+                "value": 5,
+                "type": "cross"
+              },
+              "entryPx": "100",
+              "markPx": "113",
+              "positionValueUsd": "56.5",
+              "marginUsedUsd": "11.3",
+              "unrealizedPnlUsd": "6.5",
+              "returnOnEquity": "0.65",
+              "liquidationPx": "82",
+              "liquidationDistance": 0.2743,
+              "fundingNetUsd": "0",
+              "level": "ok"
+            }
+          ],
+          "seq": 3
+        },
+        "record": {
+          "success": true,
+          "record": {
+            "profileId": "prof_0123456789abcdef",
+            "minClosesForRate": 10,
+            "totalPnlUsd": 112.42,
+            "unrealizedUsd": 106.5,
+            "totals": {
+              "realizedNetUsd": 5.92,
+              "wins": 0,
+              "losses": 0,
+              "counted": 0,
+              "perpsRealizedUsd": 6,
+              "perpsFundingUsd": 0,
+              "perpsFeesUsd": 0.08,
+              "perpsUnrealizedUsd": 6.5,
+              "perpsNetUsd": 12.42,
+              "perpsPartial": false,
+              "perpsAsOfMs": 1799749920000,
+              "perpsSnapshotId": "ps1_86a07e8ccb4c1a1a61675c5adf631380",
+              "perpsProvisional": true,
+              "perpsCertifiedAsOfMs": 1799748120000
+            },
+            "perpsRealizedUsd": 6,
+            "perpsFundingUsd": 0,
+            "perpsFeesUsd": 0.08,
+            "perpsUnrealizedUsd": 6.5,
+            "perpsNetUsd": 12.42,
+            "perpsPartial": false,
+            "perpsAsOfMs": 1799749920000,
+            "perpsSnapshotId": "ps1_86a07e8ccb4c1a1a61675c5adf631380",
+            "perpsProvisional": true,
+            "perpsCertifiedAsOfMs": 1799748120000,
+            "winRatePct": null,
+            "perpRounds": [],
+            "perpsTopCloses": []
+          }
+        }
+      }
+    },
+    {
+      "id": "provisional-next-build-mcp",
+      "scenario": "provisional-next-build",
+      "buildAt": "10:34",
+      "surface": "mcp",
+      "args": {
+        "profileId": "prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/positions",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "body": {
+          "success": true,
+          "publishedBuildId": "build_fixture_03",
+          "asOfMs": 1799749920000,
+          "spotAsOfMs": 1799749920000,
+          "perpsAsOfMs": 1799749920000,
+          "perpsSnapshotId": "ps1_86a07e8ccb4c1a1a61675c5adf631380",
+          "perpsPartial": false,
+          "perpsProvisional": true,
+          "perpsCertifiedAsOfMs": 1799748120000,
+          "portfolioValueUsd": 517.8,
+          "portfolioPartial": false,
+          "hiddenDust": 0,
+          "unpriced": 0,
+          "positions": [
+            {
+              "kind": "spot",
+              "mint": "MintFake11111111111111111111111111111111111",
+              "chain": "solana",
+              "symbol": "FAKE",
+              "quantity": 50,
+              "valueUsd": 500,
+              "unrealizedUsd": 100,
+              "origin": "bought",
+              "unrealizedPct": 25
+            },
+            {
+              "kind": "perp",
+              "coin": "ETH",
+              "side": "long",
+              "size": "0.5",
+              "leverage": {
+                "value": 5,
+                "type": "cross"
+              },
+              "entryPx": "100",
+              "markPx": "113",
+              "positionValueUsd": "56.5",
+              "marginUsedUsd": "11.3",
+              "unrealizedPnlUsd": "6.5",
+              "returnOnEquity": "0.65",
+              "liquidationPx": "82",
+              "liquidationDistance": 0.2743,
+              "fundingNetUsd": "0",
+              "level": "ok"
+            }
+          ],
+          "seq": 3
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "provisional-next-build-sdk",
+      "scenario": "provisional-next-build",
+      "buildAt": "10:34",
+      "surface": "sdk",
+      "args": {
+        "profileId": "prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/positions",
+          "credential": true
+        }
+      ],
+      "outcome": {
+        "body": {
+          "publishedBuildId": "build_fixture_03",
+          "asOfMs": 1799749920000,
+          "spotAsOfMs": 1799749920000,
+          "perpsAsOfMs": 1799749920000,
+          "perpsSnapshotId": "ps1_86a07e8ccb4c1a1a61675c5adf631380",
+          "perpsPartial": false,
+          "perpsProvisional": true,
+          "perpsCertifiedAsOfMs": 1799748120000,
+          "portfolioValueUsd": 517.8,
+          "portfolioPartial": false,
+          "hiddenDust": 0,
+          "unpriced": 0,
+          "positions": [
+            {
+              "kind": "spot",
+              "mint": "MintFake11111111111111111111111111111111111",
+              "chain": "solana",
+              "symbol": "FAKE",
+              "quantity": 50,
+              "valueUsd": 500,
+              "unrealizedUsd": 100,
+              "origin": "bought",
+              "unrealizedPct": 25
+            },
+            {
+              "kind": "perp",
+              "coin": "ETH",
+              "side": "long",
+              "size": "0.5",
+              "leverage": {
+                "value": 5,
+                "type": "cross"
+              },
+              "entryPx": "100",
+              "markPx": "113",
+              "positionValueUsd": "56.5",
+              "marginUsedUsd": "11.3",
+              "unrealizedPnlUsd": "6.5",
+              "returnOnEquity": "0.65",
+              "liquidationPx": "82",
+              "liquidationDistance": 0.2743,
+              "fundingNetUsd": "0",
+              "level": "ok"
+            }
+          ],
+          "seq": 3
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "provisional-next-build-cli",
+      "scenario": "provisional-next-build",
+      "buildAt": "10:34",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent positions prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/positions",
+          "credential": false
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/open-orders",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "lines": [
+          "Portfolio $517.80",
+          "Updated Jan 12 10:32Z",
+          "Perps as of Jan 12 10:32Z (provisional; certified to Jan 12 10:02Z, corrected hourly)",
+          "",
+          "Kind                Position  Amount  Value                   P&L                  Details",
+          "------------------  --------  ------  ----------------------  -------------------  ---------------------------------------------",
+          "token               FAKE      50      $500.00                 +$100.00 (+25.0%)    –",
+          "perp 5x Long cross  ETH       0.5     $56.50 (margin $11.30)  +$6.50 (+65.0% ROE)  liq $82.00 (27.4% away); funding earned $0.00"
+        ]
+      }
+    },
+    {
+      "id": "provisional-next-build-cli-json",
+      "scenario": "provisional-next-build",
+      "buildAt": "10:34",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent positions prof_0123456789abcdef --json"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/positions",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "body": {
+          "success": true,
+          "publishedBuildId": "build_fixture_03",
+          "asOfMs": 1799749920000,
+          "spotAsOfMs": 1799749920000,
+          "perpsAsOfMs": 1799749920000,
+          "perpsSnapshotId": "ps1_86a07e8ccb4c1a1a61675c5adf631380",
+          "perpsPartial": false,
+          "perpsProvisional": true,
+          "perpsCertifiedAsOfMs": 1799748120000,
+          "portfolioValueUsd": 517.8,
+          "portfolioPartial": false,
+          "hiddenDust": 0,
+          "unpriced": 0,
+          "positions": [
+            {
+              "kind": "spot",
+              "mint": "MintFake11111111111111111111111111111111111",
+              "chain": "solana",
+              "symbol": "FAKE",
+              "quantity": 50,
+              "valueUsd": 500,
+              "unrealizedUsd": 100,
+              "origin": "bought",
+              "unrealizedPct": 25
+            },
+            {
+              "kind": "perp",
+              "coin": "ETH",
+              "side": "long",
+              "size": "0.5",
+              "leverage": {
+                "value": 5,
+                "type": "cross"
+              },
+              "entryPx": "100",
+              "markPx": "113",
+              "positionValueUsd": "56.5",
+              "marginUsedUsd": "11.3",
+              "unrealizedPnlUsd": "6.5",
+              "returnOnEquity": "0.65",
+              "liquidationPx": "82",
+              "liquidationDistance": 0.2743,
+              "fundingNetUsd": "0",
+              "level": "ok"
+            }
+          ],
+          "seq": 3
+        }
+      }
+    },
+    {
+      "id": "provisional-one-missed-refresh-api",
+      "scenario": "provisional-one-missed-refresh",
+      "buildAt": "10:44",
+      "surface": "api-source",
+      "says": "10:44, the read was not refreshed: 12 minutes old is still inside the 15-minute limit, so still provisional.",
+      "evidence": "pure API source on made-up stored facts; the database, the perps jobs and the keyed route are not executed",
+      "outcome": {
+        "read": {
+          "kind": "provisional",
+          "certifiedCutoff": "10:02",
+          "provisionalRead": {
+            "on": "10:02",
+            "state": "10:32",
+            "used": true
+          }
+        },
+        "positions": {
+          "success": true,
+          "publishedBuildId": "build_fixture_04",
+          "asOfMs": 1799749920000,
+          "spotAsOfMs": 1799750520000,
+          "perpsAsOfMs": 1799749920000,
+          "perpsSnapshotId": "ps1_86a07e8ccb4c1a1a61675c5adf631380",
+          "perpsPartial": false,
+          "perpsProvisional": true,
+          "perpsCertifiedAsOfMs": 1799748120000,
+          "portfolioValueUsd": 517.8,
+          "portfolioPartial": false,
+          "hiddenDust": 0,
+          "unpriced": 0,
+          "positions": [
+            {
+              "kind": "spot",
+              "mint": "MintFake11111111111111111111111111111111111",
+              "chain": "solana",
+              "symbol": "FAKE",
+              "quantity": 50,
+              "valueUsd": 500,
+              "unrealizedUsd": 100,
+              "origin": "bought",
+              "unrealizedPct": 25
+            },
+            {
+              "kind": "perp",
+              "coin": "ETH",
+              "side": "long",
+              "size": "0.5",
+              "leverage": {
+                "value": 5,
+                "type": "cross"
+              },
+              "entryPx": "100",
+              "markPx": "113",
+              "positionValueUsd": "56.5",
+              "marginUsedUsd": "11.3",
+              "unrealizedPnlUsd": "6.5",
+              "returnOnEquity": "0.65",
+              "liquidationPx": "82",
+              "liquidationDistance": 0.2743,
+              "fundingNetUsd": "0",
+              "level": "ok"
+            }
+          ],
+          "seq": 4
+        },
+        "record": {
+          "success": true,
+          "record": {
+            "profileId": "prof_0123456789abcdef",
+            "minClosesForRate": 10,
+            "totalPnlUsd": 112.42,
+            "unrealizedUsd": 106.5,
+            "totals": {
+              "realizedNetUsd": 5.92,
+              "wins": 0,
+              "losses": 0,
+              "counted": 0,
+              "perpsRealizedUsd": 6,
+              "perpsFundingUsd": 0,
+              "perpsFeesUsd": 0.08,
+              "perpsUnrealizedUsd": 6.5,
+              "perpsNetUsd": 12.42,
+              "perpsPartial": false,
+              "perpsAsOfMs": 1799749920000,
+              "perpsSnapshotId": "ps1_86a07e8ccb4c1a1a61675c5adf631380",
+              "perpsProvisional": true,
+              "perpsCertifiedAsOfMs": 1799748120000
+            },
+            "perpsRealizedUsd": 6,
+            "perpsFundingUsd": 0,
+            "perpsFeesUsd": 0.08,
+            "perpsUnrealizedUsd": 6.5,
+            "perpsNetUsd": 12.42,
+            "perpsPartial": false,
+            "perpsAsOfMs": 1799749920000,
+            "perpsSnapshotId": "ps1_86a07e8ccb4c1a1a61675c5adf631380",
+            "perpsProvisional": true,
+            "perpsCertifiedAsOfMs": 1799748120000,
+            "winRatePct": null,
+            "perpRounds": [],
+            "perpsTopCloses": []
+          }
+        }
+      }
+    },
+    {
+      "id": "provisional-one-missed-refresh-mcp",
+      "scenario": "provisional-one-missed-refresh",
+      "buildAt": "10:44",
+      "surface": "mcp",
+      "args": {
+        "profileId": "prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/positions",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "body": {
+          "success": true,
+          "publishedBuildId": "build_fixture_04",
+          "asOfMs": 1799749920000,
+          "spotAsOfMs": 1799750520000,
+          "perpsAsOfMs": 1799749920000,
+          "perpsSnapshotId": "ps1_86a07e8ccb4c1a1a61675c5adf631380",
+          "perpsPartial": false,
+          "perpsProvisional": true,
+          "perpsCertifiedAsOfMs": 1799748120000,
+          "portfolioValueUsd": 517.8,
+          "portfolioPartial": false,
+          "hiddenDust": 0,
+          "unpriced": 0,
+          "positions": [
+            {
+              "kind": "spot",
+              "mint": "MintFake11111111111111111111111111111111111",
+              "chain": "solana",
+              "symbol": "FAKE",
+              "quantity": 50,
+              "valueUsd": 500,
+              "unrealizedUsd": 100,
+              "origin": "bought",
+              "unrealizedPct": 25
+            },
+            {
+              "kind": "perp",
+              "coin": "ETH",
+              "side": "long",
+              "size": "0.5",
+              "leverage": {
+                "value": 5,
+                "type": "cross"
+              },
+              "entryPx": "100",
+              "markPx": "113",
+              "positionValueUsd": "56.5",
+              "marginUsedUsd": "11.3",
+              "unrealizedPnlUsd": "6.5",
+              "returnOnEquity": "0.65",
+              "liquidationPx": "82",
+              "liquidationDistance": 0.2743,
+              "fundingNetUsd": "0",
+              "level": "ok"
+            }
+          ],
+          "seq": 4
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "provisional-one-missed-refresh-sdk",
+      "scenario": "provisional-one-missed-refresh",
+      "buildAt": "10:44",
+      "surface": "sdk",
+      "args": {
+        "profileId": "prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/positions",
+          "credential": true
+        }
+      ],
+      "outcome": {
+        "body": {
+          "publishedBuildId": "build_fixture_04",
+          "asOfMs": 1799749920000,
+          "spotAsOfMs": 1799750520000,
+          "perpsAsOfMs": 1799749920000,
+          "perpsSnapshotId": "ps1_86a07e8ccb4c1a1a61675c5adf631380",
+          "perpsPartial": false,
+          "perpsProvisional": true,
+          "perpsCertifiedAsOfMs": 1799748120000,
+          "portfolioValueUsd": 517.8,
+          "portfolioPartial": false,
+          "hiddenDust": 0,
+          "unpriced": 0,
+          "positions": [
+            {
+              "kind": "spot",
+              "mint": "MintFake11111111111111111111111111111111111",
+              "chain": "solana",
+              "symbol": "FAKE",
+              "quantity": 50,
+              "valueUsd": 500,
+              "unrealizedUsd": 100,
+              "origin": "bought",
+              "unrealizedPct": 25
+            },
+            {
+              "kind": "perp",
+              "coin": "ETH",
+              "side": "long",
+              "size": "0.5",
+              "leverage": {
+                "value": 5,
+                "type": "cross"
+              },
+              "entryPx": "100",
+              "markPx": "113",
+              "positionValueUsd": "56.5",
+              "marginUsedUsd": "11.3",
+              "unrealizedPnlUsd": "6.5",
+              "returnOnEquity": "0.65",
+              "liquidationPx": "82",
+              "liquidationDistance": 0.2743,
+              "fundingNetUsd": "0",
+              "level": "ok"
+            }
+          ],
+          "seq": 4
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "provisional-one-missed-refresh-cli",
+      "scenario": "provisional-one-missed-refresh",
+      "buildAt": "10:44",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent positions prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/positions",
+          "credential": false
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/open-orders",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "lines": [
+          "Portfolio $517.80",
+          "Updated Jan 12 10:32Z",
+          "Perps as of Jan 12 10:32Z (provisional; certified to Jan 12 10:02Z, corrected hourly)",
+          "",
+          "Kind                Position  Amount  Value                   P&L                  Details",
+          "------------------  --------  ------  ----------------------  -------------------  ---------------------------------------------",
+          "token               FAKE      50      $500.00                 +$100.00 (+25.0%)    –",
+          "perp 5x Long cross  ETH       0.5     $56.50 (margin $11.30)  +$6.50 (+65.0% ROE)  liq $82.00 (27.4% away); funding earned $0.00"
+        ]
+      }
+    },
+    {
+      "id": "provisional-one-missed-refresh-cli-json",
+      "scenario": "provisional-one-missed-refresh",
+      "buildAt": "10:44",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent positions prof_0123456789abcdef --json"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/positions",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "body": {
+          "success": true,
+          "publishedBuildId": "build_fixture_04",
+          "asOfMs": 1799749920000,
+          "spotAsOfMs": 1799750520000,
+          "perpsAsOfMs": 1799749920000,
+          "perpsSnapshotId": "ps1_86a07e8ccb4c1a1a61675c5adf631380",
+          "perpsPartial": false,
+          "perpsProvisional": true,
+          "perpsCertifiedAsOfMs": 1799748120000,
+          "portfolioValueUsd": 517.8,
+          "portfolioPartial": false,
+          "hiddenDust": 0,
+          "unpriced": 0,
+          "positions": [
+            {
+              "kind": "spot",
+              "mint": "MintFake11111111111111111111111111111111111",
+              "chain": "solana",
+              "symbol": "FAKE",
+              "quantity": 50,
+              "valueUsd": 500,
+              "unrealizedUsd": 100,
+              "origin": "bought",
+              "unrealizedPct": 25
+            },
+            {
+              "kind": "perp",
+              "coin": "ETH",
+              "side": "long",
+              "size": "0.5",
+              "leverage": {
+                "value": 5,
+                "type": "cross"
+              },
+              "entryPx": "100",
+              "markPx": "113",
+              "positionValueUsd": "56.5",
+              "marginUsedUsd": "11.3",
+              "unrealizedPnlUsd": "6.5",
+              "returnOnEquity": "0.65",
+              "liquidationPx": "82",
+              "liquidationDistance": 0.2743,
+              "fundingNetUsd": "0",
+              "level": "ok"
+            }
+          ],
+          "seq": 4
+        }
+      }
+    },
+    {
+      "id": "provisional-too-old-api",
+      "scenario": "provisional-too-old",
+      "buildAt": "10:50",
+      "surface": "api-source",
+      "says": "10:50, the read is 18 minutes old: not used. The certified 10:02 figures come back with their real age and no provisional mark.",
+      "evidence": "pure API source on made-up stored facts; the database, the perps jobs and the keyed route are not executed",
+      "outcome": {
+        "read": {
+          "kind": "certified",
+          "certifiedCutoff": "10:02",
+          "provisionalRead": {
+            "on": "10:02",
+            "state": "10:32",
+            "used": false
+          }
+        },
+        "positions": {
+          "success": true,
+          "publishedBuildId": "build_fixture_05",
+          "asOfMs": 1799748120000,
+          "spotAsOfMs": 1799750880000,
+          "perpsAsOfMs": 1799748120000,
+          "perpsSnapshotId": "ps1_f09f943da81b3c70d11cd4a55be76913",
+          "perpsPartial": false,
+          "portfolioValueUsd": 532,
+          "portfolioPartial": false,
+          "hiddenDust": 0,
+          "unpriced": 0,
+          "positions": [
+            {
+              "kind": "spot",
+              "mint": "MintFake11111111111111111111111111111111111",
+              "chain": "solana",
+              "symbol": "FAKE",
+              "quantity": 50,
+              "valueUsd": 500,
+              "unrealizedUsd": 100,
+              "origin": "bought",
+              "unrealizedPct": 25
+            },
+            {
+              "kind": "perp",
+              "coin": "ETH",
+              "side": "long",
+              "size": "1",
+              "leverage": {
+                "value": 5,
+                "type": "cross"
+              },
+              "entryPx": "100",
+              "markPx": "110",
+              "positionValueUsd": "110",
+              "marginUsedUsd": "22",
+              "unrealizedPnlUsd": "10",
+              "returnOnEquity": "0.50",
+              "liquidationPx": "82",
+              "liquidationDistance": 0.2545,
+              "fundingNetUsd": "0",
+              "level": "ok"
+            }
+          ],
+          "seq": 5
+        },
+        "record": {
+          "success": true,
+          "record": {
+            "profileId": "prof_0123456789abcdef",
+            "minClosesForRate": 10,
+            "totalPnlUsd": 109.95,
+            "unrealizedUsd": 110,
+            "totals": {
+              "realizedNetUsd": -0.05,
+              "wins": 0,
+              "losses": 0,
+              "counted": 0,
+              "perpsRealizedUsd": 0,
+              "perpsFundingUsd": 0,
+              "perpsFeesUsd": 0.05,
+              "perpsUnrealizedUsd": 10,
+              "perpsNetUsd": 9.95,
+              "perpsPartial": false,
+              "perpsAsOfMs": 1799748120000,
+              "perpsSnapshotId": "ps1_f09f943da81b3c70d11cd4a55be76913"
+            },
+            "perpsRealizedUsd": 0,
+            "perpsFundingUsd": 0,
+            "perpsFeesUsd": 0.05,
+            "perpsUnrealizedUsd": 10,
+            "perpsNetUsd": 9.95,
+            "perpsPartial": false,
+            "perpsAsOfMs": 1799748120000,
+            "perpsSnapshotId": "ps1_f09f943da81b3c70d11cd4a55be76913",
+            "winRatePct": null,
+            "perpRounds": [],
+            "perpsTopCloses": []
+          }
+        }
+      }
+    },
+    {
+      "id": "provisional-too-old-mcp",
+      "scenario": "provisional-too-old",
+      "buildAt": "10:50",
+      "surface": "mcp",
+      "args": {
+        "profileId": "prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/positions",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "body": {
+          "success": true,
+          "publishedBuildId": "build_fixture_05",
+          "asOfMs": 1799748120000,
+          "spotAsOfMs": 1799750880000,
+          "perpsAsOfMs": 1799748120000,
+          "perpsSnapshotId": "ps1_f09f943da81b3c70d11cd4a55be76913",
+          "perpsPartial": false,
+          "portfolioValueUsd": 532,
+          "portfolioPartial": false,
+          "hiddenDust": 0,
+          "unpriced": 0,
+          "positions": [
+            {
+              "kind": "spot",
+              "mint": "MintFake11111111111111111111111111111111111",
+              "chain": "solana",
+              "symbol": "FAKE",
+              "quantity": 50,
+              "valueUsd": 500,
+              "unrealizedUsd": 100,
+              "origin": "bought",
+              "unrealizedPct": 25
+            },
+            {
+              "kind": "perp",
+              "coin": "ETH",
+              "side": "long",
+              "size": "1",
+              "leverage": {
+                "value": 5,
+                "type": "cross"
+              },
+              "entryPx": "100",
+              "markPx": "110",
+              "positionValueUsd": "110",
+              "marginUsedUsd": "22",
+              "unrealizedPnlUsd": "10",
+              "returnOnEquity": "0.50",
+              "liquidationPx": "82",
+              "liquidationDistance": 0.2545,
+              "fundingNetUsd": "0",
+              "level": "ok"
+            }
+          ],
+          "seq": 5
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "provisional-too-old-sdk",
+      "scenario": "provisional-too-old",
+      "buildAt": "10:50",
+      "surface": "sdk",
+      "args": {
+        "profileId": "prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/positions",
+          "credential": true
+        }
+      ],
+      "outcome": {
+        "body": {
+          "publishedBuildId": "build_fixture_05",
+          "asOfMs": 1799748120000,
+          "spotAsOfMs": 1799750880000,
+          "perpsAsOfMs": 1799748120000,
+          "perpsSnapshotId": "ps1_f09f943da81b3c70d11cd4a55be76913",
+          "perpsPartial": false,
+          "portfolioValueUsd": 532,
+          "portfolioPartial": false,
+          "hiddenDust": 0,
+          "unpriced": 0,
+          "positions": [
+            {
+              "kind": "spot",
+              "mint": "MintFake11111111111111111111111111111111111",
+              "chain": "solana",
+              "symbol": "FAKE",
+              "quantity": 50,
+              "valueUsd": 500,
+              "unrealizedUsd": 100,
+              "origin": "bought",
+              "unrealizedPct": 25
+            },
+            {
+              "kind": "perp",
+              "coin": "ETH",
+              "side": "long",
+              "size": "1",
+              "leverage": {
+                "value": 5,
+                "type": "cross"
+              },
+              "entryPx": "100",
+              "markPx": "110",
+              "positionValueUsd": "110",
+              "marginUsedUsd": "22",
+              "unrealizedPnlUsd": "10",
+              "returnOnEquity": "0.50",
+              "liquidationPx": "82",
+              "liquidationDistance": 0.2545,
+              "fundingNetUsd": "0",
+              "level": "ok"
+            }
+          ],
+          "seq": 5
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "provisional-too-old-cli",
+      "scenario": "provisional-too-old",
+      "buildAt": "10:50",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent positions prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/positions",
+          "credential": false
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/open-orders",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "lines": [
+          "Portfolio $532.00",
+          "Updated Jan 12 10:02Z",
+          "Perps as of Jan 12 10:02Z (certified hourly)",
+          "",
+          "Kind                Position  Amount  Value                    P&L                   Details",
+          "------------------  --------  ------  -----------------------  --------------------  ---------------------------------------------",
+          "token               FAKE      50      $500.00                  +$100.00 (+25.0%)     –",
+          "perp 5x Long cross  ETH       1       $110.00 (margin $22.00)  +$10.00 (+50.0% ROE)  liq $82.00 (25.4% away); funding earned $0.00"
+        ]
+      }
+    },
+    {
+      "id": "provisional-too-old-cli-json",
+      "scenario": "provisional-too-old",
+      "buildAt": "10:50",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent positions prof_0123456789abcdef --json"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/positions",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "body": {
+          "success": true,
+          "publishedBuildId": "build_fixture_05",
+          "asOfMs": 1799748120000,
+          "spotAsOfMs": 1799750880000,
+          "perpsAsOfMs": 1799748120000,
+          "perpsSnapshotId": "ps1_f09f943da81b3c70d11cd4a55be76913",
+          "perpsPartial": false,
+          "portfolioValueUsd": 532,
+          "portfolioPartial": false,
+          "hiddenDust": 0,
+          "unpriced": 0,
+          "positions": [
+            {
+              "kind": "spot",
+              "mint": "MintFake11111111111111111111111111111111111",
+              "chain": "solana",
+              "symbol": "FAKE",
+              "quantity": 50,
+              "valueUsd": 500,
+              "unrealizedUsd": 100,
+              "origin": "bought",
+              "unrealizedPct": 25
+            },
+            {
+              "kind": "perp",
+              "coin": "ETH",
+              "side": "long",
+              "size": "1",
+              "leverage": {
+                "value": 5,
+                "type": "cross"
+              },
+              "entryPx": "100",
+              "markPx": "110",
+              "positionValueUsd": "110",
+              "marginUsedUsd": "22",
+              "unrealizedPnlUsd": "10",
+              "returnOnEquity": "0.50",
+              "liquidationPx": "82",
+              "liquidationDistance": 0.2545,
+              "fundingNetUsd": "0",
+              "level": "ok"
+            }
+          ],
+          "seq": 5
+        }
+      }
+    },
+    {
+      "id": "certified-supersedes-api",
+      "scenario": "certified-supersedes",
+      "buildAt": "11:34",
+      "surface": "api-source",
+      "says": "11:34, the 11:00 hour certified at 11:02: it replaces the provisional figures. A read still standing on the 10:02 cutoff is not used, however new.",
+      "evidence": "pure API source on made-up stored facts; the database, the perps jobs and the keyed route are not executed",
+      "outcome": {
+        "read": {
+          "kind": "certified",
+          "certifiedCutoff": "11:02",
+          "provisionalRead": {
+            "on": "10:02",
+            "state": "11:30",
+            "used": false
+          }
+        },
+        "positions": {
+          "success": true,
+          "publishedBuildId": "build_fixture_06",
+          "asOfMs": 1799751720000,
+          "spotAsOfMs": 1799753520000,
+          "perpsAsOfMs": 1799751720000,
+          "perpsSnapshotId": "ps1_69f470cccfdb3b80bcd3a551240fcf60",
+          "perpsPartial": false,
+          "portfolioValueUsd": 516.6,
+          "portfolioPartial": false,
+          "hiddenDust": 0,
+          "unpriced": 0,
+          "positions": [
+            {
+              "kind": "spot",
+              "mint": "MintFake11111111111111111111111111111111111",
+              "chain": "solana",
+              "symbol": "FAKE",
+              "quantity": 50,
+              "valueUsd": 500,
+              "unrealizedUsd": 100,
+              "origin": "bought",
+              "unrealizedPct": 25
+            },
+            {
+              "kind": "perp",
+              "coin": "ETH",
+              "side": "long",
+              "size": "0.5",
+              "leverage": {
+                "value": 5,
+                "type": "cross"
+              },
+              "entryPx": "100",
+              "markPx": "111",
+              "positionValueUsd": "55.5",
+              "marginUsedUsd": "11.1",
+              "unrealizedPnlUsd": "5.5",
+              "returnOnEquity": "0.55",
+              "liquidationPx": "82",
+              "liquidationDistance": 0.2613,
+              "fundingNetUsd": "0",
+              "level": "ok"
+            }
+          ],
+          "seq": 6
+        },
+        "record": {
+          "success": true,
+          "record": {
+            "profileId": "prof_0123456789abcdef",
+            "minClosesForRate": 10,
+            "totalPnlUsd": 111.42,
+            "unrealizedUsd": 105.5,
+            "totals": {
+              "realizedNetUsd": 5.92,
+              "wins": 0,
+              "losses": 0,
+              "counted": 0,
+              "perpsRealizedUsd": 6,
+              "perpsFundingUsd": 0,
+              "perpsFeesUsd": 0.08,
+              "perpsUnrealizedUsd": 5.5,
+              "perpsNetUsd": 11.42,
+              "perpsPartial": false,
+              "perpsAsOfMs": 1799751720000,
+              "perpsSnapshotId": "ps1_69f470cccfdb3b80bcd3a551240fcf60"
+            },
+            "perpsRealizedUsd": 6,
+            "perpsFundingUsd": 0,
+            "perpsFeesUsd": 0.08,
+            "perpsUnrealizedUsd": 5.5,
+            "perpsNetUsd": 11.42,
+            "perpsPartial": false,
+            "perpsAsOfMs": 1799751720000,
+            "perpsSnapshotId": "ps1_69f470cccfdb3b80bcd3a551240fcf60",
+            "winRatePct": null,
+            "perpRounds": [],
+            "perpsTopCloses": []
+          }
+        }
+      }
+    },
+    {
+      "id": "certified-supersedes-mcp",
+      "scenario": "certified-supersedes",
+      "buildAt": "11:34",
+      "surface": "mcp",
+      "args": {
+        "profileId": "prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/positions",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "body": {
+          "success": true,
+          "publishedBuildId": "build_fixture_06",
+          "asOfMs": 1799751720000,
+          "spotAsOfMs": 1799753520000,
+          "perpsAsOfMs": 1799751720000,
+          "perpsSnapshotId": "ps1_69f470cccfdb3b80bcd3a551240fcf60",
+          "perpsPartial": false,
+          "portfolioValueUsd": 516.6,
+          "portfolioPartial": false,
+          "hiddenDust": 0,
+          "unpriced": 0,
+          "positions": [
+            {
+              "kind": "spot",
+              "mint": "MintFake11111111111111111111111111111111111",
+              "chain": "solana",
+              "symbol": "FAKE",
+              "quantity": 50,
+              "valueUsd": 500,
+              "unrealizedUsd": 100,
+              "origin": "bought",
+              "unrealizedPct": 25
+            },
+            {
+              "kind": "perp",
+              "coin": "ETH",
+              "side": "long",
+              "size": "0.5",
+              "leverage": {
+                "value": 5,
+                "type": "cross"
+              },
+              "entryPx": "100",
+              "markPx": "111",
+              "positionValueUsd": "55.5",
+              "marginUsedUsd": "11.1",
+              "unrealizedPnlUsd": "5.5",
+              "returnOnEquity": "0.55",
+              "liquidationPx": "82",
+              "liquidationDistance": 0.2613,
+              "fundingNetUsd": "0",
+              "level": "ok"
+            }
+          ],
+          "seq": 6
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "certified-supersedes-sdk",
+      "scenario": "certified-supersedes",
+      "buildAt": "11:34",
+      "surface": "sdk",
+      "args": {
+        "profileId": "prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/positions",
+          "credential": true
+        }
+      ],
+      "outcome": {
+        "body": {
+          "publishedBuildId": "build_fixture_06",
+          "asOfMs": 1799751720000,
+          "spotAsOfMs": 1799753520000,
+          "perpsAsOfMs": 1799751720000,
+          "perpsSnapshotId": "ps1_69f470cccfdb3b80bcd3a551240fcf60",
+          "perpsPartial": false,
+          "portfolioValueUsd": 516.6,
+          "portfolioPartial": false,
+          "hiddenDust": 0,
+          "unpriced": 0,
+          "positions": [
+            {
+              "kind": "spot",
+              "mint": "MintFake11111111111111111111111111111111111",
+              "chain": "solana",
+              "symbol": "FAKE",
+              "quantity": 50,
+              "valueUsd": 500,
+              "unrealizedUsd": 100,
+              "origin": "bought",
+              "unrealizedPct": 25
+            },
+            {
+              "kind": "perp",
+              "coin": "ETH",
+              "side": "long",
+              "size": "0.5",
+              "leverage": {
+                "value": 5,
+                "type": "cross"
+              },
+              "entryPx": "100",
+              "markPx": "111",
+              "positionValueUsd": "55.5",
+              "marginUsedUsd": "11.1",
+              "unrealizedPnlUsd": "5.5",
+              "returnOnEquity": "0.55",
+              "liquidationPx": "82",
+              "liquidationDistance": 0.2613,
+              "fundingNetUsd": "0",
+              "level": "ok"
+            }
+          ],
+          "seq": 6
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "certified-supersedes-cli",
+      "scenario": "certified-supersedes",
+      "buildAt": "11:34",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent positions prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/positions",
+          "credential": false
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/open-orders",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "lines": [
+          "Portfolio $516.60",
+          "Updated Jan 12 11:02Z",
+          "Perps as of Jan 12 11:02Z (certified hourly)",
+          "",
+          "Kind                Position  Amount  Value                   P&L                  Details",
+          "------------------  --------  ------  ----------------------  -------------------  ---------------------------------------------",
+          "token               FAKE      50      $500.00                 +$100.00 (+25.0%)    –",
+          "perp 5x Long cross  ETH       0.5     $55.50 (margin $11.10)  +$5.50 (+55.0% ROE)  liq $82.00 (26.1% away); funding earned $0.00"
+        ]
+      }
+    },
+    {
+      "id": "certified-supersedes-cli-json",
+      "scenario": "certified-supersedes",
+      "buildAt": "11:34",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent positions prof_0123456789abcdef --json"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/positions",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "body": {
+          "success": true,
+          "publishedBuildId": "build_fixture_06",
+          "asOfMs": 1799751720000,
+          "spotAsOfMs": 1799753520000,
+          "perpsAsOfMs": 1799751720000,
+          "perpsSnapshotId": "ps1_69f470cccfdb3b80bcd3a551240fcf60",
+          "perpsPartial": false,
+          "portfolioValueUsd": 516.6,
+          "portfolioPartial": false,
+          "hiddenDust": 0,
+          "unpriced": 0,
+          "positions": [
+            {
+              "kind": "spot",
+              "mint": "MintFake11111111111111111111111111111111111",
+              "chain": "solana",
+              "symbol": "FAKE",
+              "quantity": 50,
+              "valueUsd": 500,
+              "unrealizedUsd": 100,
+              "origin": "bought",
+              "unrealizedPct": 25
+            },
+            {
+              "kind": "perp",
+              "coin": "ETH",
+              "side": "long",
+              "size": "0.5",
+              "leverage": {
+                "value": 5,
+                "type": "cross"
+              },
+              "entryPx": "100",
+              "markPx": "111",
+              "positionValueUsd": "55.5",
+              "marginUsedUsd": "11.1",
+              "unrealizedPnlUsd": "5.5",
+              "returnOnEquity": "0.55",
+              "liquidationPx": "82",
+              "liquidationDistance": 0.2613,
+              "fundingNetUsd": "0",
+              "level": "ok"
+            }
+          ],
+          "seq": 6
+        }
+      }
+    },
+    {
+      "id": "provisional-on-new-hour-api",
+      "scenario": "provisional-on-new-hour",
+      "buildAt": "11:44",
+      "surface": "api-source",
+      "says": "11:44, a provisional read at 11:42 on the new 11:02 cutoff: provisional again, certified to 11:02.",
+      "evidence": "pure API source on made-up stored facts; the database, the perps jobs and the keyed route are not executed",
+      "outcome": {
+        "read": {
+          "kind": "provisional",
+          "certifiedCutoff": "11:02",
+          "provisionalRead": {
+            "on": "11:02",
+            "state": "11:42",
+            "used": true
+          }
+        },
+        "positions": {
+          "success": true,
+          "publishedBuildId": "build_fixture_07",
+          "asOfMs": 1799754120000,
+          "spotAsOfMs": 1799754120000,
+          "perpsAsOfMs": 1799754120000,
+          "perpsSnapshotId": "ps1_65857e6e05e100e9350f7cbbe9e5a849",
+          "perpsPartial": false,
+          "perpsProvisional": true,
+          "perpsCertifiedAsOfMs": 1799751720000,
+          "portfolioValueUsd": 517.2,
+          "portfolioPartial": false,
+          "hiddenDust": 0,
+          "unpriced": 0,
+          "positions": [
+            {
+              "kind": "spot",
+              "mint": "MintFake11111111111111111111111111111111111",
+              "chain": "solana",
+              "symbol": "FAKE",
+              "quantity": 50,
+              "valueUsd": 500,
+              "unrealizedUsd": 100,
+              "origin": "bought",
+              "unrealizedPct": 25
+            },
+            {
+              "kind": "perp",
+              "coin": "ETH",
+              "side": "long",
+              "size": "0.5",
+              "leverage": {
+                "value": 5,
+                "type": "cross"
+              },
+              "entryPx": "100",
+              "markPx": "112",
+              "positionValueUsd": "56",
+              "marginUsedUsd": "11.2",
+              "unrealizedPnlUsd": "6",
+              "returnOnEquity": "0.60",
+              "liquidationPx": "82",
+              "liquidationDistance": 0.2679,
+              "fundingNetUsd": "0",
+              "level": "ok"
+            }
+          ],
+          "seq": 7
+        },
+        "record": {
+          "success": true,
+          "record": {
+            "profileId": "prof_0123456789abcdef",
+            "minClosesForRate": 10,
+            "totalPnlUsd": 111.92,
+            "unrealizedUsd": 106,
+            "totals": {
+              "realizedNetUsd": 5.92,
+              "wins": 0,
+              "losses": 0,
+              "counted": 0,
+              "perpsRealizedUsd": 6,
+              "perpsFundingUsd": 0,
+              "perpsFeesUsd": 0.08,
+              "perpsUnrealizedUsd": 6,
+              "perpsNetUsd": 11.92,
+              "perpsPartial": false,
+              "perpsAsOfMs": 1799754120000,
+              "perpsSnapshotId": "ps1_65857e6e05e100e9350f7cbbe9e5a849",
+              "perpsProvisional": true,
+              "perpsCertifiedAsOfMs": 1799751720000
+            },
+            "perpsRealizedUsd": 6,
+            "perpsFundingUsd": 0,
+            "perpsFeesUsd": 0.08,
+            "perpsUnrealizedUsd": 6,
+            "perpsNetUsd": 11.92,
+            "perpsPartial": false,
+            "perpsAsOfMs": 1799754120000,
+            "perpsSnapshotId": "ps1_65857e6e05e100e9350f7cbbe9e5a849",
+            "perpsProvisional": true,
+            "perpsCertifiedAsOfMs": 1799751720000,
+            "winRatePct": null,
+            "perpRounds": [],
+            "perpsTopCloses": []
+          }
+        }
+      }
+    },
+    {
+      "id": "provisional-on-new-hour-mcp",
+      "scenario": "provisional-on-new-hour",
+      "buildAt": "11:44",
+      "surface": "mcp",
+      "args": {
+        "profileId": "prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/positions",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "body": {
+          "success": true,
+          "publishedBuildId": "build_fixture_07",
+          "asOfMs": 1799754120000,
+          "spotAsOfMs": 1799754120000,
+          "perpsAsOfMs": 1799754120000,
+          "perpsSnapshotId": "ps1_65857e6e05e100e9350f7cbbe9e5a849",
+          "perpsPartial": false,
+          "perpsProvisional": true,
+          "perpsCertifiedAsOfMs": 1799751720000,
+          "portfolioValueUsd": 517.2,
+          "portfolioPartial": false,
+          "hiddenDust": 0,
+          "unpriced": 0,
+          "positions": [
+            {
+              "kind": "spot",
+              "mint": "MintFake11111111111111111111111111111111111",
+              "chain": "solana",
+              "symbol": "FAKE",
+              "quantity": 50,
+              "valueUsd": 500,
+              "unrealizedUsd": 100,
+              "origin": "bought",
+              "unrealizedPct": 25
+            },
+            {
+              "kind": "perp",
+              "coin": "ETH",
+              "side": "long",
+              "size": "0.5",
+              "leverage": {
+                "value": 5,
+                "type": "cross"
+              },
+              "entryPx": "100",
+              "markPx": "112",
+              "positionValueUsd": "56",
+              "marginUsedUsd": "11.2",
+              "unrealizedPnlUsd": "6",
+              "returnOnEquity": "0.60",
+              "liquidationPx": "82",
+              "liquidationDistance": 0.2679,
+              "fundingNetUsd": "0",
+              "level": "ok"
+            }
+          ],
+          "seq": 7
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "provisional-on-new-hour-sdk",
+      "scenario": "provisional-on-new-hour",
+      "buildAt": "11:44",
+      "surface": "sdk",
+      "args": {
+        "profileId": "prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/positions",
+          "credential": true
+        }
+      ],
+      "outcome": {
+        "body": {
+          "publishedBuildId": "build_fixture_07",
+          "asOfMs": 1799754120000,
+          "spotAsOfMs": 1799754120000,
+          "perpsAsOfMs": 1799754120000,
+          "perpsSnapshotId": "ps1_65857e6e05e100e9350f7cbbe9e5a849",
+          "perpsPartial": false,
+          "perpsProvisional": true,
+          "perpsCertifiedAsOfMs": 1799751720000,
+          "portfolioValueUsd": 517.2,
+          "portfolioPartial": false,
+          "hiddenDust": 0,
+          "unpriced": 0,
+          "positions": [
+            {
+              "kind": "spot",
+              "mint": "MintFake11111111111111111111111111111111111",
+              "chain": "solana",
+              "symbol": "FAKE",
+              "quantity": 50,
+              "valueUsd": 500,
+              "unrealizedUsd": 100,
+              "origin": "bought",
+              "unrealizedPct": 25
+            },
+            {
+              "kind": "perp",
+              "coin": "ETH",
+              "side": "long",
+              "size": "0.5",
+              "leverage": {
+                "value": 5,
+                "type": "cross"
+              },
+              "entryPx": "100",
+              "markPx": "112",
+              "positionValueUsd": "56",
+              "marginUsedUsd": "11.2",
+              "unrealizedPnlUsd": "6",
+              "returnOnEquity": "0.60",
+              "liquidationPx": "82",
+              "liquidationDistance": 0.2679,
+              "fundingNetUsd": "0",
+              "level": "ok"
+            }
+          ],
+          "seq": 7
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "provisional-on-new-hour-cli",
+      "scenario": "provisional-on-new-hour",
+      "buildAt": "11:44",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent positions prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/positions",
+          "credential": false
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/open-orders",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "lines": [
+          "Portfolio $517.20",
+          "Updated Jan 12 11:42Z",
+          "Perps as of Jan 12 11:42Z (provisional; certified to Jan 12 11:02Z, corrected hourly)",
+          "",
+          "Kind                Position  Amount  Value                   P&L                  Details",
+          "------------------  --------  ------  ----------------------  -------------------  ---------------------------------------------",
+          "token               FAKE      50      $500.00                 +$100.00 (+25.0%)    –",
+          "perp 5x Long cross  ETH       0.5     $56.00 (margin $11.20)  +$6.00 (+60.0% ROE)  liq $82.00 (26.8% away); funding earned $0.00"
+        ]
+      }
+    },
+    {
+      "id": "provisional-on-new-hour-cli-json",
+      "scenario": "provisional-on-new-hour",
+      "buildAt": "11:44",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent positions prof_0123456789abcdef --json"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/positions",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "body": {
+          "success": true,
+          "publishedBuildId": "build_fixture_07",
+          "asOfMs": 1799754120000,
+          "spotAsOfMs": 1799754120000,
+          "perpsAsOfMs": 1799754120000,
+          "perpsSnapshotId": "ps1_65857e6e05e100e9350f7cbbe9e5a849",
+          "perpsPartial": false,
+          "perpsProvisional": true,
+          "perpsCertifiedAsOfMs": 1799751720000,
+          "portfolioValueUsd": 517.2,
+          "portfolioPartial": false,
+          "hiddenDust": 0,
+          "unpriced": 0,
+          "positions": [
+            {
+              "kind": "spot",
+              "mint": "MintFake11111111111111111111111111111111111",
+              "chain": "solana",
+              "symbol": "FAKE",
+              "quantity": 50,
+              "valueUsd": 500,
+              "unrealizedUsd": 100,
+              "origin": "bought",
+              "unrealizedPct": 25
+            },
+            {
+              "kind": "perp",
+              "coin": "ETH",
+              "side": "long",
+              "size": "0.5",
+              "leverage": {
+                "value": 5,
+                "type": "cross"
+              },
+              "entryPx": "100",
+              "markPx": "112",
+              "positionValueUsd": "56",
+              "marginUsedUsd": "11.2",
+              "unrealizedPnlUsd": "6",
+              "returnOnEquity": "0.60",
+              "liquidationPx": "82",
+              "liquidationDistance": 0.2679,
+              "fundingNetUsd": "0",
+              "level": "ok"
+            }
+          ],
+          "seq": 7
+        }
+      }
+    },
+    {
+      "id": "delayed-api",
+      "scenario": "delayed",
+      "buildAt": "13:45",
+      "surface": "api-source",
+      "says": "13:45, certification stalled at 11:02 and no fresh provisional read: 2 h 43 min old is past the 2-hour line, so the certified figures are served partial.",
+      "evidence": "pure API source on made-up stored facts; the database, the perps jobs and the keyed route are not executed",
+      "outcome": {
+        "read": {
+          "kind": "certified",
+          "certifiedCutoff": "11:02",
+          "provisionalRead": {
+            "on": "11:02",
+            "state": "11:42",
+            "used": false
+          }
+        },
+        "positions": {
+          "success": true,
+          "publishedBuildId": "build_fixture_08",
+          "asOfMs": 1799751720000,
+          "spotAsOfMs": 1799761380000,
+          "perpsAsOfMs": 1799751720000,
+          "perpsSnapshotId": "ps1_69f470cccfdb3b80bcd3a551240fcf60",
+          "perpsPartial": true,
+          "portfolioValueUsd": 516.6,
+          "portfolioPartial": true,
+          "hiddenDust": 0,
+          "unpriced": 0,
+          "positions": [
+            {
+              "kind": "spot",
+              "mint": "MintFake11111111111111111111111111111111111",
+              "chain": "solana",
+              "symbol": "FAKE",
+              "quantity": 50,
+              "valueUsd": 500,
+              "unrealizedUsd": 100,
+              "origin": "bought",
+              "unrealizedPct": 25
+            },
+            {
+              "kind": "perp",
+              "coin": "ETH",
+              "side": "long",
+              "size": "0.5",
+              "leverage": {
+                "value": 5,
+                "type": "cross"
+              },
+              "entryPx": "100",
+              "markPx": "111",
+              "positionValueUsd": "55.5",
+              "marginUsedUsd": "11.1",
+              "unrealizedPnlUsd": "5.5",
+              "returnOnEquity": "0.55",
+              "liquidationPx": "82",
+              "liquidationDistance": 0.2613,
+              "fundingNetUsd": "0",
+              "level": "ok"
+            }
+          ],
+          "seq": 8
+        },
+        "record": {
+          "success": true,
+          "record": {
+            "profileId": "prof_0123456789abcdef",
+            "minClosesForRate": 10,
+            "totalPnlUsd": 111.42,
+            "unrealizedUsd": 105.5,
+            "totals": {
+              "realizedNetUsd": 5.92,
+              "wins": 0,
+              "losses": 0,
+              "counted": 0,
+              "perpsRealizedUsd": 6,
+              "perpsFundingUsd": 0,
+              "perpsFeesUsd": 0.08,
+              "perpsUnrealizedUsd": 5.5,
+              "perpsNetUsd": 11.42,
+              "perpsPartial": true,
+              "perpsAsOfMs": 1799751720000,
+              "perpsSnapshotId": "ps1_69f470cccfdb3b80bcd3a551240fcf60"
+            },
+            "perpsRealizedUsd": 6,
+            "perpsFundingUsd": 0,
+            "perpsFeesUsd": 0.08,
+            "perpsUnrealizedUsd": 5.5,
+            "perpsNetUsd": 11.42,
+            "perpsPartial": true,
+            "perpsAsOfMs": 1799751720000,
+            "perpsSnapshotId": "ps1_69f470cccfdb3b80bcd3a551240fcf60",
+            "winRatePct": null,
+            "perpRounds": [],
+            "perpsTopCloses": []
+          }
+        }
+      }
+    },
+    {
+      "id": "delayed-mcp",
+      "scenario": "delayed",
+      "buildAt": "13:45",
+      "surface": "mcp",
+      "args": {
+        "profileId": "prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/positions",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "body": {
+          "success": true,
+          "publishedBuildId": "build_fixture_08",
+          "asOfMs": 1799751720000,
+          "spotAsOfMs": 1799761380000,
+          "perpsAsOfMs": 1799751720000,
+          "perpsSnapshotId": "ps1_69f470cccfdb3b80bcd3a551240fcf60",
+          "perpsPartial": true,
+          "portfolioValueUsd": 516.6,
+          "portfolioPartial": true,
+          "hiddenDust": 0,
+          "unpriced": 0,
+          "positions": [
+            {
+              "kind": "spot",
+              "mint": "MintFake11111111111111111111111111111111111",
+              "chain": "solana",
+              "symbol": "FAKE",
+              "quantity": 50,
+              "valueUsd": 500,
+              "unrealizedUsd": 100,
+              "origin": "bought",
+              "unrealizedPct": 25
+            },
+            {
+              "kind": "perp",
+              "coin": "ETH",
+              "side": "long",
+              "size": "0.5",
+              "leverage": {
+                "value": 5,
+                "type": "cross"
+              },
+              "entryPx": "100",
+              "markPx": "111",
+              "positionValueUsd": "55.5",
+              "marginUsedUsd": "11.1",
+              "unrealizedPnlUsd": "5.5",
+              "returnOnEquity": "0.55",
+              "liquidationPx": "82",
+              "liquidationDistance": 0.2613,
+              "fundingNetUsd": "0",
+              "level": "ok"
+            }
+          ],
+          "seq": 8
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "delayed-sdk",
+      "scenario": "delayed",
+      "buildAt": "13:45",
+      "surface": "sdk",
+      "args": {
+        "profileId": "prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/positions",
+          "credential": true
+        }
+      ],
+      "outcome": {
+        "body": {
+          "publishedBuildId": "build_fixture_08",
+          "asOfMs": 1799751720000,
+          "spotAsOfMs": 1799761380000,
+          "perpsAsOfMs": 1799751720000,
+          "perpsSnapshotId": "ps1_69f470cccfdb3b80bcd3a551240fcf60",
+          "perpsPartial": true,
+          "portfolioValueUsd": 516.6,
+          "portfolioPartial": true,
+          "hiddenDust": 0,
+          "unpriced": 0,
+          "positions": [
+            {
+              "kind": "spot",
+              "mint": "MintFake11111111111111111111111111111111111",
+              "chain": "solana",
+              "symbol": "FAKE",
+              "quantity": 50,
+              "valueUsd": 500,
+              "unrealizedUsd": 100,
+              "origin": "bought",
+              "unrealizedPct": 25
+            },
+            {
+              "kind": "perp",
+              "coin": "ETH",
+              "side": "long",
+              "size": "0.5",
+              "leverage": {
+                "value": 5,
+                "type": "cross"
+              },
+              "entryPx": "100",
+              "markPx": "111",
+              "positionValueUsd": "55.5",
+              "marginUsedUsd": "11.1",
+              "unrealizedPnlUsd": "5.5",
+              "returnOnEquity": "0.55",
+              "liquidationPx": "82",
+              "liquidationDistance": 0.2613,
+              "fundingNetUsd": "0",
+              "level": "ok"
+            }
+          ],
+          "seq": 8
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "delayed-cli",
+      "scenario": "delayed",
+      "buildAt": "13:45",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent positions prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/positions",
+          "credential": false
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/open-orders",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "lines": [
+          "Portfolio $516.60 (partial)",
+          "Updated Jan 12 11:02Z; perps partial",
+          "Perps as of Jan 12 11:02Z (certified hourly)",
+          "",
+          "Kind                Position  Amount  Value                   P&L                  Details",
+          "------------------  --------  ------  ----------------------  -------------------  ---------------------------------------------",
+          "token               FAKE      50      $500.00                 +$100.00 (+25.0%)    –",
+          "perp 5x Long cross  ETH       0.5     $55.50 (margin $11.10)  +$5.50 (+55.0% ROE)  liq $82.00 (26.1% away); funding earned $0.00"
+        ]
+      }
+    },
+    {
+      "id": "delayed-cli-json",
+      "scenario": "delayed",
+      "buildAt": "13:45",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent positions prof_0123456789abcdef --json"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/positions",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "body": {
+          "success": true,
+          "publishedBuildId": "build_fixture_08",
+          "asOfMs": 1799751720000,
+          "spotAsOfMs": 1799761380000,
+          "perpsAsOfMs": 1799751720000,
+          "perpsSnapshotId": "ps1_69f470cccfdb3b80bcd3a551240fcf60",
+          "perpsPartial": true,
+          "portfolioValueUsd": 516.6,
+          "portfolioPartial": true,
+          "hiddenDust": 0,
+          "unpriced": 0,
+          "positions": [
+            {
+              "kind": "spot",
+              "mint": "MintFake11111111111111111111111111111111111",
+              "chain": "solana",
+              "symbol": "FAKE",
+              "quantity": 50,
+              "valueUsd": 500,
+              "unrealizedUsd": 100,
+              "origin": "bought",
+              "unrealizedPct": 25
+            },
+            {
+              "kind": "perp",
+              "coin": "ETH",
+              "side": "long",
+              "size": "0.5",
+              "leverage": {
+                "value": 5,
+                "type": "cross"
+              },
+              "entryPx": "100",
+              "markPx": "111",
+              "positionValueUsd": "55.5",
+              "marginUsedUsd": "11.1",
+              "unrealizedPnlUsd": "5.5",
+              "returnOnEquity": "0.55",
+              "liquidationPx": "82",
+              "liquidationDistance": 0.2613,
+              "fundingNetUsd": "0",
+              "level": "ok"
+            }
+          ],
+          "seq": 8
+        }
+      }
+    },
+    {
+      "id": "unavailable-api",
+      "scenario": "unavailable",
+      "buildAt": "14:10",
+      "surface": "api-source",
+      "says": "14:10, still 11:02 and no fresh provisional read: over 3 hours old, so the perps are unavailable. No rows, no combined value, never a flat book.",
+      "evidence": "pure API source on made-up stored facts; the database, the perps jobs and the keyed route are not executed",
+      "outcome": {
+        "read": {
+          "kind": "unavailable",
+          "reason": "stale_observation",
+          "certifiedCutoff": "11:02",
+          "provisionalRead": {
+            "on": "11:02",
+            "state": "11:42",
+            "used": false
+          }
+        },
+        "positions": {
+          "success": true,
+          "publishedBuildId": "build_fixture_09",
+          "asOfMs": 1799762880000,
+          "spotAsOfMs": 1799762880000,
+          "perpsAsOfMs": null,
+          "perpsSnapshotId": null,
+          "perpsPartial": true,
+          "perpsUnavailable": true,
+          "portfolioValueUsd": null,
+          "portfolioPartial": true,
+          "hiddenDust": 0,
+          "unpriced": 0,
+          "positions": [
+            {
+              "kind": "spot",
+              "mint": "MintFake11111111111111111111111111111111111",
+              "chain": "solana",
+              "symbol": "FAKE",
+              "quantity": 50,
+              "valueUsd": 500,
+              "unrealizedUsd": 100,
+              "origin": "bought",
+              "unrealizedPct": 25
+            }
+          ],
+          "seq": 9
+        },
+        "record": {
+          "success": true,
+          "record": {
+            "profileId": "prof_0123456789abcdef",
+            "minClosesForRate": 10,
+            "totalPnlUsd": 100,
+            "unrealizedUsd": 100,
+            "totals": {
+              "realizedNetUsd": 0,
+              "wins": 0,
+              "losses": 0,
+              "counted": 0,
+              "perpsPartial": true,
+              "perpsUnavailable": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "unavailable-mcp",
+      "scenario": "unavailable",
+      "buildAt": "14:10",
+      "surface": "mcp",
+      "args": {
+        "profileId": "prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/positions",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "body": {
+          "success": true,
+          "publishedBuildId": "build_fixture_09",
+          "asOfMs": 1799762880000,
+          "spotAsOfMs": 1799762880000,
+          "perpsAsOfMs": null,
+          "perpsSnapshotId": null,
+          "perpsPartial": true,
+          "perpsUnavailable": true,
+          "portfolioValueUsd": null,
+          "portfolioPartial": true,
+          "hiddenDust": 0,
+          "unpriced": 0,
+          "positions": [
+            {
+              "kind": "spot",
+              "mint": "MintFake11111111111111111111111111111111111",
+              "chain": "solana",
+              "symbol": "FAKE",
+              "quantity": 50,
+              "valueUsd": 500,
+              "unrealizedUsd": 100,
+              "origin": "bought",
+              "unrealizedPct": 25
+            }
+          ],
+          "seq": 9
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "unavailable-sdk",
+      "scenario": "unavailable",
+      "buildAt": "14:10",
+      "surface": "sdk",
+      "args": {
+        "profileId": "prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/positions",
+          "credential": true
+        }
+      ],
+      "outcome": {
+        "body": {
+          "publishedBuildId": "build_fixture_09",
+          "asOfMs": 1799762880000,
+          "spotAsOfMs": 1799762880000,
+          "perpsAsOfMs": null,
+          "perpsSnapshotId": null,
+          "perpsPartial": true,
+          "perpsUnavailable": true,
+          "portfolioValueUsd": null,
+          "portfolioPartial": true,
+          "hiddenDust": 0,
+          "unpriced": 0,
+          "positions": [
+            {
+              "kind": "spot",
+              "mint": "MintFake11111111111111111111111111111111111",
+              "chain": "solana",
+              "symbol": "FAKE",
+              "quantity": 50,
+              "valueUsd": 500,
+              "unrealizedUsd": 100,
+              "origin": "bought",
+              "unrealizedPct": 25
+            }
+          ],
+          "seq": 9
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "unavailable-cli",
+      "scenario": "unavailable",
+      "buildAt": "14:10",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent positions prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/positions",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "lines": [
+          "Portfolio unavailable (perps not reconciled yet)",
+          "Updated Jan 12 14:08Z; perps partial",
+          "",
+          "Kind   Position  Amount  Value    P&L                Details",
+          "-----  --------  ------  -------  -----------------  -------",
+          "token  FAKE      50      $500.00  +$100.00 (+25.0%)  –"
+        ]
+      }
+    },
+    {
+      "id": "unavailable-cli-json",
+      "scenario": "unavailable",
+      "buildAt": "14:10",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent positions prof_0123456789abcdef --json"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/positions",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "body": {
+          "success": true,
+          "publishedBuildId": "build_fixture_09",
+          "asOfMs": 1799762880000,
+          "spotAsOfMs": 1799762880000,
+          "perpsAsOfMs": null,
+          "perpsSnapshotId": null,
+          "perpsPartial": true,
+          "perpsUnavailable": true,
+          "portfolioValueUsd": null,
+          "portfolioPartial": true,
+          "hiddenDust": 0,
+          "unpriced": 0,
+          "positions": [
+            {
+              "kind": "spot",
+              "mint": "MintFake11111111111111111111111111111111111",
+              "chain": "solana",
+              "symbol": "FAKE",
+              "quantity": 50,
+              "valueUsd": 500,
+              "unrealizedUsd": 100,
+              "origin": "bought",
+              "unrealizedPct": 25
+            }
+          ],
+          "seq": 9
+        }
+      }
+    },
+    {
+      "id": "provisional-while-certification-lags-api",
+      "scenario": "provisional-while-certification-lags",
+      "buildAt": "14:10",
+      "surface": "api-source",
+      "says": "14:10 again, certification still at 11:02 but a provisional read at 14:08: the 3-hour rule is measured from the newest read of either kind, so the figures are served, provisional, certified to 11:02.",
+      "evidence": "pure API source on made-up stored facts; the database, the perps jobs and the keyed route are not executed",
+      "outcome": {
+        "read": {
+          "kind": "provisional",
+          "certifiedCutoff": "11:02",
+          "provisionalRead": {
+            "on": "11:02",
+            "state": "14:08",
+            "used": true
+          }
+        },
+        "positions": {
+          "success": true,
+          "publishedBuildId": "build_fixture_10",
+          "asOfMs": 1799762880000,
+          "spotAsOfMs": 1799762880000,
+          "perpsAsOfMs": 1799762880000,
+          "perpsSnapshotId": "ps1_aca7d4cbef9c57a7da9febe5c833457e",
+          "perpsPartial": false,
+          "perpsProvisional": true,
+          "perpsCertifiedAsOfMs": 1799751720000,
+          "portfolioValueUsd": 519,
+          "portfolioPartial": false,
+          "hiddenDust": 0,
+          "unpriced": 0,
+          "positions": [
+            {
+              "kind": "spot",
+              "mint": "MintFake11111111111111111111111111111111111",
+              "chain": "solana",
+              "symbol": "FAKE",
+              "quantity": 50,
+              "valueUsd": 500,
+              "unrealizedUsd": 100,
+              "origin": "bought",
+              "unrealizedPct": 25
+            },
+            {
+              "kind": "perp",
+              "coin": "ETH",
+              "side": "long",
+              "size": "0.5",
+              "leverage": {
+                "value": 5,
+                "type": "cross"
+              },
+              "entryPx": "100",
+              "markPx": "115",
+              "positionValueUsd": "57.5",
+              "marginUsedUsd": "11.5",
+              "unrealizedPnlUsd": "7.5",
+              "returnOnEquity": "0.75",
+              "liquidationPx": "82",
+              "liquidationDistance": 0.287,
+              "fundingNetUsd": "-0.06",
+              "level": "ok"
+            }
+          ],
+          "seq": 10
+        },
+        "record": {
+          "success": true,
+          "record": {
+            "profileId": "prof_0123456789abcdef",
+            "minClosesForRate": 10,
+            "totalPnlUsd": 113.36,
+            "unrealizedUsd": 107.5,
+            "totals": {
+              "realizedNetUsd": 5.86,
+              "wins": 0,
+              "losses": 0,
+              "counted": 0,
+              "perpsRealizedUsd": 6,
+              "perpsFundingUsd": -0.06,
+              "perpsFeesUsd": 0.08,
+              "perpsUnrealizedUsd": 7.5,
+              "perpsNetUsd": 13.36,
+              "perpsPartial": false,
+              "perpsAsOfMs": 1799762880000,
+              "perpsSnapshotId": "ps1_aca7d4cbef9c57a7da9febe5c833457e",
+              "perpsProvisional": true,
+              "perpsCertifiedAsOfMs": 1799751720000
+            },
+            "perpsRealizedUsd": 6,
+            "perpsFundingUsd": -0.06,
+            "perpsFeesUsd": 0.08,
+            "perpsUnrealizedUsd": 7.5,
+            "perpsNetUsd": 13.36,
+            "perpsPartial": false,
+            "perpsAsOfMs": 1799762880000,
+            "perpsSnapshotId": "ps1_aca7d4cbef9c57a7da9febe5c833457e",
+            "perpsProvisional": true,
+            "perpsCertifiedAsOfMs": 1799751720000,
+            "winRatePct": null,
+            "perpRounds": [],
+            "perpsTopCloses": []
+          }
+        }
+      }
+    },
+    {
+      "id": "provisional-while-certification-lags-mcp",
+      "scenario": "provisional-while-certification-lags",
+      "buildAt": "14:10",
+      "surface": "mcp",
+      "args": {
+        "profileId": "prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/positions",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "body": {
+          "success": true,
+          "publishedBuildId": "build_fixture_10",
+          "asOfMs": 1799762880000,
+          "spotAsOfMs": 1799762880000,
+          "perpsAsOfMs": 1799762880000,
+          "perpsSnapshotId": "ps1_aca7d4cbef9c57a7da9febe5c833457e",
+          "perpsPartial": false,
+          "perpsProvisional": true,
+          "perpsCertifiedAsOfMs": 1799751720000,
+          "portfolioValueUsd": 519,
+          "portfolioPartial": false,
+          "hiddenDust": 0,
+          "unpriced": 0,
+          "positions": [
+            {
+              "kind": "spot",
+              "mint": "MintFake11111111111111111111111111111111111",
+              "chain": "solana",
+              "symbol": "FAKE",
+              "quantity": 50,
+              "valueUsd": 500,
+              "unrealizedUsd": 100,
+              "origin": "bought",
+              "unrealizedPct": 25
+            },
+            {
+              "kind": "perp",
+              "coin": "ETH",
+              "side": "long",
+              "size": "0.5",
+              "leverage": {
+                "value": 5,
+                "type": "cross"
+              },
+              "entryPx": "100",
+              "markPx": "115",
+              "positionValueUsd": "57.5",
+              "marginUsedUsd": "11.5",
+              "unrealizedPnlUsd": "7.5",
+              "returnOnEquity": "0.75",
+              "liquidationPx": "82",
+              "liquidationDistance": 0.287,
+              "fundingNetUsd": "-0.06",
+              "level": "ok"
+            }
+          ],
+          "seq": 10
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "provisional-while-certification-lags-sdk",
+      "scenario": "provisional-while-certification-lags",
+      "buildAt": "14:10",
+      "surface": "sdk",
+      "args": {
+        "profileId": "prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/positions",
+          "credential": true
+        }
+      ],
+      "outcome": {
+        "body": {
+          "publishedBuildId": "build_fixture_10",
+          "asOfMs": 1799762880000,
+          "spotAsOfMs": 1799762880000,
+          "perpsAsOfMs": 1799762880000,
+          "perpsSnapshotId": "ps1_aca7d4cbef9c57a7da9febe5c833457e",
+          "perpsPartial": false,
+          "perpsProvisional": true,
+          "perpsCertifiedAsOfMs": 1799751720000,
+          "portfolioValueUsd": 519,
+          "portfolioPartial": false,
+          "hiddenDust": 0,
+          "unpriced": 0,
+          "positions": [
+            {
+              "kind": "spot",
+              "mint": "MintFake11111111111111111111111111111111111",
+              "chain": "solana",
+              "symbol": "FAKE",
+              "quantity": 50,
+              "valueUsd": 500,
+              "unrealizedUsd": 100,
+              "origin": "bought",
+              "unrealizedPct": 25
+            },
+            {
+              "kind": "perp",
+              "coin": "ETH",
+              "side": "long",
+              "size": "0.5",
+              "leverage": {
+                "value": 5,
+                "type": "cross"
+              },
+              "entryPx": "100",
+              "markPx": "115",
+              "positionValueUsd": "57.5",
+              "marginUsedUsd": "11.5",
+              "unrealizedPnlUsd": "7.5",
+              "returnOnEquity": "0.75",
+              "liquidationPx": "82",
+              "liquidationDistance": 0.287,
+              "fundingNetUsd": "-0.06",
+              "level": "ok"
+            }
+          ],
+          "seq": 10
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "provisional-while-certification-lags-cli",
+      "scenario": "provisional-while-certification-lags",
+      "buildAt": "14:10",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent positions prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/positions",
+          "credential": false
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/open-orders",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "lines": [
+          "Portfolio $519.00",
+          "Updated Jan 12 14:08Z",
+          "Perps as of Jan 12 14:08Z (provisional; certified to Jan 12 11:02Z, corrected hourly)",
+          "",
+          "Kind                Position  Amount  Value                   P&L                  Details",
+          "------------------  --------  ------  ----------------------  -------------------  -------------------------------------------",
+          "token               FAKE      50      $500.00                 +$100.00 (+25.0%)    –",
+          "perp 5x Long cross  ETH       0.5     $57.50 (margin $11.50)  +$7.50 (+75.0% ROE)  liq $82.00 (28.7% away); funding paid $0.06"
+        ]
+      }
+    },
+    {
+      "id": "provisional-while-certification-lags-cli-json",
+      "scenario": "provisional-while-certification-lags",
+      "buildAt": "14:10",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent positions prof_0123456789abcdef --json"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/positions",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "body": {
+          "success": true,
+          "publishedBuildId": "build_fixture_10",
+          "asOfMs": 1799762880000,
+          "spotAsOfMs": 1799762880000,
+          "perpsAsOfMs": 1799762880000,
+          "perpsSnapshotId": "ps1_aca7d4cbef9c57a7da9febe5c833457e",
+          "perpsPartial": false,
+          "perpsProvisional": true,
+          "perpsCertifiedAsOfMs": 1799751720000,
+          "portfolioValueUsd": 519,
+          "portfolioPartial": false,
+          "hiddenDust": 0,
+          "unpriced": 0,
+          "positions": [
+            {
+              "kind": "spot",
+              "mint": "MintFake11111111111111111111111111111111111",
+              "chain": "solana",
+              "symbol": "FAKE",
+              "quantity": 50,
+              "valueUsd": 500,
+              "unrealizedUsd": 100,
+              "origin": "bought",
+              "unrealizedPct": 25
+            },
+            {
+              "kind": "perp",
+              "coin": "ETH",
+              "side": "long",
+              "size": "0.5",
+              "leverage": {
+                "value": 5,
+                "type": "cross"
+              },
+              "entryPx": "100",
+              "markPx": "115",
+              "positionValueUsd": "57.5",
+              "marginUsedUsd": "11.5",
+              "unrealizedPnlUsd": "7.5",
+              "returnOnEquity": "0.75",
+              "liquidationPx": "82",
+              "liquidationDistance": 0.287,
+              "fundingNetUsd": "-0.06",
+              "level": "ok"
+            }
+          ],
+          "seq": 10
+        }
+      }
+    },
+    {
+      "id": "certified-base-too-old-api",
+      "scenario": "certified-base-too-old",
+      "buildAt": "17:10",
+      "surface": "api-source",
+      "says": "17:10, a provisional read at 17:08 whose certified cutoff is over 6 hours under it: not used, and the perps are unavailable.",
+      "evidence": "pure API source on made-up stored facts; the database, the perps jobs and the keyed route are not executed",
+      "outcome": {
+        "read": {
+          "kind": "unavailable",
+          "reason": "stale_observation",
+          "certifiedCutoff": "11:02",
+          "provisionalRead": {
+            "on": "11:02",
+            "state": "17:08",
+            "used": false
+          }
+        },
+        "positions": {
+          "success": true,
+          "publishedBuildId": "build_fixture_11",
+          "asOfMs": 1799773680000,
+          "spotAsOfMs": 1799773680000,
+          "perpsAsOfMs": null,
+          "perpsSnapshotId": null,
+          "perpsPartial": true,
+          "perpsUnavailable": true,
+          "portfolioValueUsd": null,
+          "portfolioPartial": true,
+          "hiddenDust": 0,
+          "unpriced": 0,
+          "positions": [
+            {
+              "kind": "spot",
+              "mint": "MintFake11111111111111111111111111111111111",
+              "chain": "solana",
+              "symbol": "FAKE",
+              "quantity": 50,
+              "valueUsd": 500,
+              "unrealizedUsd": 100,
+              "origin": "bought",
+              "unrealizedPct": 25
+            }
+          ],
+          "seq": 11
+        },
+        "record": {
+          "success": true,
+          "record": {
+            "profileId": "prof_0123456789abcdef",
+            "minClosesForRate": 10,
+            "totalPnlUsd": 100,
+            "unrealizedUsd": 100,
+            "totals": {
+              "realizedNetUsd": 0,
+              "wins": 0,
+              "losses": 0,
+              "counted": 0,
+              "perpsPartial": true,
+              "perpsUnavailable": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "certified-base-too-old-mcp",
+      "scenario": "certified-base-too-old",
+      "buildAt": "17:10",
+      "surface": "mcp",
+      "args": {
+        "profileId": "prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/positions",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "body": {
+          "success": true,
+          "publishedBuildId": "build_fixture_11",
+          "asOfMs": 1799773680000,
+          "spotAsOfMs": 1799773680000,
+          "perpsAsOfMs": null,
+          "perpsSnapshotId": null,
+          "perpsPartial": true,
+          "perpsUnavailable": true,
+          "portfolioValueUsd": null,
+          "portfolioPartial": true,
+          "hiddenDust": 0,
+          "unpriced": 0,
+          "positions": [
+            {
+              "kind": "spot",
+              "mint": "MintFake11111111111111111111111111111111111",
+              "chain": "solana",
+              "symbol": "FAKE",
+              "quantity": 50,
+              "valueUsd": 500,
+              "unrealizedUsd": 100,
+              "origin": "bought",
+              "unrealizedPct": 25
+            }
+          ],
+          "seq": 11
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "certified-base-too-old-sdk",
+      "scenario": "certified-base-too-old",
+      "buildAt": "17:10",
+      "surface": "sdk",
+      "args": {
+        "profileId": "prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/positions",
+          "credential": true
+        }
+      ],
+      "outcome": {
+        "body": {
+          "publishedBuildId": "build_fixture_11",
+          "asOfMs": 1799773680000,
+          "spotAsOfMs": 1799773680000,
+          "perpsAsOfMs": null,
+          "perpsSnapshotId": null,
+          "perpsPartial": true,
+          "perpsUnavailable": true,
+          "portfolioValueUsd": null,
+          "portfolioPartial": true,
+          "hiddenDust": 0,
+          "unpriced": 0,
+          "positions": [
+            {
+              "kind": "spot",
+              "mint": "MintFake11111111111111111111111111111111111",
+              "chain": "solana",
+              "symbol": "FAKE",
+              "quantity": 50,
+              "valueUsd": 500,
+              "unrealizedUsd": 100,
+              "origin": "bought",
+              "unrealizedPct": 25
+            }
+          ],
+          "seq": 11
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "certified-base-too-old-cli",
+      "scenario": "certified-base-too-old",
+      "buildAt": "17:10",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent positions prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/positions",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "lines": [
+          "Portfolio unavailable (perps not reconciled yet)",
+          "Updated Jan 12 17:08Z; perps partial",
+          "",
+          "Kind   Position  Amount  Value    P&L                Details",
+          "-----  --------  ------  -------  -----------------  -------",
+          "token  FAKE      50      $500.00  +$100.00 (+25.0%)  –"
+        ]
+      }
+    },
+    {
+      "id": "certified-base-too-old-cli-json",
+      "scenario": "certified-base-too-old",
+      "buildAt": "17:10",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent positions prof_0123456789abcdef --json"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/positions",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "body": {
+          "success": true,
+          "publishedBuildId": "build_fixture_11",
+          "asOfMs": 1799773680000,
+          "spotAsOfMs": 1799773680000,
+          "perpsAsOfMs": null,
+          "perpsSnapshotId": null,
+          "perpsPartial": true,
+          "perpsUnavailable": true,
+          "portfolioValueUsd": null,
+          "portfolioPartial": true,
+          "hiddenDust": 0,
+          "unpriced": 0,
+          "positions": [
+            {
+              "kind": "spot",
+              "mint": "MintFake11111111111111111111111111111111111",
+              "chain": "solana",
+              "symbol": "FAKE",
+              "quantity": 50,
+              "valueUsd": 500,
+              "unrealizedUsd": 100,
+              "origin": "bought",
+              "unrealizedPct": 25
+            }
+          ],
+          "seq": 11
+        }
+      }
+    },
+    {
+      "id": "never-certified-api",
+      "scenario": "never-certified",
+      "buildAt": "10:24",
+      "surface": "api-source",
+      "says": "10:24, a wallet with a provisional read and no certified hour yet: unavailable. A provisional read alone never makes figures.",
+      "evidence": "pure API source on made-up stored facts; the database, the perps jobs and the keyed route are not executed",
+      "outcome": {
+        "read": {
+          "kind": "unavailable",
+          "reason": "no_certified_observation",
+          "certifiedCutoff": null,
+          "provisionalRead": {
+            "on": "10:02",
+            "state": "10:22",
+            "used": false
+          }
+        },
+        "positions": {
+          "success": true,
+          "publishedBuildId": "build_fixture_12",
+          "asOfMs": 1799749320000,
+          "spotAsOfMs": 1799749320000,
+          "perpsAsOfMs": null,
+          "perpsSnapshotId": null,
+          "perpsPartial": true,
+          "perpsUnavailable": true,
+          "portfolioValueUsd": null,
+          "portfolioPartial": true,
+          "hiddenDust": 0,
+          "unpriced": 0,
+          "positions": [
+            {
+              "kind": "spot",
+              "mint": "MintFake11111111111111111111111111111111111",
+              "chain": "solana",
+              "symbol": "FAKE",
+              "quantity": 50,
+              "valueUsd": 500,
+              "unrealizedUsd": 100,
+              "origin": "bought",
+              "unrealizedPct": 25
+            }
+          ],
+          "seq": 12
+        },
+        "record": {
+          "success": true,
+          "record": {
+            "profileId": "prof_0123456789abcdef",
+            "minClosesForRate": 10,
+            "totalPnlUsd": 100,
+            "unrealizedUsd": 100,
+            "totals": {
+              "realizedNetUsd": 0,
+              "wins": 0,
+              "losses": 0,
+              "counted": 0,
+              "perpsPartial": true,
+              "perpsUnavailable": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "never-certified-mcp",
+      "scenario": "never-certified",
+      "buildAt": "10:24",
+      "surface": "mcp",
+      "args": {
+        "profileId": "prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/positions",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "body": {
+          "success": true,
+          "publishedBuildId": "build_fixture_12",
+          "asOfMs": 1799749320000,
+          "spotAsOfMs": 1799749320000,
+          "perpsAsOfMs": null,
+          "perpsSnapshotId": null,
+          "perpsPartial": true,
+          "perpsUnavailable": true,
+          "portfolioValueUsd": null,
+          "portfolioPartial": true,
+          "hiddenDust": 0,
+          "unpriced": 0,
+          "positions": [
+            {
+              "kind": "spot",
+              "mint": "MintFake11111111111111111111111111111111111",
+              "chain": "solana",
+              "symbol": "FAKE",
+              "quantity": 50,
+              "valueUsd": 500,
+              "unrealizedUsd": 100,
+              "origin": "bought",
+              "unrealizedPct": 25
+            }
+          ],
+          "seq": 12
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "never-certified-sdk",
+      "scenario": "never-certified",
+      "buildAt": "10:24",
+      "surface": "sdk",
+      "args": {
+        "profileId": "prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/positions",
+          "credential": true
+        }
+      ],
+      "outcome": {
+        "body": {
+          "publishedBuildId": "build_fixture_12",
+          "asOfMs": 1799749320000,
+          "spotAsOfMs": 1799749320000,
+          "perpsAsOfMs": null,
+          "perpsSnapshotId": null,
+          "perpsPartial": true,
+          "perpsUnavailable": true,
+          "portfolioValueUsd": null,
+          "portfolioPartial": true,
+          "hiddenDust": 0,
+          "unpriced": 0,
+          "positions": [
+            {
+              "kind": "spot",
+              "mint": "MintFake11111111111111111111111111111111111",
+              "chain": "solana",
+              "symbol": "FAKE",
+              "quantity": 50,
+              "valueUsd": 500,
+              "unrealizedUsd": 100,
+              "origin": "bought",
+              "unrealizedPct": 25
+            }
+          ],
+          "seq": 12
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "never-certified-cli",
+      "scenario": "never-certified",
+      "buildAt": "10:24",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent positions prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/positions",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "lines": [
+          "Portfolio unavailable (perps not reconciled yet)",
+          "Updated Jan 12 10:22Z; perps partial",
+          "",
+          "Kind   Position  Amount  Value    P&L                Details",
+          "-----  --------  ------  -------  -----------------  -------",
+          "token  FAKE      50      $500.00  +$100.00 (+25.0%)  –"
+        ]
+      }
+    },
+    {
+      "id": "never-certified-cli-json",
+      "scenario": "never-certified",
+      "buildAt": "10:24",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent positions prof_0123456789abcdef --json"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/positions",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "body": {
+          "success": true,
+          "publishedBuildId": "build_fixture_12",
+          "asOfMs": 1799749320000,
+          "spotAsOfMs": 1799749320000,
+          "perpsAsOfMs": null,
+          "perpsSnapshotId": null,
+          "perpsPartial": true,
+          "perpsUnavailable": true,
+          "portfolioValueUsd": null,
+          "portfolioPartial": true,
+          "hiddenDust": 0,
+          "unpriced": 0,
+          "positions": [
+            {
+              "kind": "spot",
+              "mint": "MintFake11111111111111111111111111111111111",
+              "chain": "solana",
+              "symbol": "FAKE",
+              "quantity": 50,
+              "valueUsd": 500,
+              "unrealizedUsd": 100,
+              "origin": "bought",
+              "unrealizedPct": 25
+            }
+          ],
+          "seq": 12
+        }
+      }
+    },
+    {
+      "id": "no-perps-api",
+      "scenario": "no-perps",
+      "buildAt": "10:24",
+      "surface": "api-source",
+      "says": "10:24, an agent with no perps wallet (or a server that leaves perps out of the record): spot only, the perps times null, and no perps line.",
+      "evidence": "pure API source on made-up stored facts; the database, the perps jobs and the keyed route are not executed",
+      "outcome": {
+        "read": {
+          "kind": "none"
+        },
+        "positions": {
+          "success": true,
+          "publishedBuildId": "build_fixture_13",
+          "asOfMs": 1799749320000,
+          "spotAsOfMs": 1799749320000,
+          "perpsAsOfMs": null,
+          "perpsSnapshotId": null,
+          "perpsPartial": false,
+          "portfolioValueUsd": 500,
+          "portfolioPartial": false,
+          "hiddenDust": 0,
+          "unpriced": 0,
+          "positions": [
+            {
+              "kind": "spot",
+              "mint": "MintFake11111111111111111111111111111111111",
+              "chain": "solana",
+              "symbol": "FAKE",
+              "quantity": 50,
+              "valueUsd": 500,
+              "unrealizedUsd": 100,
+              "origin": "bought",
+              "unrealizedPct": 25
+            }
+          ],
+          "seq": 13
+        },
+        "record": {
+          "success": true,
+          "record": {
+            "profileId": "prof_0123456789abcdef",
+            "minClosesForRate": 10,
+            "totalPnlUsd": 100,
+            "unrealizedUsd": 100,
+            "totals": {
+              "realizedNetUsd": 0,
+              "wins": 0,
+              "losses": 0,
+              "counted": 0
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "no-perps-mcp",
+      "scenario": "no-perps",
+      "buildAt": "10:24",
+      "surface": "mcp",
+      "args": {
+        "profileId": "prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/positions",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "body": {
+          "success": true,
+          "publishedBuildId": "build_fixture_13",
+          "asOfMs": 1799749320000,
+          "spotAsOfMs": 1799749320000,
+          "perpsAsOfMs": null,
+          "perpsSnapshotId": null,
+          "perpsPartial": false,
+          "portfolioValueUsd": 500,
+          "portfolioPartial": false,
+          "hiddenDust": 0,
+          "unpriced": 0,
+          "positions": [
+            {
+              "kind": "spot",
+              "mint": "MintFake11111111111111111111111111111111111",
+              "chain": "solana",
+              "symbol": "FAKE",
+              "quantity": 50,
+              "valueUsd": 500,
+              "unrealizedUsd": 100,
+              "origin": "bought",
+              "unrealizedPct": 25
+            }
+          ],
+          "seq": 13
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "no-perps-sdk",
+      "scenario": "no-perps",
+      "buildAt": "10:24",
+      "surface": "sdk",
+      "args": {
+        "profileId": "prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/positions",
+          "credential": true
+        }
+      ],
+      "outcome": {
+        "body": {
+          "publishedBuildId": "build_fixture_13",
+          "asOfMs": 1799749320000,
+          "spotAsOfMs": 1799749320000,
+          "perpsAsOfMs": null,
+          "perpsSnapshotId": null,
+          "perpsPartial": false,
+          "portfolioValueUsd": 500,
+          "portfolioPartial": false,
+          "hiddenDust": 0,
+          "unpriced": 0,
+          "positions": [
+            {
+              "kind": "spot",
+              "mint": "MintFake11111111111111111111111111111111111",
+              "chain": "solana",
+              "symbol": "FAKE",
+              "quantity": 50,
+              "valueUsd": 500,
+              "unrealizedUsd": 100,
+              "origin": "bought",
+              "unrealizedPct": 25
+            }
+          ],
+          "seq": 13
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "no-perps-cli",
+      "scenario": "no-perps",
+      "buildAt": "10:24",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent positions prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/positions",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "lines": [
+          "Portfolio $500.00",
+          "Updated Jan 12 10:22Z",
+          "",
+          "Kind   Position  Amount  Value    P&L                Details",
+          "-----  --------  ------  -------  -----------------  -------",
+          "token  FAKE      50      $500.00  +$100.00 (+25.0%)  –"
+        ]
+      }
+    },
+    {
+      "id": "no-perps-cli-json",
+      "scenario": "no-perps",
+      "buildAt": "10:24",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent positions prof_0123456789abcdef --json"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/positions",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "body": {
+          "success": true,
+          "publishedBuildId": "build_fixture_13",
+          "asOfMs": 1799749320000,
+          "spotAsOfMs": 1799749320000,
+          "perpsAsOfMs": null,
+          "perpsSnapshotId": null,
+          "perpsPartial": false,
+          "portfolioValueUsd": 500,
+          "portfolioPartial": false,
+          "hiddenDust": 0,
+          "unpriced": 0,
+          "positions": [
+            {
+              "kind": "spot",
+              "mint": "MintFake11111111111111111111111111111111111",
+              "chain": "solana",
+              "symbol": "FAKE",
+              "quantity": 50,
+              "valueUsd": 500,
+              "unrealizedUsd": 100,
+              "origin": "bought",
+              "unrealizedPct": 25
+            }
+          ],
+          "seq": 13
+        }
+      }
+    },
+    {
+      "id": "docs-agent-trading",
+      "scenario": "docs",
+      "surface": "docs",
+      "args": {
+        "files": [
+          "docs/agent-trading.md",
+          "apps/docs/src/content/docs/developers/agent-trading.md",
+          "apps/frontend/public/docs/agent-trading.md"
+        ]
+      },
+      "outcome": {
+        "text": "- Perp rows, `perpsAsOfMs` and `perpsSnapshotId` come from that same published board build. `perpsAsOfMs` is the oldest wallet cutoff, and `asOfMs` is the older of `spotAsOfMs` and `perpsAsOfMs`. Between certified hours each wallet is read again every board build (about every 10 minutes, the cadence spot marks have): `perpsProvisional: true` then says the perps figures come from that provisional read, `perpsAsOfMs` is its time and `perpsCertifiedAsOfMs` the hourly certified cutoff under it. The hourly certified snapshot stays the backstop: when it certifies an hour it replaces the provisional figures for that hour and corrects any drift. Without a fresh provisional read (more than 15 minutes old, or the deployment does not run it) the figures are the certified ones, about an hour behind, with no `perpsProvisional`. Perps older than 3 hours by either kind of read are `perpsUnavailable`. While a newer Hyperliquid snapshot is not yet reconciled, the previous one is served with `perpsPartial: true`. `perpsUnavailable: true` means the agent has perps with no reconciled snapshot yet: no perp rows and no combined portfolio value, never a flat book. A deployment that does not include perps in the record serves spot rows only, with the perps fields `null`."
+      }
+    },
+    {
+      "id": "docs-sdk-changelog",
+      "scenario": "docs",
+      "surface": "docs",
+      "args": {
+        "files": [
+          "packages/sdk/CHANGELOG.md"
+        ]
+      },
+      "outcome": {
+        "text": "BE-3767 (unreleased; a later bump ships it): `AgentPositions` and `AgentPublicRecord` gain optional `perpsProvisional` and `perpsCertifiedAsOfMs`. Between certified hours the API now refreshes perps figures every board build (about 10 minutes) from a provisional read; `perpsAsOfMs` is then that read's time, `perpsProvisional` is `true` and `perpsCertifiedAsOfMs` is the hourly certified cutoff that corrects it. Both are absent on certified figures and from an older API. MCP `candle_get_agent_positions` documents them, and `candle agent positions` prints a \"Perps as of\" line saying certified or provisional."
+      }
+    }
+  ]
+}
