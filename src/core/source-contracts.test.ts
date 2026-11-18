@@ -68,3 +68,48 @@ test("per-order hide: the echo is required, a dry run that lacks it stops a hidd
   expect(contracts.rows.find((r) => r.id === "hide-sdk-swap-unreadable")!.requests).toEqual([])
   expect(contracts.rows.find((r) => r.id === "hide-mcp-trade-paper")!.requests).toEqual([])
 })
+
+test("perp position pages: the round, open-orders and candles reads are one keyless GET each, the same on MCP and SDK, with no wallet, order id or cloid", () => {
+  const rows = contracts.rows.filter((r) => r.id.startsWith("perp-pages-"))
+  expect(rows).toHaveLength(12)
+  const paths: Record<string, string> = {
+    "round-closed": "/api/v1/agent/records/fixture-agent/perps/rounds/rnd_0123456789abcdef",
+    "round-open-builder-dex": "/api/v1/agent/records/fixture-agent/perps/rounds/open%3Axyz%3ATSLA",
+    "open-orders": "/api/v1/agent/records/fixture-agent/open-orders",
+    "open-orders-none": "/api/v1/agent/records/fixture-agent/open-orders",
+    "candles-default": "/api/v1/agent/perps-candles/BTC",
+    "candles-builder-dex": "/api/v1/agent/perps-candles/xyz%3ATSLA?interval=15m&count=2&end=1760003600000",
+  }
+  for (const [id, path] of Object.entries(paths)) {
+    const mcp = rows.find((r) => r.id === `perp-pages-mcp-${id}`)!
+    const sdk = rows.find((r) => r.id === `perp-pages-sdk-${id}`)!
+    for (const row of [mcp, sdk]) {
+      expect(row.requests!.map((q) => [q.method, q.path])).toEqual([["GET", path]])
+      expect((row.outcome as { isError: boolean }).isError).toBe(false)
+      expect(JSON.stringify(row.outcome)).not.toMatch(/"(wallet|address|oid|cloid)"/i)
+    }
+    // The MCP tool relays the server's answer whole; the SDK drops `success` and keeps the rest.
+    const { success: _s, ...answer } = (mcp.outcome as { body: Record<string, unknown> }).body
+    const sdkBody = (sdk.outcome as { body: Record<string, unknown> }).body
+    if (id.startsWith("round")) expect(sdkBody).toEqual({ ...(answer.round as object), seq: answer.seq })
+    else expect(sdkBody).toEqual(answer)
+    // The MCP tool never sends a credential, even though the recorder configures a key.
+    expect((mcp.requests as { credential: boolean }[]).every((q) => q.credential === false)).toBe(true)
+  }
+})
+
+test("perp position pages: a round has fills, funding and separate fees; open orders say type and trigger; none is []", () => {
+  const body = (id: string) => (rows.find((r) => r.id === id)!.outcome as { body: any }).body
+  const rows = contracts.rows
+  const round = body("perp-pages-mcp-round-closed").round
+  expect(round.fills.map((f: { role: string }) => f.role)).toEqual(["open", "close"])
+  expect(round.funding).toHaveLength(1)
+  expect(round.hyperliquidFeesUsd).toBe(0.02)
+  expect(round.builderFeesUsd).toBe(0.005)
+  expect(round.returnOnMargin).toBe(0.4)
+  expect(body("perp-pages-mcp-round-open-builder-dex").round).toMatchObject({ id: "open:xyz:TSLA", coin: "xyz:TSLA", dex: "xyz" })
+  const orders = body("perp-pages-mcp-open-orders").orders as { kind: string; triggerPx: string | null }[]
+  expect(orders.map((o) => [o.kind, o.triggerPx])).toEqual([["limit", null], ["take_profit", "120.0"], ["stop_loss", "95.0"]])
+  expect(body("perp-pages-sdk-open-orders-none").orders).toEqual([])
+  expect(body("perp-pages-mcp-candles-builder-dex")).toMatchObject({ coin: "xyz:TSLA", interval: "15m" })
+})

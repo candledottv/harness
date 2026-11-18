@@ -23,6 +23,13 @@ The command table and source contracts follow Candle CLI 0.13.28 and MCP 0.10.33
 - **Relay's Hood router swap calldata pin** (candle-monorepo #3880) lives in the API and the CLI's `relay-constants.ts`; the Harness holds no copy of that calldata, so no assertion changed.
 - Not here: `candle swap --hide` (the CLI release, BE-3699). The CLI table is not re-read, so it still has no `--hide`.
 
+### Perp position pages (candle-monorepo #3922, BE-3756)
+
+- **Source contracts follow candle-monorepo `7354c785a`** (MCP 0.10.34 with three new keyless reads; CLI source 0.13.29): `candle_get_agent_perp_round` (one perp round of a published agent, open as `open:COIN` or closed: fills, funding, Hyperliquid and Candle builder fees apart, return on margin, outcome), `candle_get_agent_open_orders` (its open limit and take-profit / stop orders with their trigger prices, `[]` with none) and `candle_get_perp_candles` (a perp coin's cached candles, builder dexes as `dex:COIN`). The tool table classes all three as reads, and the 103-tool source list is re-recorded.
+- **Twelve offline MCP/SDK scenarios** record each read through the real MCP server and SDK client against local stubs: one GET each, the same path from both, no credential from the MCP tool, a closed and an open builder-dex round, open orders with and without any, default and builder-dex candles with `interval`, `count` and `end`. The fixtures are invented values; nothing in an answer or recording carries a wallet, order id or cloid, and no network, tool call or order was used.
+- **The released CLI 0.13.28 has none of the three.** Its recording is still checked against the 0.10.33 source it was built from, and a test pins that the current source differs from it by `hide` and these three tools only.
+- Not here: the `candle agent round` command row. The CLI table is not re-read (it follows 0.13.28), so `candle_cli` does not list `agent round` or `agent positions --orders` until the CLI release (and its re-read, which also brings `swap --hide`). The agent reaches the same reads through the three MCP tools above. The Harness version stays 0.6.1, unreleased.
+
 ## 0.6.0 (unreleased)
 
 Robinhood Chain, and the Harness starts live.

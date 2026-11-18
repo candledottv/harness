@@ -231,6 +231,78 @@ try {
     assert.deepEqual(requests, [])
     rows.push({ id: "hide-mcp-trade-paper", surface: "mcp", tool: "candle_trade", args, requests, outcome })
   }
+  // Perp position pages (BE-3756, candle-monorepo #3922): a round's fills, funding and fees, the agent's open orders
+  // and a coin's cached candles, MCP and SDK. Public keyless reads: one GET each, no credential, no wallet, order id or
+  // cloid in anything the stub answers or the Harness records. Fixture values only; no real agent, wallet or hash.
+  {
+    const fakeHash = (n: number) => `0x${String(n).repeat(64).slice(0, 64)}`
+    const round = (id: string, coin: string, dex: string | null) => ({
+      success: true, seq: 7,
+      round: {
+        id, coin, dex, side: "long", outcome: "won", leverage: { value: 20, type: "cross" },
+        openedMs: 1_760_000_000_000, closedMs: 1_760_003_600_000, durationMs: 3_600_000,
+        size: { peak: "0.5", current: "0" }, entryAvgPx: "100.0", exitAvgPx: "110.0", markPx: null, liquidationPx: "95.5",
+        initialMarginUsd: 2.5, returnOnMargin: 0.4, realizedUsd: 5, unrealizedUsd: null, fundingUsd: -0.01,
+        hyperliquidFeesUsd: 0.02, builderFeesUsd: 0.005, pnlUsd: 4.965,
+        fills: [
+          { time: 1_760_000_000_000, side: "buy", role: "open", dir: "Open Long", px: "100.0", sz: "0.5", positionAfter: "0.5", feeUsd: 0.01, closedPnlUsd: 0, liquidated: false, hash: fakeHash(1) },
+          { time: 1_760_003_600_000, side: "sell", role: "close", dir: "Close Long", px: "110.0", sz: "0.5", positionAfter: "0", feeUsd: 0.01, closedPnlUsd: 5, liquidated: false, hash: fakeHash(2) },
+        ],
+        funding: [{ time: 1_760_001_800_000, usd: -0.01, rate: "0.0000125", hash: fakeHash(3) }],
+        complete: true, asOfMs: 1_760_003_700_000,
+      },
+    })
+    const orders = (list: unknown[]) => ({ success: true, orders: list, readAt: 1_760_003_700_000, stale: false, dexes: list.length ? ["xyz"] : [], seq: 7 })
+    const order = (kind: string, side: string, limitPx: string | null, triggerPx: string | null, condition: string | null) => ({
+      coin: "xyz:TSLA", dex: "xyz", kind, side, limitPx, triggerPx, triggerCondition: condition, size: "0.5", originalSize: "0.5",
+      reduceOnly: kind !== "limit", isPositionTpsl: kind !== "limit", orderType: kind === "limit" ? "Limit" : kind === "take_profit" ? "Take Profit Market" : "Stop Market", placedAtMs: 1_760_000_100_000,
+    })
+    const candles = (coin: string, interval: string) => ({ success: true, coin, interval, readAt: 1_760_003_700_000, stale: false, candles: [{ t: 1_760_000_000_000, o: "100.0", h: "101.5", l: "99.5", c: "101.0", v: "12.5" }, { t: 1_760_003_600_000, o: "101.0", h: "111.0", l: "100.5", c: "110.0", v: "30.1" }] })
+    type PerpCase = { id: string; tool: string; args: Record<string, unknown>; path: string; answer: unknown; sdk: (c: any) => Promise<any> }
+    const cases: PerpCase[] = [
+      { id: "round-closed", tool: "candle_get_agent_perp_round", args: { profileId: "fixture-agent", roundId: "rnd_0123456789abcdef" }, path: "/api/v1/agent/records/fixture-agent/perps/rounds/rnd_0123456789abcdef", answer: round("rnd_0123456789abcdef", "BTC", null), sdk: (c) => c.getAgentPerpRound("fixture-agent", "rnd_0123456789abcdef") },
+      { id: "round-open-builder-dex", tool: "candle_get_agent_perp_round", args: { profileId: "fixture-agent", roundId: "open:xyz:TSLA" }, path: "/api/v1/agent/records/fixture-agent/perps/rounds/open%3Axyz%3ATSLA", answer: round("open:xyz:TSLA", "xyz:TSLA", "xyz"), sdk: (c) => c.getAgentPerpRound("fixture-agent", "open:xyz:TSLA") },
+      { id: "open-orders", tool: "candle_get_agent_open_orders", args: { profileId: "fixture-agent" }, path: "/api/v1/agent/records/fixture-agent/open-orders", answer: orders([order("limit", "buy", "90.0", null, null), order("take_profit", "sell", null, "120.0", "Price above 120"), order("stop_loss", "sell", null, "95.0", "Price below 95")]), sdk: (c) => c.getAgentOpenOrders("fixture-agent") },
+      { id: "open-orders-none", tool: "candle_get_agent_open_orders", args: { profileId: "fixture-agent" }, path: "/api/v1/agent/records/fixture-agent/open-orders", answer: orders([]), sdk: (c) => c.getAgentOpenOrders("fixture-agent") },
+      { id: "candles-default", tool: "candle_get_perp_candles", args: { coin: "BTC" }, path: "/api/v1/agent/perps-candles/BTC", answer: candles("BTC", "1h"), sdk: (c) => c.getPerpCandles("BTC") },
+      { id: "candles-builder-dex", tool: "candle_get_perp_candles", args: { coin: "xyz:TSLA", interval: "15m", count: 2, end: 1_760_003_600_000 }, path: "/api/v1/agent/perps-candles/xyz%3ATSLA?interval=15m&count=2&end=1760003600000", answer: candles("xyz:TSLA", "15m"), sdk: (c) => c.getPerpCandles("xyz:TSLA", { interval: "15m", count: 2, end: 1_760_003_600_000 }) },
+    ]
+    const bodyOf = (r: any) => JSON.parse(r.content[0].text)
+    for (const c of cases) {
+      for (const surface of ["mcp", "sdk"] as const) {
+        const requests: { method: string; path: string; credential: boolean }[] = []
+        const fetcher = async (url: string, init?: RequestInit) => {
+          assert.ok(String(url).startsWith(cfg.apiUrl))
+          const headers = new Headers(init?.headers)
+          requests.push({ method: init?.method ?? "GET", path: String(url).slice(cfg.apiUrl.length), credential: headers.has("authorization") || headers.has("x-api-key") })
+          return new Response(JSON.stringify(c.answer), { status: 200 })
+        }
+        let outcome: { body: any; isError: boolean }
+        if (surface === "mcp") {
+          globalThis.fetch = fetcher as unknown as typeof fetch
+          const server = createCandleMcpServer({}, cfg)
+          const client = new Client({ name: "harness-source-recorder", version: "1" })
+          const [a, b] = InMemoryTransport.createLinkedPair()
+          await server.connect(b)
+          await client.connect(a)
+          try { const r: any = await client.callTool({ name: c.tool, arguments: c.args }); outcome = { body: bodyOf(r), isError: r.isError === true } }
+          finally {
+            globalThis.fetch = (() => { throw new Error("contract recording may not access the network") }) as unknown as typeof fetch
+            await client.close(); await server.close()
+          }
+        } else {
+          const client = new CandleClient({ ...cfg, fetch: fetcher, maxRetries: 0 })
+          outcome = { body: await c.sdk(client), isError: false }
+        }
+        assert.equal(outcome.isError, false, `${surface}-${c.id}`)
+        assert.deepEqual(requests.map((r) => [r.method, r.path]), [["GET", c.path]], `${surface}-${c.id} one GET`)
+        // The MCP tool sends no credential even when one is configured; the SDK client attaches its own key as it does everywhere.
+        if (surface === "mcp") assert.ok(requests.every((r) => !r.credential), `${surface}-${c.id} is keyless`)
+        assert.ok(!/"(wallet|address|oid|cloid)"/i.test(JSON.stringify(outcome.body)), `${surface}-${c.id} carries no wallet, order id or cloid`)
+        rows.push({ id: `perp-pages-${surface}-${c.id}`, surface, tool: c.tool, args: c.args, requests, outcome })
+      }
+    }
+  }
   writeFileSync(join(import.meta.dir, "../test/fixtures/candle-source-contracts.json"), `${JSON.stringify({ about: "Synthetic response stubs exercised through the actual MCP/SDK source, with network disabled. No deployed behavior is claimed. Embedded perps stops at a local refusal before build/sign/send.", source: { repo: "candledottv/candle-monorepo", commit }, rows }, null, 2)}\n`)
   console.log(`Recorded ${rows.length} offline MCP/SDK scenarios from ${commit}.`)
 } finally { globalThis.fetch = originalFetch }
