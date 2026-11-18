@@ -9,7 +9,7 @@ import source from "../../test/fixtures/candle-cli-release/source-mcp-0.10.33-to
 import current from "../../test/fixtures/candle-tools.json"
 import { LISTED_AFTER_KEY_CHECK } from "../../scripts/scrub-recordings"
 import { MIN_CANDLE_CLI } from "./cli-table"
-import { argumentDrift, CARD_TOOL_ARGS, classificationDrift, unclassifiedTools } from "./classify"
+import { argumentDrift, CARD_TOOL_ARGS, classificationDrift, TOOL_CLASSES, unclassifiedTools } from "./classify"
 import { canonicalJson } from "../shared/canonical-json"
 
 /** The keyless perps reads the source lists after the released CLI 0.13.28 (MCP 0.10.33). */
@@ -48,9 +48,10 @@ test("only the four conditional profile tools remain source-only, with no classi
   expect(sourceOnly.map((t) => t.name).sort()).toEqual([...LISTED_AFTER_KEY_CHECK].sort())
   for (const tool of sourceOnly) expect(tool).toMatchObject({ listedAfterKeyCheck: true })
   const reconciled = [...released.recording.tools, ...sourceOnly]
-  // The table already classifies the reads the source added after this release; nothing else differs.
-  const after = new Set<string>(NEWER_THAN_RELEASE)
-  expect(classificationDrift(reconciled.map((t) => t.name)).filter((p) => !after.has(p.replace("not a Candle tool: ", "")))).toEqual([])
+  // The table also holds the three perp-page reads that came after 0.10.33 (BE-3756); the released CLI has none.
+  const perpPages = ["candle_get_agent_perp_round", "candle_get_agent_open_orders", "candle_get_perp_candles"]
+  const releasedTable = Object.fromEntries(Object.entries(TOOL_CLASSES).filter(([tool]) => !perpPages.includes(tool)))
+  expect(classificationDrift(reconciled.map((t) => t.name), releasedTable)).toEqual([])
   // The table already lists `hide` for the CLI release to come (MCP 0.10.34); the released 0.10.33 has none.
   const released0_10_33 = Object.fromEntries(Object.entries(CARD_TOOL_ARGS).map(([tool, args]) => [tool, args.filter((a) => a !== "hide")]))
   expect(argumentDrift(reconciled, released0_10_33)).toEqual([])
