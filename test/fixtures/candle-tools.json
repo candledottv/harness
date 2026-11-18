@@ -1,5 +1,5 @@
 {
-  "about": "Source tools/list from candledottv/candle-monorepo at 578db6462d65842c0fdbaf08a37aedf405decee5 (CLI 0.13.29), via the real MCP server and an in-memory transport. No external requests or tool calls. Profile discovery used a local GET-only eligibility stub; the four listedAfterKeyCheck tools remain conditional. Scrubbed with scripts/scrub-recordings.ts toolFixture. This is a source contract recording, not evidence of a published CLI release.",
+  "about": "Source tools/list from candledottv/candle-monorepo at 7916d48364cb6f904f5bc337add7d27e2f5fe0ea (CLI 0.13.29), via the real MCP server and an in-memory transport. No external requests or tool calls. Profile discovery used a local GET-only eligibility stub; the four listedAfterKeyCheck tools remain conditional. Scrubbed with scripts/scrub-recordings.ts toolFixture. This is a source contract recording, not evidence of a published CLI release.",
   "serverInfo": {
     "name": "candle-mcp",
     "version": "0.10.34"
@@ -4638,7 +4638,7 @@
   ],
   "source": {
     "repo": "candledottv/candle-monorepo",
-    "commit": "578db6462d65842c0fdbaf08a37aedf405decee5",
+    "commit": "7916d48364cb6f904f5bc337add7d27e2f5fe0ea",
     "cliVersion": "0.13.29",
     "method": "in-memory tools/list; local eligibility stub; no tool calls"
   }

@@ -3,7 +3,7 @@
 // scripts/read-cli-source.ts), with the rule the agent meets, whether it can do it now, and the
 // plain-English request the pane puts on the input line. The docs site's reference/cli-parity page is written from it too.
 import { paneRowNow } from "./owner-rows"
-import { CLI_ROWS, type CliRow, heldNow, PERPS_HELD, type CliRule, type HelpTopic, PANE_RULES, SOURCE, unlocksFor } from "./cli-table"
+import { CLI_ROWS, type CliRow, heldNow, PERPS_HELD, type CliRule, type HelpTopic, PANE_RULES, SOURCE, type SourceEntry, unlocksFor } from "./cli-table"
 
 export type Availability = "now" | "coming" | "never"
 
@@ -98,6 +98,22 @@ export function helpLine(help: Readonly<Record<string, HelpTopic>>, path: string
   return { description: parent?.description ?? topic.summary, exact: false }
 }
 
+/**
+ * A third word its subcommand's handler dispatches itself (`perps spot buy`), listed among the
+ * alternatives of that subcommand's own help row (`spot <markets|balances|buy|sell|cancel> ...`). The
+ * help writes those words as a placeholder would, so the handler's dispatch is what tells them apart.
+ */
+export function dispatchedWord(source: { commands: readonly SourceEntry[]; help: Readonly<Record<string, HelpTopic>> }, path: string): boolean {
+  const [command, sub, word, ...more] = path.split(" ")
+  if (!command || !sub || !word || more.length > 0) return false
+  const entry = source.commands.find((c) => c.command === command && c.subcommand === sub)
+  if (entry?.actions?.[word] === undefined) return false
+  return (source.help[command]?.rows ?? []).some((row) => {
+    const [first, second] = row.invocation.trim().split(/\s+/)
+    return first === sub && /^[<[][a-z][a-z0-9|-]*[>\]]$/.test(second ?? "") && second!.slice(1, -1).split("|").includes(word)
+  })
+}
+
 /** The first sentence, on one line: up to the first ". " or "; " outside parentheses, less a computed tail (": …"). */
 function firstSentence(text: string): string {
   const flat = text.replace(/\s+/g, " ")
@@ -143,7 +159,7 @@ function availability(row: CliRow, perpsWrites: boolean): Availability {
 
 /** A held row's reason, or perps trading's; every row still coming says why. */
 function whyComing(row: CliRow): { why?: string } {
-  const held = row.held ?? row.card?.held ?? (row.needs !== undefined ? PERPS_HELD : undefined) ?? (row.route === "later" && row.path.startsWith("perps ") ? PERPS_LATER : undefined)
+  const held = row.held ?? row.card?.held ?? (row.needs !== undefined ? PERPS_HELD : undefined) ?? (row.route === "later" && row.path.startsWith("perps ") ? (row.note ?? PERPS_LATER) : undefined)
   return held ? { why: held } : {}
 }
 
@@ -168,7 +184,7 @@ function build(perpsWrites: boolean): CatalogueEntry[] {
       // A row the Candle Harness never runs as written but whose narrowing it does (`keys wallets scope`) can still be picked.
       ...(when === "never" ? { note: row.note } : {}),
       ...(when !== "never" || row.byFlags ? { request: row.ask ?? `${lowerFirst(description)} ` } : {}),
-      documented: line.exact,
+      documented: line.exact || dispatchedWord(SOURCE, row.path),
     }
   })
   // The help's group order, and the table's order within each group.

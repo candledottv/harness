@@ -187,6 +187,8 @@ export const LP_AGENT_SCOPES: readonly string[] = [...SOURCE.presets.readwrite.s
 const STAKE_NOTE = "From the embedded wallet: candle_stake, candle_unstake or candle_finish_unstake, as a one-press card. From a TEE wallet: this command with --wallet <the TEE wallet's label or address>, a one-press card."
 const LP_HELD = "Candle serves LP now (LP_ENABLED, on since 2026-11-06), but no key preset grants lp:write yet, which these cards need. candle-harness doctor says where LP stands."
 const STAKE_ROW = (stops: boolean): CardRow => ({ kind: "stake", idFlag: "--client-stake-id", readBack: "rerun", stops, wallet: "tee" })
+/** Why a Hyperliquid spot write is still coming: the CLI shows the pair, Hyperliquid's spot fee and Candle's builder fee (sells only) before its own confirm. */
+export const SPOT_LATER = "Hyperliquid spot orders aren't cards in the Candle Harness yet. In your own terminal the CLI shows the pair, Hyperliquid's spot fee and Candle's builder fee (on sells only) before it asks."
 /** Why a perps write is held until the person turns it on. */
 export const PERPS_HELD = "Off until perps.writes = true in config.toml."
 /** Whether a row is held now: a card's hold, or a `needs` setting, unless `perps.writes` is on. */
@@ -331,6 +333,15 @@ const ROWS: readonly RowInput[] = [
   r("perps reduce-only", "read", "cli", "agent", { byFlags: otherKey, partly: "another key's: coming", takes: 0 }),
   r("perps reduce-only on", "less-access", "cli", "agent", { needs: "perps.writes", byFlags: otherKey, partly: "another key's: coming", takes: 0 }),
   r("perps reduce-only off", "owner", "later", "owner"),
+  // Hyperliquid spot from the same EVM TEE wallet. The reads run with the agent's key. Buys, sells and
+  // cancels are signed writes the CLI checks against its own read of Hyperliquid and confirms itself.
+  // No card is built for them yet, so they stay "coming", as perps open does.
+  r("perps spot", "read", "cli", "agent", { note: "On its own it prints its usage.", takes: 0 }),
+  r("perps spot markets", "read", "cli", "agent", { takes: 0 }),
+  r("perps spot balances", "read", "cli", "agent", { takes: 0 }),
+  r("perps spot buy", "card", "later", "agent", { note: SPOT_LATER }),
+  r("perps spot sell", "card", "later", "agent", { note: SPOT_LATER }),
+  r("perps spot cancel", "card", "later", "agent", { note: SPOT_LATER }),
   never("perps watch", "The core watches perps risk itself; --on-warn and --on-critical run commands.", "agent"),
   // Account
   mcp("portfolio", "candle_get_portfolio"),

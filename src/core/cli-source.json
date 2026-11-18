@@ -3,7 +3,7 @@
   "source": {
     "repo": "candledottv/candle-monorepo",
     "path": "packages/cli/src",
-    "commit": "578db6462d65842c0fdbaf08a37aedf405decee5",
+    "commit": "7916d48364cb6f904f5bc337add7d27e2f5fe0ea",
     "cliVersion": "0.13.29"
   },
   "aliases": {
@@ -235,6 +235,10 @@
         {
           "invocation": "withdraw <amount> --to solana|hood [--wallet <evm tee>] | withdraw status <id>",
           "description": "Move USDC from the Hyperliquid account to this key's own Solana or Hood TEE wallet through Relay (perps:withdraw); at least 10 USDC, with Relay's fees at most 5% (Hyperliquid's one-time 1 USDC activation fee on a first withdrawal not counted); one vault unlock and a typed confirm, no --yes"
+        },
+        {
+          "invocation": "spot <markets|balances|buy|sell|cancel> ...",
+          "description": "Hyperliquid spot from the same TEE wallet (BE-3771): markets [--all] [--limit <n>]; balances; buy|sell <pair> <size> [--price <px>] [--tif <t>] [--slippage-bps <n>] [--client-id <id>]; cancel <cloid>. <pair> is HYPE/USDC or @107, size in the base token; USDC-quoted pairs only; a buy spends the spot USDC balance, which is separate from perps"
         },
         {
           "invocation": "positions [--wallet <tee>]",
@@ -2956,6 +2960,64 @@
         "stdin",
         "stdout"
       ]
+    },
+    {
+      "command": "perps",
+      "subcommand": "spot",
+      "handler": "perpsSpot",
+      "file": "commands/perps-spot.ts",
+      "flags": {
+        "value": [
+          "--client-id",
+          "--limit",
+          "--price",
+          "--slippage-bps",
+          "--tif",
+          "--wallet"
+        ],
+        "boolean": [
+          "--all",
+          "--no-submit",
+          "--sign-only",
+          "--yes"
+        ],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "agent",
+      "json": true,
+      "unlocks": "never",
+      "tty": [
+        "stdin"
+      ],
+      "actions": {
+        "markets": {
+          "unlocks": "never",
+          "tty": []
+        },
+        "balances": {
+          "unlocks": "never",
+          "tty": []
+        },
+        "buy": {
+          "unlocks": "never",
+          "tty": [
+            "stdin"
+          ]
+        },
+        "sell": {
+          "unlocks": "never",
+          "tty": [
+            "stdin"
+          ]
+        },
+        "cancel": {
+          "unlocks": "never",
+          "tty": [
+            "stdin"
+          ]
+        }
+      }
     },
     {
       "command": "auth",

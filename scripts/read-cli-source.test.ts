@@ -434,6 +434,29 @@ export async function factorRemove(args: string[], ctx: Ctx): Promise<number> {
   test("a dispatcher's words are read one by one", () => {
     expect(facts.factor!.actions).toEqual({ list: { unlocks: "never", tty: [] }, remove: { unlocks: "always", tty: ["stdin", "stdout"] } })
   })
+
+  test("labels that fall through to one return are each a word (perps spot's buy and sell)", () => {
+    const spot = vaultFacts(cliSource({
+      Spot: `export async function Spot(args: string[], ctx: Ctx): Promise<number> {
+  const [sub, ...rest] = args
+  switch (sub) {
+    case "markets":
+      return markets(rest, ctx)
+    case "buy":
+    case "sell":
+      return order(sub, rest, ctx)
+  }
+  return 2
+}
+async function markets(args: string[], ctx: Ctx) {
+  return 0
+}
+async function order(side: string, args: string[], ctx: Ctx) {
+  return ctx.deps.isTTY.stdin ? 0 : 1
+}`,
+    }))
+    expect(spot.spot!.actions).toEqual({ markets: { unlocks: "never", tty: [] }, buy: { unlocks: "never", tty: ["stdin"] }, sell: { unlocks: "never", tty: ["stdin"] } })
+  })
 })
 
 describe("reading the access presets", () => {
