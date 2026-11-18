@@ -1,0 +1,1292 @@
+{
+  "about": "Offline `candle swap` fast-path contracts (BE-3923): the job, wallet and decimals reads on the wire together; the order of outcomes unchanged; the embedded wallet's execute probe cached per API URL for 24 hours (a pass only); the local simulation read from the configured RPC and nothing else. Recorded by running the CLI's source against stand-ins from an exact staging commit; every fetch is intercepted. The commit is a staging build: the published CLI predates it.",
+  "source": {
+    "repo": "candledottv/candle-monorepo",
+    "commit": "ebaf6b8838f81679e333994b3be2717be4cfa37d",
+    "versions": {
+      "cli": "0.13.31",
+      "mcp": "0.10.36",
+      "sdk": "0.6.25"
+    },
+    "files": [
+      "packages/cli/src/commands/swap.ts",
+      "packages/cli/src/trading.ts"
+    ]
+  },
+  "rows": [
+    {
+      "id": "parallel-reads-tee-swap",
+      "scenario": "parallel-reads",
+      "evidence": "stand-in: each read is held until all three are on the wire; the recorder fails if one never arrives",
+      "args": {
+        "argv": [
+          "swap",
+          "SOL",
+          "<tee>",
+          "--amount",
+          "1",
+          "--yes",
+          "--json",
+          "--wallet",
+          "tee",
+          "--rpc-url",
+          "<private-rpc>",
+          "--client-trade-id",
+          "fast-1"
+        ]
+      },
+      "requests": [
+        {
+          "n": 1,
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/trading"
+        },
+        {
+          "n": 2,
+          "host": "rpc.private.test",
+          "path": "<rpc>",
+          "rpc": "getTokenSupply"
+        },
+        {
+          "n": 3,
+          "host": "api.test",
+          "path": "/api/v1/trade/agent/jobs/fast-1"
+        },
+        {
+          "n": 4,
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/embedded"
+        },
+        {
+          "n": 5,
+          "host": "api.test",
+          "path": "/api/v1/trade/agent/build"
+        },
+        {
+          "n": 6,
+          "host": "rpc.private.test",
+          "path": "<rpc>",
+          "rpc": "getMultipleAccounts"
+        },
+        {
+          "n": 7,
+          "host": "rpc.private.test",
+          "path": "<rpc>",
+          "rpc": "simulateTransaction"
+        },
+        {
+          "n": 8,
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/wallet/sign"
+        },
+        {
+          "n": 9,
+          "host": "api.test",
+          "path": "/api/v1/trade/agent/submit"
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "readsStartedTogether": [
+          "job",
+          "wallets",
+          "decimals"
+        ],
+        "readsBeforeBuild": 3,
+        "builtAfterReads": true,
+        "status": "executed"
+      }
+    },
+    {
+      "id": "prior-job-wins-over-failed-reads",
+      "scenario": "order",
+      "evidence": "A job already stored under the id is printed as it is, even when the wallet read failed alongside it.",
+      "args": {
+        "argv": [
+          "swap",
+          "SOL",
+          "USDC",
+          "--amount",
+          "1",
+          "--yes",
+          "--json",
+          "--wallet",
+          "tee",
+          "--client-trade-id",
+          "order-1"
+        ]
+      },
+      "requests": [
+        {
+          "n": 1,
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/trading"
+        },
+        {
+          "n": 2,
+          "host": "api.test",
+          "path": "/api/v1/agent/swap/jobs/order-1"
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "replayed": true,
+        "builtAnything": false,
+        "status": "confirmed",
+        "signaturesShown": 1
+      }
+    },
+    {
+      "id": "job-read-failure-first",
+      "scenario": "order",
+      "args": {
+        "argv": [
+          "swap",
+          "SOL",
+          "<tee>",
+          "--amount",
+          "1",
+          "--yes",
+          "--json",
+          "--wallet",
+          "tee",
+          "--client-trade-id",
+          "job-read-failure-first"
+        ]
+      },
+      "requests": [
+        {
+          "n": 1,
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/trading"
+        },
+        {
+          "n": 2,
+          "host": "rpc.private.test",
+          "path": "<rpc>",
+          "rpc": "getTokenSupply"
+        },
+        {
+          "n": 3,
+          "host": "rpc.private.test",
+          "path": "<rpc>",
+          "rpc": "getTokenSupply"
+        },
+        {
+          "n": 4,
+          "host": "api.test",
+          "path": "/api/v1/trade/agent/jobs/job-read-failure-first"
+        }
+      ],
+      "outcome": {
+        "exitCode": 1,
+        "code": "SCOPE_MISSING",
+        "builtAnything": false
+      }
+    },
+    {
+      "id": "wallet-failure-over-decimals-failure",
+      "scenario": "order",
+      "args": {
+        "argv": [
+          "swap",
+          "SOL",
+          "<tee>",
+          "--amount",
+          "1",
+          "--yes",
+          "--json",
+          "--wallet",
+          "tee",
+          "--client-trade-id",
+          "wallet-failure-over-decimals-failure"
+        ]
+      },
+      "requests": [
+        {
+          "n": 1,
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/trading"
+        },
+        {
+          "n": 2,
+          "host": "rpc.private.test",
+          "path": "<rpc>",
+          "rpc": "getTokenSupply"
+        },
+        {
+          "n": 3,
+          "host": "rpc.private.test",
+          "path": "<rpc>",
+          "rpc": "getTokenSupply"
+        },
+        {
+          "n": 4,
+          "host": "api.test",
+          "path": "/api/v1/trade/agent/jobs/wallet-failure-over-decimals-failure"
+        }
+      ],
+      "outcome": {
+        "exitCode": 1,
+        "code": "TIER_REQUIRED",
+        "builtAnything": false
+      }
+    },
+    {
+      "id": "decimals-failure-alone",
+      "scenario": "order",
+      "args": {
+        "argv": [
+          "swap",
+          "SOL",
+          "<tee>",
+          "--amount",
+          "1",
+          "--yes",
+          "--json",
+          "--wallet",
+          "tee",
+          "--client-trade-id",
+          "decimals-failure-alone"
+        ]
+      },
+      "requests": [
+        {
+          "n": 1,
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/trading"
+        },
+        {
+          "n": 2,
+          "host": "rpc.private.test",
+          "path": "<rpc>",
+          "rpc": "getTokenSupply"
+        },
+        {
+          "n": 3,
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/embedded"
+        },
+        {
+          "n": 4,
+          "host": "rpc.private.test",
+          "path": "<rpc>",
+          "rpc": "getTokenSupply"
+        },
+        {
+          "n": 5,
+          "host": "api.test",
+          "path": "/api/v1/trade/agent/jobs/decimals-failure-alone"
+        }
+      ],
+      "outcome": {
+        "exitCode": 1,
+        "code": "RPC_RATE_LIMITED",
+        "builtAnything": false
+      }
+    },
+    {
+      "id": "probe-first-trade",
+      "scenario": "execute-probe",
+      "args": {
+        "argv": [
+          "swap",
+          "SOL",
+          "<tee>",
+          "--amount",
+          "1",
+          "--yes",
+          "--json",
+          "--wallet",
+          "<embedded>",
+          "--client-trade-id",
+          "probe-1"
+        ]
+      },
+      "requests": [
+        {
+          "n": 1,
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/trading"
+        },
+        {
+          "n": 2,
+          "host": "rpc.private.test",
+          "path": "<rpc>",
+          "rpc": "getTokenSupply"
+        },
+        {
+          "n": 3,
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/embedded"
+        },
+        {
+          "n": 4,
+          "host": "api.test",
+          "path": "/api/v1/trade/agent/jobs/probe-1"
+        },
+        {
+          "n": 5,
+          "host": "api.test",
+          "path": "/api/v1/trade/agent/execute"
+        },
+        {
+          "n": 6,
+          "host": "api.test",
+          "path": "/api/v1/trade/agent/build"
+        },
+        {
+          "n": 7,
+          "host": "api.test",
+          "path": "/api/v1/trade/agent/execute"
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "executeCalls": 2,
+        "probed": true,
+        "status": "executed"
+      }
+    },
+    {
+      "id": "probe-cached-second-trade",
+      "scenario": "execute-probe",
+      "evidence": "The probe is the first /execute call, before the build; with the cache only the execution after the quote remains.",
+      "args": {
+        "argv": [
+          "swap",
+          "SOL",
+          "<tee>",
+          "--amount",
+          "1",
+          "--yes",
+          "--json",
+          "--wallet",
+          "<embedded>",
+          "--client-trade-id",
+          "probe-2"
+        ]
+      },
+      "requests": [
+        {
+          "n": 1,
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/trading"
+        },
+        {
+          "n": 2,
+          "host": "rpc.private.test",
+          "path": "<rpc>",
+          "rpc": "getTokenSupply"
+        },
+        {
+          "n": 3,
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/embedded"
+        },
+        {
+          "n": 4,
+          "host": "api.test",
+          "path": "/api/v1/trade/agent/jobs/probe-2"
+        },
+        {
+          "n": 5,
+          "host": "api.test",
+          "path": "/api/v1/trade/agent/build"
+        },
+        {
+          "n": 6,
+          "host": "api.test",
+          "path": "/api/v1/trade/agent/execute"
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "executeCalls": 1,
+        "probed": false,
+        "status": "executed"
+      }
+    },
+    {
+      "id": "probe-cached-after-23-hours",
+      "scenario": "execute-probe",
+      "args": {
+        "argv": [
+          "swap",
+          "SOL",
+          "<tee>",
+          "--amount",
+          "1",
+          "--yes",
+          "--json",
+          "--wallet",
+          "<embedded>",
+          "--client-trade-id",
+          "probe-3"
+        ]
+      },
+      "requests": [
+        {
+          "n": 1,
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/trading"
+        },
+        {
+          "n": 2,
+          "host": "rpc.private.test",
+          "path": "<rpc>",
+          "rpc": "getTokenSupply"
+        },
+        {
+          "n": 3,
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/embedded"
+        },
+        {
+          "n": 4,
+          "host": "api.test",
+          "path": "/api/v1/trade/agent/jobs/probe-3"
+        },
+        {
+          "n": 5,
+          "host": "api.test",
+          "path": "/api/v1/trade/agent/build"
+        },
+        {
+          "n": 6,
+          "host": "api.test",
+          "path": "/api/v1/trade/agent/execute"
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "executeCalls": 1,
+        "probed": false
+      }
+    },
+    {
+      "id": "probe-asks-again-after-25-hours",
+      "scenario": "execute-probe",
+      "args": {
+        "argv": [
+          "swap",
+          "SOL",
+          "<tee>",
+          "--amount",
+          "1",
+          "--yes",
+          "--json",
+          "--wallet",
+          "<embedded>",
+          "--client-trade-id",
+          "probe-4"
+        ]
+      },
+      "requests": [
+        {
+          "n": 1,
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/trading"
+        },
+        {
+          "n": 2,
+          "host": "rpc.private.test",
+          "path": "<rpc>",
+          "rpc": "getTokenSupply"
+        },
+        {
+          "n": 3,
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/embedded"
+        },
+        {
+          "n": 4,
+          "host": "api.test",
+          "path": "/api/v1/trade/agent/jobs/probe-4"
+        },
+        {
+          "n": 5,
+          "host": "api.test",
+          "path": "/api/v1/trade/agent/execute"
+        },
+        {
+          "n": 6,
+          "host": "api.test",
+          "path": "/api/v1/trade/agent/build"
+        },
+        {
+          "n": 7,
+          "host": "api.test",
+          "path": "/api/v1/trade/agent/execute"
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "executeCalls": 2,
+        "probed": true
+      }
+    },
+    {
+      "id": "probe-per-api-url",
+      "scenario": "execute-probe",
+      "evidence": "Run against another API URL on the same machine and config: it probes again.",
+      "args": {
+        "argv": [
+          "swap",
+          "SOL",
+          "<tee>",
+          "--amount",
+          "1",
+          "--yes",
+          "--json",
+          "--wallet",
+          "<embedded>",
+          "--client-trade-id",
+          "probe-5"
+        ]
+      },
+      "requests": [
+        {
+          "n": 1,
+          "host": "other-api.test",
+          "path": "/api/v1/agent/wallets/trading"
+        },
+        {
+          "n": 2,
+          "host": "rpc.private.test",
+          "path": "<rpc>",
+          "rpc": "getTokenSupply"
+        },
+        {
+          "n": 3,
+          "host": "other-api.test",
+          "path": "/api/v1/agent/wallets/embedded"
+        },
+        {
+          "n": 4,
+          "host": "other-api.test",
+          "path": "/api/v1/trade/agent/jobs/probe-5"
+        },
+        {
+          "n": 5,
+          "host": "other-api.test",
+          "path": "/api/v1/trade/agent/execute"
+        },
+        {
+          "n": 6,
+          "host": "other-api.test",
+          "path": "/api/v1/trade/agent/build"
+        },
+        {
+          "n": 7,
+          "host": "other-api.test",
+          "path": "/api/v1/trade/agent/execute"
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "executeCalls": 2,
+        "probed": true
+      }
+    },
+    {
+      "id": "probe-failure-never-cached",
+      "scenario": "execute-probe",
+      "args": {
+        "argv": [
+          "swap",
+          "SOL",
+          "<tee>",
+          "--amount",
+          "1",
+          "--yes",
+          "--json",
+          "--wallet",
+          "<embedded>",
+          "--client-trade-id",
+          "probe-6"
+        ]
+      },
+      "requests": [
+        {
+          "n": 1,
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/trading"
+        },
+        {
+          "n": 2,
+          "host": "rpc.private.test",
+          "path": "<rpc>",
+          "rpc": "getTokenSupply"
+        },
+        {
+          "n": 3,
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/embedded"
+        },
+        {
+          "n": 4,
+          "host": "api.test",
+          "path": "/api/v1/trade/agent/jobs/probe-6"
+        },
+        {
+          "n": 5,
+          "host": "api.test",
+          "path": "/api/v1/trade/agent/execute"
+        }
+      ],
+      "outcome": {
+        "exitCode": 1,
+        "executeCalls": 1,
+        "builtAnything": false
+      }
+    },
+    {
+      "id": "probe-failure-asks-again",
+      "scenario": "execute-probe",
+      "args": {
+        "argv": [
+          "swap",
+          "SOL",
+          "<tee>",
+          "--amount",
+          "1",
+          "--yes",
+          "--json",
+          "--wallet",
+          "<embedded>",
+          "--client-trade-id",
+          "probe-7"
+        ]
+      },
+      "requests": [
+        {
+          "n": 1,
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/trading"
+        },
+        {
+          "n": 2,
+          "host": "rpc.private.test",
+          "path": "<rpc>",
+          "rpc": "getTokenSupply"
+        },
+        {
+          "n": 3,
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/embedded"
+        },
+        {
+          "n": 4,
+          "host": "api.test",
+          "path": "/api/v1/trade/agent/jobs/probe-7"
+        },
+        {
+          "n": 5,
+          "host": "api.test",
+          "path": "/api/v1/trade/agent/execute"
+        }
+      ],
+      "outcome": {
+        "exitCode": 1,
+        "executeCalls": 1,
+        "builtAnything": false,
+        "probedAgain": true
+      }
+    },
+    {
+      "id": "probe-passed-then-quote-declined",
+      "scenario": "execute-probe",
+      "args": {
+        "argv": [
+          "swap",
+          "SOL",
+          "<tee>",
+          "--amount",
+          "1",
+          "--wallet",
+          "<embedded>",
+          "--json",
+          "--client-trade-id",
+          "probe-8"
+        ]
+      },
+      "requests": [
+        {
+          "n": 1,
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/trading"
+        },
+        {
+          "n": 2,
+          "host": "rpc.private.test",
+          "path": "<rpc>",
+          "rpc": "getTokenSupply"
+        },
+        {
+          "n": 3,
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/embedded"
+        },
+        {
+          "n": 4,
+          "host": "api.test",
+          "path": "/api/v1/trade/agent/jobs/probe-8"
+        },
+        {
+          "n": 5,
+          "host": "api.test",
+          "path": "/api/v1/trade/agent/execute"
+        },
+        {
+          "n": 6,
+          "host": "api.test",
+          "path": "/api/v1/trade/agent/build"
+        }
+      ],
+      "outcome": {
+        "exitCode": 5,
+        "executeCalls": 1,
+        "executedAfterDecline": false,
+        "status": "cancelled"
+      }
+    },
+    {
+      "id": "probe-cached-after-a-declined-quote",
+      "scenario": "execute-probe",
+      "args": {
+        "argv": [
+          "swap",
+          "SOL",
+          "<tee>",
+          "--amount",
+          "1",
+          "--yes",
+          "--json",
+          "--wallet",
+          "<embedded>",
+          "--client-trade-id",
+          "probe-9"
+        ]
+      },
+      "requests": [
+        {
+          "n": 1,
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/trading"
+        },
+        {
+          "n": 2,
+          "host": "rpc.private.test",
+          "path": "<rpc>",
+          "rpc": "getTokenSupply"
+        },
+        {
+          "n": 3,
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/embedded"
+        },
+        {
+          "n": 4,
+          "host": "api.test",
+          "path": "/api/v1/trade/agent/jobs/probe-9"
+        },
+        {
+          "n": 5,
+          "host": "api.test",
+          "path": "/api/v1/trade/agent/build"
+        },
+        {
+          "n": 6,
+          "host": "api.test",
+          "path": "/api/v1/trade/agent/execute"
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "executeCalls": 1,
+        "probed": false
+      }
+    },
+    {
+      "id": "private-rpc-flag",
+      "scenario": "private-rpc",
+      "args": {
+        "argv": [
+          "swap",
+          "SOL",
+          "<tee>",
+          "--amount",
+          "1",
+          "--yes",
+          "--json",
+          "--wallet",
+          "tee",
+          "--rpc-url",
+          "<private-rpc>",
+          "--client-trade-id",
+          "rpc-1"
+        ]
+      },
+      "requests": [
+        {
+          "n": 1,
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/trading"
+        },
+        {
+          "n": 2,
+          "host": "rpc.private.test",
+          "path": "<rpc>",
+          "rpc": "getTokenSupply"
+        },
+        {
+          "n": 3,
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/embedded"
+        },
+        {
+          "n": 4,
+          "host": "api.test",
+          "path": "/api/v1/trade/agent/jobs/rpc-1"
+        },
+        {
+          "n": 5,
+          "host": "api.test",
+          "path": "/api/v1/trade/agent/build"
+        },
+        {
+          "n": 6,
+          "host": "rpc.private.test",
+          "path": "<rpc>",
+          "rpc": "getMultipleAccounts"
+        },
+        {
+          "n": 7,
+          "host": "rpc.private.test",
+          "path": "<rpc>",
+          "rpc": "simulateTransaction"
+        },
+        {
+          "n": 8,
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/wallet/sign"
+        },
+        {
+          "n": 9,
+          "host": "api.test",
+          "path": "/api/v1/trade/agent/submit"
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "rpcHosts": [
+          "rpc.private.test"
+        ],
+        "simulatedLocally": true,
+        "hostShown": true,
+        "pathShown": false
+      }
+    },
+    {
+      "id": "private-rpc-env",
+      "scenario": "private-rpc",
+      "args": {
+        "argv": [
+          "swap",
+          "SOL",
+          "<tee>",
+          "--amount",
+          "1",
+          "--yes",
+          "--json",
+          "--wallet",
+          "tee",
+          "--client-trade-id",
+          "rpc-2"
+        ]
+      },
+      "requests": [
+        {
+          "n": 1,
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/trading"
+        },
+        {
+          "n": 2,
+          "host": "rpc.private.test",
+          "path": "<rpc>",
+          "rpc": "getTokenSupply"
+        },
+        {
+          "n": 3,
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/embedded"
+        },
+        {
+          "n": 4,
+          "host": "api.test",
+          "path": "/api/v1/trade/agent/jobs/rpc-2"
+        },
+        {
+          "n": 5,
+          "host": "api.test",
+          "path": "/api/v1/trade/agent/build"
+        },
+        {
+          "n": 6,
+          "host": "rpc.private.test",
+          "path": "<rpc>",
+          "rpc": "getMultipleAccounts"
+        },
+        {
+          "n": 7,
+          "host": "rpc.private.test",
+          "path": "<rpc>",
+          "rpc": "simulateTransaction"
+        },
+        {
+          "n": 8,
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/wallet/sign"
+        },
+        {
+          "n": 9,
+          "host": "api.test",
+          "path": "/api/v1/trade/agent/submit"
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "rpcHosts": [
+          "rpc.private.test"
+        ],
+        "simulatedLocally": true,
+        "hostShown": true,
+        "pathShown": false
+      }
+    },
+    {
+      "id": "private-rpc-profile",
+      "scenario": "private-rpc",
+      "args": {
+        "argv": [
+          "swap",
+          "SOL",
+          "<tee>",
+          "--amount",
+          "1",
+          "--yes",
+          "--json",
+          "--wallet",
+          "tee",
+          "--client-trade-id",
+          "rpc-3"
+        ]
+      },
+      "requests": [
+        {
+          "n": 1,
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/trading"
+        },
+        {
+          "n": 2,
+          "host": "rpc.profile.test",
+          "path": "<rpc>",
+          "rpc": "getTokenSupply"
+        },
+        {
+          "n": 3,
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/embedded"
+        },
+        {
+          "n": 4,
+          "host": "api.test",
+          "path": "/api/v1/trade/agent/jobs/rpc-3"
+        },
+        {
+          "n": 5,
+          "host": "api.test",
+          "path": "/api/v1/trade/agent/build"
+        },
+        {
+          "n": 6,
+          "host": "rpc.profile.test",
+          "path": "<rpc>",
+          "rpc": "getMultipleAccounts"
+        },
+        {
+          "n": 7,
+          "host": "rpc.profile.test",
+          "path": "<rpc>",
+          "rpc": "simulateTransaction"
+        },
+        {
+          "n": 8,
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/wallet/sign"
+        },
+        {
+          "n": 9,
+          "host": "api.test",
+          "path": "/api/v1/trade/agent/submit"
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "rpcHosts": [
+          "rpc.profile.test"
+        ],
+        "simulatedLocally": true,
+        "hostShown": true,
+        "pathShown": false
+      }
+    },
+    {
+      "id": "private-rpc-flag-over-env",
+      "scenario": "private-rpc",
+      "args": {
+        "argv": [
+          "swap",
+          "SOL",
+          "<tee>",
+          "--amount",
+          "1",
+          "--yes",
+          "--json",
+          "--wallet",
+          "tee",
+          "--rpc-url",
+          "<private-rpc>",
+          "--client-trade-id",
+          "rpc-4"
+        ]
+      },
+      "requests": [
+        {
+          "n": 1,
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/trading"
+        },
+        {
+          "n": 2,
+          "host": "rpc.private.test",
+          "path": "<rpc>",
+          "rpc": "getTokenSupply"
+        },
+        {
+          "n": 3,
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/embedded"
+        },
+        {
+          "n": 4,
+          "host": "api.test",
+          "path": "/api/v1/trade/agent/jobs/rpc-4"
+        },
+        {
+          "n": 5,
+          "host": "api.test",
+          "path": "/api/v1/trade/agent/build"
+        },
+        {
+          "n": 6,
+          "host": "rpc.private.test",
+          "path": "<rpc>",
+          "rpc": "getMultipleAccounts"
+        },
+        {
+          "n": 7,
+          "host": "rpc.private.test",
+          "path": "<rpc>",
+          "rpc": "simulateTransaction"
+        },
+        {
+          "n": 8,
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/wallet/sign"
+        },
+        {
+          "n": 9,
+          "host": "api.test",
+          "path": "/api/v1/trade/agent/submit"
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "rpcHosts": [
+          "rpc.private.test"
+        ],
+        "simulatedLocally": true,
+        "hostShown": true,
+        "pathShown": false
+      }
+    },
+    {
+      "id": "private-rpc-default-is-the-public-endpoint",
+      "scenario": "private-rpc",
+      "args": {
+        "argv": [
+          "swap",
+          "SOL",
+          "<tee>",
+          "--amount",
+          "1",
+          "--yes",
+          "--json",
+          "--wallet",
+          "tee",
+          "--client-trade-id",
+          "rpc-5"
+        ]
+      },
+      "requests": [
+        {
+          "n": 1,
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/trading"
+        },
+        {
+          "n": 2,
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/embedded"
+        },
+        {
+          "n": 3,
+          "host": "api.mainnet-beta.solana.com",
+          "path": "<rpc>",
+          "rpc": "getTokenSupply"
+        },
+        {
+          "n": 4,
+          "host": "api.test",
+          "path": "/api/v1/trade/agent/jobs/rpc-5"
+        },
+        {
+          "n": 5,
+          "host": "api.test",
+          "path": "/api/v1/trade/agent/build"
+        },
+        {
+          "n": 6,
+          "host": "api.mainnet-beta.solana.com",
+          "path": "<rpc>",
+          "rpc": "getMultipleAccounts"
+        },
+        {
+          "n": 7,
+          "host": "api.mainnet-beta.solana.com",
+          "path": "<rpc>",
+          "rpc": "simulateTransaction"
+        },
+        {
+          "n": 8,
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/wallet/sign"
+        },
+        {
+          "n": 9,
+          "host": "api.test",
+          "path": "/api/v1/trade/agent/submit"
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "rpcHosts": [
+          "api.mainnet-beta.solana.com"
+        ],
+        "simulatedLocally": true,
+        "hostShown": true,
+        "pathShown": false
+      }
+    },
+    {
+      "id": "private-rpc-refused-plain-http",
+      "scenario": "private-rpc",
+      "args": {
+        "argv": [
+          "swap",
+          "SOL",
+          "<tee>",
+          "--amount",
+          "1",
+          "--yes",
+          "--json",
+          "--wallet",
+          "tee",
+          "--rpc-url",
+          "<plain-http>",
+          "--client-trade-id",
+          "rpc-6"
+        ]
+      },
+      "requests": [
+        {
+          "n": 1,
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/trading"
+        },
+        {
+          "n": 2,
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/embedded"
+        },
+        {
+          "n": 3,
+          "host": "api.test",
+          "path": "/api/v1/trade/agent/jobs/rpc-6"
+        }
+      ],
+      "outcome": {
+        "exitCode": 2,
+        "code": "USAGE",
+        "builtAnything": false
+      }
+    },
+    {
+      "id": "private-rpc-refused-not-a-url",
+      "scenario": "private-rpc",
+      "args": {
+        "argv": [
+          "swap",
+          "SOL",
+          "<tee>",
+          "--amount",
+          "1",
+          "--yes",
+          "--json",
+          "--wallet",
+          "tee",
+          "--rpc-url",
+          "<not-a-url>",
+          "--client-trade-id",
+          "rpc-6"
+        ]
+      },
+      "requests": [
+        {
+          "n": 1,
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/trading"
+        },
+        {
+          "n": 2,
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/embedded"
+        },
+        {
+          "n": 3,
+          "host": "api.test",
+          "path": "/api/v1/trade/agent/jobs/rpc-6"
+        }
+      ],
+      "outcome": {
+        "exitCode": 2,
+        "code": "USAGE",
+        "builtAnything": false
+      }
+    }
+  ]
+}
