@@ -25,7 +25,7 @@ const resolve = (subcommand: string, args: string[]) => resolveCall({ command: "
 const SIGN = (q: { path: string }) => q.path.endsWith("/sign")
 
 test("the recording names the exact staging build and agrees with the other source fixtures", () => {
-  expect(transfer.source).toMatchObject({ repo: "candledottv/candle-monorepo", commit: "ceda02328bd91d2160ebf76942e92a1706f323c2", versions: { cli: "0.13.30", mcp: "0.10.35", sdk: "0.6.24" } })
+  expect(transfer.source).toMatchObject({ repo: "candledottv/candle-monorepo", commit: "df74deb0d9cf0f9e67842dfa4e1086035288557e", versions: { cli: "0.13.30", mcp: "0.10.35", sdk: "0.6.24" } })
   expect(transfer.source.commit).toBe(SOURCE.source.commit)
   expect(transfer.source.commit).toBe(tools.source.commit)
   expect(transfer.source.commit).toBe(perps.source.commit)

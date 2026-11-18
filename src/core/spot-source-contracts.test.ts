@@ -20,7 +20,7 @@ const ctx = { defaultAgent: "momentum", agents: new Set(["momentum"]) }
 const resolve = (args: string[]) => resolveCall({ command: "perps", subcommand: "spot", args }, ctx)
 
 test("the recording names the exact merged source, the same commit as the CLI table and the other source fixtures", () => {
-  expect(spot.source).toMatchObject({ repo: "candledottv/candle-monorepo", commit: "ceda02328bd91d2160ebf76942e92a1706f323c2", versions: { cli: "0.13.30", mcp: "0.10.35", sdk: "0.6.24" } })
+  expect(spot.source).toMatchObject({ repo: "candledottv/candle-monorepo", commit: "df74deb0d9cf0f9e67842dfa4e1086035288557e", versions: { cli: "0.13.30", mcp: "0.10.35", sdk: "0.6.24" } })
   expect(spot.source.commit).toBe(SOURCE.source.commit)
   expect(spot.source.commit).toBe(tools.source.commit)
   expect(spot.source.commit).toBe(perps.source.commit)
