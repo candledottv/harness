@@ -3,7 +3,7 @@
   "source": {
     "repo": "candledottv/candle-monorepo",
     "path": "packages/cli/src",
-    "commit": "0b0ecb5b06bcda837fbf09ebd25a9c0d841c5aff",
+    "commit": "ceda02328bd91d2160ebf76942e92a1706f323c2",
     "cliVersion": "0.13.30"
   },
   "aliases": {
@@ -231,6 +231,10 @@
         {
           "invocation": "orders [--wallet <tee>]",
           "description": "Open orders on Hyperliquid, and every action Candle built"
+        },
+        {
+          "invocation": "transfer --to-dex <dex> <amount> | --from-dex <dex> <amount>|--all | transfer status <id>",
+          "description": "Move free USDC between this wallet's own Hyperliquid main perps and builder dex balances (perps:write); destination is fixed to itself, no other address or subaccount accepted. A non-USDC dex is refused; held position margin stays in place. Perps to spot is not in this release. Source only until the transfer policy probe and authorized rollout"
         },
         {
           "invocation": "withdraw <amount> --to solana|hood [--wallet <evm tee>] | withdraw status <id>",
@@ -2960,6 +2964,33 @@
         "stdin",
         "stdout"
       ]
+    },
+    {
+      "command": "perps",
+      "subcommand": "transfer",
+      "handler": "perpsTransfer",
+      "file": "commands/perps-transfer.ts",
+      "flags": {
+        "value": [
+          "--from-dex",
+          "--id",
+          "--to-dex",
+          "--wallet"
+        ],
+        "boolean": [
+          "--all",
+          "--from-spot",
+          "--no-submit",
+          "--to-spot",
+          "--yes"
+        ],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "agent",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
     },
     {
       "command": "perps",

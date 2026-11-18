@@ -1,5 +1,5 @@
 {
-  "about": "Source tools/list from candledottv/candle-monorepo at 0b0ecb5b06bcda837fbf09ebd25a9c0d841c5aff (CLI 0.13.30), via the real MCP server and an in-memory transport. No external requests or tool calls. Profile discovery used a local GET-only eligibility stub; the four listedAfterKeyCheck tools remain conditional. Scrubbed with scripts/scrub-recordings.ts toolFixture. This is a source contract recording, not evidence of a published CLI release.",
+  "about": "Source tools/list from candledottv/candle-monorepo at ceda02328bd91d2160ebf76942e92a1706f323c2 (CLI 0.13.30), via the real MCP server and an in-memory transport. No external requests or tool calls. Profile discovery used a local GET-only eligibility stub; the four listedAfterKeyCheck tools remain conditional. Scrubbed with scripts/scrub-recordings.ts toolFixture. This is a source contract recording, not evidence of a published CLI release.",
   "serverInfo": {
     "name": "candle-mcp",
     "version": "0.10.35"
@@ -4109,6 +4109,53 @@
       }
     },
     {
+      "name": "candle_perps_transfer",
+      "title": "Transfer own Hyperliquid USDC",
+      "description": "Move USDC between this wallet's own main perps and builder dex balances (toDex, fromDex). Needs perps:write. No destination address accepted. clientTransferId is required for safe retries; submit=false checks without signing.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "clientTransferId": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9._:-]{1,128}$"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "toDex",
+              "fromDex"
+            ]
+          },
+          "dex": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9]{1,16}$"
+          },
+          "amountUsdc": {
+            "type": "string",
+            "pattern": "^(0|[1-9][0-9]{0,11})(\\.[0-9]{1,6})?$"
+          },
+          "all": {
+            "type": "boolean"
+          },
+          "wallet": {
+            "type": "string"
+          },
+          "submit": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "clientTransferId",
+          "mode"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
       "name": "candle_perps_deposit",
       "title": "Deposit to Hyperliquid",
       "description": "MOVES REAL FUNDS unless submit is false. Deposit onto the key's Hyperliquid account through Relay: SOL or USDC from its Solana wallet, or ETH or USDG from its Hood wallet (TEE or wallet=embedded), credited as Hyperliquid perps USDC at the key's EVM TEE wallet's own address (Candle resolves it; no recipient is taken). Refused below a floor that covers Hyperliquid's 1 USDC first-deposit charge. No Candle fee. Needs swap:write (any cap on the asset still applies), and CANDLE_KEY_SIGNER_PEM_FILE to sign. There is no withdrawal from Hyperliquid yet.",
@@ -4638,7 +4685,7 @@
   ],
   "source": {
     "repo": "candledottv/candle-monorepo",
-    "commit": "0b0ecb5b06bcda837fbf09ebd25a9c0d841c5aff",
+    "commit": "ceda02328bd91d2160ebf76942e92a1706f323c2",
     "cliVersion": "0.13.30",
     "method": "in-memory tools/list; local eligibility stub; no tool calls"
   }
