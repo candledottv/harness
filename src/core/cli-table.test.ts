@@ -11,9 +11,9 @@ const baseOf = (path: string) => {
 
 describe("the table and the source", () => {
   test("it was read from the pinned CLI source", () => {
-    // packages/cli of candledottv/candle-monorepo at the staging commit that carries CLI 0.13.28.
-    expect(SOURCE.source).toMatchObject({ repo: "candledottv/candle-monorepo", commit: "940055a9819283d721a313e9e39003f566663e6f", cliVersion: "0.13.28" })
-    expect(SOURCE.commands.length).toBe(171)
+    // Source contracts can advance before the separately signed native bootstrap release.
+    expect(SOURCE.source).toMatchObject({ repo: "candledottv/candle-monorepo", commit: "578db6462d65842c0fdbaf08a37aedf405decee5", cliVersion: "0.13.29" })
+    expect(SOURCE.commands.length).toBe(172)
     expect((SOURCE as { unread?: string[] }).unread).toEqual([])
   })
 
@@ -63,7 +63,8 @@ describe("the table and the source", () => {
     for (const p of ["agent positions=agent", "token comments=agent", "plan auto-renew=owner", "plan auto-renew on=owner", "plan auto-renew off=owner"]) expect(explicit).toContain(p)
     // 0.13.11: a signer's state reads by --key, as its siblings run.
     expect(explicit).toContain("tee signer status=agent")
-    expect(explicit.length).toBe(68)
+    expect(explicit).toContain("agent round=agent")
+    expect(explicit.length).toBe(69)
   })
 
   test("the CLI route lets the agent read and narrow access only", () => {
@@ -221,7 +222,7 @@ describe("the read at 0.13.5", () => {
     expect(launch.flags!.value.length).toBe(37)
     expect(launch.flags!.value).toContain("--quote")
     // 0.13.11 adds --require-fee-wallet.
-    expect(launch.flags!.boolean).toEqual(["--check", "--dry-run", "--require-fee-wallet", "--yes"])
+    expect(launch.flags!.boolean).toEqual(["--check", "--dry-run", "--hide", "--require-fee-wallet", "--yes"])
     expect(rowFor("launch")!.byFlags!(new Map([["--check", true]]))).toEqual({ rule: "read", route: "cli" })
     expect(rowFor("launch")!.byFlags!(new Map())).toBeUndefined()
     expect(sourceFor("auth", "login")!.tty).toEqual(["stdin", "stdout"])
@@ -232,7 +233,7 @@ describe("the read at 0.13.5", () => {
   })
 
   test("0.13.19's words the handler finds itself: swap's --dry-run before its parse, transfer's status as its first argument", () => {
-    expect(sourceFor("swap", null)!.flags!.boolean).toEqual(["--dry-run", "--wait", "--yes"])
+    expect(sourceFor("swap", null)!.flags!.boolean).toEqual(["--dry-run", "--hide", "--wait", "--yes"])
     expect(rowFor("swap")!.byFlags!(new Map([["--dry-run", true]]))).toEqual({ rule: "read", route: "cli" })
     expect(rowFor("swap")!.byFlags!(new Map())).toBeUndefined()
     expect(sourceFor("transfer", null)!.actions).toEqual({ status: { unlocks: "never", tty: [] } })

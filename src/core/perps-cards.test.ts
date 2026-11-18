@@ -178,6 +178,13 @@ describe("the flatten card", () => {
 })
 
 describe("planning a card", () => {
+  test("market reads accept the dex filter and retain dex:COIN without changing the read rule", () => {
+    for (const dex of ["xyz", "all"]) {
+      expect(resolveCall({ command: "perps", subcommand: "markets", args: ["--dex", dex] }, { defaultAgent: "momentum", agents: new Set(["momentum"]) })).toMatchObject({ ok: true, call: { rule: "mcp", route: "cli", argv: ["perps", "markets", "--dex", dex] } })
+    }
+    expect(resolveCall({ command: "perps", subcommand: "market", args: ["xyz:TSLA"] }, { defaultAgent: "momentum", agents: new Set(["momentum"]) })).toMatchObject({ ok: true, call: { rule: "mcp", route: "cli", argv: ["perps", "market", "xyz:TSLA"] } })
+  })
+
   test("close binds the EVM TEE wallet by address, the card's cloid and --yes", async () => {
     const c = ctx()
     const plan = await planCliRow(request(["perps", "close", "BTC", "--pct", "50", "--wallet", "hl-one"]), c)

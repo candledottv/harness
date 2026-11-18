@@ -1,0 +1,34 @@
+--- a/apps/docs/src/content/docs/harness/reference/keys.md
++++ b/apps/docs/src/content/docs/harness/reference/keys.md
+@@ -6 +6 @@
+-<!-- candle-harness 0.6.1. Written by scripts/docs-pages.ts in candledottv/harness from its code: don't edit it here, run that again. -->
++<!-- candle-harness 0.6.2. Written by scripts/docs-pages.ts in candledottv/harness from its code: don't edit it here, run that again. -->
+--- a/apps/docs/src/content/docs/harness/reference/config.md
++++ b/apps/docs/src/content/docs/harness/reference/config.md
+@@ -6 +6 @@
+-<!-- candle-harness 0.6.1. Written by scripts/docs-pages.ts in candledottv/harness from its code: don't edit it here, run that again. -->
++<!-- candle-harness 0.6.2. Written by scripts/docs-pages.ts in candledottv/harness from its code: don't edit it here, run that again. -->
+--- a/apps/docs/src/content/docs/harness/reference/typed-commands.md
++++ b/apps/docs/src/content/docs/harness/reference/typed-commands.md
+@@ -6 +6 @@
+-<!-- candle-harness 0.6.1. Written by scripts/docs-pages.ts in candledottv/harness from its code: don't edit it here, run that again. -->
++<!-- candle-harness 0.6.2. Written by scripts/docs-pages.ts in candledottv/harness from its code: don't edit it here, run that again. -->
+--- a/apps/docs/src/content/docs/harness/reference/cli-parity.md
++++ b/apps/docs/src/content/docs/harness/reference/cli-parity.md
+@@ -6 +6 @@
+-<!-- candle-harness 0.6.1. Written by scripts/docs-pages.ts in candledottv/harness from its code: don't edit it here, run that again. -->
++<!-- candle-harness 0.6.2. Written by scripts/docs-pages.ts in candledottv/harness from its code: don't edit it here, run that again. -->
+@@ -12 +12 @@
+-This page covers `candle` 0.13.28, grouped as `candle help` groups its commands.
++This page covers `candle` 0.13.29, grouped as `candle help` groups its commands.
+@@ -67 +67 @@
+-| `candle perps markets` | List live main-perp markets directly from Hyperliquid | read | now |
++| `candle perps markets` | List live perp markets directly from Hyperliquid (main exchange by default; --dex for a builder dex) | read | now |
+@@ -124 +124 @@
+-| `candle agent round` | One perp round of a published agent: fills, funding, fees, return on margin, outcome | read | now |
++| `candle agent round` | One perp round of a published agent, open or closed: fills, funding, fees (Hyperliquid and Candle builder fee apart), return on margin, outcome | read | now |
+--- a/apps/docs/harness-version.json
++++ b/apps/docs/harness-version.json
+@@ -2 +2 @@
+-  "version": "0.6.1"
++  "version": "0.6.2"
