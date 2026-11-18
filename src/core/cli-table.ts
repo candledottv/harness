@@ -187,6 +187,9 @@ export const LP_AGENT_SCOPES: readonly string[] = [...SOURCE.presets.readwrite.s
 const STAKE_NOTE = "From the embedded wallet: candle_stake, candle_unstake or candle_finish_unstake, as a one-press card. From a TEE wallet: this command with --wallet <the TEE wallet's label or address>, a one-press card."
 const LP_HELD = "Candle serves LP now (LP_ENABLED, on since 2026-11-06), but no key preset grants lp:write yet, which these cards need. candle-harness doctor says where LP stands."
 const STAKE_ROW = (stops: boolean): CardRow => ({ kind: "stake", idFlag: "--client-stake-id", readBack: "rerun", stops, wallet: "tee" })
+/** Why own-balance funding on Hyperliquid is still coming: it signs a typed action, which a card doesn't yet run. */
+export const TRANSFER_LATER = "Moving USDC between this wallet's own main perps and a builder dex isn't a card in the Candle Harness yet. In your own terminal, candle perps transfer --to-dex or --from-dex shows the amount and both balances before it asks, and only ever moves money to the wallet itself."
+
 /** Why a Hyperliquid spot write is still coming: the CLI shows the pair, Hyperliquid's spot fee and Candle's builder fee (sells only) before its own confirm. */
 export const SPOT_LATER = "Hyperliquid spot orders aren't cards in the Candle Harness yet. In your own terminal the CLI shows the pair, Hyperliquid's spot fee and Candle's builder fee (on sells only) before it asks."
 /** Why a perps write is held until the person turns it on. */
@@ -316,6 +319,10 @@ const ROWS: readonly RowInput[] = [
   r("perps deposit status", "read", "cli", "agent"),
   r("perps withdraw", "funds-out", "later", "agent"),
   r("perps withdraw status", "read", "cli", "agent"),
+  // Moves USDC between the wallet's own main perps and a builder dex (BE-3765, SendAsset only; perps to spot is BE-3864).
+  // The destination is the wallet itself, but it needs a signature on a typed action, so it isn't a card in the Candle Harness yet.
+  r("perps transfer", "card", "later", "agent", { note: TRANSFER_LATER }),
+  r("perps transfer status", "read", "cli", "agent", { takes: 1 }),
   r("perps setup", "card", "later", "agent"),
   r("perps open", "card", "later", "agent"),
   // What only lowers the risk on the account: one-press cards from the EVM TEE wallet, held until perps.writes is on.

@@ -1,0 +1,1768 @@
+{
+  "about": "Offline own-balance transfer contracts (BE-3765, SendAsset only: main perps <-> a builder dex; perps <-> spot is BE-3864 and not covered) from exact merged source. check rows run the transfer check through its SDK, MCP and CLI copies, which agree; cli rows run `candle perps transfer` with an ephemeral in-memory key, declining at the prompt or stopping before the relay signs; mcp and sdk rows run candle_perps_transfer and perpsTransfer() against response stubs. API refusals are response stubs carrying the route's own codes; the keyed API route is not executed. All addresses are made up. No funded account, signature, submission or deployed behavior is claimed.",
+  "source": {
+    "repo": "candledottv/candle-monorepo",
+    "commit": "ceda02328bd91d2160ebf76942e92a1706f323c2",
+    "versions": {
+      "cli": "0.13.30",
+      "mcp": "0.10.35",
+      "sdk": "0.6.24"
+    },
+    "transferCheck": {
+      "files": [
+        "packages/sdk/src/hyperliquid-transfer.ts",
+        "packages/mcp/src/hyperliquid-transfer.ts",
+        "packages/cli/src/hyperliquid-transfer.ts"
+      ],
+      "sha256": "e105bf6cb8a74af3bcf18377526db2c53159584a75ce8dbc6723e707131ba2bd"
+    }
+  },
+  "rows": [
+    {
+      "id": "check-honest-to-dex",
+      "surface": "check",
+      "args": {
+        "expect": {
+          "id": "t1",
+          "account": "0x0000000000000000000000000000000000000009",
+          "mode": "toDex",
+          "dex": "xyz",
+          "amountMicros": "5000000"
+        }
+      },
+      "outcome": {
+        "refusal": null
+      }
+    },
+    {
+      "id": "check-honest-from-dex",
+      "surface": "check",
+      "args": {
+        "expect": {
+          "id": "t2",
+          "account": "0x0000000000000000000000000000000000000009",
+          "mode": "fromDex",
+          "dex": "xyz",
+          "amountMicros": "5000000"
+        }
+      },
+      "outcome": {
+        "refusal": null
+      }
+    },
+    {
+      "id": "check-honest-all-any-amount",
+      "surface": "check",
+      "args": {
+        "expect": {
+          "id": "t2",
+          "account": "0x0000000000000000000000000000000000000009",
+          "mode": "fromDex",
+          "dex": "xyz",
+          "amountMicros": null
+        }
+      },
+      "outcome": {
+        "refusal": null
+      }
+    },
+    {
+      "id": "check-refused-foreign-destination",
+      "surface": "check",
+      "args": {
+        "expect": {
+          "id": "t1",
+          "account": "0x0000000000000000000000000000000000000009",
+          "mode": "toDex",
+          "dex": "xyz",
+          "amountMicros": "5000000"
+        }
+      },
+      "outcome": {
+        "refusal": "destination is not this wallet"
+      }
+    },
+    {
+      "id": "check-refused-foreign-destination-in-action-only",
+      "surface": "check",
+      "args": {
+        "expect": {
+          "id": "t1",
+          "account": "0x0000000000000000000000000000000000000009",
+          "mode": "toDex",
+          "dex": "xyz",
+          "amountMicros": "5000000"
+        }
+      },
+      "outcome": {
+        "refusal": "action differs from signed message"
+      }
+    },
+    {
+      "id": "check-refused-other-token",
+      "surface": "check",
+      "args": {
+        "expect": {
+          "id": "t1",
+          "account": "0x0000000000000000000000000000000000000009",
+          "mode": "toDex",
+          "dex": "xyz",
+          "amountMicros": "5000000"
+        }
+      },
+      "outcome": {
+        "refusal": "token, subaccount or dex differs"
+      }
+    },
+    {
+      "id": "check-refused-sub-account",
+      "surface": "check",
+      "args": {
+        "expect": {
+          "id": "t1",
+          "account": "0x0000000000000000000000000000000000000009",
+          "mode": "toDex",
+          "dex": "xyz",
+          "amountMicros": "5000000"
+        }
+      },
+      "outcome": {
+        "refusal": "token, subaccount or dex differs"
+      }
+    },
+    {
+      "id": "check-refused-another-dex",
+      "surface": "check",
+      "args": {
+        "expect": {
+          "id": "t1",
+          "account": "0x0000000000000000000000000000000000000009",
+          "mode": "toDex",
+          "dex": "xyz",
+          "amountMicros": "5000000"
+        }
+      },
+      "outcome": {
+        "refusal": "transfer identity differs"
+      }
+    },
+    {
+      "id": "check-refused-wrong-direction",
+      "surface": "check",
+      "args": {
+        "expect": {
+          "id": "t1",
+          "account": "0x0000000000000000000000000000000000000009",
+          "mode": "toDex",
+          "dex": "xyz",
+          "amountMicros": "5000000"
+        }
+      },
+      "outcome": {
+        "refusal": "transfer identity differs"
+      }
+    },
+    {
+      "id": "check-refused-amount-differs",
+      "surface": "check",
+      "args": {
+        "expect": {
+          "id": "t1",
+          "account": "0x0000000000000000000000000000000000000009",
+          "mode": "toDex",
+          "dex": "xyz",
+          "amountMicros": "5000000"
+        }
+      },
+      "outcome": {
+        "refusal": "amount differs"
+      }
+    },
+    {
+      "id": "check-refused-other-transfer-id",
+      "surface": "check",
+      "args": {
+        "expect": {
+          "id": "t1",
+          "account": "0x0000000000000000000000000000000000000009",
+          "mode": "toDex",
+          "dex": "xyz",
+          "amountMicros": "5000000"
+        }
+      },
+      "outcome": {
+        "refusal": "transfer identity differs"
+      }
+    },
+    {
+      "id": "check-refused-testnet-chain",
+      "surface": "check",
+      "args": {
+        "expect": {
+          "id": "t1",
+          "account": "0x0000000000000000000000000000000000000009",
+          "mode": "toDex",
+          "dex": "xyz",
+          "amountMicros": "5000000"
+        }
+      },
+      "outcome": {
+        "refusal": "message shape or nonce differs"
+      }
+    },
+    {
+      "id": "check-refused-untrusted-domain",
+      "surface": "check",
+      "args": {
+        "expect": {
+          "id": "t1",
+          "account": "0x0000000000000000000000000000000000000009",
+          "mode": "toDex",
+          "dex": "xyz",
+          "amountMicros": "5000000"
+        }
+      },
+      "outcome": {
+        "refusal": "untrusted domain"
+      }
+    },
+    {
+      "id": "check-refused-action-differs-from-message",
+      "surface": "check",
+      "args": {
+        "expect": {
+          "id": "t1",
+          "account": "0x0000000000000000000000000000000000000009",
+          "mode": "toDex",
+          "dex": "xyz",
+          "amountMicros": "5000000"
+        }
+      },
+      "outcome": {
+        "refusal": "action differs from signed message"
+      }
+    },
+    {
+      "id": "check-refused-no-nonce",
+      "surface": "check",
+      "args": {
+        "expect": {
+          "id": "t1",
+          "account": "0x0000000000000000000000000000000000000009",
+          "mode": "toDex",
+          "dex": "xyz",
+          "amountMicros": "5000000"
+        }
+      },
+      "outcome": {
+        "refusal": "invalid nonce"
+      }
+    },
+    {
+      "id": "check-refused-missing-typed-data",
+      "surface": "check",
+      "args": {
+        "expect": {
+          "id": "t1",
+          "account": "0x0000000000000000000000000000000000000009",
+          "mode": "toDex",
+          "dex": "xyz",
+          "amountMicros": "5000000"
+        }
+      },
+      "outcome": {
+        "refusal": "missing or malformed typed data or action"
+      }
+    },
+    {
+      "id": "check-refused-spot-mode-on-a-dex-build",
+      "surface": "check",
+      "args": {
+        "expect": {
+          "id": "t1",
+          "account": "0x0000000000000000000000000000000000000009",
+          "mode": "toSpot",
+          "amountMicros": "5000000"
+        }
+      },
+      "outcome": {
+        "refusal": "transfer identity differs"
+      }
+    },
+    {
+      "id": "cli-to-dex-prompt",
+      "surface": "cli",
+      "args": {
+        "argv": [
+          "--to-dex",
+          "xyz",
+          "5",
+          "--id",
+          "t1",
+          "--wallet",
+          "<tee>"
+        ]
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/trading"
+        }
+      ],
+      "outcome": {
+        "stop": "before-prompt",
+        "exitCode": 5,
+        "disclosure": [
+          "Transfer t1",
+          "Amount 5 USDC",
+          "From Main perps",
+          "To builder dex xyz"
+        ]
+      }
+    },
+    {
+      "id": "cli-to-dex-yes",
+      "surface": "cli",
+      "args": {
+        "argv": [
+          "--to-dex",
+          "xyz",
+          "5",
+          "--id",
+          "t1",
+          "--wallet",
+          "<tee>",
+          "--yes"
+        ]
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/trading"
+        },
+        {
+          "method": "POST",
+          "host": "api.test",
+          "path": "/api/v1/agent/perps/transfer",
+          "body": {
+            "clientTransferId": "t1",
+            "mode": "toDex",
+            "dex": "xyz",
+            "amountUsdc": "5",
+            "walletId": "wallet"
+          }
+        },
+        {
+          "method": "POST",
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/wallet/sign"
+        }
+      ],
+      "outcome": {
+        "stop": "before-relay",
+        "exitCode": 1,
+        "disclosure": [
+          "Transfer t1",
+          "Amount 5 USDC",
+          "From Main perps",
+          "To builder dex xyz"
+        ]
+      }
+    },
+    {
+      "id": "cli-from-dex-prompt",
+      "surface": "cli",
+      "args": {
+        "argv": [
+          "--from-dex",
+          "xyz",
+          "5",
+          "--id",
+          "t2",
+          "--wallet",
+          "<tee>"
+        ]
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/trading"
+        }
+      ],
+      "outcome": {
+        "stop": "before-prompt",
+        "exitCode": 5,
+        "disclosure": [
+          "Transfer t2",
+          "Amount 5 USDC",
+          "From builder dex xyz",
+          "To Main perps"
+        ]
+      }
+    },
+    {
+      "id": "cli-from-dex-yes",
+      "surface": "cli",
+      "args": {
+        "argv": [
+          "--from-dex",
+          "xyz",
+          "5",
+          "--id",
+          "t2",
+          "--wallet",
+          "<tee>",
+          "--yes"
+        ]
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/trading"
+        },
+        {
+          "method": "POST",
+          "host": "api.test",
+          "path": "/api/v1/agent/perps/transfer",
+          "body": {
+            "clientTransferId": "t2",
+            "mode": "fromDex",
+            "dex": "xyz",
+            "amountUsdc": "5",
+            "walletId": "wallet"
+          }
+        },
+        {
+          "method": "POST",
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/wallet/sign"
+        }
+      ],
+      "outcome": {
+        "stop": "before-relay",
+        "exitCode": 1,
+        "disclosure": [
+          "Transfer t2",
+          "Amount 5 USDC",
+          "From builder dex xyz",
+          "To Main perps"
+        ]
+      }
+    },
+    {
+      "id": "cli-from-dex-all-prompt",
+      "surface": "cli",
+      "args": {
+        "argv": [
+          "--from-dex",
+          "xyz",
+          "--all",
+          "--id",
+          "t3",
+          "--wallet",
+          "<tee>"
+        ]
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/trading"
+        }
+      ],
+      "outcome": {
+        "stop": "before-prompt",
+        "exitCode": 5,
+        "disclosure": [
+          "Transfer t3",
+          "Amount all free USDC",
+          "From builder dex xyz",
+          "To Main perps"
+        ]
+      }
+    },
+    {
+      "id": "cli-from-dex-all-yes",
+      "surface": "cli",
+      "args": {
+        "argv": [
+          "--from-dex",
+          "xyz",
+          "--all",
+          "--id",
+          "t3",
+          "--wallet",
+          "<tee>",
+          "--yes"
+        ]
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/trading"
+        },
+        {
+          "method": "POST",
+          "host": "api.test",
+          "path": "/api/v1/agent/perps/transfer",
+          "body": {
+            "clientTransferId": "t3",
+            "mode": "fromDex",
+            "dex": "xyz",
+            "all": true,
+            "walletId": "wallet"
+          }
+        },
+        {
+          "method": "POST",
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/wallet/sign"
+        }
+      ],
+      "outcome": {
+        "stop": "before-relay",
+        "exitCode": 1,
+        "disclosure": [
+          "Transfer t3",
+          "Amount all free USDC",
+          "From builder dex xyz",
+          "To Main perps"
+        ]
+      }
+    },
+    {
+      "id": "cli-no-submit-builds-and-checks-only",
+      "surface": "cli",
+      "args": {
+        "argv": [
+          "--to-dex",
+          "xyz",
+          "5",
+          "--id",
+          "t1",
+          "--wallet",
+          "<tee>",
+          "--yes",
+          "--no-submit"
+        ]
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/trading"
+        },
+        {
+          "method": "POST",
+          "host": "api.test",
+          "path": "/api/v1/agent/perps/transfer",
+          "body": {
+            "clientTransferId": "t1",
+            "mode": "toDex",
+            "dex": "xyz",
+            "amountUsdc": "5",
+            "walletId": "wallet"
+          }
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "submitted": false,
+        "status": "built"
+      }
+    },
+    {
+      "id": "cli-hostile-foreign-destination",
+      "surface": "cli",
+      "args": {
+        "argv": [
+          "--to-dex",
+          "xyz",
+          "5",
+          "--id",
+          "t1",
+          "--wallet",
+          "<tee>",
+          "--yes"
+        ]
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/trading"
+        },
+        {
+          "method": "POST",
+          "host": "api.test",
+          "path": "/api/v1/agent/perps/transfer",
+          "body": {
+            "clientTransferId": "t1",
+            "mode": "toDex",
+            "dex": "xyz",
+            "amountUsdc": "5",
+            "walletId": "wallet"
+          }
+        }
+      ],
+      "outcome": {
+        "exitCode": 1,
+        "body": {
+          "ok": false,
+          "code": "PERPS_BUILD_REFUSED",
+          "message": "Refused to sign this transfer: destination is not this wallet. Nothing was signed."
+        }
+      }
+    },
+    {
+      "id": "cli-hostile-other-token",
+      "surface": "cli",
+      "args": {
+        "argv": [
+          "--to-dex",
+          "xyz",
+          "5",
+          "--id",
+          "t1",
+          "--wallet",
+          "<tee>",
+          "--yes"
+        ]
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/trading"
+        },
+        {
+          "method": "POST",
+          "host": "api.test",
+          "path": "/api/v1/agent/perps/transfer",
+          "body": {
+            "clientTransferId": "t1",
+            "mode": "toDex",
+            "dex": "xyz",
+            "amountUsdc": "5",
+            "walletId": "wallet"
+          }
+        }
+      ],
+      "outcome": {
+        "exitCode": 1,
+        "body": {
+          "ok": false,
+          "code": "PERPS_BUILD_REFUSED",
+          "message": "Refused to sign this transfer: token, subaccount or dex differs. Nothing was signed."
+        }
+      }
+    },
+    {
+      "id": "cli-hostile-sub-account",
+      "surface": "cli",
+      "args": {
+        "argv": [
+          "--to-dex",
+          "xyz",
+          "5",
+          "--id",
+          "t1",
+          "--wallet",
+          "<tee>",
+          "--yes"
+        ]
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/trading"
+        },
+        {
+          "method": "POST",
+          "host": "api.test",
+          "path": "/api/v1/agent/perps/transfer",
+          "body": {
+            "clientTransferId": "t1",
+            "mode": "toDex",
+            "dex": "xyz",
+            "amountUsdc": "5",
+            "walletId": "wallet"
+          }
+        }
+      ],
+      "outcome": {
+        "exitCode": 1,
+        "body": {
+          "ok": false,
+          "code": "PERPS_BUILD_REFUSED",
+          "message": "Refused to sign this transfer: token, subaccount or dex differs. Nothing was signed."
+        }
+      }
+    },
+    {
+      "id": "cli-local-to-spot",
+      "surface": "cli",
+      "args": {
+        "argv": [
+          "--to-spot",
+          "5",
+          "--yes"
+        ]
+      },
+      "requests": [],
+      "outcome": {
+        "exitCode": 2,
+        "body": {
+          "ok": false,
+          "code": "USAGE",
+          "message": "Perps to spot transfers (--to-spot, --from-spot) are not available in this release."
+        }
+      }
+    },
+    {
+      "id": "cli-local-from-spot",
+      "surface": "cli",
+      "args": {
+        "argv": [
+          "--from-spot",
+          "--all",
+          "--yes"
+        ]
+      },
+      "requests": [],
+      "outcome": {
+        "exitCode": 2,
+        "body": {
+          "ok": false,
+          "code": "USAGE",
+          "message": "Perps to spot transfers (--to-spot, --from-spot) are not available in this release."
+        }
+      }
+    },
+    {
+      "id": "cli-local-to-spot-with-dex",
+      "surface": "cli",
+      "args": {
+        "argv": [
+          "--to-dex",
+          "xyz",
+          "--to-spot",
+          "5",
+          "--yes"
+        ]
+      },
+      "requests": [],
+      "outcome": {
+        "exitCode": 2,
+        "body": {
+          "ok": false,
+          "code": "USAGE",
+          "message": "Name exactly one direction: --to-dex or --from-dex."
+        }
+      }
+    },
+    {
+      "id": "cli-local-both-directions",
+      "surface": "cli",
+      "args": {
+        "argv": [
+          "--to-dex",
+          "xyz",
+          "--from-dex",
+          "xyz",
+          "5",
+          "--yes"
+        ]
+      },
+      "requests": [],
+      "outcome": {
+        "exitCode": 2,
+        "body": {
+          "ok": false,
+          "code": "USAGE",
+          "message": "Name exactly one direction: --to-dex or --from-dex."
+        }
+      }
+    },
+    {
+      "id": "cli-local-no-direction",
+      "surface": "cli",
+      "args": {
+        "argv": [
+          "5",
+          "--yes"
+        ]
+      },
+      "requests": [],
+      "outcome": {
+        "exitCode": 2,
+        "body": {
+          "ok": false,
+          "code": "USAGE",
+          "message": "Name exactly one direction: --to-dex or --from-dex."
+        }
+      }
+    },
+    {
+      "id": "cli-local-all-into-a-dex",
+      "surface": "cli",
+      "args": {
+        "argv": [
+          "--to-dex",
+          "xyz",
+          "--all",
+          "--yes"
+        ]
+      },
+      "requests": [],
+      "outcome": {
+        "exitCode": 2,
+        "body": {
+          "ok": false,
+          "code": "USAGE",
+          "message": "--all moves money INTO a builder dex; name an amount instead."
+        }
+      }
+    },
+    {
+      "id": "cli-local-all-with-an-amount",
+      "surface": "cli",
+      "args": {
+        "argv": [
+          "--from-dex",
+          "xyz",
+          "--all",
+          "5",
+          "--yes"
+        ]
+      },
+      "requests": [],
+      "outcome": {
+        "exitCode": 2,
+        "body": {
+          "ok": false,
+          "code": "USAGE",
+          "message": "--all takes no amount."
+        }
+      }
+    },
+    {
+      "id": "cli-local-spot-as-a-dex-name",
+      "surface": "cli",
+      "args": {
+        "argv": [
+          "--to-dex",
+          "spot",
+          "5",
+          "--yes"
+        ]
+      },
+      "requests": [],
+      "outcome": {
+        "exitCode": 2,
+        "body": {
+          "ok": false,
+          "code": "USAGE",
+          "message": "--to-dex/--from-dex name a builder dex: 1 to 16 letters or digits, and not spot."
+        }
+      }
+    },
+    {
+      "id": "cli-local-dex-name-with-a-dash",
+      "surface": "cli",
+      "args": {
+        "argv": [
+          "--to-dex",
+          "x-y",
+          "5",
+          "--yes"
+        ]
+      },
+      "requests": [],
+      "outcome": {
+        "exitCode": 2,
+        "body": {
+          "ok": false,
+          "code": "USAGE",
+          "message": "--to-dex/--from-dex name a builder dex: 1 to 16 letters or digits, and not spot."
+        }
+      }
+    },
+    {
+      "id": "cli-local-zero-amount",
+      "surface": "cli",
+      "args": {
+        "argv": [
+          "--to-dex",
+          "xyz",
+          "0",
+          "--yes"
+        ]
+      },
+      "requests": [],
+      "outcome": {
+        "exitCode": 2,
+        "body": {
+          "ok": false,
+          "code": "USAGE",
+          "message": "The amount must be a positive USDC decimal with at most 6 decimals."
+        }
+      }
+    },
+    {
+      "id": "cli-local-seven-decimals",
+      "surface": "cli",
+      "args": {
+        "argv": [
+          "--to-dex",
+          "xyz",
+          "1.0000001",
+          "--yes"
+        ]
+      },
+      "requests": [],
+      "outcome": {
+        "exitCode": 2,
+        "body": {
+          "ok": false,
+          "code": "USAGE",
+          "message": "The amount must be a positive USDC decimal with at most 6 decimals."
+        }
+      }
+    },
+    {
+      "id": "cli-local-no-amount",
+      "surface": "cli",
+      "args": {
+        "argv": [
+          "--to-dex",
+          "xyz",
+          "--yes"
+        ]
+      },
+      "requests": [],
+      "outcome": {
+        "exitCode": 2,
+        "body": {
+          "ok": false,
+          "code": "USAGE",
+          "message": "The amount must be a positive USDC decimal with at most 6 decimals."
+        }
+      }
+    },
+    {
+      "id": "cli-local-bad-id",
+      "surface": "cli",
+      "args": {
+        "argv": [
+          "--to-dex",
+          "xyz",
+          "5",
+          "--id",
+          "has space",
+          "--yes"
+        ]
+      },
+      "requests": [],
+      "outcome": {
+        "exitCode": 2,
+        "body": {
+          "ok": false,
+          "code": "USAGE",
+          "message": "--id must be 1 to 128 letters, digits, '.', '_', ':' or '-'."
+        }
+      }
+    },
+    {
+      "id": "cli-refused-unknown-dex",
+      "surface": "cli",
+      "evidence": "response-stub: the code is the API route's own; the keyed API route is not executed",
+      "args": {
+        "argv": [
+          "--to-dex",
+          "nodex",
+          "5",
+          "--id",
+          "t1",
+          "--wallet",
+          "<tee>",
+          "--yes"
+        ]
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/trading"
+        },
+        {
+          "method": "POST",
+          "host": "api.test",
+          "path": "/api/v1/agent/perps/transfer",
+          "body": {
+            "clientTransferId": "t1",
+            "mode": "toDex",
+            "dex": "nodex",
+            "amountUsdc": "5",
+            "walletId": "wallet"
+          }
+        }
+      ],
+      "outcome": {
+        "exitCode": 1,
+        "code": "PERPS_TRANSFER_DEX_REFUSED"
+      }
+    },
+    {
+      "id": "cli-refused-non-usdc-collateral-dex",
+      "surface": "cli",
+      "evidence": "response-stub: the code is the API route's own; the keyed API route is not executed",
+      "args": {
+        "argv": [
+          "--to-dex",
+          "hyna",
+          "5",
+          "--id",
+          "t1",
+          "--wallet",
+          "<tee>",
+          "--yes"
+        ]
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/trading"
+        },
+        {
+          "method": "POST",
+          "host": "api.test",
+          "path": "/api/v1/agent/perps/transfer",
+          "body": {
+            "clientTransferId": "t1",
+            "mode": "toDex",
+            "dex": "hyna",
+            "amountUsdc": "5",
+            "walletId": "wallet"
+          }
+        }
+      ],
+      "outcome": {
+        "exitCode": 1,
+        "code": "PERPS_TRANSFER_DEX_REFUSED"
+      }
+    },
+    {
+      "id": "cli-refused-amount-above-source-balance",
+      "surface": "cli",
+      "evidence": "response-stub: the code is the API route's own; the keyed API route is not executed",
+      "args": {
+        "argv": [
+          "--from-dex",
+          "xyz",
+          "1000000",
+          "--id",
+          "t1",
+          "--wallet",
+          "<tee>",
+          "--yes"
+        ]
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/trading"
+        },
+        {
+          "method": "POST",
+          "host": "api.test",
+          "path": "/api/v1/agent/perps/transfer",
+          "body": {
+            "clientTransferId": "t1",
+            "mode": "fromDex",
+            "dex": "xyz",
+            "amountUsdc": "1000000",
+            "walletId": "wallet"
+          }
+        }
+      ],
+      "outcome": {
+        "exitCode": 1,
+        "code": "PERPS_TRANSFER_EXCEEDS_SOURCE"
+      }
+    },
+    {
+      "id": "cli-refused-nothing-to-move",
+      "surface": "cli",
+      "evidence": "response-stub: the code is the API route's own; the keyed API route is not executed",
+      "args": {
+        "argv": [
+          "--from-dex",
+          "xyz",
+          "--all",
+          "--id",
+          "t1",
+          "--wallet",
+          "<tee>",
+          "--yes"
+        ]
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/trading"
+        },
+        {
+          "method": "POST",
+          "host": "api.test",
+          "path": "/api/v1/agent/perps/transfer",
+          "body": {
+            "clientTransferId": "t1",
+            "mode": "fromDex",
+            "dex": "xyz",
+            "all": true,
+            "walletId": "wallet"
+          }
+        }
+      ],
+      "outcome": {
+        "exitCode": 1,
+        "code": "PERPS_TRANSFER_NOTHING_TO_MOVE"
+      }
+    },
+    {
+      "id": "mcp-to-dex-submit-false",
+      "surface": "mcp",
+      "tool": "candle_perps_transfer",
+      "args": {
+        "clientTransferId": "t1",
+        "mode": "toDex",
+        "dex": "xyz",
+        "amountUsdc": "5"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/trading"
+        },
+        {
+          "method": "POST",
+          "host": "api.test",
+          "path": "/api/v1/agent/perps/transfer",
+          "body": {
+            "clientTransferId": "t1",
+            "mode": "toDex",
+            "dex": "xyz",
+            "amountUsdc": "5",
+            "walletId": "wallet"
+          }
+        }
+      ],
+      "outcome": {
+        "isError": false,
+        "body": {
+          "id": "t1",
+          "status": "built",
+          "submitted": false
+        }
+      }
+    },
+    {
+      "id": "sdk-to-dex-submit-false",
+      "surface": "sdk",
+      "tool": "perpsTransfer",
+      "args": {
+        "clientTransferId": "t1",
+        "mode": "toDex",
+        "dex": "xyz",
+        "amountUsdc": "5"
+      },
+      "requests": [
+        {
+          "method": "POST",
+          "host": "api.test",
+          "path": "/api/v1/agent/perps/transfer",
+          "body": {
+            "clientTransferId": "t1",
+            "mode": "toDex",
+            "dex": "xyz",
+            "amountUsdc": "5",
+            "wallet": "wallet"
+          }
+        }
+      ],
+      "outcome": {
+        "isError": false,
+        "body": {
+          "id": "t1",
+          "status": "built",
+          "submitted": false
+        }
+      }
+    },
+    {
+      "id": "mcp-from-dex-submit-false",
+      "surface": "mcp",
+      "tool": "candle_perps_transfer",
+      "args": {
+        "clientTransferId": "t2",
+        "mode": "fromDex",
+        "dex": "xyz",
+        "amountUsdc": "5"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/trading"
+        },
+        {
+          "method": "POST",
+          "host": "api.test",
+          "path": "/api/v1/agent/perps/transfer",
+          "body": {
+            "clientTransferId": "t2",
+            "mode": "fromDex",
+            "dex": "xyz",
+            "amountUsdc": "5",
+            "walletId": "wallet"
+          }
+        }
+      ],
+      "outcome": {
+        "isError": false,
+        "body": {
+          "id": "t2",
+          "status": "built",
+          "submitted": false
+        }
+      }
+    },
+    {
+      "id": "sdk-from-dex-submit-false",
+      "surface": "sdk",
+      "tool": "perpsTransfer",
+      "args": {
+        "clientTransferId": "t2",
+        "mode": "fromDex",
+        "dex": "xyz",
+        "amountUsdc": "5"
+      },
+      "requests": [
+        {
+          "method": "POST",
+          "host": "api.test",
+          "path": "/api/v1/agent/perps/transfer",
+          "body": {
+            "clientTransferId": "t2",
+            "mode": "fromDex",
+            "dex": "xyz",
+            "amountUsdc": "5",
+            "wallet": "wallet"
+          }
+        }
+      ],
+      "outcome": {
+        "isError": false,
+        "body": {
+          "id": "t2",
+          "status": "built",
+          "submitted": false
+        }
+      }
+    },
+    {
+      "id": "mcp-from-dex-all-submit-false",
+      "surface": "mcp",
+      "tool": "candle_perps_transfer",
+      "args": {
+        "clientTransferId": "t3",
+        "mode": "fromDex",
+        "dex": "xyz",
+        "all": true
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/trading"
+        },
+        {
+          "method": "POST",
+          "host": "api.test",
+          "path": "/api/v1/agent/perps/transfer",
+          "body": {
+            "clientTransferId": "t3",
+            "mode": "fromDex",
+            "dex": "xyz",
+            "all": true,
+            "walletId": "wallet"
+          }
+        }
+      ],
+      "outcome": {
+        "isError": false,
+        "body": {
+          "id": "t3",
+          "status": "built",
+          "submitted": false
+        }
+      }
+    },
+    {
+      "id": "sdk-from-dex-all-submit-false",
+      "surface": "sdk",
+      "tool": "perpsTransfer",
+      "args": {
+        "clientTransferId": "t3",
+        "mode": "fromDex",
+        "dex": "xyz",
+        "all": true
+      },
+      "requests": [
+        {
+          "method": "POST",
+          "host": "api.test",
+          "path": "/api/v1/agent/perps/transfer",
+          "body": {
+            "clientTransferId": "t3",
+            "mode": "fromDex",
+            "dex": "xyz",
+            "all": true,
+            "wallet": "wallet"
+          }
+        }
+      ],
+      "outcome": {
+        "isError": false,
+        "body": {
+          "id": "t3",
+          "status": "built",
+          "submitted": false
+        }
+      }
+    },
+    {
+      "id": "mcp-to-dex-full-flow-synthetic-venue",
+      "surface": "mcp",
+      "tool": "candle_perps_transfer",
+      "evidence": "stand-in: the relay and the venue are answered by the recorder; nothing is signed with a real key",
+      "args": {
+        "clientTransferId": "t1",
+        "mode": "toDex",
+        "dex": "xyz",
+        "amountUsdc": "5"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/trading"
+        },
+        {
+          "method": "POST",
+          "host": "api.test",
+          "path": "/api/v1/agent/perps/transfer"
+        },
+        {
+          "method": "POST",
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/wallet/sign"
+        },
+        {
+          "method": "POST",
+          "host": "api.hyperliquid.xyz",
+          "path": "/exchange"
+        },
+        {
+          "method": "POST",
+          "host": "api.test",
+          "path": "/api/v1/agent/perps/transfer/submitted"
+        }
+      ],
+      "outcome": {
+        "isError": false,
+        "body": {
+          "id": "t1",
+          "status": "submitted"
+        }
+      }
+    },
+    {
+      "id": "mcp-refused-to-spot",
+      "surface": "mcp",
+      "tool": "candle_perps_transfer",
+      "args": {
+        "clientTransferId": "s1",
+        "mode": "toSpot",
+        "amountUsdc": "1"
+      },
+      "requests": [],
+      "outcome": {
+        "isError": true,
+        "code": "MCP_VALIDATION"
+      }
+    },
+    {
+      "id": "mcp-refused-from-spot",
+      "surface": "mcp",
+      "tool": "candle_perps_transfer",
+      "args": {
+        "clientTransferId": "s2",
+        "mode": "fromSpot",
+        "all": true
+      },
+      "requests": [],
+      "outcome": {
+        "isError": true,
+        "code": "MCP_VALIDATION"
+      }
+    },
+    {
+      "id": "mcp-refused-destination-input",
+      "surface": "mcp",
+      "tool": "candle_perps_transfer",
+      "args": {
+        "clientTransferId": "t1",
+        "mode": "toDex",
+        "dex": "xyz",
+        "amountUsdc": "5",
+        "destination": "0x0000000000000000000000000000000000000009"
+      },
+      "requests": [],
+      "outcome": {
+        "isError": true,
+        "code": "MCP_VALIDATION"
+      }
+    },
+    {
+      "id": "mcp-refused-spot-as-a-dex-name",
+      "surface": "mcp",
+      "tool": "candle_perps_transfer",
+      "args": {
+        "clientTransferId": "t1",
+        "mode": "toDex",
+        "dex": "spot",
+        "amountUsdc": "5"
+      },
+      "requests": [],
+      "outcome": {
+        "isError": true,
+        "code": "MCP_VALIDATION"
+      }
+    },
+    {
+      "id": "mcp-refused-all-into-a-dex",
+      "surface": "mcp",
+      "tool": "candle_perps_transfer",
+      "args": {
+        "clientTransferId": "t1",
+        "mode": "toDex",
+        "dex": "xyz",
+        "all": true
+      },
+      "requests": [],
+      "outcome": {
+        "isError": true,
+        "code": "MCP_VALIDATION"
+      }
+    },
+    {
+      "id": "mcp-refused-all-with-an-amount",
+      "surface": "mcp",
+      "tool": "candle_perps_transfer",
+      "args": {
+        "clientTransferId": "t1",
+        "mode": "fromDex",
+        "dex": "xyz",
+        "all": true,
+        "amountUsdc": "5"
+      },
+      "requests": [],
+      "outcome": {
+        "isError": true,
+        "code": "MCP_VALIDATION"
+      }
+    },
+    {
+      "id": "mcp-refused-zero-amount",
+      "surface": "mcp",
+      "tool": "candle_perps_transfer",
+      "args": {
+        "clientTransferId": "t1",
+        "mode": "toDex",
+        "dex": "xyz",
+        "amountUsdc": "0"
+      },
+      "requests": [],
+      "outcome": {
+        "isError": true,
+        "code": "MCP_VALIDATION"
+      }
+    },
+    {
+      "id": "mcp-refused-foreign-destination-build",
+      "surface": "mcp",
+      "tool": "candle_perps_transfer",
+      "args": {
+        "clientTransferId": "t1",
+        "mode": "toDex",
+        "dex": "xyz",
+        "amountUsdc": "5",
+        "submit": false
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/trading"
+        },
+        {
+          "method": "POST",
+          "host": "api.test",
+          "path": "/api/v1/agent/perps/transfer",
+          "body": {
+            "clientTransferId": "t1",
+            "mode": "toDex",
+            "dex": "xyz",
+            "amountUsdc": "5",
+            "walletId": "wallet"
+          }
+        }
+      ],
+      "outcome": {
+        "isError": true,
+        "code": "PERPS_BUILD_REFUSED"
+      }
+    },
+    {
+      "id": "mcp-refused-amount-above-what-was-asked",
+      "surface": "mcp",
+      "tool": "candle_perps_transfer",
+      "args": {
+        "clientTransferId": "t1",
+        "mode": "toDex",
+        "dex": "xyz",
+        "amountUsdc": "4",
+        "submit": false
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/trading"
+        },
+        {
+          "method": "POST",
+          "host": "api.test",
+          "path": "/api/v1/agent/perps/transfer",
+          "body": {
+            "clientTransferId": "t1",
+            "mode": "toDex",
+            "dex": "xyz",
+            "amountUsdc": "4",
+            "walletId": "wallet"
+          }
+        }
+      ],
+      "outcome": {
+        "isError": true,
+        "code": "PERPS_BUILD_REFUSED"
+      }
+    },
+    {
+      "id": "mcp-refused-no-signer",
+      "surface": "mcp",
+      "tool": "candle_perps_transfer",
+      "args": {
+        "clientTransferId": "t1",
+        "mode": "toDex",
+        "dex": "xyz",
+        "amountUsdc": "5"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/trading"
+        }
+      ],
+      "outcome": {
+        "isError": true,
+        "code": "SIGNER_UNAVAILABLE"
+      }
+    },
+    {
+      "id": "mcp-refused-api-unknown-dex",
+      "surface": "mcp",
+      "tool": "candle_perps_transfer",
+      "evidence": "response-stub: the code is the API route's own; the keyed API route is not executed",
+      "args": {
+        "clientTransferId": "t1",
+        "mode": "toDex",
+        "dex": "nodex",
+        "amountUsdc": "5",
+        "submit": false
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/trading"
+        },
+        {
+          "method": "POST",
+          "host": "api.test",
+          "path": "/api/v1/agent/perps/transfer",
+          "body": {
+            "clientTransferId": "t1",
+            "mode": "toDex",
+            "dex": "nodex",
+            "amountUsdc": "5",
+            "walletId": "wallet"
+          }
+        }
+      ],
+      "outcome": {
+        "isError": true,
+        "code": "PERPS_TRANSFER_DEX_REFUSED"
+      }
+    },
+    {
+      "id": "mcp-refused-api-amount-above-source-balance",
+      "surface": "mcp",
+      "tool": "candle_perps_transfer",
+      "evidence": "response-stub: the code is the API route's own; the keyed API route is not executed",
+      "args": {
+        "clientTransferId": "t1",
+        "mode": "toDex",
+        "dex": "xyz",
+        "amountUsdc": "1000000",
+        "submit": false
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/trading"
+        },
+        {
+          "method": "POST",
+          "host": "api.test",
+          "path": "/api/v1/agent/perps/transfer",
+          "body": {
+            "clientTransferId": "t1",
+            "mode": "toDex",
+            "dex": "xyz",
+            "amountUsdc": "1000000",
+            "walletId": "wallet"
+          }
+        }
+      ],
+      "outcome": {
+        "isError": true,
+        "code": "PERPS_TRANSFER_EXCEEDS_SOURCE"
+      }
+    },
+    {
+      "id": "sdk-refused-all-into-a-dex",
+      "surface": "sdk",
+      "tool": "perpsTransfer",
+      "args": {
+        "clientTransferId": "t1",
+        "mode": "toDex",
+        "dex": "xyz",
+        "all": true
+      },
+      "requests": [],
+      "outcome": {
+        "isError": true,
+        "message": "perpsTransfer: invalid amount or all direction"
+      }
+    },
+    {
+      "id": "sdk-refused-zero-amount",
+      "surface": "sdk",
+      "tool": "perpsTransfer",
+      "args": {
+        "clientTransferId": "t1",
+        "mode": "toDex",
+        "dex": "xyz",
+        "amountUsdc": "0"
+      },
+      "requests": [],
+      "outcome": {
+        "isError": true,
+        "message": "perpsTransfer: invalid amount or all direction"
+      }
+    },
+    {
+      "id": "sdk-refused-foreign-destination-build",
+      "surface": "sdk",
+      "tool": "perpsTransfer",
+      "args": {
+        "clientTransferId": "t1",
+        "mode": "toDex",
+        "dex": "xyz",
+        "amountUsdc": "5"
+      },
+      "requests": [
+        {
+          "method": "POST",
+          "host": "api.test",
+          "path": "/api/v1/agent/perps/transfer",
+          "body": {
+            "clientTransferId": "t1",
+            "mode": "toDex",
+            "dex": "xyz",
+            "amountUsdc": "5",
+            "wallet": "wallet"
+          }
+        }
+      ],
+      "outcome": {
+        "isError": true,
+        "message": "perpsTransfer: refused build: destination is not this wallet"
+      }
+    },
+    {
+      "id": "sdk-refused-other-dex-in-build",
+      "surface": "sdk",
+      "tool": "perpsTransfer",
+      "args": {
+        "clientTransferId": "t1",
+        "mode": "toDex",
+        "dex": "xyz",
+        "amountUsdc": "5"
+      },
+      "requests": [
+        {
+          "method": "POST",
+          "host": "api.test",
+          "path": "/api/v1/agent/perps/transfer",
+          "body": {
+            "clientTransferId": "t1",
+            "mode": "toDex",
+            "dex": "xyz",
+            "amountUsdc": "5",
+            "wallet": "wallet"
+          }
+        }
+      ],
+      "outcome": {
+        "isError": true,
+        "message": "perpsTransfer: refused build: transfer identity differs"
+      }
+    }
+  ]
+}

@@ -202,6 +202,7 @@ export const TOOL_CLASSES: Readonly<Record<string, ToolClass>> = {
   candle_perps_flatten: PERPS,
   candle_perps_reduce_only: PERPS,
   candle_perps_deposit: PERPS,
+  candle_perps_transfer: PERPS,
   candle_perps_set_thresholds: PERPS,
   // Funds out: never offered to the agent.
   candle_transfer: TRANSFER,

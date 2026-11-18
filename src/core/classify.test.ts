@@ -65,6 +65,7 @@ const PERPS_WRITES = [
   "candle_perps_flatten",
   "candle_perps_reduce_only",
   "candle_perps_deposit",
+  "candle_perps_transfer",
   "candle_perps_set_thresholds",
 ]
 

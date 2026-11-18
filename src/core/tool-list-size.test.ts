@@ -36,7 +36,8 @@ test("the Candle Harness's own tools, on Max with Hacc on, stay inside their siz
   )
   // Room to add a sentence a live failure calls for, not to drift back: they were 51,889 bytes, candle_cli 11,190.
   // candle_bridge, a tool of its own, raised the cap by its size (1,216 bytes), and its own size is held too.
-  expect(bytes(own)).toBeLessThanOrEqual(50_250)
+  // The `perps transfer` row (BE-3765) added its path to candle_cli's "Later" line, 21 bytes: the cap is 50,300.
+  expect(bytes(own)).toBeLessThanOrEqual(50_300)
   expect(sizes.candle_bridge).toBeLessThanOrEqual(1_250)
   expect(sizes.candle_cli).toBeLessThanOrEqual(9_400)
 })
