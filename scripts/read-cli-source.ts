@@ -285,7 +285,9 @@ function ttyOf(body: string): string[] {
 /** A dispatcher's words and the function each runs: `case "add": return f(` and `if (word === "add") return f(`. */
 function dispatchedWords(body: string): Record<string, string> {
   const out: Record<string, string> = {}
-  for (const m of body.matchAll(/case\s+"([a-z][a-z-]*)"\s*:\s*return\s+([A-Za-z_$][\w$]*)\s*\(/g)) out[m[1]!] = m[2]!
+  // Labels that fall through to one return (`case "buy": case "sell": return spotOrder(`) are each a word.
+  for (const m of body.matchAll(/((?:case\s+"[a-z][a-z-]*"\s*:\s*)+)return\s+([A-Za-z_$][\w$]*)\s*\(/g))
+    for (const label of m[1]!.matchAll(/"([a-z][a-z-]*)"/g)) out[label[1]!] = m[2]!
   for (const m of body.matchAll(/if\s*\(\s*[a-z]+\s*===\s*"([a-z][a-z-]*)"\s*\)\s*return\s+([A-Za-z_$][\w$]*)\s*\(/g)) out[m[1]!] = m[2]!
   // The first argument itself (`transfer status`, 0.13.19), awaited or not. Not any local awaited the same
   // way: `chain === "hood"` and `reason === "interrupted"` branch on a value, not a typed word.

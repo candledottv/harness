@@ -5,7 +5,7 @@
 // into src/core/cli-source.json, which scripts/read-cli-source.ts refreshes when the pinned CLI moves.
 //
 //   bun scripts/cli-parity.ts            lists what's out of step, and exits 1 if anything is
-import { CATALOGUE, type CatalogueEntry, helpLine } from "../src/core/cli-catalogue"
+import { CATALOGUE, type CatalogueEntry, dispatchedWord, helpLine } from "../src/core/cli-catalogue"
 import { CLI_ROWS, type HelpTopic, SOURCE, type SourceEntry } from "../src/core/cli-table"
 
 const PAGE = "the docs page"
@@ -24,7 +24,9 @@ export function parityProblems(source: { commands: readonly SourceEntry[]; help:
     const words = path.split(" ")
     // A word a bare command's handler dispatches itself (`transfer status`).
     if (words.length === 2 && source.commands.some((c) => c.command === words[0] && c.subcommand === null && c.actions?.[words[1]!] !== undefined)) return true
-    return words.length === 3 && routedSet.has(words.slice(0, 2).join(" ")) && helpLine(source.help, path).exact
+    if (words.length === 3 && routedSet.has(words.slice(0, 2).join(" ")) && helpLine(source.help, path).exact) return true
+    // A word the subcommand's handler dispatches itself, listed in its help row (`perps spot buy`).
+    return dispatchedWord(source, path)
   }
   const table = rows.map((r) => r.path)
   const page = docPaths(doc)

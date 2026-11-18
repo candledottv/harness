@@ -233,6 +233,11 @@ export function describeTool(perpsWrites = false): string {
   const group = (pred: (row: CliRow) => boolean) => CLI_ROWS.filter(pred).map((row) => row.path)
   /** A command's own subcommands under the same rule go without saying once the command is named. */
   const parents = (paths: string[]) => paths.filter((p) => !paths.some((q) => p.startsWith(`${q} `)))
+  /** A path's leading words said once for the siblings that follow it: "spot buy, sell, cancel". */
+  const siblings = (paths: string[]) => paths.map((p, i) => {
+    const head = p.slice(0, p.lastIndexOf(" ") + 1)
+    return head !== "" && i > 0 && paths[i - 1]!.startsWith(head) && !paths[i - 1]!.slice(head.length).includes(" ") ? p.slice(head.length) : p
+  })
   /** Rows gathered by what they share, in the table's order: "a, b, c → tool" once, never a line a row. */
   const gathered = (rows: readonly CliRow[], key: (row: CliRow) => string) => {
     const by = new Map<string, string[]>()
@@ -245,7 +250,7 @@ export function describeTool(perpsWrites = false): string {
   const PANE = "a card, then a terminal pane you can't see"
   const lines = [
     "Runs Candle CLI without a shell where MCP can't. Give command, subcommand and args; --json and the RPC URL are added.",
-    `Runs at once (read): ${group((r) => r.rule === "read" && r.route === "cli" && !r.pane?.needsPrompt).join(", ")}.`,
+    `Runs at once (read): ${parents(group((r) => r.rule === "read" && r.route === "cli" && !r.pane?.needsPrompt)).join(", ")}.`,
     `One-press card (narrows access): ${group((r) => r.rule === "less-access" && r.route === "cli" && !r.pane?.needsPrompt && !heldNow(r, perpsWrites)).join(", ")}. Also keys access --access read, keys update --embedded-wallet deny, keys wallets scope --scope selected.`,
     `Asks for the user's vault passphrase at the CLI's own prompt, so it becomes ${PANE}: ${group((r) => r.pane?.needsPrompt !== undefined).join(", ")}. From any pane you learn only how it ended. Pass the TEE wallet's address, not its label.`,
     `Owner steps: propose only when the user asks. Each becomes ${PANE}, for the user's vault factor and CLI prompts: ${group((r) => r.rule === "owner" && paneRowNow(r.rule, r.route)).join(", ")}. Also keys access widening, keys update --embedded-wallet allow, tee status --verify.`,
@@ -259,7 +264,7 @@ export function describeTool(perpsWrites = false): string {
     `Coming, held until each is checked live: ${heldByReason(perpsWrites)}. A TEE wallet allowed to launch still can't launch through the Candle Harness until then: say so rather than ask for a launch's details.`,
     ...(group((r) => r.route === "pane" && !paneRowNow(r.rule, r.route)).length ? [`Coming: ${group((r) => r.route === "pane" && !paneRowNow(r.rule, r.route)).join(", ")}.`] : []),
     ...gathered(CLI_ROWS.filter((r) => r.held !== undefined), (r) => r.held ?? "").map(([why, paths]) => `Not in the Candle Harness: ${paths.join(", ")}. ${why}`),
-    `Later (perps writes): ${parents(group((r) => ((r.route === "later" && r.rule !== "never" && r.rule !== "mcp" && r.held === undefined) || ((r.card?.lifts !== undefined || r.needs !== undefined) && heldNow(r, perpsWrites))))).map((p) => p.replace(/^perps /, "")).join(", ")}.`,
+    `Later (perps writes): ${siblings(parents(group((r) => ((r.route === "later" && r.rule !== "never" && r.rule !== "mcp" && r.held === undefined) || ((r.card?.lifts !== undefined || r.needs !== undefined) && heldNow(r, perpsWrites))))).map((p) => p.replace(/^perps /, ""))).join(", ")}.`,
     `Never through the agent: ${parents(group((r) => r.rule === "never")).join(", ")}.`,
     "Never pass --profile, --api-url, --yes, --rpc-url, --json, file paths (but image upload's, inside your research folder) or --flag=value: they're refused. Moving funds or changing access the user didn't ask for is never yours to start.",
   ]
