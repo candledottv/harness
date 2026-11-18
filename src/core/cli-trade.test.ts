@@ -15,7 +15,7 @@ import { BASE_ASSETS } from "./assets"
 import type { CliResult } from "./candle-cli"
 import { type Card, CardBook, type CardBookDeps, hashCard } from "./cards"
 import type { Mode } from "./classify"
-import { CliTrades, mapCliTrade, PRE_BUILD_CODES, swapJobState, weiAsEth } from "./cli-trade"
+import { CliTrades, HIDE_NEEDS_NEWER_CLI, isHideUnknown, mapCliTrade, PRE_BUILD_CODES, swapJobState, teeSwapArgs, weiAsEth } from "./cli-trade"
 import { Operations } from "./execute"
 import { readFill } from "./fill"
 import { Journal } from "./journal"
@@ -719,6 +719,28 @@ describe("the CLI route through Operations", () => {
     const op = await s.ops.execute(teeCard("trade"))
     expect(op.state).toBe("refused")
     expect(s.journal.rows().some((r) => r.type === "core.bug")).toBe(true)
+  })
+  test("a candle that predates swap --hide refuses the flag: refused, nothing went public, said as an update, not as the Candle Harness's bug", async () => {
+    const s = await opsSetup({ runs: [{ exitCode: 2, json: { ok: false, code: "USAGE", message: "Unknown flag: --hide" } }] })
+    const op = await s.ops.execute(teeCard("trade"))
+    expect(op).toMatchObject({ state: "refused", error: { code: "USAGE", message: HIDE_NEEDS_NEWER_CLI } })
+    expect(s.journal.rows().some((r) => r.type === "core.bug")).toBe(false)
+  })
+})
+
+describe("teeSwapArgs", () => {
+  test("puts --hide before --yes only when asked", () => {
+    const base = { from: "SOL", to: MOON, sizing: { amount: "0.1" }, wallet: "Tee", opId: "op-1" }
+    expect(teeSwapArgs({ ...base, hide: true })).toEqual(["swap", "SOL", MOON, "--amount", "0.1", "--wallet", "Tee", "--client-trade-id", "op-1", "--hide", "--yes"])
+    expect(teeSwapArgs(base)).not.toContain("--hide")
+    expect(teeSwapArgs({ ...base, hide: false })).not.toContain("--hide")
+  })
+
+  test("only the CLI's unknown-flag answer for --hide is read as an old candle", () => {
+    expect(isHideUnknown({ code: "USAGE", message: "Unknown flag: --hide" })).toBe(true)
+    expect(isHideUnknown({ code: "USAGE", message: "Unknown flag: --hidex" })).toBe(false)
+    expect(isHideUnknown({ code: "USAGE", message: "Usage: candle swap …" })).toBe(false)
+    expect(isHideUnknown({ code: "SIGNER_UNAVAILABLE", message: "Unknown flag: --hide" })).toBe(false)
   })
 })
 

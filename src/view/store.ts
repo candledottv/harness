@@ -168,6 +168,8 @@ export interface CardDisplayView {
   preview?: string
   /** A public action says so: a launch, a post, a profile edit. */
   publicNote?: string
+  /** The order asked to stay out of Candle's public activity stream, in words: what it keeps out and what stays public. Amber. */
+  hidden?: string
   /** On a wallet that trades inside limits, why this one is a card all the same: "over the embedded wallet's $1.00 a trade without a card". */
   cardBecause?: string
   /** What re-send does for this card when an answer is lost. */

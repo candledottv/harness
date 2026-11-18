@@ -270,6 +270,8 @@ function openLines(card: ViewCard, opts: { now: number; focused: boolean; width:
     out.push(...wrapped(wrap(`${d.triggerCard.agent ? `${d.triggerCard.agent}'s trigger. ` : ""}${d.triggerCard.runs}`, room), (t) => row([{ text: t, fg: C.ink }])))
   }
   if (d.publicNote) out.push(row([{ text: fit(d.publicNote, room), fg: C.look }]))
+  // An order kept out of Candle's public stream says so, and what stays public anyway: whole, in amber.
+  if (d.hidden) out.push(...wrapped(wrap(d.hidden, room), (t) => row([{ text: t, fg: C.look }])))
   if (d.nearLimit) out.push(row([{ text: fit(d.nearLimit, room), fg: C.look }]))
   // A slippage bound the agent set: never run unseen. Looser than the default, in amber.
   if (d.slippage) out.push(row([{ text: fit(d.slippage, room), fg: d.slippageLooser ? C.look : C.dim }]))
