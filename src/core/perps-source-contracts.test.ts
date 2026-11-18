@@ -17,7 +17,7 @@ const envelope = (id: string) => {
 }
 
 test("builder contracts, CLI flags and MCP schemas name the exact merged source and its separate package versions", () => {
-  expect(perps.source).toEqual({ repo: "candledottv/candle-monorepo", commit: "7916d48364cb6f904f5bc337add7d27e2f5fe0ea", versions: { cli: "0.13.29", mcp: "0.10.34", sdk: "0.6.23" } })
+  expect(perps.source).toEqual({ repo: "candledottv/candle-monorepo", commit: "0b0ecb5b06bcda837fbf09ebd25a9c0d841c5aff", versions: { cli: "0.13.30", mcp: "0.10.35", sdk: "0.6.24" } })
   expect(rows).toHaveLength(25)
   expect(new Set(rows.map((r) => r.id)).size).toBe(25)
   expect(perps.source.commit).toBe(SOURCE.source.commit)
