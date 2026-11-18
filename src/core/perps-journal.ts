@@ -1,8 +1,12 @@
 // The journal's `perps` entry on a settled perps card (execute.ts), kept apart from the card path it is read beside.
 const record = (value: unknown): Record<string, unknown> | undefined =>
   typeof value === "object" && value !== null && !Array.isArray(value) ? (value as Record<string, unknown>) : undefined
-/** A perps market's name as Hyperliquid lists it: "BTC", "kPEPE". */
-const COIN = /^[A-Za-z0-9]{1,20}$/
+/**
+ * A perps market's name as the candle CLI takes it (cli/src/hyperliquid-markets.ts, parsePerpsCoin): a main-exchange
+ * coin as Hyperliquid lists it ("BTC", "kPEPE"), or a builder-deployed (HIP-3) market as dex:COIN ("xyz:TSLA"), a dex
+ * of 1 to 12 letters and digits. Anything else (a second colon, an empty side, a dash) is not a market.
+ */
+export const PERPS_COIN = /^(?:[A-Za-z0-9]{1,12}:)?[A-Za-z0-9]{1,20}$/
 
 /**
  * The journal's `perps` entry on a settled perps card: what was asked (coin, size or percent, cloid, from the argv the
@@ -25,7 +29,7 @@ export function perpsJournalEntry(row: string, argv: readonly string[], result: 
   const pick = (...keys: string[]): string | number | undefined => keys.map((k) => body[k]).find((v) => typeof v === "string" || typeof v === "number") as string | number | undefined
   const entry: Record<string, unknown> = {
     row,
-    ...(row === "perps cancel" ? {} : positional !== undefined && COIN.test(positional) ? { coin: positional } : {}),
+    ...(row === "perps cancel" ? {} : positional !== undefined && PERPS_COIN.test(positional) ? { coin: positional } : {}),
     ...(flag("--client-id") ?? (row === "perps cancel" ? positional : undefined) ? { cloid: flag("--client-id") ?? positional } : {}),
     ...(flag("--size") ? { size: flag("--size") } : {}),
     ...(flag("--pct") ? { pct: flag("--pct") } : {}),

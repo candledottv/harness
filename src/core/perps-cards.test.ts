@@ -222,6 +222,25 @@ describe("planning a card", () => {
     expect(clear.headline).toBe("CLEAR PERPS CANCEL-ALL TIMER")
   })
 
+  test("a builder-deployed (HIP-3) market is named dex:COIN, as the CLI takes it, on close and TP/SL", async () => {
+    const close = await planCliRow(request(["perps", "close", "xyz:TSLA", "--pct", "25", "--wallet", "hl-one"]), ctx())
+    expect(close.argv).toEqual(["perps", "close", "xyz:TSLA", "--pct", "25", "--wallet", EVM_TEE, "--client-id", cloidOf(OP_ID), "--yes"])
+    expect(close.headline).toBe("CLOSE xyz:TSLA 25%")
+    expect(close.preview).toContain("25% of the xyz:TSLA position")
+    const all = await planCliRow(request(["perps", "close", "xyz:GOLD"]), ctx())
+    expect(all.headline).toBe("CLOSE xyz:GOLD ALL")
+    const tpsl = await planCliRow(request(["perps", "tpsl", "xyz:TSLA", "--stop-loss", "180"]), ctx())
+    expect(tpsl.argv).toEqual(["perps", "tpsl", "xyz:TSLA", "--stop-loss", "180", "--wallet", EVM_TEE, "--yes"])
+    expect(tpsl.headline).toBe("TP/SL xyz:TSLA SL 180")
+    // Malformed names are refused before a card: an empty side, a second colon, a dash, a dex over 12 characters.
+    for (const coin of ["xyz:", ":TSLA", "xyz:TS-LA", "xyz:TSLA:1", "abcdefghijklm:TSLA", "xyz::TSLA"]) {
+      expect(await refusal(planCliRow(request(["perps", "close", coin]), ctx()))).toBe("INVALID_PERPS")
+      expect(await refusal(planCliRow(request(["perps", "tpsl", coin, "--take-profit", "300"]), ctx()))).toBe("INVALID_PERPS")
+    }
+    // Flatten is still the main exchange only, and its card says so.
+    expect((await planCliRow(request(["perps", "flatten"]), ctx())).preview).toContain("spot, HIP-3 and vaults aren't reached")
+  })
+
   test("a TP/SL change names the protection gap; removing a stop-loss is the person's to type", async () => {
     const change = await planCliRow(request(["perps", "tpsl", "ETH", "--stop-loss", "2500"]), ctx())
     expect(change.headline).toBe("TP/SL ETH SL 2,500")
@@ -261,6 +280,9 @@ describe("the kill switch", () => {
     // Unread argv errs towards stopping.
     expect(card("perps schedule-cancel")).toBe(true)
     for (const row of ["perps close", "perps cancel", "perps tpsl", "perps flatten"]) expect(card(row, ["perps"])).toBe(false)
+    // A builder-dex close or TP/SL is kept too: closing is never stopped, whichever dex the market is on.
+    expect(card("perps close", ["perps", "close", "xyz:TSLA", "--yes"])).toBe(false)
+    expect(card("perps tpsl", ["perps", "tpsl", "xyz:TSLA", "--stop-loss", "180", "--yes"])).toBe(false)
   })
 })
 
@@ -317,6 +339,11 @@ describe("the journal's perps entry", () => {
   })
   test("a cancel's cloid is the one it named; fields the answer lacks are left out, never guessed", () => {
     expect(perpsJournalEntry("perps cancel", ["perps", "cancel", CLOID, "--wallet", EVM_TEE, "--yes"], { success: true })).toEqual({ row: "perps cancel", cloid: CLOID })
+  })
+  test("a builder-dex close keeps its dex:COIN name; a malformed one is left out", () => {
+    const argv = ["perps", "close", "xyz:TSLA", "--size", "2", "--wallet", EVM_TEE, "--client-id", CLOID, "--yes"]
+    expect(perpsJournalEntry("perps close", argv, { success: true, cloid: CLOID })).toEqual({ row: "perps close", coin: "xyz:TSLA", cloid: CLOID, size: "2" })
+    expect(perpsJournalEntry("perps close", ["perps", "close", "xyz:TS-LA", "--yes"], {})).toEqual({ row: "perps close" })
   })
   test("a flatten has no coin: it is the row alone", () => {
     expect(perpsJournalEntry("perps flatten", ["perps", "flatten", "--wallet", EVM_TEE, "--yes"], { operation: "flatten", complete: true })).toEqual({ row: "perps flatten" })

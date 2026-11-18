@@ -75,6 +75,11 @@ export const TOOL_CLASSES: Readonly<Record<string, ToolClass>> = {
   // Server 0.10.28 (CLI 0.13.9): keyless reads. A token page's public reads answer that it's off until
   // Candle's deployment switches it on, which is the server's answer.
   candle_get_agent_positions: READ,
+  // Source after MCP 0.10.34 (candle-monorepo 578db6462): keyless reads of a published agent's perps record and
+  // Candle's cached perp candles, builder-dex (dex:COIN) markets included.
+  candle_get_agent_perp_round: READ,
+  candle_get_agent_open_orders: READ,
+  candle_get_perp_candles: READ,
   candle_token_clusters: READ,
   candle_token_history: READ,
   candle_token_page_about: READ,

@@ -1,8 +1,8 @@
 {
   "source": {
     "repo": "candledottv/candle-monorepo",
-    "commit": "a6a801ac679b9879bae979e09d0e8ac8b881c313",
-    "cliVersion": "0.13.28",
+    "commit": "578db6462d65842c0fdbaf08a37aedf405decee5",
+    "cliVersion": "0.13.29",
     "method": "in-memory tools/list; local eligibility stub; no tool calls"
   },
   "fixedPairs": [

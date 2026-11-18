@@ -25,6 +25,7 @@ import { PRE_BUILD_CODES } from "./cli-trade"
 import type { Mapped, Operation, OperationError } from "./execute"
 import { refusalMessage } from "./execute"
 import { type EmptyState, isCounted } from "./empty-accounts"
+import { PERPS_COIN } from "./perps-journal"
 import type { Journal } from "./journal"
 import { launchJobState } from "./reconcile"
 import { short, walletName as payerNameOf } from "./wallet-names"
@@ -37,8 +38,6 @@ export const MAX_IMAGE_BYTES = 10 * 1024 * 1024
 const ID_FLAGS = ["--client-trade-id", "--client-stake-id", "--client-id"]
 /** A Hyperliquid client order id (cli/src/hyperliquid.ts, HYPERLIQUID_CLOID_RE). */
 const CLOID = /^0x[0-9a-fA-F]{32}$/
-/** A perps market's name as Hyperliquid lists it: "BTC", "kPEPE". */
-const COIN = /^[A-Za-z0-9]{1,20}$/
 /** The card's id as a cloid: `0x` and its 32 hex digits. */
 export const cloidOf = (opId: string): string => `0x${opId.replace(/-/g, "").toLowerCase()}`
 const EMBEDDED_WORDS = new Set(["main", "embedded"])
@@ -346,11 +345,11 @@ async function planPerps(action: string, args: string[], words: readonly string[
   const invalid = (message: string) => ctx.refuse("INVALID_PERPS", `${message} Nothing was sent.`)
   const noRerun = "It has no id, so a re-send asks Hyperliquid again: read candle perps orders and positions first."
   const coinOf = async (usage: string): Promise<string> => {
-    if (args.length !== 1 || !COIN.test(args[0]!)) await invalid(usage)
+    if (args.length !== 1 || !PERPS_COIN.test(args[0]!)) await invalid(usage)
     return args[0]!
   }
   if (action === "close") {
-    const coin = await coinOf("candle perps close takes one market, such as BTC, and --size <n> or --pct <1-100>, or neither to close all of it.")
+    const coin = await coinOf("candle perps close takes one market, such as BTC or xyz:TSLA, and --size <n> or --pct <1-100>, or neither to close all of it.")
     const size = flagValue(words, "--size")
     const pct = flagValue(words, "--pct")
     if (size !== undefined && pct !== undefined) await invalid("candle perps close takes --size or --pct, not both.")
@@ -371,7 +370,7 @@ async function planPerps(action: string, args: string[], words: readonly string[
     return { title: `${headline} · ${walletName}`, headline, preview: "cancels one order Candle built; a TP/SL leg cancelled this way leaves the position without it", resendNote: noRerun }
   }
   if (action === "tpsl") {
-    const coin = await coinOf("candle perps tpsl takes one market, such as BTC, and the legs to attach, change or remove.")
+    const coin = await coinOf("candle perps tpsl takes one market, such as BTC or xyz:TSLA, and the legs to attach, change or remove.")
     const tp = flagValue(words, "--take-profit")
     const sl = flagValue(words, "--stop-loss")
     const removeTp = words.includes("--remove-tp")

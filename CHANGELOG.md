@@ -2,6 +2,18 @@
 
 What changed in each version of Candle Harness (called the Candle TUI before 0.3.0). Versions follow [semantic versioning](https://semver.org), and each release is listed on [GitHub](https://github.com/candledottv/harness/releases).
 
+## 0.6.2 (unreleased)
+
+Builder-deployed (HIP-3) perps markets on Hyperliquid, as Candle's CLI, MCP and SDK source take them (candle-monorepo `578db6462`; the CLI there is 0.13.29 and its MCP server still says 0.10.34). The source/build version is 0.6.2; publishing remains a separate release step.
+
+### Builder-deployed perps markets
+
+- **Markets on a builder dex are named `dex:COIN`** (`xyz:TSLA`), as the CLI takes them. `candle perps close` and `candle perps tpsl` cards accept such a name, and the journal's perps entry keeps it; a malformed name (an empty side, a second colon, a dash, a dex over 12 characters) is refused before a card, and nothing is sent. Main-exchange names are unchanged. Flatten still reaches the main exchange only, and its card says so.
+- **`candle_perps_markets` takes `dex`** (a builder dex such as `xyz`, or `all`), which reaches Candle unchanged as any perps read does; `candle perps markets` through `candle_cli` points at that tool. `candle_perps_market` takes `dex:COIN` and answers the market's terms: its dex, who deployed it and who sets its oracle, cross or isolated only, its own maximum leverage, its collateral and its fee, with a warning when the fee is above 2x the main exchange's.
+- **Three new keyless reads are classified as reads:** `candle_get_perp_candles` (Candle's cached perp candles, builder dexes included), `candle_get_agent_perp_round` and `candle_get_agent_open_orders` (a published agent's perps round and open orders).
+- **Source contracts follow `578db6462`.** The tools/list fixture is re-read (103 tools: `dex` on the market list, the three reads, and the perps tools' new words). Twenty-six offline MCP/SDK scenarios read a synthetic Hyperliquid with made-up dexes and addresses: per-dex asset ids (`100000 + dex * 10000 + index`), the dex list with deployer, oracle setters and collateral, the terms and the fee warning, and the refusals (delisted, a dex not collateralised in USDC, the per-dex kill switch, an unknown dex, a malformed name or filter). MCP and the SDK agree on each. Sixteen rows run the API's own perps gate on the same universes: the kill switch refuses an open on its dex and a close still resolves there; delisted, non-USDC and malformed names are refused either way; an isolated-only market carries its own leverage cap and margin mode into the build.
+- Not here: a recording that needs a funded builder-dex balance (that waits on moving funds between dexes), and a typed `--dex` flag in the CLI table, which is re-read with the next CLI release (the table is still 0.13.28).
+
 ## 0.6.1 (unreleased)
 
 The command table and source contracts follow Candle CLI 0.13.28 and MCP 0.10.33. The source/build version is 0.6.1; publishing remains a separate release step.

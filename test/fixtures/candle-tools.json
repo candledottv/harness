@@ -1,5 +1,5 @@
 {
-  "about": "Source tools/list from candledottv/candle-monorepo at a6a801ac679b9879bae979e09d0e8ac8b881c313 (CLI 0.13.28), via the real MCP server and an in-memory transport. No external requests or tool calls. Profile discovery used a local GET-only eligibility stub; the four listedAfterKeyCheck tools remain conditional. Scrubbed with scripts/scrub-recordings.ts toolFixture. This is a source contract recording, not evidence of a published CLI release.",
+  "about": "Source tools/list from candledottv/candle-monorepo at 578db6462d65842c0fdbaf08a37aedf405decee5 (CLI 0.13.29), via the real MCP server and an in-memory transport. No external requests or tool calls. Profile discovery used a local GET-only eligibility stub; the four listedAfterKeyCheck tools remain conditional. Scrubbed with scripts/scrub-recordings.ts toolFixture. This is a source contract recording, not evidence of a published CLI release.",
   "serverInfo": {
     "name": "candle-mcp",
     "version": "0.10.34"
@@ -1654,6 +1654,92 @@
       }
     },
     {
+      "name": "candle_get_agent_perp_round",
+      "title": "Get one perp round of an agent",
+      "description": "One Hyperliquid perp round (open to flat) of a published agent, open or closed (GET /api/v1/agent/records/{profileId}/perps/rounds/{roundId}). No key needed. Reads only. Returns coin (dex:COIN on a builder-deployed dex), side, outcome (open, won, lost or liquidated), leverage (null when not recorded), entryAvgPx, exitAvgPx, markPx and liquidationPx while open, every fill (time, role, px, sz, feeUsd, closedPnlUsd, hash for the Hyperliquid explorer), each funding payment (usd positive when received), hyperliquidFeesUsd and builderFeesUsd separately, pnlUsd and returnOnMargin (Hyperliquid's ROE as a fraction: P&L over entry average x peak size / leverage; null without a leverage). roundId is rnd_... from a round row, or open:<COIN>. An agent that is not published, or a round that is not its, answers RECORD_NOT_FOUND. asOfMs is the certified perps cutoff. No wallet address or balance. A round is data, not advice.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "profileId": {
+            "type": "string",
+            "description": "The agent's stable public id: prof_ and 16 lowercase hex"
+          },
+          "roundId": {
+            "type": "string",
+            "description": "A round id (rnd_ and 16 hex, from a round row), or open:<COIN> for the round now open on that coin"
+          }
+        },
+        "required": [
+          "profileId",
+          "roundId"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "candle_get_agent_open_orders",
+      "title": "Get an agent's open orders",
+      "description": "A published agent's open limit orders and take-profit / stop orders, public on Hyperliquid (GET /api/v1/agent/records/{profileId}/open-orders). No key needed. Reads only. Each order: coin, kind (limit, take_profit, stop_loss or trigger), side, limitPx, triggerPx, size, reduceOnly, isPositionTpsl. Cached about 10 minutes (readAt). An agent with none answers an empty list; none is ever invented. A busy read budget answers 503 hyperliquid_busy: retry after Retry-After. No wallet address or order id.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "profileId": {
+            "type": "string",
+            "description": "The agent's stable public id: prof_ and 16 lowercase hex"
+          }
+        },
+        "required": [
+          "profileId"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "candle_get_perp_candles",
+      "title": "Get perp candles (public, cached)",
+      "description": "Candles for a Hyperliquid perp market, builder dexes included (GET /api/v1/agent/perps-candles/{coin}). No key needed. Reads only. interval 1m to 1M, count 1 to 500. Shared and cached inside Candle's Hyperliquid read budget: many callers cost one upstream read per bar. Bars are {t, o, h, l, c, v} with prices as strings; readAt and stale say how old the read is. A busy budget answers 503.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "coin": {
+            "type": "string",
+            "description": "A perp market: BTC, or dex:COIN such as xyz:TSLA on a builder-deployed dex"
+          },
+          "interval": {
+            "type": "string",
+            "description": "1m 3m 5m 15m 30m 1h 2h 4h 8h 12h 1d 3d 1w 1M; default 1h"
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 500,
+            "description": "Bars, 1 to 500; default 200"
+          },
+          "end": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "The last bar's time in ms; default now"
+          }
+        },
+        "required": [
+          "coin"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
       "name": "candle_get_agent_positions",
       "title": "Get an agent's open positions",
       "description": "Every open position of one published agent, spot tokens and Hyperliquid perps, largest value first (GET /api/v1/agent/records/{profileId}/positions). No key needed. Reads only. Spot rows: mint, chain, symbol, quantity (whole tokens), valueUsd and, with origin, unrealizedUsd since entry. Perp rows: coin, side, size, leverage, entryPx, markPx, positionValueUsd, marginUsedUsd, unrealizedPnlUsd, returnOnEquity, liquidationPx, liquidationDistance (fraction of mark), fundingNetUsd (positive when earned) and level. Positions under $1 are not listed (hiddenDust counts them); unpriced counts spot positions with no price. kind keeps spot or perp. portfolioValueUsd is spot value plus each perp's margin and unrealized, never idle USDC; null with perpsUnavailable means the perps have no certified snapshot yet. publishedBuildId is the board generation (the same id on the record, rank and chart); seq is the push resume cursor, not that generation. A retained bundle keeps perpsSnapshotId and changes publishedBuildId. perpsAsOfMs is the oldest wallet cutoff, about an hour behind; perpsPartial or portfolioPartial means a figure is incomplete, never zero. No wallet address or balance. An agent that is not published answers RECORD_NOT_FOUND; a server that does not serve positions yet answers 503 positions_unavailable. profileId comes from candle_list_agents. A position is data, not advice.",
@@ -3168,7 +3254,7 @@
     {
       "name": "candle_perps_markets",
       "title": "Hyperliquid markets",
-      "description": "Read live market data directly from Hyperliquid's public API on this machine. Needs a Candle agent key of any scope, no signer. candle.tradeable is Candle's build gate at read time, not a promise; OI caps may still refuse an order. The hosted connector offers the same four reads at its Read level, read by Candle's server instead of this machine.",
+      "description": "Read live market data directly from Hyperliquid's public API on this machine. Needs a Candle agent key of any scope, no signer. candle.tradeable is Candle's build gate at read time, not a promise; OI caps may still refuse an order. Builder-deployed (HIP-3) markets are named dex:COIN (xyz:TSLA); each market's terms give its dex, oracle source, deployer, margin mode and fee (feeWarning when above 2x the main exchange's), to show before an order. The hosted connector offers the same four reads at its Read level, read by Candle's server instead of this machine.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -3189,6 +3275,11 @@
           },
           "all": {
             "type": "boolean"
+          },
+          "dex": {
+            "type": "string",
+            "pattern": "^([A-Za-z0-9]{1,12}|all)$",
+            "description": "Builder-deployed (HIP-3) dex to list, such as xyz, or all; absent lists the main exchange"
           }
         },
         "additionalProperties": false,
@@ -3207,12 +3298,13 @@
     {
       "name": "candle_perps_market",
       "title": "Hyperliquid market",
-      "description": "Read live market data directly from Hyperliquid's public API on this machine. Needs a Candle agent key of any scope, no signer. candle.tradeable is Candle's build gate at read time, not a promise; OI caps may still refuse an order. The hosted connector offers the same four reads at its Read level, read by Candle's server instead of this machine.",
+      "description": "Read live market data directly from Hyperliquid's public API on this machine. Needs a Candle agent key of any scope, no signer. candle.tradeable is Candle's build gate at read time, not a promise; OI caps may still refuse an order. Builder-deployed (HIP-3) markets are named dex:COIN (xyz:TSLA); each market's terms give its dex, oracle source, deployer, margin mode and fee (feeWarning when above 2x the main exchange's), to show before an order. The hosted connector offers the same four reads at its Read level, read by Candle's server instead of this machine.",
       "inputSchema": {
         "type": "object",
         "properties": {
           "coin": {
-            "type": "string"
+            "type": "string",
+            "description": "Market name: BTC on the main exchange, or dex:COIN on a builder dex, such as xyz:TSLA"
           }
         },
         "required": [
@@ -3234,7 +3326,7 @@
     {
       "name": "candle_perps_book",
       "title": "Hyperliquid book",
-      "description": "Read live market data directly from Hyperliquid's public API on this machine. Needs a Candle agent key of any scope, no signer. candle.tradeable is Candle's build gate at read time, not a promise; OI caps may still refuse an order. The hosted connector offers the same four reads at its Read level, read by Candle's server instead of this machine.",
+      "description": "Read live market data directly from Hyperliquid's public API on this machine. Needs a Candle agent key of any scope, no signer. candle.tradeable is Candle's build gate at read time, not a promise; OI caps may still refuse an order. Builder-deployed (HIP-3) markets are named dex:COIN (xyz:TSLA); each market's terms give its dex, oracle source, deployer, margin mode and fee (feeWarning when above 2x the main exchange's), to show before an order. The hosted connector offers the same four reads at its Read level, read by Candle's server instead of this machine.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -3271,7 +3363,7 @@
     {
       "name": "candle_perps_candles",
       "title": "Hyperliquid candles",
-      "description": "Read live market data directly from Hyperliquid's public API on this machine. Needs a Candle agent key of any scope, no signer. candle.tradeable is Candle's build gate at read time, not a promise; OI caps may still refuse an order. The hosted connector offers the same four reads at its Read level, read by Candle's server instead of this machine.",
+      "description": "Read live market data directly from Hyperliquid's public API on this machine. Needs a Candle agent key of any scope, no signer. candle.tradeable is Candle's build gate at read time, not a promise; OI caps may still refuse an order. Builder-deployed (HIP-3) markets are named dex:COIN (xyz:TSLA); each market's terms give its dex, oracle source, deployer, margin mode and fee (feeWarning when above 2x the main exchange's), to show before an order. The hosted connector offers the same four reads at its Read level, read by Candle's server instead of this machine.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -3328,7 +3420,7 @@
     {
       "name": "candle_perps_setup",
       "title": "Set up Hyperliquid perps",
-      "description": "Approve Candle's Hyperliquid builder fee (0.1%) once for the key's EVM TEE or embedded wallet, and report the account's mode and balance. Idempotent: nothing is signed when the approval is already on Hyperliquid. Refused (PERPS_ACCOUNT_MODE) unless Hyperliquid itself shows the account in standard mode. MOVES REAL FUNDS on Hyperliquid unless submit is false. Candle builds the action within this key's limits (USD window, maximum leverage, maximum position, slippage and price bands, main-exchange markets only); this server recomputes its hash and checks the action type and Candle's builder before signing, then submits it to Hyperliquid itself. Needs perps:write on the key and CANDLE_KEY_SIGNER_PEM_FILE for TEE signing. wallet=embedded uses the recorded server signature and requires no PEM; the embedded switch ships off. Embedded open/close generate client ids; repeat only the same id after an uncertain result. A refusal names the limit that refused it (error.limit).",
+      "description": "Approve Candle's Hyperliquid builder fee (0.1%) once for the key's EVM TEE or embedded wallet, and report the account's mode and balance. Idempotent: nothing is signed when the approval is already on Hyperliquid. Refused (PERPS_ACCOUNT_MODE) unless Hyperliquid itself shows the account in standard mode. MOVES REAL FUNDS on Hyperliquid unless submit is false. Candle builds the action within this key's limits (USD window, maximum leverage, maximum position, slippage and price bands, including builder-dex perps); this server recomputes its hash and checks the action type and Candle's builder before signing, then submits it to Hyperliquid itself. Needs perps:write on the key and CANDLE_KEY_SIGNER_PEM_FILE for TEE signing. wallet=embedded uses the recorded server signature and requires no PEM; the embedded switch ships off. Embedded open/close generate client ids; repeat only the same id after an uncertain result. A refusal names the limit that refused it (error.limit).",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -3351,7 +3443,7 @@
     {
       "name": "candle_perps_open",
       "title": "Open a perps position",
-      "description": "Open or add to a perpetual position on Hyperliquid's main perp exchange: a market order (IOC within slippageBps of the mid) without `price`, a limit order with it, and optional reduce-only takeProfit and stopLoss triggers. Every plan except Max pays Candle a builder fee on each order (0.1% today; perpFeeBps in candle_get_plans); Max pays none. Pass clientId to make a retry return the original order instead of placing another. MOVES REAL FUNDS on Hyperliquid unless submit is false. Candle builds the action within this key's limits (USD window, maximum leverage, maximum position, slippage and price bands, main-exchange markets only); this server recomputes its hash and checks the action type and Candle's builder before signing, then submits it to Hyperliquid itself. Needs perps:write on the key and CANDLE_KEY_SIGNER_PEM_FILE for TEE signing. wallet=embedded uses the recorded server signature and requires no PEM; the embedded switch ships off. Embedded open/close generate client ids; repeat only the same id after an uncertain result. A refusal names the limit that refused it (error.limit).",
+      "description": "Open or add to a perpetual position on Hyperliquid's main perp exchange: a market order (IOC within slippageBps of the mid) without `price`, a limit order with it, and optional reduce-only takeProfit and stopLoss triggers. Every plan except Max pays Candle a builder fee on each order (0.1% today; perpFeeBps in candle_get_plans); Max pays none. Pass clientId to make a retry return the original order instead of placing another. MOVES REAL FUNDS on Hyperliquid unless submit is false. Candle builds the action within this key's limits (USD window, maximum leverage, maximum position, slippage and price bands, including builder-dex perps); this server recomputes its hash and checks the action type and Candle's builder before signing, then submits it to Hyperliquid itself. Needs perps:write on the key and CANDLE_KEY_SIGNER_PEM_FILE for TEE signing. wallet=embedded uses the recorded server signature and requires no PEM; the embedded switch ships off. Embedded open/close generate client ids; repeat only the same id after an uncertain result. A refusal names the limit that refused it (error.limit).",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -3426,7 +3518,7 @@
     {
       "name": "candle_perps_close",
       "title": "Close a perps position",
-      "description": "Close all or part of a position with a reduce-only IOC order. It reserves nothing, so a key at its USD cap can still close. With clientId, a retry after the close filled returns that close, not a new one. MOVES REAL FUNDS on Hyperliquid unless submit is false. Candle builds the action within this key's limits (USD window, maximum leverage, maximum position, slippage and price bands, main-exchange markets only); this server recomputes its hash and checks the action type and Candle's builder before signing, then submits it to Hyperliquid itself. Needs perps:write on the key and CANDLE_KEY_SIGNER_PEM_FILE for TEE signing. wallet=embedded uses the recorded server signature and requires no PEM; the embedded switch ships off. Embedded open/close generate client ids; repeat only the same id after an uncertain result. A refusal names the limit that refused it (error.limit).",
+      "description": "Close all or part of a position with a reduce-only IOC order. It reserves nothing, so a key at its USD cap can still close. With clientId, a retry after the close filled returns that close, not a new one. MOVES REAL FUNDS on Hyperliquid unless submit is false. Candle builds the action within this key's limits (USD window, maximum leverage, maximum position, slippage and price bands, including builder-dex perps); this server recomputes its hash and checks the action type and Candle's builder before signing, then submits it to Hyperliquid itself. Needs perps:write on the key and CANDLE_KEY_SIGNER_PEM_FILE for TEE signing. wallet=embedded uses the recorded server signature and requires no PEM; the embedded switch ships off. Embedded open/close generate client ids; repeat only the same id after an uncertain result. A refusal names the limit that refused it (error.limit).",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -3474,7 +3566,7 @@
     {
       "name": "candle_perps_cancel",
       "title": "Cancel a perps order",
-      "description": "Cancel an order Candle built, by its cloid (from candle_perps_open or candle_perps_orders). MOVES REAL FUNDS on Hyperliquid unless submit is false. Candle builds the action within this key's limits (USD window, maximum leverage, maximum position, slippage and price bands, main-exchange markets only); this server recomputes its hash and checks the action type and Candle's builder before signing, then submits it to Hyperliquid itself. Needs perps:write on the key and CANDLE_KEY_SIGNER_PEM_FILE for TEE signing. wallet=embedded uses the recorded server signature and requires no PEM; the embedded switch ships off. Embedded open/close generate client ids; repeat only the same id after an uncertain result. A refusal names the limit that refused it (error.limit).",
+      "description": "Cancel an order Candle built, by its cloid (from candle_perps_open or candle_perps_orders). MOVES REAL FUNDS on Hyperliquid unless submit is false. Candle builds the action within this key's limits (USD window, maximum leverage, maximum position, slippage and price bands, including builder-dex perps); this server recomputes its hash and checks the action type and Candle's builder before signing, then submits it to Hyperliquid itself. Needs perps:write on the key and CANDLE_KEY_SIGNER_PEM_FILE for TEE signing. wallet=embedded uses the recorded server signature and requires no PEM; the embedded switch ships off. Embedded open/close generate client ids; repeat only the same id after an uncertain result. A refusal names the limit that refused it (error.limit).",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -3757,7 +3849,7 @@
     {
       "name": "candle_perps_leverage",
       "title": "Set perps leverage",
-      "description": "Set a market's leverage and margin mode (cross or isolated) on the account, within the key's maximum leverage. MOVES REAL FUNDS on Hyperliquid unless submit is false. Candle builds the action within this key's limits (USD window, maximum leverage, maximum position, slippage and price bands, main-exchange markets only); this server recomputes its hash and checks the action type and Candle's builder before signing, then submits it to Hyperliquid itself. Needs perps:write on the key and CANDLE_KEY_SIGNER_PEM_FILE for TEE signing. wallet=embedded uses the recorded server signature and requires no PEM; the embedded switch ships off. Embedded open/close generate client ids; repeat only the same id after an uncertain result. A refusal names the limit that refused it (error.limit).",
+      "description": "Set a market's leverage and margin mode (cross or isolated) on the account, within the key's maximum leverage. MOVES REAL FUNDS on Hyperliquid unless submit is false. Candle builds the action within this key's limits (USD window, maximum leverage, maximum position, slippage and price bands, including builder-dex perps); this server recomputes its hash and checks the action type and Candle's builder before signing, then submits it to Hyperliquid itself. Needs perps:write on the key and CANDLE_KEY_SIGNER_PEM_FILE for TEE signing. wallet=embedded uses the recorded server signature and requires no PEM; the embedded switch ships off. Embedded open/close generate client ids; repeat only the same id after an uncertain result. A refusal names the limit that refused it (error.limit).",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -3798,7 +3890,7 @@
     {
       "name": "candle_perps_modify",
       "title": "Modify a perps order",
-      "description": "Change a resting order Candle built (by cloid): its price, size or both. Side, time in force and reduce-only are kept from Hyperliquid's own record and checked here; the replacement gets a new cloid. A take-profit or stop-loss leg cannot be modified (use candle_perps_tpsl). MOVES REAL FUNDS on Hyperliquid unless submit is false. Candle builds the action within this key's limits (USD window, maximum leverage, maximum position, slippage and price bands, main-exchange markets only); this server recomputes its hash and checks the action type and Candle's builder before signing, then submits it to Hyperliquid itself. Needs perps:write on the key and CANDLE_KEY_SIGNER_PEM_FILE for TEE signing. wallet=embedded uses the recorded server signature and requires no PEM; the embedded switch ships off. Embedded open/close generate client ids; repeat only the same id after an uncertain result. A refusal names the limit that refused it (error.limit).",
+      "description": "Change a resting order Candle built (by cloid): its price, size or both. Side, time in force and reduce-only are kept from Hyperliquid's own record and checked here; the replacement gets a new cloid. A take-profit or stop-loss leg cannot be modified (use candle_perps_tpsl). MOVES REAL FUNDS on Hyperliquid unless submit is false. Candle builds the action within this key's limits (USD window, maximum leverage, maximum position, slippage and price bands, including builder-dex perps); this server recomputes its hash and checks the action type and Candle's builder before signing, then submits it to Hyperliquid itself. Needs perps:write on the key and CANDLE_KEY_SIGNER_PEM_FILE for TEE signing. wallet=embedded uses the recorded server signature and requires no PEM; the embedded switch ships off. Embedded open/close generate client ids; repeat only the same id after an uncertain result. A refusal names the limit that refused it (error.limit).",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -3842,7 +3934,7 @@
     {
       "name": "candle_perps_margin",
       "title": "Perps margin",
-      "description": "Exactly one of: amount, to add isolated margin to an isolated position (positive only; this tool never removes margin); or mode (cross or isolated), to set the coin's margin mode keeping its current leverage unless leverage is given. A mode change needs no position and no resting order in the coin. The answer reports the mode asked for and the one Hyperliquid shows after, separately. MOVES REAL FUNDS on Hyperliquid unless submit is false. Candle builds the action within this key's limits (USD window, maximum leverage, maximum position, slippage and price bands, main-exchange markets only); this server recomputes its hash and checks the action type and Candle's builder before signing, then submits it to Hyperliquid itself. Needs perps:write on the key and CANDLE_KEY_SIGNER_PEM_FILE for TEE signing. wallet=embedded uses the recorded server signature and requires no PEM; the embedded switch ships off. Embedded open/close generate client ids; repeat only the same id after an uncertain result. A refusal names the limit that refused it (error.limit).",
+      "description": "Exactly one of: amount, to add isolated margin to an isolated position (positive only; this tool never removes margin); or mode (cross or isolated), to set the coin's margin mode keeping its current leverage unless leverage is given. A mode change needs no position and no resting order in the coin. The answer reports the mode asked for and the one Hyperliquid shows after, separately. MOVES REAL FUNDS on Hyperliquid unless submit is false. Candle builds the action within this key's limits (USD window, maximum leverage, maximum position, slippage and price bands, including builder-dex perps); this server recomputes its hash and checks the action type and Candle's builder before signing, then submits it to Hyperliquid itself. Needs perps:write on the key and CANDLE_KEY_SIGNER_PEM_FILE for TEE signing. wallet=embedded uses the recorded server signature and requires no PEM; the embedded switch ships off. Embedded open/close generate client ids; repeat only the same id after an uncertain result. A refusal names the limit that refused it (error.limit).",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -3889,7 +3981,7 @@
     {
       "name": "candle_perps_tpsl",
       "title": "Perps take-profit / stop-loss",
-      "description": "Attach, move or remove the position's take-profit and stop-loss, each a reduce-only market trigger sized to the position now (it does not grow with later additions). Moving a leg cancels the old one first, so that side is briefly unprotected. A leg not named is left alone. Legs Candle did not build are listed in unowned and never touched; several matching legs need targetTp / targetSl. complete is false on any partial result. MOVES REAL FUNDS on Hyperliquid unless submit is false. Candle builds the action within this key's limits (USD window, maximum leverage, maximum position, slippage and price bands, main-exchange markets only); this server recomputes its hash and checks the action type and Candle's builder before signing, then submits it to Hyperliquid itself. Needs perps:write on the key and CANDLE_KEY_SIGNER_PEM_FILE for TEE signing. wallet=embedded uses the recorded server signature and requires no PEM; the embedded switch ships off. Embedded open/close generate client ids; repeat only the same id after an uncertain result. A refusal names the limit that refused it (error.limit).",
+      "description": "Attach, move or remove the position's take-profit and stop-loss, each a reduce-only market trigger sized to the position now (it does not grow with later additions). Moving a leg cancels the old one first, so that side is briefly unprotected. A leg not named is left alone. Legs Candle did not build are listed in unowned and never touched; several matching legs need targetTp / targetSl. complete is false on any partial result. Each built step retains preview.terms (dex, oracle, deployer, margin, collateral and venue fee); fee warnings also appear in warnings. Use submit:false to inspect the first build before submission (the cancel when replacing). MOVES REAL FUNDS on Hyperliquid unless submit is false. Candle builds the action within this key's limits (USD window, maximum leverage, maximum position, slippage and price bands, including builder-dex perps); this server recomputes its hash and checks the action type and Candle's builder before signing, then submits it to Hyperliquid itself. Needs perps:write on the key and CANDLE_KEY_SIGNER_PEM_FILE for TEE signing. wallet=embedded uses the recorded server signature and requires no PEM; the embedded switch ships off. Embedded open/close generate client ids; repeat only the same id after an uncertain result. A refusal names the limit that refused it (error.limit).",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -3929,7 +4021,7 @@
           },
           "submit": {
             "type": "boolean",
-            "description": "false: build and check without venue submission. Embedded builds already carry the server signature. Default true."
+            "description": "false: build and check only the first step (cancel for a replacement), returning steps[].preview.terms and fee warnings without signing or submitting"
           }
         },
         "required": [
@@ -3945,7 +4037,7 @@
     {
       "name": "candle_perps_schedule_cancel",
       "title": "Perps scheduled cancel",
-      "description": "Set Hyperliquid's cancel-all timer seconds from now (at least 5), or clear it. Wallet-wide: when it fires it cancels every open order on the account, protection included, and no positions; orders placed later by any client are canceled too. Hyperliquid allows 10 triggers per UTC day, which Candle does not count. An acknowledged set is recorded, not proof the timer will fire. MOVES REAL FUNDS on Hyperliquid unless submit is false. Candle builds the action within this key's limits (USD window, maximum leverage, maximum position, slippage and price bands, main-exchange markets only); this server recomputes its hash and checks the action type and Candle's builder before signing, then submits it to Hyperliquid itself. Needs perps:write on the key and CANDLE_KEY_SIGNER_PEM_FILE for TEE signing. wallet=embedded uses the recorded server signature and requires no PEM; the embedded switch ships off. Embedded open/close generate client ids; repeat only the same id after an uncertain result. A refusal names the limit that refused it (error.limit).",
+      "description": "Set Hyperliquid's cancel-all timer seconds from now (at least 5), or clear it. Wallet-wide: when it fires it cancels every open order on the account, protection included, and no positions; orders placed later by any client are canceled too. Hyperliquid allows 10 triggers per UTC day, which Candle does not count. An acknowledged set is recorded, not proof the timer will fire. MOVES REAL FUNDS on Hyperliquid unless submit is false. Candle builds the action within this key's limits (USD window, maximum leverage, maximum position, slippage and price bands, including builder-dex perps); this server recomputes its hash and checks the action type and Candle's builder before signing, then submits it to Hyperliquid itself. Needs perps:write on the key and CANDLE_KEY_SIGNER_PEM_FILE for TEE signing. wallet=embedded uses the recorded server signature and requires no PEM; the embedded switch ships off. Embedded open/close generate client ids; repeat only the same id after an uncertain result. A refusal names the limit that refused it (error.limit).",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -3977,7 +4069,7 @@
     {
       "name": "candle_perps_flatten",
       "title": "Flatten perps",
-      "description": "Cancel every open main-perp order on the wallet (protection included), then close every main-perp position with a reduce-only IOC, then read again. complete is true only when that read shows nothing left. At most 100 signed steps a call; call again for the rest. Spot, HIP-3 and vault exposure is not reached. MOVES REAL FUNDS on Hyperliquid unless submit is false. Candle builds the action within this key's limits (USD window, maximum leverage, maximum position, slippage and price bands, main-exchange markets only); this server recomputes its hash and checks the action type and Candle's builder before signing, then submits it to Hyperliquid itself. Needs perps:write on the key and CANDLE_KEY_SIGNER_PEM_FILE for TEE signing. wallet=embedded uses the recorded server signature and requires no PEM; the embedded switch ships off. Embedded open/close generate client ids; repeat only the same id after an uncertain result. A refusal names the limit that refused it (error.limit).",
+      "description": "Cancel every open main-perp order on the wallet (protection included), then close every main-perp position with a reduce-only IOC, then read again. complete is true only when that read shows nothing left. At most 100 signed steps a call; call again for the rest. Spot, HIP-3 and vault exposure is not reached. MOVES REAL FUNDS on Hyperliquid unless submit is false. Candle builds the action within this key's limits (USD window, maximum leverage, maximum position, slippage and price bands, including builder-dex perps); this server recomputes its hash and checks the action type and Candle's builder before signing, then submits it to Hyperliquid itself. Needs perps:write on the key and CANDLE_KEY_SIGNER_PEM_FILE for TEE signing. wallet=embedded uses the recorded server signature and requires no PEM; the embedded switch ships off. Embedded open/close generate client ids; repeat only the same id after an uncertain result. A refusal names the limit that refused it (error.limit).",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -4546,8 +4638,8 @@
   ],
   "source": {
     "repo": "candledottv/candle-monorepo",
-    "commit": "a6a801ac679b9879bae979e09d0e8ac8b881c313",
-    "cliVersion": "0.13.28",
+    "commit": "578db6462d65842c0fdbaf08a37aedf405decee5",
+    "cliVersion": "0.13.29",
     "method": "in-memory tools/list; local eligibility stub; no tool calls"
   }
 }
