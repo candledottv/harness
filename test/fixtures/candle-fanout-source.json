@@ -1,0 +1,883 @@
+{
+  "about": "Offline multi-RPC send contracts (BE-3925): which extra endpoints a send copies to; a send with preflight goes to the primary first and copies leave only after it answered with a signature; a resend that skips preflight goes everywhere at once; the answer is the primary's own and no copy delays or changes it; one sendTransaction only. Recorded by running the API's own fan-out source against stand-ins from an exact staging commit; every fetch is intercepted. The web side (quote started on press, the swap sender's fan-out address) is pinned as source text. The commit is a staging build and changes no CLI, MCP or SDK file: their published versions are the ones named in the source block.",
+  "source": {
+    "repo": "candledottv/candle-monorepo",
+    "commit": "be55c5f9021c4059cbf4ce51b15fa83746a62525",
+    "versions": {
+      "cli": "0.13.31",
+      "mcp": "0.10.36",
+      "sdk": "0.6.25"
+    },
+    "files": [
+      "apps/api/src/services/solana/send-fanout.ts",
+      "apps/api/src/routes/rpc.ts",
+      "apps/frontend/src/hooks/tokens/swap-send.ts",
+      "apps/frontend/src/components/trade/quick-buy-button.tsx",
+      "apps/frontend/src/components/trade/roster-board.tsx"
+    ]
+  },
+  "rows": [
+    {
+      "id": "endpoints-unset-deployed",
+      "scenario": "endpoints",
+      "args": {
+        "deployed": true,
+        "listed": "unset"
+      },
+      "outcome": {
+        "hosts": [
+          "api.mainnet-beta.solana.com"
+        ]
+      }
+    },
+    {
+      "id": "endpoints-unset-production-build",
+      "scenario": "endpoints",
+      "args": {
+        "deployed": true,
+        "listed": "unset"
+      },
+      "outcome": {
+        "hosts": [
+          "api.mainnet-beta.solana.com"
+        ]
+      }
+    },
+    {
+      "id": "endpoints-unset-local",
+      "scenario": "endpoints",
+      "args": {
+        "deployed": false,
+        "listed": "unset"
+      },
+      "outcome": {
+        "hosts": []
+      }
+    },
+    {
+      "id": "endpoints-blank-deployed",
+      "scenario": "endpoints",
+      "args": {
+        "deployed": true,
+        "listed": "blank"
+      },
+      "outcome": {
+        "hosts": []
+      }
+    },
+    {
+      "id": "endpoints-blank-local",
+      "scenario": "endpoints",
+      "args": {
+        "deployed": false,
+        "listed": "blank"
+      },
+      "outcome": {
+        "hosts": []
+      }
+    },
+    {
+      "id": "endpoints-two-listed",
+      "scenario": "endpoints",
+      "args": {
+        "deployed": true,
+        "listed": "set"
+      },
+      "outcome": {
+        "hosts": [
+          "extra-a.test",
+          "extra-b.test"
+        ]
+      }
+    },
+    {
+      "id": "endpoints-not-https-dropped",
+      "scenario": "endpoints",
+      "args": {
+        "deployed": true,
+        "listed": "set"
+      },
+      "outcome": {
+        "hosts": [
+          "extra-a.test"
+        ]
+      }
+    },
+    {
+      "id": "endpoints-userinfo-dropped",
+      "scenario": "endpoints",
+      "args": {
+        "deployed": true,
+        "listed": "set"
+      },
+      "outcome": {
+        "hosts": [
+          "extra-a.test"
+        ]
+      }
+    },
+    {
+      "id": "endpoints-repeat-and-primary-dropped",
+      "scenario": "endpoints",
+      "args": {
+        "deployed": true,
+        "listed": "set"
+      },
+      "outcome": {
+        "hosts": [
+          "extra-a.test"
+        ]
+      }
+    },
+    {
+      "id": "endpoints-capped-at-four",
+      "scenario": "endpoints",
+      "args": {
+        "deployed": true,
+        "listed": "set"
+      },
+      "outcome": {
+        "hosts": [
+          "extra-1.test",
+          "extra-2.test",
+          "extra-3.test",
+          "extra-4.test"
+        ]
+      }
+    },
+    {
+      "id": "preflight-accepted-copies-follow",
+      "scenario": "preflight",
+      "args": {
+        "preflight": true,
+        "extras": 2
+      },
+      "calls": [
+        {
+          "n": 1,
+          "host": "primary.test",
+          "method": "sendTransaction",
+          "skipPreflight": false,
+          "maxRetries": 5,
+          "minContextSlot": true,
+          "sameBytes": true,
+          "encoding": "base64"
+        },
+        {
+          "n": 2,
+          "host": "extra-a.test",
+          "method": "sendTransaction",
+          "skipPreflight": true,
+          "maxRetries": 5,
+          "minContextSlot": false,
+          "sameBytes": true,
+          "encoding": "base64"
+        },
+        {
+          "n": 3,
+          "host": "extra-b.test",
+          "method": "sendTransaction",
+          "skipPreflight": true,
+          "maxRetries": 5,
+          "minContextSlot": false,
+          "sameBytes": true,
+          "encoding": "base64"
+        }
+      ],
+      "outcome": {
+        "answerStatus": 200,
+        "copyFailures": [],
+        "primaryFirst": true,
+        "copiesAfterAnswer": true,
+        "sameBytes": true,
+        "copiesSkipPreflight": true,
+        "minContextSlotLeftOut": true,
+        "answerIsPrimarys": true
+      }
+    },
+    {
+      "id": "preflight-refused-no-copy",
+      "scenario": "preflight",
+      "args": {
+        "preflight": true,
+        "primary": "simulation refused"
+      },
+      "calls": [
+        {
+          "n": 1,
+          "host": "primary.test",
+          "method": "sendTransaction",
+          "skipPreflight": false,
+          "maxRetries": 5,
+          "minContextSlot": true,
+          "sameBytes": true,
+          "encoding": "base64"
+        }
+      ],
+      "outcome": {
+        "answerStatus": 200,
+        "copyFailures": [],
+        "copiesSent": 0,
+        "answerIsPrimarys": true
+      }
+    },
+    {
+      "id": "preflight-primary-429-no-copy",
+      "scenario": "preflight",
+      "args": {
+        "preflight": true,
+        "primary": "http 429"
+      },
+      "calls": [
+        {
+          "n": 1,
+          "host": "primary.test",
+          "method": "sendTransaction",
+          "skipPreflight": false,
+          "maxRetries": 5,
+          "minContextSlot": true,
+          "sameBytes": true,
+          "encoding": "base64"
+        }
+      ],
+      "outcome": {
+        "answerStatus": 429,
+        "copyFailures": [],
+        "copiesSent": 0,
+        "answerIsPrimarys": true
+      }
+    },
+    {
+      "id": "preflight-primary-500-no-copy",
+      "scenario": "preflight",
+      "args": {
+        "preflight": true,
+        "primary": "http 500"
+      },
+      "calls": [
+        {
+          "n": 1,
+          "host": "primary.test",
+          "method": "sendTransaction",
+          "skipPreflight": false,
+          "maxRetries": 5,
+          "minContextSlot": true,
+          "sameBytes": true,
+          "encoding": "base64"
+        }
+      ],
+      "outcome": {
+        "answerStatus": 500,
+        "copyFailures": [],
+        "copiesSent": 0,
+        "answerIsPrimarys": true
+      }
+    },
+    {
+      "id": "preflight-primary-not-json-no-copy",
+      "scenario": "preflight",
+      "args": {
+        "preflight": true,
+        "primary": "html at 200"
+      },
+      "calls": [
+        {
+          "n": 1,
+          "host": "primary.test",
+          "method": "sendTransaction",
+          "skipPreflight": false,
+          "maxRetries": 5,
+          "minContextSlot": true,
+          "sameBytes": true,
+          "encoding": "base64"
+        }
+      ],
+      "outcome": {
+        "answerStatus": 200,
+        "copyFailures": [],
+        "copiesSent": 0,
+        "answerIsPrimarys": true
+      }
+    },
+    {
+      "id": "preflight-primary-empty-result-no-copy",
+      "scenario": "preflight",
+      "args": {
+        "preflight": true,
+        "primary": "empty signature"
+      },
+      "calls": [
+        {
+          "n": 1,
+          "host": "primary.test",
+          "method": "sendTransaction",
+          "skipPreflight": false,
+          "maxRetries": 5,
+          "minContextSlot": true,
+          "sameBytes": true,
+          "encoding": "base64"
+        }
+      ],
+      "outcome": {
+        "answerStatus": 200,
+        "copyFailures": [],
+        "copiesSent": 0,
+        "answerIsPrimarys": true
+      }
+    },
+    {
+      "id": "preflight-primary-unreachable-rejects",
+      "scenario": "preflight",
+      "args": {
+        "preflight": true,
+        "primary": "unreachable"
+      },
+      "calls": [
+        {
+          "n": 1,
+          "host": "primary.test",
+          "method": "sendTransaction",
+          "skipPreflight": false,
+          "maxRetries": 5,
+          "minContextSlot": true,
+          "sameBytes": true,
+          "encoding": "base64"
+        }
+      ],
+      "outcome": {
+        "rejected": true,
+        "copiesSent": 0
+      }
+    },
+    {
+      "id": "resend-skip-preflight-all-at-once",
+      "scenario": "resend",
+      "args": {
+        "preflight": false,
+        "extras": 2
+      },
+      "calls": [
+        {
+          "n": 1,
+          "host": "extra-a.test",
+          "method": "sendTransaction",
+          "skipPreflight": true,
+          "maxRetries": 0,
+          "minContextSlot": false,
+          "sameBytes": true,
+          "encoding": "base64"
+        },
+        {
+          "n": 2,
+          "host": "extra-b.test",
+          "method": "sendTransaction",
+          "skipPreflight": true,
+          "maxRetries": 0,
+          "minContextSlot": false,
+          "sameBytes": true,
+          "encoding": "base64"
+        },
+        {
+          "n": 3,
+          "host": "primary.test",
+          "method": "sendTransaction",
+          "skipPreflight": true,
+          "maxRetries": 0,
+          "minContextSlot": false,
+          "sameBytes": true,
+          "encoding": "base64"
+        }
+      ],
+      "outcome": {
+        "answerStatus": 200,
+        "copiesOnWireBeforePrimaryAnswered": 2,
+        "sameBytes": true,
+        "answerIsPrimarys": true
+      }
+    },
+    {
+      "id": "resend-primary-refuses-copies-still-leave",
+      "scenario": "resend",
+      "args": {
+        "preflight": false,
+        "primary": "refuses"
+      },
+      "calls": [
+        {
+          "n": 1,
+          "host": "extra-a.test",
+          "method": "sendTransaction",
+          "skipPreflight": true,
+          "maxRetries": 0,
+          "minContextSlot": false,
+          "sameBytes": true,
+          "encoding": "base64"
+        },
+        {
+          "n": 2,
+          "host": "primary.test",
+          "method": "sendTransaction",
+          "skipPreflight": true,
+          "maxRetries": 0,
+          "minContextSlot": false,
+          "sameBytes": true,
+          "encoding": "base64"
+        }
+      ],
+      "outcome": {
+        "answerStatus": 200,
+        "copyFailures": [],
+        "copiesSent": 1,
+        "answerIsPrimarys": true
+      }
+    },
+    {
+      "id": "copy-http-429",
+      "scenario": "copy-failure",
+      "args": {
+        "preflight": true,
+        "failing": "first copy"
+      },
+      "calls": [
+        {
+          "n": 1,
+          "host": "primary.test",
+          "method": "sendTransaction",
+          "skipPreflight": false,
+          "maxRetries": 5,
+          "minContextSlot": true,
+          "sameBytes": true,
+          "encoding": "base64"
+        },
+        {
+          "n": 2,
+          "host": "extra-a.test",
+          "method": "sendTransaction",
+          "skipPreflight": true,
+          "maxRetries": 5,
+          "minContextSlot": false,
+          "sameBytes": true,
+          "encoding": "base64"
+        },
+        {
+          "n": 3,
+          "host": "extra-b.test",
+          "method": "sendTransaction",
+          "skipPreflight": true,
+          "maxRetries": 5,
+          "minContextSlot": false,
+          "sameBytes": true,
+          "encoding": "base64"
+        }
+      ],
+      "outcome": {
+        "answerStatus": 200,
+        "copyFailures": [
+          {
+            "index": 0,
+            "reason": "http 429"
+          }
+        ],
+        "answerIsPrimarys": true,
+        "otherCopySent": true
+      }
+    },
+    {
+      "id": "copy-rpc-refusal",
+      "scenario": "copy-failure",
+      "args": {
+        "preflight": true,
+        "failing": "first copy"
+      },
+      "calls": [
+        {
+          "n": 1,
+          "host": "primary.test",
+          "method": "sendTransaction",
+          "skipPreflight": false,
+          "maxRetries": 5,
+          "minContextSlot": true,
+          "sameBytes": true,
+          "encoding": "base64"
+        },
+        {
+          "n": 2,
+          "host": "extra-a.test",
+          "method": "sendTransaction",
+          "skipPreflight": true,
+          "maxRetries": 5,
+          "minContextSlot": false,
+          "sameBytes": true,
+          "encoding": "base64"
+        },
+        {
+          "n": 3,
+          "host": "extra-b.test",
+          "method": "sendTransaction",
+          "skipPreflight": true,
+          "maxRetries": 5,
+          "minContextSlot": false,
+          "sameBytes": true,
+          "encoding": "base64"
+        }
+      ],
+      "outcome": {
+        "answerStatus": 200,
+        "copyFailures": [
+          {
+            "index": 0,
+            "reason": "rpc -32002"
+          }
+        ],
+        "answerIsPrimarys": true,
+        "otherCopySent": true
+      }
+    },
+    {
+      "id": "copy-rpc-error-without-code",
+      "scenario": "copy-failure",
+      "args": {
+        "preflight": true,
+        "failing": "first copy"
+      },
+      "calls": [
+        {
+          "n": 1,
+          "host": "primary.test",
+          "method": "sendTransaction",
+          "skipPreflight": false,
+          "maxRetries": 5,
+          "minContextSlot": true,
+          "sameBytes": true,
+          "encoding": "base64"
+        },
+        {
+          "n": 2,
+          "host": "extra-a.test",
+          "method": "sendTransaction",
+          "skipPreflight": true,
+          "maxRetries": 5,
+          "minContextSlot": false,
+          "sameBytes": true,
+          "encoding": "base64"
+        },
+        {
+          "n": 3,
+          "host": "extra-b.test",
+          "method": "sendTransaction",
+          "skipPreflight": true,
+          "maxRetries": 5,
+          "minContextSlot": false,
+          "sameBytes": true,
+          "encoding": "base64"
+        }
+      ],
+      "outcome": {
+        "answerStatus": 200,
+        "copyFailures": [
+          {
+            "index": 0,
+            "reason": "rpc error"
+          }
+        ],
+        "answerIsPrimarys": true,
+        "otherCopySent": true
+      }
+    },
+    {
+      "id": "copy-network",
+      "scenario": "copy-failure",
+      "args": {
+        "preflight": true,
+        "failing": "first copy"
+      },
+      "calls": [
+        {
+          "n": 1,
+          "host": "primary.test",
+          "method": "sendTransaction",
+          "skipPreflight": false,
+          "maxRetries": 5,
+          "minContextSlot": true,
+          "sameBytes": true,
+          "encoding": "base64"
+        },
+        {
+          "n": 2,
+          "host": "extra-a.test",
+          "method": "sendTransaction",
+          "skipPreflight": true,
+          "maxRetries": 5,
+          "minContextSlot": false,
+          "sameBytes": true,
+          "encoding": "base64"
+        },
+        {
+          "n": 3,
+          "host": "extra-b.test",
+          "method": "sendTransaction",
+          "skipPreflight": true,
+          "maxRetries": 5,
+          "minContextSlot": false,
+          "sameBytes": true,
+          "encoding": "base64"
+        }
+      ],
+      "outcome": {
+        "answerStatus": 200,
+        "copyFailures": [
+          {
+            "index": 0,
+            "reason": "network"
+          }
+        ],
+        "answerIsPrimarys": true,
+        "otherCopySent": true
+      }
+    },
+    {
+      "id": "copy-timeout",
+      "scenario": "copy-failure",
+      "args": {
+        "preflight": true,
+        "failing": "first copy"
+      },
+      "calls": [
+        {
+          "n": 1,
+          "host": "primary.test",
+          "method": "sendTransaction",
+          "skipPreflight": false,
+          "maxRetries": 5,
+          "minContextSlot": true,
+          "sameBytes": true,
+          "encoding": "base64"
+        },
+        {
+          "n": 2,
+          "host": "extra-a.test",
+          "method": "sendTransaction",
+          "skipPreflight": true,
+          "maxRetries": 5,
+          "minContextSlot": false,
+          "sameBytes": true,
+          "encoding": "base64"
+        },
+        {
+          "n": 3,
+          "host": "extra-b.test",
+          "method": "sendTransaction",
+          "skipPreflight": true,
+          "maxRetries": 5,
+          "minContextSlot": false,
+          "sameBytes": true,
+          "encoding": "base64"
+        }
+      ],
+      "outcome": {
+        "answerStatus": 200,
+        "copyFailures": [
+          {
+            "index": 0,
+            "reason": "timeout"
+          }
+        ],
+        "answerIsPrimarys": true,
+        "otherCopySent": true
+      }
+    },
+    {
+      "id": "copy-slow-does-not-delay-the-answer",
+      "scenario": "copy-failure",
+      "args": {
+        "preflight": true,
+        "copyTimeoutMs": 300
+      },
+      "calls": [
+        {
+          "n": 1,
+          "host": "primary.test",
+          "method": "sendTransaction",
+          "skipPreflight": false,
+          "maxRetries": 5,
+          "minContextSlot": true,
+          "sameBytes": true,
+          "encoding": "base64"
+        },
+        {
+          "n": 2,
+          "host": "extra-a.test",
+          "method": "sendTransaction",
+          "skipPreflight": true,
+          "maxRetries": 5,
+          "minContextSlot": false,
+          "sameBytes": true,
+          "encoding": "base64"
+        }
+      ],
+      "outcome": {
+        "answerStatus": 200,
+        "answeredBeforeCopySettled": true
+      }
+    },
+    {
+      "id": "shape-single-send",
+      "scenario": "shape",
+      "args": {
+        "shape": "single-send"
+      },
+      "outcome": {
+        "fansOut": true
+      }
+    },
+    {
+      "id": "shape-batch-of-sends",
+      "scenario": "shape",
+      "args": {
+        "shape": "batch-of-sends"
+      },
+      "outcome": {
+        "fansOut": false
+      }
+    },
+    {
+      "id": "shape-other-method",
+      "scenario": "shape",
+      "args": {
+        "shape": "other-method"
+      },
+      "outcome": {
+        "fansOut": false
+      }
+    },
+    {
+      "id": "shape-simulate-is-not-a-send",
+      "scenario": "shape",
+      "args": {
+        "shape": "simulate-is-not-a-send"
+      },
+      "outcome": {
+        "fansOut": false
+      }
+    },
+    {
+      "id": "shape-not-an-object",
+      "scenario": "shape",
+      "args": {
+        "shape": "not-an-object"
+      },
+      "outcome": {
+        "fansOut": false
+      }
+    },
+    {
+      "id": "send-without-bytes-no-copy",
+      "scenario": "shape",
+      "args": {
+        "shape": "send without bytes"
+      },
+      "calls": [
+        {
+          "n": 1,
+          "host": "primary.test",
+          "method": "sendTransaction",
+          "minContextSlot": false,
+          "sameBytes": false
+        }
+      ],
+      "outcome": {
+        "copiesSent": 0
+      }
+    },
+    {
+      "id": "proxy-fans-out-only-on-request",
+      "scenario": "source-pin",
+      "args": {
+        "file": "apps/api/src/routes/rpc.ts"
+      },
+      "outcome": {
+        "found": true
+      }
+    },
+    {
+      "id": "proxy-answer-is-the-primarys",
+      "scenario": "source-pin",
+      "args": {
+        "file": "apps/api/src/routes/rpc.ts"
+      },
+      "outcome": {
+        "found": true
+      }
+    },
+    {
+      "id": "send-url-is-the-proxy-with-fanout",
+      "scenario": "source-pin",
+      "args": {
+        "file": "apps/frontend/src/hooks/tokens/swap-send.ts"
+      },
+      "outcome": {
+        "found": true
+      }
+    },
+    {
+      "id": "send-url-only-for-the-proxy-path",
+      "scenario": "source-pin",
+      "args": {
+        "file": "apps/frontend/src/hooks/tokens/swap-send.ts"
+      },
+      "outcome": {
+        "found": true
+      }
+    },
+    {
+      "id": "only-the-send-is-redirected",
+      "scenario": "source-pin",
+      "args": {
+        "file": "apps/frontend/src/hooks/tokens/swap-send.ts"
+      },
+      "outcome": {
+        "found": true
+      }
+    },
+    {
+      "id": "quote-warm-draws-nothing",
+      "scenario": "source-pin",
+      "args": {
+        "file": "apps/frontend/src/components/trade/quick-buy-button.tsx"
+      },
+      "outcome": {
+        "found": true
+      }
+    },
+    {
+      "id": "quote-warm-never-buys",
+      "scenario": "source-pin",
+      "args": {
+        "file": "apps/frontend/src/components/trade/quick-buy-button.tsx"
+      },
+      "outcome": {
+        "found": false
+      }
+    },
+    {
+      "id": "press-on-the-button-starts-the-quote",
+      "scenario": "source-pin",
+      "args": {
+        "file": "apps/frontend/src/components/trade/roster-board.tsx"
+      },
+      "outcome": {
+        "found": true
+      }
+    },
+    {
+      "id": "signed-out-press-warms-nothing",
+      "scenario": "source-pin",
+      "args": {
+        "file": "apps/frontend/src/components/trade/roster-board.tsx"
+      },
+      "outcome": {
+        "found": true
+      }
+    }
+  ]
+}

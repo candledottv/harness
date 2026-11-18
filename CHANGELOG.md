@@ -30,6 +30,18 @@ Candle's CLI (BE-3923) now starts `candle swap`'s three independent reads togeth
 - **A private RPC:** a TEE swap's local simulation reads only from the RPC the flag, then the variable, then the profile names (the public endpoint only when none is set), and only its host is shown; an RPC that isn't https is refused as usage before any request is built, and is never echoed.
 - Every code in the recording is one the trade path already maps. Nothing in the Candle Harness changes: it runs `candle swap` as before, and the CLI release pin and the runtime minimum don't move.
 
+
+### The web swap's second RPC and quick-buy prefetch
+
+Candle's web app (BE-3925) now presses the quick-buy quote early and sends a signed swap through more than one RPC. Neither is a CLI, MCP or SDK change: source is candle-monorepo `be55c5f90` (#3989), a **staging build** whose CLI says 0.13.31, MCP 0.10.36 and SDK 0.6.25, the versions npm already has. There is no release to pin; this section is a draft, and says so, until Candle ships the change to production.
+
+- **Forty offline scenarios** (`scripts/read-fanout-source.ts`, `test/fixtures/candle-fanout-source.json`) run the API's own send fan-out module against stand-ins for every endpoint. Every fetch is intercepted; no address, key, endpoint or signature is real.
+- **Which endpoints:** unset on a deployed instance is Solana's public endpoint, unset locally is none, blank is none; an entry that is not https, carries userinfo, repeats or is the primary is dropped, and the list stops at four.
+- **With preflight, the primary first:** copies leave only after the primary answered with a signature, with the same bytes and no second simulation, so a refused send still means nothing was sent. An error, an unreadable answer or no answer sends no copy.
+- **A resend that skips preflight goes everywhere at once.** The caller's answer is always the primary's, unchanged; a copy never delays it, and one that fails is reported by a short class (`http 429`, `rpc -32002`, `timeout`, `network`), never an endpoint or an error text.
+- **One plain `sendTransaction` only:** a batch, a read or a simulation never fans out, and no tip-paid sender is a target.
+- **The web side is pinned as source text:** the proxy is asked for by address, only the send is redirected, and a signed-in press on an unarmed row starts the quote but never buys. A browser run is not part of this.
+
 ## 0.6.4 (unreleased)
 
 Own-balance transfers on Hyperliquid (BE-3765), as Candle's CLI, MCP server and SDK take them: USDC between a wallet's main perps balance and a builder dex, never to another address. Source is candle-monorepo `ceda02328` (#3928), a **staging build**: the CLI there still says 0.13.30, its MCP server 0.10.35 and the SDK 0.6.24, the same versions as npm, which doesn't have the transfer commands yet. Every recording below is made against that commit, not a published package. When Candle publishes versions that carry it, the fixtures are re-read at that release and these numbers move. The source/build version is 0.6.4; publishing remains a separate release step.
