@@ -188,7 +188,9 @@ const STAKE_NOTE = "From the embedded wallet: candle_stake, candle_unstake or ca
 const LP_HELD = "Candle serves LP now (LP_ENABLED, on since 2026-11-06), but no key preset grants lp:write yet, which these cards need. candle-harness doctor says where LP stands."
 const STAKE_ROW = (stops: boolean): CardRow => ({ kind: "stake", idFlag: "--client-stake-id", readBack: "rerun", stops, wallet: "tee" })
 /** Why own-balance funding on Hyperliquid is still coming: it signs a typed action, which a card doesn't yet run. */
-export const TRANSFER_LATER = "Moving USDC between this wallet's own main perps and a builder dex isn't a card in the Candle Harness yet. In your own terminal, candle perps transfer --to-dex or --from-dex shows the amount and both balances before it asks, and only ever moves money to the wallet itself."
+/** The CLI release that publishes the transfer commands (monorepo #3977). The draft harness PR that pins this waits on npm carrying it. */
+export const TRANSFER_CLI_VERSION = "0.13.31"
+export const TRANSFER_LATER = `Moving USDC between this wallet's own main perps and a builder dex isn't a card in the Candle Harness yet. In your own terminal (CLI ${TRANSFER_CLI_VERSION} or newer), candle perps transfer --to-dex or --from-dex shows the amount and both balances before it asks, and only ever moves money to the wallet itself.`
 
 /** Why a Hyperliquid spot write is still coming: the CLI shows the pair, Hyperliquid's spot fee and Candle's builder fee (sells only) before its own confirm. */
 export const SPOT_LATER = "Hyperliquid spot orders aren't cards in the Candle Harness yet. In your own terminal the CLI shows the pair, Hyperliquid's spot fee and Candle's builder fee (on sells only) before it asks."

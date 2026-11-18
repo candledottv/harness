@@ -1,15 +1,17 @@
 // Own-balance transfers on Hyperliquid (BE-3765, SendAsset only: main perps <-> a builder dex), as Candle's
 // source takes them: the transfer check every package ships, `candle perps transfer`, the MCP tool and the
 // SDK method, recorded offline from one exact commit (scripts/read-transfer-source.ts), and how candle_cli
-// routes the command. Perps <-> spot is BE-3864 and is not covered. The commit is a staging build: the
-// published CLI 0.13.30, MCP 0.10.35 and SDK 0.6.24 predate it.
+// routes the command. Perps <-> spot is BE-3864 and is not covered. Since BE-3910 the recording is the
+// release head #3977 (cccd02f7): CLI 0.13.31, MCP 0.10.36, SDK 0.6.25, the versions that publish the
+// transfer commands. This harness change stays a draft PR until npm carries CLI 0.13.31.
 import { describe, expect, test } from "bun:test"
 import perps from "../../test/fixtures/candle-perps-source.json"
 import transfer from "../../test/fixtures/candle-transfer-source.json"
 import tools from "../../test/fixtures/candle-tools.json"
+import { PRE_BUILD_CODES } from "./cli-trade"
 import { catalogueFor } from "./cli-catalogue"
 import { classify } from "./classify"
-import { rowFor, SOURCE, TRANSFER_LATER } from "./cli-table"
+import { rowFor, SOURCE, TRANSFER_CLI_VERSION, TRANSFER_LATER } from "./cli-table"
 import { resolveCall } from "./cli-tool"
 
 type Row = { id: string; surface: string; evidence?: string; args: Record<string, any>; requests?: { method: string; host?: string; path: string; body?: Record<string, any> }[]; outcome: any }
@@ -24,15 +26,16 @@ const ctx = { defaultAgent: "momentum", agents: new Set(["momentum"]) }
 const resolve = (subcommand: string, args: string[]) => resolveCall({ command: "perps", subcommand, args }, ctx)
 const SIGN = (q: { path: string }) => q.path.endsWith("/sign")
 
-test("the recording names the exact staging build and agrees with the other source fixtures", () => {
-  expect(transfer.source).toMatchObject({ repo: "candledottv/candle-monorepo", commit: "ceda02328bd91d2160ebf76942e92a1706f323c2", versions: { cli: "0.13.30", mcp: "0.10.35", sdk: "0.6.24" } })
-  expect(transfer.source.commit).toBe(SOURCE.source.commit)
-  expect(transfer.source.commit).toBe(tools.source.commit)
-  expect(transfer.source.commit).toBe(perps.source.commit)
+test("the recording names the exact release build and agrees with the other source fixtures", () => {
+  expect(transfer.source).toMatchObject({ repo: "candledottv/candle-monorepo", commit: "cccd02f77719331cb0bcb24d08e3cf6a77fbf805", versions: { cli: "0.13.31", mcp: "0.10.36", sdk: "0.6.25" } })
+  // The other source fixtures stay at #3928's merge (ceda0232): the release head only bumped versions.
+  for (const other of [SOURCE, tools, perps]) expect(other.source.commit).toBe("ceda02328bd91d2160ebf76942e92a1706f323c2")
   // One transfer check, copied into the three packages: the recorder refuses to run if they differ.
   expect(transfer.source.transferCheck.files).toEqual(["packages/sdk/src/hyperliquid-transfer.ts", "packages/mcp/src/hyperliquid-transfer.ts", "packages/cli/src/hyperliquid-transfer.ts"])
   expect(transfer.source.transferCheck.sha256).toMatch(/^[0-9a-f]{64}$/)
-  expect(rows).toHaveLength(67)
+  // The pin this draft PR waits on: the CLI version the release head publishes.
+  expect(TRANSFER_CLI_VERSION).toBe(transfer.source.versions.cli)
+  expect(rows).toHaveLength(72)
   expect(new Set(rows.map((r) => r.id)).size).toBe(rows.length)
 })
 
@@ -41,9 +44,9 @@ test("nothing in the recording is a real address, key or account figure", () => 
   for (const hex of text.match(/0x[0-9a-fA-F]{40}\b/g) ?? []) expect(hex).toMatch(/^0x0{39}[0-9]$/)
   expect(text).not.toContain("fixture-only-not-a-key")
   expect(text).not.toMatch(/BEGIN [A-Z ]*PRIVATE KEY/)
-  // Neither the CLI nor the SDK is allowed a signature or a venue call except the one MCP full-flow row, which the recorder answers itself.
+  // Neither the CLI nor the SDK is allowed a signature or a venue call except the stand-in rows, which the recorder answers itself.
   for (const r of rows) {
-    if (r.id === "mcp-to-dex-full-flow-synthetic-venue") continue
+    if (["mcp-to-dex-full-flow-synthetic-venue", "cli-to-dex-full-flow-synthetic-venue", "cli-from-dex-all-full-flow-synthetic-venue", "cli-positions-read-back", "cli-withdraw-sweep-read-back"].includes(r.id)) continue
     expect((r.requests ?? []).some((q) => q.host === "api.hyperliquid.xyz"), r.id).toBe(false)
   }
   expect(row("mcp-to-dex-full-flow-synthetic-venue").evidence).toContain("stand-in")
@@ -253,5 +256,58 @@ describe("candle_perps_transfer and the SDK's perpsTransfer()", () => {
     expect(row("sdk-refused-foreign-destination-build").outcome.message).toBe("perpsTransfer: refused build: destination is not this wallet")
     expect(row("sdk-refused-other-dex-in-build").outcome.message).toBe("perpsTransfer: refused build: transfer identity differs")
     for (const r of ids("sdk-refused-")) expect(r.requests!.some(SIGN)).toBe(false)
+  })
+})
+
+describe("the happy path and the read-backs (the release recording, BE-3910)", () => {
+  const pathsOf = (id: string) => row(id).requests!.map((q) => `${q.host === "api.hyperliquid.xyz" ? "venue:" : ""}${q.path}`)
+  const at = (paths: string[], needle: string) => paths.findIndex((p) => p === needle || p.endsWith(needle))
+
+  test("with --yes the whole flow runs on stand-ins: build, check, relay, venue, acknowledgement, and the move is announced", () => {
+    for (const [id, notice] of [
+      ["cli-to-dex-full-flow-synthetic-venue", "Moved 5 USDC: Main perps -> builder dex xyz."],
+      ["cli-from-dex-all-full-flow-synthetic-venue", "Moved 5 USDC: builder dex xyz -> Main perps."],
+    ] as const) {
+      const r = row(id)
+      expect(r.outcome).toMatchObject({ exitCode: 0, notice })
+      expect(r.evidence).toContain("stand-in")
+      const paths = pathsOf(id)
+      expect(at(paths, "/agent/perps/transfer")).toBeLessThan(at(paths, "/wallets/wallet/sign"))
+      expect(at(paths, "/wallets/wallet/sign")).toBeLessThan(at(paths, "venue:/exchange"))
+      expect(at(paths, "venue:/exchange")).toBeLessThan(at(paths, "/perps/transfer/submitted"))
+    }
+  })
+
+  test("the read-backs: the transfer's status, the main perps balance it moved, and the balances a withdrawal sweep leaves behind", () => {
+    const status = row("cli-status-read-back")
+    expect(status.outcome).toMatchObject({ exitCode: 0, body: { id: "t1", status: "submitted", amountUsdc: "5", mode: "toDex" } })
+    expect(status.requests).toEqual([{ method: "GET", host: "api.test", path: "/api/v1/agent/perps/transfer/t1" }])
+    expect(row("cli-positions-read-back").outcome).toMatchObject({ exitCode: 0, withdrawable: "Withdrawable now 12 USDC" })
+    const sweep = row("cli-withdraw-sweep-read-back")
+    expect(sweep.outcome).toMatchObject({ exitCode: 0, retained: 'Retained balances [{"dex":"xyz","amountUsdc":"40"}]' })
+    // The sweep's own move is submitted before the withdrawal asks again, and no quote is ever reached.
+    const paths = pathsOf("cli-withdraw-sweep-read-back")
+    expect(at(paths, "venue:/exchange")).toBeLessThan(paths.lastIndexOf("/api/v1/agent/perps/withdraw"))
+    expect(paths.some((p) => p.endsWith("/withdraw/authorize"))).toBe(false)
+  })
+
+  test("every refusal code the transfer flow can answer with is mapped in PRE_BUILD_CODES, and none is unknown", () => {
+    // Everything that refuses before a signature exists, from the source's own routes and checks.
+    const beforeSignature = [
+      "PERPS_BUILD_REFUSED", "PERPS_EMBEDDED_DISABLED", "PERPS_TRANSFER_UNSUPPORTED_NETWORK", "PERPS_TRANSFER_UNVERIFIED",
+      "PERPS_TRANSFER_DEX_REFUSED", "PERPS_TRANSFER_NOTHING_TO_MOVE", "PERPS_TRANSFER_EXCEEDS_SOURCE", "SIGNER_UNAVAILABLE",
+    ]
+    for (const code of beforeSignature) expect(PRE_BUILD_CODES.has(code), code).toBe(true)
+    // These can only follow a signature, so they are never a pre-build refusal.
+    for (const code of ["PERPS_VENUE_REFUSED", "PERPS_SUBMIT_FAILED"]) expect(PRE_BUILD_CODES.has(code), code).toBe(false)
+    // No unknown codes: everything the recording observed refuse is one of the known sets.
+    const known = new Set([...PRE_BUILD_CODES, "PERPS_VENUE_REFUSED", "PERPS_SUBMIT_FAILED", "PERPS_TRANSFER_NOT_FOUND", "MCP_VALIDATION", "INVALID_RESPONSE"])
+    const observed = new Set<string>()
+    for (const r of rows) {
+      for (const code of [r.outcome?.body?.code, r.outcome?.code]) if (typeof code === "string" && code !== "INVALID_RESPONSE") observed.add(code)
+      if (r.outcome?.body?.code === "PERPS_BUILD_REFUSED") observed.add("PERPS_BUILD_REFUSED")
+    }
+    expect(observed.has("USAGE")).toBe(true)
+    for (const code of observed) expect(known.has(code), code).toBe(true)
   })
 })
