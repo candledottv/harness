@@ -358,6 +358,7 @@ const ROWS: readonly RowInput[] = [
   }),
   // A published agent's open positions (0.13.9), keyless.
   mcp("agent positions", "candle_get_agent_positions"),
+  mcp("agent round", "candle_get_agent_perp_round"),
   mcp("agent post", "candle_list_agent_posts"),
   mcp("agent post list", "candle_list_agent_posts"),
   r("agent post create", "card", "card", "agent", { via: "candle_create_post", note: "Use candle_create_post: a one-press card, public." }),

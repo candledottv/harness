@@ -3,8 +3,8 @@
   "source": {
     "repo": "candledottv/candle-monorepo",
     "path": "packages/cli/src",
-    "commit": "940055a9819283d721a313e9e39003f566663e6f",
-    "cliVersion": "0.13.28"
+    "commit": "578db6462d65842c0fdbaf08a37aedf405decee5",
+    "cliVersion": "0.13.29"
   },
   "aliases": {
     "wallet": "wallets"
@@ -91,7 +91,7 @@
       "summary": "Quote, confirm and swap on Solana or Hood, bridge between them; read an operation by id",
       "rows": [
         {
-          "invocation": "<from> <to> --amount <n>|--percent <n> --wallet <tee> [--to <tee>] [--wait]",
+          "invocation": "<from> <to> --amount <n>|--percent <n> --wallet <tee> [--to <tee>] [--wait] [--hide]",
           "description": "Quote, confirm and swap on Solana or Hood, or bridge between them"
         },
         {
@@ -169,12 +169,12 @@
       "summary": "Trade Hyperliquid perpetuals from this key's EVM TEE wallet",
       "rows": [
         {
-          "invocation": "markets [--sort <volume|oi|funding|change|name>] [--limit <n>] [--all]",
-          "description": "List live main-perp markets directly from Hyperliquid; any Candle agent key required"
+          "invocation": "markets [--sort <volume|oi|funding|change|name>] [--limit <n>] [--all] [--dex <name|all>]",
+          "description": "List live perp markets directly from Hyperliquid (main exchange by default; --dex for a builder dex); any Candle agent key required"
         },
         {
           "invocation": "market <coin>",
-          "description": "Market detail, margin tiers, impact prices and precision rules"
+          "description": "Market detail, margin tiers, impact prices and precision rules; a builder-dex market is dex:COIN (xyz:TSLA) and prints its dex, oracle, deployer, margin mode and fee"
         },
         {
           "invocation": "book <coin> [--depth <1-20>] [--sig-figs <2-5>]",
@@ -329,7 +329,11 @@
         },
         {
           "invocation": "positions <profile-id|slug>",
-          "description": "A published agent's open positions, spot and Hyperliquid perps, with amounts; under $1 hidden. No key"
+          "description": "A published agent's open positions, spot and Hyperliquid perps, with amounts; under $1 hidden; its open limit and take-profit / stop orders ride beside any perp. No key"
+        },
+        {
+          "invocation": "round <profile-id|slug> <round-id|open:COIN>",
+          "description": "One perp round of a published agent, open or closed: fills, funding, fees (Hyperliquid and Candle builder fee apart), return on margin, outcome. No key"
         }
       ]
     },
@@ -1059,6 +1063,7 @@
         ],
         "boolean": [
           "--dry-run",
+          "--hide",
           "--wait",
           "--yes"
         ],
@@ -1231,6 +1236,7 @@
         "boolean": [
           "--check",
           "--dry-run",
+          "--hide",
           "--require-fee-wallet",
           "--yes"
         ],
@@ -1405,6 +1411,24 @@
         "value": [
           "--kind"
         ],
+        "boolean": [
+          "--orders"
+        ],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "none",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
+    },
+    {
+      "command": "agent",
+      "subcommand": "round",
+      "handler": "agentRound",
+      "file": "commands/agent-round.ts",
+      "flags": {
+        "value": [],
         "boolean": [],
         "path": [],
         "pathPositionals": []
@@ -2331,6 +2355,7 @@
         "value": [
           "--count",
           "--depth",
+          "--dex",
           "--end",
           "--interval",
           "--limit",
@@ -2357,6 +2382,7 @@
         "value": [
           "--count",
           "--depth",
+          "--dex",
           "--end",
           "--interval",
           "--limit",
@@ -2383,6 +2409,7 @@
         "value": [
           "--count",
           "--depth",
+          "--dex",
           "--end",
           "--interval",
           "--limit",
@@ -2409,6 +2436,7 @@
         "value": [
           "--count",
           "--depth",
+          "--dex",
           "--end",
           "--interval",
           "--limit",
