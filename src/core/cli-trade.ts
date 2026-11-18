@@ -67,6 +67,8 @@ export function teeSwapArgs(input: {
   wallet: string
   opId: string
   slippageBps?: number
+  /** The order stays out of Candle's public activity stream: `--hide` (CLI 0.13.30's swap; an older candle refuses it as an unknown flag, so it never runs public). */
+  hide?: boolean
 }): string[] {
   const sizing = "amount" in input.sizing ? ["--amount", input.sizing.amount] : ["--percent", String(input.sizing.percent)]
   return [
@@ -79,9 +81,17 @@ export function teeSwapArgs(input: {
     "--client-trade-id",
     input.opId,
     ...(input.slippageBps !== undefined ? ["--slippage-bps", String(input.slippageBps)] : []),
+    ...(input.hide ? ["--hide"] : []),
     "--yes",
   ]
 }
+
+/** The CLI's answer to a flag it doesn't have (cli/src/args.ts): `--hide` on a candle older than the swap that takes it. */
+export const isHideUnknown = (body: Record<string, unknown> | undefined): boolean => body?.code === "USAGE" && typeof body.message === "string" && /Unknown flag: --hide\b/.test(body.message)
+
+/** Said when the user's candle predates `swap --hide`: the order wasn't placed, so nothing went public. */
+export const HIDE_NEEDS_NEWER_CLI = "This candle CLI doesn't have --hide on swap yet, so it refused the trade. Nothing was sent, and nothing went public. Update the Candle CLI, or ask again without hide."
+
 
 const record = (value: unknown): Record<string, unknown> | undefined =>
   typeof value === "object" && value !== null && !Array.isArray(value) ? (value as Record<string, unknown>) : undefined
@@ -138,6 +148,7 @@ function gasMessage(body: Record<string, unknown>): string {
 
 /** The Candle Harness's own words for the CLI's refusals, where Candle's would mislead. */
 function cliMessage(code: string, body: Record<string, unknown>): string {
+  if (isHideUnknown(body)) return HIDE_NEEDS_NEWER_CLI
   // The CLI appends "use candle swap status <id> before another attempt", which can't work from the
   // user's own terminal: the swap was placed with the agent's key, and a refused attempt isn't stored.
   if (code === "TEE_WALLET_REQUIRED") return "The candle CLI says this key can't pay from that TEE wallet (it isn't bound to this agent's key, or no longer is). Nothing was sent. The Wallets pane lists what each agent can pay from."
@@ -271,7 +282,7 @@ export class CliTrades {
     const p = op.params as unknown as CliTradeParams
     const run = await this.deps.cli.runExact({ agent: p.agent, argv: p.argv, json: true })
     const clean = { ...run, ...(run.json !== undefined ? { json: this.deps.redactor.value(run.json) } : {}) }
-    if (record(clean.json)?.code === "USAGE") {
+    if (record(clean.json)?.code === "USAGE" && !isHideUnknown(record(clean.json))) {
       await this.deps.journal.append({ type: "core.bug", mode: op.mode, agent: op.agent, opId: op.opId, what: "candle swap refused the Candle Harness's argv as USAGE", argv: p.argv })
     }
     const read = needsReadBack(clean) ? await this.read(op) : undefined

@@ -108,6 +108,7 @@ export function cardDetails(card: ViewCard, op?: ViewOperation): string[] {
     ...field("publishes", d.publishes),
     ...field("terms", d.launchTerms),
     ...field("public", d.publicNote),
+    ...field("hidden", d.hidden?.replace(/^hidden: /, "")),
     ...field("re-send", d.resendNote),
     ...field("limits", [d.limits, d.candleKeyLimit].filter(Boolean).join(" · ") || undefined),
     // A card that pays from no wallet of its own (a bot's, a trigger's) names the one it runs on, never "none".

@@ -99,6 +99,16 @@ test("real funds under a paper screen are said in amber; a card in the Candle Ha
   expect(cardDetails(card({}, { modeDiffers: words }))).toContain(`mode      ${words}`)
 })
 
+test("a hidden order says so in amber, whole, and in its details; a public one says nothing", () => {
+  const words = "hidden: Candle keeps this order out of its public activity stream; it still counts in the agent's own record, and the trade is on chain"
+  const lines = cardLines(card({}, { hidden: words }), { now: NOW, focused: false, width: 60 })
+  const amber = lines.filter((l) => l.segs.at(-1)!.fg === C.look).map((l) => textOf(l).replace(/^▌ /, "").trim()).join(" ")
+  expect(amber).toContain(words)
+  expect(cardDetails(card({}, { hidden: words }))).toContain(`hidden    ${words.replace(/^hidden: /, "")}`)
+  expect(texts(card({})).some((l) => l.includes("hidden"))).toBe(false)
+  expect(cardDetails(card({})).some((l) => l.startsWith("hidden"))).toBe(false)
+})
+
 test("a launch card says what it publishes on one line, and terms the agent set in amber, whole", () => {
   const launch = (display: Partial<ViewCard["display"]>) => card({ kind: "launch", tool: "candle_launch_token", side: undefined, params: {} }, { headline: "LAUNCH FMOON", title: "LAUNCH FMOON (Fake Moon)", mint: undefined, gets: undefined, spend: undefined, valueUsd: undefined, why: undefined, publicNote: "public: a new token can't be taken back", ...display })
   const publishes = "links: website fakemoon.example, twitter x.com · image from img.example.com · description: To the fake moon."

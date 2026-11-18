@@ -10,7 +10,7 @@ import type { AgentStatus } from "./agent-status"
 import { BASE_ASSETS } from "./assets"
 import type { ToolOutcome } from "./candle-mcp"
 import type { WalletSetting } from "./autonomy"
-import { type Card, CardBook, type CardBookDeps, CARDS_LIST_BYTES, CLOSED_CARDS_KEPT, hashCard, launchPublishes, launchTerms } from "./cards"
+import { type Card, CardBook, type CardBookDeps, CARDS_LIST_BYTES, CLOSED_CARDS_KEPT, hashCard, hideAsked, launchPublishes, launchTerms } from "./cards"
 import { classify, type Mode } from "./classify"
 import { Journal } from "./journal"
 import { byWalletWithoutCard, DaySpend, KeyHolds, Limits } from "./limits"
@@ -914,6 +914,15 @@ describe("Candle's MCP card tools", () => {
   const launch = (extra: Record<string, unknown> = {}) => ({ name: "Fake Moon", symbol: "FMOON", imageUrl: IMAGE, ...extra })
 
   describe("launches", () => {
+    test("a hidden launch's card says what stays public: Candle shows no name, and the creator wallet is on chain; a public one says nothing", async () => {
+      const s = await setup({ candle: scripted({ "candle_launch_token:dry": launchDryRun() }) })
+      const hidden = await s.propose(launch({ hide: true }), { tool: "candle_launch_token" })
+      expect(s.candleCalls[0]!.args).toMatchObject({ hide: true, dryRun: true })
+      expect(hidden.params.hide).toBe(true)
+      expect(hidden.display.hidden).toBe("hidden: Candle keeps this launch out of its public activity stream and shows no name on it; the creator wallet is still public on chain")
+      expect((await s.propose(launch(), { tool: "candle_launch_token" })).display.hidden).toBeUndefined()
+    })
+
     test("the dry run goes first, as the same call under the card's own id with dryRun: true; the card runs it with dryRun: false", async () => {
       const s = await setup({ candle: scripted({ "candle_launch_token:dry": launchDryRun() }) })
       const card = await s.propose(launch({ clientLaunchId: "agent-picked", dryRun: false }), { tool: "candle_launch_token", reason: "the meme of the week" })
@@ -1502,6 +1511,63 @@ describe("trades with no card", () => {
     const card = await s.propose(small())
     const out = await s.book.runWithoutCard(card, HARNESS)
     expect(out.ran).toBeUndefined()
+  })
+})
+
+describe("an order the agent asks to hide", () => {
+  const TEE = "TeeFake111111111111111111111111111111111111"
+  const teeWallets: CardBookDeps["wallets"] = { payer: (_agent, word) => (word === "tee-one" ? { ok: true, kind: "tee", address: TEE, id: "tee1", label: "tee-one", chain: "solana" } : { ok: true, kind: "embedded", address: WALLET, chain: "solana" }) }
+  const ORDER_WORDS = "hidden: Candle keeps this order out of its public activity stream; it still counts in the agent's own record, and the trade is on chain"
+
+  test("an embedded card keeps hide in its params, and says so; a public one says nothing", async () => {
+    const s = await setup()
+    const card = await s.propose({ ...buy(), hide: true })
+    expect(card.params.hide).toBe(true)
+    expect(card.display.hidden).toBe(ORDER_WORDS)
+    // Read as Candle's MCP server reads it: "true" hides, "false" doesn't.
+    expect((await s.propose({ ...buy("0.04"), hide: "true" })).display.hidden).toBe(ORDER_WORDS)
+    expect((await s.propose({ ...buy("0.03"), hide: false })).display.hidden).toBeUndefined()
+    expect((await s.propose(buy("0.02"))).display.hidden).toBeUndefined()
+  })
+
+  test("a TEE wallet's card carries --hide in the argv it binds, never dropped on the way to candle swap", async () => {
+    const s = await setup({ wallets: teeWallets })
+    const card = await s.propose({ mint: MOON, side: "sell", percent: 50, wallet: "tee-one", hide: true })
+    expect(card.route).toBe("cli")
+    const argv = card.params.argv as string[]
+    expect(argv).toContain("--hide")
+    expect(argv.indexOf("--hide")).toBeLessThan(argv.indexOf("--yes"))
+    expect(card.display.hidden).toBe(ORDER_WORDS)
+    const open = await s.propose({ mint: MOON, side: "sell", percent: 40, wallet: "tee-one" })
+    expect(open.params.argv as string[]).not.toContain("--hide")
+    expect(open.display.hidden).toBeUndefined()
+    // The hash binds the argv, so a card with --hide and one without can't share one.
+    expect(card.cardHash).not.toBe(open.cardHash)
+  })
+
+  test("an unreadable hide is refused before a TEE card is made, never read as public", async () => {
+    const s = await setup({ wallets: teeWallets })
+    for (const hide of ["yes", 2, null, {}]) {
+      const r = await refusal(s.propose({ mint: MOON, side: "sell", percent: 50, wallet: "tee-one", hide }))
+      expect(`${JSON.stringify(hide)}: ${r.code}`).toBe(`${JSON.stringify(hide)}: INVALID_TRADE`)
+    }
+  })
+
+  test("a swap between base assets from a TEE wallet can't be hidden: refused here, as the CLI would", async () => {
+    const s = await setup({ wallets: teeWallets })
+    const r = await refusal(s.propose({ from: "SOL", to: "USDC", amount: "0.01", wallet: "tee-one", hide: true }, { tool: "candle_swap" }))
+    expect(r.code).toBe("INVALID_SWAP")
+    expect(r.message).toContain("can't be hidden")
+    const open = await s.propose({ from: "SOL", to: "USDC", amount: "0.01", wallet: "tee-one", hide: false }, { tool: "candle_swap" })
+    expect(open.params.argv as string[]).not.toContain("--hide")
+  })
+})
+
+describe("hideAsked", () => {
+  test("reads hide as Candle's MCP server does, and anything else as unreadable", () => {
+    for (const v of [true, "true", 1, "1"]) expect(hideAsked(v)).toBe(true)
+    for (const v of [undefined, false, "false", 0, "0"]) expect(hideAsked(v)).toBe(false)
+    for (const v of ["yes", 2, null, {}, []]) expect(hideAsked(v)).toBeNull()
   })
 })
 

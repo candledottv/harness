@@ -99,6 +99,11 @@ export interface CardDisplay {
   preview?: string
   /** A public action says so before the press: a launch, a post, a profile edit. */
   publicNote?: string
+  /**
+   * The order asked to stay out of Candle's public activity stream (`hide`), in words: what it keeps out, and
+   * what stays public anyway. Display only: the params, or a TEE card's `--hide`, are in the hash.
+   */
+  hidden?: string
   /** The limits line, set only when the trade is near a limit, or the core couldn't price it. */
   nearLimit?: string
   /**
@@ -736,6 +741,10 @@ export class CardBook implements CardDesk {
         ...(planned.resendNote ? { resendNote: planned.resendNote } : {}),
         ...(planned.preview ? { preview: planned.preview } : {}),
         ...(planned.publicNote ? { publicNote: planned.publicNote } : {}),
+        ...(() => {
+          const hidden = hiddenWords(kind, planned)
+          return hidden ? { hidden } : {}
+        })(),
         ...(planned.gets ? { gets: planned.gets } : {}),
         ...(planned.sells ? { sells: planned.sells } : {}),
         ...(planned.spend ? { spend: planned.spend } : {}),
@@ -1273,9 +1282,11 @@ export class CardBook implements CardDesk {
       if (asset === undefined) return this.refuse(client, agent, tool, "PAIR_UNKNOWN", `${label} trades against an asset the Candle Harness doesn't know, so it can't be traded from a TEE wallet yet. Nothing was sent.`)
       const slippage = slippageBps(args.maxSlippageBps)
       if (slippage === null) return invalid("maxSlippageBps is a whole number of basis points, from 0 to 10000.")
+      const hide = hideAsked(args.hide)
+      if (hide === null) return invalid("hide is true or false.")
       const sizing = side === "buy" ? { amount: amount! } : percent !== undefined ? { percent: percent as number } : { amount: amount! }
       const [from, to] = side === "buy" ? [asset, mint] : [mint, asset]
-      via = { tee: { address: tee.address, ...(tee.label ? { label: tee.label } : {}) }, cli: teeSwapArgs({ from, to, sizing, wallet: tee.address, opId, ...(slippage !== undefined ? { slippageBps: slippage } : {}) }) }
+      via = { tee: { address: tee.address, ...(tee.label ? { label: tee.label } : {}) }, cli: teeSwapArgs({ from, to, sizing, wallet: tee.address, opId, ...(slippage !== undefined ? { slippageBps: slippage } : {}), ...(hide ? { hide } : {}) }) }
     }
     // Both prices read now, together: a sized buy's asset read is shared, not repeated.
     const [assetPoint, tokenPoint] = await Promise.all([asset ? this.deps.pricing.asset(agent, asset) : undefined, this.deps.pricing.token(agent, market.chain, mint)])
@@ -1478,6 +1489,10 @@ export class CardBook implements CardDesk {
       if (modeFor(client, this.deps.mode()) === "paper") return refuse("NO_PAPER_TEE", "TEE wallets have no paper form; switch to live to swap from one.")
       const slippage = slippageBps(args.maxSlippageBps)
       if (slippage === null) return invalid("maxSlippageBps is a whole number of basis points, from 0 to 10000.")
+      // The CLI hides a token buy or sell only (swap.ts): a swap between base assets is refused there, so here first, in its words.
+      const hide = hideAsked(args.hide)
+      if (hide === null) return invalid("hide is true or false.")
+      if (hide) return invalid("hide applies to a token buy or sell. A swap between base assets can't be hidden from a TEE wallet: ask again without hide. Nothing was sent.")
       via = { tee: { address: payer.address, ...(payer.label ? { label: payer.label } : {}) }, cli: teeSwapArgs({ from, to, sizing: { amount: decimal }, wallet: payer.address, opId, ...(slippage !== undefined ? { slippageBps: slippage } : {}) }) }
     }
     const [fromPoint, toPoint] = await Promise.all([this.deps.pricing.asset(agent, from), this.deps.pricing.asset(agent, to)])
@@ -2041,6 +2056,25 @@ export function slippageShown(kind: CardKind, planned: Pick<Planned, "params" | 
 function slippageBps(value: unknown): number | undefined | null {
   if (value === undefined) return undefined
   return typeof value === "number" && Number.isInteger(value) && value >= 0 && value <= 10_000 ? value : null
+}
+
+/**
+ * Whether an order asks for `hide`, read as Candle's MCP server reads it (packages/mcp/src/hide.ts, hideSchema):
+ * true, "true" or 1 hide it; absent, false, "false" or 0 don't; anything else is unreadable (null), and refused.
+ */
+export function hideAsked(value: unknown): boolean | null {
+  if (value === undefined || value === false || value === "false" || value === 0 || value === "0") return false
+  if (value === true || value === "true" || value === 1 || value === "1") return true
+  return null
+}
+
+/** What a hidden order's card says before the press, or nothing for a public one: an MCP card's `hide`, or a TEE card's `--hide`. */
+export function hiddenWords(kind: CardKind, planned: { params: Record<string, unknown>; cli?: readonly string[] }): string | undefined {
+  const hidden = hideAsked(planned.params.hide) === true || planned.cli?.includes("--hide") === true
+  if (!hidden) return undefined
+  // A hidden launch (design D1 = A): Candle shows no name on it, and the creator wallet stays public on chain.
+  if (kind === "launch") return "hidden: Candle keeps this launch out of its public activity stream and shows no name on it; the creator wallet is still public on chain"
+  return "hidden: Candle keeps this order out of its public activity stream; it still counts in the agent's own record, and the trade is on chain"
 }
 
 const record = (value: unknown): Record<string, unknown> | undefined =>
