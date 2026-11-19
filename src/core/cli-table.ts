@@ -306,7 +306,11 @@ const ROWS: readonly RowInput[] = [
   r("lp claim", "card", "card", "agent", { card: LP_ROW(false) }),
   // Perps: reads through Candle's MCP tools and the statuses; what lowers risk is a card; opening risk and moving funds come later.
   mcp("perps markets", "candle_perps_markets"),
-  mcp("perps market", "candle_perps_market"),
+  // `--agents` is the public read of the market's figures and the published Candle agents in it: candle_get_perp_market.
+  r("perps market", "mcp", "cli", "agent", {
+    mcpTool: "candle_perps_market",
+    note: "Use candle_perps_market for the market's terms, or candle_get_perp_market (--agents) for its figures and the public Candle agents long and short in it: Candle's own tools, and faster.",
+  }),
   mcp("perps book", "candle_perps_book"),
   mcp("perps candles", "candle_perps_candles"),
   mcp("perps orders", "candle_perps_orders"),

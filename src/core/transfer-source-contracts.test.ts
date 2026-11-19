@@ -28,9 +28,9 @@ const SIGN = (q: { path: string }) => q.path.endsWith("/sign")
 
 test("the recording names the exact release build and agrees with the other source fixtures", () => {
   expect(transfer.source).toMatchObject({ repo: "candledottv/candle-monorepo", commit: "cccd02f77719331cb0bcb24d08e3cf6a77fbf805", versions: { cli: "0.13.31", mcp: "0.10.36", sdk: "0.6.25" } })
-  // The other source fixtures are re-read by main at #3925's staging build (c22def12); this transfer
+  // The other source fixtures are re-read by main at #4047's merge (8a08b366); this transfer
   // recording stays pinned at the release head cccd02f7, the versions that publish the transfer commands.
-  for (const other of [SOURCE, tools, perps]) expect(other.source.commit).toBe("c22def120a7c4d8a05bbcb93a5ef2e95672a5abe")
+  for (const other of [SOURCE, tools, perps]) expect(other.source.commit).toBe("8a08b366d541a7b9f439fd6e1a290cb57375d417")
   // One transfer check, copied into the three packages: the recorder refuses to run if they differ.
   expect(transfer.source.transferCheck.files).toEqual(["packages/sdk/src/hyperliquid-transfer.ts", "packages/mcp/src/hyperliquid-transfer.ts", "packages/cli/src/hyperliquid-transfer.ts"])
   expect(transfer.source.transferCheck.sha256).toMatch(/^[0-9a-f]{64}$/)
