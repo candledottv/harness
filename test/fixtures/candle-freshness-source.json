@@ -2,7 +2,7 @@
   "about": "Offline perps freshness contracts from exact merged source. Every time is an hour and minute of one made-up day, and every figure is made up. api-source rows are answers built by Candle's pure perps source (profile bundle, board publish, positions and record composition) from one made-up wallet's stored facts: the provisional read between certified hours, the certified hour that replaces it, and the delayed and unavailable rules. The wallet's address is hashed inside that source and is in no row. mcp, sdk and cli rows read the same positions answer through the registered tool, the SDK and `candle agent positions` over an intercepted fetch. docs rows are the public page's own freshness line (its three copies agree) and the SDK changelog entry, read as text. The database, the perps jobs, the venue and the keyed API route are not executed, and no deployed behavior is claimed.",
   "source": {
     "repo": "candledottv/candle-monorepo",
-    "commit": "c22def120a7c4d8a05bbcb93a5ef2e95672a5abe",
+    "commit": "36d4bf2642244e82deaa690d8d1277d60d8b9021",
     "versions": {
       "cli": "0.13.32",
       "mcp": "0.10.37",
@@ -95,6 +95,7 @@
               "perpsFeesUsd": 0.05,
               "perpsUnrealizedUsd": 10,
               "perpsNetUsd": 9.95,
+              "perpsCoverageFromMs": 0,
               "perpsPartial": false,
               "perpsAsOfMs": 1799748120000,
               "perpsSnapshotId": "ps1_f09f943da81b3c70d11cd4a55be76913"
@@ -104,6 +105,7 @@
             "perpsFeesUsd": 0.05,
             "perpsUnrealizedUsd": 10,
             "perpsNetUsd": 9.95,
+            "perpsCoverageFromMs": 0,
             "perpsPartial": false,
             "perpsAsOfMs": 1799748120000,
             "perpsSnapshotId": "ps1_f09f943da81b3c70d11cd4a55be76913",
@@ -428,6 +430,7 @@
               "perpsFeesUsd": 0.08,
               "perpsUnrealizedUsd": 6,
               "perpsNetUsd": 11.92,
+              "perpsCoverageFromMs": 0,
               "perpsPartial": false,
               "perpsAsOfMs": 1799749320000,
               "perpsSnapshotId": "ps1_e4bd85285c380a9490bf8c112cbbc2ac",
@@ -439,6 +442,7 @@
             "perpsFeesUsd": 0.08,
             "perpsUnrealizedUsd": 6,
             "perpsNetUsd": 11.92,
+            "perpsCoverageFromMs": 0,
             "perpsPartial": false,
             "perpsAsOfMs": 1799749320000,
             "perpsSnapshotId": "ps1_e4bd85285c380a9490bf8c112cbbc2ac",
@@ -771,6 +775,7 @@
               "perpsFeesUsd": 0.08,
               "perpsUnrealizedUsd": 6.5,
               "perpsNetUsd": 12.42,
+              "perpsCoverageFromMs": 0,
               "perpsPartial": false,
               "perpsAsOfMs": 1799749920000,
               "perpsSnapshotId": "ps1_86a07e8ccb4c1a1a61675c5adf631380",
@@ -782,6 +787,7 @@
             "perpsFeesUsd": 0.08,
             "perpsUnrealizedUsd": 6.5,
             "perpsNetUsd": 12.42,
+            "perpsCoverageFromMs": 0,
             "perpsPartial": false,
             "perpsAsOfMs": 1799749920000,
             "perpsSnapshotId": "ps1_86a07e8ccb4c1a1a61675c5adf631380",
@@ -1114,6 +1120,7 @@
               "perpsFeesUsd": 0.08,
               "perpsUnrealizedUsd": 6.5,
               "perpsNetUsd": 12.42,
+              "perpsCoverageFromMs": 0,
               "perpsPartial": false,
               "perpsAsOfMs": 1799749920000,
               "perpsSnapshotId": "ps1_86a07e8ccb4c1a1a61675c5adf631380",
@@ -1125,6 +1132,7 @@
             "perpsFeesUsd": 0.08,
             "perpsUnrealizedUsd": 6.5,
             "perpsNetUsd": 12.42,
+            "perpsCoverageFromMs": 0,
             "perpsPartial": false,
             "perpsAsOfMs": 1799749920000,
             "perpsSnapshotId": "ps1_86a07e8ccb4c1a1a61675c5adf631380",
@@ -1455,6 +1463,7 @@
               "perpsFeesUsd": 0.05,
               "perpsUnrealizedUsd": 10,
               "perpsNetUsd": 9.95,
+              "perpsCoverageFromMs": 0,
               "perpsPartial": false,
               "perpsAsOfMs": 1799748120000,
               "perpsSnapshotId": "ps1_f09f943da81b3c70d11cd4a55be76913"
@@ -1464,6 +1473,7 @@
             "perpsFeesUsd": 0.05,
             "perpsUnrealizedUsd": 10,
             "perpsNetUsd": 9.95,
+            "perpsCoverageFromMs": 0,
             "perpsPartial": false,
             "perpsAsOfMs": 1799748120000,
             "perpsSnapshotId": "ps1_f09f943da81b3c70d11cd4a55be76913",
@@ -1786,6 +1796,7 @@
               "perpsFeesUsd": 0.08,
               "perpsUnrealizedUsd": 5.5,
               "perpsNetUsd": 11.42,
+              "perpsCoverageFromMs": 0,
               "perpsPartial": false,
               "perpsAsOfMs": 1799751720000,
               "perpsSnapshotId": "ps1_69f470cccfdb3b80bcd3a551240fcf60"
@@ -1795,6 +1806,7 @@
             "perpsFeesUsd": 0.08,
             "perpsUnrealizedUsd": 5.5,
             "perpsNetUsd": 11.42,
+            "perpsCoverageFromMs": 0,
             "perpsPartial": false,
             "perpsAsOfMs": 1799751720000,
             "perpsSnapshotId": "ps1_69f470cccfdb3b80bcd3a551240fcf60",
@@ -2119,6 +2131,7 @@
               "perpsFeesUsd": 0.08,
               "perpsUnrealizedUsd": 6,
               "perpsNetUsd": 11.92,
+              "perpsCoverageFromMs": 0,
               "perpsPartial": false,
               "perpsAsOfMs": 1799754120000,
               "perpsSnapshotId": "ps1_65857e6e05e100e9350f7cbbe9e5a849",
@@ -2130,6 +2143,7 @@
             "perpsFeesUsd": 0.08,
             "perpsUnrealizedUsd": 6,
             "perpsNetUsd": 11.92,
+            "perpsCoverageFromMs": 0,
             "perpsPartial": false,
             "perpsAsOfMs": 1799754120000,
             "perpsSnapshotId": "ps1_65857e6e05e100e9350f7cbbe9e5a849",
@@ -2460,6 +2474,7 @@
               "perpsFeesUsd": 0.08,
               "perpsUnrealizedUsd": 5.5,
               "perpsNetUsd": 11.42,
+              "perpsCoverageFromMs": 0,
               "perpsPartial": true,
               "perpsAsOfMs": 1799751720000,
               "perpsSnapshotId": "ps1_69f470cccfdb3b80bcd3a551240fcf60"
@@ -2469,6 +2484,7 @@
             "perpsFeesUsd": 0.08,
             "perpsUnrealizedUsd": 5.5,
             "perpsNetUsd": 11.42,
+            "perpsCoverageFromMs": 0,
             "perpsPartial": true,
             "perpsAsOfMs": 1799751720000,
             "perpsSnapshotId": "ps1_69f470cccfdb3b80bcd3a551240fcf60",
@@ -2769,8 +2785,12 @@
               "losses": 0,
               "counted": 0,
               "perpsPartial": true,
-              "perpsUnavailable": true
-            }
+              "perpsUnavailable": true,
+              "perpsAsOfMs": 1799751720000
+            },
+            "perpsPartial": true,
+            "perpsUnavailable": true,
+            "perpsAsOfMs": 1799751720000
           }
         }
       }
@@ -3025,6 +3045,7 @@
               "perpsFeesUsd": 0.08,
               "perpsUnrealizedUsd": 7.5,
               "perpsNetUsd": 13.36,
+              "perpsCoverageFromMs": 0,
               "perpsPartial": false,
               "perpsAsOfMs": 1799762880000,
               "perpsSnapshotId": "ps1_aca7d4cbef9c57a7da9febe5c833457e",
@@ -3036,6 +3057,7 @@
             "perpsFeesUsd": 0.08,
             "perpsUnrealizedUsd": 7.5,
             "perpsNetUsd": 13.36,
+            "perpsCoverageFromMs": 0,
             "perpsPartial": false,
             "perpsAsOfMs": 1799762880000,
             "perpsSnapshotId": "ps1_aca7d4cbef9c57a7da9febe5c833457e",
@@ -3344,8 +3366,12 @@
               "losses": 0,
               "counted": 0,
               "perpsPartial": true,
-              "perpsUnavailable": true
-            }
+              "perpsUnavailable": true,
+              "perpsAsOfMs": 1799751720000
+            },
+            "perpsPartial": true,
+            "perpsUnavailable": true,
+            "perpsAsOfMs": 1799751720000
           }
         }
       }
@@ -3577,7 +3603,9 @@
               "counted": 0,
               "perpsPartial": true,
               "perpsUnavailable": true
-            }
+            },
+            "perpsPartial": true,
+            "perpsUnavailable": true
           }
         }
       }

@@ -1,0 +1,5363 @@
+{
+  "about": "Offline agent record contracts from exact source. Every time is on three made-up days, and every figure, token and hash is made up. api-source rows are answers built by Candle's pure source (the perps profile bundle, the board publish, the record composition, the round rows and the union of swaps and rounds with its cursor) from one made-up wallet's stored facts, over a stand-in spot record; each also carries the server's best closes and the web's own split of the headline figure, run as the pure function it is. The wallet's address is hashed inside that source and is in no row. api-stub rows are response stand-ins: an older bundle's rows, and refusals carrying the route's own code and words. mcp, mcp-hosted, sdk and cli rows read the same answers through the registered tool, the hosted server's route, the SDK and `candle agent record` over an intercepted fetch; a served answer is kept once, in its api row, and each of those rows names it (`relays`) with the SHA-256 of the canonical JSON of what that surface gave, which the recorder checked is the same answer. docs rows are the public page's own paragraphs (its three copies agree), read as text. The database, the perps jobs, the venue and the keyed API route are not executed, and no deployed behavior is claimed.",
+  "source": {
+    "repo": "candledottv/candle-monorepo",
+    "commit": "36d4bf2642244e82deaa690d8d1277d60d8b9021",
+    "versions": {
+      "cli": "0.13.32",
+      "mcp": "0.10.37",
+      "sdk": "0.6.26"
+    }
+  },
+  "rules": {
+    "staleMs": 7200000,
+    "unavailableMs": 10800000,
+    "pageRows": 500,
+    "roundRowsMax": 200,
+    "topCloses": 5,
+    "unionRows": "all"
+  },
+  "profile": "prof_0123456789abcdef",
+  "firstDay": "2027-01-10",
+  "coverageFrom": "2027-01-10T00:00Z",
+  "rows": [
+    {
+      "id": "record-api",
+      "scenario": "record",
+      "buildAt": "2027-01-12T09:10Z",
+      "surface": "api-source",
+      "says": "Day 2 09:10, the 09:02 hour certified: four closed rounds among six swaps, newest first, one position still open, and the perps figures all present.",
+      "evidence": "pure API source on made-up stored facts, over a stand-in spot record, build id and push cursor; the database, the perps jobs and the keyed route are not executed",
+      "outcome": {
+        "read": {
+          "kind": "certified",
+          "retained": false
+        },
+        "record": {
+          "success": true,
+          "seq": 40,
+          "record": {
+            "profileId": "prof_0123456789abcdef",
+            "name": "Record fixture",
+            "wallet": "fixture-public-owner",
+            "totals": {
+              "realizedNetUsd": 279.62,
+              "feesUsd": 1.5,
+              "wins": 3,
+              "losses": 3,
+              "counted": 6,
+              "unvalued": 0,
+              "bestUsd": 383.25,
+              "worstUsd": -192.34,
+              "unrealizedUsd": 70,
+              "totalPnlUsd": 362.12,
+              "creatorFeesUsd": 12.5,
+              "perpsRealizedUsd": 250,
+              "perpsFundingUsd": -0.4,
+              "perpsFeesUsd": 19.98,
+              "perpsUnrealizedUsd": 30,
+              "perpsNetUsd": 259.62,
+              "perpsCoverageFromMs": 1799539200000,
+              "perpsPartial": false,
+              "perpsAsOfMs": 1799744520000,
+              "perpsSnapshotId": "ps1_a3eae2a1241fadb02749295ff39583d7"
+            },
+            "winRatePct": null,
+            "minClosesForRate": 10,
+            "unrealizedUsd": 70,
+            "totalPnlUsd": 362.12,
+            "creatorFeesUsd": 12.5,
+            "rows": [
+              {
+                "kind": "trade",
+                "signature": "SigFake061111111111111111111111111111111111111111",
+                "side": "buy",
+                "mint": "MoonFake11111111111111111111111111111111111",
+                "chain": "solana",
+                "symbol": "MOON",
+                "timestampMs": 1799737200000,
+                "counted": false,
+                "usdAmount": 120
+              },
+              {
+                "kind": "perp_round",
+                "coin": "DOGE",
+                "side": "long",
+                "leverage": {
+                  "value": 20,
+                  "type": "cross"
+                },
+                "leverageSource": "order",
+                "size": "10000",
+                "entryPx": 0.4,
+                "exitPx": 0.381,
+                "initialMarginUsd": 200,
+                "returnPct": -96.17,
+                "fundingUsd": 0,
+                "feesUsd": 2.34,
+                "durationMs": 5100000,
+                "pnlUsd": -192.34,
+                "liquidated": true,
+                "openedMs": 1799669100000,
+                "closedMs": 1799674200000,
+                "hash": "0x000000000000000000000000000000000000000000000000000001a304f0ffc0",
+                "id": "rnd_916e913b11a54980"
+              },
+              {
+                "kind": "trade",
+                "signature": "SigFake051111111111111111111111111111111111111111",
+                "side": "sell",
+                "mint": "MintFake11111111111111111111111111111111111",
+                "chain": "solana",
+                "symbol": "FAKE",
+                "timestampMs": 1799661600000,
+                "counted": true,
+                "usdAmount": 260,
+                "realizedNetUsd": 60
+              },
+              {
+                "kind": "perp_round",
+                "coin": "SOL",
+                "side": "long",
+                "leverage": null,
+                "leverageSource": null,
+                "size": "50",
+                "entryPx": 180,
+                "exitPx": 183,
+                "initialMarginUsd": null,
+                "returnPct": null,
+                "fundingUsd": 0,
+                "feesUsd": 5.4,
+                "durationMs": 1800000,
+                "pnlUsd": 144.6,
+                "liquidated": false,
+                "openedMs": 1799658600000,
+                "closedMs": 1799660400000,
+                "hash": "0x000000000000000000000000000000000000000000000000000001a3041e6d80",
+                "id": "rnd_18372b268b8287e2"
+              },
+              {
+                "kind": "trade",
+                "signature": "SigFake041111111111111111111111111111111111111111",
+                "side": "sell",
+                "mint": "MoonFake11111111111111111111111111111111111",
+                "chain": "solana",
+                "symbol": "MOON",
+                "timestampMs": 1799599200000,
+                "counted": true,
+                "usdAmount": 90,
+                "realizedNetUsd": -10
+              },
+              {
+                "kind": "perp_round",
+                "coin": "BTC",
+                "side": "short",
+                "leverage": {
+                  "value": 5,
+                  "type": "cross"
+                },
+                "leverageSource": "snapshot",
+                "size": "0.1",
+                "entryPx": 95000,
+                "exitPx": 96000,
+                "initialMarginUsd": 1900,
+                "returnPct": -5.522631578947369,
+                "fundingUsd": 0.8,
+                "feesUsd": 5.73,
+                "durationMs": 8400000,
+                "pnlUsd": -104.93,
+                "liquidated": false,
+                "openedMs": 1799590800000,
+                "closedMs": 1799599200000,
+                "hash": "0x000000000000000000000000000000000000000000000000000001a300789700",
+                "id": "rnd_9343dd8fce66999d"
+              },
+              {
+                "kind": "trade",
+                "signature": "SigFake031111111111111111111111111111111111111111",
+                "side": "buy",
+                "mint": "MoonFake11111111111111111111111111111111111",
+                "chain": "solana",
+                "symbol": "MOON",
+                "timestampMs": 1799582400000,
+                "counted": false,
+                "usdAmount": 100
+              },
+              {
+                "kind": "perp_round",
+                "coin": "ETH",
+                "side": "long",
+                "leverage": {
+                  "value": 10,
+                  "type": "isolated"
+                },
+                "leverageSource": "order",
+                "size": "3",
+                "entryPx": 3020,
+                "exitPx": 3150,
+                "initialMarginUsd": 906,
+                "returnPct": 42.301324503311264,
+                "fundingUsd": -1.2,
+                "feesUsd": 5.55,
+                "durationMs": 7200000,
+                "pnlUsd": 383.25,
+                "liquidated": false,
+                "openedMs": 1799571600000,
+                "closedMs": 1799578800000,
+                "hash": "0x000000000000000000000000000000000000000000000000000001a2ff414f80",
+                "id": "rnd_43896b5a354452f4"
+              },
+              {
+                "kind": "trade",
+                "signature": "SigFake021111111111111111111111111111111111111111",
+                "side": "buy",
+                "mint": "MintFake11111111111111111111111111111111111",
+                "chain": "solana",
+                "symbol": "FAKE",
+                "timestampMs": 1799568000000,
+                "counted": false,
+                "usdAmount": 200
+              },
+              {
+                "kind": "trade",
+                "signature": "SigFake011111111111111111111111111111111111111111",
+                "side": "buy",
+                "mint": "MintFake11111111111111111111111111111111111",
+                "chain": "solana",
+                "symbol": "FAKE",
+                "timestampMs": 1799524800000,
+                "counted": false,
+                "usdAmount": 50
+              }
+            ],
+            "rowsCursor": null,
+            "rowsTotal": 10,
+            "scannedTrades": 6,
+            "truncated": false,
+            "perpsRealizedUsd": 250,
+            "perpsFundingUsd": -0.4,
+            "perpsFeesUsd": 19.98,
+            "perpsUnrealizedUsd": 30,
+            "perpsNetUsd": 259.62,
+            "perpsCoverageFromMs": 1799539200000,
+            "perpsPartial": false,
+            "perpsAsOfMs": 1799744520000,
+            "perpsSnapshotId": "ps1_a3eae2a1241fadb02749295ff39583d7",
+            "perpRounds": [
+              {
+                "kind": "perp_round",
+                "coin": "DOGE",
+                "side": "long",
+                "leverage": {
+                  "value": 20,
+                  "type": "cross"
+                },
+                "leverageSource": "order",
+                "size": "10000",
+                "entryPx": 0.4,
+                "exitPx": 0.381,
+                "initialMarginUsd": 200,
+                "returnPct": -96.17,
+                "fundingUsd": 0,
+                "feesUsd": 2.34,
+                "durationMs": 5100000,
+                "pnlUsd": -192.34,
+                "liquidated": true,
+                "openedMs": 1799669100000,
+                "closedMs": 1799674200000,
+                "hash": "0x000000000000000000000000000000000000000000000000000001a304f0ffc0",
+                "id": "rnd_916e913b11a54980"
+              },
+              {
+                "kind": "perp_round",
+                "coin": "SOL",
+                "side": "long",
+                "leverage": null,
+                "leverageSource": null,
+                "size": "50",
+                "entryPx": 180,
+                "exitPx": 183,
+                "initialMarginUsd": null,
+                "returnPct": null,
+                "fundingUsd": 0,
+                "feesUsd": 5.4,
+                "durationMs": 1800000,
+                "pnlUsd": 144.6,
+                "liquidated": false,
+                "openedMs": 1799658600000,
+                "closedMs": 1799660400000,
+                "hash": "0x000000000000000000000000000000000000000000000000000001a3041e6d80",
+                "id": "rnd_18372b268b8287e2"
+              },
+              {
+                "kind": "perp_round",
+                "coin": "BTC",
+                "side": "short",
+                "leverage": {
+                  "value": 5,
+                  "type": "cross"
+                },
+                "leverageSource": "snapshot",
+                "size": "0.1",
+                "entryPx": 95000,
+                "exitPx": 96000,
+                "initialMarginUsd": 1900,
+                "returnPct": -5.522631578947369,
+                "fundingUsd": 0.8,
+                "feesUsd": 5.73,
+                "durationMs": 8400000,
+                "pnlUsd": -104.93,
+                "liquidated": false,
+                "openedMs": 1799590800000,
+                "closedMs": 1799599200000,
+                "hash": "0x000000000000000000000000000000000000000000000000000001a300789700",
+                "id": "rnd_9343dd8fce66999d"
+              },
+              {
+                "kind": "perp_round",
+                "coin": "ETH",
+                "side": "long",
+                "leverage": {
+                  "value": 10,
+                  "type": "isolated"
+                },
+                "leverageSource": "order",
+                "size": "3",
+                "entryPx": 3020,
+                "exitPx": 3150,
+                "initialMarginUsd": 906,
+                "returnPct": 42.301324503311264,
+                "fundingUsd": -1.2,
+                "feesUsd": 5.55,
+                "durationMs": 7200000,
+                "pnlUsd": 383.25,
+                "liquidated": false,
+                "openedMs": 1799571600000,
+                "closedMs": 1799578800000,
+                "hash": "0x000000000000000000000000000000000000000000000000000001a2ff414f80",
+                "id": "rnd_43896b5a354452f4"
+              }
+            ],
+            "perpsTopCloses": [
+              {
+                "kind": "perp_round",
+                "coin": "ETH",
+                "side": "long",
+                "leverage": {
+                  "value": 10,
+                  "type": "isolated"
+                },
+                "leverageSource": "order",
+                "size": "3",
+                "entryPx": 3020,
+                "exitPx": 3150,
+                "initialMarginUsd": 906,
+                "returnPct": 42.301324503311264,
+                "fundingUsd": -1.2,
+                "feesUsd": 5.55,
+                "durationMs": 7200000,
+                "pnlUsd": 383.25,
+                "liquidated": false,
+                "openedMs": 1799571600000,
+                "closedMs": 1799578800000,
+                "hash": "0x000000000000000000000000000000000000000000000000000001a2ff414f80",
+                "id": "rnd_43896b5a354452f4"
+              },
+              {
+                "kind": "perp_round",
+                "coin": "SOL",
+                "side": "long",
+                "leverage": null,
+                "leverageSource": null,
+                "size": "50",
+                "entryPx": 180,
+                "exitPx": 183,
+                "initialMarginUsd": null,
+                "returnPct": null,
+                "fundingUsd": 0,
+                "feesUsd": 5.4,
+                "durationMs": 1800000,
+                "pnlUsd": 144.6,
+                "liquidated": false,
+                "openedMs": 1799658600000,
+                "closedMs": 1799660400000,
+                "hash": "0x000000000000000000000000000000000000000000000000000001a3041e6d80",
+                "id": "rnd_18372b268b8287e2"
+              },
+              {
+                "kind": "perp_round",
+                "coin": "BTC",
+                "side": "short",
+                "leverage": {
+                  "value": 5,
+                  "type": "cross"
+                },
+                "leverageSource": "snapshot",
+                "size": "0.1",
+                "entryPx": 95000,
+                "exitPx": 96000,
+                "initialMarginUsd": 1900,
+                "returnPct": -5.522631578947369,
+                "fundingUsd": 0.8,
+                "feesUsd": 5.73,
+                "durationMs": 8400000,
+                "pnlUsd": -104.93,
+                "liquidated": false,
+                "openedMs": 1799590800000,
+                "closedMs": 1799599200000,
+                "hash": "0x000000000000000000000000000000000000000000000000000001a300789700",
+                "id": "rnd_9343dd8fce66999d"
+              },
+              {
+                "kind": "perp_round",
+                "coin": "DOGE",
+                "side": "long",
+                "leverage": {
+                  "value": 20,
+                  "type": "cross"
+                },
+                "leverageSource": "order",
+                "size": "10000",
+                "entryPx": 0.4,
+                "exitPx": 0.381,
+                "initialMarginUsd": 200,
+                "returnPct": -96.17,
+                "fundingUsd": 0,
+                "feesUsd": 2.34,
+                "durationMs": 5100000,
+                "pnlUsd": -192.34,
+                "liquidated": true,
+                "openedMs": 1799669100000,
+                "closedMs": 1799674200000,
+                "hash": "0x000000000000000000000000000000000000000000000000000001a304f0ffc0",
+                "id": "rnd_916e913b11a54980"
+              }
+            ],
+            "publishedBuildId": "build_fixture_01"
+          }
+        },
+        "topCloses": {
+          "topCloses": [
+            {
+              "kind": "perp_round",
+              "coin": "ETH",
+              "side": "long",
+              "leverage": {
+                "value": 10,
+                "type": "isolated"
+              },
+              "leverageSource": "order",
+              "size": "3",
+              "entryPx": 3020,
+              "exitPx": 3150,
+              "initialMarginUsd": 906,
+              "returnPct": 42.301324503311264,
+              "fundingUsd": -1.2,
+              "feesUsd": 5.55,
+              "durationMs": 7200000,
+              "pnlUsd": 383.25,
+              "liquidated": false,
+              "openedMs": 1799571600000,
+              "closedMs": 1799578800000,
+              "hash": "0x000000000000000000000000000000000000000000000000000001a2ff414f80",
+              "id": "rnd_43896b5a354452f4"
+            },
+            {
+              "kind": "perp_round",
+              "coin": "SOL",
+              "side": "long",
+              "leverage": null,
+              "leverageSource": null,
+              "size": "50",
+              "entryPx": 180,
+              "exitPx": 183,
+              "initialMarginUsd": null,
+              "returnPct": null,
+              "fundingUsd": 0,
+              "feesUsd": 5.4,
+              "durationMs": 1800000,
+              "pnlUsd": 144.6,
+              "liquidated": false,
+              "openedMs": 1799658600000,
+              "closedMs": 1799660400000,
+              "hash": "0x000000000000000000000000000000000000000000000000000001a3041e6d80",
+              "id": "rnd_18372b268b8287e2"
+            },
+            {
+              "signature": "SigFake051111111111111111111111111111111111111111",
+              "side": "sell",
+              "mint": "MintFake11111111111111111111111111111111111",
+              "chain": "solana",
+              "symbol": "FAKE",
+              "timestampMs": 1799661600000,
+              "counted": true,
+              "usdAmount": 260,
+              "realizedNetUsd": 60
+            },
+            {
+              "signature": "SigFake041111111111111111111111111111111111111111",
+              "side": "sell",
+              "mint": "MoonFake11111111111111111111111111111111111",
+              "chain": "solana",
+              "symbol": "MOON",
+              "timestampMs": 1799599200000,
+              "counted": true,
+              "usdAmount": 90,
+              "realizedNetUsd": -10
+            },
+            {
+              "kind": "perp_round",
+              "coin": "BTC",
+              "side": "short",
+              "leverage": {
+                "value": 5,
+                "type": "cross"
+              },
+              "leverageSource": "snapshot",
+              "size": "0.1",
+              "entryPx": 95000,
+              "exitPx": 96000,
+              "initialMarginUsd": 1900,
+              "returnPct": -5.522631578947369,
+              "fundingUsd": 0.8,
+              "feesUsd": 5.73,
+              "durationMs": 8400000,
+              "pnlUsd": -104.93,
+              "liquidated": false,
+              "openedMs": 1799590800000,
+              "closedMs": 1799599200000,
+              "hash": "0x000000000000000000000000000000000000000000000000000001a300789700",
+              "id": "rnd_9343dd8fce66999d"
+            }
+          ],
+          "asOfMs": 1799744880000,
+          "perpsPartial": false,
+          "perpsAsOfMs": 1799744520000,
+          "perpsSnapshotId": "ps1_a3eae2a1241fadb02749295ff39583d7"
+        },
+        "breakdown": {
+          "total": 362.12,
+          "creatorFeesUsd": 12.5,
+          "figures": {
+            "perpsRealizedUsd": 250,
+            "perpsFundingUsd": -0.4,
+            "perpsFeesUsd": 19.98,
+            "perpsUnrealizedUsd": 30,
+            "perpsNetUsd": 259.62
+          },
+          "parts": {
+            "spot": 90,
+            "realized": 250,
+            "funding": -0.4,
+            "fees": -19.98,
+            "unrealized": 30,
+            "creatorFees": 12.5
+          }
+        },
+        "breakdownMissing": {
+          "creatorFees": {
+            "realized": 250,
+            "funding": -0.4,
+            "fees": -19.98,
+            "unrealized": 30
+          },
+          "funding": {
+            "realized": 250,
+            "fees": -19.98,
+            "unrealized": 30,
+            "creatorFees": 12.5
+          }
+        }
+      }
+    },
+    {
+      "id": "record-mcp",
+      "scenario": "record",
+      "buildAt": "2027-01-12T09:10Z",
+      "surface": "mcp",
+      "args": {
+        "profileId": "prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef?rows=all",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "relays": "record-api",
+        "sha256": "ff025c0752cbacea9a7a71e433505d133180370ef82a8987d91edd0aacbec8fc",
+        "isError": false
+      }
+    },
+    {
+      "id": "record-mcp-hosted",
+      "scenario": "record",
+      "buildAt": "2027-01-12T09:10Z",
+      "surface": "mcp-hosted",
+      "args": {
+        "profileId": "prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef?rows=all",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "preamble": true,
+        "relays": "record-api",
+        "sha256": "ff025c0752cbacea9a7a71e433505d133180370ef82a8987d91edd0aacbec8fc",
+        "isError": false
+      }
+    },
+    {
+      "id": "record-sdk",
+      "scenario": "record",
+      "buildAt": "2027-01-12T09:10Z",
+      "surface": "sdk",
+      "args": {
+        "profileId": "prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef?rows=all",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "relays": "record-api",
+        "part": "record",
+        "sha256": "4dbc86f66524efe7890d7036f2de874e393672eb8b1d1d192f38e650fdbbd2d5",
+        "isError": false
+      }
+    },
+    {
+      "id": "record-cli",
+      "scenario": "record",
+      "buildAt": "2027-01-12T09:10Z",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent record prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef?rows=all",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "lines": [
+          "Record fixture",
+          "Perps as of 2027-01-12T09:02:00.000Z",
+          "buy MOON 120",
+          "Long DOGE 20x · size 10000 · entry 0.4 · exit 0.381 · -$192.34 · -96.2% ROE · funding 0 · fees 2.34 · duration 5100s · LIQUIDATED · https://app.hyperliquid.xyz/explorer/tx/0x000000000000000000000000000000000000000000000000000001a304f0ffc0",
+          "sell FAKE 260",
+          "Long SOL leverage not recorded · size 50 · entry 180 · exit 183 · +$144.60 · ROE unknown · funding 0 · fees 5.4 · duration 1800s · https://app.hyperliquid.xyz/explorer/tx/0x000000000000000000000000000000000000000000000000000001a3041e6d80",
+          "sell MOON 90",
+          "Short BTC 5x · size 0.1 · entry 95000 · exit 96000 · -$104.93 · -5.5% ROE · funding 0.8 · fees 5.73 · duration 8400s · https://app.hyperliquid.xyz/explorer/tx/0x000000000000000000000000000000000000000000000000000001a300789700",
+          "buy MOON 100",
+          "Long ETH 10x · size 3 · entry 3020 · exit 3150 · +$383.25 · 42.3% ROE · funding -1.2 · fees 5.55 · duration 7200s · https://app.hyperliquid.xyz/explorer/tx/0x000000000000000000000000000000000000000000000000000001a2ff414f80",
+          "buy FAKE 200",
+          "buy FAKE 50"
+        ]
+      }
+    },
+    {
+      "id": "record-cli-json",
+      "scenario": "record",
+      "buildAt": "2027-01-12T09:10Z",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent record prof_0123456789abcdef --json"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef?rows=all",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "relays": "record-api",
+        "sha256": "ff025c0752cbacea9a7a71e433505d133180370ef82a8987d91edd0aacbec8fc"
+      }
+    },
+    {
+      "id": "record-paged-api",
+      "scenario": "record-paged",
+      "buildAt": "2027-01-12T09:10Z",
+      "surface": "api-source",
+      "says": "The same build with the stored swaps in two chunks, three swaps each here where the store keeps 500: the first page ends where its chunk ends and gives a cursor; the second page, read with it, holds the rest.",
+      "evidence": "pure API source on made-up stored facts, over a stand-in spot record, build id and push cursor; the database, the perps jobs and the keyed route are not executed",
+      "outcome": {
+        "read": {
+          "kind": "certified",
+          "retained": false
+        },
+        "record": {
+          "success": true,
+          "seq": 41,
+          "record": {
+            "profileId": "prof_0123456789abcdef",
+            "name": "Record fixture",
+            "wallet": "fixture-public-owner",
+            "totals": {
+              "realizedNetUsd": 279.62,
+              "feesUsd": 1.5,
+              "wins": 3,
+              "losses": 3,
+              "counted": 6,
+              "unvalued": 0,
+              "bestUsd": 383.25,
+              "worstUsd": -192.34,
+              "unrealizedUsd": 70,
+              "totalPnlUsd": 362.12,
+              "creatorFeesUsd": 12.5,
+              "perpsRealizedUsd": 250,
+              "perpsFundingUsd": -0.4,
+              "perpsFeesUsd": 19.98,
+              "perpsUnrealizedUsd": 30,
+              "perpsNetUsd": 259.62,
+              "perpsCoverageFromMs": 1799539200000,
+              "perpsPartial": false,
+              "perpsAsOfMs": 1799744520000,
+              "perpsSnapshotId": "ps1_a3eae2a1241fadb02749295ff39583d7"
+            },
+            "winRatePct": null,
+            "minClosesForRate": 10,
+            "unrealizedUsd": 70,
+            "totalPnlUsd": 362.12,
+            "creatorFeesUsd": 12.5,
+            "rows": [
+              {
+                "kind": "trade",
+                "signature": "SigFake061111111111111111111111111111111111111111",
+                "side": "buy",
+                "mint": "MoonFake11111111111111111111111111111111111",
+                "chain": "solana",
+                "symbol": "MOON",
+                "timestampMs": 1799737200000,
+                "counted": false,
+                "usdAmount": 120
+              },
+              {
+                "kind": "perp_round",
+                "coin": "DOGE",
+                "side": "long",
+                "leverage": {
+                  "value": 20,
+                  "type": "cross"
+                },
+                "leverageSource": "order",
+                "size": "10000",
+                "entryPx": 0.4,
+                "exitPx": 0.381,
+                "initialMarginUsd": 200,
+                "returnPct": -96.17,
+                "fundingUsd": 0,
+                "feesUsd": 2.34,
+                "durationMs": 5100000,
+                "pnlUsd": -192.34,
+                "liquidated": true,
+                "openedMs": 1799669100000,
+                "closedMs": 1799674200000,
+                "hash": "0x000000000000000000000000000000000000000000000000000001a304f0ffc0",
+                "id": "rnd_916e913b11a54980"
+              },
+              {
+                "kind": "trade",
+                "signature": "SigFake051111111111111111111111111111111111111111",
+                "side": "sell",
+                "mint": "MintFake11111111111111111111111111111111111",
+                "chain": "solana",
+                "symbol": "FAKE",
+                "timestampMs": 1799661600000,
+                "counted": true,
+                "usdAmount": 260,
+                "realizedNetUsd": 60
+              },
+              {
+                "kind": "perp_round",
+                "coin": "SOL",
+                "side": "long",
+                "leverage": null,
+                "leverageSource": null,
+                "size": "50",
+                "entryPx": 180,
+                "exitPx": 183,
+                "initialMarginUsd": null,
+                "returnPct": null,
+                "fundingUsd": 0,
+                "feesUsd": 5.4,
+                "durationMs": 1800000,
+                "pnlUsd": 144.6,
+                "liquidated": false,
+                "openedMs": 1799658600000,
+                "closedMs": 1799660400000,
+                "hash": "0x000000000000000000000000000000000000000000000000000001a3041e6d80",
+                "id": "rnd_18372b268b8287e2"
+              },
+              {
+                "kind": "trade",
+                "signature": "SigFake041111111111111111111111111111111111111111",
+                "side": "sell",
+                "mint": "MoonFake11111111111111111111111111111111111",
+                "chain": "solana",
+                "symbol": "MOON",
+                "timestampMs": 1799599200000,
+                "counted": true,
+                "usdAmount": 90,
+                "realizedNetUsd": -10
+              }
+            ],
+            "rowsCursor": "u1:afd5bd10256382f1aa5b2a207289b601a97d85e88451008a0f2bd55d1633b9c3:3:63fae5907119e55869db5367424eadff:2",
+            "rowsTotal": 10,
+            "scannedTrades": 6,
+            "truncated": false,
+            "perpsRealizedUsd": 250,
+            "perpsFundingUsd": -0.4,
+            "perpsFeesUsd": 19.98,
+            "perpsUnrealizedUsd": 30,
+            "perpsNetUsd": 259.62,
+            "perpsCoverageFromMs": 1799539200000,
+            "perpsPartial": false,
+            "perpsAsOfMs": 1799744520000,
+            "perpsSnapshotId": "ps1_a3eae2a1241fadb02749295ff39583d7",
+            "perpRounds": [
+              {
+                "kind": "perp_round",
+                "coin": "DOGE",
+                "side": "long",
+                "leverage": {
+                  "value": 20,
+                  "type": "cross"
+                },
+                "leverageSource": "order",
+                "size": "10000",
+                "entryPx": 0.4,
+                "exitPx": 0.381,
+                "initialMarginUsd": 200,
+                "returnPct": -96.17,
+                "fundingUsd": 0,
+                "feesUsd": 2.34,
+                "durationMs": 5100000,
+                "pnlUsd": -192.34,
+                "liquidated": true,
+                "openedMs": 1799669100000,
+                "closedMs": 1799674200000,
+                "hash": "0x000000000000000000000000000000000000000000000000000001a304f0ffc0",
+                "id": "rnd_916e913b11a54980"
+              },
+              {
+                "kind": "perp_round",
+                "coin": "SOL",
+                "side": "long",
+                "leverage": null,
+                "leverageSource": null,
+                "size": "50",
+                "entryPx": 180,
+                "exitPx": 183,
+                "initialMarginUsd": null,
+                "returnPct": null,
+                "fundingUsd": 0,
+                "feesUsd": 5.4,
+                "durationMs": 1800000,
+                "pnlUsd": 144.6,
+                "liquidated": false,
+                "openedMs": 1799658600000,
+                "closedMs": 1799660400000,
+                "hash": "0x000000000000000000000000000000000000000000000000000001a3041e6d80",
+                "id": "rnd_18372b268b8287e2"
+              },
+              {
+                "kind": "perp_round",
+                "coin": "BTC",
+                "side": "short",
+                "leverage": {
+                  "value": 5,
+                  "type": "cross"
+                },
+                "leverageSource": "snapshot",
+                "size": "0.1",
+                "entryPx": 95000,
+                "exitPx": 96000,
+                "initialMarginUsd": 1900,
+                "returnPct": -5.522631578947369,
+                "fundingUsd": 0.8,
+                "feesUsd": 5.73,
+                "durationMs": 8400000,
+                "pnlUsd": -104.93,
+                "liquidated": false,
+                "openedMs": 1799590800000,
+                "closedMs": 1799599200000,
+                "hash": "0x000000000000000000000000000000000000000000000000000001a300789700",
+                "id": "rnd_9343dd8fce66999d"
+              },
+              {
+                "kind": "perp_round",
+                "coin": "ETH",
+                "side": "long",
+                "leverage": {
+                  "value": 10,
+                  "type": "isolated"
+                },
+                "leverageSource": "order",
+                "size": "3",
+                "entryPx": 3020,
+                "exitPx": 3150,
+                "initialMarginUsd": 906,
+                "returnPct": 42.301324503311264,
+                "fundingUsd": -1.2,
+                "feesUsd": 5.55,
+                "durationMs": 7200000,
+                "pnlUsd": 383.25,
+                "liquidated": false,
+                "openedMs": 1799571600000,
+                "closedMs": 1799578800000,
+                "hash": "0x000000000000000000000000000000000000000000000000000001a2ff414f80",
+                "id": "rnd_43896b5a354452f4"
+              }
+            ],
+            "perpsTopCloses": [
+              {
+                "kind": "perp_round",
+                "coin": "ETH",
+                "side": "long",
+                "leverage": {
+                  "value": 10,
+                  "type": "isolated"
+                },
+                "leverageSource": "order",
+                "size": "3",
+                "entryPx": 3020,
+                "exitPx": 3150,
+                "initialMarginUsd": 906,
+                "returnPct": 42.301324503311264,
+                "fundingUsd": -1.2,
+                "feesUsd": 5.55,
+                "durationMs": 7200000,
+                "pnlUsd": 383.25,
+                "liquidated": false,
+                "openedMs": 1799571600000,
+                "closedMs": 1799578800000,
+                "hash": "0x000000000000000000000000000000000000000000000000000001a2ff414f80",
+                "id": "rnd_43896b5a354452f4"
+              },
+              {
+                "kind": "perp_round",
+                "coin": "SOL",
+                "side": "long",
+                "leverage": null,
+                "leverageSource": null,
+                "size": "50",
+                "entryPx": 180,
+                "exitPx": 183,
+                "initialMarginUsd": null,
+                "returnPct": null,
+                "fundingUsd": 0,
+                "feesUsd": 5.4,
+                "durationMs": 1800000,
+                "pnlUsd": 144.6,
+                "liquidated": false,
+                "openedMs": 1799658600000,
+                "closedMs": 1799660400000,
+                "hash": "0x000000000000000000000000000000000000000000000000000001a3041e6d80",
+                "id": "rnd_18372b268b8287e2"
+              },
+              {
+                "kind": "perp_round",
+                "coin": "BTC",
+                "side": "short",
+                "leverage": {
+                  "value": 5,
+                  "type": "cross"
+                },
+                "leverageSource": "snapshot",
+                "size": "0.1",
+                "entryPx": 95000,
+                "exitPx": 96000,
+                "initialMarginUsd": 1900,
+                "returnPct": -5.522631578947369,
+                "fundingUsd": 0.8,
+                "feesUsd": 5.73,
+                "durationMs": 8400000,
+                "pnlUsd": -104.93,
+                "liquidated": false,
+                "openedMs": 1799590800000,
+                "closedMs": 1799599200000,
+                "hash": "0x000000000000000000000000000000000000000000000000000001a300789700",
+                "id": "rnd_9343dd8fce66999d"
+              },
+              {
+                "kind": "perp_round",
+                "coin": "DOGE",
+                "side": "long",
+                "leverage": {
+                  "value": 20,
+                  "type": "cross"
+                },
+                "leverageSource": "order",
+                "size": "10000",
+                "entryPx": 0.4,
+                "exitPx": 0.381,
+                "initialMarginUsd": 200,
+                "returnPct": -96.17,
+                "fundingUsd": 0,
+                "feesUsd": 2.34,
+                "durationMs": 5100000,
+                "pnlUsd": -192.34,
+                "liquidated": true,
+                "openedMs": 1799669100000,
+                "closedMs": 1799674200000,
+                "hash": "0x000000000000000000000000000000000000000000000000000001a304f0ffc0",
+                "id": "rnd_916e913b11a54980"
+              }
+            ],
+            "publishedBuildId": "build_fixture_02"
+          }
+        },
+        "nextPage": {
+          "success": true,
+          "seq": 41,
+          "record": {
+            "profileId": "prof_0123456789abcdef",
+            "name": "Record fixture",
+            "wallet": "fixture-public-owner",
+            "totals": {
+              "realizedNetUsd": 279.62,
+              "feesUsd": 1.5,
+              "wins": 3,
+              "losses": 3,
+              "counted": 6,
+              "unvalued": 0,
+              "bestUsd": 383.25,
+              "worstUsd": -192.34,
+              "unrealizedUsd": 70,
+              "totalPnlUsd": 362.12,
+              "creatorFeesUsd": 12.5,
+              "perpsRealizedUsd": 250,
+              "perpsFundingUsd": -0.4,
+              "perpsFeesUsd": 19.98,
+              "perpsUnrealizedUsd": 30,
+              "perpsNetUsd": 259.62,
+              "perpsCoverageFromMs": 1799539200000,
+              "perpsPartial": false,
+              "perpsAsOfMs": 1799744520000,
+              "perpsSnapshotId": "ps1_a3eae2a1241fadb02749295ff39583d7"
+            },
+            "winRatePct": null,
+            "minClosesForRate": 10,
+            "unrealizedUsd": 70,
+            "totalPnlUsd": 362.12,
+            "creatorFeesUsd": 12.5,
+            "rows": [
+              {
+                "kind": "perp_round",
+                "coin": "BTC",
+                "side": "short",
+                "leverage": {
+                  "value": 5,
+                  "type": "cross"
+                },
+                "leverageSource": "snapshot",
+                "size": "0.1",
+                "entryPx": 95000,
+                "exitPx": 96000,
+                "initialMarginUsd": 1900,
+                "returnPct": -5.522631578947369,
+                "fundingUsd": 0.8,
+                "feesUsd": 5.73,
+                "durationMs": 8400000,
+                "pnlUsd": -104.93,
+                "liquidated": false,
+                "openedMs": 1799590800000,
+                "closedMs": 1799599200000,
+                "hash": "0x000000000000000000000000000000000000000000000000000001a300789700",
+                "id": "rnd_9343dd8fce66999d"
+              },
+              {
+                "kind": "trade",
+                "signature": "SigFake031111111111111111111111111111111111111111",
+                "side": "buy",
+                "mint": "MoonFake11111111111111111111111111111111111",
+                "chain": "solana",
+                "symbol": "MOON",
+                "timestampMs": 1799582400000,
+                "counted": false,
+                "usdAmount": 100
+              },
+              {
+                "kind": "perp_round",
+                "coin": "ETH",
+                "side": "long",
+                "leverage": {
+                  "value": 10,
+                  "type": "isolated"
+                },
+                "leverageSource": "order",
+                "size": "3",
+                "entryPx": 3020,
+                "exitPx": 3150,
+                "initialMarginUsd": 906,
+                "returnPct": 42.301324503311264,
+                "fundingUsd": -1.2,
+                "feesUsd": 5.55,
+                "durationMs": 7200000,
+                "pnlUsd": 383.25,
+                "liquidated": false,
+                "openedMs": 1799571600000,
+                "closedMs": 1799578800000,
+                "hash": "0x000000000000000000000000000000000000000000000000000001a2ff414f80",
+                "id": "rnd_43896b5a354452f4"
+              },
+              {
+                "kind": "trade",
+                "signature": "SigFake021111111111111111111111111111111111111111",
+                "side": "buy",
+                "mint": "MintFake11111111111111111111111111111111111",
+                "chain": "solana",
+                "symbol": "FAKE",
+                "timestampMs": 1799568000000,
+                "counted": false,
+                "usdAmount": 200
+              },
+              {
+                "kind": "trade",
+                "signature": "SigFake011111111111111111111111111111111111111111",
+                "side": "buy",
+                "mint": "MintFake11111111111111111111111111111111111",
+                "chain": "solana",
+                "symbol": "FAKE",
+                "timestampMs": 1799524800000,
+                "counted": false,
+                "usdAmount": 50
+              }
+            ],
+            "rowsCursor": null,
+            "rowsTotal": 10,
+            "scannedTrades": 6,
+            "truncated": false,
+            "perpsRealizedUsd": 250,
+            "perpsFundingUsd": -0.4,
+            "perpsFeesUsd": 19.98,
+            "perpsUnrealizedUsd": 30,
+            "perpsNetUsd": 259.62,
+            "perpsCoverageFromMs": 1799539200000,
+            "perpsPartial": false,
+            "perpsAsOfMs": 1799744520000,
+            "perpsSnapshotId": "ps1_a3eae2a1241fadb02749295ff39583d7",
+            "perpRounds": [
+              {
+                "kind": "perp_round",
+                "coin": "DOGE",
+                "side": "long",
+                "leverage": {
+                  "value": 20,
+                  "type": "cross"
+                },
+                "leverageSource": "order",
+                "size": "10000",
+                "entryPx": 0.4,
+                "exitPx": 0.381,
+                "initialMarginUsd": 200,
+                "returnPct": -96.17,
+                "fundingUsd": 0,
+                "feesUsd": 2.34,
+                "durationMs": 5100000,
+                "pnlUsd": -192.34,
+                "liquidated": true,
+                "openedMs": 1799669100000,
+                "closedMs": 1799674200000,
+                "hash": "0x000000000000000000000000000000000000000000000000000001a304f0ffc0",
+                "id": "rnd_916e913b11a54980"
+              },
+              {
+                "kind": "perp_round",
+                "coin": "SOL",
+                "side": "long",
+                "leverage": null,
+                "leverageSource": null,
+                "size": "50",
+                "entryPx": 180,
+                "exitPx": 183,
+                "initialMarginUsd": null,
+                "returnPct": null,
+                "fundingUsd": 0,
+                "feesUsd": 5.4,
+                "durationMs": 1800000,
+                "pnlUsd": 144.6,
+                "liquidated": false,
+                "openedMs": 1799658600000,
+                "closedMs": 1799660400000,
+                "hash": "0x000000000000000000000000000000000000000000000000000001a3041e6d80",
+                "id": "rnd_18372b268b8287e2"
+              },
+              {
+                "kind": "perp_round",
+                "coin": "BTC",
+                "side": "short",
+                "leverage": {
+                  "value": 5,
+                  "type": "cross"
+                },
+                "leverageSource": "snapshot",
+                "size": "0.1",
+                "entryPx": 95000,
+                "exitPx": 96000,
+                "initialMarginUsd": 1900,
+                "returnPct": -5.522631578947369,
+                "fundingUsd": 0.8,
+                "feesUsd": 5.73,
+                "durationMs": 8400000,
+                "pnlUsd": -104.93,
+                "liquidated": false,
+                "openedMs": 1799590800000,
+                "closedMs": 1799599200000,
+                "hash": "0x000000000000000000000000000000000000000000000000000001a300789700",
+                "id": "rnd_9343dd8fce66999d"
+              },
+              {
+                "kind": "perp_round",
+                "coin": "ETH",
+                "side": "long",
+                "leverage": {
+                  "value": 10,
+                  "type": "isolated"
+                },
+                "leverageSource": "order",
+                "size": "3",
+                "entryPx": 3020,
+                "exitPx": 3150,
+                "initialMarginUsd": 906,
+                "returnPct": 42.301324503311264,
+                "fundingUsd": -1.2,
+                "feesUsd": 5.55,
+                "durationMs": 7200000,
+                "pnlUsd": 383.25,
+                "liquidated": false,
+                "openedMs": 1799571600000,
+                "closedMs": 1799578800000,
+                "hash": "0x000000000000000000000000000000000000000000000000000001a2ff414f80",
+                "id": "rnd_43896b5a354452f4"
+              }
+            ],
+            "perpsTopCloses": [
+              {
+                "kind": "perp_round",
+                "coin": "ETH",
+                "side": "long",
+                "leverage": {
+                  "value": 10,
+                  "type": "isolated"
+                },
+                "leverageSource": "order",
+                "size": "3",
+                "entryPx": 3020,
+                "exitPx": 3150,
+                "initialMarginUsd": 906,
+                "returnPct": 42.301324503311264,
+                "fundingUsd": -1.2,
+                "feesUsd": 5.55,
+                "durationMs": 7200000,
+                "pnlUsd": 383.25,
+                "liquidated": false,
+                "openedMs": 1799571600000,
+                "closedMs": 1799578800000,
+                "hash": "0x000000000000000000000000000000000000000000000000000001a2ff414f80",
+                "id": "rnd_43896b5a354452f4"
+              },
+              {
+                "kind": "perp_round",
+                "coin": "SOL",
+                "side": "long",
+                "leverage": null,
+                "leverageSource": null,
+                "size": "50",
+                "entryPx": 180,
+                "exitPx": 183,
+                "initialMarginUsd": null,
+                "returnPct": null,
+                "fundingUsd": 0,
+                "feesUsd": 5.4,
+                "durationMs": 1800000,
+                "pnlUsd": 144.6,
+                "liquidated": false,
+                "openedMs": 1799658600000,
+                "closedMs": 1799660400000,
+                "hash": "0x000000000000000000000000000000000000000000000000000001a3041e6d80",
+                "id": "rnd_18372b268b8287e2"
+              },
+              {
+                "kind": "perp_round",
+                "coin": "BTC",
+                "side": "short",
+                "leverage": {
+                  "value": 5,
+                  "type": "cross"
+                },
+                "leverageSource": "snapshot",
+                "size": "0.1",
+                "entryPx": 95000,
+                "exitPx": 96000,
+                "initialMarginUsd": 1900,
+                "returnPct": -5.522631578947369,
+                "fundingUsd": 0.8,
+                "feesUsd": 5.73,
+                "durationMs": 8400000,
+                "pnlUsd": -104.93,
+                "liquidated": false,
+                "openedMs": 1799590800000,
+                "closedMs": 1799599200000,
+                "hash": "0x000000000000000000000000000000000000000000000000000001a300789700",
+                "id": "rnd_9343dd8fce66999d"
+              },
+              {
+                "kind": "perp_round",
+                "coin": "DOGE",
+                "side": "long",
+                "leverage": {
+                  "value": 20,
+                  "type": "cross"
+                },
+                "leverageSource": "order",
+                "size": "10000",
+                "entryPx": 0.4,
+                "exitPx": 0.381,
+                "initialMarginUsd": 200,
+                "returnPct": -96.17,
+                "fundingUsd": 0,
+                "feesUsd": 2.34,
+                "durationMs": 5100000,
+                "pnlUsd": -192.34,
+                "liquidated": true,
+                "openedMs": 1799669100000,
+                "closedMs": 1799674200000,
+                "hash": "0x000000000000000000000000000000000000000000000000000001a304f0ffc0",
+                "id": "rnd_916e913b11a54980"
+              }
+            ],
+            "publishedBuildId": "build_fixture_02"
+          }
+        },
+        "topCloses": {
+          "topCloses": [
+            {
+              "kind": "perp_round",
+              "coin": "ETH",
+              "side": "long",
+              "leverage": {
+                "value": 10,
+                "type": "isolated"
+              },
+              "leverageSource": "order",
+              "size": "3",
+              "entryPx": 3020,
+              "exitPx": 3150,
+              "initialMarginUsd": 906,
+              "returnPct": 42.301324503311264,
+              "fundingUsd": -1.2,
+              "feesUsd": 5.55,
+              "durationMs": 7200000,
+              "pnlUsd": 383.25,
+              "liquidated": false,
+              "openedMs": 1799571600000,
+              "closedMs": 1799578800000,
+              "hash": "0x000000000000000000000000000000000000000000000000000001a2ff414f80",
+              "id": "rnd_43896b5a354452f4"
+            },
+            {
+              "kind": "perp_round",
+              "coin": "SOL",
+              "side": "long",
+              "leverage": null,
+              "leverageSource": null,
+              "size": "50",
+              "entryPx": 180,
+              "exitPx": 183,
+              "initialMarginUsd": null,
+              "returnPct": null,
+              "fundingUsd": 0,
+              "feesUsd": 5.4,
+              "durationMs": 1800000,
+              "pnlUsd": 144.6,
+              "liquidated": false,
+              "openedMs": 1799658600000,
+              "closedMs": 1799660400000,
+              "hash": "0x000000000000000000000000000000000000000000000000000001a3041e6d80",
+              "id": "rnd_18372b268b8287e2"
+            },
+            {
+              "signature": "SigFake051111111111111111111111111111111111111111",
+              "side": "sell",
+              "mint": "MintFake11111111111111111111111111111111111",
+              "chain": "solana",
+              "symbol": "FAKE",
+              "timestampMs": 1799661600000,
+              "counted": true,
+              "usdAmount": 260,
+              "realizedNetUsd": 60
+            },
+            {
+              "signature": "SigFake041111111111111111111111111111111111111111",
+              "side": "sell",
+              "mint": "MoonFake11111111111111111111111111111111111",
+              "chain": "solana",
+              "symbol": "MOON",
+              "timestampMs": 1799599200000,
+              "counted": true,
+              "usdAmount": 90,
+              "realizedNetUsd": -10
+            },
+            {
+              "kind": "perp_round",
+              "coin": "BTC",
+              "side": "short",
+              "leverage": {
+                "value": 5,
+                "type": "cross"
+              },
+              "leverageSource": "snapshot",
+              "size": "0.1",
+              "entryPx": 95000,
+              "exitPx": 96000,
+              "initialMarginUsd": 1900,
+              "returnPct": -5.522631578947369,
+              "fundingUsd": 0.8,
+              "feesUsd": 5.73,
+              "durationMs": 8400000,
+              "pnlUsd": -104.93,
+              "liquidated": false,
+              "openedMs": 1799590800000,
+              "closedMs": 1799599200000,
+              "hash": "0x000000000000000000000000000000000000000000000000000001a300789700",
+              "id": "rnd_9343dd8fce66999d"
+            }
+          ],
+          "asOfMs": 1799744880000,
+          "perpsPartial": false,
+          "perpsAsOfMs": 1799744520000,
+          "perpsSnapshotId": "ps1_a3eae2a1241fadb02749295ff39583d7"
+        },
+        "breakdown": {
+          "total": 362.12,
+          "creatorFeesUsd": 12.5,
+          "figures": {
+            "perpsRealizedUsd": 250,
+            "perpsFundingUsd": -0.4,
+            "perpsFeesUsd": 19.98,
+            "perpsUnrealizedUsd": 30,
+            "perpsNetUsd": 259.62
+          },
+          "parts": {
+            "spot": 90,
+            "realized": 250,
+            "funding": -0.4,
+            "fees": -19.98,
+            "unrealized": 30,
+            "creatorFees": 12.5
+          }
+        }
+      }
+    },
+    {
+      "id": "record-paged-mcp",
+      "scenario": "record-paged",
+      "buildAt": "2027-01-12T09:10Z",
+      "surface": "mcp",
+      "args": {
+        "profileId": "prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef?rows=all",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "relays": "record-paged-api",
+        "sha256": "8026fd6b61ad1948eb08e99ce7276da229eba6c75737c0125b24d0987db45a58",
+        "isError": false
+      }
+    },
+    {
+      "id": "record-paged-mcp-hosted",
+      "scenario": "record-paged",
+      "buildAt": "2027-01-12T09:10Z",
+      "surface": "mcp-hosted",
+      "args": {
+        "profileId": "prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef?rows=all",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "preamble": true,
+        "relays": "record-paged-api",
+        "sha256": "8026fd6b61ad1948eb08e99ce7276da229eba6c75737c0125b24d0987db45a58",
+        "isError": false
+      }
+    },
+    {
+      "id": "record-paged-sdk",
+      "scenario": "record-paged",
+      "buildAt": "2027-01-12T09:10Z",
+      "surface": "sdk",
+      "args": {
+        "profileId": "prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef?rows=all",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "relays": "record-paged-api",
+        "part": "record",
+        "sha256": "168bc15ee6281562b416e0e0a9b32a0c656879a4596ababd494b8d2a7ad7ac3e",
+        "isError": false
+      }
+    },
+    {
+      "id": "record-paged-cli",
+      "scenario": "record-paged",
+      "buildAt": "2027-01-12T09:10Z",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent record prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef?rows=all",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "lines": [
+          "Record fixture",
+          "Perps as of 2027-01-12T09:02:00.000Z",
+          "buy MOON 120",
+          "Long DOGE 20x · size 10000 · entry 0.4 · exit 0.381 · -$192.34 · -96.2% ROE · funding 0 · fees 2.34 · duration 5100s · LIQUIDATED · https://app.hyperliquid.xyz/explorer/tx/0x000000000000000000000000000000000000000000000000000001a304f0ffc0",
+          "sell FAKE 260",
+          "Long SOL leverage not recorded · size 50 · entry 180 · exit 183 · +$144.60 · ROE unknown · funding 0 · fees 5.4 · duration 1800s · https://app.hyperliquid.xyz/explorer/tx/0x000000000000000000000000000000000000000000000000000001a3041e6d80",
+          "sell MOON 90",
+          "Next page: --cursor u1:afd5bd10256382f1aa5b2a207289b601a97d85e88451008a0f2bd55d1633b9c3:3:63fae5907119e55869db5367424eadff:2"
+        ]
+      }
+    },
+    {
+      "id": "record-paged-cli-json",
+      "scenario": "record-paged",
+      "buildAt": "2027-01-12T09:10Z",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent record prof_0123456789abcdef --json"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef?rows=all",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "relays": "record-paged-api",
+        "sha256": "8026fd6b61ad1948eb08e99ce7276da229eba6c75737c0125b24d0987db45a58"
+      }
+    },
+    {
+      "id": "record-paged-page-2-mcp",
+      "scenario": "record-paged",
+      "buildAt": "2027-01-12T09:10Z",
+      "surface": "mcp",
+      "args": {
+        "profileId": "prof_0123456789abcdef",
+        "cursor": "u1:afd5bd10256382f1aa5b2a207289b601a97d85e88451008a0f2bd55d1633b9c3:3:63fae5907119e55869db5367424eadff:2"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef?rows=all&cursor=u1%3Aafd5bd10256382f1aa5b2a207289b601a97d85e88451008a0f2bd55d1633b9c3%3A3%3A63fae5907119e55869db5367424eadff%3A2",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "relays": "record-paged-api nextPage",
+        "sha256": "3b3aa4a91c4c3506ed85faa3e6658efa21e09749f9c324ed56c8f55ade80219b",
+        "isError": false
+      }
+    },
+    {
+      "id": "record-paged-page-2-mcp-hosted",
+      "scenario": "record-paged",
+      "buildAt": "2027-01-12T09:10Z",
+      "surface": "mcp-hosted",
+      "args": {
+        "profileId": "prof_0123456789abcdef",
+        "cursor": "u1:afd5bd10256382f1aa5b2a207289b601a97d85e88451008a0f2bd55d1633b9c3:3:63fae5907119e55869db5367424eadff:2"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef?rows=all&cursor=u1%3Aafd5bd10256382f1aa5b2a207289b601a97d85e88451008a0f2bd55d1633b9c3%3A3%3A63fae5907119e55869db5367424eadff%3A2",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "preamble": true,
+        "relays": "record-paged-api nextPage",
+        "sha256": "3b3aa4a91c4c3506ed85faa3e6658efa21e09749f9c324ed56c8f55ade80219b",
+        "isError": false
+      }
+    },
+    {
+      "id": "record-paged-page-2-sdk",
+      "scenario": "record-paged",
+      "buildAt": "2027-01-12T09:10Z",
+      "surface": "sdk",
+      "args": {
+        "profileId": "prof_0123456789abcdef",
+        "cursor": "u1:afd5bd10256382f1aa5b2a207289b601a97d85e88451008a0f2bd55d1633b9c3:3:63fae5907119e55869db5367424eadff:2"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef?rows=all&cursor=u1%3Aafd5bd10256382f1aa5b2a207289b601a97d85e88451008a0f2bd55d1633b9c3%3A3%3A63fae5907119e55869db5367424eadff%3A2",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "relays": "record-paged-api nextPage",
+        "part": "record",
+        "sha256": "bdd5fa292a7f788fa10ce2ecdfb09f15dcb3d66b2f98c0cd7de20a2dfb21192e",
+        "isError": false
+      }
+    },
+    {
+      "id": "record-paged-page-2-cli",
+      "scenario": "record-paged",
+      "buildAt": "2027-01-12T09:10Z",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent record prof_0123456789abcdef --cursor u1:afd5bd10256382f1aa5b2a207289b601a97d85e88451008a0f2bd55d1633b9c3:3:63fae5907119e55869db5367424eadff:2"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef?rows=all&cursor=u1%3Aafd5bd10256382f1aa5b2a207289b601a97d85e88451008a0f2bd55d1633b9c3%3A3%3A63fae5907119e55869db5367424eadff%3A2",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "lines": [
+          "Record fixture",
+          "Perps as of 2027-01-12T09:02:00.000Z",
+          "Short BTC 5x · size 0.1 · entry 95000 · exit 96000 · -$104.93 · -5.5% ROE · funding 0.8 · fees 5.73 · duration 8400s · https://app.hyperliquid.xyz/explorer/tx/0x000000000000000000000000000000000000000000000000000001a300789700",
+          "buy MOON 100",
+          "Long ETH 10x · size 3 · entry 3020 · exit 3150 · +$383.25 · 42.3% ROE · funding -1.2 · fees 5.55 · duration 7200s · https://app.hyperliquid.xyz/explorer/tx/0x000000000000000000000000000000000000000000000000000001a2ff414f80",
+          "buy FAKE 200",
+          "buy FAKE 50"
+        ]
+      }
+    },
+    {
+      "id": "record-paged-page-2-cli-json",
+      "scenario": "record-paged",
+      "buildAt": "2027-01-12T09:10Z",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent record prof_0123456789abcdef --cursor u1:afd5bd10256382f1aa5b2a207289b601a97d85e88451008a0f2bd55d1633b9c3:3:63fae5907119e55869db5367424eadff:2 --json"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef?rows=all&cursor=u1%3Aafd5bd10256382f1aa5b2a207289b601a97d85e88451008a0f2bd55d1633b9c3%3A3%3A63fae5907119e55869db5367424eadff%3A2",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "relays": "record-paged-api nextPage",
+        "sha256": "3b3aa4a91c4c3506ed85faa3e6658efa21e09749f9c324ed56c8f55ade80219b"
+      }
+    },
+    {
+      "id": "perps-only-api",
+      "scenario": "perps-only",
+      "buildAt": "2027-01-12T09:10Z",
+      "surface": "api-source",
+      "says": "The same build for an agent with no spot swap: every row is a round, and the perps figures are the whole P&L.",
+      "evidence": "pure API source on made-up stored facts, over a stand-in spot record, build id and push cursor; the database, the perps jobs and the keyed route are not executed",
+      "outcome": {
+        "read": {
+          "kind": "certified",
+          "retained": false
+        },
+        "record": {
+          "success": true,
+          "seq": 42,
+          "record": {
+            "profileId": "prof_0123456789abcdef",
+            "name": "Record fixture",
+            "wallet": "fixture-public-owner",
+            "totals": {
+              "realizedNetUsd": 229.62,
+              "feesUsd": 0,
+              "wins": 2,
+              "losses": 2,
+              "counted": 4,
+              "unvalued": 0,
+              "unrealizedUsd": 30,
+              "totalPnlUsd": 259.62,
+              "creatorFeesUsd": 0,
+              "bestUsd": 383.25,
+              "worstUsd": -192.34,
+              "perpsRealizedUsd": 250,
+              "perpsFundingUsd": -0.4,
+              "perpsFeesUsd": 19.98,
+              "perpsUnrealizedUsd": 30,
+              "perpsNetUsd": 259.62,
+              "perpsCoverageFromMs": 1799539200000,
+              "perpsPartial": false,
+              "perpsAsOfMs": 1799744520000,
+              "perpsSnapshotId": "ps1_a3eae2a1241fadb02749295ff39583d7"
+            },
+            "winRatePct": null,
+            "minClosesForRate": 10,
+            "unrealizedUsd": 30,
+            "totalPnlUsd": 259.62,
+            "creatorFeesUsd": 0,
+            "rows": [
+              {
+                "kind": "perp_round",
+                "coin": "DOGE",
+                "side": "long",
+                "leverage": {
+                  "value": 20,
+                  "type": "cross"
+                },
+                "leverageSource": "order",
+                "size": "10000",
+                "entryPx": 0.4,
+                "exitPx": 0.381,
+                "initialMarginUsd": 200,
+                "returnPct": -96.17,
+                "fundingUsd": 0,
+                "feesUsd": 2.34,
+                "durationMs": 5100000,
+                "pnlUsd": -192.34,
+                "liquidated": true,
+                "openedMs": 1799669100000,
+                "closedMs": 1799674200000,
+                "hash": "0x000000000000000000000000000000000000000000000000000001a304f0ffc0",
+                "id": "rnd_916e913b11a54980"
+              },
+              {
+                "kind": "perp_round",
+                "coin": "SOL",
+                "side": "long",
+                "leverage": null,
+                "leverageSource": null,
+                "size": "50",
+                "entryPx": 180,
+                "exitPx": 183,
+                "initialMarginUsd": null,
+                "returnPct": null,
+                "fundingUsd": 0,
+                "feesUsd": 5.4,
+                "durationMs": 1800000,
+                "pnlUsd": 144.6,
+                "liquidated": false,
+                "openedMs": 1799658600000,
+                "closedMs": 1799660400000,
+                "hash": "0x000000000000000000000000000000000000000000000000000001a3041e6d80",
+                "id": "rnd_18372b268b8287e2"
+              },
+              {
+                "kind": "perp_round",
+                "coin": "BTC",
+                "side": "short",
+                "leverage": {
+                  "value": 5,
+                  "type": "cross"
+                },
+                "leverageSource": "snapshot",
+                "size": "0.1",
+                "entryPx": 95000,
+                "exitPx": 96000,
+                "initialMarginUsd": 1900,
+                "returnPct": -5.522631578947369,
+                "fundingUsd": 0.8,
+                "feesUsd": 5.73,
+                "durationMs": 8400000,
+                "pnlUsd": -104.93,
+                "liquidated": false,
+                "openedMs": 1799590800000,
+                "closedMs": 1799599200000,
+                "hash": "0x000000000000000000000000000000000000000000000000000001a300789700",
+                "id": "rnd_9343dd8fce66999d"
+              },
+              {
+                "kind": "perp_round",
+                "coin": "ETH",
+                "side": "long",
+                "leverage": {
+                  "value": 10,
+                  "type": "isolated"
+                },
+                "leverageSource": "order",
+                "size": "3",
+                "entryPx": 3020,
+                "exitPx": 3150,
+                "initialMarginUsd": 906,
+                "returnPct": 42.301324503311264,
+                "fundingUsd": -1.2,
+                "feesUsd": 5.55,
+                "durationMs": 7200000,
+                "pnlUsd": 383.25,
+                "liquidated": false,
+                "openedMs": 1799571600000,
+                "closedMs": 1799578800000,
+                "hash": "0x000000000000000000000000000000000000000000000000000001a2ff414f80",
+                "id": "rnd_43896b5a354452f4"
+              }
+            ],
+            "rowsCursor": null,
+            "rowsTotal": 4,
+            "scannedTrades": 0,
+            "truncated": false,
+            "perpsRealizedUsd": 250,
+            "perpsFundingUsd": -0.4,
+            "perpsFeesUsd": 19.98,
+            "perpsUnrealizedUsd": 30,
+            "perpsNetUsd": 259.62,
+            "perpsCoverageFromMs": 1799539200000,
+            "perpsPartial": false,
+            "perpsAsOfMs": 1799744520000,
+            "perpsSnapshotId": "ps1_a3eae2a1241fadb02749295ff39583d7",
+            "perpRounds": [
+              {
+                "kind": "perp_round",
+                "coin": "DOGE",
+                "side": "long",
+                "leverage": {
+                  "value": 20,
+                  "type": "cross"
+                },
+                "leverageSource": "order",
+                "size": "10000",
+                "entryPx": 0.4,
+                "exitPx": 0.381,
+                "initialMarginUsd": 200,
+                "returnPct": -96.17,
+                "fundingUsd": 0,
+                "feesUsd": 2.34,
+                "durationMs": 5100000,
+                "pnlUsd": -192.34,
+                "liquidated": true,
+                "openedMs": 1799669100000,
+                "closedMs": 1799674200000,
+                "hash": "0x000000000000000000000000000000000000000000000000000001a304f0ffc0",
+                "id": "rnd_916e913b11a54980"
+              },
+              {
+                "kind": "perp_round",
+                "coin": "SOL",
+                "side": "long",
+                "leverage": null,
+                "leverageSource": null,
+                "size": "50",
+                "entryPx": 180,
+                "exitPx": 183,
+                "initialMarginUsd": null,
+                "returnPct": null,
+                "fundingUsd": 0,
+                "feesUsd": 5.4,
+                "durationMs": 1800000,
+                "pnlUsd": 144.6,
+                "liquidated": false,
+                "openedMs": 1799658600000,
+                "closedMs": 1799660400000,
+                "hash": "0x000000000000000000000000000000000000000000000000000001a3041e6d80",
+                "id": "rnd_18372b268b8287e2"
+              },
+              {
+                "kind": "perp_round",
+                "coin": "BTC",
+                "side": "short",
+                "leverage": {
+                  "value": 5,
+                  "type": "cross"
+                },
+                "leverageSource": "snapshot",
+                "size": "0.1",
+                "entryPx": 95000,
+                "exitPx": 96000,
+                "initialMarginUsd": 1900,
+                "returnPct": -5.522631578947369,
+                "fundingUsd": 0.8,
+                "feesUsd": 5.73,
+                "durationMs": 8400000,
+                "pnlUsd": -104.93,
+                "liquidated": false,
+                "openedMs": 1799590800000,
+                "closedMs": 1799599200000,
+                "hash": "0x000000000000000000000000000000000000000000000000000001a300789700",
+                "id": "rnd_9343dd8fce66999d"
+              },
+              {
+                "kind": "perp_round",
+                "coin": "ETH",
+                "side": "long",
+                "leverage": {
+                  "value": 10,
+                  "type": "isolated"
+                },
+                "leverageSource": "order",
+                "size": "3",
+                "entryPx": 3020,
+                "exitPx": 3150,
+                "initialMarginUsd": 906,
+                "returnPct": 42.301324503311264,
+                "fundingUsd": -1.2,
+                "feesUsd": 5.55,
+                "durationMs": 7200000,
+                "pnlUsd": 383.25,
+                "liquidated": false,
+                "openedMs": 1799571600000,
+                "closedMs": 1799578800000,
+                "hash": "0x000000000000000000000000000000000000000000000000000001a2ff414f80",
+                "id": "rnd_43896b5a354452f4"
+              }
+            ],
+            "perpsTopCloses": [
+              {
+                "kind": "perp_round",
+                "coin": "ETH",
+                "side": "long",
+                "leverage": {
+                  "value": 10,
+                  "type": "isolated"
+                },
+                "leverageSource": "order",
+                "size": "3",
+                "entryPx": 3020,
+                "exitPx": 3150,
+                "initialMarginUsd": 906,
+                "returnPct": 42.301324503311264,
+                "fundingUsd": -1.2,
+                "feesUsd": 5.55,
+                "durationMs": 7200000,
+                "pnlUsd": 383.25,
+                "liquidated": false,
+                "openedMs": 1799571600000,
+                "closedMs": 1799578800000,
+                "hash": "0x000000000000000000000000000000000000000000000000000001a2ff414f80",
+                "id": "rnd_43896b5a354452f4"
+              },
+              {
+                "kind": "perp_round",
+                "coin": "SOL",
+                "side": "long",
+                "leverage": null,
+                "leverageSource": null,
+                "size": "50",
+                "entryPx": 180,
+                "exitPx": 183,
+                "initialMarginUsd": null,
+                "returnPct": null,
+                "fundingUsd": 0,
+                "feesUsd": 5.4,
+                "durationMs": 1800000,
+                "pnlUsd": 144.6,
+                "liquidated": false,
+                "openedMs": 1799658600000,
+                "closedMs": 1799660400000,
+                "hash": "0x000000000000000000000000000000000000000000000000000001a3041e6d80",
+                "id": "rnd_18372b268b8287e2"
+              },
+              {
+                "kind": "perp_round",
+                "coin": "BTC",
+                "side": "short",
+                "leverage": {
+                  "value": 5,
+                  "type": "cross"
+                },
+                "leverageSource": "snapshot",
+                "size": "0.1",
+                "entryPx": 95000,
+                "exitPx": 96000,
+                "initialMarginUsd": 1900,
+                "returnPct": -5.522631578947369,
+                "fundingUsd": 0.8,
+                "feesUsd": 5.73,
+                "durationMs": 8400000,
+                "pnlUsd": -104.93,
+                "liquidated": false,
+                "openedMs": 1799590800000,
+                "closedMs": 1799599200000,
+                "hash": "0x000000000000000000000000000000000000000000000000000001a300789700",
+                "id": "rnd_9343dd8fce66999d"
+              },
+              {
+                "kind": "perp_round",
+                "coin": "DOGE",
+                "side": "long",
+                "leverage": {
+                  "value": 20,
+                  "type": "cross"
+                },
+                "leverageSource": "order",
+                "size": "10000",
+                "entryPx": 0.4,
+                "exitPx": 0.381,
+                "initialMarginUsd": 200,
+                "returnPct": -96.17,
+                "fundingUsd": 0,
+                "feesUsd": 2.34,
+                "durationMs": 5100000,
+                "pnlUsd": -192.34,
+                "liquidated": true,
+                "openedMs": 1799669100000,
+                "closedMs": 1799674200000,
+                "hash": "0x000000000000000000000000000000000000000000000000000001a304f0ffc0",
+                "id": "rnd_916e913b11a54980"
+              }
+            ],
+            "publishedBuildId": "build_fixture_03"
+          }
+        },
+        "topCloses": {
+          "topCloses": [
+            {
+              "kind": "perp_round",
+              "coin": "ETH",
+              "side": "long",
+              "leverage": {
+                "value": 10,
+                "type": "isolated"
+              },
+              "leverageSource": "order",
+              "size": "3",
+              "entryPx": 3020,
+              "exitPx": 3150,
+              "initialMarginUsd": 906,
+              "returnPct": 42.301324503311264,
+              "fundingUsd": -1.2,
+              "feesUsd": 5.55,
+              "durationMs": 7200000,
+              "pnlUsd": 383.25,
+              "liquidated": false,
+              "openedMs": 1799571600000,
+              "closedMs": 1799578800000,
+              "hash": "0x000000000000000000000000000000000000000000000000000001a2ff414f80",
+              "id": "rnd_43896b5a354452f4"
+            },
+            {
+              "kind": "perp_round",
+              "coin": "SOL",
+              "side": "long",
+              "leverage": null,
+              "leverageSource": null,
+              "size": "50",
+              "entryPx": 180,
+              "exitPx": 183,
+              "initialMarginUsd": null,
+              "returnPct": null,
+              "fundingUsd": 0,
+              "feesUsd": 5.4,
+              "durationMs": 1800000,
+              "pnlUsd": 144.6,
+              "liquidated": false,
+              "openedMs": 1799658600000,
+              "closedMs": 1799660400000,
+              "hash": "0x000000000000000000000000000000000000000000000000000001a3041e6d80",
+              "id": "rnd_18372b268b8287e2"
+            },
+            {
+              "kind": "perp_round",
+              "coin": "BTC",
+              "side": "short",
+              "leverage": {
+                "value": 5,
+                "type": "cross"
+              },
+              "leverageSource": "snapshot",
+              "size": "0.1",
+              "entryPx": 95000,
+              "exitPx": 96000,
+              "initialMarginUsd": 1900,
+              "returnPct": -5.522631578947369,
+              "fundingUsd": 0.8,
+              "feesUsd": 5.73,
+              "durationMs": 8400000,
+              "pnlUsd": -104.93,
+              "liquidated": false,
+              "openedMs": 1799590800000,
+              "closedMs": 1799599200000,
+              "hash": "0x000000000000000000000000000000000000000000000000000001a300789700",
+              "id": "rnd_9343dd8fce66999d"
+            },
+            {
+              "kind": "perp_round",
+              "coin": "DOGE",
+              "side": "long",
+              "leverage": {
+                "value": 20,
+                "type": "cross"
+              },
+              "leverageSource": "order",
+              "size": "10000",
+              "entryPx": 0.4,
+              "exitPx": 0.381,
+              "initialMarginUsd": 200,
+              "returnPct": -96.17,
+              "fundingUsd": 0,
+              "feesUsd": 2.34,
+              "durationMs": 5100000,
+              "pnlUsd": -192.34,
+              "liquidated": true,
+              "openedMs": 1799669100000,
+              "closedMs": 1799674200000,
+              "hash": "0x000000000000000000000000000000000000000000000000000001a304f0ffc0",
+              "id": "rnd_916e913b11a54980"
+            }
+          ],
+          "asOfMs": 1799744880000,
+          "perpsPartial": false,
+          "perpsAsOfMs": 1799744520000,
+          "perpsSnapshotId": "ps1_a3eae2a1241fadb02749295ff39583d7"
+        },
+        "breakdown": {
+          "total": 259.62,
+          "creatorFeesUsd": 0,
+          "figures": {
+            "perpsRealizedUsd": 250,
+            "perpsFundingUsd": -0.4,
+            "perpsFeesUsd": 19.98,
+            "perpsUnrealizedUsd": 30,
+            "perpsNetUsd": 259.62
+          },
+          "parts": {
+            "spot": 0,
+            "realized": 250,
+            "funding": -0.4,
+            "fees": -19.98,
+            "unrealized": 30,
+            "creatorFees": 0
+          }
+        }
+      }
+    },
+    {
+      "id": "perps-only-mcp",
+      "scenario": "perps-only",
+      "buildAt": "2027-01-12T09:10Z",
+      "surface": "mcp",
+      "args": {
+        "profileId": "prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef?rows=all",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "relays": "perps-only-api",
+        "sha256": "48c7a893961a8633a20bf8a526e987e98a566a676aa850da439d43478599c9aa",
+        "isError": false
+      }
+    },
+    {
+      "id": "perps-only-mcp-hosted",
+      "scenario": "perps-only",
+      "buildAt": "2027-01-12T09:10Z",
+      "surface": "mcp-hosted",
+      "args": {
+        "profileId": "prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef?rows=all",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "preamble": true,
+        "relays": "perps-only-api",
+        "sha256": "48c7a893961a8633a20bf8a526e987e98a566a676aa850da439d43478599c9aa",
+        "isError": false
+      }
+    },
+    {
+      "id": "perps-only-sdk",
+      "scenario": "perps-only",
+      "buildAt": "2027-01-12T09:10Z",
+      "surface": "sdk",
+      "args": {
+        "profileId": "prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef?rows=all",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "relays": "perps-only-api",
+        "part": "record",
+        "sha256": "8f10ef86f5cf00e6992fe3fad8e9efaaef40db3e0f213e3fde429b14f37956cc",
+        "isError": false
+      }
+    },
+    {
+      "id": "perps-only-cli",
+      "scenario": "perps-only",
+      "buildAt": "2027-01-12T09:10Z",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent record prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef?rows=all",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "lines": [
+          "Record fixture",
+          "Perps as of 2027-01-12T09:02:00.000Z",
+          "Long DOGE 20x · size 10000 · entry 0.4 · exit 0.381 · -$192.34 · -96.2% ROE · funding 0 · fees 2.34 · duration 5100s · LIQUIDATED · https://app.hyperliquid.xyz/explorer/tx/0x000000000000000000000000000000000000000000000000000001a304f0ffc0",
+          "Long SOL leverage not recorded · size 50 · entry 180 · exit 183 · +$144.60 · ROE unknown · funding 0 · fees 5.4 · duration 1800s · https://app.hyperliquid.xyz/explorer/tx/0x000000000000000000000000000000000000000000000000000001a3041e6d80",
+          "Short BTC 5x · size 0.1 · entry 95000 · exit 96000 · -$104.93 · -5.5% ROE · funding 0.8 · fees 5.73 · duration 8400s · https://app.hyperliquid.xyz/explorer/tx/0x000000000000000000000000000000000000000000000000000001a300789700",
+          "Long ETH 10x · size 3 · entry 3020 · exit 3150 · +$383.25 · 42.3% ROE · funding -1.2 · fees 5.55 · duration 7200s · https://app.hyperliquid.xyz/explorer/tx/0x000000000000000000000000000000000000000000000000000001a2ff414f80"
+        ]
+      }
+    },
+    {
+      "id": "perps-only-cli-json",
+      "scenario": "perps-only",
+      "buildAt": "2027-01-12T09:10Z",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent record prof_0123456789abcdef --json"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef?rows=all",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "relays": "perps-only-api",
+        "sha256": "48c7a893961a8633a20bf8a526e987e98a566a676aa850da439d43478599c9aa"
+      }
+    },
+    {
+      "id": "older-facts-api",
+      "scenario": "older-facts",
+      "buildAt": "2027-01-12T09:10Z",
+      "surface": "api-source",
+      "says": "The same build from facts stored before fill prices and leverage actions were kept: sizes and averages are unknown, leverage is what a certified hour saw or nothing, and no return is made up.",
+      "evidence": "pure API source on made-up stored facts, over a stand-in spot record, build id and push cursor; the database, the perps jobs and the keyed route are not executed",
+      "outcome": {
+        "read": {
+          "kind": "certified",
+          "retained": false
+        },
+        "record": {
+          "success": true,
+          "seq": 43,
+          "record": {
+            "profileId": "prof_0123456789abcdef",
+            "name": "Record fixture",
+            "wallet": "fixture-public-owner",
+            "totals": {
+              "realizedNetUsd": 279.62,
+              "feesUsd": 1.5,
+              "wins": 3,
+              "losses": 3,
+              "counted": 6,
+              "unvalued": 0,
+              "bestUsd": 383.25,
+              "worstUsd": -192.34,
+              "unrealizedUsd": 70,
+              "totalPnlUsd": 362.12,
+              "creatorFeesUsd": 12.5,
+              "perpsRealizedUsd": 250,
+              "perpsFundingUsd": -0.4,
+              "perpsFeesUsd": 19.98,
+              "perpsUnrealizedUsd": 30,
+              "perpsNetUsd": 259.62,
+              "perpsCoverageFromMs": 1799539200000,
+              "perpsPartial": false,
+              "perpsAsOfMs": 1799744520000,
+              "perpsSnapshotId": "ps1_a3eae2a1241fadb02749295ff39583d7"
+            },
+            "winRatePct": null,
+            "minClosesForRate": 10,
+            "unrealizedUsd": 70,
+            "totalPnlUsd": 362.12,
+            "creatorFeesUsd": 12.5,
+            "rows": [
+              {
+                "kind": "trade",
+                "signature": "SigFake061111111111111111111111111111111111111111",
+                "side": "buy",
+                "mint": "MoonFake11111111111111111111111111111111111",
+                "chain": "solana",
+                "symbol": "MOON",
+                "timestampMs": 1799737200000,
+                "counted": false,
+                "usdAmount": 120
+              },
+              {
+                "kind": "perp_round",
+                "coin": "DOGE",
+                "side": "long",
+                "leverage": {
+                  "value": 20,
+                  "type": "cross"
+                },
+                "leverageSource": "snapshot",
+                "size": null,
+                "entryPx": null,
+                "exitPx": null,
+                "initialMarginUsd": null,
+                "returnPct": null,
+                "fundingUsd": 0,
+                "feesUsd": 2.34,
+                "durationMs": 5100000,
+                "pnlUsd": -192.34,
+                "liquidated": true,
+                "openedMs": 1799669100000,
+                "closedMs": 1799674200000,
+                "hash": "0x000000000000000000000000000000000000000000000000000001a304f0ffc0",
+                "id": "rnd_916e913b11a54980"
+              },
+              {
+                "kind": "trade",
+                "signature": "SigFake051111111111111111111111111111111111111111",
+                "side": "sell",
+                "mint": "MintFake11111111111111111111111111111111111",
+                "chain": "solana",
+                "symbol": "FAKE",
+                "timestampMs": 1799661600000,
+                "counted": true,
+                "usdAmount": 260,
+                "realizedNetUsd": 60
+              },
+              {
+                "kind": "perp_round",
+                "coin": "SOL",
+                "side": "long",
+                "leverage": null,
+                "leverageSource": null,
+                "size": null,
+                "entryPx": null,
+                "exitPx": null,
+                "initialMarginUsd": null,
+                "returnPct": null,
+                "fundingUsd": 0,
+                "feesUsd": 5.4,
+                "durationMs": 1800000,
+                "pnlUsd": 144.6,
+                "liquidated": false,
+                "openedMs": 1799658600000,
+                "closedMs": 1799660400000,
+                "hash": "0x000000000000000000000000000000000000000000000000000001a3041e6d80",
+                "id": "rnd_18372b268b8287e2"
+              },
+              {
+                "kind": "trade",
+                "signature": "SigFake041111111111111111111111111111111111111111",
+                "side": "sell",
+                "mint": "MoonFake11111111111111111111111111111111111",
+                "chain": "solana",
+                "symbol": "MOON",
+                "timestampMs": 1799599200000,
+                "counted": true,
+                "usdAmount": 90,
+                "realizedNetUsd": -10
+              },
+              {
+                "kind": "perp_round",
+                "coin": "BTC",
+                "side": "short",
+                "leverage": {
+                  "value": 5,
+                  "type": "cross"
+                },
+                "leverageSource": "snapshot",
+                "size": null,
+                "entryPx": null,
+                "exitPx": null,
+                "initialMarginUsd": null,
+                "returnPct": null,
+                "fundingUsd": 0.8,
+                "feesUsd": 5.73,
+                "durationMs": 8400000,
+                "pnlUsd": -104.93,
+                "liquidated": false,
+                "openedMs": 1799590800000,
+                "closedMs": 1799599200000,
+                "hash": "0x000000000000000000000000000000000000000000000000000001a300789700",
+                "id": "rnd_9343dd8fce66999d"
+              },
+              {
+                "kind": "trade",
+                "signature": "SigFake031111111111111111111111111111111111111111",
+                "side": "buy",
+                "mint": "MoonFake11111111111111111111111111111111111",
+                "chain": "solana",
+                "symbol": "MOON",
+                "timestampMs": 1799582400000,
+                "counted": false,
+                "usdAmount": 100
+              },
+              {
+                "kind": "perp_round",
+                "coin": "ETH",
+                "side": "long",
+                "leverage": {
+                  "value": 10,
+                  "type": "isolated"
+                },
+                "leverageSource": "snapshot",
+                "size": null,
+                "entryPx": null,
+                "exitPx": null,
+                "initialMarginUsd": null,
+                "returnPct": null,
+                "fundingUsd": -1.2,
+                "feesUsd": 5.55,
+                "durationMs": 7200000,
+                "pnlUsd": 383.25,
+                "liquidated": false,
+                "openedMs": 1799571600000,
+                "closedMs": 1799578800000,
+                "hash": "0x000000000000000000000000000000000000000000000000000001a2ff414f80",
+                "id": "rnd_43896b5a354452f4"
+              },
+              {
+                "kind": "trade",
+                "signature": "SigFake021111111111111111111111111111111111111111",
+                "side": "buy",
+                "mint": "MintFake11111111111111111111111111111111111",
+                "chain": "solana",
+                "symbol": "FAKE",
+                "timestampMs": 1799568000000,
+                "counted": false,
+                "usdAmount": 200
+              },
+              {
+                "kind": "trade",
+                "signature": "SigFake011111111111111111111111111111111111111111",
+                "side": "buy",
+                "mint": "MintFake11111111111111111111111111111111111",
+                "chain": "solana",
+                "symbol": "FAKE",
+                "timestampMs": 1799524800000,
+                "counted": false,
+                "usdAmount": 50
+              }
+            ],
+            "rowsCursor": null,
+            "rowsTotal": 10,
+            "scannedTrades": 6,
+            "truncated": false,
+            "perpsRealizedUsd": 250,
+            "perpsFundingUsd": -0.4,
+            "perpsFeesUsd": 19.98,
+            "perpsUnrealizedUsd": 30,
+            "perpsNetUsd": 259.62,
+            "perpsCoverageFromMs": 1799539200000,
+            "perpsPartial": false,
+            "perpsAsOfMs": 1799744520000,
+            "perpsSnapshotId": "ps1_a3eae2a1241fadb02749295ff39583d7",
+            "perpRounds": [
+              {
+                "kind": "perp_round",
+                "coin": "DOGE",
+                "side": "long",
+                "leverage": {
+                  "value": 20,
+                  "type": "cross"
+                },
+                "leverageSource": "snapshot",
+                "size": null,
+                "entryPx": null,
+                "exitPx": null,
+                "initialMarginUsd": null,
+                "returnPct": null,
+                "fundingUsd": 0,
+                "feesUsd": 2.34,
+                "durationMs": 5100000,
+                "pnlUsd": -192.34,
+                "liquidated": true,
+                "openedMs": 1799669100000,
+                "closedMs": 1799674200000,
+                "hash": "0x000000000000000000000000000000000000000000000000000001a304f0ffc0",
+                "id": "rnd_916e913b11a54980"
+              },
+              {
+                "kind": "perp_round",
+                "coin": "SOL",
+                "side": "long",
+                "leverage": null,
+                "leverageSource": null,
+                "size": null,
+                "entryPx": null,
+                "exitPx": null,
+                "initialMarginUsd": null,
+                "returnPct": null,
+                "fundingUsd": 0,
+                "feesUsd": 5.4,
+                "durationMs": 1800000,
+                "pnlUsd": 144.6,
+                "liquidated": false,
+                "openedMs": 1799658600000,
+                "closedMs": 1799660400000,
+                "hash": "0x000000000000000000000000000000000000000000000000000001a3041e6d80",
+                "id": "rnd_18372b268b8287e2"
+              },
+              {
+                "kind": "perp_round",
+                "coin": "BTC",
+                "side": "short",
+                "leverage": {
+                  "value": 5,
+                  "type": "cross"
+                },
+                "leverageSource": "snapshot",
+                "size": null,
+                "entryPx": null,
+                "exitPx": null,
+                "initialMarginUsd": null,
+                "returnPct": null,
+                "fundingUsd": 0.8,
+                "feesUsd": 5.73,
+                "durationMs": 8400000,
+                "pnlUsd": -104.93,
+                "liquidated": false,
+                "openedMs": 1799590800000,
+                "closedMs": 1799599200000,
+                "hash": "0x000000000000000000000000000000000000000000000000000001a300789700",
+                "id": "rnd_9343dd8fce66999d"
+              },
+              {
+                "kind": "perp_round",
+                "coin": "ETH",
+                "side": "long",
+                "leverage": {
+                  "value": 10,
+                  "type": "isolated"
+                },
+                "leverageSource": "snapshot",
+                "size": null,
+                "entryPx": null,
+                "exitPx": null,
+                "initialMarginUsd": null,
+                "returnPct": null,
+                "fundingUsd": -1.2,
+                "feesUsd": 5.55,
+                "durationMs": 7200000,
+                "pnlUsd": 383.25,
+                "liquidated": false,
+                "openedMs": 1799571600000,
+                "closedMs": 1799578800000,
+                "hash": "0x000000000000000000000000000000000000000000000000000001a2ff414f80",
+                "id": "rnd_43896b5a354452f4"
+              }
+            ],
+            "perpsTopCloses": [
+              {
+                "kind": "perp_round",
+                "coin": "ETH",
+                "side": "long",
+                "leverage": {
+                  "value": 10,
+                  "type": "isolated"
+                },
+                "leverageSource": "snapshot",
+                "size": null,
+                "entryPx": null,
+                "exitPx": null,
+                "initialMarginUsd": null,
+                "returnPct": null,
+                "fundingUsd": -1.2,
+                "feesUsd": 5.55,
+                "durationMs": 7200000,
+                "pnlUsd": 383.25,
+                "liquidated": false,
+                "openedMs": 1799571600000,
+                "closedMs": 1799578800000,
+                "hash": "0x000000000000000000000000000000000000000000000000000001a2ff414f80",
+                "id": "rnd_43896b5a354452f4"
+              },
+              {
+                "kind": "perp_round",
+                "coin": "SOL",
+                "side": "long",
+                "leverage": null,
+                "leverageSource": null,
+                "size": null,
+                "entryPx": null,
+                "exitPx": null,
+                "initialMarginUsd": null,
+                "returnPct": null,
+                "fundingUsd": 0,
+                "feesUsd": 5.4,
+                "durationMs": 1800000,
+                "pnlUsd": 144.6,
+                "liquidated": false,
+                "openedMs": 1799658600000,
+                "closedMs": 1799660400000,
+                "hash": "0x000000000000000000000000000000000000000000000000000001a3041e6d80",
+                "id": "rnd_18372b268b8287e2"
+              },
+              {
+                "kind": "perp_round",
+                "coin": "BTC",
+                "side": "short",
+                "leverage": {
+                  "value": 5,
+                  "type": "cross"
+                },
+                "leverageSource": "snapshot",
+                "size": null,
+                "entryPx": null,
+                "exitPx": null,
+                "initialMarginUsd": null,
+                "returnPct": null,
+                "fundingUsd": 0.8,
+                "feesUsd": 5.73,
+                "durationMs": 8400000,
+                "pnlUsd": -104.93,
+                "liquidated": false,
+                "openedMs": 1799590800000,
+                "closedMs": 1799599200000,
+                "hash": "0x000000000000000000000000000000000000000000000000000001a300789700",
+                "id": "rnd_9343dd8fce66999d"
+              },
+              {
+                "kind": "perp_round",
+                "coin": "DOGE",
+                "side": "long",
+                "leverage": {
+                  "value": 20,
+                  "type": "cross"
+                },
+                "leverageSource": "snapshot",
+                "size": null,
+                "entryPx": null,
+                "exitPx": null,
+                "initialMarginUsd": null,
+                "returnPct": null,
+                "fundingUsd": 0,
+                "feesUsd": 2.34,
+                "durationMs": 5100000,
+                "pnlUsd": -192.34,
+                "liquidated": true,
+                "openedMs": 1799669100000,
+                "closedMs": 1799674200000,
+                "hash": "0x000000000000000000000000000000000000000000000000000001a304f0ffc0",
+                "id": "rnd_916e913b11a54980"
+              }
+            ],
+            "publishedBuildId": "build_fixture_04"
+          }
+        },
+        "topCloses": {
+          "topCloses": [
+            {
+              "kind": "perp_round",
+              "coin": "ETH",
+              "side": "long",
+              "leverage": {
+                "value": 10,
+                "type": "isolated"
+              },
+              "leverageSource": "snapshot",
+              "size": null,
+              "entryPx": null,
+              "exitPx": null,
+              "initialMarginUsd": null,
+              "returnPct": null,
+              "fundingUsd": -1.2,
+              "feesUsd": 5.55,
+              "durationMs": 7200000,
+              "pnlUsd": 383.25,
+              "liquidated": false,
+              "openedMs": 1799571600000,
+              "closedMs": 1799578800000,
+              "hash": "0x000000000000000000000000000000000000000000000000000001a2ff414f80",
+              "id": "rnd_43896b5a354452f4"
+            },
+            {
+              "kind": "perp_round",
+              "coin": "SOL",
+              "side": "long",
+              "leverage": null,
+              "leverageSource": null,
+              "size": null,
+              "entryPx": null,
+              "exitPx": null,
+              "initialMarginUsd": null,
+              "returnPct": null,
+              "fundingUsd": 0,
+              "feesUsd": 5.4,
+              "durationMs": 1800000,
+              "pnlUsd": 144.6,
+              "liquidated": false,
+              "openedMs": 1799658600000,
+              "closedMs": 1799660400000,
+              "hash": "0x000000000000000000000000000000000000000000000000000001a3041e6d80",
+              "id": "rnd_18372b268b8287e2"
+            },
+            {
+              "signature": "SigFake051111111111111111111111111111111111111111",
+              "side": "sell",
+              "mint": "MintFake11111111111111111111111111111111111",
+              "chain": "solana",
+              "symbol": "FAKE",
+              "timestampMs": 1799661600000,
+              "counted": true,
+              "usdAmount": 260,
+              "realizedNetUsd": 60
+            },
+            {
+              "signature": "SigFake041111111111111111111111111111111111111111",
+              "side": "sell",
+              "mint": "MoonFake11111111111111111111111111111111111",
+              "chain": "solana",
+              "symbol": "MOON",
+              "timestampMs": 1799599200000,
+              "counted": true,
+              "usdAmount": 90,
+              "realizedNetUsd": -10
+            },
+            {
+              "kind": "perp_round",
+              "coin": "BTC",
+              "side": "short",
+              "leverage": {
+                "value": 5,
+                "type": "cross"
+              },
+              "leverageSource": "snapshot",
+              "size": null,
+              "entryPx": null,
+              "exitPx": null,
+              "initialMarginUsd": null,
+              "returnPct": null,
+              "fundingUsd": 0.8,
+              "feesUsd": 5.73,
+              "durationMs": 8400000,
+              "pnlUsd": -104.93,
+              "liquidated": false,
+              "openedMs": 1799590800000,
+              "closedMs": 1799599200000,
+              "hash": "0x000000000000000000000000000000000000000000000000000001a300789700",
+              "id": "rnd_9343dd8fce66999d"
+            }
+          ],
+          "asOfMs": 1799744880000,
+          "perpsPartial": false,
+          "perpsAsOfMs": 1799744520000,
+          "perpsSnapshotId": "ps1_a3eae2a1241fadb02749295ff39583d7"
+        },
+        "breakdown": {
+          "total": 362.12,
+          "creatorFeesUsd": 12.5,
+          "figures": {
+            "perpsRealizedUsd": 250,
+            "perpsFundingUsd": -0.4,
+            "perpsFeesUsd": 19.98,
+            "perpsUnrealizedUsd": 30,
+            "perpsNetUsd": 259.62
+          },
+          "parts": {
+            "spot": 90,
+            "realized": 250,
+            "funding": -0.4,
+            "fees": -19.98,
+            "unrealized": 30,
+            "creatorFees": 12.5
+          }
+        }
+      }
+    },
+    {
+      "id": "older-facts-mcp",
+      "scenario": "older-facts",
+      "buildAt": "2027-01-12T09:10Z",
+      "surface": "mcp",
+      "args": {
+        "profileId": "prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef?rows=all",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "relays": "older-facts-api",
+        "sha256": "05b3fdfb828ec23e4b55973515394963f35e6f4c415fa29656448e246624e1c3",
+        "isError": false
+      }
+    },
+    {
+      "id": "older-facts-mcp-hosted",
+      "scenario": "older-facts",
+      "buildAt": "2027-01-12T09:10Z",
+      "surface": "mcp-hosted",
+      "args": {
+        "profileId": "prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef?rows=all",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "preamble": true,
+        "relays": "older-facts-api",
+        "sha256": "05b3fdfb828ec23e4b55973515394963f35e6f4c415fa29656448e246624e1c3",
+        "isError": false
+      }
+    },
+    {
+      "id": "older-facts-sdk",
+      "scenario": "older-facts",
+      "buildAt": "2027-01-12T09:10Z",
+      "surface": "sdk",
+      "args": {
+        "profileId": "prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef?rows=all",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "relays": "older-facts-api",
+        "part": "record",
+        "sha256": "ee43c66edc4ba5ac1ded59d2ab8ce533bd3d424a6c06944fd8f14f55f235a95d",
+        "isError": false
+      }
+    },
+    {
+      "id": "older-facts-cli",
+      "scenario": "older-facts",
+      "buildAt": "2027-01-12T09:10Z",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent record prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef?rows=all",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "lines": [
+          "Record fixture",
+          "Perps as of 2027-01-12T09:02:00.000Z",
+          "buy MOON 120",
+          "Long DOGE 20x · size unknown · entry unknown · exit unknown · -$192.34 · ROE unknown · funding 0 · fees 2.34 · duration 5100s · LIQUIDATED · https://app.hyperliquid.xyz/explorer/tx/0x000000000000000000000000000000000000000000000000000001a304f0ffc0",
+          "sell FAKE 260",
+          "Long SOL leverage not recorded · size unknown · entry unknown · exit unknown · +$144.60 · ROE unknown · funding 0 · fees 5.4 · duration 1800s · https://app.hyperliquid.xyz/explorer/tx/0x000000000000000000000000000000000000000000000000000001a3041e6d80",
+          "sell MOON 90",
+          "Short BTC 5x · size unknown · entry unknown · exit unknown · -$104.93 · ROE unknown · funding 0.8 · fees 5.73 · duration 8400s · https://app.hyperliquid.xyz/explorer/tx/0x000000000000000000000000000000000000000000000000000001a300789700",
+          "buy MOON 100",
+          "Long ETH 10x · size unknown · entry unknown · exit unknown · +$383.25 · ROE unknown · funding -1.2 · fees 5.55 · duration 7200s · https://app.hyperliquid.xyz/explorer/tx/0x000000000000000000000000000000000000000000000000000001a2ff414f80",
+          "buy FAKE 200",
+          "buy FAKE 50"
+        ]
+      }
+    },
+    {
+      "id": "older-facts-cli-json",
+      "scenario": "older-facts",
+      "buildAt": "2027-01-12T09:10Z",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent record prof_0123456789abcdef --json"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef?rows=all",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "relays": "older-facts-api",
+        "sha256": "05b3fdfb828ec23e4b55973515394963f35e6f4c415fa29656448e246624e1c3"
+      }
+    },
+    {
+      "id": "delayed-api",
+      "scenario": "delayed",
+      "buildAt": "2027-01-12T11:45Z",
+      "surface": "api-source",
+      "says": "Day 2 11:45, certification still at 09:02: 2 h 43 min old is past the 2-hour line, so the same figures are served partial.",
+      "evidence": "pure API source on made-up stored facts, over a stand-in spot record, build id and push cursor; the database, the perps jobs and the keyed route are not executed",
+      "outcome": {
+        "read": {
+          "kind": "delayed",
+          "retained": false
+        },
+        "record": {
+          "success": true,
+          "seq": 44,
+          "record": {
+            "profileId": "prof_0123456789abcdef",
+            "name": "Record fixture",
+            "wallet": "fixture-public-owner",
+            "totals": {
+              "realizedNetUsd": 279.62,
+              "feesUsd": 1.5,
+              "wins": 3,
+              "losses": 3,
+              "counted": 6,
+              "unvalued": 0,
+              "bestUsd": 383.25,
+              "worstUsd": -192.34,
+              "unrealizedUsd": 70,
+              "totalPnlUsd": 362.12,
+              "creatorFeesUsd": 12.5,
+              "perpsRealizedUsd": 250,
+              "perpsFundingUsd": -0.4,
+              "perpsFeesUsd": 19.98,
+              "perpsUnrealizedUsd": 30,
+              "perpsNetUsd": 259.62,
+              "perpsCoverageFromMs": 1799539200000,
+              "perpsPartial": true,
+              "perpsAsOfMs": 1799744520000,
+              "perpsSnapshotId": "ps1_a3eae2a1241fadb02749295ff39583d7"
+            },
+            "winRatePct": null,
+            "minClosesForRate": 10,
+            "unrealizedUsd": 70,
+            "totalPnlUsd": 362.12,
+            "creatorFeesUsd": 12.5,
+            "rows": [
+              {
+                "kind": "trade",
+                "signature": "SigFake061111111111111111111111111111111111111111",
+                "side": "buy",
+                "mint": "MoonFake11111111111111111111111111111111111",
+                "chain": "solana",
+                "symbol": "MOON",
+                "timestampMs": 1799737200000,
+                "counted": false,
+                "usdAmount": 120
+              },
+              {
+                "kind": "perp_round",
+                "coin": "DOGE",
+                "side": "long",
+                "leverage": {
+                  "value": 20,
+                  "type": "cross"
+                },
+                "leverageSource": "order",
+                "size": "10000",
+                "entryPx": 0.4,
+                "exitPx": 0.381,
+                "initialMarginUsd": 200,
+                "returnPct": -96.17,
+                "fundingUsd": 0,
+                "feesUsd": 2.34,
+                "durationMs": 5100000,
+                "pnlUsd": -192.34,
+                "liquidated": true,
+                "openedMs": 1799669100000,
+                "closedMs": 1799674200000,
+                "hash": "0x000000000000000000000000000000000000000000000000000001a304f0ffc0",
+                "id": "rnd_916e913b11a54980"
+              },
+              {
+                "kind": "trade",
+                "signature": "SigFake051111111111111111111111111111111111111111",
+                "side": "sell",
+                "mint": "MintFake11111111111111111111111111111111111",
+                "chain": "solana",
+                "symbol": "FAKE",
+                "timestampMs": 1799661600000,
+                "counted": true,
+                "usdAmount": 260,
+                "realizedNetUsd": 60
+              },
+              {
+                "kind": "perp_round",
+                "coin": "SOL",
+                "side": "long",
+                "leverage": null,
+                "leverageSource": null,
+                "size": "50",
+                "entryPx": 180,
+                "exitPx": 183,
+                "initialMarginUsd": null,
+                "returnPct": null,
+                "fundingUsd": 0,
+                "feesUsd": 5.4,
+                "durationMs": 1800000,
+                "pnlUsd": 144.6,
+                "liquidated": false,
+                "openedMs": 1799658600000,
+                "closedMs": 1799660400000,
+                "hash": "0x000000000000000000000000000000000000000000000000000001a3041e6d80",
+                "id": "rnd_18372b268b8287e2"
+              },
+              {
+                "kind": "trade",
+                "signature": "SigFake041111111111111111111111111111111111111111",
+                "side": "sell",
+                "mint": "MoonFake11111111111111111111111111111111111",
+                "chain": "solana",
+                "symbol": "MOON",
+                "timestampMs": 1799599200000,
+                "counted": true,
+                "usdAmount": 90,
+                "realizedNetUsd": -10
+              },
+              {
+                "kind": "perp_round",
+                "coin": "BTC",
+                "side": "short",
+                "leverage": {
+                  "value": 5,
+                  "type": "cross"
+                },
+                "leverageSource": "snapshot",
+                "size": "0.1",
+                "entryPx": 95000,
+                "exitPx": 96000,
+                "initialMarginUsd": 1900,
+                "returnPct": -5.522631578947369,
+                "fundingUsd": 0.8,
+                "feesUsd": 5.73,
+                "durationMs": 8400000,
+                "pnlUsd": -104.93,
+                "liquidated": false,
+                "openedMs": 1799590800000,
+                "closedMs": 1799599200000,
+                "hash": "0x000000000000000000000000000000000000000000000000000001a300789700",
+                "id": "rnd_9343dd8fce66999d"
+              },
+              {
+                "kind": "trade",
+                "signature": "SigFake031111111111111111111111111111111111111111",
+                "side": "buy",
+                "mint": "MoonFake11111111111111111111111111111111111",
+                "chain": "solana",
+                "symbol": "MOON",
+                "timestampMs": 1799582400000,
+                "counted": false,
+                "usdAmount": 100
+              },
+              {
+                "kind": "perp_round",
+                "coin": "ETH",
+                "side": "long",
+                "leverage": {
+                  "value": 10,
+                  "type": "isolated"
+                },
+                "leverageSource": "order",
+                "size": "3",
+                "entryPx": 3020,
+                "exitPx": 3150,
+                "initialMarginUsd": 906,
+                "returnPct": 42.301324503311264,
+                "fundingUsd": -1.2,
+                "feesUsd": 5.55,
+                "durationMs": 7200000,
+                "pnlUsd": 383.25,
+                "liquidated": false,
+                "openedMs": 1799571600000,
+                "closedMs": 1799578800000,
+                "hash": "0x000000000000000000000000000000000000000000000000000001a2ff414f80",
+                "id": "rnd_43896b5a354452f4"
+              },
+              {
+                "kind": "trade",
+                "signature": "SigFake021111111111111111111111111111111111111111",
+                "side": "buy",
+                "mint": "MintFake11111111111111111111111111111111111",
+                "chain": "solana",
+                "symbol": "FAKE",
+                "timestampMs": 1799568000000,
+                "counted": false,
+                "usdAmount": 200
+              },
+              {
+                "kind": "trade",
+                "signature": "SigFake011111111111111111111111111111111111111111",
+                "side": "buy",
+                "mint": "MintFake11111111111111111111111111111111111",
+                "chain": "solana",
+                "symbol": "FAKE",
+                "timestampMs": 1799524800000,
+                "counted": false,
+                "usdAmount": 50
+              }
+            ],
+            "rowsCursor": null,
+            "rowsTotal": 10,
+            "scannedTrades": 6,
+            "truncated": false,
+            "perpsRealizedUsd": 250,
+            "perpsFundingUsd": -0.4,
+            "perpsFeesUsd": 19.98,
+            "perpsUnrealizedUsd": 30,
+            "perpsNetUsd": 259.62,
+            "perpsCoverageFromMs": 1799539200000,
+            "perpsPartial": true,
+            "perpsAsOfMs": 1799744520000,
+            "perpsSnapshotId": "ps1_a3eae2a1241fadb02749295ff39583d7",
+            "perpRounds": [
+              {
+                "kind": "perp_round",
+                "coin": "DOGE",
+                "side": "long",
+                "leverage": {
+                  "value": 20,
+                  "type": "cross"
+                },
+                "leverageSource": "order",
+                "size": "10000",
+                "entryPx": 0.4,
+                "exitPx": 0.381,
+                "initialMarginUsd": 200,
+                "returnPct": -96.17,
+                "fundingUsd": 0,
+                "feesUsd": 2.34,
+                "durationMs": 5100000,
+                "pnlUsd": -192.34,
+                "liquidated": true,
+                "openedMs": 1799669100000,
+                "closedMs": 1799674200000,
+                "hash": "0x000000000000000000000000000000000000000000000000000001a304f0ffc0",
+                "id": "rnd_916e913b11a54980"
+              },
+              {
+                "kind": "perp_round",
+                "coin": "SOL",
+                "side": "long",
+                "leverage": null,
+                "leverageSource": null,
+                "size": "50",
+                "entryPx": 180,
+                "exitPx": 183,
+                "initialMarginUsd": null,
+                "returnPct": null,
+                "fundingUsd": 0,
+                "feesUsd": 5.4,
+                "durationMs": 1800000,
+                "pnlUsd": 144.6,
+                "liquidated": false,
+                "openedMs": 1799658600000,
+                "closedMs": 1799660400000,
+                "hash": "0x000000000000000000000000000000000000000000000000000001a3041e6d80",
+                "id": "rnd_18372b268b8287e2"
+              },
+              {
+                "kind": "perp_round",
+                "coin": "BTC",
+                "side": "short",
+                "leverage": {
+                  "value": 5,
+                  "type": "cross"
+                },
+                "leverageSource": "snapshot",
+                "size": "0.1",
+                "entryPx": 95000,
+                "exitPx": 96000,
+                "initialMarginUsd": 1900,
+                "returnPct": -5.522631578947369,
+                "fundingUsd": 0.8,
+                "feesUsd": 5.73,
+                "durationMs": 8400000,
+                "pnlUsd": -104.93,
+                "liquidated": false,
+                "openedMs": 1799590800000,
+                "closedMs": 1799599200000,
+                "hash": "0x000000000000000000000000000000000000000000000000000001a300789700",
+                "id": "rnd_9343dd8fce66999d"
+              },
+              {
+                "kind": "perp_round",
+                "coin": "ETH",
+                "side": "long",
+                "leverage": {
+                  "value": 10,
+                  "type": "isolated"
+                },
+                "leverageSource": "order",
+                "size": "3",
+                "entryPx": 3020,
+                "exitPx": 3150,
+                "initialMarginUsd": 906,
+                "returnPct": 42.301324503311264,
+                "fundingUsd": -1.2,
+                "feesUsd": 5.55,
+                "durationMs": 7200000,
+                "pnlUsd": 383.25,
+                "liquidated": false,
+                "openedMs": 1799571600000,
+                "closedMs": 1799578800000,
+                "hash": "0x000000000000000000000000000000000000000000000000000001a2ff414f80",
+                "id": "rnd_43896b5a354452f4"
+              }
+            ],
+            "perpsTopCloses": [
+              {
+                "kind": "perp_round",
+                "coin": "ETH",
+                "side": "long",
+                "leverage": {
+                  "value": 10,
+                  "type": "isolated"
+                },
+                "leverageSource": "order",
+                "size": "3",
+                "entryPx": 3020,
+                "exitPx": 3150,
+                "initialMarginUsd": 906,
+                "returnPct": 42.301324503311264,
+                "fundingUsd": -1.2,
+                "feesUsd": 5.55,
+                "durationMs": 7200000,
+                "pnlUsd": 383.25,
+                "liquidated": false,
+                "openedMs": 1799571600000,
+                "closedMs": 1799578800000,
+                "hash": "0x000000000000000000000000000000000000000000000000000001a2ff414f80",
+                "id": "rnd_43896b5a354452f4"
+              },
+              {
+                "kind": "perp_round",
+                "coin": "SOL",
+                "side": "long",
+                "leverage": null,
+                "leverageSource": null,
+                "size": "50",
+                "entryPx": 180,
+                "exitPx": 183,
+                "initialMarginUsd": null,
+                "returnPct": null,
+                "fundingUsd": 0,
+                "feesUsd": 5.4,
+                "durationMs": 1800000,
+                "pnlUsd": 144.6,
+                "liquidated": false,
+                "openedMs": 1799658600000,
+                "closedMs": 1799660400000,
+                "hash": "0x000000000000000000000000000000000000000000000000000001a3041e6d80",
+                "id": "rnd_18372b268b8287e2"
+              },
+              {
+                "kind": "perp_round",
+                "coin": "BTC",
+                "side": "short",
+                "leverage": {
+                  "value": 5,
+                  "type": "cross"
+                },
+                "leverageSource": "snapshot",
+                "size": "0.1",
+                "entryPx": 95000,
+                "exitPx": 96000,
+                "initialMarginUsd": 1900,
+                "returnPct": -5.522631578947369,
+                "fundingUsd": 0.8,
+                "feesUsd": 5.73,
+                "durationMs": 8400000,
+                "pnlUsd": -104.93,
+                "liquidated": false,
+                "openedMs": 1799590800000,
+                "closedMs": 1799599200000,
+                "hash": "0x000000000000000000000000000000000000000000000000000001a300789700",
+                "id": "rnd_9343dd8fce66999d"
+              },
+              {
+                "kind": "perp_round",
+                "coin": "DOGE",
+                "side": "long",
+                "leverage": {
+                  "value": 20,
+                  "type": "cross"
+                },
+                "leverageSource": "order",
+                "size": "10000",
+                "entryPx": 0.4,
+                "exitPx": 0.381,
+                "initialMarginUsd": 200,
+                "returnPct": -96.17,
+                "fundingUsd": 0,
+                "feesUsd": 2.34,
+                "durationMs": 5100000,
+                "pnlUsd": -192.34,
+                "liquidated": true,
+                "openedMs": 1799669100000,
+                "closedMs": 1799674200000,
+                "hash": "0x000000000000000000000000000000000000000000000000000001a304f0ffc0",
+                "id": "rnd_916e913b11a54980"
+              }
+            ],
+            "publishedBuildId": "build_fixture_05"
+          }
+        },
+        "topCloses": {
+          "topCloses": [
+            {
+              "kind": "perp_round",
+              "coin": "ETH",
+              "side": "long",
+              "leverage": {
+                "value": 10,
+                "type": "isolated"
+              },
+              "leverageSource": "order",
+              "size": "3",
+              "entryPx": 3020,
+              "exitPx": 3150,
+              "initialMarginUsd": 906,
+              "returnPct": 42.301324503311264,
+              "fundingUsd": -1.2,
+              "feesUsd": 5.55,
+              "durationMs": 7200000,
+              "pnlUsd": 383.25,
+              "liquidated": false,
+              "openedMs": 1799571600000,
+              "closedMs": 1799578800000,
+              "hash": "0x000000000000000000000000000000000000000000000000000001a2ff414f80",
+              "id": "rnd_43896b5a354452f4"
+            },
+            {
+              "kind": "perp_round",
+              "coin": "SOL",
+              "side": "long",
+              "leverage": null,
+              "leverageSource": null,
+              "size": "50",
+              "entryPx": 180,
+              "exitPx": 183,
+              "initialMarginUsd": null,
+              "returnPct": null,
+              "fundingUsd": 0,
+              "feesUsd": 5.4,
+              "durationMs": 1800000,
+              "pnlUsd": 144.6,
+              "liquidated": false,
+              "openedMs": 1799658600000,
+              "closedMs": 1799660400000,
+              "hash": "0x000000000000000000000000000000000000000000000000000001a3041e6d80",
+              "id": "rnd_18372b268b8287e2"
+            },
+            {
+              "signature": "SigFake051111111111111111111111111111111111111111",
+              "side": "sell",
+              "mint": "MintFake11111111111111111111111111111111111",
+              "chain": "solana",
+              "symbol": "FAKE",
+              "timestampMs": 1799661600000,
+              "counted": true,
+              "usdAmount": 260,
+              "realizedNetUsd": 60
+            },
+            {
+              "signature": "SigFake041111111111111111111111111111111111111111",
+              "side": "sell",
+              "mint": "MoonFake11111111111111111111111111111111111",
+              "chain": "solana",
+              "symbol": "MOON",
+              "timestampMs": 1799599200000,
+              "counted": true,
+              "usdAmount": 90,
+              "realizedNetUsd": -10
+            },
+            {
+              "kind": "perp_round",
+              "coin": "BTC",
+              "side": "short",
+              "leverage": {
+                "value": 5,
+                "type": "cross"
+              },
+              "leverageSource": "snapshot",
+              "size": "0.1",
+              "entryPx": 95000,
+              "exitPx": 96000,
+              "initialMarginUsd": 1900,
+              "returnPct": -5.522631578947369,
+              "fundingUsd": 0.8,
+              "feesUsd": 5.73,
+              "durationMs": 8400000,
+              "pnlUsd": -104.93,
+              "liquidated": false,
+              "openedMs": 1799590800000,
+              "closedMs": 1799599200000,
+              "hash": "0x000000000000000000000000000000000000000000000000000001a300789700",
+              "id": "rnd_9343dd8fce66999d"
+            }
+          ],
+          "asOfMs": 1799754180000,
+          "perpsPartial": true,
+          "perpsAsOfMs": 1799744520000,
+          "perpsSnapshotId": "ps1_a3eae2a1241fadb02749295ff39583d7"
+        },
+        "breakdown": {
+          "total": 362.12,
+          "creatorFeesUsd": 12.5,
+          "figures": {
+            "perpsRealizedUsd": 250,
+            "perpsFundingUsd": -0.4,
+            "perpsFeesUsd": 19.98,
+            "perpsUnrealizedUsd": 30,
+            "perpsNetUsd": 259.62
+          },
+          "parts": {
+            "spot": 90,
+            "realized": 250,
+            "funding": -0.4,
+            "fees": -19.98,
+            "unrealized": 30,
+            "creatorFees": 12.5
+          }
+        }
+      }
+    },
+    {
+      "id": "delayed-mcp",
+      "scenario": "delayed",
+      "buildAt": "2027-01-12T11:45Z",
+      "surface": "mcp",
+      "args": {
+        "profileId": "prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef?rows=all",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "relays": "delayed-api",
+        "sha256": "582c579e52f4ea3ec425ef428ebb967c2eafdb654c93c72c1ce486ca0c7b53ed",
+        "isError": false
+      }
+    },
+    {
+      "id": "delayed-mcp-hosted",
+      "scenario": "delayed",
+      "buildAt": "2027-01-12T11:45Z",
+      "surface": "mcp-hosted",
+      "args": {
+        "profileId": "prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef?rows=all",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "preamble": true,
+        "relays": "delayed-api",
+        "sha256": "582c579e52f4ea3ec425ef428ebb967c2eafdb654c93c72c1ce486ca0c7b53ed",
+        "isError": false
+      }
+    },
+    {
+      "id": "delayed-sdk",
+      "scenario": "delayed",
+      "buildAt": "2027-01-12T11:45Z",
+      "surface": "sdk",
+      "args": {
+        "profileId": "prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef?rows=all",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "relays": "delayed-api",
+        "part": "record",
+        "sha256": "33cf50b8ec0fba9abb8edeff136bc74a38a187dc257d2a5edd5330e126cc0191",
+        "isError": false
+      }
+    },
+    {
+      "id": "delayed-cli",
+      "scenario": "delayed",
+      "buildAt": "2027-01-12T11:45Z",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent record prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef?rows=all",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "lines": [
+          "Record fixture",
+          "Perps as of 2027-01-12T09:02:00.000Z (partial)",
+          "buy MOON 120",
+          "Long DOGE 20x · size 10000 · entry 0.4 · exit 0.381 · -$192.34 · -96.2% ROE · funding 0 · fees 2.34 · duration 5100s · LIQUIDATED · https://app.hyperliquid.xyz/explorer/tx/0x000000000000000000000000000000000000000000000000000001a304f0ffc0",
+          "sell FAKE 260",
+          "Long SOL leverage not recorded · size 50 · entry 180 · exit 183 · +$144.60 · ROE unknown · funding 0 · fees 5.4 · duration 1800s · https://app.hyperliquid.xyz/explorer/tx/0x000000000000000000000000000000000000000000000000000001a3041e6d80",
+          "sell MOON 90",
+          "Short BTC 5x · size 0.1 · entry 95000 · exit 96000 · -$104.93 · -5.5% ROE · funding 0.8 · fees 5.73 · duration 8400s · https://app.hyperliquid.xyz/explorer/tx/0x000000000000000000000000000000000000000000000000000001a300789700",
+          "buy MOON 100",
+          "Long ETH 10x · size 3 · entry 3020 · exit 3150 · +$383.25 · 42.3% ROE · funding -1.2 · fees 5.55 · duration 7200s · https://app.hyperliquid.xyz/explorer/tx/0x000000000000000000000000000000000000000000000000000001a2ff414f80",
+          "buy FAKE 200",
+          "buy FAKE 50"
+        ]
+      }
+    },
+    {
+      "id": "delayed-cli-json",
+      "scenario": "delayed",
+      "buildAt": "2027-01-12T11:45Z",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent record prof_0123456789abcdef --json"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef?rows=all",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "relays": "delayed-api",
+        "sha256": "582c579e52f4ea3ec425ef428ebb967c2eafdb654c93c72c1ce486ca0c7b53ed"
+      }
+    },
+    {
+      "id": "unavailable-api",
+      "scenario": "unavailable",
+      "buildAt": "2027-01-12T12:20Z",
+      "surface": "api-source",
+      "says": "Day 2 12:20, still 09:02: over 3 hours old, so the perps are unavailable. The record says so, gives the last certified time, and lists the swaps alone.",
+      "evidence": "pure API source on made-up stored facts, over a stand-in spot record, build id and push cursor; the database, the perps jobs and the keyed route are not executed",
+      "outcome": {
+        "read": {
+          "kind": "unavailable",
+          "reason": "stale_observation",
+          "retained": false
+        },
+        "record": {
+          "success": true,
+          "seq": 45,
+          "record": {
+            "profileId": "prof_0123456789abcdef",
+            "name": "Record fixture",
+            "wallet": "fixture-public-owner",
+            "totals": {
+              "realizedNetUsd": 50,
+              "feesUsd": 1.5,
+              "wins": 1,
+              "losses": 1,
+              "counted": 2,
+              "unvalued": 0,
+              "bestUsd": 60,
+              "worstUsd": -10,
+              "unrealizedUsd": 40,
+              "totalPnlUsd": 102.5,
+              "creatorFeesUsd": 12.5,
+              "perpsPartial": true,
+              "perpsUnavailable": true,
+              "perpsAsOfMs": 1799744520000
+            },
+            "winRatePct": null,
+            "minClosesForRate": 10,
+            "unrealizedUsd": 40,
+            "totalPnlUsd": 102.5,
+            "creatorFeesUsd": 12.5,
+            "rows": [
+              {
+                "kind": "trade",
+                "signature": "SigFake061111111111111111111111111111111111111111",
+                "side": "buy",
+                "mint": "MoonFake11111111111111111111111111111111111",
+                "chain": "solana",
+                "symbol": "MOON",
+                "timestampMs": 1799737200000,
+                "counted": false,
+                "usdAmount": 120
+              },
+              {
+                "kind": "trade",
+                "signature": "SigFake051111111111111111111111111111111111111111",
+                "side": "sell",
+                "mint": "MintFake11111111111111111111111111111111111",
+                "chain": "solana",
+                "symbol": "FAKE",
+                "timestampMs": 1799661600000,
+                "counted": true,
+                "usdAmount": 260,
+                "realizedNetUsd": 60
+              },
+              {
+                "kind": "trade",
+                "signature": "SigFake041111111111111111111111111111111111111111",
+                "side": "sell",
+                "mint": "MoonFake11111111111111111111111111111111111",
+                "chain": "solana",
+                "symbol": "MOON",
+                "timestampMs": 1799599200000,
+                "counted": true,
+                "usdAmount": 90,
+                "realizedNetUsd": -10
+              },
+              {
+                "kind": "trade",
+                "signature": "SigFake031111111111111111111111111111111111111111",
+                "side": "buy",
+                "mint": "MoonFake11111111111111111111111111111111111",
+                "chain": "solana",
+                "symbol": "MOON",
+                "timestampMs": 1799582400000,
+                "counted": false,
+                "usdAmount": 100
+              },
+              {
+                "kind": "trade",
+                "signature": "SigFake021111111111111111111111111111111111111111",
+                "side": "buy",
+                "mint": "MintFake11111111111111111111111111111111111",
+                "chain": "solana",
+                "symbol": "FAKE",
+                "timestampMs": 1799568000000,
+                "counted": false,
+                "usdAmount": 200
+              },
+              {
+                "kind": "trade",
+                "signature": "SigFake011111111111111111111111111111111111111111",
+                "side": "buy",
+                "mint": "MintFake11111111111111111111111111111111111",
+                "chain": "solana",
+                "symbol": "FAKE",
+                "timestampMs": 1799524800000,
+                "counted": false,
+                "usdAmount": 50
+              }
+            ],
+            "rowsCursor": null,
+            "rowsTotal": 6,
+            "scannedTrades": 6,
+            "truncated": false,
+            "perpsPartial": true,
+            "perpsUnavailable": true,
+            "perpsAsOfMs": 1799744520000,
+            "publishedBuildId": "build_fixture_06"
+          }
+        },
+        "breakdown": {
+          "total": 102.5,
+          "creatorFeesUsd": 12.5,
+          "figures": {},
+          "parts": {
+            "creatorFees": 12.5
+          }
+        }
+      }
+    },
+    {
+      "id": "unavailable-mcp",
+      "scenario": "unavailable",
+      "buildAt": "2027-01-12T12:20Z",
+      "surface": "mcp",
+      "args": {
+        "profileId": "prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef?rows=all",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "relays": "unavailable-api",
+        "sha256": "cd7e9341fe56968af8f661081f7eed23dc19b5a6dd6d766cf3dd71fb9b9b91d8",
+        "isError": false
+      }
+    },
+    {
+      "id": "unavailable-mcp-hosted",
+      "scenario": "unavailable",
+      "buildAt": "2027-01-12T12:20Z",
+      "surface": "mcp-hosted",
+      "args": {
+        "profileId": "prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef?rows=all",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "preamble": true,
+        "relays": "unavailable-api",
+        "sha256": "cd7e9341fe56968af8f661081f7eed23dc19b5a6dd6d766cf3dd71fb9b9b91d8",
+        "isError": false
+      }
+    },
+    {
+      "id": "unavailable-sdk",
+      "scenario": "unavailable",
+      "buildAt": "2027-01-12T12:20Z",
+      "surface": "sdk",
+      "args": {
+        "profileId": "prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef?rows=all",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "relays": "unavailable-api",
+        "part": "record",
+        "sha256": "015a1e36fa2a7d0bef280cefd7e044a7fe8a234c7bbb1473757c9641ea83ce2d",
+        "isError": false
+      }
+    },
+    {
+      "id": "unavailable-cli",
+      "scenario": "unavailable",
+      "buildAt": "2027-01-12T12:20Z",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent record prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef?rows=all",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "lines": [
+          "Record fixture",
+          "Perps as of 2027-01-12T09:02:00.000Z (unavailable)",
+          "buy MOON 120",
+          "sell FAKE 260",
+          "sell MOON 90",
+          "buy MOON 100",
+          "buy FAKE 200",
+          "buy FAKE 50"
+        ]
+      }
+    },
+    {
+      "id": "unavailable-cli-json",
+      "scenario": "unavailable",
+      "buildAt": "2027-01-12T12:20Z",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent record prof_0123456789abcdef --json"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef?rows=all",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "relays": "unavailable-api",
+        "sha256": "cd7e9341fe56968af8f661081f7eed23dc19b5a6dd6d766cf3dd71fb9b9b91d8"
+      }
+    },
+    {
+      "id": "never-certified-api",
+      "scenario": "never-certified",
+      "buildAt": "2027-01-11T10:00Z",
+      "surface": "api-source",
+      "says": "A wallet with fills and no certified hour yet: unavailable, with no perps time at all.",
+      "evidence": "pure API source on made-up stored facts, over a stand-in spot record, build id and push cursor; the database, the perps jobs and the keyed route are not executed",
+      "outcome": {
+        "read": {
+          "kind": "unavailable",
+          "reason": "no_certified_observation",
+          "retained": false
+        },
+        "record": {
+          "success": true,
+          "seq": 46,
+          "record": {
+            "profileId": "prof_0123456789abcdef",
+            "name": "Record fixture",
+            "wallet": "fixture-public-owner",
+            "totals": {
+              "realizedNetUsd": 50,
+              "feesUsd": 1.5,
+              "wins": 1,
+              "losses": 1,
+              "counted": 2,
+              "unvalued": 0,
+              "bestUsd": 60,
+              "worstUsd": -10,
+              "unrealizedUsd": 40,
+              "totalPnlUsd": 102.5,
+              "creatorFeesUsd": 12.5,
+              "perpsPartial": true,
+              "perpsUnavailable": true
+            },
+            "winRatePct": null,
+            "minClosesForRate": 10,
+            "unrealizedUsd": 40,
+            "totalPnlUsd": 102.5,
+            "creatorFeesUsd": 12.5,
+            "rows": [
+              {
+                "kind": "trade",
+                "signature": "SigFake061111111111111111111111111111111111111111",
+                "side": "buy",
+                "mint": "MoonFake11111111111111111111111111111111111",
+                "chain": "solana",
+                "symbol": "MOON",
+                "timestampMs": 1799737200000,
+                "counted": false,
+                "usdAmount": 120
+              },
+              {
+                "kind": "trade",
+                "signature": "SigFake051111111111111111111111111111111111111111",
+                "side": "sell",
+                "mint": "MintFake11111111111111111111111111111111111",
+                "chain": "solana",
+                "symbol": "FAKE",
+                "timestampMs": 1799661600000,
+                "counted": true,
+                "usdAmount": 260,
+                "realizedNetUsd": 60
+              },
+              {
+                "kind": "trade",
+                "signature": "SigFake041111111111111111111111111111111111111111",
+                "side": "sell",
+                "mint": "MoonFake11111111111111111111111111111111111",
+                "chain": "solana",
+                "symbol": "MOON",
+                "timestampMs": 1799599200000,
+                "counted": true,
+                "usdAmount": 90,
+                "realizedNetUsd": -10
+              },
+              {
+                "kind": "trade",
+                "signature": "SigFake031111111111111111111111111111111111111111",
+                "side": "buy",
+                "mint": "MoonFake11111111111111111111111111111111111",
+                "chain": "solana",
+                "symbol": "MOON",
+                "timestampMs": 1799582400000,
+                "counted": false,
+                "usdAmount": 100
+              },
+              {
+                "kind": "trade",
+                "signature": "SigFake021111111111111111111111111111111111111111",
+                "side": "buy",
+                "mint": "MintFake11111111111111111111111111111111111",
+                "chain": "solana",
+                "symbol": "FAKE",
+                "timestampMs": 1799568000000,
+                "counted": false,
+                "usdAmount": 200
+              },
+              {
+                "kind": "trade",
+                "signature": "SigFake011111111111111111111111111111111111111111",
+                "side": "buy",
+                "mint": "MintFake11111111111111111111111111111111111",
+                "chain": "solana",
+                "symbol": "FAKE",
+                "timestampMs": 1799524800000,
+                "counted": false,
+                "usdAmount": 50
+              }
+            ],
+            "rowsCursor": null,
+            "rowsTotal": 6,
+            "scannedTrades": 6,
+            "truncated": false,
+            "perpsPartial": true,
+            "perpsUnavailable": true,
+            "publishedBuildId": "build_fixture_07"
+          }
+        },
+        "breakdown": {
+          "total": 102.5,
+          "creatorFeesUsd": 12.5,
+          "figures": {},
+          "parts": {
+            "creatorFees": 12.5
+          }
+        }
+      }
+    },
+    {
+      "id": "never-certified-mcp",
+      "scenario": "never-certified",
+      "buildAt": "2027-01-11T10:00Z",
+      "surface": "mcp",
+      "args": {
+        "profileId": "prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef?rows=all",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "relays": "never-certified-api",
+        "sha256": "f7bec996fb4b65f63b1b002e31e2615f75e9bc495d8d30c135b084c47c018398",
+        "isError": false
+      }
+    },
+    {
+      "id": "never-certified-mcp-hosted",
+      "scenario": "never-certified",
+      "buildAt": "2027-01-11T10:00Z",
+      "surface": "mcp-hosted",
+      "args": {
+        "profileId": "prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef?rows=all",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "preamble": true,
+        "relays": "never-certified-api",
+        "sha256": "f7bec996fb4b65f63b1b002e31e2615f75e9bc495d8d30c135b084c47c018398",
+        "isError": false
+      }
+    },
+    {
+      "id": "never-certified-sdk",
+      "scenario": "never-certified",
+      "buildAt": "2027-01-11T10:00Z",
+      "surface": "sdk",
+      "args": {
+        "profileId": "prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef?rows=all",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "relays": "never-certified-api",
+        "part": "record",
+        "sha256": "80dc7c8e321b695e4baa50c40ece286ecbb90f9918953dad937b958420b0dc95",
+        "isError": false
+      }
+    },
+    {
+      "id": "never-certified-cli",
+      "scenario": "never-certified",
+      "buildAt": "2027-01-11T10:00Z",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent record prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef?rows=all",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "lines": [
+          "Record fixture",
+          "Perps as of not recorded (unavailable)",
+          "buy MOON 120",
+          "sell FAKE 260",
+          "sell MOON 90",
+          "buy MOON 100",
+          "buy FAKE 200",
+          "buy FAKE 50"
+        ]
+      }
+    },
+    {
+      "id": "never-certified-cli-json",
+      "scenario": "never-certified",
+      "buildAt": "2027-01-11T10:00Z",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent record prof_0123456789abcdef --json"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef?rows=all",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "relays": "never-certified-api",
+        "sha256": "f7bec996fb4b65f63b1b002e31e2615f75e9bc495d8d30c135b084c47c018398"
+      }
+    },
+    {
+      "id": "no-perps-api",
+      "scenario": "no-perps",
+      "buildAt": "2027-01-12T09:10Z",
+      "surface": "api-source",
+      "says": "An agent with no perps wallet: the swaps alone, each marked a trade, no perps figure and no perps time.",
+      "evidence": "pure API source on made-up stored facts, over a stand-in spot record, build id and push cursor; the database, the perps jobs and the keyed route are not executed",
+      "outcome": {
+        "read": {
+          "kind": "none"
+        },
+        "record": {
+          "success": true,
+          "seq": 47,
+          "record": {
+            "profileId": "prof_0123456789abcdef",
+            "name": "Record fixture",
+            "wallet": "fixture-public-owner",
+            "totals": {
+              "realizedNetUsd": 50,
+              "feesUsd": 1.5,
+              "wins": 1,
+              "losses": 1,
+              "counted": 2,
+              "unvalued": 0,
+              "bestUsd": 60,
+              "worstUsd": -10,
+              "unrealizedUsd": 40,
+              "totalPnlUsd": 102.5,
+              "creatorFeesUsd": 12.5
+            },
+            "winRatePct": null,
+            "minClosesForRate": 10,
+            "unrealizedUsd": 40,
+            "totalPnlUsd": 102.5,
+            "creatorFeesUsd": 12.5,
+            "rows": [
+              {
+                "kind": "trade",
+                "signature": "SigFake061111111111111111111111111111111111111111",
+                "side": "buy",
+                "mint": "MoonFake11111111111111111111111111111111111",
+                "chain": "solana",
+                "symbol": "MOON",
+                "timestampMs": 1799737200000,
+                "counted": false,
+                "usdAmount": 120
+              },
+              {
+                "kind": "trade",
+                "signature": "SigFake051111111111111111111111111111111111111111",
+                "side": "sell",
+                "mint": "MintFake11111111111111111111111111111111111",
+                "chain": "solana",
+                "symbol": "FAKE",
+                "timestampMs": 1799661600000,
+                "counted": true,
+                "usdAmount": 260,
+                "realizedNetUsd": 60
+              },
+              {
+                "kind": "trade",
+                "signature": "SigFake041111111111111111111111111111111111111111",
+                "side": "sell",
+                "mint": "MoonFake11111111111111111111111111111111111",
+                "chain": "solana",
+                "symbol": "MOON",
+                "timestampMs": 1799599200000,
+                "counted": true,
+                "usdAmount": 90,
+                "realizedNetUsd": -10
+              },
+              {
+                "kind": "trade",
+                "signature": "SigFake031111111111111111111111111111111111111111",
+                "side": "buy",
+                "mint": "MoonFake11111111111111111111111111111111111",
+                "chain": "solana",
+                "symbol": "MOON",
+                "timestampMs": 1799582400000,
+                "counted": false,
+                "usdAmount": 100
+              },
+              {
+                "kind": "trade",
+                "signature": "SigFake021111111111111111111111111111111111111111",
+                "side": "buy",
+                "mint": "MintFake11111111111111111111111111111111111",
+                "chain": "solana",
+                "symbol": "FAKE",
+                "timestampMs": 1799568000000,
+                "counted": false,
+                "usdAmount": 200
+              },
+              {
+                "kind": "trade",
+                "signature": "SigFake011111111111111111111111111111111111111111",
+                "side": "buy",
+                "mint": "MintFake11111111111111111111111111111111111",
+                "chain": "solana",
+                "symbol": "FAKE",
+                "timestampMs": 1799524800000,
+                "counted": false,
+                "usdAmount": 50
+              }
+            ],
+            "rowsCursor": null,
+            "rowsTotal": 6,
+            "scannedTrades": 6,
+            "truncated": false,
+            "publishedBuildId": "build_fixture_08"
+          }
+        },
+        "breakdown": {
+          "total": 102.5,
+          "creatorFeesUsd": 12.5,
+          "figures": {},
+          "parts": {
+            "creatorFees": 12.5
+          }
+        }
+      }
+    },
+    {
+      "id": "no-perps-mcp",
+      "scenario": "no-perps",
+      "buildAt": "2027-01-12T09:10Z",
+      "surface": "mcp",
+      "args": {
+        "profileId": "prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef?rows=all",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "relays": "no-perps-api",
+        "sha256": "317e55361c1e822cdfe2b26cb7334ede7c9379d37ff262eccc62db9aba35f998",
+        "isError": false
+      }
+    },
+    {
+      "id": "no-perps-mcp-hosted",
+      "scenario": "no-perps",
+      "buildAt": "2027-01-12T09:10Z",
+      "surface": "mcp-hosted",
+      "args": {
+        "profileId": "prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef?rows=all",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "preamble": true,
+        "relays": "no-perps-api",
+        "sha256": "317e55361c1e822cdfe2b26cb7334ede7c9379d37ff262eccc62db9aba35f998",
+        "isError": false
+      }
+    },
+    {
+      "id": "no-perps-sdk",
+      "scenario": "no-perps",
+      "buildAt": "2027-01-12T09:10Z",
+      "surface": "sdk",
+      "args": {
+        "profileId": "prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef?rows=all",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "relays": "no-perps-api",
+        "part": "record",
+        "sha256": "fd7cda622010648976e96d0e34b2a05e01e3ebb845692d07884c182491145c30",
+        "isError": false
+      }
+    },
+    {
+      "id": "no-perps-cli",
+      "scenario": "no-perps",
+      "buildAt": "2027-01-12T09:10Z",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent record prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef?rows=all",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "lines": [
+          "Record fixture",
+          "Perps as of not recorded",
+          "buy MOON 120",
+          "sell FAKE 260",
+          "sell MOON 90",
+          "buy MOON 100",
+          "buy FAKE 200",
+          "buy FAKE 50"
+        ]
+      }
+    },
+    {
+      "id": "no-perps-cli-json",
+      "scenario": "no-perps",
+      "buildAt": "2027-01-12T09:10Z",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent record prof_0123456789abcdef --json"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef?rows=all",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "relays": "no-perps-api",
+        "sha256": "317e55361c1e822cdfe2b26cb7334ede7c9379d37ff262eccc62db9aba35f998"
+      }
+    },
+    {
+      "id": "builder-dex-round-row",
+      "scenario": "builder-dex",
+      "surface": "api-source",
+      "says": "A builder-dex round as the source's round row gives it: the dex:COIN name whole, 20x isolated from the leverage action, and the return on the initial margin at the largest size.",
+      "evidence": "the source's roundRow on made-up facts; the record built above does not count builder-dex rounds at this commit",
+      "outcome": {
+        "row": {
+          "kind": "perp_round",
+          "coin": "xyz:S&P500",
+          "side": "long",
+          "leverage": {
+            "value": 20,
+            "type": "isolated"
+          },
+          "leverageSource": "order",
+          "size": "6",
+          "entryPx": 7687.5,
+          "exitPx": 7969.95,
+          "initialMarginUsd": 2306.25,
+          "returnPct": 73.26612466124661,
+          "fundingUsd": 2,
+          "feesUsd": 7,
+          "durationMs": 3600000,
+          "pnlUsd": 1689.7,
+          "liquidated": false,
+          "openedMs": 1799679600000,
+          "closedMs": 1799683200000,
+          "hash": "0x000000000000000000000000000000000000000000000000000001a3057a5400",
+          "id": "rnd_1f62eeb886ea9203"
+        }
+      }
+    },
+    {
+      "id": "route-fixture-api",
+      "scenario": "route-fixture",
+      "surface": "api-source",
+      "evidence": "packages/shared/src/agent-record.fixture.json, the route answer Candle's CLI, MCP and SDK tests share, read as it is",
+      "says": "A record whose one row is a builder-dex round.",
+      "outcome": {
+        "record": {
+          "success": true,
+          "seq": 42,
+          "record": {
+            "profileId": "prof_0123456789abcdef",
+            "name": "Perps fixture",
+            "wallet": "fixture-public-owner",
+            "totals": {
+              "realizedNetUsd": 1694.7,
+              "feesUsd": 7,
+              "wins": 1,
+              "losses": 0,
+              "counted": 1,
+              "unvalued": 0,
+              "bestUsd": 1694.7,
+              "worstUsd": 1694.7
+            },
+            "winRatePct": null,
+            "minClosesForRate": 10,
+            "rows": [
+              {
+                "kind": "perp_round",
+                "coin": "xyz:S&P500",
+                "side": "long",
+                "leverage": {
+                  "value": 20,
+                  "type": "isolated"
+                },
+                "leverageSource": "order",
+                "pnlUsd": 1694.7,
+                "liquidated": false,
+                "openedMs": 1794920400000,
+                "closedMs": 1794924000000,
+                "hash": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "size": "6",
+                "entryPx": 7687.5,
+                "exitPx": 7969.95,
+                "initialMarginUsd": 2306.25,
+                "returnPct": 73.4829268292683,
+                "fundingUsd": 2,
+                "feesUsd": 7,
+                "durationMs": 3600000
+              }
+            ],
+            "rowsCursor": null,
+            "rowsTotal": 1,
+            "scannedTrades": 0,
+            "truncated": false,
+            "perpsRealizedUsd": 1699.7,
+            "perpsFundingUsd": 2,
+            "perpsFeesUsd": 7,
+            "perpsUnrealizedUsd": 0,
+            "perpsNetUsd": 1694.7,
+            "perpsAsOfMs": 1794924000000,
+            "perpsCoverageFromMs": 1794398400000,
+            "perpsPartial": false
+          }
+        }
+      }
+    },
+    {
+      "id": "route-fixture-mcp",
+      "scenario": "route-fixture",
+      "surface": "mcp",
+      "args": {
+        "profileId": "prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef?rows=all",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "relays": "route-fixture-api",
+        "sha256": "695162160998a2a4f7b1d30de362521b712feb38417031602e4118fc552ccad6",
+        "isError": false
+      }
+    },
+    {
+      "id": "route-fixture-mcp-hosted",
+      "scenario": "route-fixture",
+      "surface": "mcp-hosted",
+      "args": {
+        "profileId": "prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef?rows=all",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "preamble": true,
+        "relays": "route-fixture-api",
+        "sha256": "695162160998a2a4f7b1d30de362521b712feb38417031602e4118fc552ccad6",
+        "isError": false
+      }
+    },
+    {
+      "id": "route-fixture-sdk",
+      "scenario": "route-fixture",
+      "surface": "sdk",
+      "args": {
+        "profileId": "prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef?rows=all",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "relays": "route-fixture-api",
+        "part": "record",
+        "sha256": "1397cd4743301dfc3702e765d53e6ec517509cc97fff950ae7b95feacadb413d",
+        "isError": false
+      }
+    },
+    {
+      "id": "route-fixture-cli",
+      "scenario": "route-fixture",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent record prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef?rows=all",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "lines": [
+          "Perps fixture",
+          "Perps as of 2026-11-17T14:00:00.000Z",
+          "Long xyz:S&P500 20x · size 6 · entry 7687.5 · exit 7969.95 · +$1,694.70 · 73.5% ROE · funding 2 · fees 7 · duration 3600s · https://app.hyperliquid.xyz/explorer/tx/0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        ]
+      }
+    },
+    {
+      "id": "route-fixture-cli-json",
+      "scenario": "route-fixture",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent record prof_0123456789abcdef --json"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef?rows=all",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "relays": "route-fixture-api",
+        "sha256": "695162160998a2a4f7b1d30de362521b712feb38417031602e4118fc552ccad6"
+      }
+    },
+    {
+      "id": "older-bundle-api",
+      "scenario": "older-bundle",
+      "surface": "api-stub",
+      "evidence": "a response stand-in: the first scenario's answer without the fields this source adds, as a bundle published before it carries them",
+      "says": "Rounds published before the added fields: each is still a round, and what is missing is unknown, never zero.",
+      "outcome": {
+        "removed": [
+          "size",
+          "entryPx",
+          "exitPx",
+          "initialMarginUsd",
+          "returnPct",
+          "fundingUsd",
+          "feesUsd",
+          "durationMs",
+          "leverageSource",
+          "perpsCoverageFromMs"
+        ],
+        "record": {
+          "success": true,
+          "seq": 40,
+          "record": {
+            "profileId": "prof_0123456789abcdef",
+            "name": "Record fixture",
+            "wallet": "fixture-public-owner",
+            "totals": {
+              "realizedNetUsd": 279.62,
+              "feesUsd": 1.5,
+              "wins": 3,
+              "losses": 3,
+              "counted": 6,
+              "unvalued": 0,
+              "bestUsd": 383.25,
+              "worstUsd": -192.34,
+              "unrealizedUsd": 70,
+              "totalPnlUsd": 362.12,
+              "creatorFeesUsd": 12.5,
+              "perpsRealizedUsd": 250,
+              "perpsFundingUsd": -0.4,
+              "perpsFeesUsd": 19.98,
+              "perpsUnrealizedUsd": 30,
+              "perpsNetUsd": 259.62,
+              "perpsPartial": false,
+              "perpsAsOfMs": 1799744520000,
+              "perpsSnapshotId": "ps1_a3eae2a1241fadb02749295ff39583d7"
+            },
+            "winRatePct": null,
+            "minClosesForRate": 10,
+            "unrealizedUsd": 70,
+            "totalPnlUsd": 362.12,
+            "creatorFeesUsd": 12.5,
+            "rows": [
+              {
+                "kind": "trade",
+                "signature": "SigFake061111111111111111111111111111111111111111",
+                "side": "buy",
+                "mint": "MoonFake11111111111111111111111111111111111",
+                "chain": "solana",
+                "symbol": "MOON",
+                "timestampMs": 1799737200000,
+                "counted": false,
+                "usdAmount": 120
+              },
+              {
+                "kind": "perp_round",
+                "coin": "DOGE",
+                "side": "long",
+                "leverage": {
+                  "value": 20,
+                  "type": "cross"
+                },
+                "pnlUsd": -192.34,
+                "liquidated": true,
+                "openedMs": 1799669100000,
+                "closedMs": 1799674200000,
+                "hash": "0x000000000000000000000000000000000000000000000000000001a304f0ffc0",
+                "id": "rnd_916e913b11a54980"
+              },
+              {
+                "kind": "trade",
+                "signature": "SigFake051111111111111111111111111111111111111111",
+                "side": "sell",
+                "mint": "MintFake11111111111111111111111111111111111",
+                "chain": "solana",
+                "symbol": "FAKE",
+                "timestampMs": 1799661600000,
+                "counted": true,
+                "usdAmount": 260,
+                "realizedNetUsd": 60
+              },
+              {
+                "kind": "perp_round",
+                "coin": "SOL",
+                "side": "long",
+                "leverage": null,
+                "pnlUsd": 144.6,
+                "liquidated": false,
+                "openedMs": 1799658600000,
+                "closedMs": 1799660400000,
+                "hash": "0x000000000000000000000000000000000000000000000000000001a3041e6d80",
+                "id": "rnd_18372b268b8287e2"
+              },
+              {
+                "kind": "trade",
+                "signature": "SigFake041111111111111111111111111111111111111111",
+                "side": "sell",
+                "mint": "MoonFake11111111111111111111111111111111111",
+                "chain": "solana",
+                "symbol": "MOON",
+                "timestampMs": 1799599200000,
+                "counted": true,
+                "usdAmount": 90,
+                "realizedNetUsd": -10
+              },
+              {
+                "kind": "perp_round",
+                "coin": "BTC",
+                "side": "short",
+                "leverage": {
+                  "value": 5,
+                  "type": "cross"
+                },
+                "pnlUsd": -104.93,
+                "liquidated": false,
+                "openedMs": 1799590800000,
+                "closedMs": 1799599200000,
+                "hash": "0x000000000000000000000000000000000000000000000000000001a300789700",
+                "id": "rnd_9343dd8fce66999d"
+              },
+              {
+                "kind": "trade",
+                "signature": "SigFake031111111111111111111111111111111111111111",
+                "side": "buy",
+                "mint": "MoonFake11111111111111111111111111111111111",
+                "chain": "solana",
+                "symbol": "MOON",
+                "timestampMs": 1799582400000,
+                "counted": false,
+                "usdAmount": 100
+              },
+              {
+                "kind": "perp_round",
+                "coin": "ETH",
+                "side": "long",
+                "leverage": {
+                  "value": 10,
+                  "type": "isolated"
+                },
+                "pnlUsd": 383.25,
+                "liquidated": false,
+                "openedMs": 1799571600000,
+                "closedMs": 1799578800000,
+                "hash": "0x000000000000000000000000000000000000000000000000000001a2ff414f80",
+                "id": "rnd_43896b5a354452f4"
+              },
+              {
+                "kind": "trade",
+                "signature": "SigFake021111111111111111111111111111111111111111",
+                "side": "buy",
+                "mint": "MintFake11111111111111111111111111111111111",
+                "chain": "solana",
+                "symbol": "FAKE",
+                "timestampMs": 1799568000000,
+                "counted": false,
+                "usdAmount": 200
+              },
+              {
+                "kind": "trade",
+                "signature": "SigFake011111111111111111111111111111111111111111",
+                "side": "buy",
+                "mint": "MintFake11111111111111111111111111111111111",
+                "chain": "solana",
+                "symbol": "FAKE",
+                "timestampMs": 1799524800000,
+                "counted": false,
+                "usdAmount": 50
+              }
+            ],
+            "rowsCursor": null,
+            "rowsTotal": 10,
+            "scannedTrades": 6,
+            "truncated": false,
+            "perpsRealizedUsd": 250,
+            "perpsFundingUsd": -0.4,
+            "perpsFeesUsd": 19.98,
+            "perpsUnrealizedUsd": 30,
+            "perpsNetUsd": 259.62,
+            "perpsPartial": false,
+            "perpsAsOfMs": 1799744520000,
+            "perpsSnapshotId": "ps1_a3eae2a1241fadb02749295ff39583d7",
+            "perpRounds": [
+              {
+                "kind": "perp_round",
+                "coin": "DOGE",
+                "side": "long",
+                "leverage": {
+                  "value": 20,
+                  "type": "cross"
+                },
+                "pnlUsd": -192.34,
+                "liquidated": true,
+                "openedMs": 1799669100000,
+                "closedMs": 1799674200000,
+                "hash": "0x000000000000000000000000000000000000000000000000000001a304f0ffc0",
+                "id": "rnd_916e913b11a54980"
+              },
+              {
+                "kind": "perp_round",
+                "coin": "SOL",
+                "side": "long",
+                "leverage": null,
+                "pnlUsd": 144.6,
+                "liquidated": false,
+                "openedMs": 1799658600000,
+                "closedMs": 1799660400000,
+                "hash": "0x000000000000000000000000000000000000000000000000000001a3041e6d80",
+                "id": "rnd_18372b268b8287e2"
+              },
+              {
+                "kind": "perp_round",
+                "coin": "BTC",
+                "side": "short",
+                "leverage": {
+                  "value": 5,
+                  "type": "cross"
+                },
+                "pnlUsd": -104.93,
+                "liquidated": false,
+                "openedMs": 1799590800000,
+                "closedMs": 1799599200000,
+                "hash": "0x000000000000000000000000000000000000000000000000000001a300789700",
+                "id": "rnd_9343dd8fce66999d"
+              },
+              {
+                "kind": "perp_round",
+                "coin": "ETH",
+                "side": "long",
+                "leverage": {
+                  "value": 10,
+                  "type": "isolated"
+                },
+                "pnlUsd": 383.25,
+                "liquidated": false,
+                "openedMs": 1799571600000,
+                "closedMs": 1799578800000,
+                "hash": "0x000000000000000000000000000000000000000000000000000001a2ff414f80",
+                "id": "rnd_43896b5a354452f4"
+              }
+            ],
+            "perpsTopCloses": [
+              {
+                "kind": "perp_round",
+                "coin": "ETH",
+                "side": "long",
+                "leverage": {
+                  "value": 10,
+                  "type": "isolated"
+                },
+                "pnlUsd": 383.25,
+                "liquidated": false,
+                "openedMs": 1799571600000,
+                "closedMs": 1799578800000,
+                "hash": "0x000000000000000000000000000000000000000000000000000001a2ff414f80",
+                "id": "rnd_43896b5a354452f4"
+              },
+              {
+                "kind": "perp_round",
+                "coin": "SOL",
+                "side": "long",
+                "leverage": null,
+                "pnlUsd": 144.6,
+                "liquidated": false,
+                "openedMs": 1799658600000,
+                "closedMs": 1799660400000,
+                "hash": "0x000000000000000000000000000000000000000000000000000001a3041e6d80",
+                "id": "rnd_18372b268b8287e2"
+              },
+              {
+                "kind": "perp_round",
+                "coin": "BTC",
+                "side": "short",
+                "leverage": {
+                  "value": 5,
+                  "type": "cross"
+                },
+                "pnlUsd": -104.93,
+                "liquidated": false,
+                "openedMs": 1799590800000,
+                "closedMs": 1799599200000,
+                "hash": "0x000000000000000000000000000000000000000000000000000001a300789700",
+                "id": "rnd_9343dd8fce66999d"
+              },
+              {
+                "kind": "perp_round",
+                "coin": "DOGE",
+                "side": "long",
+                "leverage": {
+                  "value": 20,
+                  "type": "cross"
+                },
+                "pnlUsd": -192.34,
+                "liquidated": true,
+                "openedMs": 1799669100000,
+                "closedMs": 1799674200000,
+                "hash": "0x000000000000000000000000000000000000000000000000000001a304f0ffc0",
+                "id": "rnd_916e913b11a54980"
+              }
+            ],
+            "publishedBuildId": "build_fixture_01"
+          }
+        }
+      }
+    },
+    {
+      "id": "older-bundle-mcp",
+      "scenario": "older-bundle",
+      "surface": "mcp",
+      "args": {
+        "profileId": "prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef?rows=all",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "relays": "older-bundle-api",
+        "sha256": "881c992362ea966dbd777efbb9b5aea8393b25271e49ec8d5c1c684ecd95a38e",
+        "isError": false
+      }
+    },
+    {
+      "id": "older-bundle-mcp-hosted",
+      "scenario": "older-bundle",
+      "surface": "mcp-hosted",
+      "args": {
+        "profileId": "prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef?rows=all",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "preamble": true,
+        "relays": "older-bundle-api",
+        "sha256": "881c992362ea966dbd777efbb9b5aea8393b25271e49ec8d5c1c684ecd95a38e",
+        "isError": false
+      }
+    },
+    {
+      "id": "older-bundle-sdk",
+      "scenario": "older-bundle",
+      "surface": "sdk",
+      "args": {
+        "profileId": "prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef?rows=all",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "relays": "older-bundle-api",
+        "part": "record",
+        "sha256": "f310f3f656f20e9cbd8b3cc137d89e6641e589da626b15bb9af95b50be87bf82",
+        "isError": false
+      }
+    },
+    {
+      "id": "older-bundle-cli",
+      "scenario": "older-bundle",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent record prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef?rows=all",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "lines": [
+          "Record fixture",
+          "Perps as of 2027-01-12T09:02:00.000Z",
+          "buy MOON 120",
+          "Long DOGE 20x · size unknown · entry unknown · exit unknown · -$192.34 · ROE unknown · funding unknown · fees unknown · duration unknown · LIQUIDATED · https://app.hyperliquid.xyz/explorer/tx/0x000000000000000000000000000000000000000000000000000001a304f0ffc0",
+          "sell FAKE 260",
+          "Long SOL leverage not recorded · size unknown · entry unknown · exit unknown · +$144.60 · ROE unknown · funding unknown · fees unknown · duration unknown · https://app.hyperliquid.xyz/explorer/tx/0x000000000000000000000000000000000000000000000000000001a3041e6d80",
+          "sell MOON 90",
+          "Short BTC 5x · size unknown · entry unknown · exit unknown · -$104.93 · ROE unknown · funding unknown · fees unknown · duration unknown · https://app.hyperliquid.xyz/explorer/tx/0x000000000000000000000000000000000000000000000000000001a300789700",
+          "buy MOON 100",
+          "Long ETH 10x · size unknown · entry unknown · exit unknown · +$383.25 · ROE unknown · funding unknown · fees unknown · duration unknown · https://app.hyperliquid.xyz/explorer/tx/0x000000000000000000000000000000000000000000000000000001a2ff414f80",
+          "buy FAKE 200",
+          "buy FAKE 50"
+        ]
+      }
+    },
+    {
+      "id": "older-bundle-cli-json",
+      "scenario": "older-bundle",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent record prof_0123456789abcdef --json"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef?rows=all",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "relays": "older-bundle-api",
+        "sha256": "881c992362ea966dbd777efbb9b5aea8393b25271e49ec8d5c1c684ecd95a38e"
+      }
+    },
+    {
+      "id": "refused-not-published-api",
+      "scenario": "refused-not-published",
+      "surface": "api-stub",
+      "evidence": "a response stand-in carrying the route's own status, code and message, which the recorder checks are in the route's source",
+      "says": "A private, hidden, revoked or unknown agent: one answer for all of them, so the read cannot tell which ids exist.",
+      "outcome": {
+        "status": 404,
+        "body": {
+          "success": false,
+          "error": {
+            "code": "RECORD_NOT_FOUND",
+            "message": "No published record for this agent"
+          }
+        }
+      }
+    },
+    {
+      "id": "refused-not-published-mcp",
+      "scenario": "refused-not-published",
+      "surface": "mcp",
+      "args": {
+        "profileId": "prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef?rows=all",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "body": {
+          "success": false,
+          "error": {
+            "code": "RECORD_NOT_FOUND",
+            "message": "No published record for this agent"
+          }
+        },
+        "isError": true
+      }
+    },
+    {
+      "id": "refused-not-published-mcp-hosted",
+      "scenario": "refused-not-published",
+      "surface": "mcp-hosted",
+      "args": {
+        "profileId": "prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef?rows=all",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "preamble": true,
+        "body": {
+          "success": false,
+          "error": {
+            "code": "RECORD_NOT_FOUND",
+            "message": "No published record for this agent"
+          }
+        },
+        "isError": true
+      }
+    },
+    {
+      "id": "refused-not-published-sdk",
+      "scenario": "refused-not-published",
+      "surface": "sdk",
+      "args": {
+        "profileId": "prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef?rows=all",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "isError": true,
+        "error": {
+          "status": 404,
+          "code": "RECORD_NOT_FOUND",
+          "message": "No published record for this agent"
+        }
+      }
+    },
+    {
+      "id": "refused-not-published-cli",
+      "scenario": "refused-not-published",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent record prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef?rows=all",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 1,
+        "stdout": [],
+        "stderr": [
+          "No published record for this agent"
+        ]
+      }
+    },
+    {
+      "id": "refused-not-published-cli-json",
+      "scenario": "refused-not-published",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent record prof_0123456789abcdef --json"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef?rows=all",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 1,
+        "body": {
+          "ok": false,
+          "code": "RECORD_NOT_FOUND",
+          "status": 404,
+          "message": "No published record for this agent"
+        }
+      }
+    },
+    {
+      "id": "refused-cursor-expired-api",
+      "scenario": "refused-cursor-expired",
+      "surface": "api-stub",
+      "evidence": "a response stand-in carrying the route's own status, code and message, which the recorder checks are in the route's source",
+      "says": "A cursor from a record that has changed since: start paging again.",
+      "outcome": {
+        "status": 400,
+        "body": {
+          "success": false,
+          "error": {
+            "code": "VALIDATION_FAILED",
+            "message": "Record changed; restart paging",
+            "details": {
+              "field": "cursor"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "refused-cursor-expired-mcp",
+      "scenario": "refused-cursor-expired",
+      "surface": "mcp",
+      "args": {
+        "profileId": "prof_0123456789abcdef",
+        "cursor": "u1:0000000000000000000000000000000000000000000000000000000000000000:3:00000000000000000000000000000000:2"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef?rows=all&cursor=u1%3A0000000000000000000000000000000000000000000000000000000000000000%3A3%3A00000000000000000000000000000000%3A2",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "body": {
+          "success": false,
+          "error": {
+            "code": "VALIDATION_FAILED",
+            "message": "Record changed; restart paging",
+            "details": {
+              "field": "cursor"
+            }
+          }
+        },
+        "isError": true
+      }
+    },
+    {
+      "id": "refused-cursor-expired-mcp-hosted",
+      "scenario": "refused-cursor-expired",
+      "surface": "mcp-hosted",
+      "args": {
+        "profileId": "prof_0123456789abcdef",
+        "cursor": "u1:0000000000000000000000000000000000000000000000000000000000000000:3:00000000000000000000000000000000:2"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef?rows=all&cursor=u1%3A0000000000000000000000000000000000000000000000000000000000000000%3A3%3A00000000000000000000000000000000%3A2",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "preamble": true,
+        "body": {
+          "success": false,
+          "error": {
+            "code": "VALIDATION_FAILED",
+            "message": "Record changed; restart paging",
+            "details": {
+              "field": "cursor"
+            }
+          }
+        },
+        "isError": true
+      }
+    },
+    {
+      "id": "refused-cursor-expired-sdk",
+      "scenario": "refused-cursor-expired",
+      "surface": "sdk",
+      "args": {
+        "profileId": "prof_0123456789abcdef",
+        "cursor": "u1:0000000000000000000000000000000000000000000000000000000000000000:3:00000000000000000000000000000000:2"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef?rows=all&cursor=u1%3A0000000000000000000000000000000000000000000000000000000000000000%3A3%3A00000000000000000000000000000000%3A2",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "isError": true,
+        "error": {
+          "status": 400,
+          "code": "VALIDATION_FAILED",
+          "message": "Record changed; restart paging"
+        }
+      }
+    },
+    {
+      "id": "refused-cursor-expired-cli",
+      "scenario": "refused-cursor-expired",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent record prof_0123456789abcdef --cursor u1:0000000000000000000000000000000000000000000000000000000000000000:3:00000000000000000000000000000000:2"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef?rows=all&cursor=u1%3A0000000000000000000000000000000000000000000000000000000000000000%3A3%3A00000000000000000000000000000000%3A2",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 1,
+        "stdout": [],
+        "stderr": [
+          "Record changed; restart paging"
+        ]
+      }
+    },
+    {
+      "id": "refused-cursor-expired-cli-json",
+      "scenario": "refused-cursor-expired",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent record prof_0123456789abcdef --cursor u1:0000000000000000000000000000000000000000000000000000000000000000:3:00000000000000000000000000000000:2 --json"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef?rows=all&cursor=u1%3A0000000000000000000000000000000000000000000000000000000000000000%3A3%3A00000000000000000000000000000000%3A2",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 1,
+        "body": {
+          "ok": false,
+          "code": "VALIDATION_FAILED",
+          "status": 400,
+          "message": "Record changed; restart paging"
+        }
+      }
+    },
+    {
+      "id": "usage-cli-not-a-profile-id",
+      "scenario": "usage",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent record momentum"
+      },
+      "requests": [],
+      "says": "The command takes a profile id (prof_ and 16 hex), not a slug: usage, and nothing is read.",
+      "outcome": {
+        "exitCode": 2,
+        "stdout": [],
+        "stderr": [
+          "Usage: candle agent record <profile-id> [--cursor cursor] [--json]"
+        ]
+      }
+    },
+    {
+      "id": "usage-mcp-cursor-not-text",
+      "scenario": "usage",
+      "surface": "mcp",
+      "args": {
+        "profileId": "prof_0123456789abcdef",
+        "cursor": 123
+      },
+      "requests": [],
+      "says": "A cursor that is not text is refused by the tool's own schema, and nothing is read.",
+      "outcome": {
+        "isError": true
+      }
+    },
+    {
+      "id": "hosted-tools-list",
+      "scenario": "hosted",
+      "surface": "mcp-hosted",
+      "says": "The hosted server's public tools, listed with no sign-in: the record read is one of them.",
+      "outcome": {
+        "tools": [
+          "candle_get_market",
+          "candle_token_forensics",
+          "candle_token_card",
+          "candle_get_price_history",
+          "candle_token_events",
+          "candle_get_feed",
+          "candle_get_agent_profile",
+          "candle_list_agent_posts",
+          "candle_get_agent_record",
+          "candle_get_agent_positions",
+          "candle_list_agents",
+          "candle_get_plans",
+          "candle_resolve_token"
+        ],
+        "record": {
+          "description": "Read one public agent’s measured record, with spot swaps and certified Hyperliquid rounds, leverage, entry and exit, size, funding, fees and return on initial margin. rowsCursor pages the combined history. perpsAsOfMs and perpsCoverageFromMs name freshness and coverage. Unknown is not zero. Measured record, not a forecast.",
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "profileId": {
+                "type": "string"
+              },
+              "cursor": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "profileId"
+            ],
+            "additionalProperties": false,
+            "$schema": "http://json-schema.org/draft-07/schema#"
+          },
+          "annotations": {
+            "readOnlyHint": true,
+            "destructiveHint": false,
+            "idempotentHint": true,
+            "openWorldHint": true
+          }
+        }
+      }
+    },
+    {
+      "id": "docs-record-read",
+      "scenario": "docs",
+      "surface": "docs",
+      "args": {
+        "files": [
+          "docs/agent-trading.md",
+          "apps/docs/src/content/docs/developers/agent-trading.md",
+          "apps/frontend/public/docs/agent-trading.md"
+        ]
+      },
+      "outcome": {
+        "text": "`candle agent record <profile-id> [--cursor cursor] [--json]`, SDK `getAgentRecord(profileId, { cursor })`, and MCP `candle_get_agent_record` (local and hosted) request `rows=all`: spot swaps and certified closed perp rounds, newest first. Each next `rowsCursor` pins both histories; pass it as `cursor`, and restart paging if it expires. These reads send no credential and retain the same public-agent gate."
+      }
+    },
+    {
+      "id": "docs-round-row",
+      "scenario": "docs",
+      "surface": "docs",
+      "args": {
+        "files": [
+          "docs/agent-trading.md",
+          "apps/docs/src/content/docs/developers/agent-trading.md",
+          "apps/frontend/public/docs/agent-trading.md"
+        ]
+      },
+      "outcome": {
+        "text": "A `kind: \"perp_round\"` row preserves the full `dex:COIN` name and adds `size` (largest size reached), `entryPx` (average basis at that size), `exitPx` (size-weighted reductions), `fundingUsd` (positive earned), `feesUsd`, `durationMs`, `initialMarginUsd` and `returnPct`. Initial margin is entry average × largest size / leverage; ROE is net round P&L / that margin × 100. Leverage uses the last landed Candle leverage action before open, else the highest certified observation during the round. `leverageSource` names `order` or `snapshot`; unknown leverage and return are null. Older published bundles omit the added fields. No wallet or account value is added to a round."
+      }
+    },
+    {
+      "id": "docs-perps-times",
+      "scenario": "docs",
+      "surface": "docs",
+      "args": {
+        "files": [
+          "docs/agent-trading.md",
+          "apps/docs/src/content/docs/developers/agent-trading.md",
+          "apps/frontend/public/docs/agent-trading.md"
+        ]
+      },
+      "outcome": {
+        "text": "`perpsAsOfMs` stamps every perps figure, including the last certified time when unavailable. `perpsCoverageFromMs` names the start of stored coverage. The ALL chart's `perpsCountedFromMs` marks the first published perps day; earlier points exclude perps where certified historical daily values are unavailable. Measured record, not a forecast. Past results do not predict future results."
+      }
+    }
+  ]
+}

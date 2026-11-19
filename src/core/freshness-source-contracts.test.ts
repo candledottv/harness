@@ -38,7 +38,7 @@ const perpRows = (id: Build) => positions(id).positions.filter((p: { kind: strin
 const PATH = `/api/v1/agent/records/${freshness.profile}/positions`
 
 test("the recording names the exact staging build, agrees with the other source fixtures, and carries Candle's own limits", () => {
-  expect(freshness.source).toEqual({ repo: "candledottv/candle-monorepo", commit: "c22def120a7c4d8a05bbcb93a5ef2e95672a5abe", versions: { cli: "0.13.32", mcp: "0.10.37", sdk: "0.6.26" } })
+  expect(freshness.source).toEqual({ repo: "candledottv/candle-monorepo", commit: "36d4bf2642244e82deaa690d8d1277d60d8b9021", versions: { cli: "0.13.32", mcp: "0.10.37", sdk: "0.6.26" } })
   expect(freshness.source.commit).toBe(SOURCE.source.commit)
   expect(freshness.source.commit).toBe(tools.source.commit)
   expect(freshness.source.commit).toBe(perps.source.commit)
@@ -183,8 +183,10 @@ describe("delayed and unavailable perps, at the new cadence", () => {
     expect(perpRows("unavailable")).toEqual([])
     // The spot rows are still listed, and the delayed build's bundle is not kept past the line.
     expect(p.positions.map((r: { kind: string }) => r.kind)).toEqual(["spot"])
-    expect(record("unavailable").totals).toMatchObject({ perpsPartial: true, perpsUnavailable: true })
-    expect(record("unavailable").totals).not.toHaveProperty("perpsAsOfMs")
+    // The record says when the perps were last certified, so a reader can tell since when they are delayed; the
+    // positions answer above still gives no perps time.
+    expect(record("unavailable").totals).toMatchObject({ perpsPartial: true, perpsUnavailable: true, perpsAsOfMs: at(11, 2) })
+    expect(record("unavailable")).toMatchObject({ perpsPartial: true, perpsUnavailable: true, perpsAsOfMs: at(11, 2) })
     expect(record("unavailable")).not.toHaveProperty("perpsNetUsd")
   })
 

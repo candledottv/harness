@@ -380,6 +380,8 @@ const ROWS: readonly RowInput[] = [
   }),
   // A published agent's open positions (0.13.9), keyless.
   mcp("agent positions", "candle_get_agent_positions"),
+  // One published agent's measured record, its swaps and closed perp rounds in one list: a keyless read.
+  mcp("agent record", "candle_get_agent_record"),
   mcp("agent round", "candle_get_agent_perp_round"),
   mcp("agent post", "candle_list_agent_posts"),
   mcp("agent post list", "candle_list_agent_posts"),

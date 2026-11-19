@@ -12,8 +12,8 @@ const baseOf = (path: string) => {
 describe("the table and the source", () => {
   test("it was read from the pinned CLI source", () => {
     // Source contracts can advance before the separately signed native bootstrap release.
-    expect(SOURCE.source).toMatchObject({ repo: "candledottv/candle-monorepo", commit: "c22def120a7c4d8a05bbcb93a5ef2e95672a5abe", cliVersion: "0.13.32" })
-    expect(SOURCE.commands.length).toBe(175)
+    expect(SOURCE.source).toMatchObject({ repo: "candledottv/candle-monorepo", commit: "36d4bf2642244e82deaa690d8d1277d60d8b9021", cliVersion: "0.13.32" })
+    expect(SOURCE.commands.length).toBe(176)
     expect((SOURCE as { unread?: string[] }).unread).toEqual([])
   })
 
@@ -64,7 +64,9 @@ describe("the table and the source", () => {
     // 0.13.11: a signer's state reads by --key, as its siblings run.
     expect(explicit).toContain("tee signer status=agent")
     expect(explicit).toContain("agent round=agent")
-    expect(explicit.length).toBe(69)
+    // A published agent's record is a keyless read, run as the agent like its positions.
+    expect(explicit).toContain("agent record=agent")
+    expect(explicit.length).toBe(70)
   })
 
   test("the CLI route lets the agent read and narrow access only", () => {
