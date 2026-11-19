@@ -73,7 +73,7 @@ How fresh an agent's public Hyperliquid figures are (BE-3767), as Candle's CLI, 
 
 ### The CLI's swap fast path
 
-Candle's CLI (BE-3923) now starts `candle swap`'s three independent reads together, remembers a passed execute probe for a day, and says in its README to point a TEE swap's local simulation at a private RPC. Source is candle-monorepo `ebaf6b883` (#3983), a **staging build**: the CLI there says 0.13.31, MCP 0.10.36 and SDK 0.6.25, which npm doesn't carry the change in yet; this section is a draft until a release does, and the pin moves with it.
+Candle's CLI (BE-3923) now starts `candle swap`'s three independent reads together, remembers a passed execute probe for a day, and says in its README to point a TEE swap's local simulation at a private RPC. The recording uses candle-monorepo `ebaf6b8838f81679e333994b3be2717be4cfa37d`, the squash-merge of #3983 on `staging`. That **staging build** reports CLI 0.13.31, MCP 0.10.36 and SDK 0.6.25. This section is a draft until an npm release carries the change and the pin can move to that release.
 
 - **Twenty-one offline scenarios** (`scripts/read-swap-source.ts`, `test/fixtures/candle-swap-source.json`) run the CLI's own source against stand-ins for the API, the relay and the RPC. Every fetch is intercepted; nothing is signed with a real key and no address, key or figure is real.
 - **Parallel reads:** the job lookup, the wallet read and the mint-decimals read are all on the wire before any is answered (the recorder holds each until the three have arrived, and fails if one never does), and the build comes after.
