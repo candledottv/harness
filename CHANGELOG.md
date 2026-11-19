@@ -2,6 +2,19 @@
 
 What changed in each version of Candle Harness (called the Candle TUI before 0.3.0). Versions follow [semantic versioning](https://semver.org), and each release is listed on [GitHub](https://github.com/candledottv/harness/releases).
 
+## 0.6.8 (unreleased)
+
+Embedded-wallet perps in Candle's public record, fill by fill by order (BE-3773), as Candle's API will count them. Source is candle-monorepo `cf2c16863` (#3920), a **staging build**: it changes no CLI, MCP or SDK file, so the versions stay the CLI 0.13.32, MCP 0.10.37 and SDK 0.6.26 of the 0.6.7 section, and nothing here is released. This section is a draft until Candle ships the change to production. The source/build version is 0.6.8; publishing remains a separate release step.
+
+### Perps traded from an embedded wallet
+
+- **Forty-three offline rows** (`scripts/read-perps-attribution-source.ts`, `test/fixtures/candle-perps-attribution-source.json`) run Candle's own board path (attribution by order, the profile engine, the board publish, the record and positions answers) on one made-up embedded wallet's stored facts and a made-up order inventory, then read the positions answer through the registered MCP tool, the SDK and `candle agent positions`. Every fetch is refused; the wallet's address and the owner's fill hashes are in no row.
+- **Fills belong to the agent whose key built the order**, matched by `cloid` and checked against the venue order id (`oid`) the venue pinned to it. The owner's own trade on the same coin is in no answer: with the agent holding 2 ETH at 100 and the owner adding 1, the position is the agent's 2 at its own entry, and a closed round is the agent's fills only, with its P&L against its own entry.
+- **A cloid the venue never pinned claims nothing** (`order_unverified`): its fills are left out of the agent's profile, which then has no round, no position and no fee. A cloid carried by another venue order than the pinned one (`cloid_reused`) claims nothing either. An agent that is not public gets nothing.
+- **A round on an embedded wallet has no id and no hash**, so no link names the wallet on an explorer and no dead round page is published. A shared split that is not exact (the owner's trade on the agent's coin) marks the round `partial: true` with `partialReasons` (`unmatched_fill`), and the window `perpsPartial`; a wallet only the agent trades gives an exact round.
+- **What Candle's docs say:** the page's "Which perps count for an agent: by order, not by wallet" section, recorded as text.
+- **What the Candle Harness does:** nothing new. It reads these answers as it reads any positions answer; the recording is for the agent surfaces. The other source fixtures stay at `c22def120`, and the signed CLI release pin (`install.sh`) and the runtime minimum don't move.
+
 ## 0.6.7 (unreleased)
 
 Perps position webhooks and the owner's perps reads (BE-3758), as Candle's API, CLI, MCP server and SDK now carry them. Source is candle-monorepo `c22def120` (#3925), a **staging build** that moves the CLI to 0.13.32, MCP to 0.10.37 and the SDK to 0.6.26; npm doesn't carry those yet. This section is a draft until a release does; the fixtures are re-read then. The source/build version is 0.6.7; publishing remains a separate release step.
