@@ -310,12 +310,16 @@ const ROWS: readonly RowInput[] = [
   mcp("perps book", "candle_perps_book"),
   mcp("perps candles", "candle_perps_candles"),
   mcp("perps orders", "candle_perps_orders"),
+  // One TEE wallet's resting orders on every perp dex and the key's withdrawals in flight: a read (account:read).
+  mcp("perps activity", "candle_perps_activity"),
   mcp("perps positions", "candle_perps_positions"),
   mcp("perps fills", "candle_perps_fills"),
   mcp("perps funding", "candle_perps_funding"),
   mcp("perps account", "candle_perps_account"),
   mcp("perps risk", "candle_perps_risk"),
-  mcp("perps thresholds", "candle_perps_thresholds"),
+  // The key's own thresholds are Candle's MCP read. Another key's (`--key <prefix|label>`), with its stored perps
+  // limits, is read with the owner's device token, which no agent key holds.
+  r("perps thresholds", "mcp", "cli", "agent", { mcpTool: "candle_perps_thresholds", byFlags: otherKey, partly: "another key's: coming" }),
   r("perps thresholds set", "owner", "later", "owner"),
   r("perps deposit", "card", "later", "agent"),
   r("perps deposit status", "read", "cli", "agent"),

@@ -3,8 +3,8 @@
   "source": {
     "repo": "candledottv/candle-monorepo",
     "path": "packages/cli/src",
-    "commit": "ceda02328bd91d2160ebf76942e92a1706f323c2",
-    "cliVersion": "0.13.30"
+    "commit": "c22def120a7c4d8a05bbcb93a5ef2e95672a5abe",
+    "cliVersion": "0.13.32"
   },
   "aliases": {
     "wallet": "wallets"
@@ -233,8 +233,12 @@
           "description": "Open orders on Hyperliquid, and every action Candle built"
         },
         {
+          "invocation": "activity [--wallet <tee>]",
+          "description": "BE-3758: this wallet's resting Hyperliquid orders across the default perp dex and every builder-deployed dex (each row names its dex), plus withdrawals still in flight; needs account:read; reads only"
+        },
+        {
           "invocation": "transfer --to-dex <dex> <amount> | --from-dex <dex> <amount>|--all | transfer status <id>",
-          "description": "Move free USDC between this wallet's own Hyperliquid main perps and builder dex balances (perps:write); destination is fixed to itself, no other address or subaccount accepted. A non-USDC dex is refused; held position margin stays in place. Perps to spot is not in this release. Source only until the transfer policy probe and authorized rollout"
+          "description": "Move free USDC between this wallet's own Hyperliquid main perps and builder dex balances (perps:write); destination is fixed to itself, no other address or subaccount accepted. A non-USDC dex is refused; held position margin stays in place. Perps to spot is not in this release. Needs an API with the transfer endpoint and a wallet whose transfer policy has been migrated"
         },
         {
           "invocation": "withdraw <amount> --to solana|hood [--wallet <evm tee>] | withdraw status <id>",
@@ -273,8 +277,8 @@
           "description": "Poll from this machine and print one JSON line per level change, heartbeat or error; runs until stopped and exits with the last level's code"
         },
         {
-          "invocation": "thresholds | thresholds set [--warn-distance <pct>] ... [--key <prefix|label|self>] | thresholds clear",
-          "description": "Show this key's risk thresholds; set or clear them. As self (the default) a key may only tighten; a prefix or label uses the device token and may loosen"
+          "invocation": "thresholds [--key <prefix|label|self>] | thresholds set [--warn-distance <pct>] ... [--key <prefix|label|self>] | thresholds clear",
+          "description": "Show a key's risk thresholds (and, with a prefix or label, its stored perps limits); set or clear them. As self (the default) a key may only tighten; a prefix or label uses the device token and may loosen"
         }
       ]
     },
@@ -2603,6 +2607,24 @@
       "flags": {
         "value": [
           "--limit",
+          "--wallet"
+        ],
+        "boolean": [],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "agent",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
+    },
+    {
+      "command": "perps",
+      "subcommand": "activity",
+      "handler": "perpsActivity",
+      "file": "commands/perps.ts",
+      "flags": {
+        "value": [
           "--wallet"
         ],
         "boolean": [],
