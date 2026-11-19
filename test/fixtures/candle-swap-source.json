@@ -2,7 +2,7 @@
   "about": "Offline `candle swap` fast-path contracts (BE-3923): the job, wallet and decimals reads on the wire together; the order of outcomes unchanged; the embedded wallet's execute probe cached per API URL for 24 hours (a pass only); the local simulation read from the configured RPC and nothing else. Recorded by running the CLI's source against stand-ins from an exact staging commit; every fetch is intercepted. The commit is a staging build: the published CLI predates it.",
   "source": {
     "repo": "candledottv/candle-monorepo",
-    "commit": "ebaf6b8838f81679e333994b3be2717be4cfa37d",
+    "commit": "aca38574f1a307730318f9bf3be91e7d0b67c0b4",
     "versions": {
       "cli": "0.13.31",
       "mcp": "0.10.36",
