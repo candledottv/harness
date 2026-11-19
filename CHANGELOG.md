@@ -4,7 +4,7 @@ What changed in each version of Candle Harness (called the Candle TUI before 0.3
 
 ## 0.6.8 (unreleased)
 
-Embedded-wallet perps in Candle's public record, fill by fill by order (BE-3773), as Candle's API will count them. Source is candle-monorepo pull request #3920 at `61d0d40b4`, **not yet merged**: it changes no CLI, MCP or SDK file, so the versions stay the CLI 0.13.32, MCP 0.10.37 and SDK 0.6.26 of the 0.6.7 section, and nothing here is released. This section is a draft until that pull request lands; the recording is then re-read at the merge commit. The source/build version is 0.6.8; publishing remains a separate release step.
+Embedded-wallet perps in Candle's public record, fill by fill by order (BE-3773), as Candle's API will count them. Source is candle-monorepo `cf2c16863` (#3920), a **staging build**: it changes no CLI, MCP or SDK file, so the versions stay the CLI 0.13.32, MCP 0.10.37 and SDK 0.6.26 of the 0.6.7 section, and nothing here is released. This section is a draft until Candle ships the change to production. The source/build version is 0.6.8; publishing remains a separate release step.
 
 ### Perps traded from an embedded wallet
 

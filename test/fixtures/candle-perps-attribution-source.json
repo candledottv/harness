@@ -2,7 +2,7 @@
   "about": "Offline contracts for embedded-wallet perps in the public record, from exact source (BE-3773). Every time is an hour and minute of one made-up day, and every figure is made up. api-source rows are answers built by Candle's board path (attribution by order, the profile engine, the board publish, record and positions composition) from one made-up embedded wallet's stored facts and a made-up order inventory: the agent's own fills only, the owner's trades in no answer, a cloid the venue never pinned claiming nothing, and a round with no id and no hash. The wallet's address and the owner's fill hashes are in no row. mcp, sdk and cli rows read the same positions answer through the registered tool, the SDK and `candle agent positions` over an intercepted fetch. The docs row is the public page's own by-order section (its copies agree), read as text. The database, the perps jobs, the venue and the keyed API route are not executed, and no deployed behavior is claimed.",
   "source": {
     "repo": "candledottv/candle-monorepo",
-    "commit": "61d0d40b454e177c4b6d60d507c3f7c6ff985182",
+    "commit": "cf2c16863597e065855d7e9856a216ecfd15bc9c",
     "versions": {
       "cli": "0.13.32",
       "mcp": "0.10.37",

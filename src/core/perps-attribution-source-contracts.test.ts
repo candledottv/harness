@@ -23,7 +23,7 @@ const PATH = `/api/v1/agent/records/${attribution.profile}/positions`
 
 test("the recording names its exact source and says what it did not run", () => {
   expect(attribution.source.repo).toBe("candledottv/candle-monorepo")
-  expect(attribution.source.commit).toBe("61d0d40b454e177c4b6d60d507c3f7c6ff985182")
+  expect(attribution.source.commit).toBe("cf2c16863597e065855d7e9856a216ecfd15bc9c")
   expect(attribution.source.versions).toEqual({ cli: "0.13.32", mcp: "0.10.37", sdk: "0.6.26" })
   expect(new Set(rows.map((r) => r.id)).size).toBe(rows.length)
   for (const id of SCENARIOS) {
