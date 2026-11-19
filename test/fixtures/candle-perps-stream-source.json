@@ -1,0 +1,1396 @@
+{
+  "about": "Offline perps activity-stream contracts (BE-3769): the one eligibility rule applied to perps events exactly as to a trade (the switch, a published agent's key, never a hidden order), the event kind from the position's size before and after a fill, one fill announced end to end through announcePerpFill and broadcastActivity onto a subscribed stream with stand-in venue reads and a stand-in published-agent lookup, the fills summary, and `hide` as the perps routes parse it. The routes, the settle claim and the schema are pinned as source text. Recorded from an exact staging commit with every fetch refused; the commit changes no CLI, MCP or SDK file, and at it no perps order in the CLI, MCP or SDK takes `hide`.",
+  "source": {
+    "repo": "candledottv/candle-monorepo",
+    "commit": "ba1be9ffa03a841c058bf72d6b9ffd270b0552be",
+    "versions": {
+      "cli": "0.13.31",
+      "mcp": "0.10.36",
+      "sdk": "0.6.25"
+    },
+    "files": [
+      "apps/api/src/lib/stream-eligibility.ts",
+      "apps/api/src/lib/perps-stream.ts",
+      "apps/api/src/lib/activity-broadcast.ts",
+      "apps/api/src/lib/agent-hide.ts",
+      "apps/api/src/routes/agent-perps.ts",
+      "apps/api/src/lib/perps-reconcile.ts",
+      "packages/db/convex/perpOrders.ts",
+      "packages/db/convex/schema.ts"
+    ]
+  },
+  "rows": [
+    {
+      "id": "perp-stream-types",
+      "scenario": "types",
+      "args": {
+        "file": "apps/api/src/lib/stream-eligibility.ts"
+      },
+      "outcome": {
+        "types": [
+          "perp_open",
+          "perp_add",
+          "perp_reduce",
+          "perp_close",
+          "perp_liquidation"
+        ]
+      }
+    },
+    {
+      "id": "eligible-published-agent-key-switch-on",
+      "scenario": "eligibility",
+      "args": {
+        "case": "published-agent-key-switch-on"
+      },
+      "outcome": {
+        "perps": {
+          "perp_open": true,
+          "perp_add": true,
+          "perp_reduce": true,
+          "perp_close": true,
+          "perp_liquidation": true
+        },
+        "buy": true
+      }
+    },
+    {
+      "id": "eligible-switch-off",
+      "scenario": "eligibility",
+      "args": {
+        "case": "switch-off"
+      },
+      "outcome": {
+        "perps": {
+          "perp_open": false,
+          "perp_add": false,
+          "perp_reduce": false,
+          "perp_close": false,
+          "perp_liquidation": false
+        },
+        "buy": false
+      }
+    },
+    {
+      "id": "eligible-hidden-order",
+      "scenario": "eligibility",
+      "args": {
+        "case": "hidden-order"
+      },
+      "outcome": {
+        "perps": {
+          "perp_open": false,
+          "perp_add": false,
+          "perp_reduce": false,
+          "perp_close": false,
+          "perp_liquidation": false
+        },
+        "buy": false
+      }
+    },
+    {
+      "id": "eligible-private-agent-no-name",
+      "scenario": "eligibility",
+      "args": {
+        "case": "private-agent-no-name"
+      },
+      "outcome": {
+        "perps": {
+          "perp_open": false,
+          "perp_add": false,
+          "perp_reduce": false,
+          "perp_close": false,
+          "perp_liquidation": false
+        },
+        "buy": false
+      }
+    },
+    {
+      "id": "eligible-blank-agent-name",
+      "scenario": "eligibility",
+      "args": {
+        "case": "blank-agent-name"
+      },
+      "outcome": {
+        "perps": {
+          "perp_open": false,
+          "perp_add": false,
+          "perp_reduce": false,
+          "perp_close": false,
+          "perp_liquidation": false
+        },
+        "buy": false
+      }
+    },
+    {
+      "id": "eligible-human-order-no-agent-key",
+      "scenario": "eligibility",
+      "args": {
+        "case": "human-order-no-agent-key"
+      },
+      "outcome": {
+        "perps": {
+          "perp_open": false,
+          "perp_add": false,
+          "perp_reduce": false,
+          "perp_close": false,
+          "perp_liquidation": false
+        },
+        "buy": false
+      }
+    },
+    {
+      "id": "eligible-agent-key-missing",
+      "scenario": "eligibility",
+      "args": {
+        "case": "agent-key-missing"
+      },
+      "outcome": {
+        "perps": {
+          "perp_open": false,
+          "perp_add": false,
+          "perp_reduce": false,
+          "perp_close": false,
+          "perp_liquidation": false
+        },
+        "buy": false
+      }
+    },
+    {
+      "id": "eligible-agent-key-blank",
+      "scenario": "eligibility",
+      "args": {
+        "case": "agent-key-blank"
+      },
+      "outcome": {
+        "perps": {
+          "perp_open": false,
+          "perp_add": false,
+          "perp_reduce": false,
+          "perp_close": false,
+          "perp_liquidation": false
+        },
+        "buy": false
+      }
+    },
+    {
+      "id": "eligible-via-api-key-not-boolean-true",
+      "scenario": "eligibility",
+      "args": {
+        "case": "via-api-key-not-boolean-true"
+      },
+      "outcome": {
+        "perps": {
+          "perp_open": false,
+          "perp_add": false,
+          "perp_reduce": false,
+          "perp_close": false,
+          "perp_liquidation": false
+        },
+        "buy": false
+      }
+    },
+    {
+      "id": "perp-events-ask-for-the-agent-name",
+      "scenario": "eligibility",
+      "args": {
+        "case": "needsAgentName"
+      },
+      "outcome": {
+        "asksName": {
+          "perp_open": {
+            "agentKey": true,
+            "noAgentKey": false
+          },
+          "perp_add": {
+            "agentKey": true,
+            "noAgentKey": false
+          },
+          "perp_reduce": {
+            "agentKey": true,
+            "noAgentKey": false
+          },
+          "perp_close": {
+            "agentKey": true,
+            "noAgentKey": false
+          },
+          "perp_liquidation": {
+            "agentKey": true,
+            "noAgentKey": false
+          }
+        }
+      }
+    },
+    {
+      "id": "trades-in-stream-switch-values",
+      "scenario": "eligibility",
+      "args": {
+        "case": "AGENT_TRADES_IN_STREAM_ENABLED"
+      },
+      "outcome": {
+        "0": false,
+        "1": true,
+        "true": true,
+        "TRUE": false,
+        "yes": false,
+        "false": false,
+        "unset": false
+      }
+    },
+    {
+      "id": "kind-flat-to-long",
+      "scenario": "event-kind",
+      "args": {
+        "before": 0,
+        "after": 1.5
+      },
+      "outcome": {
+        "type": "perp_open"
+      }
+    },
+    {
+      "id": "kind-flat-to-short",
+      "scenario": "event-kind",
+      "args": {
+        "before": 0,
+        "after": -2
+      },
+      "outcome": {
+        "type": "perp_open"
+      }
+    },
+    {
+      "id": "kind-long-grows",
+      "scenario": "event-kind",
+      "args": {
+        "before": 1,
+        "after": 1.5
+      },
+      "outcome": {
+        "type": "perp_add"
+      }
+    },
+    {
+      "id": "kind-short-grows",
+      "scenario": "event-kind",
+      "args": {
+        "before": -1,
+        "after": -3
+      },
+      "outcome": {
+        "type": "perp_add"
+      }
+    },
+    {
+      "id": "kind-long-shrinks",
+      "scenario": "event-kind",
+      "args": {
+        "before": 2,
+        "after": 0.5
+      },
+      "outcome": {
+        "type": "perp_reduce"
+      }
+    },
+    {
+      "id": "kind-short-shrinks",
+      "scenario": "event-kind",
+      "args": {
+        "before": -3,
+        "after": -1
+      },
+      "outcome": {
+        "type": "perp_reduce"
+      }
+    },
+    {
+      "id": "kind-long-to-flat",
+      "scenario": "event-kind",
+      "args": {
+        "before": 1,
+        "after": 0
+      },
+      "outcome": {
+        "type": "perp_close"
+      }
+    },
+    {
+      "id": "kind-short-to-flat",
+      "scenario": "event-kind",
+      "args": {
+        "before": -2,
+        "after": 0
+      },
+      "outcome": {
+        "type": "perp_close"
+      }
+    },
+    {
+      "id": "kind-long-flips-short",
+      "scenario": "event-kind",
+      "args": {
+        "before": 1,
+        "after": -0.5
+      },
+      "outcome": {
+        "type": "perp_open"
+      }
+    },
+    {
+      "id": "kind-short-flips-long",
+      "scenario": "event-kind",
+      "args": {
+        "before": -1,
+        "after": 2
+      },
+      "outcome": {
+        "type": "perp_open"
+      }
+    },
+    {
+      "id": "kind-dust-before-is-flat",
+      "scenario": "event-kind",
+      "args": {
+        "before": 1e-12,
+        "after": 0.4
+      },
+      "outcome": {
+        "type": "perp_open"
+      }
+    },
+    {
+      "id": "kind-dust-after-is-flat",
+      "scenario": "event-kind",
+      "args": {
+        "before": 0.4,
+        "after": 1e-12
+      },
+      "outcome": {
+        "type": "perp_close"
+      }
+    },
+    {
+      "id": "announce-open-long-from-flat",
+      "scenario": "announce",
+      "args": {
+        "coin": "ETH",
+        "sizeDelta": 1.5,
+        "side": "buy",
+        "px": 3000,
+        "positionAfter": "1.5",
+        "hidden": false,
+        "switchOn": true,
+        "agent": "published"
+      },
+      "outcome": {
+        "sent": true,
+        "wire": {
+          "type": "perp_open",
+          "coin": "ETH",
+          "side": "long",
+          "leverage": 10,
+          "notionalUsd": 4500,
+          "timestamp": 1790000000000,
+          "agentName": "Fixture Agent"
+        },
+        "lookups": [
+          {
+            "owner": "the order's owner",
+            "key": "the order's key"
+          }
+        ],
+        "venueReads": [
+          "clearinghouse"
+        ],
+        "threw": false
+      }
+    },
+    {
+      "id": "announce-open-short-from-flat",
+      "scenario": "announce",
+      "args": {
+        "coin": "BTC",
+        "sizeDelta": 0.25,
+        "side": "sell",
+        "px": 60000,
+        "positionAfter": "-0.25",
+        "hidden": false,
+        "switchOn": true,
+        "agent": "published"
+      },
+      "outcome": {
+        "sent": true,
+        "wire": {
+          "type": "perp_open",
+          "coin": "BTC",
+          "side": "short",
+          "leverage": 20,
+          "notionalUsd": 15000,
+          "timestamp": 1790000000000,
+          "agentName": "Fixture Agent"
+        },
+        "lookups": [
+          {
+            "owner": "the order's owner",
+            "key": "the order's key"
+          }
+        ],
+        "venueReads": [
+          "clearinghouse"
+        ],
+        "threw": false
+      }
+    },
+    {
+      "id": "announce-add-to-long",
+      "scenario": "announce",
+      "args": {
+        "coin": "ETH",
+        "sizeDelta": 0.5,
+        "side": "buy",
+        "px": 3100,
+        "positionAfter": "2",
+        "hidden": false,
+        "switchOn": true,
+        "agent": "published"
+      },
+      "outcome": {
+        "sent": true,
+        "wire": {
+          "type": "perp_add",
+          "coin": "ETH",
+          "side": "long",
+          "leverage": 10,
+          "notionalUsd": 1550,
+          "timestamp": 1790000000000,
+          "agentName": "Fixture Agent"
+        },
+        "lookups": [
+          {
+            "owner": "the order's owner",
+            "key": "the order's key"
+          }
+        ],
+        "venueReads": [
+          "clearinghouse"
+        ],
+        "threw": false
+      }
+    },
+    {
+      "id": "announce-reduce-long-keeps-no-pnl",
+      "scenario": "announce",
+      "args": {
+        "coin": "ETH",
+        "sizeDelta": 0.5,
+        "side": "sell",
+        "px": 3200,
+        "realizedPnlUsd": 87.654,
+        "positionAfter": "1.5",
+        "hidden": false,
+        "switchOn": true,
+        "agent": "published"
+      },
+      "outcome": {
+        "sent": true,
+        "wire": {
+          "type": "perp_reduce",
+          "coin": "ETH",
+          "side": "long",
+          "leverage": 10,
+          "notionalUsd": 1600,
+          "timestamp": 1790000000000,
+          "agentName": "Fixture Agent"
+        },
+        "lookups": [
+          {
+            "owner": "the order's owner",
+            "key": "the order's key"
+          }
+        ],
+        "venueReads": [
+          "clearinghouse"
+        ],
+        "threw": false
+      }
+    },
+    {
+      "id": "announce-close-long-carries-pnl",
+      "scenario": "announce",
+      "args": {
+        "coin": "ETH",
+        "sizeDelta": 1.5,
+        "side": "sell",
+        "px": 3300,
+        "realizedPnlUsd": 412.345,
+        "positionAfter": null,
+        "hidden": false,
+        "switchOn": true,
+        "agent": "published"
+      },
+      "outcome": {
+        "sent": true,
+        "wire": {
+          "type": "perp_close",
+          "coin": "ETH",
+          "side": "long",
+          "leverage": 10,
+          "notionalUsd": 4950,
+          "realizedPnlUsd": 412.35,
+          "timestamp": 1790000000000,
+          "agentName": "Fixture Agent"
+        },
+        "lookups": [
+          {
+            "owner": "the order's owner",
+            "key": "the order's key"
+          }
+        ],
+        "venueReads": [
+          "clearinghouse",
+          "activeAssetData"
+        ],
+        "threw": false
+      }
+    },
+    {
+      "id": "announce-close-short-carries-a-loss",
+      "scenario": "announce",
+      "args": {
+        "coin": "BTC",
+        "sizeDelta": 0.25,
+        "side": "buy",
+        "px": 61000,
+        "realizedPnlUsd": -250.004,
+        "positionAfter": null,
+        "hidden": false,
+        "switchOn": true,
+        "agent": "published"
+      },
+      "outcome": {
+        "sent": true,
+        "wire": {
+          "type": "perp_close",
+          "coin": "BTC",
+          "side": "short",
+          "leverage": 20,
+          "notionalUsd": 15250,
+          "realizedPnlUsd": -250,
+          "timestamp": 1790000000000,
+          "agentName": "Fixture Agent"
+        },
+        "lookups": [
+          {
+            "owner": "the order's owner",
+            "key": "the order's key"
+          }
+        ],
+        "venueReads": [
+          "clearinghouse",
+          "activeAssetData"
+        ],
+        "threw": false
+      }
+    },
+    {
+      "id": "announce-flip-long-to-short-is-an-open",
+      "scenario": "announce",
+      "args": {
+        "coin": "ETH",
+        "sizeDelta": 2,
+        "side": "sell",
+        "px": 3000,
+        "positionAfter": "-0.5",
+        "hidden": false,
+        "switchOn": true,
+        "agent": "published"
+      },
+      "outcome": {
+        "sent": true,
+        "wire": {
+          "type": "perp_open",
+          "coin": "ETH",
+          "side": "short",
+          "leverage": 5,
+          "notionalUsd": 6000,
+          "timestamp": 1790000000000,
+          "agentName": "Fixture Agent"
+        },
+        "lookups": [
+          {
+            "owner": "the order's owner",
+            "key": "the order's key"
+          }
+        ],
+        "venueReads": [
+          "clearinghouse"
+        ],
+        "threw": false
+      }
+    },
+    {
+      "id": "announce-builder-dex-coin",
+      "scenario": "announce",
+      "args": {
+        "coin": "xyz:XYZ100",
+        "sizeDelta": 3,
+        "side": "buy",
+        "px": 41.237,
+        "positionAfter": "3",
+        "hidden": false,
+        "switchOn": true,
+        "agent": "published"
+      },
+      "outcome": {
+        "sent": true,
+        "wire": {
+          "type": "perp_open",
+          "coin": "xyz:XYZ100",
+          "side": "long",
+          "leverage": 3,
+          "notionalUsd": 123.71,
+          "timestamp": 1790000000000,
+          "agentName": "Fixture Agent"
+        },
+        "lookups": [
+          {
+            "owner": "the order's owner",
+            "key": "the order's key"
+          }
+        ],
+        "venueReads": [
+          "clearinghouse"
+        ],
+        "threw": false
+      }
+    },
+    {
+      "id": "announce-close-leverage-unreadable-is-left-out",
+      "scenario": "announce",
+      "args": {
+        "coin": "ETH",
+        "sizeDelta": 1,
+        "side": "sell",
+        "px": 3000,
+        "positionAfter": null,
+        "hidden": false,
+        "switchOn": true,
+        "agent": "published"
+      },
+      "outcome": {
+        "sent": true,
+        "wire": {
+          "type": "perp_close",
+          "coin": "ETH",
+          "side": "long",
+          "notionalUsd": 3000,
+          "timestamp": 1790000000000,
+          "agentName": "Fixture Agent"
+        },
+        "lookups": [
+          {
+            "owner": "the order's owner",
+            "key": "the order's key"
+          }
+        ],
+        "venueReads": [
+          "clearinghouse",
+          "activeAssetData"
+        ],
+        "threw": false
+      }
+    },
+    {
+      "id": "announce-hidden-order-sends-nothing",
+      "scenario": "announce",
+      "args": {
+        "coin": "ETH",
+        "sizeDelta": 1.5,
+        "side": "buy",
+        "px": 3000,
+        "positionAfter": "1.5",
+        "hidden": true,
+        "switchOn": true,
+        "agent": "published"
+      },
+      "outcome": {
+        "sent": false,
+        "lookups": [],
+        "venueReads": [
+          "clearinghouse"
+        ],
+        "threw": false
+      }
+    },
+    {
+      "id": "announce-private-agent-sends-nothing",
+      "scenario": "announce",
+      "args": {
+        "coin": "ETH",
+        "sizeDelta": 1.5,
+        "side": "buy",
+        "px": 3000,
+        "positionAfter": "1.5",
+        "hidden": false,
+        "switchOn": true,
+        "agent": "private"
+      },
+      "outcome": {
+        "sent": false,
+        "lookups": [
+          {
+            "owner": "the order's owner",
+            "key": "the order's key"
+          }
+        ],
+        "venueReads": [
+          "clearinghouse"
+        ],
+        "threw": false
+      }
+    },
+    {
+      "id": "announce-switch-off-sends-nothing",
+      "scenario": "announce",
+      "args": {
+        "coin": "ETH",
+        "sizeDelta": 1.5,
+        "side": "buy",
+        "px": 3000,
+        "positionAfter": "1.5",
+        "hidden": false,
+        "switchOn": false,
+        "agent": "published"
+      },
+      "outcome": {
+        "sent": false,
+        "lookups": [],
+        "venueReads": [
+          "clearinghouse"
+        ],
+        "threw": false
+      }
+    },
+    {
+      "id": "announce-lookup-failure-sends-nothing",
+      "scenario": "announce",
+      "args": {
+        "coin": "ETH",
+        "sizeDelta": 1.5,
+        "side": "buy",
+        "px": 3000,
+        "positionAfter": "1.5",
+        "hidden": false,
+        "switchOn": true,
+        "agent": "lookup fails"
+      },
+      "outcome": {
+        "sent": false,
+        "lookups": [
+          {
+            "owner": "the order's owner",
+            "key": "the order's key"
+          }
+        ],
+        "venueReads": [
+          "clearinghouse"
+        ],
+        "threw": false
+      }
+    },
+    {
+      "id": "announce-blank-agent-key-sends-nothing",
+      "scenario": "announce",
+      "args": {
+        "coin": "ETH",
+        "sizeDelta": 1.5,
+        "side": "buy",
+        "px": 3000,
+        "positionAfter": "1.5",
+        "hidden": false,
+        "switchOn": true,
+        "agent": "published",
+        "agentKey": "blank"
+      },
+      "outcome": {
+        "sent": false,
+        "lookups": [],
+        "venueReads": [
+          "clearinghouse"
+        ],
+        "threw": false
+      }
+    },
+    {
+      "id": "announce-venue-read-failure-sends-nothing",
+      "scenario": "announce",
+      "args": {
+        "coin": "ETH",
+        "sizeDelta": 1.5,
+        "side": "buy",
+        "px": 3000,
+        "positionAfter": null,
+        "hidden": false,
+        "switchOn": true,
+        "agent": "published"
+      },
+      "outcome": {
+        "sent": false,
+        "lookups": [],
+        "venueReads": [
+          "clearinghouse"
+        ],
+        "threw": false
+      }
+    },
+    {
+      "id": "announce-unreadable-size-sends-nothing",
+      "scenario": "announce",
+      "args": {
+        "coin": "ETH",
+        "sizeDelta": 1.5,
+        "side": "buy",
+        "px": 3000,
+        "positionAfter": "not-a-number",
+        "hidden": false,
+        "switchOn": true,
+        "agent": "published"
+      },
+      "outcome": {
+        "sent": false,
+        "lookups": [],
+        "venueReads": [
+          "clearinghouse"
+        ],
+        "threw": false
+      }
+    },
+    {
+      "id": "payload-before-the-strip",
+      "scenario": "payload",
+      "args": {
+        "type": "perp_close",
+        "leverage": null
+      },
+      "outcome": {
+        "fields": [
+          "coin",
+          "notionalUsd",
+          "realizedPnlUsd",
+          "side",
+          "timestamp",
+          "type",
+          "userAddress",
+          "viaApiKey"
+        ],
+        "carriesTheOwner": true,
+        "viaApiKey": true,
+        "notionalUsd": 4950.01,
+        "realizedPnlUsd": 12.35,
+        "hasLeverage": false
+      }
+    },
+    {
+      "id": "payload-after-the-strip",
+      "scenario": "payload",
+      "args": {
+        "named": "agent"
+      },
+      "outcome": {
+        "fields": [
+          "agentName",
+          "coin",
+          "notionalUsd",
+          "realizedPnlUsd",
+          "side",
+          "timestamp",
+          "type"
+        ]
+      }
+    },
+    {
+      "id": "payload-pnl-only-on-a-close",
+      "scenario": "payload",
+      "args": {
+        "type": "perp_open",
+        "realizedPnlUsd": 5
+      },
+      "outcome": {
+        "hasRealizedPnl": false
+      }
+    },
+    {
+      "id": "fills-two-fills-volume-weighted",
+      "scenario": "fills",
+      "args": {
+        "fills": 2
+      },
+      "outcome": {
+        "summary": {
+          "px": 3075,
+          "size": 4,
+          "pnl": 6,
+          "time": 300
+        }
+      }
+    },
+    {
+      "id": "fills-cloid-read-case-insensitively",
+      "scenario": "fills",
+      "args": {
+        "fills": 1
+      },
+      "outcome": {
+        "summary": {
+          "px": 50,
+          "size": 2,
+          "pnl": 0,
+          "time": 7
+        }
+      }
+    },
+    {
+      "id": "fills-other-orders-ignored",
+      "scenario": "fills",
+      "args": {
+        "fills": 2
+      },
+      "outcome": {
+        "summary": {
+          "px": 40,
+          "size": 1,
+          "pnl": 1.5,
+          "time": 5
+        }
+      }
+    },
+    {
+      "id": "fills-zero-negative-and-unreadable-sizes-ignored",
+      "scenario": "fills",
+      "args": {
+        "fills": 4
+      },
+      "outcome": {
+        "summary": {
+          "px": 40,
+          "size": 2,
+          "pnl": 0,
+          "time": 8
+        }
+      }
+    },
+    {
+      "id": "fills-no-fill-for-the-order",
+      "scenario": "fills",
+      "args": {
+        "fills": 1
+      },
+      "outcome": {
+        "summary": null
+      }
+    },
+    {
+      "id": "hide-parse-true",
+      "scenario": "hide-parse",
+      "args": {
+        "value": true
+      },
+      "outcome": {
+        "ok": true,
+        "hide": true
+      }
+    },
+    {
+      "id": "hide-parse-string-true",
+      "scenario": "hide-parse",
+      "args": {
+        "value": "true"
+      },
+      "outcome": {
+        "ok": true,
+        "hide": true
+      }
+    },
+    {
+      "id": "hide-parse-1",
+      "scenario": "hide-parse",
+      "args": {
+        "value": 1
+      },
+      "outcome": {
+        "ok": true,
+        "hide": true
+      }
+    },
+    {
+      "id": "hide-parse-string-1",
+      "scenario": "hide-parse",
+      "args": {
+        "value": "1"
+      },
+      "outcome": {
+        "ok": true,
+        "hide": true
+      }
+    },
+    {
+      "id": "hide-parse-false",
+      "scenario": "hide-parse",
+      "args": {
+        "value": false
+      },
+      "outcome": {
+        "ok": true,
+        "hide": false
+      }
+    },
+    {
+      "id": "hide-parse-string-false",
+      "scenario": "hide-parse",
+      "args": {
+        "value": "false"
+      },
+      "outcome": {
+        "ok": true,
+        "hide": false
+      }
+    },
+    {
+      "id": "hide-parse-0",
+      "scenario": "hide-parse",
+      "args": {
+        "value": 0
+      },
+      "outcome": {
+        "ok": true,
+        "hide": false
+      }
+    },
+    {
+      "id": "hide-parse-string-0",
+      "scenario": "hide-parse",
+      "args": {
+        "value": "0"
+      },
+      "outcome": {
+        "ok": true,
+        "hide": false
+      }
+    },
+    {
+      "id": "hide-parse-absent",
+      "scenario": "hide-parse",
+      "args": {
+        "value": "absent"
+      },
+      "outcome": {
+        "ok": true,
+        "hide": false
+      }
+    },
+    {
+      "id": "hide-parse-null",
+      "scenario": "hide-parse",
+      "args": {
+        "value": null
+      },
+      "outcome": {
+        "ok": true,
+        "hide": false
+      }
+    },
+    {
+      "id": "hide-parse-string-yes",
+      "scenario": "hide-parse",
+      "args": {
+        "value": "yes"
+      },
+      "outcome": {
+        "ok": false,
+        "message": "hide must be a boolean (true, \"true\" or 1)"
+      }
+    },
+    {
+      "id": "hide-parse-2",
+      "scenario": "hide-parse",
+      "args": {
+        "value": 2
+      },
+      "outcome": {
+        "ok": false,
+        "message": "hide must be a boolean (true, \"true\" or 1)"
+      }
+    },
+    {
+      "id": "hide-parse-string-upper-true",
+      "scenario": "hide-parse",
+      "args": {
+        "value": "TRUE"
+      },
+      "outcome": {
+        "ok": false,
+        "message": "hide must be a boolean (true, \"true\" or 1)"
+      }
+    },
+    {
+      "id": "hide-parse-object",
+      "scenario": "hide-parse",
+      "args": {
+        "value": {}
+      },
+      "outcome": {
+        "ok": false,
+        "message": "hide must be a boolean (true, \"true\" or 1)"
+      }
+    },
+    {
+      "id": "perp-hide-is-parse-hide-or-a-400",
+      "scenario": "source-pin",
+      "args": {
+        "file": "apps/api/src/routes/agent-perps.ts"
+      },
+      "outcome": {
+        "found": true
+      }
+    },
+    {
+      "id": "open-parses-hide-before-building",
+      "scenario": "source-pin",
+      "args": {
+        "file": "apps/api/src/routes/agent-perps.ts"
+      },
+      "outcome": {
+        "found": true
+      }
+    },
+    {
+      "id": "open-stores-and-echoes-hide",
+      "scenario": "source-pin",
+      "args": {
+        "file": "apps/api/src/routes/agent-perps.ts"
+      },
+      "outcome": {
+        "found": true
+      }
+    },
+    {
+      "id": "close-parses-hide-before-building",
+      "scenario": "source-pin",
+      "args": {
+        "file": "apps/api/src/routes/agent-perps.ts"
+      },
+      "outcome": {
+        "found": true
+      }
+    },
+    {
+      "id": "close-stores-and-echoes-hide",
+      "scenario": "source-pin",
+      "args": {
+        "file": "apps/api/src/routes/agent-perps.ts"
+      },
+      "outcome": {
+        "found": true
+      }
+    },
+    {
+      "id": "modify-parses-hide-before-building",
+      "scenario": "source-pin",
+      "args": {
+        "file": "apps/api/src/routes/agent-perps.ts"
+      },
+      "outcome": {
+        "found": true
+      }
+    },
+    {
+      "id": "modify-stores-and-echoes-hide",
+      "scenario": "source-pin",
+      "args": {
+        "file": "apps/api/src/routes/agent-perps.ts"
+      },
+      "outcome": {
+        "found": true
+      }
+    },
+    {
+      "id": "tpsl-parses-hide-before-building",
+      "scenario": "source-pin",
+      "args": {
+        "file": "apps/api/src/routes/agent-perps.ts"
+      },
+      "outcome": {
+        "found": true
+      }
+    },
+    {
+      "id": "tpsl-stores-and-echoes-hide",
+      "scenario": "source-pin",
+      "args": {
+        "file": "apps/api/src/routes/agent-perps.ts"
+      },
+      "outcome": {
+        "found": true
+      }
+    },
+    {
+      "id": "open-and-close-fingerprint-carries-hide",
+      "scenario": "source-pin",
+      "args": {
+        "file": "apps/api/src/routes/agent-perps.ts"
+      },
+      "outcome": {
+        "found": true
+      }
+    },
+    {
+      "id": "modify-of-a-hidden-order-stays-hidden",
+      "scenario": "source-pin",
+      "args": {
+        "file": "apps/api/src/routes/agent-perps.ts"
+      },
+      "outcome": {
+        "found": true
+      }
+    },
+    {
+      "id": "replay-answers-the-stored-flag",
+      "scenario": "source-pin",
+      "args": {
+        "file": "apps/api/src/routes/agent-perps.ts"
+      },
+      "outcome": {
+        "found": true
+      }
+    },
+    {
+      "id": "echo-only-when-hidden",
+      "scenario": "source-pin",
+      "args": {
+        "file": "apps/api/src/routes/agent-perps.ts"
+      },
+      "outcome": {
+        "found": true
+      }
+    },
+    {
+      "id": "row-stores-stream-hidden",
+      "scenario": "source-pin",
+      "args": {
+        "file": "apps/api/src/routes/agent-perps.ts"
+      },
+      "outcome": {
+        "found": true
+      }
+    },
+    {
+      "id": "hide-has-no-switch-in-the-route",
+      "scenario": "source-pin",
+      "args": {
+        "file": "apps/api/src/routes/agent-perps.ts"
+      },
+      "outcome": {
+        "found": true
+      }
+    },
+    {
+      "id": "hide-switch-deleted-in-flags",
+      "scenario": "source-pin",
+      "args": {
+        "file": "apps/api/src/config/flags.ts"
+      },
+      "outcome": {
+        "found": true
+      }
+    },
+    {
+      "id": "settle-claims-each-increase-once",
+      "scenario": "source-pin",
+      "args": {
+        "file": "packages/db/convex/perpOrders.ts"
+      },
+      "outcome": {
+        "found": true
+      }
+    },
+    {
+      "id": "reconcile-announces-only-the-claim",
+      "scenario": "source-pin",
+      "args": {
+        "file": "apps/api/src/lib/perps-reconcile.ts"
+      },
+      "outcome": {
+        "found": true
+      }
+    },
+    {
+      "id": "reconcile-announces-order-kinds-only",
+      "scenario": "source-pin",
+      "args": {
+        "file": "apps/api/src/lib/perps-reconcile.ts"
+      },
+      "outcome": {
+        "found": true
+      }
+    },
+    {
+      "id": "reconcile-passes-the-rows-hide",
+      "scenario": "source-pin",
+      "args": {
+        "file": "apps/api/src/lib/perps-reconcile.ts"
+      },
+      "outcome": {
+        "found": true
+      }
+    },
+    {
+      "id": "schema-perp-orders-stream-fields",
+      "scenario": "source-pin",
+      "args": {
+        "file": "packages/db/convex/schema.ts"
+      },
+      "outcome": {
+        "found": true
+      }
+    },
+    {
+      "id": "perps-agent-named-from-the-key-not-the-payload",
+      "scenario": "source-pin",
+      "args": {
+        "file": "apps/api/src/lib/activity-broadcast.ts"
+      },
+      "outcome": {
+        "found": true
+      }
+    },
+    {
+      "id": "no-liquidation-emitter-yet",
+      "scenario": "source-pin",
+      "args": {
+        "file": "apps/api/src/lib/perps-stream.ts"
+      },
+      "outcome": {
+        "found": true
+      }
+    },
+    {
+      "id": "clients-carry-no-perps-hide",
+      "scenario": "clients",
+      "args": {
+        "files": [
+          "packages/cli/src/commands/perps.ts",
+          "packages/mcp/src/perps.ts",
+          "packages/mcp/src/hyperliquid-manage.ts",
+          "packages/sdk/src/client.ts",
+          "packages/sdk/src/hyperliquid-manage.ts"
+        ]
+      },
+      "outcome": {
+        "cliPerpsTakesHide": false,
+        "mcpPerpsTakesHide": false,
+        "mcpManageTakesHide": false,
+        "sdkOpenCloseModifyTakeHide": false,
+        "sdkTpslTakesHide": false
+      }
+    }
+  ]
+}
