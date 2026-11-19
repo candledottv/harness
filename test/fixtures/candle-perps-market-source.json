@@ -1,0 +1,2567 @@
+{
+  "about": "Offline perp market contracts from exact merged source. Every figure, market, dex, agent and time is made up; times are minutes before one made-up instant. api-source rows are Candle's own `GET /api/v1/agent/perps-markets/:coin` route and its governed market-data reads, run against a stand-in Hyperliquid (requests lists each venue read one page load makes); the agents half is Candle's pure composeMarketAgents on three made-up public agents' published bundles, put in where the route reads the database. The bundles carry a made-up wallet, account value and fill hash that no row carries; the builder dex's made-up deployer is named by its role. mcp, sdk and cli rows read the same answer through the registered tool, the SDK and `candle perps market <coin> --agents` over an intercepted fetch. docs rows are the public pages' own lines, read as text. The database, the public gate and the venue are not executed, and no deployed behavior is claimed.",
+  "source": {
+    "repo": "candledottv/candle-monorepo",
+    "commit": "8a08b366d541a7b9f439fd6e1a290cb57375d417",
+    "versions": {
+      "cli": "0.13.33",
+      "mcp": "0.10.38",
+      "sdk": "0.6.27"
+    }
+  },
+  "limits": {
+    "agentsMax": 500,
+    "roundsMax": 20
+  },
+  "now": "2027-01-12T14:00:00.000Z",
+  "rows": [
+    {
+      "id": "btc-api",
+      "scenario": "btc",
+      "surface": "api-source",
+      "says": "A main-dex market three public agents hold: two long, one short, and two closed rounds (one published before round ids).",
+      "evidence": "Candle's own route and governed market-data reads against a stand-in Hyperliquid; the agents half is the pure composeMarketAgents on made-up public bundles in place of the database read",
+      "args": {
+        "path": "/api/v1/agent/perps-markets/BTC"
+      },
+      "requests": [
+        {
+          "type": "metaAndAssetCtxs"
+        },
+        {
+          "type": "predictedFundings"
+        },
+        {
+          "type": "perpsAtOpenInterestCap"
+        },
+        {
+          "type": "fundingHistory",
+          "coin": "BTC"
+        }
+      ],
+      "outcome": {
+        "status": 200,
+        "cacheControl": "public, s-maxage=15, stale-while-revalidate=60",
+        "body": {
+          "success": true,
+          "network": "mainnet",
+          "market": {
+            "coin": "BTC",
+            "dex": null,
+            "dexName": null,
+            "deployer": null,
+            "oracleSource": "validators",
+            "markPx": "63000",
+            "change24hPct": "5.0",
+            "fundingRate": "0.0000125",
+            "fundingAprPct": "10.95",
+            "openInterestUsd": "63000000.00",
+            "dayNotionalVolumeUsd": "900000000",
+            "maxLeverage": 40,
+            "onlyIsolated": false,
+            "isDelisted": false
+          },
+          "readAt": 1799762400000,
+          "stale": false,
+          "funding": {
+            "points": [
+              {
+                "time": 1799751600000,
+                "fundingRate": "0.0000125",
+                "fundingAprPct": "10.95"
+              },
+              {
+                "time": 1799755200000,
+                "fundingRate": "0.0000125",
+                "fundingAprPct": "10.95"
+              },
+              {
+                "time": 1799758800000,
+                "fundingRate": "0.0000125",
+                "fundingAprPct": "10.95"
+              }
+            ],
+            "readAt": 1799762400000,
+            "stale": false
+          },
+          "agents": {
+            "coin": "BTC",
+            "long": 2,
+            "short": 1,
+            "netSize": "0.65",
+            "netValueUsd": "40950",
+            "positions": [
+              {
+                "agent": {
+                  "profileId": "prof_1111111111111111",
+                  "slug": "alpha-fixture",
+                  "name": "Alpha Fixture",
+                  "avatarUrl": null
+                },
+                "label": "Long BTC 20x",
+                "coin": "BTC",
+                "side": "long",
+                "leverage": {
+                  "value": 20,
+                  "type": "cross"
+                },
+                "size": "0.5",
+                "entryPx": "60000",
+                "markPx": "63000",
+                "positionValueUsd": "31500",
+                "unrealizedPnlUsd": "1500",
+                "returnOnEquity": "1.0000",
+                "asOfMs": 1799761920000
+              },
+              {
+                "agent": {
+                  "profileId": "prof_2222222222222222",
+                  "slug": "beta-fixture",
+                  "name": "Beta Fixture",
+                  "avatarUrl": null
+                },
+                "label": "Long BTC 10x",
+                "coin": "BTC",
+                "side": "long",
+                "leverage": {
+                  "value": 10,
+                  "type": "isolated"
+                },
+                "size": "0.25",
+                "entryPx": "62000",
+                "markPx": "63000",
+                "positionValueUsd": "15750",
+                "unrealizedPnlUsd": "250",
+                "returnOnEquity": "0.1613",
+                "asOfMs": 1799761920000
+              },
+              {
+                "agent": {
+                  "profileId": "prof_3333333333333333",
+                  "slug": "gamma-fixture",
+                  "name": null,
+                  "avatarUrl": null
+                },
+                "label": "Short BTC 25x",
+                "coin": "BTC",
+                "side": "short",
+                "leverage": {
+                  "value": 25,
+                  "type": "cross"
+                },
+                "size": "0.1",
+                "entryPx": "64000",
+                "markPx": "63000",
+                "positionValueUsd": "6300",
+                "unrealizedPnlUsd": "100",
+                "returnOnEquity": "0.3906",
+                "asOfMs": 1799758320000
+              }
+            ],
+            "rounds": [
+              {
+                "agent": {
+                  "profileId": "prof_2222222222222222",
+                  "slug": "beta-fixture",
+                  "name": "Beta Fixture",
+                  "avatarUrl": null
+                },
+                "roundId": null,
+                "coin": "BTC",
+                "side": "short",
+                "leverage": null,
+                "pnlUsd": 40,
+                "liquidated": false,
+                "closedMs": 1799760600000
+              },
+              {
+                "agent": {
+                  "profileId": "prof_1111111111111111",
+                  "slug": "alpha-fixture",
+                  "name": "Alpha Fixture",
+                  "avatarUrl": null
+                },
+                "roundId": "rnd_0123456789abcdef",
+                "coin": "BTC",
+                "side": "long",
+                "leverage": {
+                  "value": 10,
+                  "type": "cross"
+                },
+                "pnlUsd": 120,
+                "liquidated": false,
+                "closedMs": 1799757000000
+              }
+            ],
+            "asOfMs": 1799758320000,
+            "truncated": false
+          },
+          "agentsUnavailable": false
+        }
+      }
+    },
+    {
+      "id": "btc-mcp",
+      "scenario": "btc",
+      "surface": "mcp",
+      "args": {
+        "coin": "BTC"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/perps-markets/BTC",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "body": {
+          "success": true,
+          "network": "mainnet",
+          "market": {
+            "coin": "BTC",
+            "dex": null,
+            "dexName": null,
+            "deployer": null,
+            "oracleSource": "validators",
+            "markPx": "63000",
+            "change24hPct": "5.0",
+            "fundingRate": "0.0000125",
+            "fundingAprPct": "10.95",
+            "openInterestUsd": "63000000.00",
+            "dayNotionalVolumeUsd": "900000000",
+            "maxLeverage": 40,
+            "onlyIsolated": false,
+            "isDelisted": false
+          },
+          "readAt": 1799762400000,
+          "stale": false,
+          "funding": {
+            "points": [
+              {
+                "time": 1799751600000,
+                "fundingRate": "0.0000125",
+                "fundingAprPct": "10.95"
+              },
+              {
+                "time": 1799755200000,
+                "fundingRate": "0.0000125",
+                "fundingAprPct": "10.95"
+              },
+              {
+                "time": 1799758800000,
+                "fundingRate": "0.0000125",
+                "fundingAprPct": "10.95"
+              }
+            ],
+            "readAt": 1799762400000,
+            "stale": false
+          },
+          "agents": {
+            "coin": "BTC",
+            "long": 2,
+            "short": 1,
+            "netSize": "0.65",
+            "netValueUsd": "40950",
+            "positions": [
+              {
+                "agent": {
+                  "profileId": "prof_1111111111111111",
+                  "slug": "alpha-fixture",
+                  "name": "Alpha Fixture",
+                  "avatarUrl": null
+                },
+                "label": "Long BTC 20x",
+                "coin": "BTC",
+                "side": "long",
+                "leverage": {
+                  "value": 20,
+                  "type": "cross"
+                },
+                "size": "0.5",
+                "entryPx": "60000",
+                "markPx": "63000",
+                "positionValueUsd": "31500",
+                "unrealizedPnlUsd": "1500",
+                "returnOnEquity": "1.0000",
+                "asOfMs": 1799761920000
+              },
+              {
+                "agent": {
+                  "profileId": "prof_2222222222222222",
+                  "slug": "beta-fixture",
+                  "name": "Beta Fixture",
+                  "avatarUrl": null
+                },
+                "label": "Long BTC 10x",
+                "coin": "BTC",
+                "side": "long",
+                "leverage": {
+                  "value": 10,
+                  "type": "isolated"
+                },
+                "size": "0.25",
+                "entryPx": "62000",
+                "markPx": "63000",
+                "positionValueUsd": "15750",
+                "unrealizedPnlUsd": "250",
+                "returnOnEquity": "0.1613",
+                "asOfMs": 1799761920000
+              },
+              {
+                "agent": {
+                  "profileId": "prof_3333333333333333",
+                  "slug": "gamma-fixture",
+                  "name": null,
+                  "avatarUrl": null
+                },
+                "label": "Short BTC 25x",
+                "coin": "BTC",
+                "side": "short",
+                "leverage": {
+                  "value": 25,
+                  "type": "cross"
+                },
+                "size": "0.1",
+                "entryPx": "64000",
+                "markPx": "63000",
+                "positionValueUsd": "6300",
+                "unrealizedPnlUsd": "100",
+                "returnOnEquity": "0.3906",
+                "asOfMs": 1799758320000
+              }
+            ],
+            "rounds": [
+              {
+                "agent": {
+                  "profileId": "prof_2222222222222222",
+                  "slug": "beta-fixture",
+                  "name": "Beta Fixture",
+                  "avatarUrl": null
+                },
+                "roundId": null,
+                "coin": "BTC",
+                "side": "short",
+                "leverage": null,
+                "pnlUsd": 40,
+                "liquidated": false,
+                "closedMs": 1799760600000
+              },
+              {
+                "agent": {
+                  "profileId": "prof_1111111111111111",
+                  "slug": "alpha-fixture",
+                  "name": "Alpha Fixture",
+                  "avatarUrl": null
+                },
+                "roundId": "rnd_0123456789abcdef",
+                "coin": "BTC",
+                "side": "long",
+                "leverage": {
+                  "value": 10,
+                  "type": "cross"
+                },
+                "pnlUsd": 120,
+                "liquidated": false,
+                "closedMs": 1799757000000
+              }
+            ],
+            "asOfMs": 1799758320000,
+            "truncated": false
+          },
+          "agentsUnavailable": false
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "btc-sdk",
+      "scenario": "btc",
+      "surface": "sdk",
+      "args": {
+        "coin": "BTC"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/perps-markets/BTC"
+        }
+      ],
+      "outcome": {
+        "body": {
+          "network": "mainnet",
+          "market": {
+            "coin": "BTC",
+            "dex": null,
+            "dexName": null,
+            "deployer": null,
+            "oracleSource": "validators",
+            "markPx": "63000",
+            "change24hPct": "5.0",
+            "fundingRate": "0.0000125",
+            "fundingAprPct": "10.95",
+            "openInterestUsd": "63000000.00",
+            "dayNotionalVolumeUsd": "900000000",
+            "maxLeverage": 40,
+            "onlyIsolated": false,
+            "isDelisted": false
+          },
+          "readAt": 1799762400000,
+          "stale": false,
+          "funding": {
+            "points": [
+              {
+                "time": 1799751600000,
+                "fundingRate": "0.0000125",
+                "fundingAprPct": "10.95"
+              },
+              {
+                "time": 1799755200000,
+                "fundingRate": "0.0000125",
+                "fundingAprPct": "10.95"
+              },
+              {
+                "time": 1799758800000,
+                "fundingRate": "0.0000125",
+                "fundingAprPct": "10.95"
+              }
+            ],
+            "readAt": 1799762400000,
+            "stale": false
+          },
+          "agents": {
+            "coin": "BTC",
+            "long": 2,
+            "short": 1,
+            "netSize": "0.65",
+            "netValueUsd": "40950",
+            "positions": [
+              {
+                "agent": {
+                  "profileId": "prof_1111111111111111",
+                  "slug": "alpha-fixture",
+                  "name": "Alpha Fixture",
+                  "avatarUrl": null
+                },
+                "label": "Long BTC 20x",
+                "coin": "BTC",
+                "side": "long",
+                "leverage": {
+                  "value": 20,
+                  "type": "cross"
+                },
+                "size": "0.5",
+                "entryPx": "60000",
+                "markPx": "63000",
+                "positionValueUsd": "31500",
+                "unrealizedPnlUsd": "1500",
+                "returnOnEquity": "1.0000",
+                "asOfMs": 1799761920000
+              },
+              {
+                "agent": {
+                  "profileId": "prof_2222222222222222",
+                  "slug": "beta-fixture",
+                  "name": "Beta Fixture",
+                  "avatarUrl": null
+                },
+                "label": "Long BTC 10x",
+                "coin": "BTC",
+                "side": "long",
+                "leverage": {
+                  "value": 10,
+                  "type": "isolated"
+                },
+                "size": "0.25",
+                "entryPx": "62000",
+                "markPx": "63000",
+                "positionValueUsd": "15750",
+                "unrealizedPnlUsd": "250",
+                "returnOnEquity": "0.1613",
+                "asOfMs": 1799761920000
+              },
+              {
+                "agent": {
+                  "profileId": "prof_3333333333333333",
+                  "slug": "gamma-fixture",
+                  "name": null,
+                  "avatarUrl": null
+                },
+                "label": "Short BTC 25x",
+                "coin": "BTC",
+                "side": "short",
+                "leverage": {
+                  "value": 25,
+                  "type": "cross"
+                },
+                "size": "0.1",
+                "entryPx": "64000",
+                "markPx": "63000",
+                "positionValueUsd": "6300",
+                "unrealizedPnlUsd": "100",
+                "returnOnEquity": "0.3906",
+                "asOfMs": 1799758320000
+              }
+            ],
+            "rounds": [
+              {
+                "agent": {
+                  "profileId": "prof_2222222222222222",
+                  "slug": "beta-fixture",
+                  "name": "Beta Fixture",
+                  "avatarUrl": null
+                },
+                "roundId": null,
+                "coin": "BTC",
+                "side": "short",
+                "leverage": null,
+                "pnlUsd": 40,
+                "liquidated": false,
+                "closedMs": 1799760600000
+              },
+              {
+                "agent": {
+                  "profileId": "prof_1111111111111111",
+                  "slug": "alpha-fixture",
+                  "name": "Alpha Fixture",
+                  "avatarUrl": null
+                },
+                "roundId": "rnd_0123456789abcdef",
+                "coin": "BTC",
+                "side": "long",
+                "leverage": {
+                  "value": 10,
+                  "type": "cross"
+                },
+                "pnlUsd": 120,
+                "liquidated": false,
+                "closedMs": 1799757000000
+              }
+            ],
+            "asOfMs": 1799758320000,
+            "truncated": false
+          },
+          "agentsUnavailable": false
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "btc-cli",
+      "scenario": "btc",
+      "surface": "cli",
+      "args": {
+        "command": "candle perps market BTC --agents"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/perps-markets/BTC",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "lines": [
+          "BTC: mark $63,000.00, 24h +5.0%, funding/h 0.0013%, open interest $63.00M, 24h volume $900.00M; as of Jan 12 14:00Z",
+          "Candle agents in BTC: 2 long, 1 short, net size 0.65",
+          "Agent          Position       Size  Entry  Mark   P&L (ROE)             As of",
+          "-------------  -------------  ----  -----  -----  --------------------  -------------",
+          "Alpha Fixture  Long BTC 20x   0.5   60000  63000  +$1,500.00 (+100.0%)  Jan 12 13:52Z",
+          "Beta Fixture   Long BTC 10x   0.25  62000  63000  +$250.00 (+16.1%)     Jan 12 13:52Z",
+          "gamma-fixture  Short BTC 25x  0.1   64000  63000  +$100.00 (+39.1%)     Jan 12 12:52Z",
+          "Recent closed rounds",
+          "Agent          Side   P&L       Closed         Round",
+          "-------------  -----  --------  -------------  --------------------",
+          "Beta Fixture   short  +$40.00   Jan 12 13:30Z  -",
+          "Alpha Fixture  long   +$120.00  Jan 12 12:30Z  rnd_0123456789abcdef",
+          "Measured record, not a forecast. Past results do not predict future results."
+        ]
+      }
+    },
+    {
+      "id": "btc-cli-json",
+      "scenario": "btc",
+      "surface": "cli",
+      "args": {
+        "command": "candle perps market BTC --agents --json"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/perps-markets/BTC",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "body": {
+          "success": true,
+          "network": "mainnet",
+          "market": {
+            "coin": "BTC",
+            "dex": null,
+            "dexName": null,
+            "deployer": null,
+            "oracleSource": "validators",
+            "markPx": "63000",
+            "change24hPct": "5.0",
+            "fundingRate": "0.0000125",
+            "fundingAprPct": "10.95",
+            "openInterestUsd": "63000000.00",
+            "dayNotionalVolumeUsd": "900000000",
+            "maxLeverage": 40,
+            "onlyIsolated": false,
+            "isDelisted": false
+          },
+          "readAt": 1799762400000,
+          "stale": false,
+          "funding": {
+            "points": [
+              {
+                "time": 1799751600000,
+                "fundingRate": "0.0000125",
+                "fundingAprPct": "10.95"
+              },
+              {
+                "time": 1799755200000,
+                "fundingRate": "0.0000125",
+                "fundingAprPct": "10.95"
+              },
+              {
+                "time": 1799758800000,
+                "fundingRate": "0.0000125",
+                "fundingAprPct": "10.95"
+              }
+            ],
+            "readAt": 1799762400000,
+            "stale": false
+          },
+          "agents": {
+            "coin": "BTC",
+            "long": 2,
+            "short": 1,
+            "netSize": "0.65",
+            "netValueUsd": "40950",
+            "positions": [
+              {
+                "agent": {
+                  "profileId": "prof_1111111111111111",
+                  "slug": "alpha-fixture",
+                  "name": "Alpha Fixture",
+                  "avatarUrl": null
+                },
+                "label": "Long BTC 20x",
+                "coin": "BTC",
+                "side": "long",
+                "leverage": {
+                  "value": 20,
+                  "type": "cross"
+                },
+                "size": "0.5",
+                "entryPx": "60000",
+                "markPx": "63000",
+                "positionValueUsd": "31500",
+                "unrealizedPnlUsd": "1500",
+                "returnOnEquity": "1.0000",
+                "asOfMs": 1799761920000
+              },
+              {
+                "agent": {
+                  "profileId": "prof_2222222222222222",
+                  "slug": "beta-fixture",
+                  "name": "Beta Fixture",
+                  "avatarUrl": null
+                },
+                "label": "Long BTC 10x",
+                "coin": "BTC",
+                "side": "long",
+                "leverage": {
+                  "value": 10,
+                  "type": "isolated"
+                },
+                "size": "0.25",
+                "entryPx": "62000",
+                "markPx": "63000",
+                "positionValueUsd": "15750",
+                "unrealizedPnlUsd": "250",
+                "returnOnEquity": "0.1613",
+                "asOfMs": 1799761920000
+              },
+              {
+                "agent": {
+                  "profileId": "prof_3333333333333333",
+                  "slug": "gamma-fixture",
+                  "name": null,
+                  "avatarUrl": null
+                },
+                "label": "Short BTC 25x",
+                "coin": "BTC",
+                "side": "short",
+                "leverage": {
+                  "value": 25,
+                  "type": "cross"
+                },
+                "size": "0.1",
+                "entryPx": "64000",
+                "markPx": "63000",
+                "positionValueUsd": "6300",
+                "unrealizedPnlUsd": "100",
+                "returnOnEquity": "0.3906",
+                "asOfMs": 1799758320000
+              }
+            ],
+            "rounds": [
+              {
+                "agent": {
+                  "profileId": "prof_2222222222222222",
+                  "slug": "beta-fixture",
+                  "name": "Beta Fixture",
+                  "avatarUrl": null
+                },
+                "roundId": null,
+                "coin": "BTC",
+                "side": "short",
+                "leverage": null,
+                "pnlUsd": 40,
+                "liquidated": false,
+                "closedMs": 1799760600000
+              },
+              {
+                "agent": {
+                  "profileId": "prof_1111111111111111",
+                  "slug": "alpha-fixture",
+                  "name": "Alpha Fixture",
+                  "avatarUrl": null
+                },
+                "roundId": "rnd_0123456789abcdef",
+                "coin": "BTC",
+                "side": "long",
+                "leverage": {
+                  "value": 10,
+                  "type": "cross"
+                },
+                "pnlUsd": 120,
+                "liquidated": false,
+                "closedMs": 1799757000000
+              }
+            ],
+            "asOfMs": 1799758320000,
+            "truncated": false
+          },
+          "agentsUnavailable": false
+        }
+      }
+    },
+    {
+      "id": "builder-dex-api",
+      "scenario": "builder-dex",
+      "surface": "api-source",
+      "says": "A builder-dex market (dex:COIN): its dex, deployer and oracle source, one agent short, and a liquidated closed round.",
+      "evidence": "Candle's own route and governed market-data reads against a stand-in Hyperliquid; the agents half is the pure composeMarketAgents on made-up public bundles in place of the database read",
+      "args": {
+        "path": "/api/v1/agent/perps-markets/xyz%3ATSLA"
+      },
+      "requests": [
+        {
+          "type": "perpDexs"
+        },
+        {
+          "type": "predictedFundings"
+        },
+        {
+          "type": "perpsAtOpenInterestCap"
+        },
+        {
+          "type": "metaAndAssetCtxs",
+          "dex": "xyz"
+        },
+        {
+          "type": "fundingHistory",
+          "coin": "xyz:TSLA"
+        }
+      ],
+      "outcome": {
+        "status": 200,
+        "cacheControl": "public, s-maxage=15, stale-while-revalidate=60",
+        "body": {
+          "success": true,
+          "network": "mainnet",
+          "market": {
+            "coin": "xyz:TSLA",
+            "dex": "xyz",
+            "dexName": "XYZ Fixture",
+            "deployer": "<builder-dex-deployer>",
+            "oracleSource": "deployer",
+            "markPx": "250",
+            "change24hPct": "4.2",
+            "fundingRate": "0.00002",
+            "fundingAprPct": "17.52",
+            "openInterestUsd": "2500000.00",
+            "dayNotionalVolumeUsd": "5000000",
+            "maxLeverage": 10,
+            "onlyIsolated": false,
+            "isDelisted": false
+          },
+          "readAt": 1799762400000,
+          "stale": false,
+          "funding": {
+            "points": [
+              {
+                "time": 1799751600000,
+                "fundingRate": "0.0000125",
+                "fundingAprPct": "10.95"
+              },
+              {
+                "time": 1799755200000,
+                "fundingRate": "0.0000125",
+                "fundingAprPct": "10.95"
+              },
+              {
+                "time": 1799758800000,
+                "fundingRate": "0.0000125",
+                "fundingAprPct": "10.95"
+              }
+            ],
+            "readAt": 1799762400000,
+            "stale": false
+          },
+          "agents": {
+            "coin": "xyz:TSLA",
+            "long": 0,
+            "short": 1,
+            "netSize": "-2",
+            "netValueUsd": "-500",
+            "positions": [
+              {
+                "agent": {
+                  "profileId": "prof_2222222222222222",
+                  "slug": "beta-fixture",
+                  "name": "Beta Fixture",
+                  "avatarUrl": null
+                },
+                "label": "Short xyz:TSLA 5x",
+                "coin": "xyz:TSLA",
+                "side": "short",
+                "leverage": {
+                  "value": 5,
+                  "type": "isolated"
+                },
+                "size": "2",
+                "entryPx": "260",
+                "markPx": "250",
+                "positionValueUsd": "500",
+                "unrealizedPnlUsd": "20",
+                "returnOnEquity": "0.1923",
+                "asOfMs": 1799761920000
+              }
+            ],
+            "rounds": [
+              {
+                "agent": {
+                  "profileId": "prof_1111111111111111",
+                  "slug": "alpha-fixture",
+                  "name": "Alpha Fixture",
+                  "avatarUrl": null
+                },
+                "roundId": "rnd_1123456789abcdef",
+                "coin": "xyz:TSLA",
+                "side": "short",
+                "leverage": {
+                  "value": 10,
+                  "type": "cross"
+                },
+                "pnlUsd": -15,
+                "liquidated": true,
+                "closedMs": 1799744400000
+              }
+            ],
+            "asOfMs": 1799761920000,
+            "truncated": false
+          },
+          "agentsUnavailable": false
+        }
+      }
+    },
+    {
+      "id": "builder-dex-mcp",
+      "scenario": "builder-dex",
+      "surface": "mcp",
+      "args": {
+        "coin": "xyz:TSLA"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/perps-markets/xyz%3ATSLA",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "body": {
+          "success": true,
+          "network": "mainnet",
+          "market": {
+            "coin": "xyz:TSLA",
+            "dex": "xyz",
+            "dexName": "XYZ Fixture",
+            "deployer": "<builder-dex-deployer>",
+            "oracleSource": "deployer",
+            "markPx": "250",
+            "change24hPct": "4.2",
+            "fundingRate": "0.00002",
+            "fundingAprPct": "17.52",
+            "openInterestUsd": "2500000.00",
+            "dayNotionalVolumeUsd": "5000000",
+            "maxLeverage": 10,
+            "onlyIsolated": false,
+            "isDelisted": false
+          },
+          "readAt": 1799762400000,
+          "stale": false,
+          "funding": {
+            "points": [
+              {
+                "time": 1799751600000,
+                "fundingRate": "0.0000125",
+                "fundingAprPct": "10.95"
+              },
+              {
+                "time": 1799755200000,
+                "fundingRate": "0.0000125",
+                "fundingAprPct": "10.95"
+              },
+              {
+                "time": 1799758800000,
+                "fundingRate": "0.0000125",
+                "fundingAprPct": "10.95"
+              }
+            ],
+            "readAt": 1799762400000,
+            "stale": false
+          },
+          "agents": {
+            "coin": "xyz:TSLA",
+            "long": 0,
+            "short": 1,
+            "netSize": "-2",
+            "netValueUsd": "-500",
+            "positions": [
+              {
+                "agent": {
+                  "profileId": "prof_2222222222222222",
+                  "slug": "beta-fixture",
+                  "name": "Beta Fixture",
+                  "avatarUrl": null
+                },
+                "label": "Short xyz:TSLA 5x",
+                "coin": "xyz:TSLA",
+                "side": "short",
+                "leverage": {
+                  "value": 5,
+                  "type": "isolated"
+                },
+                "size": "2",
+                "entryPx": "260",
+                "markPx": "250",
+                "positionValueUsd": "500",
+                "unrealizedPnlUsd": "20",
+                "returnOnEquity": "0.1923",
+                "asOfMs": 1799761920000
+              }
+            ],
+            "rounds": [
+              {
+                "agent": {
+                  "profileId": "prof_1111111111111111",
+                  "slug": "alpha-fixture",
+                  "name": "Alpha Fixture",
+                  "avatarUrl": null
+                },
+                "roundId": "rnd_1123456789abcdef",
+                "coin": "xyz:TSLA",
+                "side": "short",
+                "leverage": {
+                  "value": 10,
+                  "type": "cross"
+                },
+                "pnlUsd": -15,
+                "liquidated": true,
+                "closedMs": 1799744400000
+              }
+            ],
+            "asOfMs": 1799761920000,
+            "truncated": false
+          },
+          "agentsUnavailable": false
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "builder-dex-sdk",
+      "scenario": "builder-dex",
+      "surface": "sdk",
+      "args": {
+        "coin": "xyz:TSLA"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/perps-markets/xyz%3ATSLA"
+        }
+      ],
+      "outcome": {
+        "body": {
+          "network": "mainnet",
+          "market": {
+            "coin": "xyz:TSLA",
+            "dex": "xyz",
+            "dexName": "XYZ Fixture",
+            "deployer": "<builder-dex-deployer>",
+            "oracleSource": "deployer",
+            "markPx": "250",
+            "change24hPct": "4.2",
+            "fundingRate": "0.00002",
+            "fundingAprPct": "17.52",
+            "openInterestUsd": "2500000.00",
+            "dayNotionalVolumeUsd": "5000000",
+            "maxLeverage": 10,
+            "onlyIsolated": false,
+            "isDelisted": false
+          },
+          "readAt": 1799762400000,
+          "stale": false,
+          "funding": {
+            "points": [
+              {
+                "time": 1799751600000,
+                "fundingRate": "0.0000125",
+                "fundingAprPct": "10.95"
+              },
+              {
+                "time": 1799755200000,
+                "fundingRate": "0.0000125",
+                "fundingAprPct": "10.95"
+              },
+              {
+                "time": 1799758800000,
+                "fundingRate": "0.0000125",
+                "fundingAprPct": "10.95"
+              }
+            ],
+            "readAt": 1799762400000,
+            "stale": false
+          },
+          "agents": {
+            "coin": "xyz:TSLA",
+            "long": 0,
+            "short": 1,
+            "netSize": "-2",
+            "netValueUsd": "-500",
+            "positions": [
+              {
+                "agent": {
+                  "profileId": "prof_2222222222222222",
+                  "slug": "beta-fixture",
+                  "name": "Beta Fixture",
+                  "avatarUrl": null
+                },
+                "label": "Short xyz:TSLA 5x",
+                "coin": "xyz:TSLA",
+                "side": "short",
+                "leverage": {
+                  "value": 5,
+                  "type": "isolated"
+                },
+                "size": "2",
+                "entryPx": "260",
+                "markPx": "250",
+                "positionValueUsd": "500",
+                "unrealizedPnlUsd": "20",
+                "returnOnEquity": "0.1923",
+                "asOfMs": 1799761920000
+              }
+            ],
+            "rounds": [
+              {
+                "agent": {
+                  "profileId": "prof_1111111111111111",
+                  "slug": "alpha-fixture",
+                  "name": "Alpha Fixture",
+                  "avatarUrl": null
+                },
+                "roundId": "rnd_1123456789abcdef",
+                "coin": "xyz:TSLA",
+                "side": "short",
+                "leverage": {
+                  "value": 10,
+                  "type": "cross"
+                },
+                "pnlUsd": -15,
+                "liquidated": true,
+                "closedMs": 1799744400000
+              }
+            ],
+            "asOfMs": 1799761920000,
+            "truncated": false
+          },
+          "agentsUnavailable": false
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "builder-dex-cli",
+      "scenario": "builder-dex",
+      "surface": "cli",
+      "args": {
+        "command": "candle perps market xyz:TSLA --agents"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/perps-markets/xyz%3ATSLA",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "lines": [
+          "xyz:TSLA (builder dex xyz, deployer <builder-dex-deployer>, oracle set by the deployer): mark $250.00, 24h +4.2%, funding/h 0.0020%, open interest $2.50M, 24h volume $5.00M; as of Jan 12 14:00Z",
+          "Candle agents in xyz:TSLA: 0 long, 1 short, net size -2",
+          "Agent         Position           Size  Entry  Mark  P&L (ROE)         As of",
+          "------------  -----------------  ----  -----  ----  ----------------  -------------",
+          "Beta Fixture  Short xyz:TSLA 5x  2     260    250   +$20.00 (+19.2%)  Jan 12 13:52Z",
+          "Recent closed rounds",
+          "Agent          Side   P&L      Closed         Round",
+          "-------------  -----  -------  -------------  --------------------",
+          "Alpha Fixture  short  -$15.00  Jan 12 09:00Z  rnd_1123456789abcdef",
+          "Measured record, not a forecast. Past results do not predict future results."
+        ]
+      }
+    },
+    {
+      "id": "builder-dex-cli-json",
+      "scenario": "builder-dex",
+      "surface": "cli",
+      "args": {
+        "command": "candle perps market xyz:TSLA --agents --json"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/perps-markets/xyz%3ATSLA",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "body": {
+          "success": true,
+          "network": "mainnet",
+          "market": {
+            "coin": "xyz:TSLA",
+            "dex": "xyz",
+            "dexName": "XYZ Fixture",
+            "deployer": "<builder-dex-deployer>",
+            "oracleSource": "deployer",
+            "markPx": "250",
+            "change24hPct": "4.2",
+            "fundingRate": "0.00002",
+            "fundingAprPct": "17.52",
+            "openInterestUsd": "2500000.00",
+            "dayNotionalVolumeUsd": "5000000",
+            "maxLeverage": 10,
+            "onlyIsolated": false,
+            "isDelisted": false
+          },
+          "readAt": 1799762400000,
+          "stale": false,
+          "funding": {
+            "points": [
+              {
+                "time": 1799751600000,
+                "fundingRate": "0.0000125",
+                "fundingAprPct": "10.95"
+              },
+              {
+                "time": 1799755200000,
+                "fundingRate": "0.0000125",
+                "fundingAprPct": "10.95"
+              },
+              {
+                "time": 1799758800000,
+                "fundingRate": "0.0000125",
+                "fundingAprPct": "10.95"
+              }
+            ],
+            "readAt": 1799762400000,
+            "stale": false
+          },
+          "agents": {
+            "coin": "xyz:TSLA",
+            "long": 0,
+            "short": 1,
+            "netSize": "-2",
+            "netValueUsd": "-500",
+            "positions": [
+              {
+                "agent": {
+                  "profileId": "prof_2222222222222222",
+                  "slug": "beta-fixture",
+                  "name": "Beta Fixture",
+                  "avatarUrl": null
+                },
+                "label": "Short xyz:TSLA 5x",
+                "coin": "xyz:TSLA",
+                "side": "short",
+                "leverage": {
+                  "value": 5,
+                  "type": "isolated"
+                },
+                "size": "2",
+                "entryPx": "260",
+                "markPx": "250",
+                "positionValueUsd": "500",
+                "unrealizedPnlUsd": "20",
+                "returnOnEquity": "0.1923",
+                "asOfMs": 1799761920000
+              }
+            ],
+            "rounds": [
+              {
+                "agent": {
+                  "profileId": "prof_1111111111111111",
+                  "slug": "alpha-fixture",
+                  "name": "Alpha Fixture",
+                  "avatarUrl": null
+                },
+                "roundId": "rnd_1123456789abcdef",
+                "coin": "xyz:TSLA",
+                "side": "short",
+                "leverage": {
+                  "value": 10,
+                  "type": "cross"
+                },
+                "pnlUsd": -15,
+                "liquidated": true,
+                "closedMs": 1799744400000
+              }
+            ],
+            "asOfMs": 1799761920000,
+            "truncated": false
+          },
+          "agentsUnavailable": false
+        }
+      }
+    },
+    {
+      "id": "no-agents-api",
+      "scenario": "no-agents",
+      "surface": "api-source",
+      "says": "A market no public Candle agent has traded: the figures, zero long, zero short, no positions and no rounds.",
+      "evidence": "Candle's own route and governed market-data reads against a stand-in Hyperliquid; the agents half is the pure composeMarketAgents on made-up public bundles in place of the database read",
+      "args": {
+        "path": "/api/v1/agent/perps-markets/ETH"
+      },
+      "requests": [
+        {
+          "type": "metaAndAssetCtxs"
+        },
+        {
+          "type": "predictedFundings"
+        },
+        {
+          "type": "perpsAtOpenInterestCap"
+        },
+        {
+          "type": "fundingHistory",
+          "coin": "ETH"
+        }
+      ],
+      "outcome": {
+        "status": 200,
+        "cacheControl": "public, s-maxage=15, stale-while-revalidate=60",
+        "body": {
+          "success": true,
+          "network": "mainnet",
+          "market": {
+            "coin": "ETH",
+            "dex": null,
+            "dexName": null,
+            "deployer": null,
+            "oracleSource": "validators",
+            "markPx": "3100",
+            "change24hPct": "-3.1",
+            "fundingRate": "-0.00000625",
+            "fundingAprPct": "-5.48",
+            "openInterestUsd": "62000000.00",
+            "dayNotionalVolumeUsd": "400000000",
+            "maxLeverage": 25,
+            "onlyIsolated": false,
+            "isDelisted": false
+          },
+          "readAt": 1799762400000,
+          "stale": false,
+          "funding": {
+            "points": [
+              {
+                "time": 1799751600000,
+                "fundingRate": "0.0000125",
+                "fundingAprPct": "10.95"
+              },
+              {
+                "time": 1799755200000,
+                "fundingRate": "0.0000125",
+                "fundingAprPct": "10.95"
+              },
+              {
+                "time": 1799758800000,
+                "fundingRate": "0.0000125",
+                "fundingAprPct": "10.95"
+              }
+            ],
+            "readAt": 1799762400000,
+            "stale": false
+          },
+          "agents": {
+            "coin": "ETH",
+            "long": 0,
+            "short": 0,
+            "netSize": "0",
+            "netValueUsd": "0",
+            "positions": [],
+            "rounds": [],
+            "asOfMs": null,
+            "truncated": false
+          },
+          "agentsUnavailable": false
+        }
+      }
+    },
+    {
+      "id": "no-agents-mcp",
+      "scenario": "no-agents",
+      "surface": "mcp",
+      "args": {
+        "coin": "ETH"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/perps-markets/ETH",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "body": {
+          "success": true,
+          "network": "mainnet",
+          "market": {
+            "coin": "ETH",
+            "dex": null,
+            "dexName": null,
+            "deployer": null,
+            "oracleSource": "validators",
+            "markPx": "3100",
+            "change24hPct": "-3.1",
+            "fundingRate": "-0.00000625",
+            "fundingAprPct": "-5.48",
+            "openInterestUsd": "62000000.00",
+            "dayNotionalVolumeUsd": "400000000",
+            "maxLeverage": 25,
+            "onlyIsolated": false,
+            "isDelisted": false
+          },
+          "readAt": 1799762400000,
+          "stale": false,
+          "funding": {
+            "points": [
+              {
+                "time": 1799751600000,
+                "fundingRate": "0.0000125",
+                "fundingAprPct": "10.95"
+              },
+              {
+                "time": 1799755200000,
+                "fundingRate": "0.0000125",
+                "fundingAprPct": "10.95"
+              },
+              {
+                "time": 1799758800000,
+                "fundingRate": "0.0000125",
+                "fundingAprPct": "10.95"
+              }
+            ],
+            "readAt": 1799762400000,
+            "stale": false
+          },
+          "agents": {
+            "coin": "ETH",
+            "long": 0,
+            "short": 0,
+            "netSize": "0",
+            "netValueUsd": "0",
+            "positions": [],
+            "rounds": [],
+            "asOfMs": null,
+            "truncated": false
+          },
+          "agentsUnavailable": false
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "no-agents-sdk",
+      "scenario": "no-agents",
+      "surface": "sdk",
+      "args": {
+        "coin": "ETH"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/perps-markets/ETH"
+        }
+      ],
+      "outcome": {
+        "body": {
+          "network": "mainnet",
+          "market": {
+            "coin": "ETH",
+            "dex": null,
+            "dexName": null,
+            "deployer": null,
+            "oracleSource": "validators",
+            "markPx": "3100",
+            "change24hPct": "-3.1",
+            "fundingRate": "-0.00000625",
+            "fundingAprPct": "-5.48",
+            "openInterestUsd": "62000000.00",
+            "dayNotionalVolumeUsd": "400000000",
+            "maxLeverage": 25,
+            "onlyIsolated": false,
+            "isDelisted": false
+          },
+          "readAt": 1799762400000,
+          "stale": false,
+          "funding": {
+            "points": [
+              {
+                "time": 1799751600000,
+                "fundingRate": "0.0000125",
+                "fundingAprPct": "10.95"
+              },
+              {
+                "time": 1799755200000,
+                "fundingRate": "0.0000125",
+                "fundingAprPct": "10.95"
+              },
+              {
+                "time": 1799758800000,
+                "fundingRate": "0.0000125",
+                "fundingAprPct": "10.95"
+              }
+            ],
+            "readAt": 1799762400000,
+            "stale": false
+          },
+          "agents": {
+            "coin": "ETH",
+            "long": 0,
+            "short": 0,
+            "netSize": "0",
+            "netValueUsd": "0",
+            "positions": [],
+            "rounds": [],
+            "asOfMs": null,
+            "truncated": false
+          },
+          "agentsUnavailable": false
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "no-agents-cli",
+      "scenario": "no-agents",
+      "surface": "cli",
+      "args": {
+        "command": "candle perps market ETH --agents"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/perps-markets/ETH",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "lines": [
+          "ETH: mark $3,100.00, 24h -3.1%, funding/h -0.0006%, open interest $62.00M, 24h volume $400.00M; as of Jan 12 14:00Z",
+          "Candle agents in ETH: 0 long, 0 short, net size 0",
+          "No public Candle agent holds an open position in this market.",
+          "Measured record, not a forecast. Past results do not predict future results."
+        ]
+      }
+    },
+    {
+      "id": "no-agents-cli-json",
+      "scenario": "no-agents",
+      "surface": "cli",
+      "args": {
+        "command": "candle perps market ETH --agents --json"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/perps-markets/ETH",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "body": {
+          "success": true,
+          "network": "mainnet",
+          "market": {
+            "coin": "ETH",
+            "dex": null,
+            "dexName": null,
+            "deployer": null,
+            "oracleSource": "validators",
+            "markPx": "3100",
+            "change24hPct": "-3.1",
+            "fundingRate": "-0.00000625",
+            "fundingAprPct": "-5.48",
+            "openInterestUsd": "62000000.00",
+            "dayNotionalVolumeUsd": "400000000",
+            "maxLeverage": 25,
+            "onlyIsolated": false,
+            "isDelisted": false
+          },
+          "readAt": 1799762400000,
+          "stale": false,
+          "funding": {
+            "points": [
+              {
+                "time": 1799751600000,
+                "fundingRate": "0.0000125",
+                "fundingAprPct": "10.95"
+              },
+              {
+                "time": 1799755200000,
+                "fundingRate": "0.0000125",
+                "fundingAprPct": "10.95"
+              },
+              {
+                "time": 1799758800000,
+                "fundingRate": "0.0000125",
+                "fundingAprPct": "10.95"
+              }
+            ],
+            "readAt": 1799762400000,
+            "stale": false
+          },
+          "agents": {
+            "coin": "ETH",
+            "long": 0,
+            "short": 0,
+            "netSize": "0",
+            "netValueUsd": "0",
+            "positions": [],
+            "rounds": [],
+            "asOfMs": null,
+            "truncated": false
+          },
+          "agentsUnavailable": false
+        }
+      }
+    },
+    {
+      "id": "rounds-only-api",
+      "scenario": "rounds-only",
+      "surface": "api-source",
+      "says": "A market with a closed round and no open position.",
+      "evidence": "Candle's own route and governed market-data reads against a stand-in Hyperliquid; the agents half is the pure composeMarketAgents on made-up public bundles in place of the database read",
+      "args": {
+        "path": "/api/v1/agent/perps-markets/SOL"
+      },
+      "requests": [
+        {
+          "type": "metaAndAssetCtxs"
+        },
+        {
+          "type": "predictedFundings"
+        },
+        {
+          "type": "perpsAtOpenInterestCap"
+        },
+        {
+          "type": "fundingHistory",
+          "coin": "SOL"
+        }
+      ],
+      "outcome": {
+        "status": 200,
+        "cacheControl": "public, s-maxage=15, stale-while-revalidate=60",
+        "body": {
+          "success": true,
+          "network": "mainnet",
+          "market": {
+            "coin": "SOL",
+            "dex": null,
+            "dexName": null,
+            "deployer": null,
+            "oracleSource": "validators",
+            "markPx": "150",
+            "change24hPct": "0.0",
+            "fundingRate": "0.00001",
+            "fundingAprPct": "8.76",
+            "openInterestUsd": "75000000.00",
+            "dayNotionalVolumeUsd": "50000000",
+            "maxLeverage": 20,
+            "onlyIsolated": false,
+            "isDelisted": false
+          },
+          "readAt": 1799762400000,
+          "stale": false,
+          "funding": {
+            "points": [
+              {
+                "time": 1799751600000,
+                "fundingRate": "0.0000125",
+                "fundingAprPct": "10.95"
+              },
+              {
+                "time": 1799755200000,
+                "fundingRate": "0.0000125",
+                "fundingAprPct": "10.95"
+              },
+              {
+                "time": 1799758800000,
+                "fundingRate": "0.0000125",
+                "fundingAprPct": "10.95"
+              }
+            ],
+            "readAt": 1799762400000,
+            "stale": false
+          },
+          "agents": {
+            "coin": "SOL",
+            "long": 0,
+            "short": 0,
+            "netSize": "0",
+            "netValueUsd": "0",
+            "positions": [],
+            "rounds": [
+              {
+                "agent": {
+                  "profileId": "prof_1111111111111111",
+                  "slug": "alpha-fixture",
+                  "name": "Alpha Fixture",
+                  "avatarUrl": null
+                },
+                "roundId": "rnd_2123456789abcdef",
+                "coin": "SOL",
+                "side": "long",
+                "leverage": {
+                  "value": 10,
+                  "type": "cross"
+                },
+                "pnlUsd": 3,
+                "liquidated": false,
+                "closedMs": 1799726400000
+              }
+            ],
+            "asOfMs": null,
+            "truncated": false
+          },
+          "agentsUnavailable": false
+        }
+      }
+    },
+    {
+      "id": "rounds-only-mcp",
+      "scenario": "rounds-only",
+      "surface": "mcp",
+      "args": {
+        "coin": "SOL"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/perps-markets/SOL",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "body": {
+          "success": true,
+          "network": "mainnet",
+          "market": {
+            "coin": "SOL",
+            "dex": null,
+            "dexName": null,
+            "deployer": null,
+            "oracleSource": "validators",
+            "markPx": "150",
+            "change24hPct": "0.0",
+            "fundingRate": "0.00001",
+            "fundingAprPct": "8.76",
+            "openInterestUsd": "75000000.00",
+            "dayNotionalVolumeUsd": "50000000",
+            "maxLeverage": 20,
+            "onlyIsolated": false,
+            "isDelisted": false
+          },
+          "readAt": 1799762400000,
+          "stale": false,
+          "funding": {
+            "points": [
+              {
+                "time": 1799751600000,
+                "fundingRate": "0.0000125",
+                "fundingAprPct": "10.95"
+              },
+              {
+                "time": 1799755200000,
+                "fundingRate": "0.0000125",
+                "fundingAprPct": "10.95"
+              },
+              {
+                "time": 1799758800000,
+                "fundingRate": "0.0000125",
+                "fundingAprPct": "10.95"
+              }
+            ],
+            "readAt": 1799762400000,
+            "stale": false
+          },
+          "agents": {
+            "coin": "SOL",
+            "long": 0,
+            "short": 0,
+            "netSize": "0",
+            "netValueUsd": "0",
+            "positions": [],
+            "rounds": [
+              {
+                "agent": {
+                  "profileId": "prof_1111111111111111",
+                  "slug": "alpha-fixture",
+                  "name": "Alpha Fixture",
+                  "avatarUrl": null
+                },
+                "roundId": "rnd_2123456789abcdef",
+                "coin": "SOL",
+                "side": "long",
+                "leverage": {
+                  "value": 10,
+                  "type": "cross"
+                },
+                "pnlUsd": 3,
+                "liquidated": false,
+                "closedMs": 1799726400000
+              }
+            ],
+            "asOfMs": null,
+            "truncated": false
+          },
+          "agentsUnavailable": false
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "rounds-only-sdk",
+      "scenario": "rounds-only",
+      "surface": "sdk",
+      "args": {
+        "coin": "SOL"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/perps-markets/SOL"
+        }
+      ],
+      "outcome": {
+        "body": {
+          "network": "mainnet",
+          "market": {
+            "coin": "SOL",
+            "dex": null,
+            "dexName": null,
+            "deployer": null,
+            "oracleSource": "validators",
+            "markPx": "150",
+            "change24hPct": "0.0",
+            "fundingRate": "0.00001",
+            "fundingAprPct": "8.76",
+            "openInterestUsd": "75000000.00",
+            "dayNotionalVolumeUsd": "50000000",
+            "maxLeverage": 20,
+            "onlyIsolated": false,
+            "isDelisted": false
+          },
+          "readAt": 1799762400000,
+          "stale": false,
+          "funding": {
+            "points": [
+              {
+                "time": 1799751600000,
+                "fundingRate": "0.0000125",
+                "fundingAprPct": "10.95"
+              },
+              {
+                "time": 1799755200000,
+                "fundingRate": "0.0000125",
+                "fundingAprPct": "10.95"
+              },
+              {
+                "time": 1799758800000,
+                "fundingRate": "0.0000125",
+                "fundingAprPct": "10.95"
+              }
+            ],
+            "readAt": 1799762400000,
+            "stale": false
+          },
+          "agents": {
+            "coin": "SOL",
+            "long": 0,
+            "short": 0,
+            "netSize": "0",
+            "netValueUsd": "0",
+            "positions": [],
+            "rounds": [
+              {
+                "agent": {
+                  "profileId": "prof_1111111111111111",
+                  "slug": "alpha-fixture",
+                  "name": "Alpha Fixture",
+                  "avatarUrl": null
+                },
+                "roundId": "rnd_2123456789abcdef",
+                "coin": "SOL",
+                "side": "long",
+                "leverage": {
+                  "value": 10,
+                  "type": "cross"
+                },
+                "pnlUsd": 3,
+                "liquidated": false,
+                "closedMs": 1799726400000
+              }
+            ],
+            "asOfMs": null,
+            "truncated": false
+          },
+          "agentsUnavailable": false
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "rounds-only-cli",
+      "scenario": "rounds-only",
+      "surface": "cli",
+      "args": {
+        "command": "candle perps market SOL --agents"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/perps-markets/SOL",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "lines": [
+          "SOL: mark $150.00, 24h 0.0%, funding/h 0.0010%, open interest $75.00M, 24h volume $50.00M; as of Jan 12 14:00Z",
+          "Candle agents in SOL: 0 long, 0 short, net size 0",
+          "No public Candle agent holds an open position in this market.",
+          "Recent closed rounds",
+          "Agent          Side  P&L     Closed         Round",
+          "-------------  ----  ------  -------------  --------------------",
+          "Alpha Fixture  long  +$3.00  Jan 12 04:00Z  rnd_2123456789abcdef",
+          "Measured record, not a forecast. Past results do not predict future results."
+        ]
+      }
+    },
+    {
+      "id": "rounds-only-cli-json",
+      "scenario": "rounds-only",
+      "surface": "cli",
+      "args": {
+        "command": "candle perps market SOL --agents --json"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/perps-markets/SOL",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "body": {
+          "success": true,
+          "network": "mainnet",
+          "market": {
+            "coin": "SOL",
+            "dex": null,
+            "dexName": null,
+            "deployer": null,
+            "oracleSource": "validators",
+            "markPx": "150",
+            "change24hPct": "0.0",
+            "fundingRate": "0.00001",
+            "fundingAprPct": "8.76",
+            "openInterestUsd": "75000000.00",
+            "dayNotionalVolumeUsd": "50000000",
+            "maxLeverage": 20,
+            "onlyIsolated": false,
+            "isDelisted": false
+          },
+          "readAt": 1799762400000,
+          "stale": false,
+          "funding": {
+            "points": [
+              {
+                "time": 1799751600000,
+                "fundingRate": "0.0000125",
+                "fundingAprPct": "10.95"
+              },
+              {
+                "time": 1799755200000,
+                "fundingRate": "0.0000125",
+                "fundingAprPct": "10.95"
+              },
+              {
+                "time": 1799758800000,
+                "fundingRate": "0.0000125",
+                "fundingAprPct": "10.95"
+              }
+            ],
+            "readAt": 1799762400000,
+            "stale": false
+          },
+          "agents": {
+            "coin": "SOL",
+            "long": 0,
+            "short": 0,
+            "netSize": "0",
+            "netValueUsd": "0",
+            "positions": [],
+            "rounds": [
+              {
+                "agent": {
+                  "profileId": "prof_1111111111111111",
+                  "slug": "alpha-fixture",
+                  "name": "Alpha Fixture",
+                  "avatarUrl": null
+                },
+                "roundId": "rnd_2123456789abcdef",
+                "coin": "SOL",
+                "side": "long",
+                "leverage": {
+                  "value": 10,
+                  "type": "cross"
+                },
+                "pnlUsd": 3,
+                "liquidated": false,
+                "closedMs": 1799726400000
+              }
+            ],
+            "asOfMs": null,
+            "truncated": false
+          },
+          "agentsUnavailable": false
+        }
+      }
+    },
+    {
+      "id": "agents-unavailable-api",
+      "scenario": "agents-unavailable",
+      "surface": "api-source",
+      "says": "The agents read fails (the board has no complete build): the figures are still served, agents null and agentsUnavailable true.",
+      "evidence": "Candle's own route and governed market-data reads against a stand-in Hyperliquid; the agents half is the pure composeMarketAgents on made-up public bundles in place of the database read",
+      "args": {
+        "path": "/api/v1/agent/perps-markets/BTC"
+      },
+      "requests": [
+        {
+          "type": "metaAndAssetCtxs"
+        },
+        {
+          "type": "predictedFundings"
+        },
+        {
+          "type": "perpsAtOpenInterestCap"
+        },
+        {
+          "type": "fundingHistory",
+          "coin": "BTC"
+        }
+      ],
+      "outcome": {
+        "status": 200,
+        "cacheControl": "public, s-maxage=15, stale-while-revalidate=60",
+        "body": {
+          "success": true,
+          "network": "mainnet",
+          "market": {
+            "coin": "BTC",
+            "dex": null,
+            "dexName": null,
+            "deployer": null,
+            "oracleSource": "validators",
+            "markPx": "63000",
+            "change24hPct": "5.0",
+            "fundingRate": "0.0000125",
+            "fundingAprPct": "10.95",
+            "openInterestUsd": "63000000.00",
+            "dayNotionalVolumeUsd": "900000000",
+            "maxLeverage": 40,
+            "onlyIsolated": false,
+            "isDelisted": false
+          },
+          "readAt": 1799762400000,
+          "stale": false,
+          "funding": {
+            "points": [
+              {
+                "time": 1799751600000,
+                "fundingRate": "0.0000125",
+                "fundingAprPct": "10.95"
+              },
+              {
+                "time": 1799755200000,
+                "fundingRate": "0.0000125",
+                "fundingAprPct": "10.95"
+              },
+              {
+                "time": 1799758800000,
+                "fundingRate": "0.0000125",
+                "fundingAprPct": "10.95"
+              }
+            ],
+            "readAt": 1799762400000,
+            "stale": false
+          },
+          "agents": null,
+          "agentsUnavailable": true
+        }
+      }
+    },
+    {
+      "id": "agents-unavailable-mcp",
+      "scenario": "agents-unavailable",
+      "surface": "mcp",
+      "args": {
+        "coin": "BTC"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/perps-markets/BTC",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "body": {
+          "success": true,
+          "network": "mainnet",
+          "market": {
+            "coin": "BTC",
+            "dex": null,
+            "dexName": null,
+            "deployer": null,
+            "oracleSource": "validators",
+            "markPx": "63000",
+            "change24hPct": "5.0",
+            "fundingRate": "0.0000125",
+            "fundingAprPct": "10.95",
+            "openInterestUsd": "63000000.00",
+            "dayNotionalVolumeUsd": "900000000",
+            "maxLeverage": 40,
+            "onlyIsolated": false,
+            "isDelisted": false
+          },
+          "readAt": 1799762400000,
+          "stale": false,
+          "funding": {
+            "points": [
+              {
+                "time": 1799751600000,
+                "fundingRate": "0.0000125",
+                "fundingAprPct": "10.95"
+              },
+              {
+                "time": 1799755200000,
+                "fundingRate": "0.0000125",
+                "fundingAprPct": "10.95"
+              },
+              {
+                "time": 1799758800000,
+                "fundingRate": "0.0000125",
+                "fundingAprPct": "10.95"
+              }
+            ],
+            "readAt": 1799762400000,
+            "stale": false
+          },
+          "agents": null,
+          "agentsUnavailable": true
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "agents-unavailable-sdk",
+      "scenario": "agents-unavailable",
+      "surface": "sdk",
+      "args": {
+        "coin": "BTC"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/perps-markets/BTC"
+        }
+      ],
+      "outcome": {
+        "body": {
+          "network": "mainnet",
+          "market": {
+            "coin": "BTC",
+            "dex": null,
+            "dexName": null,
+            "deployer": null,
+            "oracleSource": "validators",
+            "markPx": "63000",
+            "change24hPct": "5.0",
+            "fundingRate": "0.0000125",
+            "fundingAprPct": "10.95",
+            "openInterestUsd": "63000000.00",
+            "dayNotionalVolumeUsd": "900000000",
+            "maxLeverage": 40,
+            "onlyIsolated": false,
+            "isDelisted": false
+          },
+          "readAt": 1799762400000,
+          "stale": false,
+          "funding": {
+            "points": [
+              {
+                "time": 1799751600000,
+                "fundingRate": "0.0000125",
+                "fundingAprPct": "10.95"
+              },
+              {
+                "time": 1799755200000,
+                "fundingRate": "0.0000125",
+                "fundingAprPct": "10.95"
+              },
+              {
+                "time": 1799758800000,
+                "fundingRate": "0.0000125",
+                "fundingAprPct": "10.95"
+              }
+            ],
+            "readAt": 1799762400000,
+            "stale": false
+          },
+          "agents": null,
+          "agentsUnavailable": true
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "agents-unavailable-cli",
+      "scenario": "agents-unavailable",
+      "surface": "cli",
+      "args": {
+        "command": "candle perps market BTC --agents"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/perps-markets/BTC",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "lines": [
+          "BTC: mark $63,000.00, 24h +5.0%, funding/h 0.0013%, open interest $63.00M, 24h volume $900.00M; as of Jan 12 14:00Z",
+          "Candle agents: unavailable right now (the board has no complete build)."
+        ]
+      }
+    },
+    {
+      "id": "agents-unavailable-cli-json",
+      "scenario": "agents-unavailable",
+      "surface": "cli",
+      "args": {
+        "command": "candle perps market BTC --agents --json"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/perps-markets/BTC",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "body": {
+          "success": true,
+          "network": "mainnet",
+          "market": {
+            "coin": "BTC",
+            "dex": null,
+            "dexName": null,
+            "deployer": null,
+            "oracleSource": "validators",
+            "markPx": "63000",
+            "change24hPct": "5.0",
+            "fundingRate": "0.0000125",
+            "fundingAprPct": "10.95",
+            "openInterestUsd": "63000000.00",
+            "dayNotionalVolumeUsd": "900000000",
+            "maxLeverage": 40,
+            "onlyIsolated": false,
+            "isDelisted": false
+          },
+          "readAt": 1799762400000,
+          "stale": false,
+          "funding": {
+            "points": [
+              {
+                "time": 1799751600000,
+                "fundingRate": "0.0000125",
+                "fundingAprPct": "10.95"
+              },
+              {
+                "time": 1799755200000,
+                "fundingRate": "0.0000125",
+                "fundingAprPct": "10.95"
+              },
+              {
+                "time": 1799758800000,
+                "fundingRate": "0.0000125",
+                "fundingAprPct": "10.95"
+              }
+            ],
+            "readAt": 1799762400000,
+            "stale": false
+          },
+          "agents": null,
+          "agentsUnavailable": true
+        }
+      }
+    },
+    {
+      "id": "not-listed-api",
+      "scenario": "not-listed",
+      "surface": "api-source",
+      "says": "A coin Hyperliquid does not list: 404 MARKET_NOT_FOUND.",
+      "evidence": "Candle's own route and governed market-data reads against a stand-in Hyperliquid; the agents half is the pure composeMarketAgents on made-up public bundles in place of the database read",
+      "args": {
+        "path": "/api/v1/agent/perps-markets/NOPE"
+      },
+      "requests": [
+        {
+          "type": "metaAndAssetCtxs"
+        },
+        {
+          "type": "predictedFundings"
+        },
+        {
+          "type": "perpsAtOpenInterestCap"
+        }
+      ],
+      "outcome": {
+        "status": 404,
+        "cacheControl": "no-store",
+        "body": {
+          "success": false,
+          "error": {
+            "code": "MARKET_NOT_FOUND",
+            "message": "No such perp market",
+            "retryable": false
+          }
+        }
+      }
+    },
+    {
+      "id": "not-listed-mcp",
+      "scenario": "not-listed",
+      "surface": "mcp",
+      "args": {
+        "coin": "NOPE"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/perps-markets/NOPE",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "body": {
+          "success": false,
+          "error": {
+            "code": "MARKET_NOT_FOUND",
+            "message": "No such perp market",
+            "retryable": false
+          }
+        },
+        "isError": true
+      }
+    },
+    {
+      "id": "not-listed-sdk",
+      "scenario": "not-listed",
+      "surface": "sdk",
+      "args": {
+        "coin": "NOPE"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/perps-markets/NOPE"
+        }
+      ],
+      "outcome": {
+        "body": {
+          "code": "MARKET_NOT_FOUND",
+          "status": 404,
+          "message": "No such perp market"
+        },
+        "isError": true
+      }
+    },
+    {
+      "id": "not-listed-cli",
+      "scenario": "not-listed",
+      "surface": "cli",
+      "args": {
+        "command": "candle perps market NOPE --agents"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/perps-markets/NOPE",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 1,
+        "lines": [],
+        "stderr": [
+          "No such perp market"
+        ]
+      }
+    },
+    {
+      "id": "not-listed-cli-json",
+      "scenario": "not-listed",
+      "surface": "cli",
+      "args": {
+        "command": "candle perps market NOPE --agents --json"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/perps-markets/NOPE",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 1,
+        "lines": [
+          "{\"ok\":false,\"retryable\":false,\"code\":\"MARKET_NOT_FOUND\",\"status\":404,\"message\":\"No such perp market\"}"
+        ]
+      }
+    },
+    {
+      "id": "malformed-api",
+      "scenario": "malformed",
+      "surface": "api-source",
+      "says": "A coin that is not a perp market name: 400 before any read.",
+      "evidence": "Candle's own route and governed market-data reads against a stand-in Hyperliquid; the agents half is the pure composeMarketAgents on made-up public bundles in place of the database read",
+      "args": {
+        "path": "/api/v1/agent/perps-markets/xyz%3ATS-LA"
+      },
+      "requests": [],
+      "outcome": {
+        "status": 400,
+        "cacheControl": null,
+        "body": {
+          "success": false,
+          "error": {
+            "code": "VALIDATION_FAILED",
+            "message": "coin must be a perp market such as BTC or xyz:TSLA",
+            "field": "coin",
+            "retryable": false
+          }
+        }
+      }
+    },
+    {
+      "id": "malformed-mcp",
+      "scenario": "malformed",
+      "surface": "mcp",
+      "args": {
+        "coin": "xyz:TS-LA"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/perps-markets/xyz%3ATS-LA",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "body": {
+          "success": false,
+          "error": {
+            "code": "VALIDATION_FAILED",
+            "message": "coin must be a perp market such as BTC or xyz:TSLA",
+            "field": "coin",
+            "retryable": false
+          }
+        },
+        "isError": true
+      }
+    },
+    {
+      "id": "malformed-sdk",
+      "scenario": "malformed",
+      "surface": "sdk",
+      "args": {
+        "coin": "xyz:TS-LA"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/perps-markets/xyz%3ATS-LA"
+        }
+      ],
+      "outcome": {
+        "body": {
+          "code": "VALIDATION_FAILED",
+          "status": 400,
+          "message": "coin must be a perp market such as BTC or xyz:TSLA"
+        },
+        "isError": true
+      }
+    },
+    {
+      "id": "malformed-cli",
+      "scenario": "malformed",
+      "surface": "cli",
+      "args": {
+        "command": "candle perps market xyz:TS-LA --agents"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/perps-markets/xyz%3ATS-LA",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 1,
+        "lines": [],
+        "stderr": [
+          "coin must be a perp market such as BTC or xyz:TSLA"
+        ]
+      }
+    },
+    {
+      "id": "malformed-cli-json",
+      "scenario": "malformed",
+      "surface": "cli",
+      "args": {
+        "command": "candle perps market xyz:TS-LA --agents --json"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/perps-markets/xyz%3ATS-LA",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 1,
+        "lines": [
+          "{\"ok\":false,\"retryable\":false,\"code\":\"VALIDATION_FAILED\",\"status\":400,\"message\":\"coin must be a perp market such as BTC or xyz:TSLA\"}"
+        ]
+      }
+    },
+    {
+      "id": "docs-agent-trading",
+      "scenario": "docs",
+      "surface": "docs",
+      "args": {
+        "files": [
+          "docs/agent-trading.md",
+          "apps/docs/src/content/docs/developers/agent-trading.md",
+          "apps/frontend/public/docs/agent-trading.md"
+        ]
+      },
+      "outcome": {
+        "text": "- `GET /api/v1/agent/perps-markets/{coin}`: one perp market and Candle's agents in it (BE-3777), no credential. `market` is Hyperliquid's public figures (mark, 24 h change, funding now, open interest, 24 h volume; a builder-dex market, `dex:COIN`, also names its dex, deployer and oracle source), `funding.points` the last 24 hours of funding, and `agents` the public agents in the market from the published perps bundle: how many are long and short, `netSize`, each open position (`label` like `Long BTC 20x`, size, entry, mark, P&L and `returnOnEquity`, each with `asOfMs`) and recent closed rounds with their `roundId`. Only published agents appear; no wallet address, order id or account value. The figures come from shared cached reads inside Candle's Hyperliquid budget, so concurrent requests for one coin make one upstream read. `agents` is `null` with `agentsUnavailable: true` while the board has no complete build. 404 `MARKET_NOT_FOUND` for a coin Hyperliquid does not list. Measured record, not a forecast: past results do not predict future results."
+      }
+    },
+    {
+      "id": "docs-cli",
+      "scenario": "docs",
+      "surface": "docs",
+      "args": {
+        "files": [
+          "apps/docs/src/content/docs/developers/cli.md"
+        ]
+      },
+      "outcome": {
+        "text": "| `perps market <coin> --agents [--json]` | The public market read, no key: Hyperliquid's figures for one perp market (`dex:COIN` for a builder dex) and the published Candle agents long and short in it, with their open positions and recent closed rounds. No wallet address |"
+      }
+    },
+    {
+      "id": "docs-mcp",
+      "scenario": "docs",
+      "surface": "docs",
+      "args": {
+        "files": [
+          "apps/docs/src/content/docs/developers/mcp-server.md"
+        ]
+      },
+      "outcome": {
+        "text": "| `candle_get_perp_market` | `GET /api/v1/agent/perps-markets/:coin`: one perp market, `dex:COIN` included: Hyperliquid's public figures, 24 hours of funding, and the public Candle agents long and short in it (open positions and recent closed rounds). No wallet address. Shared and cached inside Candle's Hyperliquid read budget. Stdio only for now | No |"
+      }
+    },
+    {
+      "id": "docs-sdk-changelog",
+      "scenario": "docs",
+      "surface": "docs",
+      "args": {
+        "files": [
+          "packages/sdk/CHANGELOG.md"
+        ]
+      },
+      "outcome": {
+        "text": "Release 0.6.27 (BE-3777), with CLI 0.13.33 and MCP 0.10.38. `getPerpMarket(coin)` (type `PerpMarket`): one Hyperliquid perp market, `dex:COIN` included, with Hyperliquid's public figures (mark, 24 h change, funding now, open interest, 24 h volume), the last 24 hours of funding, and Candle's public agents in it (how many are long and short, net size, each open position labelled like `Long BTC 20x`, and recent closed rounds with their round ids). No credential; shared and cached; no wallet address. MCP adds `candle_get_perp_market`; the CLI adds `candle perps market <coin> --agents`."
+      }
+    }
+  ]
+}

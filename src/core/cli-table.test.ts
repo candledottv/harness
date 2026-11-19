@@ -12,7 +12,7 @@ const baseOf = (path: string) => {
 describe("the table and the source", () => {
   test("it was read from the pinned CLI source", () => {
     // Source contracts can advance before the separately signed native bootstrap release.
-    expect(SOURCE.source).toMatchObject({ repo: "candledottv/candle-monorepo", commit: "c22def120a7c4d8a05bbcb93a5ef2e95672a5abe", cliVersion: "0.13.32" })
+    expect(SOURCE.source).toMatchObject({ repo: "candledottv/candle-monorepo", commit: "8a08b366d541a7b9f439fd6e1a290cb57375d417", cliVersion: "0.13.33" })
     expect(SOURCE.commands.length).toBe(175)
     expect((SOURCE as { unread?: string[] }).unread).toEqual([])
   })

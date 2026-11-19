@@ -27,8 +27,8 @@ const ctx = { defaultAgent: "momentum", agents: new Set(["momentum"]) }
 test("the recording names the exact merged source, the same commit as the CLI table and tools/list", () => {
   expect(fixture.source).toMatchObject({
     repo: "candledottv/candle-monorepo",
-    commit: "c22def120a7c4d8a05bbcb93a5ef2e95672a5abe",
-    versions: { cli: "0.13.32", mcp: "0.10.37", sdk: "0.6.26" },
+    commit: "8a08b366d541a7b9f439fd6e1a290cb57375d417",
+    versions: { cli: "0.13.33", mcp: "0.10.38", sdk: "0.6.27" },
   })
   expect(fixture.source.commit).toBe(SOURCE.source.commit)
   expect(fixture.source.commit).toBe(tools.source.commit)

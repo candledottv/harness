@@ -80,6 +80,8 @@ export const TOOL_CLASSES: Readonly<Record<string, ToolClass>> = {
   candle_get_agent_perp_round: READ,
   candle_get_agent_open_orders: READ,
   candle_get_perp_candles: READ,
+  // One perp market's public figures and the published Candle agents long and short in it, keyless.
+  candle_get_perp_market: READ,
   candle_token_clusters: READ,
   candle_token_history: READ,
   candle_token_page_about: READ,

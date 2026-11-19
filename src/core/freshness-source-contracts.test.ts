@@ -38,7 +38,7 @@ const perpRows = (id: Build) => positions(id).positions.filter((p: { kind: strin
 const PATH = `/api/v1/agent/records/${freshness.profile}/positions`
 
 test("the recording names the exact staging build, agrees with the other source fixtures, and carries Candle's own limits", () => {
-  expect(freshness.source).toEqual({ repo: "candledottv/candle-monorepo", commit: "c22def120a7c4d8a05bbcb93a5ef2e95672a5abe", versions: { cli: "0.13.32", mcp: "0.10.37", sdk: "0.6.26" } })
+  expect(freshness.source).toEqual({ repo: "candledottv/candle-monorepo", commit: "8a08b366d541a7b9f439fd6e1a290cb57375d417", versions: { cli: "0.13.33", mcp: "0.10.38", sdk: "0.6.27" } })
   expect(freshness.source.commit).toBe(SOURCE.source.commit)
   expect(freshness.source.commit).toBe(tools.source.commit)
   expect(freshness.source.commit).toBe(perps.source.commit)
