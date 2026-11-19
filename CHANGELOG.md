@@ -2,6 +2,28 @@
 
 What changed in each version of Candle Harness (called the Candle TUI before 0.3.0). Versions follow [semantic versioning](https://semver.org), and each release is listed on [GitHub](https://github.com/candledottv/harness/releases).
 
+## 0.6.7 (unreleased)
+
+Perps position webhooks and the owner's perps reads (BE-3758), as Candle's API, CLI, MCP server and SDK now carry them. Source is candle-monorepo `c22def120` (#3925), a **staging build** that moves the CLI to 0.13.32, MCP to 0.10.37 and the SDK to 0.6.26; npm doesn't carry those yet. This section is a draft until a release does; the fixtures are re-read then. The source/build version is 0.6.7; publishing remains a separate release step.
+
+### Perps position webhooks
+
+- **Forty-nine offline scenarios** (`scripts/read-perps-webhook-source.ts`, `test/fixtures/candle-perps-webhook-source.json`) run Candle's own webhook policy, perps fill-event code, emit, delivery and signing, and the SDK's webhook module, against stand-ins for the owner lookup, the enqueue and the endpoint. Every fetch is refused; the made-up wallet, owners and fill hash are replaced by their role in every row, and no secret or signature is kept.
+- **Three new events** an endpoint may register beside the three risk events: `perps.position_opened`, `perps.position_closed` and `perps.liquidated`. The SDK's `PERPS_POSITION_EVENT_NAMES` is the same three; an unknown perps event is refused at registration.
+- **Which fill is an event:** an open from flat (long or short), a close that takes the position to exactly zero (a buy closes a short), and a liquidation whose liquidated user is this wallet (the address's case doesn't matter). An increase, a partial close, a flip through zero and a liquidator's own fill send nothing. Builder-dex coins keep `dex:COIN`.
+- **What each carries:** `candle.perps.position_event/1` with `event`, `network`, `address`, `coin`, `dex` (null on the default dex), `side`, `dir`, `size`, `price`, `startPosition`, `closedPnl`, `fee`, `fillId`, `hash`, the exchange's `fillTime` and `source: "ingest"`; a liquidation adds `liquidation: { markPx, method }`. No leverage: a fill doesn't carry one. The SDK's `isPerpsPositionEventPayload` accepts each and refuses a risk event, another source and an unknown event.
+- **When it is sent:** once per new fill and owner of the wallet (each live EVM link), so two owners get two. A re-ingest inserts no fill and sends nothing, an unlinked wallet has nobody to tell, and a fill more than 24 hours old when first recorded (a wallet's first scan) is history, not news. Two hours late is still sent: the events come from the perps ingest, not a stream, and Candle's docs say so.
+- **One delivery each:** signed like every Candle webhook (`x-candle-signature: t=<seconds>,v1=<hmac>`, `x-candle-event`, an `{id, event, createdAt, data}` envelope), and the SDK's `verifyWebhookSignature` checks exactly what arrived; a tampered body, a timestamp six minutes off and another secret fail. Delivered two hours after the fill, `fillTime` is still the fill's.
+- **What Candle's docs say:** the webhooks page's three rows and its lateness line, and the SDK changelog entry for 0.6.26, recorded as text.
+- **What the Candle Harness does:** nothing new. It registers no webhook and receives none; the recording is for the owner's endpoint and the SDK it uses.
+
+### The owner's perps reads
+
+- **`candle perps activity` and `candle_perps_activity`:** one EVM TEE wallet's resting orders on the default and every builder dex (each row names its dex) and the key's withdrawals in flight. Both are reads: the command is in the table as Candle's MCP tool, the tool is classified as a read in live and paper. The CLI, the MCP tool and the SDK's `perpsOverviewActivity()` make the same reads and give the same answer on three stand-in answers; a failed read is null and the CLI says "not read", never "none".
+- **`candle perps thresholds --key <prefix|label>`** now reads another key's thresholds and stored perps limits with the owner's device token. The key's own thresholds stay Candle's MCP read; another key's is the owner's, and the Candle Harness doesn't run it for the agent ("another key's: coming").
+- **Every source fixture is re-read at `c22def120`:** the CLI table (175 commands, `perps activity` new), tools/list (105 tools, `candle_perps_activity` new), the 94 MCP/SDK scenarios, the 25 perps, the 59 spot, the 67 transfer and the 67 freshness rows. Apart from the new command and tool, the `perps transfer` and `perps thresholds` help lines and the versions and commit they name, they are unchanged.
+- Not here: the owner console's web panels (a later web change), the risk monitor's real-time alerts (off in production), and any live webhook delivery. The signed CLI release pin (`install.sh`) and the runtime minimum (0.13.28) don't move.
+
 ## 0.6.6 (unreleased)
 
 Perps fills in Candle's public activity stream, and `hide` on perps orders (BE-3769), as Candle's API now runs them: a published agent's Hyperliquid fill goes to the site banner's and the Discord announcer's feed as `perp_open`, `perp_add`, `perp_reduce` or `perp_close`, under the same rule as a token trade. Source is candle-monorepo `ba1be9ffa` (#3935), a **staging build** that changes no CLI, MCP or SDK file: the CLI there says 0.13.31, MCP 0.10.36 and SDK 0.6.25, the versions npm already has, and none of them takes `hide` on a perps order yet. This section is a draft until a release carries the client side; the fixtures are re-read then. The source/build version is 0.6.6; publishing remains a separate release step.
