@@ -59,6 +59,16 @@ export const PRE_BUILD_CODES: ReadonlySet<string> = new Set([
   "SEQUENCED_RAIL_REQUIRED",
   // A sell the quote prices at zero: the CLI refuses it after the build and before any signature, releasing a Hood hold.
   "SELL_PAYS_ZERO",
+  // The own-balance Hyperliquid transfer (BE-3765, `candle perps transfer`): the local build check, the
+  // embedded-wallet bar, and the API build route's own answers all refuse before anything is signed.
+  // PERPS_VENUE_REFUSED and PERPS_SUBMIT_FAILED stay out: they can only happen after a signature exists.
+  "PERPS_BUILD_REFUSED",
+  "PERPS_EMBEDDED_DISABLED",
+  "PERPS_TRANSFER_UNSUPPORTED_NETWORK",
+  "PERPS_TRANSFER_UNVERIFIED",
+  "PERPS_TRANSFER_DEX_REFUSED",
+  "PERPS_TRANSFER_NOTHING_TO_MOVE",
+  "PERPS_TRANSFER_EXCEEDS_SOURCE",
 ])
 
 /** The words a TEE trade runs, before `--json` and `--rpc-url` (CandleCli.finalArgs adds those). */
