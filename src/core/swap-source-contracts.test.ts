@@ -21,7 +21,7 @@ const executes = (r: Row) => r.requests.filter((q) => q.path === "/api/v1/trade/
 test("the recording names the exact staging build and the files the fast path is in", () => {
   expect(swap.source).toMatchObject({
     repo: "candledottv/candle-monorepo",
-    commit: "aca38574f1a307730318f9bf3be91e7d0b67c0b4",
+    commit: "ebaf6b8838f81679e333994b3be2717be4cfa37d",
     versions: { cli: "0.13.31", mcp: "0.10.36", sdk: "0.6.25" },
     files: ["packages/cli/src/commands/swap.ts", "packages/cli/src/trading.ts"],
   })
