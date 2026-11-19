@@ -1,0 +1,1327 @@
+{
+  "about": "Offline perps position webhook contracts and the perps wallet activity read, from exact merged source: the events an endpoint may register, which event a fill is (open from flat, close to zero, liquidation of this wallet), the `candle.perps.position_event/1` payload with the exchange's fillTime, the emit with a stand-in owner lookup and enqueue (one per new fill and owner, nothing for a re-ingest, an unlinked wallet or a fill more than a day old), one signed delivery each to a stand-in endpoint verified by the SDK's own code, the docs and changelog text, and `candle perps activity`, `candle_perps_activity` and `perpsOverviewActivity()` on the same stand-in answers. Every fetch, lookup and enqueue is a stand-in; made-up addresses are replaced by their role.",
+  "source": {
+    "repo": "candledottv/candle-monorepo",
+    "commit": "c22def120a7c4d8a05bbcb93a5ef2e95672a5abe",
+    "versions": {
+      "cli": "0.13.32",
+      "mcp": "0.10.37",
+      "sdk": "0.6.26"
+    },
+    "files": [
+      "packages/db/convex/lib/webhookPolicy.ts",
+      "apps/api/src/services/hyperliquid-reconciliation.ts",
+      "apps/api/src/lib/perps-fill-events.ts",
+      "apps/api/src/lib/perps-fill-event-emit.ts",
+      "apps/api/src/lib/webhook-delivery.ts",
+      "packages/sdk/src/webhooks.ts"
+    ]
+  },
+  "rows": [
+    {
+      "id": "policy-perps-events",
+      "scenario": "policy",
+      "args": {
+        "file": "packages/db/convex/lib/webhookPolicy.ts"
+      },
+      "outcome": {
+        "perps": [
+          "perps.risk_warning",
+          "perps.risk_critical",
+          "perps.risk_cleared",
+          "perps.position_opened",
+          "perps.position_closed",
+          "perps.liquidated"
+        ],
+        "total": 22
+      }
+    },
+    {
+      "id": "policy-register-the-three-position-events",
+      "scenario": "policy",
+      "args": {
+        "events": [
+          "perps.position_opened",
+          "perps.position_closed",
+          "perps.liquidated"
+        ]
+      },
+      "outcome": {
+        "ok": true,
+        "events": [
+          "perps.position_opened",
+          "perps.position_closed",
+          "perps.liquidated"
+        ]
+      }
+    },
+    {
+      "id": "policy-register-position-and-risk-events",
+      "scenario": "policy",
+      "args": {
+        "events": [
+          "perps.risk_critical",
+          "perps.position_opened",
+          "perps.position_closed",
+          "perps.liquidated"
+        ]
+      },
+      "outcome": {
+        "ok": true,
+        "events": [
+          "perps.risk_critical",
+          "perps.position_opened",
+          "perps.position_closed",
+          "perps.liquidated"
+        ]
+      }
+    },
+    {
+      "id": "policy-register-an-unknown-perps-event",
+      "scenario": "policy",
+      "args": {
+        "events": [
+          "perps.position_flipped"
+        ]
+      },
+      "outcome": {
+        "ok": false
+      }
+    },
+    {
+      "id": "sdk-event-names-match-policy",
+      "scenario": "policy",
+      "args": {
+        "file": "packages/sdk/src/webhooks.ts"
+      },
+      "outcome": {
+        "sdk": [
+          "perps.position_opened",
+          "perps.position_closed",
+          "perps.liquidated"
+        ],
+        "allRegistrable": true
+      }
+    },
+    {
+      "id": "event-open-long-from-flat",
+      "scenario": "event",
+      "args": {
+        "coin": "BTC",
+        "dir": "Open Long",
+        "side": "B",
+        "startPosition": "0",
+        "size": "0.5",
+        "liquidation": "none"
+      },
+      "outcome": {
+        "event": "perps.position_opened"
+      }
+    },
+    {
+      "id": "payload-open-long-from-flat",
+      "scenario": "payload",
+      "args": {
+        "event": "perps.position_opened"
+      },
+      "outcome": {
+        "payload": {
+          "schema": "candle.perps.position_event/1",
+          "event": "perps.position_opened",
+          "network": "mainnet",
+          "address": "<wallet>",
+          "coin": "BTC",
+          "dex": null,
+          "side": "long",
+          "dir": "Open Long",
+          "size": "0.5",
+          "price": "100000",
+          "startPosition": "0",
+          "closedPnl": "0",
+          "fee": "1.5",
+          "fillId": "BTC:1",
+          "hash": "<fill hash>",
+          "fillTime": "2026-11-17T12:00:00.000Z",
+          "source": "ingest"
+        },
+        "sdkAccepts": true
+      }
+    },
+    {
+      "id": "event-open-short-from-flat",
+      "scenario": "event",
+      "args": {
+        "coin": "BTC",
+        "dir": "Open Short",
+        "side": "A",
+        "startPosition": "0",
+        "size": "0.5",
+        "liquidation": "none"
+      },
+      "outcome": {
+        "event": "perps.position_opened"
+      }
+    },
+    {
+      "id": "payload-open-short-from-flat",
+      "scenario": "payload",
+      "args": {
+        "event": "perps.position_opened"
+      },
+      "outcome": {
+        "payload": {
+          "schema": "candle.perps.position_event/1",
+          "event": "perps.position_opened",
+          "network": "mainnet",
+          "address": "<wallet>",
+          "coin": "BTC",
+          "dex": null,
+          "side": "short",
+          "dir": "Open Short",
+          "size": "0.5",
+          "price": "100000",
+          "startPosition": "0",
+          "closedPnl": "0",
+          "fee": "1.5",
+          "fillId": "BTC:1",
+          "hash": "<fill hash>",
+          "fillTime": "2026-11-17T12:00:00.000Z",
+          "source": "ingest"
+        },
+        "sdkAccepts": true
+      }
+    },
+    {
+      "id": "event-add-to-a-long",
+      "scenario": "event",
+      "args": {
+        "coin": "BTC",
+        "dir": "Open Long",
+        "side": "B",
+        "startPosition": "0.5",
+        "size": "0.5",
+        "liquidation": "none"
+      },
+      "outcome": {
+        "event": null
+      }
+    },
+    {
+      "id": "event-partial-close-of-a-long",
+      "scenario": "event",
+      "args": {
+        "coin": "BTC",
+        "dir": "Close Long",
+        "side": "A",
+        "startPosition": "1",
+        "size": "0.5",
+        "liquidation": "none"
+      },
+      "outcome": {
+        "event": null
+      }
+    },
+    {
+      "id": "event-full-close-of-a-long",
+      "scenario": "event",
+      "args": {
+        "coin": "BTC",
+        "dir": "Close Long",
+        "side": "A",
+        "startPosition": "0.5",
+        "size": "0.5",
+        "liquidation": "none"
+      },
+      "outcome": {
+        "event": "perps.position_closed"
+      }
+    },
+    {
+      "id": "payload-full-close-of-a-long",
+      "scenario": "payload",
+      "args": {
+        "event": "perps.position_closed"
+      },
+      "outcome": {
+        "payload": {
+          "schema": "candle.perps.position_event/1",
+          "event": "perps.position_closed",
+          "network": "mainnet",
+          "address": "<wallet>",
+          "coin": "BTC",
+          "dex": null,
+          "side": "long",
+          "dir": "Close Long",
+          "size": "0.5",
+          "price": "100000",
+          "startPosition": "0.5",
+          "closedPnl": "500.25",
+          "fee": "1.5",
+          "fillId": "BTC:2",
+          "hash": "<fill hash>",
+          "fillTime": "2026-11-17T12:00:00.000Z",
+          "source": "ingest"
+        },
+        "sdkAccepts": true
+      }
+    },
+    {
+      "id": "event-full-close-of-a-short",
+      "scenario": "event",
+      "args": {
+        "coin": "BTC",
+        "dir": "Close Short",
+        "side": "B",
+        "startPosition": "-0.5",
+        "size": "0.5",
+        "liquidation": "none"
+      },
+      "outcome": {
+        "event": "perps.position_closed"
+      }
+    },
+    {
+      "id": "payload-full-close-of-a-short",
+      "scenario": "payload",
+      "args": {
+        "event": "perps.position_closed"
+      },
+      "outcome": {
+        "payload": {
+          "schema": "candle.perps.position_event/1",
+          "event": "perps.position_closed",
+          "network": "mainnet",
+          "address": "<wallet>",
+          "coin": "BTC",
+          "dex": null,
+          "side": "short",
+          "dir": "Close Short",
+          "size": "0.5",
+          "price": "100000",
+          "startPosition": "-0.5",
+          "closedPnl": "-120.5",
+          "fee": "1.5",
+          "fillId": "BTC:3",
+          "hash": "<fill hash>",
+          "fillTime": "2026-11-17T12:00:00.000Z",
+          "source": "ingest"
+        },
+        "sdkAccepts": true
+      }
+    },
+    {
+      "id": "event-flip-long-to-short",
+      "scenario": "event",
+      "args": {
+        "coin": "BTC",
+        "dir": "Long > Short",
+        "side": "A",
+        "startPosition": "0.25",
+        "size": "0.5",
+        "liquidation": "none"
+      },
+      "outcome": {
+        "event": null
+      }
+    },
+    {
+      "id": "event-builder-dex-open",
+      "scenario": "event",
+      "args": {
+        "coin": "xyz:TSLA",
+        "dir": "Open Long",
+        "side": "B",
+        "startPosition": "0",
+        "size": "4",
+        "liquidation": "none"
+      },
+      "outcome": {
+        "event": "perps.position_opened"
+      }
+    },
+    {
+      "id": "payload-builder-dex-open",
+      "scenario": "payload",
+      "args": {
+        "event": "perps.position_opened"
+      },
+      "outcome": {
+        "payload": {
+          "schema": "candle.perps.position_event/1",
+          "event": "perps.position_opened",
+          "network": "mainnet",
+          "address": "<wallet>",
+          "coin": "xyz:TSLA",
+          "dex": "xyz",
+          "side": "long",
+          "dir": "Open Long",
+          "size": "4",
+          "price": "250",
+          "startPosition": "0",
+          "closedPnl": "0",
+          "fee": "1.5",
+          "fillId": "xyz:TSLA:4",
+          "hash": "<fill hash>",
+          "fillTime": "2026-11-17T12:00:00.000Z",
+          "source": "ingest"
+        },
+        "sdkAccepts": true
+      }
+    },
+    {
+      "id": "event-builder-dex-full-close",
+      "scenario": "event",
+      "args": {
+        "coin": "xyz:TSLA",
+        "dir": "Close Long",
+        "side": "A",
+        "startPosition": "4",
+        "size": "4",
+        "liquidation": "none"
+      },
+      "outcome": {
+        "event": "perps.position_closed"
+      }
+    },
+    {
+      "id": "payload-builder-dex-full-close",
+      "scenario": "payload",
+      "args": {
+        "event": "perps.position_closed"
+      },
+      "outcome": {
+        "payload": {
+          "schema": "candle.perps.position_event/1",
+          "event": "perps.position_closed",
+          "network": "mainnet",
+          "address": "<wallet>",
+          "coin": "xyz:TSLA",
+          "dex": "xyz",
+          "side": "long",
+          "dir": "Close Long",
+          "size": "4",
+          "price": "260",
+          "startPosition": "4",
+          "closedPnl": "40",
+          "fee": "1.5",
+          "fillId": "xyz:TSLA:5",
+          "hash": "<fill hash>",
+          "fillTime": "2026-11-17T12:00:00.000Z",
+          "source": "ingest"
+        },
+        "sdkAccepts": true
+      }
+    },
+    {
+      "id": "event-liquidation-of-this-wallet",
+      "scenario": "event",
+      "args": {
+        "coin": "BTC",
+        "dir": "Liquidated Cross Long",
+        "side": "A",
+        "startPosition": "0.5",
+        "size": "0.5",
+        "liquidation": "present"
+      },
+      "outcome": {
+        "event": "perps.liquidated"
+      }
+    },
+    {
+      "id": "payload-liquidation-of-this-wallet",
+      "scenario": "payload",
+      "args": {
+        "event": "perps.liquidated"
+      },
+      "outcome": {
+        "payload": {
+          "schema": "candle.perps.position_event/1",
+          "event": "perps.liquidated",
+          "network": "mainnet",
+          "address": "<wallet>",
+          "coin": "BTC",
+          "dex": null,
+          "side": "long",
+          "dir": "Liquidated Cross Long",
+          "size": "0.5",
+          "price": "89990",
+          "startPosition": "0.5",
+          "closedPnl": "-5000",
+          "fee": "1.5",
+          "fillId": "BTC:6",
+          "hash": "<fill hash>",
+          "fillTime": "2026-11-17T12:00:00.000Z",
+          "liquidation": {
+            "markPx": "90000",
+            "method": "market"
+          },
+          "source": "ingest"
+        },
+        "sdkAccepts": true
+      }
+    },
+    {
+      "id": "event-liquidation-address-case-differs",
+      "scenario": "event",
+      "args": {
+        "coin": "BTC",
+        "dir": "Liquidated Cross Long",
+        "side": "A",
+        "startPosition": "0.5",
+        "size": "0.5",
+        "liquidation": "present"
+      },
+      "outcome": {
+        "event": "perps.liquidated"
+      }
+    },
+    {
+      "id": "payload-liquidation-address-case-differs",
+      "scenario": "payload",
+      "args": {
+        "event": "perps.liquidated"
+      },
+      "outcome": {
+        "payload": {
+          "schema": "candle.perps.position_event/1",
+          "event": "perps.liquidated",
+          "network": "mainnet",
+          "address": "<wallet>",
+          "coin": "BTC",
+          "dex": null,
+          "side": "long",
+          "dir": "Liquidated Cross Long",
+          "size": "0.5",
+          "price": "100000",
+          "startPosition": "0.5",
+          "closedPnl": "0",
+          "fee": "1.5",
+          "fillId": "BTC:7",
+          "hash": "<fill hash>",
+          "fillTime": "2026-11-17T12:00:00.000Z",
+          "liquidation": {
+            "markPx": "90000",
+            "method": "market"
+          },
+          "source": "ingest"
+        },
+        "sdkAccepts": true
+      }
+    },
+    {
+      "id": "event-liquidators-own-fill",
+      "scenario": "event",
+      "args": {
+        "coin": "BTC",
+        "dir": "Open Long",
+        "side": "B",
+        "startPosition": "0",
+        "size": "0.5",
+        "liquidation": "present"
+      },
+      "outcome": {
+        "event": null
+      }
+    },
+    {
+      "id": "event-builder-dex-liquidation",
+      "scenario": "event",
+      "args": {
+        "coin": "xyz:TSLA",
+        "dir": "Liquidated Isolated Long",
+        "side": "A",
+        "startPosition": "4",
+        "size": "4",
+        "liquidation": "present"
+      },
+      "outcome": {
+        "event": "perps.liquidated"
+      }
+    },
+    {
+      "id": "payload-builder-dex-liquidation",
+      "scenario": "payload",
+      "args": {
+        "event": "perps.liquidated"
+      },
+      "outcome": {
+        "payload": {
+          "schema": "candle.perps.position_event/1",
+          "event": "perps.liquidated",
+          "network": "mainnet",
+          "address": "<wallet>",
+          "coin": "xyz:TSLA",
+          "dex": "xyz",
+          "side": "long",
+          "dir": "Liquidated Isolated Long",
+          "size": "4",
+          "price": "200",
+          "startPosition": "4",
+          "closedPnl": "0",
+          "fee": "1.5",
+          "fillId": "xyz:TSLA:9",
+          "hash": "<fill hash>",
+          "fillTime": "2026-11-17T12:00:00.000Z",
+          "liquidation": {
+            "markPx": "90000",
+            "method": "market"
+          },
+          "source": "ingest"
+        },
+        "sdkAccepts": true
+      }
+    },
+    {
+      "id": "sdk-guard-refuses-other-shapes",
+      "scenario": "payload",
+      "args": {
+        "cases": [
+          "risk-event",
+          "source-not-ingest",
+          "unknown-event",
+          "null",
+          "string"
+        ]
+      },
+      "outcome": {
+        "riskEvent": false,
+        "sourceNotIngest": false,
+        "unknownEvent": false,
+        "null": false,
+        "string": false
+      }
+    },
+    {
+      "id": "max-age",
+      "scenario": "emit",
+      "args": {
+        "name": "PERPS_FILL_EVENT_MAX_AGE_MS"
+      },
+      "outcome": {
+        "ms": 86400000,
+        "hours": 24
+      }
+    },
+    {
+      "id": "emit-open-and-close-one-owner",
+      "scenario": "emit",
+      "args": {
+        "owners": 1,
+        "fills": 2,
+        "hoursAfterFill": 1
+      },
+      "outcome": {
+        "sent": 2,
+        "enqueued": [
+          {
+            "owner": "<owner>",
+            "event": "perps.position_opened",
+            "fillId": "BTC:1",
+            "fillTime": "2026-11-17T12:00:00.000Z"
+          },
+          {
+            "owner": "<owner>",
+            "event": "perps.position_closed",
+            "fillId": "BTC:2",
+            "fillTime": "2026-11-17T12:00:00.000Z"
+          }
+        ],
+        "ownerLookups": 1,
+        "lookup": "select distinct account from identity.linked_wallets where chain = 'evm' and lower(address) = ? and revoked_at is null"
+      }
+    },
+    {
+      "id": "emit-two-hours-late-still-sent",
+      "scenario": "emit",
+      "args": {
+        "owners": 1,
+        "fills": 1,
+        "hoursAfterFill": 2
+      },
+      "outcome": {
+        "sent": 1,
+        "enqueued": [
+          {
+            "owner": "<owner>",
+            "event": "perps.position_closed",
+            "fillId": "BTC:3",
+            "fillTime": "2026-11-17T12:00:00.000Z"
+          }
+        ],
+        "ownerLookups": 1,
+        "lookup": "select distinct account from identity.linked_wallets where chain = 'evm' and lower(address) = ? and revoked_at is null"
+      }
+    },
+    {
+      "id": "emit-liquidation-two-owners",
+      "scenario": "emit",
+      "args": {
+        "owners": 2,
+        "fills": 1,
+        "hoursAfterFill": 1
+      },
+      "outcome": {
+        "sent": 2,
+        "enqueued": [
+          {
+            "owner": "<owner>",
+            "event": "perps.liquidated",
+            "fillId": "BTC:6",
+            "fillTime": "2026-11-17T12:00:00.000Z"
+          },
+          {
+            "owner": "<second owner>",
+            "event": "perps.liquidated",
+            "fillId": "BTC:6",
+            "fillTime": "2026-11-17T12:00:00.000Z"
+          }
+        ],
+        "ownerLookups": 1,
+        "lookup": "select distinct account from identity.linked_wallets where chain = 'evm' and lower(address) = ? and revoked_at is null"
+      }
+    },
+    {
+      "id": "emit-increase-and-partial-close-send-nothing",
+      "scenario": "emit",
+      "args": {
+        "owners": 1,
+        "fills": 2,
+        "hoursAfterFill": 1
+      },
+      "outcome": {
+        "sent": 0,
+        "enqueued": [],
+        "ownerLookups": 0
+      }
+    },
+    {
+      "id": "emit-unlinked-wallet-nobody-to-tell",
+      "scenario": "emit",
+      "args": {
+        "owners": 0,
+        "fills": 1,
+        "hoursAfterFill": 1
+      },
+      "outcome": {
+        "sent": 0,
+        "enqueued": [],
+        "ownerLookups": 1,
+        "lookup": "select distinct account from identity.linked_wallets where chain = 'evm' and lower(address) = ? and revoked_at is null"
+      }
+    },
+    {
+      "id": "emit-re-ingest-inserts-no-fill",
+      "scenario": "emit",
+      "args": {
+        "owners": 1,
+        "fills": 0,
+        "hoursAfterFill": 1
+      },
+      "outcome": {
+        "sent": 0,
+        "enqueued": [],
+        "ownerLookups": 0
+      }
+    },
+    {
+      "id": "emit-fill-23-hours-old",
+      "scenario": "emit",
+      "args": {
+        "owners": 1,
+        "fills": 1,
+        "hoursAfterFill": 23
+      },
+      "outcome": {
+        "sent": 1,
+        "enqueued": [
+          {
+            "owner": "<owner>",
+            "event": "perps.position_closed",
+            "fillId": "BTC:2",
+            "fillTime": "2026-11-17T12:00:00.000Z"
+          }
+        ],
+        "ownerLookups": 1,
+        "lookup": "select distinct account from identity.linked_wallets where chain = 'evm' and lower(address) = ? and revoked_at is null"
+      }
+    },
+    {
+      "id": "emit-fill-25-hours-old-is-history",
+      "scenario": "emit",
+      "args": {
+        "owners": 1,
+        "fills": 1,
+        "hoursAfterFill": 25
+      },
+      "outcome": {
+        "sent": 0,
+        "enqueued": [],
+        "ownerLookups": 0
+      }
+    },
+    {
+      "id": "emit-first-scan-days-back",
+      "scenario": "emit",
+      "args": {
+        "owners": 1,
+        "fills": 2,
+        "hoursAfterFill": 72
+      },
+      "outcome": {
+        "sent": 0,
+        "enqueued": [],
+        "ownerLookups": 0
+      }
+    },
+    {
+      "id": "deliver-open-long-from-flat",
+      "scenario": "deliver",
+      "args": {
+        "event": "perps.position_opened",
+        "secret": "<fixture secret>"
+      },
+      "outcome": {
+        "result": {
+          "ok": true,
+          "statusCode": 204
+        },
+        "headers": {
+          "content-type": "application/json",
+          "x-candle-event": "perps.position_opened",
+          "x-candle-delivery": "fixture-event-open-long-from-flat",
+          "x-candle-signature": "t=<seconds>,v1=<64 hex>"
+        },
+        "signatureTimestampIsDeliveryTime": true,
+        "envelope": {
+          "keys": [
+            "id",
+            "event",
+            "createdAt",
+            "data"
+          ],
+          "event": "perps.position_opened",
+          "createdAtIsDeliveryTime": true
+        },
+        "data": {
+          "schema": "candle.perps.position_event/1",
+          "event": "perps.position_opened",
+          "network": "mainnet",
+          "address": "<wallet>",
+          "coin": "BTC",
+          "dex": null,
+          "side": "long",
+          "dir": "Open Long",
+          "size": "0.5",
+          "price": "100000",
+          "startPosition": "0",
+          "closedPnl": "0",
+          "fee": "1.5",
+          "fillId": "BTC:1",
+          "hash": "<fill hash>",
+          "fillTime": "2026-11-17T12:00:00.000Z",
+          "source": "ingest"
+        },
+        "sdk": {
+          "verifies": true,
+          "verifiesFourMinutesLater": true,
+          "refusesSixMinutesLater": true,
+          "refusesATamperedBody": true,
+          "refusesAnotherSecret": true,
+          "refusesNoHeader": true,
+          "acceptsThePayload": true
+        }
+      }
+    },
+    {
+      "id": "deliver-full-close-of-a-long",
+      "scenario": "deliver",
+      "args": {
+        "event": "perps.position_closed",
+        "secret": "<fixture secret>"
+      },
+      "outcome": {
+        "result": {
+          "ok": true,
+          "statusCode": 204
+        },
+        "headers": {
+          "content-type": "application/json",
+          "x-candle-event": "perps.position_closed",
+          "x-candle-delivery": "fixture-event-full-close-of-a-long",
+          "x-candle-signature": "t=<seconds>,v1=<64 hex>"
+        },
+        "signatureTimestampIsDeliveryTime": true,
+        "envelope": {
+          "keys": [
+            "id",
+            "event",
+            "createdAt",
+            "data"
+          ],
+          "event": "perps.position_closed",
+          "createdAtIsDeliveryTime": true
+        },
+        "data": {
+          "schema": "candle.perps.position_event/1",
+          "event": "perps.position_closed",
+          "network": "mainnet",
+          "address": "<wallet>",
+          "coin": "BTC",
+          "dex": null,
+          "side": "long",
+          "dir": "Close Long",
+          "size": "0.5",
+          "price": "100000",
+          "startPosition": "0.5",
+          "closedPnl": "500.25",
+          "fee": "1.5",
+          "fillId": "BTC:2",
+          "hash": "<fill hash>",
+          "fillTime": "2026-11-17T12:00:00.000Z",
+          "source": "ingest"
+        },
+        "sdk": {
+          "verifies": true,
+          "verifiesFourMinutesLater": true,
+          "refusesSixMinutesLater": true,
+          "refusesATamperedBody": true,
+          "refusesAnotherSecret": true,
+          "refusesNoHeader": true,
+          "acceptsThePayload": true
+        }
+      }
+    },
+    {
+      "id": "deliver-builder-dex-full-close",
+      "scenario": "deliver",
+      "args": {
+        "event": "perps.position_closed",
+        "secret": "<fixture secret>"
+      },
+      "outcome": {
+        "result": {
+          "ok": true,
+          "statusCode": 204
+        },
+        "headers": {
+          "content-type": "application/json",
+          "x-candle-event": "perps.position_closed",
+          "x-candle-delivery": "fixture-event-builder-dex-full-close",
+          "x-candle-signature": "t=<seconds>,v1=<64 hex>"
+        },
+        "signatureTimestampIsDeliveryTime": true,
+        "envelope": {
+          "keys": [
+            "id",
+            "event",
+            "createdAt",
+            "data"
+          ],
+          "event": "perps.position_closed",
+          "createdAtIsDeliveryTime": true
+        },
+        "data": {
+          "schema": "candle.perps.position_event/1",
+          "event": "perps.position_closed",
+          "network": "mainnet",
+          "address": "<wallet>",
+          "coin": "xyz:TSLA",
+          "dex": "xyz",
+          "side": "long",
+          "dir": "Close Long",
+          "size": "4",
+          "price": "260",
+          "startPosition": "4",
+          "closedPnl": "40",
+          "fee": "1.5",
+          "fillId": "xyz:TSLA:5",
+          "hash": "<fill hash>",
+          "fillTime": "2026-11-17T12:00:00.000Z",
+          "source": "ingest"
+        },
+        "sdk": {
+          "verifies": true,
+          "verifiesFourMinutesLater": true,
+          "refusesSixMinutesLater": true,
+          "refusesATamperedBody": true,
+          "refusesAnotherSecret": true,
+          "refusesNoHeader": true,
+          "acceptsThePayload": true
+        }
+      }
+    },
+    {
+      "id": "deliver-liquidation-of-this-wallet",
+      "scenario": "deliver",
+      "args": {
+        "event": "perps.liquidated",
+        "secret": "<fixture secret>"
+      },
+      "outcome": {
+        "result": {
+          "ok": true,
+          "statusCode": 204
+        },
+        "headers": {
+          "content-type": "application/json",
+          "x-candle-event": "perps.liquidated",
+          "x-candle-delivery": "fixture-event-liquidation-of-this-wallet",
+          "x-candle-signature": "t=<seconds>,v1=<64 hex>"
+        },
+        "signatureTimestampIsDeliveryTime": true,
+        "envelope": {
+          "keys": [
+            "id",
+            "event",
+            "createdAt",
+            "data"
+          ],
+          "event": "perps.liquidated",
+          "createdAtIsDeliveryTime": true
+        },
+        "data": {
+          "schema": "candle.perps.position_event/1",
+          "event": "perps.liquidated",
+          "network": "mainnet",
+          "address": "<wallet>",
+          "coin": "BTC",
+          "dex": null,
+          "side": "long",
+          "dir": "Liquidated Cross Long",
+          "size": "0.5",
+          "price": "89990",
+          "startPosition": "0.5",
+          "closedPnl": "-5000",
+          "fee": "1.5",
+          "fillId": "BTC:6",
+          "hash": "<fill hash>",
+          "fillTime": "2026-11-17T12:00:00.000Z",
+          "liquidation": {
+            "markPx": "90000",
+            "method": "market"
+          },
+          "source": "ingest"
+        },
+        "sdk": {
+          "verifies": true,
+          "verifiesFourMinutesLater": true,
+          "refusesSixMinutesLater": true,
+          "refusesATamperedBody": true,
+          "refusesAnotherSecret": true,
+          "refusesNoHeader": true,
+          "acceptsThePayload": true
+        }
+      }
+    },
+    {
+      "id": "docs-webhooks-rows",
+      "scenario": "docs",
+      "args": {
+        "file": "apps/docs/src/content/docs/developers/webhooks.md"
+      },
+      "outcome": {
+        "rows": [
+          "| `perps.position_opened` | A fill opened a perps position from flat (every dex, builder dexes as `dex:COIN`) | `schema` (`candle.perps.position_event/1`), `event`, `network`, `address`, `coin`, `dex`, `side`, `dir`, `size`, `price`, `startPosition`, `closedPnl`, `fee`, `fillId`, `hash`, `fillTime`, `source` |",
+          "| `perps.position_closed` | A fill took a perps position to zero | as `perps.position_opened` |",
+          "| `perps.liquidated` | A fill liquidated your wallet's position | as `perps.position_opened`, plus `liquidation: { markPx, method }` |"
+        ]
+      }
+    },
+    {
+      "id": "docs-webhooks-lateness",
+      "scenario": "docs",
+      "args": {
+        "file": "apps/docs/src/content/docs/developers/webhooks.md"
+      },
+      "outcome": {
+        "text": "The three `perps.position_*` / `perps.liquidated` events are read from the perps ingest, not streamed: they can arrive up to about two hours after `fillTime`, and one fill emits at most once (a re-ingest sends nothing new). Real-time critical-risk alerts come from `perps.risk_critical`, which needs the risk monitor. They cover every EVM TEE wallet the ingest reads, including those of private and unlisted agents; the public board still shows only public agents."
+      }
+    },
+    {
+      "id": "sdk-changelog-entry",
+      "scenario": "docs",
+      "args": {
+        "file": "packages/sdk/CHANGELOG.md"
+      },
+      "outcome": {
+        "text": "Release 0.6.26 (BE-3758), with CLI 0.13.32 and MCP 0.10.37; this release also publishes the unreleased BE-3767 fields below. `perpsOverviewActivity(walletId)` (type `PerpsOverviewActivity`): one EVM TEE wallet's open Hyperliquid orders across the default and every builder-deployed perp dex (each row tagged with its `dex`) and its bound key's withdrawals in flight; needs `account:read`, and either list is null when its read failed. `@candledottv/agent-sdk/webhooks` adds the typed perps position events `perps.position_opened`, `perps.position_closed` and `perps.liquidated` (`candle.perps.position_event/1`, with `fillTime`). MCP adds `candle_perps_activity`; the CLI adds `candle perps activity` and `candle perps thresholds --key <prefix|label>` (the owner's read of a key's stored thresholds and perps limits, with the device token)."
+      }
+    },
+    {
+      "id": "activity-orders-on-two-dexes-and-a-withdrawal",
+      "scenario": "activity",
+      "args": {
+        "wallet": "<tee label>",
+        "answer": {
+          "openOrders": 2,
+          "withdrawalsInFlight": 1
+        }
+      },
+      "outcome": {
+        "cli": {
+          "exitCode": 0,
+          "humanExit": 0,
+          "requests": [
+            {
+              "method": "GET",
+              "host": "api.test",
+              "path": "/api/v1/agent/wallets/trading",
+              "query": "",
+              "auth": "api-key"
+            },
+            {
+              "method": "GET",
+              "host": "api.test",
+              "path": "/api/v1/agent/perps/overview/activity",
+              "query": "?walletId=wallet",
+              "auth": "api-key"
+            }
+          ],
+          "lines": [
+            "Wallet wallet",
+            "Network mainnet",
+            "Open orders 2",
+            "Coin BTC",
+            "Dex default",
+            "Side buy",
+            "Size 0.1",
+            "Price 95000",
+            "Reduce only no",
+            "Coin xyz:TSLA",
+            "Dex xyz",
+            "Side sell",
+            "Size 2",
+            "Price 300",
+            "Reduce only yes",
+            "Withdrawals in flight 1",
+            "Withdrawal fixture-withdrawal",
+            "Status submitted",
+            "Amount 25 USDC",
+            "To <own solana tee>"
+          ]
+        },
+        "mcp": {
+          "isError": false,
+          "requests": [
+            {
+              "method": "GET",
+              "host": "api.test",
+              "path": "/api/v1/agent/wallets/trading",
+              "query": "",
+              "auth": "api-key"
+            },
+            {
+              "method": "GET",
+              "host": "api.test",
+              "path": "/api/v1/agent/perps/overview/activity",
+              "query": "?walletId=wallet",
+              "auth": "api-key"
+            }
+          ]
+        },
+        "sdk": {
+          "requests": [
+            {
+              "method": "GET",
+              "host": "api.test",
+              "path": "/api/v1/agent/perps/overview/activity",
+              "query": "?walletId=wallet",
+              "auth": "api-key"
+            }
+          ]
+        },
+        "sameAnswer": true,
+        "openOrders": [
+          {
+            "coin": "BTC",
+            "dex": null,
+            "side": "buy",
+            "price": "95000",
+            "size": "0.1",
+            "originalSize": "0.1",
+            "reduceOnly": false,
+            "type": "Limit",
+            "trigger": null,
+            "placedAt": 1794916800000
+          },
+          {
+            "coin": "xyz:TSLA",
+            "dex": "xyz",
+            "side": "sell",
+            "price": "300",
+            "size": "2",
+            "originalSize": "4",
+            "reduceOnly": true,
+            "type": "Take Profit Limit",
+            "trigger": "Price above 295",
+            "placedAt": 1794916860000
+          }
+        ],
+        "withdrawalsInFlight": [
+          {
+            "id": "fixture-withdrawal",
+            "status": "submitted",
+            "to": "<own solana tee>",
+            "amountUsdcMicros": 25000000,
+            "createdAt": 1794916800000
+          }
+        ]
+      }
+    },
+    {
+      "id": "activity-nothing-resting",
+      "scenario": "activity",
+      "args": {
+        "wallet": "<tee label>",
+        "answer": {
+          "openOrders": 0,
+          "withdrawalsInFlight": 0
+        }
+      },
+      "outcome": {
+        "cli": {
+          "exitCode": 0,
+          "humanExit": 0,
+          "requests": [
+            {
+              "method": "GET",
+              "host": "api.test",
+              "path": "/api/v1/agent/wallets/trading",
+              "query": "",
+              "auth": "api-key"
+            },
+            {
+              "method": "GET",
+              "host": "api.test",
+              "path": "/api/v1/agent/perps/overview/activity",
+              "query": "?walletId=wallet",
+              "auth": "api-key"
+            }
+          ],
+          "lines": [
+            "Wallet wallet",
+            "Network mainnet",
+            "Open orders none",
+            "Withdrawals in flight none"
+          ]
+        },
+        "mcp": {
+          "isError": false,
+          "requests": [
+            {
+              "method": "GET",
+              "host": "api.test",
+              "path": "/api/v1/agent/wallets/trading",
+              "query": "",
+              "auth": "api-key"
+            },
+            {
+              "method": "GET",
+              "host": "api.test",
+              "path": "/api/v1/agent/perps/overview/activity",
+              "query": "?walletId=wallet",
+              "auth": "api-key"
+            }
+          ]
+        },
+        "sdk": {
+          "requests": [
+            {
+              "method": "GET",
+              "host": "api.test",
+              "path": "/api/v1/agent/perps/overview/activity",
+              "query": "?walletId=wallet",
+              "auth": "api-key"
+            }
+          ]
+        },
+        "sameAnswer": true,
+        "openOrders": [],
+        "withdrawalsInFlight": []
+      }
+    },
+    {
+      "id": "activity-both-reads-failed",
+      "scenario": "activity",
+      "args": {
+        "wallet": "<tee label>",
+        "answer": {
+          "openOrders": null,
+          "withdrawalsInFlight": null
+        }
+      },
+      "outcome": {
+        "cli": {
+          "exitCode": 0,
+          "humanExit": 0,
+          "requests": [
+            {
+              "method": "GET",
+              "host": "api.test",
+              "path": "/api/v1/agent/wallets/trading",
+              "query": "",
+              "auth": "api-key"
+            },
+            {
+              "method": "GET",
+              "host": "api.test",
+              "path": "/api/v1/agent/perps/overview/activity",
+              "query": "?walletId=wallet",
+              "auth": "api-key"
+            }
+          ],
+          "lines": [
+            "Wallet wallet",
+            "Network mainnet",
+            "Open orders not read",
+            "Withdrawals in flight not read"
+          ]
+        },
+        "mcp": {
+          "isError": false,
+          "requests": [
+            {
+              "method": "GET",
+              "host": "api.test",
+              "path": "/api/v1/agent/wallets/trading",
+              "query": "",
+              "auth": "api-key"
+            },
+            {
+              "method": "GET",
+              "host": "api.test",
+              "path": "/api/v1/agent/perps/overview/activity",
+              "query": "?walletId=wallet",
+              "auth": "api-key"
+            }
+          ]
+        },
+        "sdk": {
+          "requests": [
+            {
+              "method": "GET",
+              "host": "api.test",
+              "path": "/api/v1/agent/perps/overview/activity",
+              "query": "?walletId=wallet",
+              "auth": "api-key"
+            }
+          ]
+        },
+        "sameAnswer": true,
+        "openOrders": null,
+        "withdrawalsInFlight": null
+      }
+    },
+    {
+      "id": "activity-mcp-without-a-key",
+      "scenario": "activity",
+      "args": {
+        "apiKey": "none"
+      },
+      "outcome": {
+        "isError": true,
+        "code": "MCP_VALIDATION"
+      }
+    }
+  ]
+}

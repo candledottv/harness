@@ -27,6 +27,7 @@ const READS = [
   "candle_perps_book",
   "candle_perps_candles",
   "candle_perps_orders",
+  "candle_perps_activity",
   "candle_perps_positions",
   "candle_perps_fills",
   "candle_perps_funding",
