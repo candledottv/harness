@@ -1,8 +1,8 @@
 {
-  "about": "Source tools/list from candledottv/candle-monorepo at df74deb0d9cf0f9e67842dfa4e1086035288557e (CLI 0.13.30), via the real MCP server and an in-memory transport. No external requests or tool calls. Profile discovery used a local GET-only eligibility stub; the four listedAfterKeyCheck tools remain conditional. Scrubbed with scripts/scrub-recordings.ts toolFixture. This is a source contract recording, not evidence of a published CLI release.",
+  "about": "Source tools/list from candledottv/candle-monorepo at c22def120a7c4d8a05bbcb93a5ef2e95672a5abe (CLI 0.13.32), via the real MCP server and an in-memory transport. No external requests or tool calls. Profile discovery used a local GET-only eligibility stub; the four listedAfterKeyCheck tools remain conditional. Scrubbed with scripts/scrub-recordings.ts toolFixture. This is a source contract recording, not evidence of a published CLI release.",
   "serverInfo": {
     "name": "candle-mcp",
-    "version": "0.10.35"
+    "version": "0.10.37"
   },
   "tools": [
     {
@@ -3638,6 +3638,25 @@
       }
     },
     {
+      "name": "candle_perps_activity",
+      "title": "Perps wallet activity",
+      "description": "BE-3758: one of the account's EVM TEE wallets and its Hyperliquid activity: resting open orders across the default perp dex and every builder-deployed dex (each row's dex names it; a builder coin keeps its dex:COIN form) and the bound key's withdrawals still in flight. Either list is null when its read failed, never an empty list. Needs account:read. Reads only; moves nothing.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "wallet": {
+            "type": "string",
+            "description": "The EVM TEE wallet by id, address or label. Its resting orders across the default and every builder perp dex, and withdrawals in flight."
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
       "name": "candle_perps_account",
       "title": "Perps account line",
       "description": "The Hyperliquid account line for the key's EVM TEE or embedded wallet: account value and margin used (totals, isolated included), cross account value, free margin (an estimate), withdrawable (what can leave), cross maintenance margin and the cross margin ratio (liquidation at 1), unrealized P&L, and over a recent window (`since`, default 24h) realized P&L, fees and funding (positive received), with the risk level. Read by this server from Hyperliquid's public API; Candle is asked only for the wallet and the key's thresholds. Reads only; moves nothing. Phase 1 has no server-side monitor: nothing warns you unless you poll candle_perps_risk.",
@@ -4685,8 +4704,8 @@
   ],
   "source": {
     "repo": "candledottv/candle-monorepo",
-    "commit": "df74deb0d9cf0f9e67842dfa4e1086035288557e",
-    "cliVersion": "0.13.30",
+    "commit": "c22def120a7c4d8a05bbcb93a5ef2e95672a5abe",
+    "cliVersion": "0.13.32",
     "method": "in-memory tools/list; local eligibility stub; no tool calls"
   }
 }
