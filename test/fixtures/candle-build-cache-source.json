@@ -1,0 +1,880 @@
+{
+  "about": "Offline build-path contracts (BE-3920): the warm blockhash (1.5 s, one shared read, a failure never kept), the cached lookup tables (10 s, per address and connection, an unreadable table never kept), and the web's buy as POST /jupiter/swap builds it, reading neither inside the windows, keeping the fee exactly as before and reading a stale table again once before it gives the fee up. Recorded by running the API's own source against a stand-in connection and Jupiter from an exact staging commit; every fetch and RPC is intercepted. The build handler's parallel checks and the web route's wiring are pinned as source text. The commit changes no CLI, MCP or SDK file: their published versions are the ones named in the source block.",
+  "source": {
+    "repo": "candledottv/candle-monorepo",
+    "commit": "d47d374040283ecf3c435e967d6c36f58121e43c",
+    "versions": {
+      "cli": "0.13.31",
+      "mcp": "0.10.36",
+      "sdk": "0.6.25"
+    },
+    "files": [
+      "apps/api/src/services/jupiter/build-cache.ts",
+      "apps/api/src/services/jupiter/swap.ts",
+      "apps/api/src/routes/jupiter.ts",
+      "apps/api/src/services/candle/client.ts",
+      "apps/api/src/routes/trade-agent.ts",
+      "apps/api/src/services/jupiter/dflow.ts"
+    ]
+  },
+  "rows": [
+    {
+      "id": "blockhash-reused-inside-the-window",
+      "scenario": "blockhash",
+      "args": {
+        "gapMs": 1499
+      },
+      "reads": [
+        {
+          "n": 1,
+          "rpc": "getLatestBlockhash"
+        }
+      ],
+      "outcome": {
+        "fetches": 1,
+        "sameHash": true,
+        "heightIsTheRpcs": true
+      }
+    },
+    {
+      "id": "blockhash-read-again-at-the-window",
+      "scenario": "blockhash",
+      "args": {
+        "gapMs": 1500
+      },
+      "reads": [
+        {
+          "n": 1,
+          "rpc": "getLatestBlockhash"
+        },
+        {
+          "n": 2,
+          "rpc": "getLatestBlockhash"
+        }
+      ],
+      "outcome": {
+        "fetches": 2,
+        "sameHash": false,
+        "heightIsTheRpcs": true
+      }
+    },
+    {
+      "id": "blockhash-burst-shares-one-read",
+      "scenario": "blockhash",
+      "args": {
+        "callers": 5
+      },
+      "reads": [
+        {
+          "n": 1,
+          "rpc": "getLatestBlockhash"
+        }
+      ],
+      "outcome": {
+        "fetches": 1,
+        "sameHash": true
+      }
+    },
+    {
+      "id": "blockhash-failed-read-is-not-kept",
+      "scenario": "blockhash",
+      "args": {
+        "first": "rpc failure"
+      },
+      "reads": [
+        {
+          "n": 1,
+          "rpc": "getLatestBlockhash"
+        },
+        {
+          "n": 2,
+          "rpc": "getLatestBlockhash"
+        }
+      ],
+      "outcome": {
+        "firstRejected": true,
+        "fetches": 2,
+        "secondIsTheRpcs": true
+      }
+    },
+    {
+      "id": "blockhash-expired-is-never-served-on-failure",
+      "scenario": "blockhash",
+      "args": {
+        "gapMs": 1500,
+        "second": "rpc failure"
+      },
+      "reads": [
+        {
+          "n": 1,
+          "rpc": "getLatestBlockhash"
+        },
+        {
+          "n": 2,
+          "rpc": "getLatestBlockhash"
+        }
+      ],
+      "outcome": {
+        "secondRejected": true,
+        "fetches": 2
+      }
+    },
+    {
+      "id": "blockhash-per-connection",
+      "scenario": "blockhash",
+      "args": {
+        "connections": 2
+      },
+      "outcome": {
+        "fetches": 2
+      }
+    },
+    {
+      "id": "table-reused-inside-the-window",
+      "scenario": "lookup-table",
+      "args": {
+        "gapMs": 9999
+      },
+      "reads": [
+        {
+          "n": 1,
+          "rpc": "getAddressLookupTable",
+          "table": "route"
+        }
+      ],
+      "outcome": {
+        "fetches": 1
+      }
+    },
+    {
+      "id": "table-read-again-at-the-window",
+      "scenario": "lookup-table",
+      "args": {
+        "gapMs": 10000
+      },
+      "reads": [
+        {
+          "n": 1,
+          "rpc": "getAddressLookupTable",
+          "table": "route"
+        },
+        {
+          "n": 2,
+          "rpc": "getAddressLookupTable",
+          "table": "route"
+        }
+      ],
+      "outcome": {
+        "fetches": 2
+      }
+    },
+    {
+      "id": "table-unreadable-is-not-kept",
+      "scenario": "lookup-table",
+      "args": {
+        "first": "not found"
+      },
+      "reads": [
+        {
+          "n": 1,
+          "rpc": "getAddressLookupTable",
+          "table": "route"
+        },
+        {
+          "n": 2,
+          "rpc": "getAddressLookupTable",
+          "table": "route"
+        }
+      ],
+      "outcome": {
+        "firstFound": false,
+        "secondFound": true,
+        "fetches": 2
+      }
+    },
+    {
+      "id": "table-failed-read-is-not-kept",
+      "scenario": "lookup-table",
+      "args": {
+        "first": "rpc failure"
+      },
+      "reads": [
+        {
+          "n": 1,
+          "rpc": "getAddressLookupTable",
+          "table": "route"
+        },
+        {
+          "n": 2,
+          "rpc": "getAddressLookupTable",
+          "table": "route"
+        }
+      ],
+      "outcome": {
+        "firstRejected": true,
+        "secondFound": true,
+        "fetches": 2
+      }
+    },
+    {
+      "id": "table-per-address",
+      "scenario": "lookup-table",
+      "args": {
+        "addresses": 2,
+        "readsEach": 2
+      },
+      "reads": [
+        {
+          "n": 1,
+          "rpc": "getAddressLookupTable",
+          "table": "route"
+        },
+        {
+          "n": 2,
+          "rpc": "getAddressLookupTable",
+          "table": "other"
+        }
+      ],
+      "outcome": {
+        "fetches": 2
+      }
+    },
+    {
+      "id": "table-dropped-is-read-again-and-only-it",
+      "scenario": "lookup-table",
+      "args": {
+        "dropped": "route"
+      },
+      "reads": [
+        {
+          "n": 1,
+          "rpc": "getAddressLookupTable",
+          "table": "route"
+        },
+        {
+          "n": 2,
+          "rpc": "getAddressLookupTable",
+          "table": "other"
+        },
+        {
+          "n": 3,
+          "rpc": "getAddressLookupTable",
+          "table": "route"
+        }
+      ],
+      "outcome": {
+        "fetches": 3,
+        "readAgain": [
+          "route"
+        ]
+      }
+    },
+    {
+      "id": "table-per-connection",
+      "scenario": "lookup-table",
+      "args": {
+        "connections": 2
+      },
+      "outcome": {
+        "fetches": 2
+      }
+    },
+    {
+      "id": "web-buy-second-reads-neither",
+      "scenario": "web-buy",
+      "args": {
+        "buys": 2,
+        "gapMs": 1000
+      },
+      "reads": [
+        {
+          "n": 1,
+          "rpc": "getAddressLookupTable",
+          "table": "route"
+        },
+        {
+          "n": 2,
+          "rpc": "getLatestBlockhash"
+        },
+        {
+          "n": 3,
+          "rpc": "simulateTransaction"
+        },
+        {
+          "n": 4,
+          "rpc": "simulateTransaction"
+        }
+      ],
+      "jupiter": [
+        "/swap/v1/swap-instructions",
+        "/swap/v1/swap-instructions"
+      ],
+      "outcome": {
+        "tableReads": 1,
+        "hashReads": 1,
+        "simulations": 2,
+        "first": {
+          "feeForgone": false,
+          "feeCarried": true,
+          "tablesUsed": 1,
+          "hash": "read 1",
+          "lastValidBlockHeight": 1001
+        },
+        "second": {
+          "feeForgone": false,
+          "feeCarried": true,
+          "tablesUsed": 1,
+          "hash": "read 1",
+          "lastValidBlockHeight": 1001
+        }
+      }
+    },
+    {
+      "id": "web-buy-past-the-hash-window-reads-the-hash",
+      "scenario": "web-buy",
+      "args": {
+        "buys": 2,
+        "gapMs": 1500
+      },
+      "reads": [
+        {
+          "n": 1,
+          "rpc": "getAddressLookupTable",
+          "table": "route"
+        },
+        {
+          "n": 2,
+          "rpc": "getLatestBlockhash"
+        },
+        {
+          "n": 3,
+          "rpc": "simulateTransaction"
+        },
+        {
+          "n": 4,
+          "rpc": "getLatestBlockhash"
+        },
+        {
+          "n": 5,
+          "rpc": "simulateTransaction"
+        }
+      ],
+      "jupiter": [
+        "/swap/v1/swap-instructions",
+        "/swap/v1/swap-instructions"
+      ],
+      "outcome": {
+        "tableReads": 1,
+        "hashReads": 2,
+        "simulations": 2,
+        "first": {
+          "feeForgone": false,
+          "feeCarried": true,
+          "tablesUsed": 1,
+          "hash": "read 1",
+          "lastValidBlockHeight": 1001
+        },
+        "second": {
+          "feeForgone": false,
+          "feeCarried": true,
+          "tablesUsed": 1,
+          "hash": "read 2",
+          "lastValidBlockHeight": 1002
+        }
+      }
+    },
+    {
+      "id": "web-buy-past-the-table-window-reads-both",
+      "scenario": "web-buy",
+      "args": {
+        "buys": 2,
+        "gapMs": 10000
+      },
+      "reads": [
+        {
+          "n": 1,
+          "rpc": "getAddressLookupTable",
+          "table": "route"
+        },
+        {
+          "n": 2,
+          "rpc": "getLatestBlockhash"
+        },
+        {
+          "n": 3,
+          "rpc": "simulateTransaction"
+        },
+        {
+          "n": 4,
+          "rpc": "getAddressLookupTable",
+          "table": "route"
+        },
+        {
+          "n": 5,
+          "rpc": "getLatestBlockhash"
+        },
+        {
+          "n": 6,
+          "rpc": "simulateTransaction"
+        }
+      ],
+      "jupiter": [
+        "/swap/v1/swap-instructions",
+        "/swap/v1/swap-instructions"
+      ],
+      "outcome": {
+        "tableReads": 2,
+        "hashReads": 2,
+        "simulations": 2,
+        "first": {
+          "feeForgone": false,
+          "feeCarried": true,
+          "tablesUsed": 1,
+          "hash": "read 1",
+          "lastValidBlockHeight": 1001
+        },
+        "second": {
+          "feeForgone": false,
+          "feeCarried": true,
+          "tablesUsed": 1,
+          "hash": "read 2",
+          "lastValidBlockHeight": 1002
+        }
+      }
+    },
+    {
+      "id": "web-buy-after-an-agent-build-reads-neither",
+      "scenario": "web-buy",
+      "args": {
+        "first": "agent build",
+        "then": "web buy",
+        "gapMs": 0
+      },
+      "reads": [
+        {
+          "n": 1,
+          "rpc": "getAddressLookupTable",
+          "table": "route"
+        },
+        {
+          "n": 2,
+          "rpc": "getLatestBlockhash"
+        },
+        {
+          "n": 3,
+          "rpc": "simulateTransaction"
+        },
+        {
+          "n": 4,
+          "rpc": "simulateTransaction"
+        }
+      ],
+      "jupiter": [
+        "/swap/v1/swap-instructions",
+        "/swap/v1/swap-instructions"
+      ],
+      "outcome": {
+        "tableReads": 1,
+        "hashReads": 1,
+        "web": {
+          "feeForgone": false,
+          "feeCarried": true,
+          "tablesUsed": 1,
+          "hash": "read 1",
+          "lastValidBlockHeight": 1001
+        }
+      }
+    },
+    {
+      "id": "web-buy-burst-shares-the-hash",
+      "scenario": "web-buy",
+      "args": {
+        "buys": 3,
+        "together": true
+      },
+      "reads": [
+        {
+          "n": 1,
+          "rpc": "getAddressLookupTable",
+          "table": "route"
+        },
+        {
+          "n": 2,
+          "rpc": "getAddressLookupTable",
+          "table": "route"
+        },
+        {
+          "n": 3,
+          "rpc": "getAddressLookupTable",
+          "table": "route"
+        },
+        {
+          "n": 4,
+          "rpc": "getLatestBlockhash"
+        },
+        {
+          "n": 5,
+          "rpc": "simulateTransaction"
+        },
+        {
+          "n": 6,
+          "rpc": "simulateTransaction"
+        },
+        {
+          "n": 7,
+          "rpc": "simulateTransaction"
+        }
+      ],
+      "jupiter": [
+        "/swap/v1/swap-instructions",
+        "/swap/v1/swap-instructions",
+        "/swap/v1/swap-instructions"
+      ],
+      "outcome": {
+        "hashReads": 1,
+        "tableReads": 3,
+        "feeCarried": true,
+        "sameHash": true
+      }
+    },
+    {
+      "id": "web-buy-unreadable-table-is-read-next-buy",
+      "scenario": "web-buy",
+      "args": {
+        "buys": 2,
+        "firstTable": "not found"
+      },
+      "reads": [
+        {
+          "n": 1,
+          "rpc": "getAddressLookupTable",
+          "table": "route"
+        },
+        {
+          "n": 2,
+          "rpc": "getLatestBlockhash"
+        },
+        {
+          "n": 3,
+          "rpc": "simulateTransaction"
+        },
+        {
+          "n": 4,
+          "rpc": "getAddressLookupTable",
+          "table": "route"
+        },
+        {
+          "n": 5,
+          "rpc": "simulateTransaction"
+        }
+      ],
+      "jupiter": [
+        "/swap/v1/swap-instructions",
+        "/swap/v1/swap-instructions"
+      ],
+      "outcome": {
+        "tableReads": 2,
+        "first": {
+          "feeForgone": false,
+          "feeCarried": true,
+          "tablesUsed": 0,
+          "hash": "read 1",
+          "lastValidBlockHeight": 1001
+        },
+        "second": {
+          "feeForgone": false,
+          "feeCarried": true,
+          "tablesUsed": 1,
+          "hash": "read 1",
+          "lastValidBlockHeight": 1001
+        }
+      }
+    },
+    {
+      "id": "web-buy-failed-hash-read-builds-nothing",
+      "scenario": "web-buy",
+      "args": {
+        "buys": 2,
+        "firstHash": "rpc failure"
+      },
+      "reads": [
+        {
+          "n": 1,
+          "rpc": "getAddressLookupTable",
+          "table": "route"
+        },
+        {
+          "n": 2,
+          "rpc": "getLatestBlockhash"
+        },
+        {
+          "n": 3,
+          "rpc": "getLatestBlockhash"
+        },
+        {
+          "n": 4,
+          "rpc": "simulateTransaction"
+        }
+      ],
+      "jupiter": [
+        "/swap/v1/swap-instructions",
+        "/swap/v1/swap-instructions"
+      ],
+      "outcome": {
+        "firstRejected": true,
+        "simulatedBeforeTheRetry": false,
+        "hashReads": 2,
+        "second": {
+          "feeForgone": false,
+          "feeCarried": true,
+          "tablesUsed": 1,
+          "hash": "read 2",
+          "lastValidBlockHeight": 1002
+        }
+      }
+    },
+    {
+      "id": "web-buy-stale-table-is-read-again-and-the-fee-kept",
+      "scenario": "stale-table",
+      "args": {
+        "cachedTable": "before the append",
+        "routeAccounts": 39
+      },
+      "reads": [
+        {
+          "n": 1,
+          "rpc": "getAddressLookupTable",
+          "table": "route"
+        },
+        {
+          "n": 2,
+          "rpc": "getLatestBlockhash"
+        },
+        {
+          "n": 3,
+          "rpc": "getAddressLookupTable",
+          "table": "route"
+        },
+        {
+          "n": 4,
+          "rpc": "simulateTransaction"
+        }
+      ],
+      "jupiter": [
+        "/swap/v1/swap-instructions"
+      ],
+      "outcome": {
+        "tableReads": 2,
+        "feeFreeRequests": 0,
+        "buy": {
+          "feeForgone": false,
+          "feeCarried": true,
+          "tablesUsed": 1,
+          "hash": "read 1",
+          "lastValidBlockHeight": 1001
+        }
+      }
+    },
+    {
+      "id": "web-buy-still-too-big-after-one-read-falls-back-as-before",
+      "scenario": "stale-table",
+      "args": {
+        "table": "never grows",
+        "routeAccounts": 39
+      },
+      "reads": [
+        {
+          "n": 1,
+          "rpc": "getAddressLookupTable",
+          "table": "route"
+        },
+        {
+          "n": 2,
+          "rpc": "getLatestBlockhash"
+        },
+        {
+          "n": 3,
+          "rpc": "getAddressLookupTable",
+          "table": "route"
+        },
+        {
+          "n": 4,
+          "rpc": "simulateTransaction"
+        }
+      ],
+      "jupiter": [
+        "/swap/v1/swap-instructions",
+        "/swap/v1/swap"
+      ],
+      "outcome": {
+        "tableReads": 2,
+        "feeFreeRequests": 1,
+        "buy": {
+          "feeForgone": true,
+          "feeForgoneReason": "input_fee_packet_limit",
+          "feeCarried": false,
+          "tablesUsed": 0,
+          "hash": "jupiter's own",
+          "lastValidBlockHeight": 77
+        }
+      }
+    },
+    {
+      "id": "web-buy-uses-the-process-connection",
+      "scenario": "source-pin",
+      "args": {
+        "file": "apps/api/src/routes/jupiter.ts"
+      },
+      "outcome": {
+        "found": true
+      }
+    },
+    {
+      "id": "web-buy-passes-no-priority-cap",
+      "scenario": "source-pin",
+      "args": {
+        "file": "apps/api/src/routes/jupiter.ts"
+      },
+      "outcome": {
+        "found": true
+      }
+    },
+    {
+      "id": "web-swap-is-session-auth",
+      "scenario": "source-pin",
+      "args": {
+        "file": "apps/api/src/routes/jupiter.ts"
+      },
+      "outcome": {
+        "found": true
+      }
+    },
+    {
+      "id": "one-connection-per-process",
+      "scenario": "source-pin",
+      "args": {
+        "file": "apps/api/src/services/candle/client.ts"
+      },
+      "outcome": {
+        "found": true
+      }
+    },
+    {
+      "id": "tables-read-through-the-cache",
+      "scenario": "source-pin",
+      "args": {
+        "file": "apps/api/src/services/jupiter/swap.ts"
+      },
+      "outcome": {
+        "found": true
+      }
+    },
+    {
+      "id": "hash-read-through-the-cache",
+      "scenario": "source-pin",
+      "args": {
+        "file": "apps/api/src/services/jupiter/swap.ts"
+      },
+      "outcome": {
+        "found": true
+      }
+    },
+    {
+      "id": "compile-failure-reads-tables-once-more",
+      "scenario": "source-pin",
+      "args": {
+        "file": "apps/api/src/services/jupiter/swap.ts"
+      },
+      "outcome": {
+        "found": true
+      }
+    },
+    {
+      "id": "overflow-reads-tables-once-before-the-fee-goes",
+      "scenario": "source-pin",
+      "args": {
+        "file": "apps/api/src/services/jupiter/swap.ts"
+      },
+      "outcome": {
+        "found": true
+      }
+    },
+    {
+      "id": "build-breaker-and-payer-start-together",
+      "scenario": "source-pin",
+      "args": {
+        "file": "apps/api/src/routes/trade-agent.ts"
+      },
+      "outcome": {
+        "found": true
+      }
+    },
+    {
+      "id": "build-breaker-answers-before-the-payer-is-used",
+      "scenario": "source-pin",
+      "args": {
+        "file": "apps/api/src/routes/trade-agent.ts"
+      },
+      "outcome": {
+        "found": true
+      }
+    },
+    {
+      "id": "build-payer-read-only-for-a-linked-payer",
+      "scenario": "source-pin",
+      "args": {
+        "file": "apps/api/src/routes/trade-agent.ts"
+      },
+      "outcome": {
+        "found": true
+      }
+    },
+    {
+      "id": "build-feed-read-starts-early",
+      "scenario": "source-pin",
+      "args": {
+        "file": "apps/api/src/routes/trade-agent.ts"
+      },
+      "outcome": {
+        "found": true
+      }
+    },
+    {
+      "id": "build-mount-reads-wallets-fresh",
+      "scenario": "source-pin",
+      "args": {
+        "file": "apps/api/src/routes/trade-agent.ts"
+      },
+      "outcome": {
+        "found": true
+      }
+    },
+    {
+      "id": "dflow-quote-budget-is-400ms",
+      "scenario": "source-pin",
+      "args": {
+        "file": "apps/api/src/services/jupiter/dflow.ts"
+      },
+      "outcome": {
+        "found": true
+      }
+    },
+    {
+      "id": "build-check-codes",
+      "scenario": "codes",
+      "args": {
+        "file": "apps/api/src/routes/trade-agent.ts"
+      },
+      "outcome": {
+        "codes": [
+          "SWAP_ROUTE_FAILING",
+          "AGENT_WALLET_MISSING",
+          "VALIDATION_FAILED"
+        ],
+        "previewOnly": [
+          "PREVIEW_UNSUPPORTED"
+        ]
+      }
+    }
+  ]
+}
