@@ -2,9 +2,7 @@
 // SDK, local MCP, hosted MCP and web make to the Candle API names its client (`X-Candle-Client: <surface>/<version>`),
 // the API reads that label strictly, and each Solana swap the API broadcasts inside a swap route leaves one
 // `ops.swap_landings` row with its send time, landing slot, winning path, wallet type and client. Recorded offline from
-// one exact commit (scripts/read-client-surface-source.ts). The commit is a staging build: the published CLI 0.13.31,
-// MCP 0.10.36 and SDK 0.6.25 predate it, so the CLI, SDK and local-MCP rows hold only until the release that carries
-// BE-3919 is published, and the pin below moves to that release.
+// the exact published release commit (scripts/read-client-surface-source.ts): CLI 0.13.35, MCP 0.10.40 and SDK 0.6.29.
 import { expect, test } from "bun:test"
 import surface from "../../test/fixtures/candle-client-surface-source.json"
 
@@ -17,14 +15,14 @@ const row = (id: string) => {
   return found
 }
 const scenario = (name: string) => rows.filter((r) => r.scenario === name)
-const CLI = "cli/0.13.31", SDK = "sdk/0.6.25", MCP = "mcp/0.10.36", HOSTED = "mcp-hosted/0.10.36", WEB = "web/0123456789ab"
+const CLI = "cli/0.13.35", SDK = "sdk/0.6.29", MCP = "mcp/0.10.40", HOSTED = "mcp-hosted/0.10.40", WEB = "web/0123456789ab"
 const LANDING_FIELDS = ["signature", "route", "wallet_type", "client", "key_prefix", "sent_at", "send_ms", "outcome", "landed_slot", "confirmed_after_ms", "winning_path", "sends"]
 
-test("the recording names the exact staging build and the files the label and the landing row live in", () => {
+test("the recording names the exact published release build and the files the label and the landing row live in", () => {
   expect(surface.source).toMatchObject({
     repo: "candledottv/candle-monorepo",
-    commit: "c6671538c7bd65c7d67a16ab67e3ff5b275c349b",
-    versions: { cli: "0.13.31", mcp: "0.10.36", sdk: "0.6.25" },
+    commit: "ebd1e50050cddc82d82186a1e6a499cd0ca02e85",
+    versions: { cli: "0.13.35", mcp: "0.10.40", sdk: "0.6.29" },
   })
   expect(surface.source.files).toContain("packages/cli/src/client.ts")
   expect(surface.source.files).toContain("apps/api/src/ledger/trading/swap-landings.ts")

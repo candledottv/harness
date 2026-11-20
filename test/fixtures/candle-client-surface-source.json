@@ -1,12 +1,12 @@
 {
-  "about": "Offline client-surface and swap-landing contracts (BE-3919): the X-Candle-Client label the CLI, SDK, local MCP, hosted MCP and web put on their Candle API requests, how the API reads it, and the per-swap row (send time, landing slot, winning path, wallet type, client) the API keeps for each Solana swap it broadcasts. Recorded by running Candle's own source against stand-ins from an exact staging commit; every fetch is intercepted. The commit is a staging build: the published CLI, MCP and SDK predate it.",
+  "about": "Offline client-surface and swap-landing contracts (BE-3919): the X-Candle-Client label the CLI, SDK, local MCP, hosted MCP and web put on their Candle API requests, how the API reads it, and the per-swap row (send time, landing slot, winning path, wallet type, client) the API keeps for each Solana swap it broadcasts. Recorded by running Candle's own source against stand-ins from the published release commit (CLI 0.13.35, MCP 0.10.40, SDK 0.6.29); every fetch is intercepted.",
   "source": {
     "repo": "candledottv/candle-monorepo",
-    "commit": "c6671538c7bd65c7d67a16ab67e3ff5b275c349b",
+    "commit": "ebd1e50050cddc82d82186a1e6a499cd0ca02e85",
     "versions": {
-      "cli": "0.13.31",
-      "mcp": "0.10.36",
-      "sdk": "0.6.25"
+      "cli": "0.13.35",
+      "mcp": "0.10.40",
+      "sdk": "0.6.29"
     },
     "files": [
       "packages/cli/src/client.ts",
@@ -47,7 +47,7 @@
           "n": 1,
           "host": "api.test",
           "path": "/api/v1/agent/wallets/trading",
-          "client": "cli/0.13.31"
+          "client": "cli/0.13.35"
         },
         {
           "n": 2,
@@ -60,19 +60,19 @@
           "n": 3,
           "host": "api.test",
           "path": "/api/v1/agent/wallets/embedded",
-          "client": "cli/0.13.31"
+          "client": "cli/0.13.35"
         },
         {
           "n": 4,
           "host": "api.test",
           "path": "/api/v1/trade/agent/jobs/surface-1",
-          "client": "cli/0.13.31"
+          "client": "cli/0.13.35"
         },
         {
           "n": 5,
           "host": "api.test",
           "path": "/api/v1/trade/agent/build",
-          "client": "cli/0.13.31"
+          "client": "cli/0.13.35"
         },
         {
           "n": 6,
@@ -92,13 +92,13 @@
           "n": 8,
           "host": "api.test",
           "path": "/api/v1/agent/wallets/wallet/sign",
-          "client": "cli/0.13.31"
+          "client": "cli/0.13.35"
         },
         {
           "n": 9,
           "host": "api.test",
           "path": "/api/v1/trade/agent/submit",
-          "client": "cli/0.13.31"
+          "client": "cli/0.13.35"
         }
       ],
       "outcome": {
@@ -108,7 +108,7 @@
         "apiLabelled": 6,
         "rpcRequests": 3,
         "rpcLabelled": 0,
-        "label": "cli/0.13.31"
+        "label": "cli/0.13.35"
       }
     },
     {
@@ -135,7 +135,7 @@
           "n": 1,
           "host": "api.test",
           "path": "/api/v1/agent/wallets/trading",
-          "client": "cli/0.13.31"
+          "client": "cli/0.13.35"
         },
         {
           "n": 2,
@@ -148,31 +148,31 @@
           "n": 3,
           "host": "api.test",
           "path": "/api/v1/agent/wallets/embedded",
-          "client": "cli/0.13.31"
+          "client": "cli/0.13.35"
         },
         {
           "n": 4,
           "host": "api.test",
           "path": "/api/v1/trade/agent/jobs/surface-2",
-          "client": "cli/0.13.31"
+          "client": "cli/0.13.35"
         },
         {
           "n": 5,
           "host": "api.test",
           "path": "/api/v1/trade/agent/execute",
-          "client": "cli/0.13.31"
+          "client": "cli/0.13.35"
         },
         {
           "n": 6,
           "host": "api.test",
           "path": "/api/v1/trade/agent/build",
-          "client": "cli/0.13.31"
+          "client": "cli/0.13.35"
         },
         {
           "n": 7,
           "host": "api.test",
           "path": "/api/v1/trade/agent/execute",
-          "client": "cli/0.13.31"
+          "client": "cli/0.13.35"
         }
       ],
       "outcome": {
@@ -182,7 +182,7 @@
         "apiLabelled": 6,
         "rpcRequests": 1,
         "rpcLabelled": 0,
-        "label": "cli/0.13.31"
+        "label": "cli/0.13.35"
       }
     },
     {
@@ -195,10 +195,10 @@
       "outcome": {
         "headersOut": {
           "x-api-key": "<key>",
-          "x-candle-client": "cli/0.13.31"
+          "x-candle-client": "cli/0.13.35"
         },
         "shapeOut": "record",
-        "label": "cli/0.13.31"
+        "label": "cli/0.13.35"
       }
     },
     {
@@ -216,11 +216,11 @@
           ],
           [
             "x-candle-client",
-            "cli/0.13.31"
+            "cli/0.13.35"
           ]
         ],
         "shapeOut": "array",
-        "label": "cli/0.13.31"
+        "label": "cli/0.13.35"
       }
     },
     {
@@ -233,10 +233,10 @@
       "outcome": {
         "headersOut": {
           "accept": "application/json",
-          "x-candle-client": "cli/0.13.31"
+          "x-candle-client": "cli/0.13.35"
         },
         "shapeOut": "Headers",
-        "label": "cli/0.13.31"
+        "label": "cli/0.13.35"
       }
     },
     {
@@ -248,10 +248,10 @@
       },
       "outcome": {
         "headersOut": {
-          "x-candle-client": "cli/0.13.31"
+          "x-candle-client": "cli/0.13.35"
         },
         "shapeOut": "record",
-        "label": "cli/0.13.31"
+        "label": "cli/0.13.35"
       }
     },
     {
@@ -284,25 +284,25 @@
           "n": 1,
           "host": "api.test",
           "path": "/api/v1/launch/presets",
-          "client": "sdk/0.6.25"
+          "client": "sdk/0.6.29"
         },
         {
           "n": 2,
           "host": "api.test",
           "path": "/api/v1/agent/keys/self/limits",
-          "client": "sdk/0.6.25"
+          "client": "sdk/0.6.29"
         },
         {
           "n": 3,
           "host": "api.test",
           "path": "/api/v1/agent/portfolio",
-          "client": "sdk/0.6.25"
+          "client": "sdk/0.6.29"
         }
       ],
       "outcome": {
         "apiRequests": 3,
         "apiLabelled": 3,
-        "label": "sdk/0.6.25"
+        "label": "sdk/0.6.29"
       }
     },
     {
@@ -313,7 +313,7 @@
         "host": "api.test"
       },
       "outcome": {
-        "label": "sdk/0.6.25"
+        "label": "sdk/0.6.29"
       }
     },
     {
@@ -324,7 +324,7 @@
         "host": "api.test"
       },
       "outcome": {
-        "label": "sdk/0.6.25"
+        "label": "sdk/0.6.29"
       }
     },
     {
@@ -371,13 +371,13 @@
           "n": 1,
           "host": "api.test",
           "path": "/api/v1/activity/report",
-          "client": "mcp/0.10.36"
+          "client": "mcp/0.10.40"
         }
       ],
       "outcome": {
         "apiRequests": 1,
         "apiLabelled": 1,
-        "label": "mcp/0.10.36"
+        "label": "mcp/0.10.40"
       }
     },
     {
@@ -399,7 +399,7 @@
         "configuredApiHost": "api.test"
       },
       "outcome": {
-        "label": "mcp/0.10.36"
+        "label": "mcp/0.10.40"
       }
     },
     {
@@ -432,7 +432,7 @@
         "configuredApiHost": "other-api.test"
       },
       "outcome": {
-        "label": "mcp/0.10.36"
+        "label": "mcp/0.10.40"
       }
     },
     {
@@ -444,7 +444,7 @@
       },
       "outcome": {
         "sameRequestObject": true,
-        "label": "mcp-hosted/0.10.36"
+        "label": "mcp-hosted/0.10.40"
       }
     },
     {
@@ -629,11 +629,11 @@
       "id": "api-reads-cli",
       "scenario": "api-label",
       "args": {
-        "header": "cli/0.13.31",
+        "header": "cli/0.13.35",
         "origin": null
       },
       "outcome": {
-        "label": "cli/0.13.31",
+        "label": "cli/0.13.35",
         "rawCaller": false,
         "echoedInput": false
       }
@@ -642,11 +642,11 @@
       "id": "api-reads-sdk",
       "scenario": "api-label",
       "args": {
-        "header": "sdk/0.6.25",
+        "header": "sdk/0.6.29",
         "origin": null
       },
       "outcome": {
-        "label": "sdk/0.6.25",
+        "label": "sdk/0.6.29",
         "rawCaller": false,
         "echoedInput": false
       }
@@ -655,11 +655,11 @@
       "id": "api-reads-mcp",
       "scenario": "api-label",
       "args": {
-        "header": "mcp/0.10.36",
+        "header": "mcp/0.10.40",
         "origin": null
       },
       "outcome": {
-        "label": "mcp/0.10.36",
+        "label": "mcp/0.10.40",
         "rawCaller": false,
         "echoedInput": false
       }
@@ -668,11 +668,11 @@
       "id": "api-reads-mcp-hosted",
       "scenario": "api-label",
       "args": {
-        "header": "mcp-hosted/0.10.36",
+        "header": "mcp-hosted/0.10.40",
         "origin": null
       },
       "outcome": {
-        "label": "mcp-hosted/0.10.36",
+        "label": "mcp-hosted/0.10.40",
         "rawCaller": false,
         "echoedInput": false
       }
@@ -694,11 +694,11 @@
       "id": "api-trims-spaces",
       "scenario": "api-label",
       "args": {
-        "header": "  cli/0.13.31  ",
+        "header": "  cli/0.13.35  ",
         "origin": null
       },
       "outcome": {
-        "label": "cli/0.13.31",
+        "label": "cli/0.13.35",
         "rawCaller": false,
         "echoedInput": false
       }
@@ -707,7 +707,7 @@
       "id": "api-surface-is-case-sensitive",
       "scenario": "api-label",
       "args": {
-        "header": "CLI/0.13.31",
+        "header": "CLI/0.13.35",
         "origin": null
       },
       "outcome": {
@@ -850,11 +850,11 @@
       "id": "api-header-wins-over-origin",
       "scenario": "api-label",
       "args": {
-        "header": "sdk/0.6.25",
+        "header": "sdk/0.6.29",
         "origin": "https://alpha.candle.tv"
       },
       "outcome": {
-        "label": "sdk/0.6.25",
+        "label": "sdk/0.6.29",
         "rawCaller": false,
         "echoedInput": false
       }
@@ -878,7 +878,7 @@
       "args": {
         "route": "/api/v1/trade/agent/build",
         "headers": {
-          "X-Candle-Client": "cli/0.13.31"
+          "X-Candle-Client": "cli/0.13.35"
         },
         "writerRunning": true
       },
@@ -890,7 +890,7 @@
             "signature": "<signature>",
             "route": "build",
             "wallet_type": "main",
-            "client": "cli/0.13.31",
+            "client": "cli/0.13.35",
             "key_prefix": "FIXTURE1",
             "sent_at": "<t0>",
             "send_ms": 40,
@@ -909,7 +909,7 @@
       "args": {
         "route": "/api/v1/trade/agent/execute",
         "headers": {
-          "X-Candle-Client": "cli/0.13.31"
+          "X-Candle-Client": "cli/0.13.35"
         },
         "writerRunning": true
       },
@@ -921,7 +921,7 @@
             "signature": "<signature>",
             "route": "execute",
             "wallet_type": "main",
-            "client": "cli/0.13.31",
+            "client": "cli/0.13.35",
             "key_prefix": "FIXTURE1",
             "sent_at": "<t0>",
             "send_ms": 40,
@@ -940,7 +940,7 @@
       "args": {
         "route": "/api/v1/trade/agent/submit",
         "headers": {
-          "X-Candle-Client": "cli/0.13.31"
+          "X-Candle-Client": "cli/0.13.35"
         },
         "writerRunning": true
       },
@@ -952,7 +952,7 @@
             "signature": "<signature>",
             "route": "submit",
             "wallet_type": "linked",
-            "client": "cli/0.13.31",
+            "client": "cli/0.13.35",
             "key_prefix": "FIXTURE1",
             "sent_at": "<t0>",
             "send_ms": 40,
@@ -971,7 +971,7 @@
       "args": {
         "route": "/api/v1/agent/swap",
         "headers": {
-          "X-Candle-Client": "cli/0.13.31"
+          "X-Candle-Client": "cli/0.13.35"
         },
         "writerRunning": true
       },
@@ -983,7 +983,7 @@
             "signature": "<signature>",
             "route": "swap",
             "wallet_type": "main",
-            "client": "cli/0.13.31",
+            "client": "cli/0.13.35",
             "key_prefix": "FIXTURE1",
             "sent_at": "<t0>",
             "send_ms": 40,
@@ -1002,7 +1002,7 @@
       "args": {
         "route": "/api/v1/trade/agent/submit",
         "headers": {
-          "X-Candle-Client": "sdk/0.6.25"
+          "X-Candle-Client": "sdk/0.6.29"
         },
         "writerRunning": true
       },
@@ -1014,7 +1014,7 @@
             "signature": "<signature>",
             "route": "submit",
             "wallet_type": "linked",
-            "client": "sdk/0.6.25",
+            "client": "sdk/0.6.29",
             "key_prefix": "FIXTURE1",
             "sent_at": "<t0>",
             "send_ms": 40,
@@ -1033,7 +1033,7 @@
       "args": {
         "route": "/api/v1/trade/agent/submit",
         "headers": {
-          "X-Candle-Client": "mcp/0.10.36"
+          "X-Candle-Client": "mcp/0.10.40"
         },
         "writerRunning": true
       },
@@ -1045,7 +1045,7 @@
             "signature": "<signature>",
             "route": "submit",
             "wallet_type": "linked",
-            "client": "mcp/0.10.36",
+            "client": "mcp/0.10.40",
             "key_prefix": "FIXTURE1",
             "sent_at": "<t0>",
             "send_ms": 40,
@@ -1064,7 +1064,7 @@
       "args": {
         "route": "/api/v1/trade/agent/submit",
         "headers": {
-          "X-Candle-Client": "mcp-hosted/0.10.36"
+          "X-Candle-Client": "mcp-hosted/0.10.40"
         },
         "writerRunning": true
       },
@@ -1076,7 +1076,7 @@
             "signature": "<signature>",
             "route": "submit",
             "wallet_type": "linked",
-            "client": "mcp-hosted/0.10.36",
+            "client": "mcp-hosted/0.10.40",
             "key_prefix": "FIXTURE1",
             "sent_at": "<t0>",
             "send_ms": 40,
@@ -1188,7 +1188,7 @@
       "args": {
         "route": "/api/v1/trade/agent/submit",
         "headers": {
-          "X-Candle-Client": "sdk/0.6.25"
+          "X-Candle-Client": "sdk/0.6.29"
         },
         "writerRunning": true
       },
@@ -1200,7 +1200,7 @@
             "signature": "<signature>",
             "route": "submit",
             "wallet_type": "linked",
-            "client": "sdk/0.6.25",
+            "client": "sdk/0.6.29",
             "key_prefix": "FIXTURE1",
             "sent_at": "<t0>",
             "send_ms": 120,
@@ -1220,7 +1220,7 @@
       "args": {
         "route": "/api/v1/trade/agent/submit",
         "headers": {
-          "X-Candle-Client": "cli/0.13.31"
+          "X-Candle-Client": "cli/0.13.35"
         },
         "writerRunning": true
       },
@@ -1232,7 +1232,7 @@
             "signature": "<signature>",
             "route": "submit",
             "wallet_type": "linked",
-            "client": "cli/0.13.31",
+            "client": "cli/0.13.35",
             "key_prefix": "FIXTURE1",
             "sent_at": "<t0>",
             "send_ms": 35,
@@ -1252,7 +1252,7 @@
       "args": {
         "route": "/api/v1/agent/swap",
         "headers": {
-          "X-Candle-Client": "mcp/0.10.36"
+          "X-Candle-Client": "mcp/0.10.40"
         },
         "writerRunning": true
       },
@@ -1264,7 +1264,7 @@
             "signature": "<signature>",
             "route": "swap",
             "wallet_type": "main",
-            "client": "mcp/0.10.36",
+            "client": "mcp/0.10.40",
             "key_prefix": "FIXTURE1",
             "sent_at": "<t0>",
             "send_ms": 30000,
@@ -1284,7 +1284,7 @@
       "args": {
         "route": "/api/v1/trade/agent/build",
         "headers": {
-          "X-Candle-Client": "cli/0.13.31"
+          "X-Candle-Client": "cli/0.13.35"
         },
         "writerRunning": true
       },
@@ -1296,7 +1296,7 @@
             "signature": "<signature>",
             "route": "build",
             "wallet_type": "main",
-            "client": "cli/0.13.31",
+            "client": "cli/0.13.35",
             "key_prefix": "FIXTURE1",
             "sent_at": "<t0>",
             "send_ms": 50,
@@ -1316,7 +1316,7 @@
       "args": {
         "route": "/api/v1/trade/agent/submit",
         "headers": {
-          "X-Candle-Client": "cli/0.13.31"
+          "X-Candle-Client": "cli/0.13.35"
         },
         "writerRunning": true
       },
@@ -1333,7 +1333,7 @@
       "args": {
         "route": "/api/v1/agent/transfer (no swap scope)",
         "headers": {
-          "X-Candle-Client": "cli/0.13.31"
+          "X-Candle-Client": "cli/0.13.35"
         },
         "writerRunning": true
       },
@@ -1350,7 +1350,7 @@
       "args": {
         "route": "/api/v1/trade/agent/submit",
         "headers": {
-          "X-Candle-Client": "cli/0.13.31"
+          "X-Candle-Client": "cli/0.13.35"
         },
         "writerRunning": false
       },

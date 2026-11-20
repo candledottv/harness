@@ -332,7 +332,7 @@ try {
       ["api-reads-mcp-hosted", { [HEADER]: sent["mcp-hosted"] as string }],
       ["api-reads-web", { [HEADER]: sent.web as string }],
       ["api-trims-spaces", { [HEADER]: `  ${sent.cli}  ` }],
-      ["api-surface-is-case-sensitive", { [HEADER]: "CLI/0.13.31" }],
+      ["api-surface-is-case-sensitive", { [HEADER]: "CLI/0.13.35" }],
       ["api-unknown-surface", { [HEADER]: "curl/8.0.1" }],
       ["api-empty-version", { [HEADER]: "cli/" }],
       ["api-version-too-long", { [HEADER]: LONG }],
@@ -538,7 +538,7 @@ try {
   const out = JSON.stringify(rows)
   for (const secret of [KEY, "fixture-path-not-a-key", "BEGIN", "7ZL9Fvkp", "9dXSV8VW", "fixture-account"]) assert.ok(!out.includes(secret), `a fixture carries ${secret}: ${rows.filter((r) => JSON.stringify(r).includes(secret)).map((r) => r.id)}`)
   writeFileSync(join(import.meta.dir, "../test/fixtures/candle-client-surface-source.json"), `${JSON.stringify({
-    about: "Offline client-surface and swap-landing contracts (BE-3919): the X-Candle-Client label the CLI, SDK, local MCP, hosted MCP and web put on their Candle API requests, how the API reads it, and the per-swap row (send time, landing slot, winning path, wallet type, client) the API keeps for each Solana swap it broadcasts. Recorded by running Candle's own source against stand-ins from an exact staging commit; every fetch is intercepted. The commit is a staging build: the published CLI, MCP and SDK predate it.",
+    about: "Offline client-surface and swap-landing contracts (BE-3919): the X-Candle-Client label the CLI, SDK, local MCP, hosted MCP and web put on their Candle API requests, how the API reads it, and the per-swap row (send time, landing slot, winning path, wallet type, client) the API keeps for each Solana swap it broadcasts. Recorded by running Candle's own source against stand-ins from the published release commit (CLI 0.13.35, MCP 0.10.40, SDK 0.6.29); every fetch is intercepted.",
     source, rows,
   }, null, 2)}\n`)
   console.log(`Recorded ${rows.length} offline client-surface contracts from ${source.commit}.`)
