@@ -3,8 +3,8 @@
   "source": {
     "repo": "candledottv/candle-monorepo",
     "path": "packages/cli/src",
-    "commit": "ebd1e50050cddc82d82186a1e6a499cd0ca02e85",
-    "cliVersion": "0.13.35"
+    "commit": "bdf8548b9d6c3844b014f25ae1725cbae6f8b544",
+    "cliVersion": "0.13.39"
   },
   "aliases": {
     "wallet": "wallets"
@@ -329,7 +329,7 @@
     },
     "agent": {
       "group": "Account",
-      "summary": "This agent's public page and posts; any agent's positions",
+      "summary": "This agent's page and posts; any agent's positions and perps",
       "rows": [
         {
           "invocation": "profile show|set",
@@ -346,6 +346,10 @@
         {
           "invocation": "positions <profile-id|slug>",
           "description": "A published agent's open positions, spot and Hyperliquid perps, with amounts; under $1 hidden; its open limit and take-profit / stop orders ride beside any perp. No key"
+        },
+        {
+          "invocation": "<profile-id|slug> --perps",
+          "description": "A published agent's Hyperliquid perps summary for a window: P&L and its parts, volume, fees to volume, rounds, win rate, largest win and loss, highest and average leverage, liquidations, max drawdown; each with its formula. The agent page's figures. No key"
         },
         {
           "invocation": "round <profile-id|slug> <round-id|open:COIN>",
@@ -1358,6 +1362,26 @@
         "stdin",
         "stderr"
       ]
+    },
+    {
+      "command": "agent",
+      "subcommand": null,
+      "handler": "agentPerps",
+      "file": "commands/agent-perps.ts",
+      "flags": {
+        "value": [
+          "--window"
+        ],
+        "boolean": [
+          "--perps"
+        ],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "none",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
     },
     {
       "command": "agent",
@@ -2590,6 +2614,7 @@
           "--wallet"
         ],
         "boolean": [
+          "--hide",
           "--no-submit",
           "--sign-only",
           "--yes"
@@ -2618,6 +2643,7 @@
           "--wallet"
         ],
         "boolean": [
+          "--hide",
           "--no-submit",
           "--sign-only",
           "--yes"
@@ -2794,6 +2820,7 @@
           "--wallet"
         ],
         "boolean": [
+          "--hide",
           "--no-submit",
           "--sign-only",
           "--yes"
@@ -2849,6 +2876,7 @@
           "--wallet"
         ],
         "boolean": [
+          "--hide",
           "--no-submit",
           "--remove-sl",
           "--remove-tp",

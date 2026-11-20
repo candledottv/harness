@@ -27,15 +27,15 @@ const venueTypes = (id: string) =>
     .filter((r) => r.host === "api.hyperliquid.xyz")
     .map((r) => (r.body?.dex ? `${r.body.type}:${r.body.dex}` : String(r.body?.type)))
 
-test("the recording pins the exact published source, the same commit as the CLI table, tools/list and the other source fixtures", () => {
+test("the recording pins the exact published source; the CLI table, tools/list and the other source fixtures have moved on to #4073's merge", () => {
   expect(unified.source).toMatchObject({
     repo: "candledottv/candle-monorepo",
     commit: "ebd1e50050cddc82d82186a1e6a499cd0ca02e85",
     versions: { cli: "0.13.35", mcp: "0.10.40", sdk: "0.6.29" },
   })
-  expect(unified.source.commit).toBe(SOURCE.source.commit)
-  expect(unified.source.commit).toBe(tools.source.commit)
-  expect(unified.source.commit).toBe(perps.source.commit)
+  // 0.6.13 re-reads the other source fixtures at #4073's merge (bdf8548b9, CLI 0.13.39); this one stays at the
+  // published release (ebd1e5005) with the published-package run that must match it row for row.
+  for (const other of [SOURCE, tools, perps]) expect(other.source.commit).toBe("bdf8548b9d6c3844b014f25ae1725cbae6f8b544")
   // One shared risk engine copied byte-identically into SDK, MCP and CLI.
   expect(unified.source.riskEngine.files).toEqual([
     "packages/sdk/src/hyperliquid-risk.ts",

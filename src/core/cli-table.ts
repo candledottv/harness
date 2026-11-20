@@ -385,6 +385,8 @@ const ROWS: readonly RowInput[] = [
     note: "Use candle_update_profile: a one-press card, public. Its avatar and banner take only an uploads.candle.tv URL: for an image at another https address, use candle_upload_profile_image (its own card); for a file in your research folder, upload it with candle image upload first, then pass its URL.",
   }),
   // A published agent's open positions (0.13.9) and measured record (0.13.35), keyless.
+  // `candle agent <profile-id|slug> --perps` (source 0.13.39, BE-3775): the bare word's handler is the perps summary.
+  mcp("agent", "candle_get_agent_perps_summary"),
   mcp("agent positions", "candle_get_agent_positions"),
   mcp("agent record", "candle_get_agent_record"),
   mcp("agent round", "candle_get_agent_perp_round"),
@@ -796,8 +798,22 @@ export const FORBIDDEN_FLAGS = new Set([
  * The flags a row takes from the agent: what the command's source declares (for an action word with
  * a table of its own, that action's), less the forbidden (but those the row lifts) and the path flags.
  */
+/**
+ * Flags the pinned source declares that the Candle Harness doesn't take yet, by command: read as flags the command
+ * doesn't have. Source 0.13.39 carries `--hide` on perps orders (BE-3996); until the Candle Harness covers it
+ * (BE-3770), a perps order never goes out hidden or public by a flag the harness hasn't checked.
+ */
+const WITHHELD_FLAGS: Readonly<Record<string, readonly string[]>> = {
+  "perps open": ["--hide"],
+  "perps close": ["--hide"],
+  "perps modify": ["--hide"],
+  "perps tpsl": ["--hide"],
+}
+/** Whether a flag the source declares for this command is withheld (WITHHELD_FLAGS). */
+export const withheldFlag = (entry: SourceEntry, flag: string): boolean => WITHHELD_FLAGS[entry.subcommand === null ? entry.command : `${entry.command} ${entry.subcommand}`]?.includes(flag) ?? false
+
 export function allowedFlags(entry: SourceEntry, action?: string, lifts: readonly string[] = []): { value: Set<string>; boolean: Set<string> } {
-  const ok = (f: string) => (!FORBIDDEN_FLAGS.has(f) || lifts.includes(f)) && !f.startsWith("--accept-") && !(entry.flags?.path ?? []).includes(f) && f.startsWith("-")
+  const ok = (f: string) => (!FORBIDDEN_FLAGS.has(f) || lifts.includes(f)) && !f.startsWith("--accept-") && !(entry.flags?.path ?? []).includes(f) && f.startsWith("-") && !withheldFlag(entry, f)
   const values = action !== undefined && entry.flags?.byAction?.[action] !== undefined ? entry.flags.byAction[action]! : (entry.flags?.value ?? [])
   return { value: new Set(values.filter(ok)), boolean: new Set((entry.flags?.boolean ?? []).filter(ok)) }
 }

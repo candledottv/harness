@@ -1,0 +1,2583 @@
+{
+  "about": "Offline agent perps summary contracts from exact source (BE-3775). Every time is on forty-one made-up days, and every figure, coin and hash is made up. api-source rows are answers built by Candle's pure source (the perps profile bundle and hourly components, the board figures, the publish over a prior build with two daily points, perpsSummaryOf) from one made-up wallet's stored facts, in a stand-in route envelope (publishedBuildId, seq); each window's row also carries the series its max drawdown reads. The wallet's address is hashed inside that source and is in no row. api-stub rows are response stand-ins: no perps history, a slug answer, and refusals carrying the route's own code and words. mcp, sdk and cli rows read the same answers through the registered local tool, the SDK and `candle agent <id> --perps` over an intercepted fetch; a served answer is kept once, in its api row, and each of those rows names it (`relays`) with the SHA-256 of the canonical JSON of what that surface gave, which the recorder checked is the same answer. chart-split rows run the chart's split as the pure function it is over a stand-in spot chart. docs rows are the public page's own lines (its three copies agree), read as text. The database, the public gate, the perps jobs, the venue and the keyed API route are not executed, and no deployed behavior is claimed.",
+  "source": {
+    "repo": "candledottv/candle-monorepo",
+    "commit": "bdf8548b9d6c3844b014f25ae1725cbae6f8b544",
+    "versions": {
+      "cli": "0.13.39",
+      "mcp": "0.10.42",
+      "sdk": "0.6.32"
+    }
+  },
+  "rules": {
+    "staleMs": 7200000,
+    "unavailableMs": 10800000,
+    "windowsMs": {
+      "24h": 86400000,
+      "7d": 604800000,
+      "30d": 2592000000
+    }
+  },
+  "profile": "prof_0123456789abcdef",
+  "firstDay": "2027-01-01",
+  "coverageFrom": "2027-01-01T00:00Z",
+  "buildAt": "2027-02-10T12:30Z",
+  "rows": [
+    {
+      "id": "summary-all-api",
+      "scenario": "summary-all",
+      "window": "all",
+      "buildAt": "2027-02-10T12:30Z",
+      "surface": "api-source",
+      "says": "Day 40 12:30, the 12:02 hour certified: the all summary of five closed rounds (one in each window's own span, two in the last day), one position open, one builder-dex buy.",
+      "evidence": "pure API source on made-up stored facts (perpsProfileBundle, perpsProfileHourly, boardPerpsOf, publishBoardPerps over a prior build with two daily points, perpsSummaryOf), in a stand-in route envelope; the database, the public gate and the perps jobs are not executed",
+      "outcome": {
+        "answer": {
+          "success": true,
+          "window": "all",
+          "publishedBuildId": "build_fixture_01",
+          "summary": {
+            "available": true,
+            "window": "all",
+            "asOfMs": 1802260920000,
+            "coverageFromMs": 1798761600000,
+            "partial": false,
+            "perpsSnapshotId": "ps1_9e3c05e9fd3fd507138ee0d0acae62bf",
+            "netUsd": 256.81,
+            "realizedUsd": 230,
+            "unrealizedUsd": 50,
+            "fundingUsd": 2.5,
+            "feesUsd": 25.69,
+            "volumeUsd": 69030,
+            "builderDexVolumeUsd": 4800,
+            "volumeUnpricedFills": 0,
+            "feesToVolumePct": 0.03999688619025378,
+            "roundsClosed": 5,
+            "wins": 3,
+            "losses": 2,
+            "winRatePct": 60,
+            "largestWinUsd": 290.28,
+            "largestLossUsd": -202.32,
+            "highestLeverage": 25,
+            "averageLeverage": 11,
+            "leverageNotRecordedRounds": 1,
+            "liquidations": 1,
+            "maxDrawdownUsd": 388.6
+          },
+          "seq": 70
+        },
+        "drawdownSeries": {
+          "points": 724,
+          "moves": [
+            {
+              "at": "2027-01-05T00:00Z",
+              "pnlUsd": 290.28
+            },
+            {
+              "at": "2027-01-09T00:00Z",
+              "pnlUsd": 520
+            },
+            {
+              "at": "2027-01-11T12:00Z",
+              "pnlUsd": 290.28
+            },
+            {
+              "at": "2027-01-16T11:00Z",
+              "pnlUsd": 248.78
+            },
+            {
+              "at": "2027-01-16T13:00Z",
+              "pnlUsd": 484.86
+            },
+            {
+              "at": "2027-02-06T10:00Z",
+              "pnlUsd": 282.54
+            },
+            {
+              "at": "2027-02-10T04:00Z",
+              "pnlUsd": 131.4
+            },
+            {
+              "at": "2027-02-10T08:00Z",
+              "pnlUsd": 209.29
+            },
+            {
+              "at": "2027-02-10T12:00Z",
+              "pnlUsd": 256.81
+            },
+            {
+              "at": "2027-02-10T12:30Z",
+              "pnlUsd": 256.81
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "summary-all-mcp",
+      "scenario": "summary-all",
+      "window": "all",
+      "buildAt": "2027-02-10T12:30Z",
+      "surface": "mcp",
+      "args": {
+        "profileId": "prof_0123456789abcdef",
+        "window": "all"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/perps?window=all",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "relays": "summary-all-api",
+        "sha256": "d255ee9e8c758e408adebbc193eeaacc27cf88e9145ab4db1433e9143f475c22",
+        "isError": false
+      }
+    },
+    {
+      "id": "summary-all-sdk",
+      "scenario": "summary-all",
+      "window": "all",
+      "buildAt": "2027-02-10T12:30Z",
+      "surface": "sdk",
+      "args": {
+        "profileId": "prof_0123456789abcdef",
+        "window": "all"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/perps?window=all",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "relays": "summary-all-api",
+        "part": "answer without success",
+        "sha256": "8e053a4e8319907bf99479636c00c14f709230fa8912abcf35a7e1ef23a2d7c7",
+        "isError": false
+      }
+    },
+    {
+      "id": "summary-all-cli",
+      "scenario": "summary-all",
+      "window": "all",
+      "buildAt": "2027-02-10T12:30Z",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent prof_0123456789abcdef --perps --window all"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/perps?window=all",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "lines": [
+          "Perps summary, all time",
+          "As of Feb 10 12:02Z",
+          "Recorded since 2027-01-01",
+          "",
+          "Figure            Value          How",
+          "----------------  -------------  -------------------------------------------------------------------------",
+          "Perps P&L         +$256.81       realized + funding - fees + unrealized change",
+          "Realized          +$230.00       closed P&L of the fills in the window",
+          "Unrealized        +$50.00        open positions now",
+          "Funding           +$2.50         positive when received",
+          "Fees              $25.69         Hyperliquid fees, Candle's builder fee included",
+          "Volume            $69,030.00     sum of price x size per fill, $4,800.00 on builder dexes",
+          "Fees to volume    0.0400%        fees / main-exchange volume",
+          "Rounds closed     5              open to flat, counted at the close",
+          "Win rate          60.0% (3W 2L)  wins / (wins + losses)",
+          "Largest win       +$290.28       best round above zero",
+          "Largest loss      -$202.32       worst round below zero",
+          "Highest leverage  25x            rounds closed in the window (1 round with leverage not recorded left out)",
+          "Average leverage  11x            mean over those rounds (1 round with leverage not recorded left out)",
+          "Liquidations      1              rounds closed by a liquidation",
+          "Max drawdown      $388.60        peak to trough of cumulative perps P&L"
+        ]
+      }
+    },
+    {
+      "id": "summary-all-cli-json",
+      "scenario": "summary-all",
+      "window": "all",
+      "buildAt": "2027-02-10T12:30Z",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent prof_0123456789abcdef --perps --window all --json"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/perps?window=all",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "relays": "summary-all-api",
+        "sha256": "d255ee9e8c758e408adebbc193eeaacc27cf88e9145ab4db1433e9143f475c22"
+      }
+    },
+    {
+      "id": "summary-24h-api",
+      "scenario": "summary-24h",
+      "window": "24h",
+      "buildAt": "2027-02-10T12:30Z",
+      "surface": "api-source",
+      "says": "Day 40 12:30, the 12:02 hour certified: the 24h summary of five closed rounds (one in each window's own span, two in the last day), one position open, one builder-dex buy.",
+      "evidence": "pure API source on made-up stored facts (perpsProfileBundle, perpsProfileHourly, boardPerpsOf, publishBoardPerps over a prior build with two daily points, perpsSummaryOf), in a stand-in route envelope; the database, the public gate and the perps jobs are not executed",
+      "outcome": {
+        "answer": {
+          "success": true,
+          "window": "24h",
+          "publishedBuildId": "build_fixture_01",
+          "summary": {
+            "available": true,
+            "window": "24h",
+            "asOfMs": 1802260920000,
+            "coverageFromMs": 1798761600000,
+            "partial": false,
+            "perpsSnapshotId": "ps1_9e3c05e9fd3fd507138ee0d0acae62bf",
+            "netUsd": -25.73,
+            "realizedUsd": -70,
+            "unrealizedUsd": 50,
+            "fundingUsd": 0,
+            "feesUsd": 5.73,
+            "volumeUsd": 19130,
+            "builderDexVolumeUsd": 4800,
+            "volumeUnpricedFills": 0,
+            "feesToVolumePct": 0.039986043265875786,
+            "roundsClosed": 2,
+            "wins": 1,
+            "losses": 1,
+            "winRatePct": 50,
+            "largestWinUsd": 77.89,
+            "largestLossUsd": -151.14,
+            "highestLeverage": 25,
+            "averageLeverage": 17.5,
+            "leverageNotRecordedRounds": 0,
+            "liquidations": 1,
+            "maxDrawdownUsd": 151.14
+          },
+          "seq": 71
+        },
+        "drawdownSeries": {
+          "points": 26,
+          "moves": [
+            {
+              "at": "2027-02-09T12:00Z",
+              "pnlUsd": 282.54
+            },
+            {
+              "at": "2027-02-10T04:00Z",
+              "pnlUsd": 131.4
+            },
+            {
+              "at": "2027-02-10T08:00Z",
+              "pnlUsd": 209.29
+            },
+            {
+              "at": "2027-02-10T12:00Z",
+              "pnlUsd": 256.81
+            },
+            {
+              "at": "2027-02-10T12:30Z",
+              "pnlUsd": 256.81
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "summary-24h-mcp",
+      "scenario": "summary-24h",
+      "window": "24h",
+      "buildAt": "2027-02-10T12:30Z",
+      "surface": "mcp",
+      "args": {
+        "profileId": "prof_0123456789abcdef",
+        "window": "24h"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/perps?window=24h",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "relays": "summary-24h-api",
+        "sha256": "db645304f46e0810ef77acf9e21139c1d93f09565ba42b7547acf916b7c7f718",
+        "isError": false
+      }
+    },
+    {
+      "id": "summary-24h-sdk",
+      "scenario": "summary-24h",
+      "window": "24h",
+      "buildAt": "2027-02-10T12:30Z",
+      "surface": "sdk",
+      "args": {
+        "profileId": "prof_0123456789abcdef",
+        "window": "24h"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/perps?window=24h",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "relays": "summary-24h-api",
+        "part": "answer without success",
+        "sha256": "9fd5348134345f2803c1a85cfa87ac7a0525a1d9b1d606f4409b5d9be4415bcf",
+        "isError": false
+      }
+    },
+    {
+      "id": "summary-24h-cli",
+      "scenario": "summary-24h",
+      "window": "24h",
+      "buildAt": "2027-02-10T12:30Z",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent prof_0123456789abcdef --perps --window 24h"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/perps?window=24h",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "lines": [
+          "Perps summary, 24h",
+          "As of Feb 10 12:02Z",
+          "Recorded since 2027-01-01",
+          "",
+          "Figure            Value          How",
+          "----------------  -------------  --------------------------------------------------------",
+          "Perps P&L         -$25.73        realized + funding - fees + unrealized change",
+          "Realized          -$70.00        closed P&L of the fills in the window",
+          "Unrealized        +$50.00        change over the window",
+          "Funding           $0.00          positive when received",
+          "Fees              $5.73          Hyperliquid fees, Candle's builder fee included",
+          "Volume            $19,130.00     sum of price x size per fill, $4,800.00 on builder dexes",
+          "Fees to volume    0.0400%        fees / main-exchange volume",
+          "Rounds closed     2              open to flat, counted at the close",
+          "Win rate          50.0% (1W 1L)  wins / (wins + losses)",
+          "Largest win       +$77.89        best round above zero",
+          "Largest loss      -$151.14       worst round below zero",
+          "Highest leverage  25x            rounds closed in the window",
+          "Average leverage  17.5x          mean over those rounds",
+          "Liquidations      1              rounds closed by a liquidation",
+          "Max drawdown      $151.14        peak to trough of cumulative perps P&L"
+        ]
+      }
+    },
+    {
+      "id": "summary-24h-cli-json",
+      "scenario": "summary-24h",
+      "window": "24h",
+      "buildAt": "2027-02-10T12:30Z",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent prof_0123456789abcdef --perps --window 24h --json"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/perps?window=24h",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "relays": "summary-24h-api",
+        "sha256": "db645304f46e0810ef77acf9e21139c1d93f09565ba42b7547acf916b7c7f718"
+      }
+    },
+    {
+      "id": "summary-7d-api",
+      "scenario": "summary-7d",
+      "window": "7d",
+      "buildAt": "2027-02-10T12:30Z",
+      "surface": "api-source",
+      "says": "Day 40 12:30, the 12:02 hour certified: the 7d summary of five closed rounds (one in each window's own span, two in the last day), one position open, one builder-dex buy.",
+      "evidence": "pure API source on made-up stored facts (perpsProfileBundle, perpsProfileHourly, boardPerpsOf, publishBoardPerps over a prior build with two daily points, perpsSummaryOf), in a stand-in route envelope; the database, the public gate and the perps jobs are not executed",
+      "outcome": {
+        "answer": {
+          "success": true,
+          "window": "7d",
+          "publishedBuildId": "build_fixture_01",
+          "summary": {
+            "available": true,
+            "window": "7d",
+            "asOfMs": 1802260920000,
+            "coverageFromMs": 1798761600000,
+            "partial": false,
+            "perpsSnapshotId": "ps1_9e3c05e9fd3fd507138ee0d0acae62bf",
+            "netUsd": -228.05,
+            "realizedUsd": -270,
+            "unrealizedUsd": 50,
+            "fundingUsd": 0,
+            "feesUsd": 8.05,
+            "volumeUsd": 24930,
+            "builderDexVolumeUsd": 4800,
+            "volumeUnpricedFills": 0,
+            "feesToVolumePct": 0.03999006458022852,
+            "roundsClosed": 3,
+            "wins": 1,
+            "losses": 2,
+            "winRatePct": 33.33333333333333,
+            "largestWinUsd": 77.89,
+            "largestLossUsd": -202.32,
+            "highestLeverage": 25,
+            "averageLeverage": 17.5,
+            "leverageNotRecordedRounds": 1,
+            "liquidations": 1,
+            "maxDrawdownUsd": 353.46
+          },
+          "seq": 72
+        },
+        "drawdownSeries": {
+          "points": 170,
+          "moves": [
+            {
+              "at": "2027-02-03T12:00Z",
+              "pnlUsd": 484.86
+            },
+            {
+              "at": "2027-02-06T10:00Z",
+              "pnlUsd": 282.54
+            },
+            {
+              "at": "2027-02-10T04:00Z",
+              "pnlUsd": 131.4
+            },
+            {
+              "at": "2027-02-10T08:00Z",
+              "pnlUsd": 209.29
+            },
+            {
+              "at": "2027-02-10T12:00Z",
+              "pnlUsd": 256.81
+            },
+            {
+              "at": "2027-02-10T12:30Z",
+              "pnlUsd": 256.81
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "summary-7d-mcp",
+      "scenario": "summary-7d",
+      "window": "7d",
+      "buildAt": "2027-02-10T12:30Z",
+      "surface": "mcp",
+      "args": {
+        "profileId": "prof_0123456789abcdef",
+        "window": "7d"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/perps?window=7d",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "relays": "summary-7d-api",
+        "sha256": "6fd79d3a7208d28d8d2e211160e907c02c34885329177296d329d245b3a34fab",
+        "isError": false
+      }
+    },
+    {
+      "id": "summary-7d-sdk",
+      "scenario": "summary-7d",
+      "window": "7d",
+      "buildAt": "2027-02-10T12:30Z",
+      "surface": "sdk",
+      "args": {
+        "profileId": "prof_0123456789abcdef",
+        "window": "7d"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/perps?window=7d",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "relays": "summary-7d-api",
+        "part": "answer without success",
+        "sha256": "1491b4537ed6a16ac19f1cbbbfe5e374e9c6a0e9642a067859a5a3426fba3fcc",
+        "isError": false
+      }
+    },
+    {
+      "id": "summary-7d-cli",
+      "scenario": "summary-7d",
+      "window": "7d",
+      "buildAt": "2027-02-10T12:30Z",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent prof_0123456789abcdef --perps --window 7d"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/perps?window=7d",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "lines": [
+          "Perps summary, 7d",
+          "As of Feb 10 12:02Z",
+          "Recorded since 2027-01-01",
+          "",
+          "Figure            Value          How",
+          "----------------  -------------  -------------------------------------------------------------------------",
+          "Perps P&L         -$228.05       realized + funding - fees + unrealized change",
+          "Realized          -$270.00       closed P&L of the fills in the window",
+          "Unrealized        +$50.00        change over the window",
+          "Funding           $0.00          positive when received",
+          "Fees              $8.05          Hyperliquid fees, Candle's builder fee included",
+          "Volume            $24,930.00     sum of price x size per fill, $4,800.00 on builder dexes",
+          "Fees to volume    0.0400%        fees / main-exchange volume",
+          "Rounds closed     3              open to flat, counted at the close",
+          "Win rate          33.3% (1W 2L)  wins / (wins + losses)",
+          "Largest win       +$77.89        best round above zero",
+          "Largest loss      -$202.32       worst round below zero",
+          "Highest leverage  25x            rounds closed in the window (1 round with leverage not recorded left out)",
+          "Average leverage  17.5x          mean over those rounds (1 round with leverage not recorded left out)",
+          "Liquidations      1              rounds closed by a liquidation",
+          "Max drawdown      $353.46        peak to trough of cumulative perps P&L"
+        ]
+      }
+    },
+    {
+      "id": "summary-7d-cli-json",
+      "scenario": "summary-7d",
+      "window": "7d",
+      "buildAt": "2027-02-10T12:30Z",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent prof_0123456789abcdef --perps --window 7d --json"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/perps?window=7d",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "relays": "summary-7d-api",
+        "sha256": "6fd79d3a7208d28d8d2e211160e907c02c34885329177296d329d245b3a34fab"
+      }
+    },
+    {
+      "id": "summary-30d-api",
+      "scenario": "summary-30d",
+      "window": "30d",
+      "buildAt": "2027-02-10T12:30Z",
+      "surface": "api-source",
+      "says": "Day 40 12:30, the 12:02 hour certified: the 30d summary of five closed rounds (one in each window's own span, two in the last day), one position open, one builder-dex buy.",
+      "evidence": "pure API source on made-up stored facts (perpsProfileBundle, perpsProfileHourly, boardPerpsOf, publishBoardPerps over a prior build with two daily points, perpsSummaryOf), in a stand-in route envelope; the database, the public gate and the perps jobs are not executed",
+      "outcome": {
+        "answer": {
+          "success": true,
+          "window": "30d",
+          "publishedBuildId": "build_fixture_01",
+          "summary": {
+            "available": true,
+            "window": "30d",
+            "asOfMs": 1802260920000,
+            "coverageFromMs": 1798761600000,
+            "partial": false,
+            "perpsSnapshotId": "ps1_9e3c05e9fd3fd507138ee0d0acae62bf",
+            "netUsd": -33.47,
+            "realizedUsd": -70,
+            "unrealizedUsd": 50,
+            "fundingUsd": 2.5,
+            "feesUsd": 15.97,
+            "volumeUsd": 44730,
+            "builderDexVolumeUsd": 4800,
+            "volumeUnpricedFills": 0,
+            "feesToVolumePct": 0.03999499123466066,
+            "roundsClosed": 4,
+            "wins": 2,
+            "losses": 2,
+            "winRatePct": 50,
+            "largestWinUsd": 194.58,
+            "largestLossUsd": -202.32,
+            "highestLeverage": 25,
+            "averageLeverage": 13,
+            "leverageNotRecordedRounds": 1,
+            "liquidations": 1,
+            "maxDrawdownUsd": 353.46
+          },
+          "seq": 73
+        },
+        "drawdownSeries": {
+          "points": 722,
+          "moves": [
+            {
+              "at": "2027-01-11T12:00Z",
+              "pnlUsd": 290.28
+            },
+            {
+              "at": "2027-01-16T11:00Z",
+              "pnlUsd": 248.78
+            },
+            {
+              "at": "2027-01-16T13:00Z",
+              "pnlUsd": 484.86
+            },
+            {
+              "at": "2027-02-06T10:00Z",
+              "pnlUsd": 282.54
+            },
+            {
+              "at": "2027-02-10T04:00Z",
+              "pnlUsd": 131.4
+            },
+            {
+              "at": "2027-02-10T08:00Z",
+              "pnlUsd": 209.29
+            },
+            {
+              "at": "2027-02-10T12:00Z",
+              "pnlUsd": 256.81
+            },
+            {
+              "at": "2027-02-10T12:30Z",
+              "pnlUsd": 256.81
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "summary-30d-mcp",
+      "scenario": "summary-30d",
+      "window": "30d",
+      "buildAt": "2027-02-10T12:30Z",
+      "surface": "mcp",
+      "args": {
+        "profileId": "prof_0123456789abcdef",
+        "window": "30d"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/perps?window=30d",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "relays": "summary-30d-api",
+        "sha256": "2f37d9d86fc9c077ade38a8726c7ff7c686bb7bd34a3228d3f8774b541b6d09b",
+        "isError": false
+      }
+    },
+    {
+      "id": "summary-30d-sdk",
+      "scenario": "summary-30d",
+      "window": "30d",
+      "buildAt": "2027-02-10T12:30Z",
+      "surface": "sdk",
+      "args": {
+        "profileId": "prof_0123456789abcdef",
+        "window": "30d"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/perps?window=30d",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "relays": "summary-30d-api",
+        "part": "answer without success",
+        "sha256": "12a617ae5daf21708427baccd790c8a5910e9b725e469cf48ab500e1da5b4887",
+        "isError": false
+      }
+    },
+    {
+      "id": "summary-30d-cli",
+      "scenario": "summary-30d",
+      "window": "30d",
+      "buildAt": "2027-02-10T12:30Z",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent prof_0123456789abcdef --perps --window 30d"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/perps?window=30d",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "lines": [
+          "Perps summary, 30d",
+          "As of Feb 10 12:02Z",
+          "Recorded since 2027-01-01",
+          "",
+          "Figure            Value          How",
+          "----------------  -------------  -------------------------------------------------------------------------",
+          "Perps P&L         -$33.47        realized + funding - fees + unrealized change",
+          "Realized          -$70.00        closed P&L of the fills in the window",
+          "Unrealized        +$50.00        change over the window",
+          "Funding           +$2.50         positive when received",
+          "Fees              $15.97         Hyperliquid fees, Candle's builder fee included",
+          "Volume            $44,730.00     sum of price x size per fill, $4,800.00 on builder dexes",
+          "Fees to volume    0.0400%        fees / main-exchange volume",
+          "Rounds closed     4              open to flat, counted at the close",
+          "Win rate          50.0% (2W 2L)  wins / (wins + losses)",
+          "Largest win       +$194.58       best round above zero",
+          "Largest loss      -$202.32       worst round below zero",
+          "Highest leverage  25x            rounds closed in the window (1 round with leverage not recorded left out)",
+          "Average leverage  13x            mean over those rounds (1 round with leverage not recorded left out)",
+          "Liquidations      1              rounds closed by a liquidation",
+          "Max drawdown      $353.46        peak to trough of cumulative perps P&L"
+        ]
+      }
+    },
+    {
+      "id": "summary-30d-cli-json",
+      "scenario": "summary-30d",
+      "window": "30d",
+      "buildAt": "2027-02-10T12:30Z",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent prof_0123456789abcdef --perps --window 30d --json"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/perps?window=30d",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "relays": "summary-30d-api",
+        "sha256": "2f37d9d86fc9c077ade38a8726c7ff7c686bb7bd34a3228d3f8774b541b6d09b"
+      }
+    },
+    {
+      "id": "summary-default-api",
+      "scenario": "summary-default",
+      "buildAt": "2027-02-10T12:30Z",
+      "surface": "api-source",
+      "says": "No window given: the route's default is all.",
+      "evidence": "the same pure source answer as summary-all, read with no window",
+      "outcome": {
+        "answer": {
+          "success": true,
+          "window": "all",
+          "publishedBuildId": "build_fixture_01",
+          "summary": {
+            "available": true,
+            "window": "all",
+            "asOfMs": 1802260920000,
+            "coverageFromMs": 1798761600000,
+            "partial": false,
+            "perpsSnapshotId": "ps1_9e3c05e9fd3fd507138ee0d0acae62bf",
+            "netUsd": 256.81,
+            "realizedUsd": 230,
+            "unrealizedUsd": 50,
+            "fundingUsd": 2.5,
+            "feesUsd": 25.69,
+            "volumeUsd": 69030,
+            "builderDexVolumeUsd": 4800,
+            "volumeUnpricedFills": 0,
+            "feesToVolumePct": 0.03999688619025378,
+            "roundsClosed": 5,
+            "wins": 3,
+            "losses": 2,
+            "winRatePct": 60,
+            "largestWinUsd": 290.28,
+            "largestLossUsd": -202.32,
+            "highestLeverage": 25,
+            "averageLeverage": 11,
+            "leverageNotRecordedRounds": 1,
+            "liquidations": 1,
+            "maxDrawdownUsd": 388.6
+          },
+          "seq": 74
+        }
+      }
+    },
+    {
+      "id": "summary-default-default-mcp",
+      "scenario": "summary-default",
+      "buildAt": "2027-02-10T12:30Z",
+      "surface": "mcp",
+      "args": {
+        "profileId": "prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/perps",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "relays": "summary-default-api",
+        "sha256": "f0949aaf601db5eedb14b2c04bfdc5b29ae3b27290da989d207d21375cae55ff",
+        "isError": false
+      }
+    },
+    {
+      "id": "summary-default-default-sdk",
+      "scenario": "summary-default",
+      "buildAt": "2027-02-10T12:30Z",
+      "surface": "sdk",
+      "args": {
+        "profileId": "prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/perps",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "relays": "summary-default-api",
+        "part": "answer without success",
+        "sha256": "5c5613c3344bec28ae5e09486cc45ad164046ee722ad7381481d70f70745afd5",
+        "isError": false
+      }
+    },
+    {
+      "id": "summary-default-default-cli",
+      "scenario": "summary-default",
+      "buildAt": "2027-02-10T12:30Z",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent prof_0123456789abcdef --perps"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/perps?window=all",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "lines": [
+          "Perps summary, all time",
+          "As of Feb 10 12:02Z",
+          "Recorded since 2027-01-01",
+          "",
+          "Figure            Value          How",
+          "----------------  -------------  -------------------------------------------------------------------------",
+          "Perps P&L         +$256.81       realized + funding - fees + unrealized change",
+          "Realized          +$230.00       closed P&L of the fills in the window",
+          "Unrealized        +$50.00        open positions now",
+          "Funding           +$2.50         positive when received",
+          "Fees              $25.69         Hyperliquid fees, Candle's builder fee included",
+          "Volume            $69,030.00     sum of price x size per fill, $4,800.00 on builder dexes",
+          "Fees to volume    0.0400%        fees / main-exchange volume",
+          "Rounds closed     5              open to flat, counted at the close",
+          "Win rate          60.0% (3W 2L)  wins / (wins + losses)",
+          "Largest win       +$290.28       best round above zero",
+          "Largest loss      -$202.32       worst round below zero",
+          "Highest leverage  25x            rounds closed in the window (1 round with leverage not recorded left out)",
+          "Average leverage  11x            mean over those rounds (1 round with leverage not recorded left out)",
+          "Liquidations      1              rounds closed by a liquidation",
+          "Max drawdown      $388.60        peak to trough of cumulative perps P&L"
+        ]
+      }
+    },
+    {
+      "id": "summary-default-default-cli-json",
+      "scenario": "summary-default",
+      "buildAt": "2027-02-10T12:30Z",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent prof_0123456789abcdef --perps --json"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/perps?window=all",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "relays": "summary-default-api",
+        "sha256": "f0949aaf601db5eedb14b2c04bfdc5b29ae3b27290da989d207d21375cae55ff"
+      }
+    },
+    {
+      "id": "summary-slug-api",
+      "scenario": "summary-slug",
+      "window": "7d",
+      "buildAt": "2027-02-10T12:30Z",
+      "surface": "api-stub",
+      "says": "The CLI takes a slug too: the public slug read gives the profile id.",
+      "evidence": "a slug answer stand-in, then the 7d pure source answer",
+      "outcome": {
+        "slug": {
+          "success": true,
+          "resolved": {
+            "profileId": "prof_0123456789abcdef"
+          }
+        },
+        "answer": {
+          "success": true,
+          "window": "7d",
+          "publishedBuildId": "build_fixture_01",
+          "summary": {
+            "available": true,
+            "window": "7d",
+            "asOfMs": 1802260920000,
+            "coverageFromMs": 1798761600000,
+            "partial": false,
+            "perpsSnapshotId": "ps1_9e3c05e9fd3fd507138ee0d0acae62bf",
+            "netUsd": -228.05,
+            "realizedUsd": -270,
+            "unrealizedUsd": 50,
+            "fundingUsd": 0,
+            "feesUsd": 8.05,
+            "volumeUsd": 24930,
+            "builderDexVolumeUsd": 4800,
+            "volumeUnpricedFills": 0,
+            "feesToVolumePct": 0.03999006458022852,
+            "roundsClosed": 3,
+            "wins": 1,
+            "losses": 2,
+            "winRatePct": 33.33333333333333,
+            "largestWinUsd": 77.89,
+            "largestLossUsd": -202.32,
+            "highestLeverage": 25,
+            "averageLeverage": 17.5,
+            "leverageNotRecordedRounds": 1,
+            "liquidations": 1,
+            "maxDrawdownUsd": 353.46
+          },
+          "seq": 75
+        }
+      }
+    },
+    {
+      "id": "summary-slug-cli",
+      "scenario": "summary-slug",
+      "window": "7d",
+      "buildAt": "2027-02-10T12:30Z",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent summary-fixture --perps --window 7d"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/slug/summary-fixture",
+          "credential": false
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/perps?window=7d",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "lines": [
+          "Perps summary, 7d",
+          "As of Feb 10 12:02Z",
+          "Recorded since 2027-01-01",
+          "",
+          "Figure            Value          How",
+          "----------------  -------------  -------------------------------------------------------------------------",
+          "Perps P&L         -$228.05       realized + funding - fees + unrealized change",
+          "Realized          -$270.00       closed P&L of the fills in the window",
+          "Unrealized        +$50.00        change over the window",
+          "Funding           $0.00          positive when received",
+          "Fees              $8.05          Hyperliquid fees, Candle's builder fee included",
+          "Volume            $24,930.00     sum of price x size per fill, $4,800.00 on builder dexes",
+          "Fees to volume    0.0400%        fees / main-exchange volume",
+          "Rounds closed     3              open to flat, counted at the close",
+          "Win rate          33.3% (1W 2L)  wins / (wins + losses)",
+          "Largest win       +$77.89        best round above zero",
+          "Largest loss      -$202.32       worst round below zero",
+          "Highest leverage  25x            rounds closed in the window (1 round with leverage not recorded left out)",
+          "Average leverage  17.5x          mean over those rounds (1 round with leverage not recorded left out)",
+          "Liquidations      1              rounds closed by a liquidation",
+          "Max drawdown      $353.46        peak to trough of cumulative perps P&L"
+        ]
+      }
+    },
+    {
+      "id": "summary-slug-cli-json",
+      "scenario": "summary-slug",
+      "window": "7d",
+      "buildAt": "2027-02-10T12:30Z",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent summary-fixture --perps --window 7d --json"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/slug/summary-fixture",
+          "credential": false
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/perps?window=7d",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "relays": "summary-slug-api answer",
+        "sha256": "9c0968917fc8ffd3e28ddf7be5ed75af0bee16753692bebfdf2d66d330551cab"
+      }
+    },
+    {
+      "id": "unpriced-fill-api",
+      "scenario": "unpriced-fill",
+      "window": "24h",
+      "buildAt": "2027-02-10T12:30Z",
+      "surface": "api-source",
+      "says": "The same build with the builder-dex buy stored before fill prices were kept: no notional, so it is left out of the volume, counted in volumeUnpricedFills, and the summary is partial.",
+      "evidence": "pure API source on made-up stored facts, one fill without px; the database, the public gate and the perps jobs are not executed",
+      "outcome": {
+        "answer": {
+          "success": true,
+          "window": "24h",
+          "publishedBuildId": "build_fixture_02",
+          "summary": {
+            "available": true,
+            "window": "24h",
+            "asOfMs": 1802260920000,
+            "coverageFromMs": 1798761600000,
+            "partial": true,
+            "perpsSnapshotId": "ps1_9e3c05e9fd3fd507138ee0d0acae62bf",
+            "netUsd": -25.73,
+            "realizedUsd": -70,
+            "unrealizedUsd": 50,
+            "fundingUsd": 0,
+            "feesUsd": 5.73,
+            "volumeUsd": 14330,
+            "builderDexVolumeUsd": 0,
+            "volumeUnpricedFills": 1,
+            "feesToVolumePct": 0.039986043265875786,
+            "roundsClosed": 2,
+            "wins": 1,
+            "losses": 1,
+            "winRatePct": 50,
+            "largestWinUsd": 77.89,
+            "largestLossUsd": -151.14,
+            "highestLeverage": 25,
+            "averageLeverage": 17.5,
+            "leverageNotRecordedRounds": 0,
+            "liquidations": 1,
+            "maxDrawdownUsd": 151.14
+          },
+          "seq": 76
+        }
+      }
+    },
+    {
+      "id": "unpriced-fill-mcp",
+      "scenario": "unpriced-fill",
+      "window": "24h",
+      "buildAt": "2027-02-10T12:30Z",
+      "surface": "mcp",
+      "args": {
+        "profileId": "prof_0123456789abcdef",
+        "window": "24h"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/perps?window=24h",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "relays": "unpriced-fill-api",
+        "sha256": "bc52ec3710ab7a8a323d8d2a9ad761d92ca2a9af39268ebc9fee9c026889d47f",
+        "isError": false
+      }
+    },
+    {
+      "id": "unpriced-fill-sdk",
+      "scenario": "unpriced-fill",
+      "window": "24h",
+      "buildAt": "2027-02-10T12:30Z",
+      "surface": "sdk",
+      "args": {
+        "profileId": "prof_0123456789abcdef",
+        "window": "24h"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/perps?window=24h",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "relays": "unpriced-fill-api",
+        "part": "answer without success",
+        "sha256": "00e7650656995b5622445923453549a530d5e80520bdc33cdc632ade54d7c2fb",
+        "isError": false
+      }
+    },
+    {
+      "id": "unpriced-fill-cli",
+      "scenario": "unpriced-fill",
+      "window": "24h",
+      "buildAt": "2027-02-10T12:30Z",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent prof_0123456789abcdef --perps --window 24h"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/perps?window=24h",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "lines": [
+          "Perps summary, 24h (partial)",
+          "As of Feb 10 12:02Z",
+          "Recorded since 2027-01-01",
+          "",
+          "Figure            Value                                          How",
+          "----------------  ---------------------------------------------  -----------------------------------------------",
+          "Perps P&L         -$25.73                                        realized + funding - fees + unrealized change",
+          "Realized          -$70.00                                        closed P&L of the fills in the window",
+          "Unrealized        +$50.00                                        change over the window",
+          "Funding           $0.00                                          positive when received",
+          "Fees              $5.73                                          Hyperliquid fees, Candle's builder fee included",
+          "Volume            $14,330.00 (1 fills without a price left out)  sum of price x size per fill",
+          "Fees to volume    0.0400%                                        fees / main-exchange volume",
+          "Rounds closed     2                                              open to flat, counted at the close",
+          "Win rate          50.0% (1W 1L)                                  wins / (wins + losses)",
+          "Largest win       +$77.89                                        best round above zero",
+          "Largest loss      -$151.14                                       worst round below zero",
+          "Highest leverage  25x                                            rounds closed in the window",
+          "Average leverage  17.5x                                          mean over those rounds",
+          "Liquidations      1                                              rounds closed by a liquidation",
+          "Max drawdown      $151.14                                        peak to trough of cumulative perps P&L"
+        ]
+      }
+    },
+    {
+      "id": "unpriced-fill-cli-json",
+      "scenario": "unpriced-fill",
+      "window": "24h",
+      "buildAt": "2027-02-10T12:30Z",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent prof_0123456789abcdef --perps --window 24h --json"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/perps?window=24h",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "relays": "unpriced-fill-api",
+        "sha256": "bc52ec3710ab7a8a323d8d2a9ad761d92ca2a9af39268ebc9fee9c026889d47f"
+      }
+    },
+    {
+      "id": "older-bundle-api",
+      "scenario": "older-bundle",
+      "window": "7d",
+      "buildAt": "2027-02-10T12:30Z",
+      "surface": "api-source",
+      "says": "A bundle published before #4073 has no summary figures in its window: volume, fees to volume, leverage, liquidations and drawdown are null, and the record's own figures stay.",
+      "evidence": "pure perpsSummaryOf on the published bundle with the 7d window's summary figures taken out, as an older build stored it",
+      "outcome": {
+        "answer": {
+          "success": true,
+          "window": "7d",
+          "publishedBuildId": "build_fixture_03",
+          "summary": {
+            "available": true,
+            "window": "7d",
+            "asOfMs": 1802260920000,
+            "coverageFromMs": 1798761600000,
+            "partial": false,
+            "perpsSnapshotId": "ps1_9e3c05e9fd3fd507138ee0d0acae62bf",
+            "netUsd": -228.05,
+            "realizedUsd": -270,
+            "unrealizedUsd": 50,
+            "fundingUsd": 0,
+            "feesUsd": 8.05,
+            "volumeUsd": null,
+            "builderDexVolumeUsd": null,
+            "volumeUnpricedFills": 0,
+            "feesToVolumePct": null,
+            "roundsClosed": 3,
+            "wins": 1,
+            "losses": 2,
+            "winRatePct": 33.33333333333333,
+            "largestWinUsd": 77.89,
+            "largestLossUsd": -202.32,
+            "highestLeverage": null,
+            "averageLeverage": null,
+            "leverageNotRecordedRounds": null,
+            "liquidations": null,
+            "maxDrawdownUsd": null
+          },
+          "seq": 77
+        }
+      }
+    },
+    {
+      "id": "older-bundle-mcp",
+      "scenario": "older-bundle",
+      "window": "7d",
+      "buildAt": "2027-02-10T12:30Z",
+      "surface": "mcp",
+      "args": {
+        "profileId": "prof_0123456789abcdef",
+        "window": "7d"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/perps?window=7d",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "relays": "older-bundle-api",
+        "sha256": "01a4f12f23cab0136f179a9ce40fc905be455e178eb553f652f50c2a83392fb0",
+        "isError": false
+      }
+    },
+    {
+      "id": "older-bundle-sdk",
+      "scenario": "older-bundle",
+      "window": "7d",
+      "buildAt": "2027-02-10T12:30Z",
+      "surface": "sdk",
+      "args": {
+        "profileId": "prof_0123456789abcdef",
+        "window": "7d"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/perps?window=7d",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "relays": "older-bundle-api",
+        "part": "answer without success",
+        "sha256": "f43cb2dda6e4802c89e51306da4ee9a038ae953090f5aa78601025d4788266fd",
+        "isError": false
+      }
+    },
+    {
+      "id": "older-bundle-cli",
+      "scenario": "older-bundle",
+      "window": "7d",
+      "buildAt": "2027-02-10T12:30Z",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent prof_0123456789abcdef --perps --window 7d"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/perps?window=7d",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "lines": [
+          "Perps summary, 7d",
+          "As of Feb 10 12:02Z",
+          "Recorded since 2027-01-01",
+          "",
+          "Figure            Value          How",
+          "----------------  -------------  -----------------------------------------------",
+          "Perps P&L         -$228.05       realized + funding - fees + unrealized change",
+          "Realized          -$270.00       closed P&L of the fills in the window",
+          "Unrealized        +$50.00        change over the window",
+          "Funding           $0.00          positive when received",
+          "Fees              $8.05          Hyperliquid fees, Candle's builder fee included",
+          "Volume            unknown        sum of price x size per fill",
+          "Fees to volume    unknown        fees / main-exchange volume",
+          "Rounds closed     3              open to flat, counted at the close",
+          "Win rate          33.3% (1W 2L)  wins / (wins + losses)",
+          "Largest win       +$77.89        best round above zero",
+          "Largest loss      -$202.32       worst round below zero",
+          "Highest leverage  not recorded   rounds closed in the window",
+          "Average leverage  not recorded   mean over those rounds",
+          "Liquidations      unknown        rounds closed by a liquidation",
+          "Max drawdown      unknown        peak to trough of cumulative perps P&L"
+        ]
+      }
+    },
+    {
+      "id": "older-bundle-cli-json",
+      "scenario": "older-bundle",
+      "window": "7d",
+      "buildAt": "2027-02-10T12:30Z",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent prof_0123456789abcdef --perps --window 7d --json"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/perps?window=7d",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "relays": "older-bundle-api",
+        "sha256": "01a4f12f23cab0136f179a9ce40fc905be455e178eb553f652f50c2a83392fb0"
+      }
+    },
+    {
+      "id": "delayed-api",
+      "scenario": "delayed",
+      "window": "all",
+      "buildAt": "2027-02-10T14:45Z",
+      "surface": "api-source",
+      "says": "Day 40 14:45, certification still at 12:02: 2 h 43 min old, past the 2-hour line, so the figures are served partial.",
+      "evidence": "pure API source, published over the day 40 12:30 build; the database, the public gate and the perps jobs are not executed",
+      "outcome": {
+        "answer": {
+          "success": true,
+          "window": "all",
+          "publishedBuildId": "build_fixture_04",
+          "summary": {
+            "available": true,
+            "window": "all",
+            "asOfMs": 1802260920000,
+            "coverageFromMs": 1798761600000,
+            "partial": true,
+            "perpsSnapshotId": "ps1_9e3c05e9fd3fd507138ee0d0acae62bf",
+            "netUsd": 256.81,
+            "realizedUsd": 230,
+            "unrealizedUsd": 50,
+            "fundingUsd": 2.5,
+            "feesUsd": 25.69,
+            "volumeUsd": 69030,
+            "builderDexVolumeUsd": 4800,
+            "volumeUnpricedFills": 0,
+            "feesToVolumePct": 0.03999688619025378,
+            "roundsClosed": 5,
+            "wins": 3,
+            "losses": 2,
+            "winRatePct": 60,
+            "largestWinUsd": 290.28,
+            "largestLossUsd": -202.32,
+            "highestLeverage": 25,
+            "averageLeverage": 11,
+            "leverageNotRecordedRounds": 1,
+            "liquidations": 1,
+            "maxDrawdownUsd": 388.6
+          },
+          "seq": 78
+        }
+      }
+    },
+    {
+      "id": "delayed-mcp",
+      "scenario": "delayed",
+      "window": "all",
+      "buildAt": "2027-02-10T14:45Z",
+      "surface": "mcp",
+      "args": {
+        "profileId": "prof_0123456789abcdef",
+        "window": "all"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/perps?window=all",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "relays": "delayed-api",
+        "sha256": "0c476b8088f191837069a948b9d010cc68c9817256aeb7c84b21c91b0fd3b305",
+        "isError": false
+      }
+    },
+    {
+      "id": "delayed-sdk",
+      "scenario": "delayed",
+      "window": "all",
+      "buildAt": "2027-02-10T14:45Z",
+      "surface": "sdk",
+      "args": {
+        "profileId": "prof_0123456789abcdef",
+        "window": "all"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/perps?window=all",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "relays": "delayed-api",
+        "part": "answer without success",
+        "sha256": "b7265cd7d0be5e3e37eeb2b9ef1114a785fb01faf94a86194da05db0cba23ecf",
+        "isError": false
+      }
+    },
+    {
+      "id": "delayed-cli",
+      "scenario": "delayed",
+      "window": "all",
+      "buildAt": "2027-02-10T14:45Z",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent prof_0123456789abcdef --perps --window all"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/perps?window=all",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "lines": [
+          "Perps summary, all time (partial)",
+          "As of Feb 10 12:02Z",
+          "Recorded since 2027-01-01",
+          "",
+          "Figure            Value          How",
+          "----------------  -------------  -------------------------------------------------------------------------",
+          "Perps P&L         +$256.81       realized + funding - fees + unrealized change",
+          "Realized          +$230.00       closed P&L of the fills in the window",
+          "Unrealized        +$50.00        open positions now",
+          "Funding           +$2.50         positive when received",
+          "Fees              $25.69         Hyperliquid fees, Candle's builder fee included",
+          "Volume            $69,030.00     sum of price x size per fill, $4,800.00 on builder dexes",
+          "Fees to volume    0.0400%        fees / main-exchange volume",
+          "Rounds closed     5              open to flat, counted at the close",
+          "Win rate          60.0% (3W 2L)  wins / (wins + losses)",
+          "Largest win       +$290.28       best round above zero",
+          "Largest loss      -$202.32       worst round below zero",
+          "Highest leverage  25x            rounds closed in the window (1 round with leverage not recorded left out)",
+          "Average leverage  11x            mean over those rounds (1 round with leverage not recorded left out)",
+          "Liquidations      1              rounds closed by a liquidation",
+          "Max drawdown      $388.60        peak to trough of cumulative perps P&L"
+        ]
+      }
+    },
+    {
+      "id": "delayed-cli-json",
+      "scenario": "delayed",
+      "window": "all",
+      "buildAt": "2027-02-10T14:45Z",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent prof_0123456789abcdef --perps --window all --json"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/perps?window=all",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "relays": "delayed-api",
+        "sha256": "0c476b8088f191837069a948b9d010cc68c9817256aeb7c84b21c91b0fd3b305"
+      }
+    },
+    {
+      "id": "unavailable-api",
+      "scenario": "unavailable",
+      "window": "30d",
+      "buildAt": "2027-02-10T15:20Z",
+      "surface": "api-source",
+      "says": "Day 40 15:20, certification still at 12:02: over 3 hours old, so the perps are unavailable: no figure, never zero, and the time they were last true.",
+      "evidence": "pure API source, published over the day 40 12:30 build; the database, the public gate and the perps jobs are not executed",
+      "outcome": {
+        "answer": {
+          "success": true,
+          "window": "30d",
+          "publishedBuildId": "build_fixture_05",
+          "summary": {
+            "available": false,
+            "window": "30d",
+            "asOfMs": 1802260920000,
+            "partial": true
+          },
+          "seq": 79
+        }
+      }
+    },
+    {
+      "id": "unavailable-mcp",
+      "scenario": "unavailable",
+      "window": "30d",
+      "buildAt": "2027-02-10T15:20Z",
+      "surface": "mcp",
+      "args": {
+        "profileId": "prof_0123456789abcdef",
+        "window": "30d"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/perps?window=30d",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "relays": "unavailable-api",
+        "sha256": "501a08412b00577d453e564633058bedea4b372ed47659e031ea5e3805c22b89",
+        "isError": false
+      }
+    },
+    {
+      "id": "unavailable-sdk",
+      "scenario": "unavailable",
+      "window": "30d",
+      "buildAt": "2027-02-10T15:20Z",
+      "surface": "sdk",
+      "args": {
+        "profileId": "prof_0123456789abcdef",
+        "window": "30d"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/perps?window=30d",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "relays": "unavailable-api",
+        "part": "answer without success",
+        "sha256": "2eb189c70082d15377ce55de26d2c28cfe9d4df2d1985dd76664008e0c769041",
+        "isError": false
+      }
+    },
+    {
+      "id": "unavailable-cli",
+      "scenario": "unavailable",
+      "window": "30d",
+      "buildAt": "2027-02-10T15:20Z",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent prof_0123456789abcdef --perps --window 30d"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/perps?window=30d",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "lines": [
+          "Perps delayed since Feb 10 12:02Z; no summary now."
+        ]
+      }
+    },
+    {
+      "id": "unavailable-cli-json",
+      "scenario": "unavailable",
+      "window": "30d",
+      "buildAt": "2027-02-10T15:20Z",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent prof_0123456789abcdef --perps --window 30d --json"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/perps?window=30d",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "relays": "unavailable-api",
+        "sha256": "501a08412b00577d453e564633058bedea4b372ed47659e031ea5e3805c22b89"
+      }
+    },
+    {
+      "id": "no-perps-api",
+      "scenario": "no-perps",
+      "window": "all",
+      "buildAt": "2027-02-10T12:30Z",
+      "surface": "api-stub",
+      "says": "A public agent with no perps wallet: summary is null.",
+      "evidence": "the route's answer for a profile readActivePerps finds nothing for (readPublicPerpsSummary: perps ? perpsSummaryOf(...) : null), as a stand-in",
+      "outcome": {
+        "answer": {
+          "success": true,
+          "window": "all",
+          "publishedBuildId": "build_fixture_06",
+          "summary": null,
+          "seq": 80
+        }
+      }
+    },
+    {
+      "id": "no-perps-mcp",
+      "scenario": "no-perps",
+      "window": "all",
+      "buildAt": "2027-02-10T12:30Z",
+      "surface": "mcp",
+      "args": {
+        "profileId": "prof_0123456789abcdef",
+        "window": "all"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/perps?window=all",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "relays": "no-perps-api",
+        "sha256": "b1b9f9540fb2e4e7f2ec4401c64169025597d8f46506195cdc34fc8a935145f6",
+        "isError": false
+      }
+    },
+    {
+      "id": "no-perps-sdk",
+      "scenario": "no-perps",
+      "window": "all",
+      "buildAt": "2027-02-10T12:30Z",
+      "surface": "sdk",
+      "args": {
+        "profileId": "prof_0123456789abcdef",
+        "window": "all"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/perps?window=all",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "relays": "no-perps-api",
+        "part": "answer without success",
+        "sha256": "9b79b693f879200f1a51b70b2bffbe44fde4c536f50f3d293319a3ceaadb45ff",
+        "isError": false
+      }
+    },
+    {
+      "id": "no-perps-cli",
+      "scenario": "no-perps",
+      "window": "all",
+      "buildAt": "2027-02-10T12:30Z",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent prof_0123456789abcdef --perps --window all"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/perps?window=all",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "lines": [
+          "No perps history (all time)."
+        ]
+      }
+    },
+    {
+      "id": "no-perps-cli-json",
+      "scenario": "no-perps",
+      "window": "all",
+      "buildAt": "2027-02-10T12:30Z",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent prof_0123456789abcdef --perps --window all --json"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/perps?window=all",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "relays": "no-perps-api",
+        "sha256": "b1b9f9540fb2e4e7f2ec4401c64169025597d8f46506195cdc34fc8a935145f6"
+      }
+    },
+    {
+      "id": "route-fixture-api",
+      "scenario": "route-fixture",
+      "window": "7d",
+      "surface": "api-source",
+      "evidence": "packages/shared/src/agent-perps-summary.fixture.json, the route answer Candle's CLI, MCP, SDK and web tests share (Candle's own fixture agent's 7d answer), read as it is",
+      "says": "Candle's own fixture agent, 7d.",
+      "outcome": {
+        "answer": {
+          "success": true,
+          "window": "7d",
+          "publishedBuildId": "build_fixture",
+          "summary": {
+            "available": true,
+            "window": "7d",
+            "asOfMs": 12139320000,
+            "coverageFromMs": 8640000000,
+            "partial": false,
+            "perpsSnapshotId": "ps1_523f36d6e58a741b2a9178add6f688aa",
+            "netUsd": -203.47,
+            "realizedUsd": -230,
+            "unrealizedUsd": 30,
+            "fundingUsd": 0,
+            "feesUsd": 3.47,
+            "volumeUsd": 9070,
+            "builderDexVolumeUsd": 400,
+            "volumeUnpricedFills": 0,
+            "feesToVolumePct": 0.04002306805074971,
+            "roundsClosed": 3,
+            "wins": 1,
+            "losses": 2,
+            "winRatePct": 33.33333333333333,
+            "largestWinUsd": 19.6,
+            "largestLossUsd": -150.82,
+            "highestLeverage": 20,
+            "averageLeverage": 11.5,
+            "leverageNotRecordedRounds": 1,
+            "liquidations": 1,
+            "maxDrawdownUsd": 252.82
+          },
+          "seq": 42
+        }
+      }
+    },
+    {
+      "id": "route-fixture-mcp",
+      "scenario": "route-fixture",
+      "window": "7d",
+      "surface": "mcp",
+      "args": {
+        "profileId": "prof_0123456789abcdef",
+        "window": "7d"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/perps?window=7d",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "relays": "route-fixture-api",
+        "sha256": "800bfb9016a1d80e1f6a17e94246d9d1e81e678d212a1ee578976e587b7f0fa7",
+        "isError": false
+      }
+    },
+    {
+      "id": "route-fixture-sdk",
+      "scenario": "route-fixture",
+      "window": "7d",
+      "surface": "sdk",
+      "args": {
+        "profileId": "prof_0123456789abcdef",
+        "window": "7d"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/perps?window=7d",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "relays": "route-fixture-api",
+        "part": "answer without success",
+        "sha256": "511fa646a52642d68bbb15a4518f3f214231727945f10e0db8a6fcea0bd4615c",
+        "isError": false
+      }
+    },
+    {
+      "id": "route-fixture-cli",
+      "scenario": "route-fixture",
+      "window": "7d",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent prof_0123456789abcdef --perps --window 7d"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/perps?window=7d",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "lines": [
+          "Perps summary, 7d",
+          "As of May 21 1970 12:02Z",
+          "Recorded since 1970-04-11",
+          "",
+          "Figure            Value          How",
+          "----------------  -------------  -------------------------------------------------------------------------",
+          "Perps P&L         -$203.47       realized + funding - fees + unrealized change",
+          "Realized          -$230.00       closed P&L of the fills in the window",
+          "Unrealized        +$30.00        change over the window",
+          "Funding           $0.00          positive when received",
+          "Fees              $3.47          Hyperliquid fees, Candle's builder fee included",
+          "Volume            $9,070.00      sum of price x size per fill, $400.00 on builder dexes",
+          "Fees to volume    0.0400%        fees / main-exchange volume",
+          "Rounds closed     3              open to flat, counted at the close",
+          "Win rate          33.3% (1W 2L)  wins / (wins + losses)",
+          "Largest win       +$19.60        best round above zero",
+          "Largest loss      -$150.82       worst round below zero",
+          "Highest leverage  20x            rounds closed in the window (1 round with leverage not recorded left out)",
+          "Average leverage  11.5x          mean over those rounds (1 round with leverage not recorded left out)",
+          "Liquidations      1              rounds closed by a liquidation",
+          "Max drawdown      $252.82        peak to trough of cumulative perps P&L"
+        ]
+      }
+    },
+    {
+      "id": "route-fixture-cli-json",
+      "scenario": "route-fixture",
+      "window": "7d",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent prof_0123456789abcdef --perps --window 7d --json"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/perps?window=7d",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "relays": "route-fixture-api",
+        "sha256": "800bfb9016a1d80e1f6a17e94246d9d1e81e678d212a1ee578976e587b7f0fa7"
+      }
+    },
+    {
+      "id": "refused-not-published-api",
+      "scenario": "refused-not-published",
+      "window": "7d",
+      "surface": "api-stub",
+      "evidence": "a response stand-in carrying the route's own status, code and message, which the recorder checks are in the route's source",
+      "says": "A private, hidden, revoked or unknown agent: the same 404 as every record read.",
+      "outcome": {
+        "status": 404,
+        "body": {
+          "success": false,
+          "error": {
+            "code": "RECORD_NOT_FOUND",
+            "message": "No published record for this agent"
+          }
+        }
+      }
+    },
+    {
+      "id": "refused-not-published-mcp",
+      "scenario": "refused-not-published",
+      "window": "7d",
+      "surface": "mcp",
+      "args": {
+        "profileId": "prof_0123456789abcdef",
+        "window": "7d"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/perps?window=7d",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "body": {
+          "success": false,
+          "error": {
+            "code": "RECORD_NOT_FOUND",
+            "message": "No published record for this agent"
+          }
+        },
+        "isError": true
+      }
+    },
+    {
+      "id": "refused-not-published-sdk",
+      "scenario": "refused-not-published",
+      "window": "7d",
+      "surface": "sdk",
+      "args": {
+        "profileId": "prof_0123456789abcdef",
+        "window": "7d"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/perps?window=7d",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "isError": true,
+        "error": {
+          "status": 404,
+          "code": "RECORD_NOT_FOUND",
+          "message": "No published record for this agent"
+        }
+      }
+    },
+    {
+      "id": "refused-not-published-cli",
+      "scenario": "refused-not-published",
+      "window": "7d",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent prof_0123456789abcdef --perps --window 7d"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/perps?window=7d",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 1,
+        "stdout": [],
+        "stderr": [
+          "No published record for this agent"
+        ]
+      }
+    },
+    {
+      "id": "refused-not-published-cli-json",
+      "scenario": "refused-not-published",
+      "window": "7d",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent prof_0123456789abcdef --perps --window 7d --json"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/perps?window=7d",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 1,
+        "body": {
+          "ok": false,
+          "code": "RECORD_NOT_FOUND",
+          "status": 404,
+          "message": "No published record for this agent"
+        }
+      }
+    },
+    {
+      "id": "refused-not-served-api",
+      "scenario": "refused-not-served",
+      "window": "all",
+      "surface": "api-stub",
+      "evidence": "a response stand-in carrying the route's own status, code and message, which the recorder checks are in the route's source",
+      "says": "A deployment that does not serve the board from Postgres yet: 503 for every profile, not retryable.",
+      "outcome": {
+        "status": 503,
+        "body": {
+          "success": false,
+          "error": {
+            "code": "perps_summary_unavailable",
+            "message": "The perps summary is not served by this API yet",
+            "retryable": false
+          }
+        }
+      }
+    },
+    {
+      "id": "refused-not-served-mcp",
+      "scenario": "refused-not-served",
+      "window": "all",
+      "surface": "mcp",
+      "args": {
+        "profileId": "prof_0123456789abcdef",
+        "window": "all"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/perps?window=all",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "body": {
+          "success": false,
+          "error": {
+            "code": "perps_summary_unavailable",
+            "message": "The perps summary is not served by this API yet",
+            "retryable": false
+          }
+        },
+        "isError": true
+      }
+    },
+    {
+      "id": "refused-not-served-sdk",
+      "scenario": "refused-not-served",
+      "window": "all",
+      "surface": "sdk",
+      "args": {
+        "profileId": "prof_0123456789abcdef",
+        "window": "all"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/perps?window=all",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "isError": true,
+        "error": {
+          "status": 503,
+          "code": "perps_summary_unavailable",
+          "message": "The perps summary is not served by this API yet"
+        }
+      }
+    },
+    {
+      "id": "refused-not-served-cli",
+      "scenario": "refused-not-served",
+      "window": "all",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent prof_0123456789abcdef --perps --window all"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/perps?window=all",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 1,
+        "stdout": [],
+        "stderr": [
+          "The perps summary is not served by this API yet"
+        ]
+      }
+    },
+    {
+      "id": "refused-not-served-cli-json",
+      "scenario": "refused-not-served",
+      "window": "all",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent prof_0123456789abcdef --perps --window all --json"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/perps?window=all",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 1,
+        "body": {
+          "ok": false,
+          "retryable": false,
+          "code": "perps_summary_unavailable",
+          "status": 503,
+          "message": "The perps summary is not served by this API yet"
+        }
+      }
+    },
+    {
+      "id": "refused-window-api",
+      "scenario": "refused-window",
+      "surface": "api-stub",
+      "says": "The route refuses a window it does not know, 400 VALIDATION_FAILED on the field window. No agent surface can send one: each refuses it first, below.",
+      "evidence": "the route's own words, checked in its source",
+      "outcome": {
+        "status": 400,
+        "source": "invalid(c, \"window\", \"window must be 24h, 7d, 30d or all\")"
+      }
+    },
+    {
+      "id": "usage-cli-window-unknown",
+      "scenario": "usage",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent prof_0123456789abcdef --perps --window 90d"
+      },
+      "requests": [],
+      "says": "A window the command does not take: usage, and nothing is read.",
+      "outcome": {
+        "exitCode": 2,
+        "stdout": [],
+        "stderr": [
+          "--window must be all, 24h, 7d or 30d",
+          "Usage: candle agent <profile-id|slug> --perps [--window all|24h|7d|30d] [--json]"
+        ]
+      }
+    },
+    {
+      "id": "usage-cli-no-perps-flag",
+      "scenario": "usage",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent prof_0123456789abcdef"
+      },
+      "requests": [],
+      "says": "The bare word with a profile id and no --perps: usage, and nothing is read.",
+      "outcome": {
+        "exitCode": 2,
+        "stdout": [],
+        "stderr": [
+          "Usage: candle agent <profile-id|slug> --perps [--window all|24h|7d|30d] [--json]"
+        ]
+      }
+    },
+    {
+      "id": "usage-cli-not-an-id",
+      "scenario": "usage",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent Not An Agent! --perps"
+      },
+      "requests": [],
+      "says": "A word that is neither a profile id nor a slug: usage, and nothing is read.",
+      "outcome": {
+        "exitCode": 2,
+        "stdout": [],
+        "stderr": [
+          "Usage: candle agent <profile-id|slug> --perps [--window all|24h|7d|30d] [--json]"
+        ]
+      }
+    },
+    {
+      "id": "refused-cli-slug-unknown",
+      "scenario": "usage",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent nobody-here --perps"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/slug/nobody-here",
+          "credential": false
+        }
+      ],
+      "says": "A slug no published agent has: the slug read finds nothing, the CLI says so and reads no summary.",
+      "outcome": {
+        "exitCode": 1,
+        "stdout": [],
+        "stderr": [
+          "No published agent has the slug nobody-here."
+        ]
+      }
+    },
+    {
+      "id": "usage-mcp-window-unknown",
+      "scenario": "usage",
+      "surface": "mcp",
+      "args": {
+        "profileId": "prof_0123456789abcdef",
+        "window": "90d"
+      },
+      "requests": [],
+      "says": "A window the tool does not take is refused by its own schema, and nothing is read.",
+      "outcome": {
+        "isError": true
+      }
+    },
+    {
+      "id": "chart-split-24h",
+      "scenario": "chart-split",
+      "window": "24h",
+      "surface": "api-source",
+      "says": "The 24h chart: each hour adds the perps realized net through it and the unrealized its certified hour saw, split the same way; the current point's perps part is the all window's net.",
+      "evidence": "pure composeChartAnswer over a stand-in spot chart and the published bundle above; no agent surface reads the chart at this commit",
+      "outcome": {
+        "spotChart": {
+          "range": "24h",
+          "points": [
+            {
+              "ts": 1802174400000,
+              "realizedNetUsd": 10,
+              "unrealizedUsd": 2,
+              "totalPnlUsd": 12,
+              "partial": false
+            },
+            {
+              "ts": 1802232000000,
+              "realizedNetUsd": 12,
+              "unrealizedUsd": 0,
+              "totalPnlUsd": 12,
+              "partial": false
+            },
+            {
+              "ts": 1802246400000,
+              "realizedNetUsd": 15,
+              "unrealizedUsd": 1,
+              "totalPnlUsd": 16,
+              "partial": false
+            },
+            {
+              "ts": 1802260800000,
+              "realizedNetUsd": 18,
+              "unrealizedUsd": 0,
+              "totalPnlUsd": 18,
+              "partial": false
+            },
+            {
+              "ts": 1802262600000,
+              "realizedNetUsd": 20,
+              "unrealizedUsd": 0,
+              "totalPnlUsd": 276.81,
+              "partial": false
+            }
+          ]
+        },
+        "composed": {
+          "range": "24h",
+          "points": [
+            {
+              "ts": 1802174400000,
+              "realizedNetUsd": 292.53999999999996,
+              "unrealizedUsd": 2,
+              "totalPnlUsd": 294.53999999999996,
+              "partial": false,
+              "spotPnlUsd": 12,
+              "perpsPnlUsd": 282.53999999999996,
+              "at": "2027-02-09T12:00Z"
+            },
+            {
+              "ts": 1802232000000,
+              "realizedNetUsd": 143.4,
+              "unrealizedUsd": 0,
+              "totalPnlUsd": 143.4,
+              "partial": false,
+              "spotPnlUsd": 12,
+              "perpsPnlUsd": 131.4,
+              "at": "2027-02-10T04:00Z"
+            },
+            {
+              "ts": 1802246400000,
+              "realizedNetUsd": 224.29,
+              "unrealizedUsd": 1,
+              "totalPnlUsd": 225.29,
+              "partial": false,
+              "spotPnlUsd": 16,
+              "perpsPnlUsd": 209.29,
+              "at": "2027-02-10T08:00Z"
+            },
+            {
+              "ts": 1802260800000,
+              "realizedNetUsd": 224.81,
+              "unrealizedUsd": 50,
+              "totalPnlUsd": 274.81,
+              "partial": false,
+              "spotPnlUsd": 18,
+              "perpsPnlUsd": 256.81,
+              "at": "2027-02-10T12:00Z"
+            },
+            {
+              "ts": 1802262600000,
+              "realizedNetUsd": 20,
+              "unrealizedUsd": 0,
+              "totalPnlUsd": 276.81,
+              "partial": false,
+              "spotPnlUsd": 20,
+              "perpsPnlUsd": 256.81,
+              "at": "2027-02-10T12:30Z"
+            }
+          ],
+          "perpsSnapshotId": "ps1_9e3c05e9fd3fd507138ee0d0acae62bf",
+          "perpsAsOfMs": 1802260920000,
+          "perpsPartial": false
+        }
+      }
+    },
+    {
+      "id": "chart-split-all",
+      "scenario": "chart-split",
+      "window": "all",
+      "surface": "api-source",
+      "says": "The all-range chart: each day adds the published perps point for that day (0 on a day before perps were published), and every point splits into spotPnlUsd and perpsPnlUsd, which sum to totalPnlUsd.",
+      "evidence": "pure composeChartAnswer over a stand-in spot chart and the published bundle above; no agent surface reads the chart at this commit",
+      "outcome": {
+        "spotChart": {
+          "range": "all",
+          "points": [
+            {
+              "ts": 1798934400000,
+              "realizedNetUsd": 5,
+              "unrealizedUsd": 0,
+              "totalPnlUsd": 5,
+              "partial": false
+            },
+            {
+              "ts": 1799107200000,
+              "realizedNetUsd": 8,
+              "unrealizedUsd": 0,
+              "totalPnlUsd": 8,
+              "partial": false
+            },
+            {
+              "ts": 1799452800000,
+              "realizedNetUsd": 9,
+              "unrealizedUsd": 1,
+              "totalPnlUsd": 10,
+              "partial": false
+            },
+            {
+              "ts": 1802262600000,
+              "realizedNetUsd": 20,
+              "unrealizedUsd": 0,
+              "totalPnlUsd": 276.81,
+              "partial": false
+            }
+          ]
+        },
+        "composed": {
+          "range": "all",
+          "points": [
+            {
+              "ts": 1798934400000,
+              "realizedNetUsd": 5,
+              "unrealizedUsd": 0,
+              "totalPnlUsd": 5,
+              "partial": false,
+              "spotPnlUsd": 5,
+              "perpsPnlUsd": 0,
+              "at": "2027-01-03T00:00Z"
+            },
+            {
+              "ts": 1799107200000,
+              "realizedNetUsd": 298.28,
+              "unrealizedUsd": 0,
+              "totalPnlUsd": 298.28,
+              "partial": false,
+              "spotPnlUsd": 8,
+              "perpsPnlUsd": 290.28,
+              "at": "2027-01-05T00:00Z"
+            },
+            {
+              "ts": 1799452800000,
+              "realizedNetUsd": 529,
+              "unrealizedUsd": 1,
+              "totalPnlUsd": 530,
+              "partial": false,
+              "spotPnlUsd": 10,
+              "perpsPnlUsd": 520,
+              "at": "2027-01-09T00:00Z"
+            },
+            {
+              "ts": 1802262600000,
+              "realizedNetUsd": 20,
+              "unrealizedUsd": 0,
+              "totalPnlUsd": 276.81,
+              "partial": false,
+              "spotPnlUsd": 20,
+              "perpsPnlUsd": 256.81,
+              "at": "2027-02-10T12:30Z"
+            }
+          ],
+          "perpsCountedFromMs": 1799107200000,
+          "perpsSnapshotId": "ps1_9e3c05e9fd3fd507138ee0d0acae62bf",
+          "perpsAsOfMs": 1802260920000,
+          "perpsPartial": false
+        }
+      }
+    },
+    {
+      "id": "chart-split-spot-only",
+      "scenario": "chart-split",
+      "window": "7d",
+      "surface": "api-source",
+      "says": "A spot-only agent's chart is returned as it was: no split fields.",
+      "evidence": "pure composeChartAnswer with no perps bundle",
+      "outcome": {
+        "spotChart": {
+          "range": "7d",
+          "points": [
+            {
+              "ts": 1801785600000,
+              "realizedNetUsd": 1,
+              "unrealizedUsd": 0,
+              "totalPnlUsd": 1,
+              "partial": false
+            }
+          ]
+        },
+        "composed": "the same object, untouched"
+      }
+    },
+    {
+      "id": "chart-agent-surfaces",
+      "scenario": "chart-split",
+      "surface": "source-text",
+      "says": "No agent surface reads the chart at this commit, so the split series is the web's only: the CLI, the local and hosted MCP servers and the SDK carry no chart read.",
+      "evidence": "every non-test .ts file under packages/cli/src, packages/mcp/src, packages/sdk/src and apps/api/src/mcp/hosted.ts, searched for a /records/.../chart path",
+      "outcome": {
+        "chartReaders": []
+      }
+    },
+    {
+      "id": "local-tool",
+      "scenario": "tools",
+      "surface": "mcp",
+      "says": "The local server's summary tool: keyless, read-only, window optional.",
+      "outcome": {
+        "name": "candle_get_agent_perps_summary",
+        "title": "Get an agent's perps summary",
+        "description": "One published agent's Hyperliquid perps summary for a window (all, 24h, 7d or 30d; default all) (GET /api/v1/agent/records/{profileId}/perps). No key needed. Reads only. summary: netUsd (realized + funding - fees + unrealized change), realizedUsd, unrealizedUsd, fundingUsd (positive when received), feesUsd (Hyperliquid fees, Candle's builder fee included), volumeUsd (sum of px x sz of the agent's fills, builder-dex fills included; builderDexVolumeUsd is their part), feesToVolumePct (fees over main-exchange volume), roundsClosed, wins, losses, winRatePct, largestWinUsd, largestLossUsd, highestLeverage and averageLeverage (rounds with leverage not recorded are left out and counted in leverageNotRecordedRounds), liquidations and maxDrawdownUsd (peak to trough of the cumulative perps P&L, dollars). null means not known, never zero. summary is null for an agent with no perps history; available false means the perps are delayed (asOfMs). asOfMs is when the figures were true. The same figures as the agent page. An agent that is not published answers RECORD_NOT_FOUND. No wallet address or balance. A measured record, not a forecast.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "profileId": {
+              "type": "string",
+              "description": "The agent's stable public id: prof_ and 16 lowercase hex"
+            },
+            "window": {
+              "type": "string",
+              "enum": [
+                "all",
+                "24h",
+                "7d",
+                "30d"
+              ],
+              "description": "The window; omit for all time"
+            }
+          },
+          "required": [
+            "profileId"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "annotations": null
+      }
+    },
+    {
+      "id": "hosted-tools-list",
+      "scenario": "tools",
+      "surface": "mcp-hosted",
+      "says": "The hosted server's public tools, listed with no sign-in: the summary is not one of them at this commit (local only, like the perp round and market reads).",
+      "outcome": {
+        "tools": [
+          "candle_get_market",
+          "candle_token_forensics",
+          "candle_token_card",
+          "candle_get_price_history",
+          "candle_token_events",
+          "candle_get_feed",
+          "candle_get_agent_profile",
+          "candle_list_agent_posts",
+          "candle_get_agent_record",
+          "candle_get_agent_positions",
+          "candle_list_agents",
+          "candle_get_plans",
+          "candle_resolve_token"
+        ]
+      }
+    },
+    {
+      "id": "docs-summary-section",
+      "scenario": "docs",
+      "surface": "docs",
+      "args": {
+        "files": [
+          "docs/agent-trading.md",
+          "apps/docs/src/content/docs/developers/agent-trading.md",
+          "apps/frontend/public/docs/agent-trading.md"
+        ]
+      },
+      "says": "The public page's section: the read, every formula, the times, the chart split and the clients.",
+      "outcome": {
+        "lines": [
+          "### Public agent perps summary (`GET /api/v1/agent/records/{profileId}/perps`, BE-3775)",
+          "Public and keyless. One published agent's Hyperliquid perps summary for a window, `window=all` (default), `24h`, `7d` or `30d`; anything else is 400 `VALIDATION_FAILED` with `error.field` `window`. The figures come from the same published board build as the record, chart and positions (`publishedBuildId`, `perpsSnapshotId`), behind the same public gate: a private, unpublished, hidden or turned-off agent and a malformed id all get the same 404 `RECORD_NOT_FOUND`. Returns `{ success: true, window, publishedBuildId, summary, seq }`. `summary` is `null` for a public agent with no perps history (no summary row on its page); `{ available: false, asOfMs, partial: true }` while its perps are delayed (no figures, never zero). Otherwise:",
+          "| Field | Formula |",
+          "| --- | --- |",
+          "| `netUsd` | `realizedUsd + fundingUsd - feesUsd + unrealizedUsd`, the record's `perpsNetUsd` for the window |",
+          "| `realizedUsd` | closed P&L of the agent's fills in the window (fills after the window's start observation, through its end observation) |",
+          "| `unrealizedUsd` | unrealized P&L at the end observation, less (for 24h, 7d and 30d) the unrealized at the window's start |",
+          "| `fundingUsd` | funding payments in the window, positive when received |",
+          "| `feesUsd` | Hyperliquid's fees on those fills, Candle's builder fee included; a rebate is negative |",
+          "| `volumeUsd` | the sum of `px x sz` (USDC notional) over the agent's fills in the same interval, on every perp dex: builder-dex (`dex:COIN`) fills included, `builderDexVolumeUsd` is their part. A fill with no stored price is left out and counted in `volumeUnpricedFills` (then `partial` is true) |",
+          "| `feesToVolumePct` | `feesUsd / (volumeUsd - builderDexVolumeUsd) x 100`: builder-dex fees are charged in each dex's own token and are not in the record's fees yet, so the ratio is main exchange over main exchange |",
+          "| `roundsClosed`, `wins`, `losses` | rounds (open to flat) closed in the window that count: complete, and the agent's at the close. A round's P&L is closed P&L - fees + funding while it was open; above zero is a win, below a loss |",
+          "| `winRatePct` | `wins / (wins + losses) x 100`; a break-even round is neither; null with no decided round |",
+          "| `largestWinUsd`, `largestLossUsd` | the best round above zero and the worst round below zero; null when there is none |",
+          "| `highestLeverage`, `averageLeverage` | over the rounds closed in the window: each round's leverage is the last Candle leverage order on that coin before it opened, else the highest leverage an hourly snapshot saw during it. A round with neither is \"leverage not recorded\", left out of both figures and counted in `leverageNotRecordedRounds` |",
+          "| `liquidations` | rounds closed in the window by a liquidation of the agent's own wallet |",
+          "| `maxDrawdownUsd` | peak to trough, in dollars, of the agent's cumulative perps P&L series (realized net plus unrealized): hourly points inside 30 days; `all` adds the daily points before them and starts at the first daily point (the chart's \"perps counted from\" date). Positive; 0 when it never fell; no capital base |",
+          "`asOfMs` is when the figures were true (the oldest wallet's observation, as the record's `perpsAsOfMs`; with `perpsProvisional: true`, the provisional read and `perpsCertifiedAsOfMs` the hourly certified cutoff under it). `coverageFromMs` is when Candle began recording the agent's wallet: all-time figures count from there. A bundle published before these figures existed answers them `null` (unknown, never zero) until the next board build. No wallet address or account value. A deployment that does not serve the agent board from Postgres yet answers 503 `perps_summary_unavailable` (`retryable: false`) for every profile.",
+          "The chart read (`/records/{profileId}/chart`) also splits every point while the agent's perps are available: `spotPnlUsd` (the point before perps were added) and `perpsPnlUsd` (what perps added; 0 on a day before perps were published), so `spotPnlUsd + perpsPnlUsd = totalPnlUsd` at every point. The combined `totalPnlUsd` line is unchanged; a spot-only agent's chart carries neither field.",
+          "Clients: SDK `getAgentPerpsSummary(profileId, { window })`; CLI `candle agent <profile-id|slug> --perps [--window all|24h|7d|30d] [--json]`; MCP `candle_get_agent_perps_summary` (keyless, local server)."
+        ]
+      }
+    }
+  ]
+}

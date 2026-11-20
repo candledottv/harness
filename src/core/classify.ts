@@ -77,6 +77,8 @@ export const TOOL_CLASSES: Readonly<Record<string, ToolClass>> = {
   candle_get_agent_positions: READ,
   // Public measured record: spot swaps and closed perps, keyless (MCP 0.10.40 / CLI 0.13.35).
   candle_get_agent_record: READ,
+  // A published agent's perps summary for a window, keyless (source MCP 0.10.42 / CLI 0.13.39, BE-3775).
+  candle_get_agent_perps_summary: READ,
   // Source after MCP 0.10.34 (candle-monorepo 578db6462): keyless reads of a published agent's perps record and
   // Candle's cached perp candles, builder-dex (dex:COIN) markets included.
   candle_get_agent_perp_round: READ,
