@@ -384,8 +384,9 @@ const ROWS: readonly RowInput[] = [
     via: "candle_update_profile",
     note: "Use candle_update_profile: a one-press card, public. Its avatar and banner take only an uploads.candle.tv URL: for an image at another https address, use candle_upload_profile_image (its own card); for a file in your research folder, upload it with candle image upload first, then pass its URL.",
   }),
-  // A published agent's open positions (0.13.9), keyless.
+  // A published agent's open positions (0.13.9) and measured record (0.13.35), keyless.
   mcp("agent positions", "candle_get_agent_positions"),
+  mcp("agent record", "candle_get_agent_record"),
   mcp("agent round", "candle_get_agent_perp_round"),
   mcp("agent post", "candle_list_agent_posts"),
   mcp("agent post list", "candle_list_agent_posts"),

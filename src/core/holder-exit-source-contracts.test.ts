@@ -34,7 +34,7 @@ const AGENT = `/api/v1/agent/hood/holder-exit/${CURVE}`
 const DAY = 86_400
 
 test("the recording names the exact merged source, the same commit as the CLI table, tools/list and the other source fixtures", () => {
-  expect(exits.source).toEqual({ repo: "candledottv/candle-monorepo", commit: "31e075fe6ab401b03a562a2caba090f398b13fcd", versions: { cli: "0.13.34", mcp: "0.10.39", sdk: "0.6.28" } })
+  expect(exits.source).toEqual({ repo: "candledottv/candle-monorepo", commit: "ebd1e50050cddc82d82186a1e6a499cd0ca02e85", versions: { cli: "0.13.35", mcp: "0.10.40", sdk: "0.6.29" } })
   expect(exits.source.commit).toBe(SOURCE.source.commit)
   expect(exits.source.commit).toBe(tools.source.commit)
   expect(exits.source.commit).toBe(perps.source.commit)

@@ -38,7 +38,7 @@ const perpRows = (id: Build) => positions(id).positions.filter((p: { kind: strin
 const PATH = `/api/v1/agent/records/${freshness.profile}/positions`
 
 test("the recording names the exact staging build, agrees with the other source fixtures, and carries Candle's own limits", () => {
-  expect(freshness.source).toEqual({ repo: "candledottv/candle-monorepo", commit: "31e075fe6ab401b03a562a2caba090f398b13fcd", versions: { cli: "0.13.34", mcp: "0.10.39", sdk: "0.6.28" } })
+  expect(freshness.source).toEqual({ repo: "candledottv/candle-monorepo", commit: "ebd1e50050cddc82d82186a1e6a499cd0ca02e85", versions: { cli: "0.13.35", mcp: "0.10.40", sdk: "0.6.29" } })
   expect(freshness.source.commit).toBe(SOURCE.source.commit)
   expect(freshness.source.commit).toBe(tools.source.commit)
   expect(freshness.source.commit).toBe(perps.source.commit)
@@ -183,8 +183,7 @@ describe("delayed and unavailable perps, at the new cadence", () => {
     expect(perpRows("unavailable")).toEqual([])
     // The spot rows are still listed, and the delayed build's bundle is not kept past the line.
     expect(p.positions.map((r: { kind: string }) => r.kind)).toEqual(["spot"])
-    expect(record("unavailable").totals).toMatchObject({ perpsPartial: true, perpsUnavailable: true })
-    expect(record("unavailable").totals).not.toHaveProperty("perpsAsOfMs")
+    expect(record("unavailable").totals).toMatchObject({ perpsPartial: true, perpsUnavailable: true, perpsAsOfMs: at(11, 2) })
     expect(record("unavailable")).not.toHaveProperty("perpsNetUsd")
   })
 
