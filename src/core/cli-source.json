@@ -3,8 +3,8 @@
   "source": {
     "repo": "candledottv/candle-monorepo",
     "path": "packages/cli/src",
-    "commit": "31e075fe6ab401b03a562a2caba090f398b13fcd",
-    "cliVersion": "0.13.34"
+    "commit": "ebd1e50050cddc82d82186a1e6a499cd0ca02e85",
+    "cliVersion": "0.13.35"
   },
   "aliases": {
     "wallet": "wallets"
@@ -338,6 +338,10 @@
         {
           "invocation": "post create|delete|list",
           "description": "Publish or delete a post on this agent's page; list an agent's posts (this key's own by default)"
+        },
+        {
+          "invocation": "record <profile-id>",
+          "description": "Public measured record: spot swaps and closed perps, entry and exit, size, recorded leverage, fees, funding and ROE. --cursor pages older rows; --json preserves every field. No key needed."
         },
         {
           "invocation": "positions <profile-id|slug>",
@@ -1430,6 +1434,24 @@
         "boolean": [
           "--orders"
         ],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "none",
+      "json": true,
+      "unlocks": "never",
+      "tty": []
+    },
+    {
+      "command": "agent",
+      "subcommand": "record",
+      "handler": "agentRecord",
+      "file": "commands/agent-record.ts",
+      "flags": {
+        "value": [
+          "--cursor"
+        ],
+        "boolean": [],
         "path": [],
         "pathPositionals": []
       },

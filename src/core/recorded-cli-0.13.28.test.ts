@@ -13,7 +13,7 @@ import { argumentDrift, CARD_TOOL_ARGS, classificationDrift, TOOL_CLASSES, uncla
 import { canonicalJson } from "../shared/canonical-json"
 
 /** The keyless perps reads the source lists after the released CLI 0.13.28 (MCP 0.10.33), the own-balance transfer tool and the perps wallet activity read. */
-const NEWER_THAN_RELEASE = ["candle_get_agent_open_orders", "candle_get_agent_perp_round", "candle_get_perp_candles", "candle_perps_transfer", "candle_perps_activity", "candle_get_perp_market", "candle_holder_exit", "candle_claim_holder_exit"] as const
+const NEWER_THAN_RELEASE = ["candle_get_agent_open_orders", "candle_get_agent_perp_round", "candle_get_agent_record", "candle_get_perp_candles", "candle_perps_transfer", "candle_perps_activity", "candle_get_perp_market", "candle_holder_exit", "candle_claim_holder_exit"] as const
 
 test("the released Read-key recording pins the CLI and MCP versions separately", () => {
   expect(released.cliVersion).toBe("0.13.28")
@@ -49,7 +49,7 @@ test("only the four conditional profile tools remain source-only, with no classi
   for (const tool of sourceOnly) expect(tool).toMatchObject({ listedAfterKeyCheck: true })
   const reconciled = [...released.recording.tools, ...sourceOnly]
   // The table also holds the three perp-page reads that came after 0.10.33, the transfer tool, the perps wallet activity read, the perp market read and the two holder-exit tools; the released CLI has none.
-  const perpPages = ["candle_get_agent_perp_round", "candle_get_agent_open_orders", "candle_get_perp_candles", "candle_perps_transfer", "candle_perps_activity", "candle_get_perp_market", "candle_holder_exit", "candle_claim_holder_exit"]
+  const perpPages = ["candle_get_agent_perp_round", "candle_get_agent_open_orders", "candle_get_agent_record", "candle_get_perp_candles", "candle_perps_transfer", "candle_perps_activity", "candle_get_perp_market", "candle_holder_exit", "candle_claim_holder_exit"]
   const releasedTable = Object.fromEntries(Object.entries(TOOL_CLASSES).filter(([tool]) => !perpPages.includes(tool)))
   expect(classificationDrift(reconciled.map((t) => t.name), releasedTable)).toEqual([])
   // The table already lists `hide` for the CLI release to come (MCP 0.10.34); the released 0.10.33 has none.
@@ -58,7 +58,7 @@ test("only the four conditional profile tools remain source-only, with no classi
 })
 
 test("the current source differs from the released 0.10.33 by per-order hide, builder-dex perps, seven new reads and the transfer tool", () => {
-  expect(current.serverInfo).toEqual({ name: "candle-mcp", version: "0.10.39" })
+  expect(current.serverInfo).toEqual({ name: "candle-mcp", version: "0.10.40" })
   expect(current.tools.map((t) => t.name).filter((n) => !source.tools.some((t) => t.name === n)).sort()).toEqual([...NEWER_THAN_RELEASE].sort())
   expect(current.tools).toHaveLength(source.tools.length + NEWER_THAN_RELEASE.length)
   // The atomic launch dry run is a read and takes hide too, to check the echo before a hidden launch.

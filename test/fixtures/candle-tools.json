@@ -1,8 +1,8 @@
 {
-  "about": "Source tools/list from candledottv/candle-monorepo at 31e075fe6ab401b03a562a2caba090f398b13fcd (CLI 0.13.34), via the real MCP server and an in-memory transport. No external requests or tool calls. Profile discovery used a local GET-only eligibility stub; the four listedAfterKeyCheck tools remain conditional. Scrubbed with scripts/scrub-recordings.ts toolFixture. This is a source contract recording, not evidence of a published CLI release.",
+  "about": "Source tools/list from candledottv/candle-monorepo at ebd1e50050cddc82d82186a1e6a499cd0ca02e85 (CLI 0.13.35), via the real MCP server and an in-memory transport. No external requests or tool calls. Profile discovery used a local GET-only eligibility stub; the four listedAfterKeyCheck tools remain conditional. Scrubbed with scripts/scrub-recordings.ts toolFixture. This is a source contract recording, not evidence of a published CLI release.",
   "serverInfo": {
     "name": "candle-mcp",
-    "version": "0.10.39"
+    "version": "0.10.40"
   },
   "tools": [
     {
@@ -1641,6 +1641,30 @@
           "cursor": {
             "type": "string",
             "description": "The previous page's cursor, verbatim"
+          }
+        },
+        "required": [
+          "profileId"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "candle_get_agent_record",
+      "title": "Get an agent's measured record",
+      "description": "Public trading record, spot swaps and certified closed Hyperliquid rounds interleaved newest first. No key needed. Round fields: dex:COIN, side, recorded leverage (null when unknown), largest size, entry and exit averages, net P&L, funding (positive earned), fees, duration, liquidation and closing fill hash. returnPct is net P&L / initial margin at the largest size, times 100. perpsAsOfMs stamps the certified figures; perpsCoverageFromMs is the coverage start. A missing field is unknown, never zero. Pass rowsCursor as cursor to page; restart if the cursor expires. Private and hidden agents answer RECORD_NOT_FOUND. Measured record, not a forecast.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "profileId": {
+            "type": "string"
+          },
+          "cursor": {
+            "type": "string"
           }
         },
         "required": [
@@ -4803,8 +4827,8 @@
   ],
   "source": {
     "repo": "candledottv/candle-monorepo",
-    "commit": "31e075fe6ab401b03a562a2caba090f398b13fcd",
-    "cliVersion": "0.13.34",
+    "commit": "ebd1e50050cddc82d82186a1e6a499cd0ca02e85",
+    "cliVersion": "0.13.35",
     "method": "in-memory tools/list; local eligibility stub; no tool calls"
   }
 }
