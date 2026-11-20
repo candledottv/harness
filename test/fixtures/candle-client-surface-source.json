@@ -1,0 +1,1531 @@
+{
+  "about": "Offline client-surface and swap-landing contracts (BE-3919): the X-Candle-Client label the CLI, SDK, local MCP, hosted MCP and web put on their Candle API requests, how the API reads it, and the per-swap row (send time, landing slot, winning path, wallet type, client) the API keeps for each Solana swap it broadcasts. Recorded by running Candle's own source against stand-ins from the published release commit (CLI 0.13.35, MCP 0.10.40, SDK 0.6.29); every fetch is intercepted.",
+  "source": {
+    "repo": "candledottv/candle-monorepo",
+    "commit": "ebd1e50050cddc82d82186a1e6a499cd0ca02e85",
+    "versions": {
+      "cli": "0.13.35",
+      "mcp": "0.10.40",
+      "sdk": "0.6.29"
+    },
+    "files": [
+      "packages/cli/src/client.ts",
+      "packages/sdk/src/client-surface.ts",
+      "packages/mcp/src/client.ts",
+      "apps/api/src/mcp/hosted.ts",
+      "apps/frontend/src/lib/client-surface.ts",
+      "apps/api/src/lib/client-surface.ts",
+      "apps/api/src/ledger/trading/swap-landings.ts",
+      "apps/api/src/services/candle/trade-broadcast.ts",
+      "apps/api/src/services/candle/launch-confirm.ts",
+      "apps/api/src/app.ts",
+      "apps/api/src/ledger/migrations/20270209000000_ops_swap_landings.sql"
+    ]
+  },
+  "rows": [
+    {
+      "id": "cli-tee-swap",
+      "scenario": "cli",
+      "evidence": "TEE wallet: job, wallets, decimals, build, relay sign, submit; the local simulation on the RPC",
+      "args": {
+        "argv": [
+          "swap",
+          "SOL",
+          "<mint>",
+          "--amount",
+          "1",
+          "--yes",
+          "--json",
+          "--wallet",
+          "tee",
+          "--client-trade-id",
+          "surface-1"
+        ]
+      },
+      "requests": [
+        {
+          "n": 1,
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/trading",
+          "client": "cli/0.13.35"
+        },
+        {
+          "n": 2,
+          "host": "rpc.private.test",
+          "path": "<rpc>",
+          "rpc": "getTokenSupply",
+          "client": null
+        },
+        {
+          "n": 3,
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/embedded",
+          "client": "cli/0.13.35"
+        },
+        {
+          "n": 4,
+          "host": "api.test",
+          "path": "/api/v1/trade/agent/jobs/surface-1",
+          "client": "cli/0.13.35"
+        },
+        {
+          "n": 5,
+          "host": "api.test",
+          "path": "/api/v1/trade/agent/build",
+          "client": "cli/0.13.35"
+        },
+        {
+          "n": 6,
+          "host": "rpc.private.test",
+          "path": "<rpc>",
+          "rpc": "getMultipleAccounts",
+          "client": null
+        },
+        {
+          "n": 7,
+          "host": "rpc.private.test",
+          "path": "<rpc>",
+          "rpc": "simulateTransaction",
+          "client": null
+        },
+        {
+          "n": 8,
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/wallet/sign",
+          "client": "cli/0.13.35"
+        },
+        {
+          "n": 9,
+          "host": "api.test",
+          "path": "/api/v1/trade/agent/submit",
+          "client": "cli/0.13.35"
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "status": "executed",
+        "apiRequests": 6,
+        "apiLabelled": 6,
+        "rpcRequests": 3,
+        "rpcLabelled": 0,
+        "label": "cli/0.13.35"
+      }
+    },
+    {
+      "id": "cli-embedded-swap",
+      "scenario": "cli",
+      "evidence": "embedded (main) wallet: execute probe, build, execute",
+      "args": {
+        "argv": [
+          "swap",
+          "SOL",
+          "<mint>",
+          "--amount",
+          "1",
+          "--yes",
+          "--json",
+          "--wallet",
+          "<embedded>",
+          "--client-trade-id",
+          "surface-2"
+        ]
+      },
+      "requests": [
+        {
+          "n": 1,
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/trading",
+          "client": "cli/0.13.35"
+        },
+        {
+          "n": 2,
+          "host": "rpc.private.test",
+          "path": "<rpc>",
+          "rpc": "getTokenSupply",
+          "client": null
+        },
+        {
+          "n": 3,
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/embedded",
+          "client": "cli/0.13.35"
+        },
+        {
+          "n": 4,
+          "host": "api.test",
+          "path": "/api/v1/trade/agent/jobs/surface-2",
+          "client": "cli/0.13.35"
+        },
+        {
+          "n": 5,
+          "host": "api.test",
+          "path": "/api/v1/trade/agent/execute",
+          "client": "cli/0.13.35"
+        },
+        {
+          "n": 6,
+          "host": "api.test",
+          "path": "/api/v1/trade/agent/build",
+          "client": "cli/0.13.35"
+        },
+        {
+          "n": 7,
+          "host": "api.test",
+          "path": "/api/v1/trade/agent/execute",
+          "client": "cli/0.13.35"
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "status": "executed",
+        "apiRequests": 6,
+        "apiLabelled": 6,
+        "rpcRequests": 1,
+        "rpcLabelled": 0,
+        "label": "cli/0.13.35"
+      }
+    },
+    {
+      "id": "cli-quant-record-headers",
+      "scenario": "cli",
+      "args": {
+        "wrapper": "withCliClientSurface",
+        "headersIn": "record"
+      },
+      "outcome": {
+        "headersOut": {
+          "x-api-key": "<key>",
+          "x-candle-client": "cli/0.13.35"
+        },
+        "shapeOut": "record",
+        "label": "cli/0.13.35"
+      }
+    },
+    {
+      "id": "cli-quant-array-headers",
+      "scenario": "cli",
+      "args": {
+        "wrapper": "withCliClientSurface",
+        "headersIn": "array"
+      },
+      "outcome": {
+        "headersOut": [
+          [
+            "accept",
+            "*/*"
+          ],
+          [
+            "x-candle-client",
+            "cli/0.13.35"
+          ]
+        ],
+        "shapeOut": "array",
+        "label": "cli/0.13.35"
+      }
+    },
+    {
+      "id": "cli-quant-Headers-object",
+      "scenario": "cli",
+      "args": {
+        "wrapper": "withCliClientSurface",
+        "headersIn": "Headers"
+      },
+      "outcome": {
+        "headersOut": {
+          "accept": "application/json",
+          "x-candle-client": "cli/0.13.35"
+        },
+        "shapeOut": "Headers",
+        "label": "cli/0.13.35"
+      }
+    },
+    {
+      "id": "cli-quant-no-headers",
+      "scenario": "cli",
+      "args": {
+        "wrapper": "withCliClientSurface",
+        "headersIn": "none"
+      },
+      "outcome": {
+        "headersOut": {
+          "x-candle-client": "cli/0.13.35"
+        },
+        "shapeOut": "record",
+        "label": "cli/0.13.35"
+      }
+    },
+    {
+      "id": "cli-quant-label-already-set",
+      "scenario": "cli",
+      "args": {
+        "wrapper": "withCliClientSurface",
+        "headersIn": "record"
+      },
+      "outcome": {
+        "headersOut": {
+          "X-Candle-Client": "cli/other"
+        },
+        "shapeOut": "record",
+        "label": "cli/other"
+      }
+    },
+    {
+      "id": "sdk-client-methods",
+      "scenario": "sdk",
+      "args": {
+        "methods": [
+          "getPresets",
+          "getSpendLimits",
+          "getPortfolio"
+        ]
+      },
+      "requests": [
+        {
+          "n": 1,
+          "host": "api.test",
+          "path": "/api/v1/launch/presets",
+          "client": "sdk/0.6.29"
+        },
+        {
+          "n": 2,
+          "host": "api.test",
+          "path": "/api/v1/agent/keys/self/limits",
+          "client": "sdk/0.6.29"
+        },
+        {
+          "n": 3,
+          "host": "api.test",
+          "path": "/api/v1/agent/portfolio",
+          "client": "sdk/0.6.29"
+        }
+      ],
+      "outcome": {
+        "apiRequests": 3,
+        "apiLabelled": 3,
+        "label": "sdk/0.6.29"
+      }
+    },
+    {
+      "id": "sdk-api-string-url",
+      "scenario": "sdk",
+      "args": {
+        "input": "string",
+        "host": "api.test"
+      },
+      "outcome": {
+        "label": "sdk/0.6.29"
+      }
+    },
+    {
+      "id": "sdk-api-url-object",
+      "scenario": "sdk",
+      "args": {
+        "input": "URL",
+        "host": "api.test"
+      },
+      "outcome": {
+        "label": "sdk/0.6.29"
+      }
+    },
+    {
+      "id": "sdk-hyperliquid-origin",
+      "scenario": "sdk",
+      "args": {
+        "input": "string",
+        "host": "api.hyperliquid.xyz"
+      },
+      "outcome": {
+        "label": null
+      }
+    },
+    {
+      "id": "sdk-request-object",
+      "scenario": "sdk",
+      "args": {
+        "input": "Request",
+        "host": "api.test"
+      },
+      "outcome": {
+        "label": null
+      }
+    },
+    {
+      "id": "sdk-label-already-set",
+      "scenario": "sdk",
+      "args": {
+        "input": "string",
+        "host": "api.test"
+      },
+      "outcome": {
+        "label": "sdk/custom"
+      }
+    },
+    {
+      "id": "mcp-tool-request",
+      "scenario": "mcp",
+      "args": {
+        "tool": "candle_report_activity"
+      },
+      "requests": [
+        {
+          "n": 1,
+          "host": "api.test",
+          "path": "/api/v1/activity/report",
+          "client": "mcp/0.10.40"
+        }
+      ],
+      "outcome": {
+        "apiRequests": 1,
+        "apiLabelled": 1,
+        "label": "mcp/0.10.40"
+      }
+    },
+    {
+      "id": "mcp-hyperliquid-origin",
+      "scenario": "mcp",
+      "args": {
+        "host": "api.hyperliquid.xyz",
+        "configuredApiHost": "api.test"
+      },
+      "outcome": {
+        "label": null
+      }
+    },
+    {
+      "id": "mcp-api-array-headers",
+      "scenario": "mcp",
+      "args": {
+        "host": "api.test",
+        "configuredApiHost": "api.test"
+      },
+      "outcome": {
+        "label": "mcp/0.10.40"
+      }
+    },
+    {
+      "id": "mcp-label-already-set",
+      "scenario": "mcp",
+      "args": {
+        "host": "api.test",
+        "configuredApiHost": "api.test"
+      },
+      "outcome": {
+        "label": "mcp-hosted/1"
+      }
+    },
+    {
+      "id": "mcp-api-url-switched-old-origin",
+      "scenario": "mcp",
+      "args": {
+        "host": "api.test",
+        "configuredApiHost": "other-api.test"
+      },
+      "outcome": {
+        "label": null
+      }
+    },
+    {
+      "id": "mcp-api-url-switched-new-origin",
+      "scenario": "mcp",
+      "args": {
+        "host": "other-api.test",
+        "configuredApiHost": "other-api.test"
+      },
+      "outcome": {
+        "label": "mcp/0.10.40"
+      }
+    },
+    {
+      "id": "mcp-hosted-stamp",
+      "scenario": "mcp-hosted",
+      "evidence": "the hosted connector replaces any label on the request it dispatches; a bound credential is keyed by that object",
+      "args": {
+        "incomingLabel": "mcp/0.0.1"
+      },
+      "outcome": {
+        "sameRequestObject": true,
+        "label": "mcp-hosted/0.10.40"
+      }
+    },
+    {
+      "id": "mcp-hosted-immutable-headers",
+      "scenario": "mcp-hosted",
+      "evidence": "the label is measurement only: a request it cannot be set on is still dispatched",
+      "args": {
+        "headers": "a write throws"
+      },
+      "outcome": {
+        "dispatched": true,
+        "label": null
+      }
+    },
+    {
+      "id": "web-label-build-sha",
+      "scenario": "web",
+      "args": {
+        "buildSha": "<40-char sha>"
+      },
+      "outcome": {
+        "label": "web/0123456789ab"
+      }
+    },
+    {
+      "id": "web-label-no-sha",
+      "scenario": "web",
+      "args": {
+        "buildSha": null
+      },
+      "outcome": {
+        "label": "web/dev"
+      }
+    },
+    {
+      "id": "web-json-post-swap",
+      "scenario": "web",
+      "args": {
+        "method": "POST",
+        "host": "api.test",
+        "path": "/api/v1/jupiter/swap",
+        "headerNames": [
+          "content-type"
+        ]
+      },
+      "outcome": {
+        "preflighted": true,
+        "labelled": true,
+        "label": "web/0123456789ab"
+      }
+    },
+    {
+      "id": "web-json-post-confirm",
+      "scenario": "web",
+      "args": {
+        "method": "POST",
+        "host": "api.test",
+        "path": "/api/v1/jupiter/confirm",
+        "headerNames": [
+          "content-type"
+        ]
+      },
+      "outcome": {
+        "preflighted": true,
+        "labelled": true,
+        "label": "web/0123456789ab"
+      }
+    },
+    {
+      "id": "web-keyed-get",
+      "scenario": "web",
+      "args": {
+        "method": "GET",
+        "host": "api.test",
+        "path": "/api/v1/agent/wallets/trading",
+        "headerNames": [
+          "x-api-key"
+        ]
+      },
+      "outcome": {
+        "preflighted": true,
+        "labelled": true,
+        "label": "web/0123456789ab"
+      }
+    },
+    {
+      "id": "web-simple-get-quote",
+      "scenario": "web",
+      "args": {
+        "method": "GET",
+        "host": "api.test",
+        "path": "/api/v1/jupiter/quote",
+        "headerNames": []
+      },
+      "outcome": {
+        "preflighted": false,
+        "labelled": false,
+        "label": null
+      }
+    },
+    {
+      "id": "web-simple-get-accept-header",
+      "scenario": "web",
+      "args": {
+        "method": "GET",
+        "host": "api.test",
+        "path": "/api/v1/markets/feed",
+        "headerNames": [
+          "accept"
+        ]
+      },
+      "outcome": {
+        "preflighted": false,
+        "labelled": false,
+        "label": null
+      }
+    },
+    {
+      "id": "web-form-post",
+      "scenario": "web",
+      "args": {
+        "method": "POST",
+        "host": "api.test",
+        "path": "/api/v1/upload",
+        "headerNames": [
+          "content-type"
+        ]
+      },
+      "outcome": {
+        "preflighted": false,
+        "labelled": false,
+        "label": null
+      }
+    },
+    {
+      "id": "web-other-origin-post",
+      "scenario": "web",
+      "args": {
+        "method": "POST",
+        "host": "auth.privy.test",
+        "path": "/api/v1/sessions",
+        "headerNames": [
+          "content-type"
+        ]
+      },
+      "outcome": {
+        "preflighted": true,
+        "labelled": false,
+        "label": null
+      }
+    },
+    {
+      "id": "web-label-already-set",
+      "scenario": "web",
+      "args": {
+        "method": "POST",
+        "host": "api.test",
+        "path": "/api/v1/jupiter/swap",
+        "headerNames": [
+          "content-type",
+          "X-Candle-Client"
+        ]
+      },
+      "outcome": {
+        "preflighted": true,
+        "labelled": false,
+        "label": null
+      }
+    },
+    {
+      "id": "web-request-object",
+      "scenario": "web",
+      "args": {
+        "input": "Request"
+      },
+      "outcome": {
+        "labelled": false,
+        "label": null
+      }
+    },
+    {
+      "id": "api-reads-cli",
+      "scenario": "api-label",
+      "args": {
+        "header": "cli/0.13.35",
+        "origin": null
+      },
+      "outcome": {
+        "label": "cli/0.13.35",
+        "rawCaller": false,
+        "echoedInput": false
+      }
+    },
+    {
+      "id": "api-reads-sdk",
+      "scenario": "api-label",
+      "args": {
+        "header": "sdk/0.6.29",
+        "origin": null
+      },
+      "outcome": {
+        "label": "sdk/0.6.29",
+        "rawCaller": false,
+        "echoedInput": false
+      }
+    },
+    {
+      "id": "api-reads-mcp",
+      "scenario": "api-label",
+      "args": {
+        "header": "mcp/0.10.40",
+        "origin": null
+      },
+      "outcome": {
+        "label": "mcp/0.10.40",
+        "rawCaller": false,
+        "echoedInput": false
+      }
+    },
+    {
+      "id": "api-reads-mcp-hosted",
+      "scenario": "api-label",
+      "args": {
+        "header": "mcp-hosted/0.10.40",
+        "origin": null
+      },
+      "outcome": {
+        "label": "mcp-hosted/0.10.40",
+        "rawCaller": false,
+        "echoedInput": false
+      }
+    },
+    {
+      "id": "api-reads-web",
+      "scenario": "api-label",
+      "args": {
+        "header": "web/0123456789ab",
+        "origin": null
+      },
+      "outcome": {
+        "label": "web/0123456789ab",
+        "rawCaller": false,
+        "echoedInput": false
+      }
+    },
+    {
+      "id": "api-trims-spaces",
+      "scenario": "api-label",
+      "args": {
+        "header": "  cli/0.13.35  ",
+        "origin": null
+      },
+      "outcome": {
+        "label": "cli/0.13.35",
+        "rawCaller": false,
+        "echoedInput": false
+      }
+    },
+    {
+      "id": "api-surface-is-case-sensitive",
+      "scenario": "api-label",
+      "args": {
+        "header": "CLI/0.13.35",
+        "origin": null
+      },
+      "outcome": {
+        "label": "unknown",
+        "rawCaller": true,
+        "echoedInput": false
+      }
+    },
+    {
+      "id": "api-unknown-surface",
+      "scenario": "api-label",
+      "args": {
+        "header": "curl/8.0.1",
+        "origin": null
+      },
+      "outcome": {
+        "label": "unknown",
+        "rawCaller": true,
+        "echoedInput": false
+      }
+    },
+    {
+      "id": "api-empty-version",
+      "scenario": "api-label",
+      "args": {
+        "header": "cli/",
+        "origin": null
+      },
+      "outcome": {
+        "label": "unknown",
+        "rawCaller": true,
+        "echoedInput": false
+      }
+    },
+    {
+      "id": "api-version-too-long",
+      "scenario": "api-label",
+      "args": {
+        "header": "cli/<41 digits>",
+        "origin": null
+      },
+      "outcome": {
+        "label": "unknown",
+        "rawCaller": true,
+        "echoedInput": false
+      }
+    },
+    {
+      "id": "api-version-with-space",
+      "scenario": "api-label",
+      "args": {
+        "header": "sdk/1 2",
+        "origin": null
+      },
+      "outcome": {
+        "label": "unknown",
+        "rawCaller": true,
+        "echoedInput": false
+      }
+    },
+    {
+      "id": "api-version-with-separator",
+      "scenario": "api-label",
+      "args": {
+        "header": "sdk/1;x=2",
+        "origin": null
+      },
+      "outcome": {
+        "label": "unknown",
+        "rawCaller": true,
+        "echoedInput": false
+      }
+    },
+    {
+      "id": "api-no-header",
+      "scenario": "api-label",
+      "args": {
+        "header": null,
+        "origin": null
+      },
+      "outcome": {
+        "label": "unknown",
+        "rawCaller": true,
+        "echoedInput": false
+      }
+    },
+    {
+      "id": "api-web-origin-no-header",
+      "scenario": "api-label",
+      "args": {
+        "header": null,
+        "origin": "https://alpha.candle.tv"
+      },
+      "outcome": {
+        "label": "web",
+        "rawCaller": false,
+        "echoedInput": false
+      }
+    },
+    {
+      "id": "api-web-preview-origin",
+      "scenario": "api-label",
+      "args": {
+        "header": null,
+        "origin": "https://preview-1.candle.run"
+      },
+      "outcome": {
+        "label": "web",
+        "rawCaller": false,
+        "echoedInput": false
+      }
+    },
+    {
+      "id": "api-web-origin-plain-http",
+      "scenario": "api-label",
+      "args": {
+        "header": null,
+        "origin": "http://alpha.candle.tv"
+      },
+      "outcome": {
+        "label": "unknown",
+        "rawCaller": true,
+        "echoedInput": false
+      }
+    },
+    {
+      "id": "api-lookalike-origin",
+      "scenario": "api-label",
+      "args": {
+        "header": null,
+        "origin": "https://evilcandle.tv"
+      },
+      "outcome": {
+        "label": "unknown",
+        "rawCaller": true,
+        "echoedInput": false
+      }
+    },
+    {
+      "id": "api-header-wins-over-origin",
+      "scenario": "api-label",
+      "args": {
+        "header": "sdk/0.6.29",
+        "origin": "https://alpha.candle.tv"
+      },
+      "outcome": {
+        "label": "sdk/0.6.29",
+        "rawCaller": false,
+        "echoedInput": false
+      }
+    },
+    {
+      "id": "api-bad-header-falls-to-origin",
+      "scenario": "api-label",
+      "args": {
+        "header": "nope",
+        "origin": "https://staging.candle.tv"
+      },
+      "outcome": {
+        "label": "web",
+        "rawCaller": false,
+        "echoedInput": false
+      }
+    },
+    {
+      "id": "landing-build-landed",
+      "scenario": "landing",
+      "args": {
+        "route": "/api/v1/trade/agent/build",
+        "headers": {
+          "X-Candle-Client": "cli/0.13.35"
+        },
+        "writerRunning": true
+      },
+      "outcome": {
+        "httpStatus": 200,
+        "tradeSaw": "signature",
+        "rows": [
+          {
+            "signature": "<signature>",
+            "route": "build",
+            "wallet_type": "main",
+            "client": "cli/0.13.35",
+            "key_prefix": "FIXTURE1",
+            "sent_at": "<t0>",
+            "send_ms": 40,
+            "outcome": "landed",
+            "landed_slot": 391000001,
+            "confirmed_after_ms": 940,
+            "winning_path": "rpc",
+            "sends": 1
+          }
+        ]
+      }
+    },
+    {
+      "id": "landing-execute-landed",
+      "scenario": "landing",
+      "args": {
+        "route": "/api/v1/trade/agent/execute",
+        "headers": {
+          "X-Candle-Client": "cli/0.13.35"
+        },
+        "writerRunning": true
+      },
+      "outcome": {
+        "httpStatus": 200,
+        "tradeSaw": "signature",
+        "rows": [
+          {
+            "signature": "<signature>",
+            "route": "execute",
+            "wallet_type": "main",
+            "client": "cli/0.13.35",
+            "key_prefix": "FIXTURE1",
+            "sent_at": "<t0>",
+            "send_ms": 40,
+            "outcome": "landed",
+            "landed_slot": 391000002,
+            "confirmed_after_ms": 940,
+            "winning_path": "rpc",
+            "sends": 1
+          }
+        ]
+      }
+    },
+    {
+      "id": "landing-submit-landed",
+      "scenario": "landing",
+      "args": {
+        "route": "/api/v1/trade/agent/submit",
+        "headers": {
+          "X-Candle-Client": "cli/0.13.35"
+        },
+        "writerRunning": true
+      },
+      "outcome": {
+        "httpStatus": 200,
+        "tradeSaw": "signature",
+        "rows": [
+          {
+            "signature": "<signature>",
+            "route": "submit",
+            "wallet_type": "linked",
+            "client": "cli/0.13.35",
+            "key_prefix": "FIXTURE1",
+            "sent_at": "<t0>",
+            "send_ms": 40,
+            "outcome": "landed",
+            "landed_slot": 391000003,
+            "confirmed_after_ms": 940,
+            "winning_path": "rpc",
+            "sends": 1
+          }
+        ]
+      }
+    },
+    {
+      "id": "landing-swap-landed",
+      "scenario": "landing",
+      "args": {
+        "route": "/api/v1/agent/swap",
+        "headers": {
+          "X-Candle-Client": "cli/0.13.35"
+        },
+        "writerRunning": true
+      },
+      "outcome": {
+        "httpStatus": 200,
+        "tradeSaw": "signature",
+        "rows": [
+          {
+            "signature": "<signature>",
+            "route": "swap",
+            "wallet_type": "main",
+            "client": "cli/0.13.35",
+            "key_prefix": "FIXTURE1",
+            "sent_at": "<t0>",
+            "send_ms": 40,
+            "outcome": "landed",
+            "landed_slot": 391000004,
+            "confirmed_after_ms": 940,
+            "winning_path": "rpc",
+            "sends": 1
+          }
+        ]
+      }
+    },
+    {
+      "id": "landing-client-sdk",
+      "scenario": "landing",
+      "args": {
+        "route": "/api/v1/trade/agent/submit",
+        "headers": {
+          "X-Candle-Client": "sdk/0.6.29"
+        },
+        "writerRunning": true
+      },
+      "outcome": {
+        "httpStatus": 200,
+        "tradeSaw": "signature",
+        "rows": [
+          {
+            "signature": "<signature>",
+            "route": "submit",
+            "wallet_type": "linked",
+            "client": "sdk/0.6.29",
+            "key_prefix": "FIXTURE1",
+            "sent_at": "<t0>",
+            "send_ms": 40,
+            "outcome": "landed",
+            "landed_slot": 12,
+            "confirmed_after_ms": 940,
+            "winning_path": "rpc",
+            "sends": 1
+          }
+        ]
+      }
+    },
+    {
+      "id": "landing-client-mcp",
+      "scenario": "landing",
+      "args": {
+        "route": "/api/v1/trade/agent/submit",
+        "headers": {
+          "X-Candle-Client": "mcp/0.10.40"
+        },
+        "writerRunning": true
+      },
+      "outcome": {
+        "httpStatus": 200,
+        "tradeSaw": "signature",
+        "rows": [
+          {
+            "signature": "<signature>",
+            "route": "submit",
+            "wallet_type": "linked",
+            "client": "mcp/0.10.40",
+            "key_prefix": "FIXTURE1",
+            "sent_at": "<t0>",
+            "send_ms": 40,
+            "outcome": "landed",
+            "landed_slot": 12,
+            "confirmed_after_ms": 940,
+            "winning_path": "rpc",
+            "sends": 1
+          }
+        ]
+      }
+    },
+    {
+      "id": "landing-client-mcp-hosted",
+      "scenario": "landing",
+      "args": {
+        "route": "/api/v1/trade/agent/submit",
+        "headers": {
+          "X-Candle-Client": "mcp-hosted/0.10.40"
+        },
+        "writerRunning": true
+      },
+      "outcome": {
+        "httpStatus": 200,
+        "tradeSaw": "signature",
+        "rows": [
+          {
+            "signature": "<signature>",
+            "route": "submit",
+            "wallet_type": "linked",
+            "client": "mcp-hosted/0.10.40",
+            "key_prefix": "FIXTURE1",
+            "sent_at": "<t0>",
+            "send_ms": 40,
+            "outcome": "landed",
+            "landed_slot": 12,
+            "confirmed_after_ms": 940,
+            "winning_path": "rpc",
+            "sends": 1
+          }
+        ]
+      }
+    },
+    {
+      "id": "landing-client-web",
+      "scenario": "landing",
+      "args": {
+        "route": "/api/v1/trade/agent/submit",
+        "headers": {
+          "X-Candle-Client": "web/0123456789ab"
+        },
+        "writerRunning": true
+      },
+      "outcome": {
+        "httpStatus": 200,
+        "tradeSaw": "signature",
+        "rows": [
+          {
+            "signature": "<signature>",
+            "route": "submit",
+            "wallet_type": "linked",
+            "client": "web/0123456789ab",
+            "key_prefix": "FIXTURE1",
+            "sent_at": "<t0>",
+            "send_ms": 40,
+            "outcome": "landed",
+            "landed_slot": 12,
+            "confirmed_after_ms": 940,
+            "winning_path": "rpc",
+            "sends": 1
+          }
+        ]
+      }
+    },
+    {
+      "id": "landing-client-web-origin-only",
+      "scenario": "landing",
+      "evidence": "a simple web GET carries no header; a Candle Origin reads as web with no version",
+      "args": {
+        "route": "/api/v1/agent/swap",
+        "headers": {
+          "Origin": "https://alpha.candle.tv"
+        },
+        "writerRunning": true
+      },
+      "outcome": {
+        "httpStatus": 200,
+        "tradeSaw": "signature",
+        "rows": [
+          {
+            "signature": "<signature>",
+            "route": "swap",
+            "wallet_type": "main",
+            "client": "web",
+            "key_prefix": "FIXTURE1",
+            "sent_at": "<t0>",
+            "send_ms": 40,
+            "outcome": "landed",
+            "landed_slot": 13,
+            "confirmed_after_ms": 940,
+            "winning_path": "rpc",
+            "sends": 1
+          }
+        ]
+      }
+    },
+    {
+      "id": "landing-client-raw-caller",
+      "scenario": "landing",
+      "args": {
+        "route": "/api/v1/trade/agent/execute",
+        "headers": {},
+        "writerRunning": true
+      },
+      "outcome": {
+        "httpStatus": 200,
+        "tradeSaw": "signature",
+        "rows": [
+          {
+            "signature": "<signature>",
+            "route": "execute",
+            "wallet_type": "main",
+            "client": "unknown",
+            "key_prefix": "FIXTURE1",
+            "sent_at": "<t0>",
+            "send_ms": 40,
+            "outcome": "landed",
+            "landed_slot": 14,
+            "confirmed_after_ms": 940,
+            "winning_path": "rpc",
+            "sends": 1
+          }
+        ]
+      }
+    },
+    {
+      "id": "landing-landed-after-resends",
+      "scenario": "landing",
+      "evidence": "two resends before the confirmed status: sends counts the first send and each accepted resend",
+      "args": {
+        "route": "/api/v1/trade/agent/submit",
+        "headers": {
+          "X-Candle-Client": "sdk/0.6.29"
+        },
+        "writerRunning": true
+      },
+      "outcome": {
+        "httpStatus": 200,
+        "tradeSaw": "signature",
+        "rows": [
+          {
+            "signature": "<signature>",
+            "route": "submit",
+            "wallet_type": "linked",
+            "client": "sdk/0.6.29",
+            "key_prefix": "FIXTURE1",
+            "sent_at": "<t0>",
+            "send_ms": 120,
+            "outcome": "landed",
+            "landed_slot": 391000777,
+            "confirmed_after_ms": 7520,
+            "winning_path": "rpc",
+            "sends": 3
+          }
+        ]
+      }
+    },
+    {
+      "id": "landing-reverted",
+      "scenario": "landing",
+      "evidence": "a confirmed status with an error landed and reverted: the slot is kept, the trade still sees the revert",
+      "args": {
+        "route": "/api/v1/trade/agent/submit",
+        "headers": {
+          "X-Candle-Client": "cli/0.13.35"
+        },
+        "writerRunning": true
+      },
+      "outcome": {
+        "httpStatus": 500,
+        "tradeSaw": "TradeRevertedError",
+        "rows": [
+          {
+            "signature": "<signature>",
+            "route": "submit",
+            "wallet_type": "linked",
+            "client": "cli/0.13.35",
+            "key_prefix": "FIXTURE1",
+            "sent_at": "<t0>",
+            "send_ms": 35,
+            "outcome": "reverted",
+            "landed_slot": 55,
+            "confirmed_after_ms": 1135,
+            "winning_path": "rpc",
+            "sends": 1
+          }
+        ]
+      }
+    },
+    {
+      "id": "landing-unconfirmed-send-answer-lost",
+      "scenario": "landing",
+      "evidence": "the send threw after the bytes may have reached the node: unconfirmed, no slot, no path",
+      "args": {
+        "route": "/api/v1/agent/swap",
+        "headers": {
+          "X-Candle-Client": "mcp/0.10.40"
+        },
+        "writerRunning": true
+      },
+      "outcome": {
+        "httpStatus": 500,
+        "tradeSaw": "TradeUnconfirmedError",
+        "rows": [
+          {
+            "signature": "<signature>",
+            "route": "swap",
+            "wallet_type": "main",
+            "client": "mcp/0.10.40",
+            "key_prefix": "FIXTURE1",
+            "sent_at": "<t0>",
+            "send_ms": 30000,
+            "outcome": "unconfirmed",
+            "landed_slot": null,
+            "confirmed_after_ms": null,
+            "winning_path": null,
+            "sends": 1
+          }
+        ]
+      }
+    },
+    {
+      "id": "landing-unconfirmed-confirm-timed-out",
+      "scenario": "landing",
+      "evidence": "the confirm loop gave up: unconfirmed, no slot, no path",
+      "args": {
+        "route": "/api/v1/trade/agent/build",
+        "headers": {
+          "X-Candle-Client": "cli/0.13.35"
+        },
+        "writerRunning": true
+      },
+      "outcome": {
+        "httpStatus": 500,
+        "tradeSaw": "TradeUnconfirmedError",
+        "rows": [
+          {
+            "signature": "<signature>",
+            "route": "build",
+            "wallet_type": "main",
+            "client": "cli/0.13.35",
+            "key_prefix": "FIXTURE1",
+            "sent_at": "<t0>",
+            "send_ms": 50,
+            "outcome": "unconfirmed",
+            "landed_slot": null,
+            "confirmed_after_ms": null,
+            "winning_path": null,
+            "sends": 1
+          }
+        ]
+      }
+    },
+    {
+      "id": "landing-refused-send",
+      "scenario": "landing",
+      "evidence": "the RPC refused the send: nothing reached the chain, so no landing",
+      "args": {
+        "route": "/api/v1/trade/agent/submit",
+        "headers": {
+          "X-Candle-Client": "cli/0.13.35"
+        },
+        "writerRunning": true
+      },
+      "outcome": {
+        "httpStatus": 500,
+        "tradeSaw": "SendTransactionError",
+        "rows": []
+      }
+    },
+    {
+      "id": "landing-outside-swap-scope",
+      "scenario": "landing",
+      "evidence": "a broadcast outside the four swap routes (transfers, staking, LP, fees, launches) is not recorded",
+      "args": {
+        "route": "/api/v1/agent/transfer (no swap scope)",
+        "headers": {
+          "X-Candle-Client": "cli/0.13.35"
+        },
+        "writerRunning": true
+      },
+      "outcome": {
+        "httpStatus": 200,
+        "tradeSaw": "signature",
+        "rows": []
+      }
+    },
+    {
+      "id": "landing-no-writer",
+      "scenario": "landing",
+      "evidence": "without a database writer (no API_DATABASE_URL) nothing is kept",
+      "args": {
+        "route": "/api/v1/trade/agent/submit",
+        "headers": {
+          "X-Candle-Client": "cli/0.13.35"
+        },
+        "writerRunning": false
+      },
+      "outcome": {
+        "httpStatus": 200,
+        "tradeSaw": "signature",
+        "rows": []
+      }
+    },
+    {
+      "id": "landing-observer-reports-no-slot",
+      "scenario": "landing",
+      "evidence": "the RPC gave no slot with the confirmed status: landed, slot null",
+      "args": {
+        "route": "/api/v1/trade/agent/submit",
+        "headers": {},
+        "writerRunning": true
+      },
+      "outcome": {
+        "httpStatus": 200,
+        "tradeSaw": "signature",
+        "rows": [
+          {
+            "signature": "<signature>",
+            "route": "submit",
+            "wallet_type": "linked",
+            "client": "unknown",
+            "key_prefix": "FIXTURE1",
+            "sent_at": "<t0>",
+            "send_ms": 20,
+            "outcome": "landed",
+            "landed_slot": null,
+            "confirmed_after_ms": 820,
+            "winning_path": "rpc",
+            "sends": 1
+          }
+        ]
+      }
+    },
+    {
+      "id": "confirm-first-poll",
+      "scenario": "confirm",
+      "args": {
+        "pollsUntilConfirmed": 1
+      },
+      "outcome": {
+        "outcome": "returned",
+        "observedOnce": true,
+        "slot": 400000001,
+        "sends": 1,
+        "resends": 0
+      }
+    },
+    {
+      "id": "confirm-after-a-resend",
+      "scenario": "confirm",
+      "args": {
+        "pollsUntilConfirmed": 5
+      },
+      "outcome": {
+        "outcome": "returned",
+        "observedOnce": true,
+        "slot": 400000002,
+        "sends": 2,
+        "resends": 1
+      }
+    },
+    {
+      "id": "confirm-reverted",
+      "scenario": "confirm",
+      "args": {
+        "pollsUntilConfirmed": 1
+      },
+      "outcome": {
+        "outcome": "OnChainRevertError",
+        "observedOnce": true,
+        "slot": 400000003,
+        "sends": 1,
+        "resends": 0
+      }
+    },
+    {
+      "id": "confirm-processed-is-not-landed",
+      "scenario": "confirm",
+      "args": {
+        "pollsUntilConfirmed": 2
+      },
+      "outcome": {
+        "outcome": "returned",
+        "observedOnce": true,
+        "slot": 400000004,
+        "sends": 1,
+        "resends": 0
+      }
+    },
+    {
+      "id": "source-swap-scope-mounts",
+      "scenario": "source",
+      "evidence": "pinned as source text: app.ts is the whole API and is not run here",
+      "args": {
+        "file": "apps/api/src/app.ts"
+      },
+      "outcome": {
+        "mounts": [
+          {
+            "path": "/api/v1/trade/agent/build",
+            "route": "build",
+            "wallet": "main"
+          },
+          {
+            "path": "/api/v1/trade/agent/execute",
+            "route": "execute",
+            "wallet": "main"
+          },
+          {
+            "path": "/api/v1/trade/agent/submit",
+            "route": "submit",
+            "wallet": "linked"
+          },
+          {
+            "path": "/api/v1/agent/swap",
+            "route": "swap",
+            "wallet": "main"
+          }
+        ]
+      }
+    },
+    {
+      "id": "source-swap-landings-table",
+      "scenario": "source",
+      "evidence": "pinned as source text: the migration is not run here",
+      "args": {
+        "file": "apps/api/src/ledger/migrations/20270209000000_ops_swap_landings.sql"
+      },
+      "outcome": {
+        "columns": [
+          "signature",
+          "env",
+          "chain",
+          "route",
+          "wallet_type",
+          "client",
+          "key_prefix",
+          "sent_at",
+          "send_ms",
+          "outcome",
+          "landed_slot",
+          "confirmed_at",
+          "winning_path",
+          "sends",
+          "written_at",
+          "written_by"
+        ],
+        "checks": {
+          "route": [
+            "build",
+            "execute",
+            "submit",
+            "swap"
+          ],
+          "wallet_type": [
+            "main",
+            "linked"
+          ],
+          "outcome": [
+            "landed",
+            "reverted",
+            "unconfirmed"
+          ],
+          "winning_path": [
+            "rpc"
+          ],
+          "winningPathNullable": true
+        }
+      }
+    }
+  ]
+}
