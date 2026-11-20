@@ -2,11 +2,11 @@
   "about": "Offline perps freshness contracts from exact merged source. Every time is an hour and minute of one made-up day, and every figure is made up. api-source rows are answers built by Candle's pure perps source (profile bundle, board publish, positions and record composition) from one made-up wallet's stored facts: the provisional read between certified hours, the certified hour that replaces it, and the delayed and unavailable rules. The wallet's address is hashed inside that source and is in no row. mcp, sdk and cli rows read the same positions answer through the registered tool, the SDK and `candle agent positions` over an intercepted fetch. docs rows are the public page's own freshness line (its three copies agree) and the SDK changelog entry, read as text. The database, the perps jobs, the venue and the keyed API route are not executed, and no deployed behavior is claimed.",
   "source": {
     "repo": "candledottv/candle-monorepo",
-    "commit": "8a08b366d541a7b9f439fd6e1a290cb57375d417",
+    "commit": "31e075fe6ab401b03a562a2caba090f398b13fcd",
     "versions": {
-      "cli": "0.13.33",
-      "mcp": "0.10.38",
-      "sdk": "0.6.27"
+      "cli": "0.13.34",
+      "mcp": "0.10.39",
+      "sdk": "0.6.28"
     }
   },
   "rules": {

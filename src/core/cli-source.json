@@ -3,8 +3,8 @@
   "source": {
     "repo": "candledottv/candle-monorepo",
     "path": "packages/cli/src",
-    "commit": "8a08b366d541a7b9f439fd6e1a290cb57375d417",
-    "cliVersion": "0.13.33"
+    "commit": "31e075fe6ab401b03a562a2caba090f398b13fcd",
+    "cliVersion": "0.13.34"
   },
   "aliases": {
     "wallet": "wallets"
@@ -366,7 +366,7 @@
     },
     "token": {
       "group": "Account",
-      "summary": "Token About pages, creator metadata edits, events, cluster analysis, forensics and the vamp finder",
+      "summary": "Token About pages, creator metadata edits, events, cluster analysis, forensics, the vamp finder and Hood holder exits",
       "rows": [
         {
           "invocation": "edit <mint>",
@@ -379,6 +379,10 @@
         {
           "invocation": "events <mint>",
           "description": "Signals, callouts and tracked-wallet trades for one token, one per line"
+        },
+        {
+          "invocation": "exit <token>",
+          "description": "Hood: where a holder stands if the launch does not migrate (Recovery, rescue, team vesting), and the exit"
         },
         {
           "invocation": "forensics <mint>",
@@ -1542,6 +1546,33 @@
       "json": true,
       "unlocks": "never",
       "tty": []
+    },
+    {
+      "command": "token",
+      "subcommand": "exit",
+      "handler": "tokenExit",
+      "file": "commands/token-exit.ts",
+      "flags": {
+        "value": [
+          "--amount",
+          "--wallet"
+        ],
+        "boolean": [
+          "--claim-team",
+          "--dry-run",
+          "--enter-recovery",
+          "--recover",
+          "--yes"
+        ],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "agent",
+      "json": true,
+      "unlocks": "never",
+      "tty": [
+        "stdin"
+      ]
     },
     {
       "command": "token",

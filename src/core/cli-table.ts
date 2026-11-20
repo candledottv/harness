@@ -481,6 +481,14 @@ const ROWS: readonly RowInput[] = [
   r("token about", "read", "cli", "agent"),
   r("token history", "read", "cli", "agent"),
   r("token comments", "read", "cli", "agent"),
+  // A Hood holder exit (0.13.34): without a flag it reads where a holder stands on one curve; --dry-run reads
+  // what a run would do. --recover, --enter-recovery and --claim-team move funds (approve, then redeem) from the
+  // account's wallet, and no card carries them yet: a funds-out row, later.
+  r("token exit", "read", "cli", "agent", {
+    takes: 1,
+    byFlags: (flags) => (flags.has("--dry-run") ? { rule: "read", route: "cli" } : ["--recover", "--enter-recovery", "--claim-team"].some((f) => flags.has(f)) ? { rule: "funds-out", route: "later" } : undefined),
+    partly: "--recover, --enter-recovery and --claim-team: coming",
+  }),
   // The creator's edit of a token's description and links (0.13.9), under launch:write, which Write holds.
   r("token edit", "card", "card", "agent", {
     via: "candle_token_edit",
