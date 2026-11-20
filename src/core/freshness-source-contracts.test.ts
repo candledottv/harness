@@ -183,7 +183,10 @@ describe("delayed and unavailable perps, at the new cadence", () => {
     expect(perpRows("unavailable")).toEqual([])
     // The spot rows are still listed, and the delayed build's bundle is not kept past the line.
     expect(p.positions.map((r: { kind: string }) => r.kind)).toEqual(["spot"])
+    // The record says when the perps were last certified, so a reader can tell since when they are delayed; the
+    // positions answer above still gives no perps time.
     expect(record("unavailable").totals).toMatchObject({ perpsPartial: true, perpsUnavailable: true, perpsAsOfMs: at(11, 2) })
+    expect(record("unavailable")).toMatchObject({ perpsPartial: true, perpsUnavailable: true, perpsAsOfMs: at(11, 2) })
     expect(record("unavailable")).not.toHaveProperty("perpsNetUsd")
   })
 

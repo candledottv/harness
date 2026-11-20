@@ -5,6 +5,7 @@ import type { Side } from "./limits"
 
 const READS = [
   "candle_get_market",
+  "candle_get_agent_record",
   "candle_get_feed",
   "candle_vamp_candidates",
   "candle_token_forensics",
