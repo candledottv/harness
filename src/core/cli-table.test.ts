@@ -12,8 +12,8 @@ const baseOf = (path: string) => {
 describe("the table and the source", () => {
   test("it was read from the pinned CLI source", () => {
     // Source contracts can advance before the separately signed native bootstrap release.
-    expect(SOURCE.source).toMatchObject({ repo: "candledottv/candle-monorepo", commit: "ebd1e50050cddc82d82186a1e6a499cd0ca02e85", cliVersion: "0.13.35" })
-    expect(SOURCE.commands.length).toBe(177)
+    expect(SOURCE.source).toMatchObject({ repo: "candledottv/candle-monorepo", commit: "bdf8548b9d6c3844b014f25ae1725cbae6f8b544", cliVersion: "0.13.39" })
+    expect(SOURCE.commands.length).toBe(178)
     expect((SOURCE as { unread?: string[] }).unread).toEqual([])
   })
 
@@ -65,7 +65,9 @@ describe("the table and the source", () => {
     expect(explicit).toContain("tee signer status=agent")
     expect(explicit).toContain("agent round=agent")
     expect(explicit).toContain("agent record=agent")
-    expect(explicit.length).toBe(70)
+    // 0.13.39 (BE-3775): the bare word's handler, `agent <profile-id|slug> --perps`, a keyless read.
+    expect(explicit).toContain("agent=agent")
+    expect(explicit.length).toBe(71)
   })
 
   test("the CLI route lets the agent read and narrow access only", () => {

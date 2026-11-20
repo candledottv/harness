@@ -13,7 +13,7 @@ import { argumentDrift, CARD_TOOL_ARGS, classificationDrift, TOOL_CLASSES, uncla
 import { canonicalJson } from "../shared/canonical-json"
 
 /** The keyless perps reads the source lists after the released CLI 0.13.28 (MCP 0.10.33), the own-balance transfer tool and the perps wallet activity read. */
-const NEWER_THAN_RELEASE = ["candle_get_agent_open_orders", "candle_get_agent_perp_round", "candle_get_agent_record", "candle_get_perp_candles", "candle_perps_transfer", "candle_perps_activity", "candle_get_perp_market", "candle_holder_exit", "candle_claim_holder_exit"] as const
+const NEWER_THAN_RELEASE = ["candle_get_agent_open_orders", "candle_get_agent_perp_round", "candle_get_agent_record", "candle_get_perp_candles", "candle_perps_transfer", "candle_perps_activity", "candle_get_perp_market", "candle_holder_exit", "candle_claim_holder_exit", "candle_get_agent_perps_summary"] as const
 
 test("the released Read-key recording pins the CLI and MCP versions separately", () => {
   expect(released.cliVersion).toBe("0.13.28")
@@ -48,8 +48,8 @@ test("only the four conditional profile tools remain source-only, with no classi
   expect(sourceOnly.map((t) => t.name).sort()).toEqual([...LISTED_AFTER_KEY_CHECK].sort())
   for (const tool of sourceOnly) expect(tool).toMatchObject({ listedAfterKeyCheck: true })
   const reconciled = [...released.recording.tools, ...sourceOnly]
-  // The table also holds the three perp-page reads that came after 0.10.33, the transfer tool, the perps wallet activity read, the perp market read and the two holder-exit tools; the released CLI has none.
-  const perpPages = ["candle_get_agent_perp_round", "candle_get_agent_open_orders", "candle_get_agent_record", "candle_get_perp_candles", "candle_perps_transfer", "candle_perps_activity", "candle_get_perp_market", "candle_holder_exit", "candle_claim_holder_exit"]
+  // The table also holds the three perp-page reads that came after 0.10.33, the transfer tool, the perps wallet activity read, the perp market read, the two holder-exit tools and the perps summary read; the released CLI has none.
+  const perpPages = ["candle_get_agent_perp_round", "candle_get_agent_open_orders", "candle_get_agent_record", "candle_get_perp_candles", "candle_perps_transfer", "candle_perps_activity", "candle_get_perp_market", "candle_holder_exit", "candle_claim_holder_exit", "candle_get_agent_perps_summary"]
   const releasedTable = Object.fromEntries(Object.entries(TOOL_CLASSES).filter(([tool]) => !perpPages.includes(tool)))
   expect(classificationDrift(reconciled.map((t) => t.name), releasedTable)).toEqual([])
   // The table already lists `hide` for the CLI release to come (MCP 0.10.34); the released 0.10.33 has none.
@@ -57,18 +57,21 @@ test("only the four conditional profile tools remain source-only, with no classi
   expect(argumentDrift(reconciled, released0_10_33)).toEqual([])
 })
 
-test("the current source differs from the released 0.10.33 by per-order hide, builder-dex perps, seven new reads and the transfer tool", () => {
-  expect(current.serverInfo).toEqual({ name: "candle-mcp", version: "0.10.40" })
+test("the current source differs from the released 0.10.33 by per-order hide, builder-dex perps, eight new reads and the transfer tool", () => {
+  expect(current.serverInfo).toEqual({ name: "candle-mcp", version: "0.10.42" })
   expect(current.tools.map((t) => t.name).filter((n) => !source.tools.some((t) => t.name === n)).sort()).toEqual([...NEWER_THAN_RELEASE].sort())
   expect(current.tools).toHaveLength(source.tools.length + NEWER_THAN_RELEASE.length)
   // The atomic launch dry run is a read and takes hide too, to check the echo before a hidden launch.
   const withHide = ["candle_atomic_launch_dry_run", "candle_launch_and_seed", "candle_launch_token", "candle_swap", "candle_trade"]
+  const perpsWithHide = ["candle_perps_open", "candle_perps_close", "candle_perps_modify", "candle_perps_tpsl"]
   for (const tool of current.tools) {
     const before = source.tools.find((t) => t.name === tool.name)
     if (!before) continue
     const props = Object.keys(tool.inputSchema.properties)
     const was = Object.keys(before.inputSchema.properties)
     if (withHide.includes(tool.name)) expect(props.filter((p) => !was.includes(p))).toEqual(["hide"])
+    // Source MCP 0.10.42 (BE-3996): the perps orders take hide too; the Candle Harness refuses it on them (classify.ts) until BE-3770.
+    else if (perpsWithHide.includes(tool.name)) expect(props.filter((p) => !was.includes(p))).toEqual(["hide"])
     // Builder-deployed (HIP-3) markets: the market list takes a dex filter; every other perps tool keeps its arguments.
     else if (tool.name === "candle_perps_markets") expect(props.filter((p) => !was.includes(p))).toEqual(["dex"])
     else expect(props).toEqual(was)

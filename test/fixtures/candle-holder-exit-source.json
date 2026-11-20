@@ -2,11 +2,11 @@
   "about": "Offline Hood holder-exit contracts from exact merged source. Every address, amount, hash and time is made up; times are days before or after one made-up instant. api-source rows are Candle's own pure deriveHolderExit run on made-up chain facts at one block, in the read route's envelope (the route, the chain read and its cache are not run). api-stub rows are response stubs for the agent route (a dry run, a completed exit, a partial and an indeterminate one, a refusal), shaped by the SDK's types and the route's refusal table; the route, the builder and the signer are not run. mcp, sdk and cli rows read the same answers through the registered tools, the SDK and `candle token exit <token>` over an intercepted fetch: nothing is sent, signed or read from a chain. portfolio-marks-source and docs rows are the source's own text, read as text; `candle portfolio` itself is not run. No deployed behavior is claimed.",
   "source": {
     "repo": "candledottv/candle-monorepo",
-    "commit": "ebd1e50050cddc82d82186a1e6a499cd0ca02e85",
+    "commit": "bdf8548b9d6c3844b014f25ae1725cbae6f8b544",
     "versions": {
-      "cli": "0.13.35",
-      "mcp": "0.10.40",
-      "sdk": "0.6.29"
+      "cli": "0.13.39",
+      "mcp": "0.10.42",
+      "sdk": "0.6.32"
     }
   },
   "now": "2027-01-12T14:00:00.000Z",

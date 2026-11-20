@@ -2,11 +2,11 @@
   "about": "Offline agent record contracts from exact source. Every time is on three made-up days, and every figure, token and hash is made up. api-source rows are answers built by Candle's pure source (the perps profile bundle, the board publish, the record composition, the round rows and the union of swaps and rounds with its cursor) from one made-up wallet's stored facts, over a stand-in spot record; each also carries the server's best closes and the web's own split of the headline figure, run as the pure function it is. The wallet's address is hashed inside that source and is in no row. api-stub rows are response stand-ins: an older bundle's rows, and refusals carrying the route's own code and words. mcp, mcp-hosted, sdk and cli rows read the same answers through the registered tool, the hosted server's route, the SDK and `candle agent record` over an intercepted fetch; a served answer is kept once, in its api row, and each of those rows names it (`relays`) with the SHA-256 of the canonical JSON of what that surface gave, which the recorder checked is the same answer. docs rows are the public page's own paragraphs (its three copies agree), read as text. The database, the perps jobs, the venue and the keyed API route are not executed, and no deployed behavior is claimed.",
   "source": {
     "repo": "candledottv/candle-monorepo",
-    "commit": "ebd1e50050cddc82d82186a1e6a499cd0ca02e85",
+    "commit": "bdf8548b9d6c3844b014f25ae1725cbae6f8b544",
     "versions": {
-      "cli": "0.13.35",
-      "mcp": "0.10.40",
-      "sdk": "0.6.29"
+      "cli": "0.13.39",
+      "mcp": "0.10.42",
+      "sdk": "0.6.32"
     }
   },
   "rules": {

@@ -22,7 +22,7 @@ import type { CliCardRequest, CliCards } from "./cli-cards"
 import type { CardKind } from "./classify"
 import { type Destination, notAsked, prepareFundsOut } from "./destinations"
 import { versionAtLeast } from "./candle-mcp"
-import { allowedFlags, CLI_ROWS, type CliRow, canonicalCommand, heldNow, LP_AGENT_SCOPES, PERPS_HELD, type CliRule, dashPrefixValue, type Identity, isFlagWord, MIN_CANDLE_CLI, type Route, needsVault, repeats, rowFor, runsInPane, SOURCE, type SourceEntry, sourceFor } from "./cli-table"
+import { allowedFlags, CLI_ROWS, type CliRow, canonicalCommand, heldNow, LP_AGENT_SCOPES, PERPS_HELD, type CliRule, dashPrefixValue, type Identity, isFlagWord, MIN_CANDLE_CLI, type Route, needsVault, repeats, rowFor, runsInPane, SOURCE, type SourceEntry, sourceFor, withheldFlag } from "./cli-table"
 import type { Mapped, Operation } from "./execute"
 import type { Journal } from "./journal"
 import { paneRowNow, positionals, prepareKeysCreate, presetDrops, REAL_IN_PAPER, rebindFills, rebindNote } from "./owner-rows"
@@ -121,7 +121,7 @@ export function resolveCall(input: { command: unknown; subcommand?: unknown; arg
     } else if (allowed.boolean.has(arg)) {
       flags.set(arg, true)
     } else {
-      const declared = [...(entry.flags?.value ?? []), ...(entry.flags?.boolean ?? [])].includes(arg)
+      const declared = [...(entry.flags?.value ?? []), ...(entry.flags?.boolean ?? [])].includes(arg) && !withheldFlag(entry, arg)
       // A path the pane asks the user for (left to it, the agent asked for vault backup's --to in chat, then passed it).
       const asked = row.pane?.askPaths?.find((p) => p.flag === arg)
       if (asked) return fail("FLAG_NOT_ALLOWED", `Leave ${arg} out: the prompt pane asks the user for it when the step runs. Propose the step without it, and don't ask the user for it in chat.`)

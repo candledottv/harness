@@ -1,8 +1,8 @@
 {
-  "about": "Source tools/list from candledottv/candle-monorepo at ebd1e50050cddc82d82186a1e6a499cd0ca02e85 (CLI 0.13.35), via the real MCP server and an in-memory transport. No external requests or tool calls. Profile discovery used a local GET-only eligibility stub; the four listedAfterKeyCheck tools remain conditional. Scrubbed with scripts/scrub-recordings.ts toolFixture. This is a source contract recording, not evidence of a published CLI release.",
+  "about": "Source tools/list from candledottv/candle-monorepo at bdf8548b9d6c3844b014f25ae1725cbae6f8b544 (CLI 0.13.39), via the real MCP server and an in-memory transport. No external requests or tool calls. Profile discovery used a local GET-only eligibility stub; the four listedAfterKeyCheck tools remain conditional. Scrubbed with scripts/scrub-recordings.ts toolFixture. This is a source contract recording, not evidence of a published CLI release.",
   "serverInfo": {
     "name": "candle-mcp",
-    "version": "0.10.40"
+    "version": "0.10.42"
   },
   "tools": [
     {
@@ -1665,6 +1665,38 @@
           },
           "cursor": {
             "type": "string"
+          }
+        },
+        "required": [
+          "profileId"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "candle_get_agent_perps_summary",
+      "title": "Get an agent's perps summary",
+      "description": "One published agent's Hyperliquid perps summary for a window (all, 24h, 7d or 30d; default all) (GET /api/v1/agent/records/{profileId}/perps). No key needed. Reads only. summary: netUsd (realized + funding - fees + unrealized change), realizedUsd, unrealizedUsd, fundingUsd (positive when received), feesUsd (Hyperliquid fees, Candle's builder fee included), volumeUsd (sum of px x sz of the agent's fills, builder-dex fills included; builderDexVolumeUsd is their part), feesToVolumePct (fees over main-exchange volume), roundsClosed, wins, losses, winRatePct, largestWinUsd, largestLossUsd, highestLeverage and averageLeverage (rounds with leverage not recorded are left out and counted in leverageNotRecordedRounds), liquidations and maxDrawdownUsd (peak to trough of the cumulative perps P&L, dollars). null means not known, never zero. summary is null for an agent with no perps history; available false means the perps are delayed (asOfMs). asOfMs is when the figures were true. The same figures as the agent page. An agent that is not published answers RECORD_NOT_FOUND. No wallet address or balance. A measured record, not a forecast.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "profileId": {
+            "type": "string",
+            "description": "The agent's stable public id: prof_ and 16 lowercase hex"
+          },
+          "window": {
+            "type": "string",
+            "enum": [
+              "all",
+              "24h",
+              "7d",
+              "30d"
+            ],
+            "description": "The window; omit for all time"
           }
         },
         "required": [
@@ -3617,6 +3649,10 @@
             "pattern": "^0x[0-9a-fA-F]{32}$",
             "description": "Optional client order id (0x + 32 hex) used as the order's cloid. Retrying with the same id and request returns the original operation (replayed: true); embedded returns its stored signature and resumes submission. Another request under that id is refused (PERPS_CLIENT_ID_CONFLICT). Embedded open/close generate an id when omitted. Use a new id for a new order."
           },
+          "hide": {
+            "type": "boolean",
+            "description": "Keep this order out of the public activity stream. Sent only when true. The API confirms it; a result without that confirmation is an error, because an API that does not know `hide` would place the order publicly. Hidden orders still count in this key's own record. A refusal means the API has not enabled hide yet: nothing was placed."
+          },
           "wallet": {
             "type": "string",
             "description": "The EVM TEE wallet by id, address or label, or embedded. Defaults to the only TEE, then embedded when permitted."
@@ -3666,6 +3702,10 @@
             "type": "string",
             "pattern": "^0x[0-9a-fA-F]{32}$",
             "description": "Optional client order id (0x + 32 hex) used as the order's cloid. Retrying with the same id and request returns the original operation (replayed: true); embedded returns its stored signature and resumes submission. Another request under that id is refused (PERPS_CLIENT_ID_CONFLICT). Embedded open/close generate an id when omitted. Use a new id for a new order."
+          },
+          "hide": {
+            "type": "boolean",
+            "description": "Keep this order out of the public activity stream. Sent only when true. The API confirms it; a result without that confirmation is an error, because an API that does not know `hide` would place the order publicly. Hidden orders still count in this key's own record. A refusal means the API has not enabled hide yet: nothing was placed."
           },
           "wallet": {
             "type": "string",
@@ -4054,6 +4094,10 @@
             "type": "integer",
             "minimum": 1
           },
+          "hide": {
+            "type": "boolean",
+            "description": "Keep this order out of the public activity stream. Sent only when true. The API confirms it; a result without that confirmation is an error, because an API that does not know `hide` would place the order publicly. Hidden orders still count in this key's own record. A refusal means the API has not enabled hide yet: nothing was placed."
+          },
           "wallet": {
             "type": "string",
             "description": "The EVM TEE wallet by id, address or label, or embedded. Defaults to the only TEE, then embedded when permitted."
@@ -4156,6 +4200,10 @@
             "type": "string",
             "pattern": "^0x[0-9a-fA-F]{32}$",
             "description": "Which stop-loss, when several match"
+          },
+          "hide": {
+            "type": "boolean",
+            "description": "Keep this order out of the public activity stream. Sent only when true. The API confirms it; a result without that confirmation is an error, because an API that does not know `hide` would place the order publicly. Hidden orders still count in this key's own record. A refusal means the API has not enabled hide yet: nothing was placed."
           },
           "wallet": {
             "type": "string",
@@ -4827,8 +4875,8 @@
   ],
   "source": {
     "repo": "candledottv/candle-monorepo",
-    "commit": "ebd1e50050cddc82d82186a1e6a499cd0ca02e85",
-    "cliVersion": "0.13.35",
+    "commit": "bdf8548b9d6c3844b014f25ae1725cbae6f8b544",
+    "cliVersion": "0.13.39",
     "method": "in-memory tools/list; local eligibility stub; no tool calls"
   }
 }
