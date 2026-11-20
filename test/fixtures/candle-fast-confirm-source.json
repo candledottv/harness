@@ -1,0 +1,1710 @@
+{
+  "about": "Offline fast-confirm contracts (BE-3927): the trade rail's confirm reads the status every 250 ms from the send, checks the transaction's own blockhash every 8 reads and stops once the chain says it is dead (after one last status read), and keeps a 60 s budget that covers every RPC wait; launches keep the 1 s loop. A dead hash or the budget ends a trade as unconfirmed with its signature, and a swap answers SWAP_FAILED at stage unconfirmed. The web app's confirm reads every 250 ms and stops past the height bound; its swap watch runs a round every 250 ms and ends on the chain's expiry proof. Recorded by running the source against a stand-in RPC on a stand-in clock from an exact staging commit; every fetch is refused. The commit changes no CLI, MCP or SDK file: their published versions are the ones named in the source block.",
+  "source": {
+    "repo": "candledottv/candle-monorepo",
+    "commit": "5833f956012617e38771cedf0a71f91950bee306",
+    "versions": {
+      "cli": "0.13.32",
+      "mcp": "0.10.37",
+      "sdk": "0.6.26"
+    },
+    "files": [
+      "apps/api/src/services/candle/launch-confirm.ts",
+      "apps/api/src/services/candle/trade-broadcast.ts",
+      "apps/api/src/services/candle/swap-execution.ts",
+      "apps/api/src/routes/agent.ts",
+      "apps/api/src/services/candle/launch-helpers.ts",
+      "apps/api/src/services/candle/solana-headless.ts",
+      "apps/frontend/src/utils/solana.ts",
+      "apps/frontend/src/utils/solana-swap-outcome.ts"
+    ]
+  },
+  "rows": [
+    {
+      "id": "fast-first-read-at-250ms",
+      "scenario": "fast-loop",
+      "args": {
+        "landsOnRead": 1,
+        "fast": true
+      },
+      "outcome": {
+        "statusReads": 1,
+        "statusAtMs": [
+          250
+        ],
+        "validityAtMs": [],
+        "validityReads": 0,
+        "resendsAtMs": [],
+        "endedAtMs": 250,
+        "result": "returned",
+        "signature": "the send's own",
+        "observed": {
+          "sends": 1,
+          "slot": 901
+        }
+      }
+    },
+    {
+      "id": "default-first-read-at-1s",
+      "scenario": "default-loop",
+      "args": {
+        "landsOnRead": 1,
+        "fast": false
+      },
+      "outcome": {
+        "statusReads": 1,
+        "statusAtMs": [
+          1000
+        ],
+        "validityAtMs": [],
+        "validityReads": 0,
+        "resendsAtMs": [],
+        "endedAtMs": 1000,
+        "result": "returned",
+        "signature": "the send's own",
+        "observed": {
+          "sends": 1,
+          "slot": 901
+        }
+      }
+    },
+    {
+      "id": "fast-reads-every-250ms",
+      "scenario": "fast-loop",
+      "args": {
+        "landsOnRead": 6,
+        "fast": true
+      },
+      "outcome": {
+        "statusReads": 6,
+        "statusAtMs": [
+          250,
+          500,
+          750,
+          1000,
+          1250,
+          1500
+        ],
+        "validityAtMs": [],
+        "validityReads": 0,
+        "resendsAtMs": [],
+        "endedAtMs": 1500,
+        "result": "returned",
+        "signature": "the send's own",
+        "observed": {
+          "sends": 1,
+          "slot": 901
+        }
+      }
+    },
+    {
+      "id": "default-reads-every-1s",
+      "scenario": "default-loop",
+      "args": {
+        "landsOnRead": 3,
+        "fast": false
+      },
+      "outcome": {
+        "statusReads": 3,
+        "statusAtMs": [
+          1000,
+          2000,
+          3000
+        ],
+        "validityAtMs": [],
+        "validityReads": 0,
+        "resendsAtMs": [],
+        "endedAtMs": 3000,
+        "result": "returned",
+        "signature": "the send's own",
+        "observed": {
+          "sends": 1,
+          "slot": 901
+        }
+      }
+    },
+    {
+      "id": "fast-checks-its-own-hash-every-8-reads",
+      "scenario": "fast-loop",
+      "args": {
+        "landsOnRead": 20,
+        "hash": "valid",
+        "fast": true
+      },
+      "outcome": {
+        "statusReads": 20,
+        "statusAtMs": [
+          250,
+          500,
+          750,
+          1000,
+          1250,
+          1500,
+          "...",
+          4750,
+          5000
+        ],
+        "validityAtMs": [
+          2000,
+          4000
+        ],
+        "validityReads": 2,
+        "validityOnOwnHash": true,
+        "validityCommitment": [
+          "confirmed"
+        ],
+        "resendsAtMs": [
+          3250
+        ],
+        "endedAtMs": 5000,
+        "result": "returned",
+        "signature": "the send's own",
+        "observed": {
+          "sends": 2,
+          "slot": 901
+        }
+      }
+    },
+    {
+      "id": "fast-stops-once-the-hash-is-dead",
+      "scenario": "fast-loop",
+      "args": {
+        "hash": "dead at the first check",
+        "fast": true
+      },
+      "outcome": {
+        "statusReads": 9,
+        "statusAtMs": [
+          250,
+          500,
+          750,
+          1000,
+          1250,
+          1500,
+          1750,
+          2000,
+          2000
+        ],
+        "validityAtMs": [
+          2000
+        ],
+        "validityReads": 1,
+        "validityOnOwnHash": true,
+        "validityCommitment": [
+          "confirmed"
+        ],
+        "resendsAtMs": [],
+        "endedAtMs": 2000,
+        "result": "LaunchConfirmationTimeoutError",
+        "message": "Transaction expired before it confirmed.",
+        "signatureKept": true
+      }
+    },
+    {
+      "id": "fast-dead-hash-later-check",
+      "scenario": "fast-loop",
+      "args": {
+        "hash": "dead at the third check",
+        "fast": true
+      },
+      "outcome": {
+        "statusReads": 25,
+        "statusAtMs": [
+          250,
+          500,
+          750,
+          1000,
+          1250,
+          1500,
+          "...",
+          6000,
+          6000
+        ],
+        "validityAtMs": [
+          2000,
+          4000,
+          6000
+        ],
+        "validityReads": 3,
+        "validityOnOwnHash": true,
+        "validityCommitment": [
+          "confirmed"
+        ],
+        "resendsAtMs": [
+          3250
+        ],
+        "endedAtMs": 6000,
+        "result": "LaunchConfirmationTimeoutError",
+        "message": "Transaction expired before it confirmed.",
+        "signatureKept": true
+      }
+    },
+    {
+      "id": "fast-dead-hash-landed-in-the-last-read-wins",
+      "scenario": "fast-loop",
+      "args": {
+        "hash": "dead",
+        "lastRead": "confirmed",
+        "fast": true
+      },
+      "outcome": {
+        "statusReads": 9,
+        "statusAtMs": [
+          250,
+          500,
+          750,
+          1000,
+          1250,
+          1500,
+          1750,
+          2000,
+          2000
+        ],
+        "validityAtMs": [
+          2000
+        ],
+        "validityReads": 1,
+        "validityOnOwnHash": true,
+        "validityCommitment": [
+          "confirmed"
+        ],
+        "resendsAtMs": [],
+        "endedAtMs": 2000,
+        "result": "returned",
+        "signature": "the send's own",
+        "observed": {
+          "sends": 1,
+          "slot": 901
+        }
+      }
+    },
+    {
+      "id": "fast-dead-hash-finalized-in-the-last-read-wins",
+      "scenario": "fast-loop",
+      "args": {
+        "hash": "dead",
+        "lastRead": "finalized",
+        "fast": true
+      },
+      "outcome": {
+        "statusReads": 9,
+        "statusAtMs": [
+          250,
+          500,
+          750,
+          1000,
+          1250,
+          1500,
+          1750,
+          2000,
+          2000
+        ],
+        "validityAtMs": [
+          2000
+        ],
+        "validityReads": 1,
+        "validityOnOwnHash": true,
+        "validityCommitment": [
+          "confirmed"
+        ],
+        "resendsAtMs": [],
+        "endedAtMs": 2000,
+        "result": "returned",
+        "signature": "the send's own",
+        "observed": {
+          "sends": 1,
+          "slot": 901
+        }
+      }
+    },
+    {
+      "id": "fast-dead-hash-reverted-in-the-last-read",
+      "scenario": "fast-loop",
+      "args": {
+        "hash": "dead",
+        "lastRead": "confirmed with an error",
+        "fast": true
+      },
+      "outcome": {
+        "statusReads": 9,
+        "statusAtMs": [
+          250,
+          500,
+          750,
+          1000,
+          1250,
+          1500,
+          1750,
+          2000,
+          2000
+        ],
+        "validityAtMs": [
+          2000
+        ],
+        "validityReads": 1,
+        "validityOnOwnHash": true,
+        "validityCommitment": [
+          "confirmed"
+        ],
+        "resendsAtMs": [],
+        "endedAtMs": 2000,
+        "result": "OnChainRevertError",
+        "message": "Token creation failed: {\"InstructionError\":[0,{\"Custom\":1}]}",
+        "signatureKept": true,
+        "observed": {
+          "sends": 1,
+          "slot": 901
+        }
+      }
+    },
+    {
+      "id": "fast-dead-hash-processed-is-not-landed",
+      "scenario": "fast-loop",
+      "args": {
+        "hash": "dead",
+        "lastRead": "processed",
+        "fast": true
+      },
+      "outcome": {
+        "statusReads": 9,
+        "statusAtMs": [
+          250,
+          500,
+          750,
+          1000,
+          1250,
+          1500,
+          1750,
+          2000,
+          2000
+        ],
+        "validityAtMs": [
+          2000
+        ],
+        "validityReads": 1,
+        "validityOnOwnHash": true,
+        "validityCommitment": [
+          "confirmed"
+        ],
+        "resendsAtMs": [],
+        "endedAtMs": 2000,
+        "result": "LaunchConfirmationTimeoutError",
+        "message": "Transaction expired before it confirmed.",
+        "signatureKept": true
+      }
+    },
+    {
+      "id": "fast-dead-hash-processed-error-is-not-final",
+      "scenario": "fast-loop",
+      "args": {
+        "hash": "dead",
+        "lastRead": "processed with an error",
+        "fast": true
+      },
+      "outcome": {
+        "statusReads": 9,
+        "statusAtMs": [
+          250,
+          500,
+          750,
+          1000,
+          1250,
+          1500,
+          1750,
+          2000,
+          2000
+        ],
+        "validityAtMs": [
+          2000
+        ],
+        "validityReads": 1,
+        "validityOnOwnHash": true,
+        "validityCommitment": [
+          "confirmed"
+        ],
+        "resendsAtMs": [],
+        "endedAtMs": 2000,
+        "result": "LaunchConfirmationTimeoutError",
+        "message": "Transaction expired before it confirmed.",
+        "signatureKept": true
+      }
+    },
+    {
+      "id": "fast-dead-hash-last-read-fails",
+      "scenario": "fast-loop",
+      "args": {
+        "hash": "dead",
+        "lastRead": "rpc failure",
+        "fast": true
+      },
+      "outcome": {
+        "statusReads": 9,
+        "statusAtMs": [
+          250,
+          500,
+          750,
+          1000,
+          1250,
+          1500,
+          1750,
+          2000,
+          2000
+        ],
+        "validityAtMs": [
+          2000
+        ],
+        "validityReads": 1,
+        "validityOnOwnHash": true,
+        "validityCommitment": [
+          "confirmed"
+        ],
+        "resendsAtMs": [],
+        "endedAtMs": 2000,
+        "result": "LaunchConfirmationTimeoutError",
+        "message": "Transaction expired before it confirmed.",
+        "signatureKept": true
+      }
+    },
+    {
+      "id": "fast-failed-validity-read-decides-nothing",
+      "scenario": "fast-loop",
+      "args": {
+        "landsOnRead": 12,
+        "firstCheck": "rpc failure",
+        "fast": true
+      },
+      "outcome": {
+        "statusReads": 12,
+        "statusAtMs": [
+          250,
+          500,
+          750,
+          1000,
+          1250,
+          1500,
+          1750,
+          2000,
+          2250,
+          2500,
+          2750,
+          3000
+        ],
+        "validityAtMs": [
+          2000
+        ],
+        "validityReads": 1,
+        "validityOnOwnHash": true,
+        "validityCommitment": [
+          "confirmed"
+        ],
+        "resendsAtMs": [],
+        "endedAtMs": 3000,
+        "result": "returned",
+        "signature": "the send's own",
+        "observed": {
+          "sends": 1,
+          "slot": 901
+        }
+      }
+    },
+    {
+      "id": "fast-undecodable-bytes-never-check-a-hash",
+      "scenario": "fast-loop",
+      "args": {
+        "landsOnRead": 20,
+        "bytes": "undecodable",
+        "fast": true
+      },
+      "outcome": {
+        "statusReads": 20,
+        "statusAtMs": [
+          250,
+          500,
+          750,
+          1000,
+          1250,
+          1500,
+          "...",
+          4750,
+          5000
+        ],
+        "validityAtMs": [],
+        "validityReads": 0,
+        "resendsAtMs": [
+          3250
+        ],
+        "endedAtMs": 5000,
+        "result": "returned",
+        "signature": "the send's own",
+        "observed": {
+          "sends": 2,
+          "slot": 901
+        }
+      }
+    },
+    {
+      "id": "default-never-checks-the-hash",
+      "scenario": "default-loop",
+      "args": {
+        "landsOnRead": 20,
+        "hash": "dead",
+        "fast": false
+      },
+      "outcome": {
+        "statusReads": 20,
+        "statusAtMs": [
+          1000,
+          2000,
+          3000,
+          4000,
+          5000,
+          6000,
+          "...",
+          19000,
+          20000
+        ],
+        "validityAtMs": [],
+        "validityReads": 0,
+        "resendsAtMs": [
+          4000,
+          8000,
+          12000,
+          16000
+        ],
+        "endedAtMs": 20000,
+        "result": "returned",
+        "signature": "the send's own",
+        "observed": {
+          "sends": 5,
+          "slot": 901
+        }
+      }
+    },
+    {
+      "id": "fast-status-read-failure-is-indeterminate",
+      "scenario": "fast-loop",
+      "args": {
+        "failsOnRead": 3,
+        "fast": true
+      },
+      "outcome": {
+        "statusReads": 3,
+        "statusAtMs": [
+          250,
+          500,
+          750
+        ],
+        "validityAtMs": [],
+        "validityReads": 0,
+        "resendsAtMs": [],
+        "endedAtMs": 750,
+        "result": "IndeterminateLaunchOutcomeError",
+        "message": "stand-in RPC refused the read",
+        "signatureKept": true
+      }
+    },
+    {
+      "id": "fast-reverted-status-is-final",
+      "scenario": "fast-loop",
+      "args": {
+        "revertsOnRead": 2,
+        "fast": true
+      },
+      "outcome": {
+        "statusReads": 2,
+        "statusAtMs": [
+          250,
+          500
+        ],
+        "validityAtMs": [],
+        "validityReads": 0,
+        "resendsAtMs": [],
+        "endedAtMs": 500,
+        "result": "OnChainRevertError",
+        "message": "Token creation failed: {\"InstructionError\":[0,{\"Custom\":1}]}",
+        "signatureKept": true,
+        "observed": {
+          "sends": 1,
+          "slot": 901
+        }
+      }
+    },
+    {
+      "id": "fast-processed-error-keeps-polling",
+      "scenario": "fast-loop",
+      "args": {
+        "reads": "processed with an error, then confirmed",
+        "fast": true
+      },
+      "outcome": {
+        "statusReads": 3,
+        "statusAtMs": [
+          250,
+          500,
+          750
+        ],
+        "validityAtMs": [],
+        "validityReads": 0,
+        "resendsAtMs": [],
+        "endedAtMs": 750,
+        "result": "returned",
+        "signature": "the send's own",
+        "observed": {
+          "sends": 1,
+          "slot": 901
+        }
+      }
+    },
+    {
+      "id": "fast-resends-every-3s",
+      "scenario": "fast-loop",
+      "args": {
+        "landsOnRead": 30,
+        "fast": true
+      },
+      "outcome": {
+        "statusReads": 30,
+        "statusAtMs": [
+          250,
+          500,
+          750,
+          1000,
+          1250,
+          1500,
+          "...",
+          7250,
+          7500
+        ],
+        "validityAtMs": [
+          2000,
+          4000,
+          6000
+        ],
+        "validityReads": 3,
+        "validityOnOwnHash": true,
+        "validityCommitment": [
+          "confirmed"
+        ],
+        "resendsAtMs": [
+          3250,
+          6500
+        ],
+        "endedAtMs": 7500,
+        "result": "returned",
+        "signature": "the send's own",
+        "observed": {
+          "sends": 3,
+          "slot": 901
+        }
+      }
+    },
+    {
+      "id": "default-resends-every-3s",
+      "scenario": "default-loop",
+      "args": {
+        "landsOnRead": 9,
+        "fast": false
+      },
+      "outcome": {
+        "statusReads": 9,
+        "statusAtMs": [
+          1000,
+          2000,
+          3000,
+          4000,
+          5000,
+          6000,
+          7000,
+          8000,
+          9000
+        ],
+        "validityAtMs": [],
+        "validityReads": 0,
+        "resendsAtMs": [
+          4000,
+          8000
+        ],
+        "endedAtMs": 9000,
+        "result": "returned",
+        "signature": "the send's own",
+        "observed": {
+          "sends": 3,
+          "slot": 901
+        }
+      }
+    },
+    {
+      "id": "fast-refused-resend-is-tried-each-read-and-keeps-polling",
+      "scenario": "fast-loop",
+      "args": {
+        "landsOnRead": 16,
+        "resends": "refused",
+        "fast": true
+      },
+      "outcome": {
+        "statusReads": 16,
+        "statusAtMs": [
+          250,
+          500,
+          750,
+          1000,
+          1250,
+          1500,
+          "...",
+          3750,
+          4000
+        ],
+        "validityAtMs": [
+          2000
+        ],
+        "validityReads": 1,
+        "validityOnOwnHash": true,
+        "validityCommitment": [
+          "confirmed"
+        ],
+        "resendsAtMs": [
+          3250,
+          3500,
+          3750
+        ],
+        "endedAtMs": 4000,
+        "result": "returned",
+        "signature": "the send's own",
+        "observed": {
+          "sends": 1,
+          "slot": 901
+        }
+      }
+    },
+    {
+      "id": "fast-60s-cap-while-the-hash-stays-valid",
+      "scenario": "fast-loop",
+      "args": {
+        "lands": "never",
+        "hash": "valid",
+        "fast": true
+      },
+      "outcome": {
+        "statusReads": 240,
+        "statusAtMs": [
+          250,
+          500,
+          750,
+          1000,
+          1250,
+          1500,
+          "...",
+          59750,
+          60000
+        ],
+        "validityAtMs": [
+          2000,
+          4000,
+          6000,
+          8000,
+          10000,
+          12000,
+          "...",
+          58000,
+          60000
+        ],
+        "validityReads": 30,
+        "validityOnOwnHash": true,
+        "validityCommitment": [
+          "confirmed"
+        ],
+        "resendsAtMs": [
+          3250,
+          6500,
+          9750,
+          13000,
+          16250,
+          19500,
+          22750,
+          26000,
+          29250,
+          32500,
+          35750,
+          39000,
+          42250,
+          45500,
+          48750,
+          52000,
+          55250,
+          58500
+        ],
+        "endedAtMs": 60000,
+        "result": "LaunchConfirmationTimeoutError",
+        "message": "Transaction timed out. Verify the mint on-chain before retrying.",
+        "signatureKept": true
+      }
+    },
+    {
+      "id": "default-60s-cap",
+      "scenario": "default-loop",
+      "args": {
+        "lands": "never",
+        "fast": false
+      },
+      "outcome": {
+        "statusReads": 60,
+        "statusAtMs": [
+          1000,
+          2000,
+          3000,
+          4000,
+          5000,
+          6000,
+          "...",
+          59000,
+          60000
+        ],
+        "validityAtMs": [],
+        "validityReads": 0,
+        "resendsAtMs": [
+          4000,
+          8000,
+          12000,
+          16000,
+          20000,
+          24000,
+          28000,
+          32000,
+          36000,
+          40000,
+          44000,
+          48000,
+          52000,
+          56000,
+          60000
+        ],
+        "endedAtMs": 60000,
+        "result": "LaunchConfirmationTimeoutError",
+        "message": "Transaction timed out. Verify the mint on-chain before retrying.",
+        "signatureKept": true
+      }
+    },
+    {
+      "id": "fast-slow-reads-stay-inside-the-budget",
+      "scenario": "fast-loop",
+      "args": {
+        "lands": "never",
+        "eachReadMs": 5000,
+        "fast": true
+      },
+      "outcome": {
+        "statusReads": 6,
+        "statusAtMs": [
+          250,
+          10500,
+          20750,
+          31000,
+          41250,
+          51500
+        ],
+        "validityAtMs": [],
+        "validityReads": 0,
+        "resendsAtMs": [
+          5250,
+          15500,
+          25750,
+          36000,
+          46250,
+          56500
+        ],
+        "endedAtMs": 60000,
+        "result": "LaunchConfirmationTimeoutError",
+        "message": "Transaction timed out. Verify the mint on-chain before retrying.",
+        "signatureKept": true
+      }
+    },
+    {
+      "id": "fast-a-read-that-never-answers-is-cut-at-the-budget",
+      "scenario": "fast-loop",
+      "args": {
+        "firstRead": "never answers",
+        "fast": true
+      },
+      "outcome": {
+        "statusReads": 1,
+        "statusAtMs": [
+          250
+        ],
+        "validityAtMs": [],
+        "validityReads": 0,
+        "resendsAtMs": [],
+        "endedAtMs": 60000,
+        "result": "LaunchConfirmationTimeoutError",
+        "message": "Transaction timed out. Verify the mint on-chain before retrying.",
+        "signatureKept": true
+      }
+    },
+    {
+      "id": "trade-confirm-is-the-fast-loop",
+      "scenario": "trade-broadcast",
+      "args": {
+        "landsOnRead": 2
+      },
+      "outcome": {
+        "statusReads": 2,
+        "statusAtMs": [
+          250,
+          500
+        ],
+        "validityAtMs": [],
+        "validityReads": 0,
+        "resendsAtMs": [],
+        "endedAtMs": 500,
+        "result": "returned",
+        "signature": "the send's own",
+        "firstSend": {
+          "preflight": true,
+          "maxRetries": 5
+        },
+        "resends": []
+      }
+    },
+    {
+      "id": "trade-dead-hash-is-unconfirmed",
+      "scenario": "trade-broadcast",
+      "args": {
+        "hash": "dead at the first check"
+      },
+      "outcome": {
+        "statusReads": 9,
+        "statusAtMs": [
+          250,
+          500,
+          750,
+          1000,
+          1250,
+          1500,
+          1750,
+          2000,
+          2000
+        ],
+        "validityAtMs": [
+          2000
+        ],
+        "validityReads": 1,
+        "validityOnOwnHash": true,
+        "validityCommitment": [
+          "confirmed"
+        ],
+        "resendsAtMs": [],
+        "endedAtMs": 2000,
+        "result": "TradeUnconfirmedError",
+        "message": "The trade transaction was not confirmed within 60 seconds. The transaction may still land; verify it on-chain before retrying under a new clientTradeId. Read GET /api/v1/trade/agent/jobs/{clientTradeId} for the recorded signature.",
+        "signatureKept": true,
+        "firstSend": {
+          "preflight": true,
+          "maxRetries": 5
+        },
+        "resends": [],
+        "unconfirmedMessage": true
+      }
+    },
+    {
+      "id": "trade-60s-cap-is-unconfirmed",
+      "scenario": "trade-broadcast",
+      "args": {
+        "lands": "never",
+        "hash": "valid"
+      },
+      "outcome": {
+        "statusReads": 240,
+        "statusAtMs": [
+          250,
+          500,
+          750,
+          1000,
+          1250,
+          1500,
+          "...",
+          59750,
+          60000
+        ],
+        "validityAtMs": [
+          2000,
+          4000,
+          6000,
+          8000,
+          10000,
+          12000,
+          "...",
+          58000,
+          60000
+        ],
+        "validityReads": 30,
+        "validityOnOwnHash": true,
+        "validityCommitment": [
+          "confirmed"
+        ],
+        "resendsAtMs": [
+          3250,
+          6500,
+          9750,
+          13000,
+          16250,
+          19500,
+          22750,
+          26000,
+          29250,
+          32500,
+          35750,
+          39000,
+          42250,
+          45500,
+          48750,
+          52000,
+          55250,
+          58500
+        ],
+        "endedAtMs": 60000,
+        "result": "TradeUnconfirmedError",
+        "message": "The trade transaction was not confirmed within 60 seconds. The transaction may still land; verify it on-chain before retrying under a new clientTradeId. Read GET /api/v1/trade/agent/jobs/{clientTradeId} for the recorded signature.",
+        "signatureKept": true,
+        "firstSend": {
+          "preflight": true,
+          "maxRetries": 5
+        },
+        "resends": [
+          {
+            "preflight": false,
+            "maxRetries": 0
+          },
+          {
+            "preflight": false,
+            "maxRetries": 0
+          },
+          {
+            "preflight": false,
+            "maxRetries": 0
+          },
+          {
+            "preflight": false,
+            "maxRetries": 0
+          },
+          {
+            "preflight": false,
+            "maxRetries": 0
+          },
+          {
+            "preflight": false,
+            "maxRetries": 0
+          },
+          {
+            "preflight": false,
+            "maxRetries": 0
+          },
+          {
+            "preflight": false,
+            "maxRetries": 0
+          },
+          {
+            "preflight": false,
+            "maxRetries": 0
+          },
+          {
+            "preflight": false,
+            "maxRetries": 0
+          },
+          {
+            "preflight": false,
+            "maxRetries": 0
+          },
+          {
+            "preflight": false,
+            "maxRetries": 0
+          },
+          {
+            "preflight": false,
+            "maxRetries": 0
+          },
+          {
+            "preflight": false,
+            "maxRetries": 0
+          },
+          {
+            "preflight": false,
+            "maxRetries": 0
+          },
+          {
+            "preflight": false,
+            "maxRetries": 0
+          },
+          {
+            "preflight": false,
+            "maxRetries": 0
+          },
+          {
+            "preflight": false,
+            "maxRetries": 0
+          }
+        ],
+        "unconfirmedMessage": true
+      }
+    },
+    {
+      "id": "trade-never-answering-read-is-unconfirmed",
+      "scenario": "trade-broadcast",
+      "args": {
+        "firstRead": "never answers"
+      },
+      "outcome": {
+        "statusReads": 1,
+        "statusAtMs": [
+          250
+        ],
+        "validityAtMs": [],
+        "validityReads": 0,
+        "resendsAtMs": [],
+        "endedAtMs": 60000,
+        "result": "TradeUnconfirmedError",
+        "message": "The trade transaction was not confirmed within 60 seconds. The transaction may still land; verify it on-chain before retrying under a new clientTradeId. Read GET /api/v1/trade/agent/jobs/{clientTradeId} for the recorded signature.",
+        "signatureKept": true,
+        "firstSend": {
+          "preflight": true,
+          "maxRetries": 5
+        },
+        "resends": [],
+        "unconfirmedMessage": true
+      }
+    },
+    {
+      "id": "trade-status-read-failure-is-unconfirmed",
+      "scenario": "trade-broadcast",
+      "args": {
+        "failsOnRead": 2
+      },
+      "outcome": {
+        "statusReads": 2,
+        "statusAtMs": [
+          250,
+          500
+        ],
+        "validityAtMs": [],
+        "validityReads": 0,
+        "resendsAtMs": [],
+        "endedAtMs": 500,
+        "result": "TradeUnconfirmedError",
+        "message": "The trade transaction was not confirmed within 60 seconds. The transaction may still land; verify it on-chain before retrying under a new clientTradeId. Read GET /api/v1/trade/agent/jobs/{clientTradeId} for the recorded signature.",
+        "signatureKept": true,
+        "firstSend": {
+          "preflight": true,
+          "maxRetries": 5
+        },
+        "resends": [],
+        "unconfirmedMessage": true
+      }
+    },
+    {
+      "id": "trade-revert-is-reverted",
+      "scenario": "trade-broadcast",
+      "args": {
+        "revertsOnRead": 3
+      },
+      "outcome": {
+        "statusReads": 3,
+        "statusAtMs": [
+          250,
+          500,
+          750
+        ],
+        "validityAtMs": [],
+        "validityReads": 0,
+        "resendsAtMs": [],
+        "endedAtMs": 750,
+        "result": "TradeRevertedError",
+        "message": "The trade transaction landed and reverted on chain: {\"InstructionError\":[0,{\"Custom\":1}]}. The network fee was spent; nothing else moved. This clientTradeId is settled: to trade again, re-quote and use a new clientTradeId.",
+        "signatureKept": true,
+        "firstSend": {
+          "preflight": true,
+          "maxRetries": 5
+        },
+        "resends": [],
+        "unconfirmedMessage": false
+      }
+    },
+    {
+      "id": "trade-landed-in-the-last-read-after-the-hash-died",
+      "scenario": "trade-broadcast",
+      "args": {
+        "hash": "dead",
+        "lastRead": "confirmed"
+      },
+      "outcome": {
+        "statusReads": 9,
+        "statusAtMs": [
+          250,
+          500,
+          750,
+          1000,
+          1250,
+          1500,
+          1750,
+          2000,
+          2000
+        ],
+        "validityAtMs": [
+          2000
+        ],
+        "validityReads": 1,
+        "validityOnOwnHash": true,
+        "validityCommitment": [
+          "confirmed"
+        ],
+        "resendsAtMs": [],
+        "endedAtMs": 2000,
+        "result": "returned",
+        "signature": "the send's own",
+        "firstSend": {
+          "preflight": true,
+          "maxRetries": 5
+        },
+        "resends": []
+      }
+    },
+    {
+      "id": "swap-landed-is-confirmed",
+      "scenario": "swap-execution",
+      "args": {
+        "landsOnRead": 2
+      },
+      "outcome": {
+        "confirmed": true,
+        "endedAtMs": 500,
+        "evidence": {
+          "stage": "confirmed",
+          "retryable": false,
+          "legs": [
+            {
+              "outcome": "confirmed",
+              "sent": true
+            }
+          ]
+        },
+        "storedStages": [
+          "unconfirmed",
+          "confirmed"
+        ],
+        "signature": "the send's own"
+      }
+    },
+    {
+      "id": "swap-dead-hash-answers-unconfirmed",
+      "scenario": "swap-execution",
+      "args": {
+        "hash": "dead at the first check"
+      },
+      "outcome": {
+        "confirmed": false,
+        "endedAtMs": 2000,
+        "evidence": {
+          "stage": "unconfirmed",
+          "code": "SWAP_FAILED",
+          "retryable": false,
+          "legs": [
+            {
+              "outcome": "unknown",
+              "sent": true
+            }
+          ]
+        },
+        "storedStages": [
+          "unconfirmed",
+          "unconfirmed"
+        ],
+        "signature": "the send's own",
+        "answer": {
+          "code": "SWAP_FAILED",
+          "stage": "unconfirmed",
+          "retryable": false,
+          "message": "Swap outcome needs verification on chain. Do not resubmit this intention or automatically retry with a new id."
+        }
+      }
+    },
+    {
+      "id": "swap-60s-cap-answers-unconfirmed",
+      "scenario": "swap-execution",
+      "args": {
+        "lands": "never"
+      },
+      "outcome": {
+        "confirmed": false,
+        "endedAtMs": 60000,
+        "evidence": {
+          "stage": "unconfirmed",
+          "code": "SWAP_FAILED",
+          "retryable": false,
+          "legs": [
+            {
+              "outcome": "unknown",
+              "sent": true
+            }
+          ]
+        },
+        "storedStages": [
+          "unconfirmed",
+          "unconfirmed"
+        ],
+        "signature": "the send's own",
+        "answer": {
+          "code": "SWAP_FAILED",
+          "stage": "unconfirmed",
+          "retryable": false,
+          "message": "Swap outcome needs verification on chain. Do not resubmit this intention or automatically retry with a new id."
+        }
+      }
+    },
+    {
+      "id": "swap-revert-answers-reverted",
+      "scenario": "swap-execution",
+      "args": {
+        "revertsOnRead": 2
+      },
+      "outcome": {
+        "confirmed": false,
+        "endedAtMs": 500,
+        "evidence": {
+          "stage": "reverted",
+          "code": "SWAP_FAILED",
+          "retryable": false,
+          "legs": [
+            {
+              "outcome": "reverted",
+              "sent": true
+            }
+          ]
+        },
+        "storedStages": [
+          "unconfirmed",
+          "reverted"
+        ],
+        "signature": "the send's own",
+        "answer": {
+          "code": "SWAP_FAILED",
+          "stage": "reverted",
+          "retryable": false,
+          "message": "The trade transaction landed and reverted on chain: {\"InstructionError\":[0,{\"Custom\":1}]}. The network fee was spent; nothing else moved. This clientTradeId is settled: to trade again, re-quote and use a new clientTradeId."
+        }
+      }
+    },
+    {
+      "id": "web-confirm-reads-every-250ms",
+      "scenario": "web-confirm",
+      "args": {
+        "landsOnRead": 4
+      },
+      "outcome": {
+        "statusReads": 4,
+        "statusAtMs": [
+          0,
+          250,
+          500,
+          750
+        ],
+        "heightReads": 0,
+        "endedAtMs": 750,
+        "result": "returned"
+      }
+    },
+    {
+      "id": "web-confirm-stops-past-the-height-bound",
+      "scenario": "web-confirm",
+      "args": {
+        "lastValidBlockHeight": 1000,
+        "heightPassesOnRead": 3
+      },
+      "outcome": {
+        "statusReads": 3,
+        "statusAtMs": [
+          0,
+          250,
+          500
+        ],
+        "heightReads": 3,
+        "endedAtMs": 500,
+        "result": "TransactionExpiredError"
+      }
+    },
+    {
+      "id": "web-confirm-failed-read-keeps-polling",
+      "scenario": "web-confirm",
+      "args": {
+        "reads": "rpc failure, then confirmed"
+      },
+      "outcome": {
+        "statusReads": 2,
+        "statusAtMs": [
+          0,
+          250
+        ],
+        "heightReads": 0,
+        "endedAtMs": 250,
+        "result": "returned"
+      }
+    },
+    {
+      "id": "web-confirm-on-chain-error-is-failed",
+      "scenario": "web-confirm",
+      "args": {
+        "erroredOnRead": 2
+      },
+      "outcome": {
+        "statusReads": 2,
+        "statusAtMs": [
+          0,
+          250
+        ],
+        "heightReads": 0,
+        "endedAtMs": 250,
+        "result": "TransactionFailedError"
+      }
+    },
+    {
+      "id": "web-confirm-caller-interval-kept",
+      "scenario": "web-confirm",
+      "args": {
+        "intervalMs": 1000,
+        "landsOnRead": 3
+      },
+      "outcome": {
+        "statusReads": 3,
+        "statusAtMs": [
+          0,
+          1000,
+          2000
+        ],
+        "heightReads": 0,
+        "endedAtMs": 2000,
+        "result": "returned"
+      }
+    },
+    {
+      "id": "web-confirm-60s-cap-without-a-bound",
+      "scenario": "web-confirm",
+      "args": {
+        "lands": "never"
+      },
+      "outcome": {
+        "statusReads": 242,
+        "statusAtMs": [
+          0,
+          250,
+          500,
+          750,
+          1000,
+          1250,
+          "...",
+          60000,
+          60250
+        ],
+        "heightReads": 0,
+        "endedAtMs": 60250,
+        "result": "ConfirmationTimeoutError"
+      }
+    },
+    {
+      "id": "web-watch-round-every-250ms",
+      "scenario": "web-swap-watch",
+      "args": {
+        "landsOnRound": 4
+      },
+      "outcome": {
+        "rounds": 4,
+        "roundsAtMs": [
+          0,
+          250,
+          500,
+          750
+        ],
+        "endedAtMs": 750,
+        "kind": "landed"
+      }
+    },
+    {
+      "id": "web-watch-ends-on-the-expiry-proof",
+      "scenario": "web-swap-watch",
+      "args": {
+        "finalized": "past the bound",
+        "history": "none"
+      },
+      "outcome": {
+        "rounds": 21,
+        "roundsAtMs": [
+          0,
+          250,
+          500,
+          750,
+          1000,
+          1250,
+          "...",
+          4750,
+          5000
+        ],
+        "endedAtMs": 5000,
+        "kind": "expired"
+      }
+    },
+    {
+      "id": "web-watch-on-chain-error-is-failed",
+      "scenario": "web-swap-watch",
+      "args": {
+        "erroredOnRound": 2
+      },
+      "outcome": {
+        "rounds": 2,
+        "roundsAtMs": [
+          0,
+          250
+        ],
+        "endedAtMs": 250,
+        "kind": "failed"
+      }
+    },
+    {
+      "id": "web-watch-has-no-deadline",
+      "scenario": "web-swap-watch",
+      "args": {
+        "landsOnRound": 300
+      },
+      "outcome": {
+        "rounds": 300,
+        "roundsAtMs": [
+          0,
+          250,
+          500,
+          750,
+          1000,
+          1250,
+          "...",
+          74500,
+          74750
+        ],
+        "endedAtMs": 74750,
+        "kind": "landed",
+        "windowEndedAtMs": 60000
+      }
+    },
+    {
+      "id": "fast-poll-is-250ms",
+      "scenario": "source-pin",
+      "args": {
+        "file": "apps/api/src/services/candle/launch-confirm.ts"
+      },
+      "outcome": {
+        "found": true
+      }
+    },
+    {
+      "id": "fast-hash-check-every-8-polls",
+      "scenario": "source-pin",
+      "args": {
+        "file": "apps/api/src/services/candle/launch-confirm.ts"
+      },
+      "outcome": {
+        "found": true
+      }
+    },
+    {
+      "id": "fast-budget-is-60s",
+      "scenario": "source-pin",
+      "args": {
+        "file": "apps/api/src/services/candle/launch-confirm.ts"
+      },
+      "outcome": {
+        "found": true
+      }
+    },
+    {
+      "id": "fast-hash-read-at-confirmed",
+      "scenario": "source-pin",
+      "args": {
+        "file": "apps/api/src/services/candle/launch-confirm.ts"
+      },
+      "outcome": {
+        "found": true
+      }
+    },
+    {
+      "id": "trade-confirm-asks-for-fast",
+      "scenario": "source-pin",
+      "args": {
+        "file": "apps/api/src/services/candle/trade-broadcast.ts"
+      },
+      "outcome": {
+        "found": true
+      }
+    },
+    {
+      "id": "trade-indeterminate-is-unconfirmed",
+      "scenario": "source-pin",
+      "args": {
+        "file": "apps/api/src/services/candle/trade-broadcast.ts"
+      },
+      "outcome": {
+        "found": true
+      }
+    },
+    {
+      "id": "launch-confirm-keeps-the-default-loop",
+      "scenario": "source-pin",
+      "args": {
+        "file": "apps/api/src/services/candle/launch-helpers.ts"
+      },
+      "outcome": {
+        "found": true
+      }
+    },
+    {
+      "id": "headless-confirm-keeps-the-default-loop",
+      "scenario": "source-pin",
+      "args": {
+        "file": "apps/api/src/services/candle/solana-headless.ts"
+      },
+      "outcome": {
+        "found": true
+      }
+    },
+    {
+      "id": "web-confirm-default-interval-250ms",
+      "scenario": "source-pin",
+      "args": {
+        "file": "apps/frontend/src/utils/solana.ts"
+      },
+      "outcome": {
+        "found": true
+      }
+    },
+    {
+      "id": "web-swap-watch-round-250ms",
+      "scenario": "source-pin",
+      "args": {
+        "file": "apps/frontend/src/utils/solana-swap-outcome.ts"
+      },
+      "outcome": {
+        "found": true
+      }
+    },
+    {
+      "id": "confirm-codes",
+      "scenario": "codes",
+      "args": {
+        "from": "swap-execution"
+      },
+      "outcome": {
+        "codes": [
+          "SWAP_FAILED"
+        ],
+        "stages": [
+          "unconfirmed",
+          "reverted"
+        ],
+        "retryable": [
+          false
+        ]
+      }
+    }
+  ]
+}

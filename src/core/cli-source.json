@@ -3,8 +3,8 @@
   "source": {
     "repo": "candledottv/candle-monorepo",
     "path": "packages/cli/src",
-    "commit": "36d4bf2642244e82deaa690d8d1277d60d8b9021",
-    "cliVersion": "0.13.32"
+    "commit": "ebd1e50050cddc82d82186a1e6a499cd0ca02e85",
+    "cliVersion": "0.13.35"
   },
   "aliases": {
     "wallet": "wallets"
@@ -173,8 +173,8 @@
           "description": "List live perp markets directly from Hyperliquid (main exchange by default; --dex for a builder dex); any Candle agent key required"
         },
         {
-          "invocation": "market <coin>",
-          "description": "Market detail, margin tiers, impact prices and precision rules; a builder-dex market is dex:COIN (xyz:TSLA) and prints its dex, oracle, deployer, margin mode and fee"
+          "invocation": "market <coin> [--agents]",
+          "description": "--agents: the public read (no key): the market's figures and the published Candle agents long and short in it, with their open positions and recent closed rounds. Without it: market detail, margin tiers, impact prices and precision rules; a builder-dex market is dex:COIN (xyz:TSLA) and prints its dex, oracle, deployer, margin mode and fee"
         },
         {
           "invocation": "book <coin> [--depth <1-20>] [--sig-figs <2-5>]",
@@ -370,7 +370,7 @@
     },
     "token": {
       "group": "Account",
-      "summary": "Token About pages, creator metadata edits, events, cluster analysis, forensics and the vamp finder",
+      "summary": "Token About pages, creator metadata edits, events, cluster analysis, forensics, the vamp finder and Hood holder exits",
       "rows": [
         {
           "invocation": "edit <mint>",
@@ -383,6 +383,10 @@
         {
           "invocation": "events <mint>",
           "description": "Signals, callouts and tracked-wallet trades for one token, one per line"
+        },
+        {
+          "invocation": "exit <token>",
+          "description": "Hood: where a holder stands if the launch does not migrate (Recovery, rescue, team vesting), and the exit"
         },
         {
           "invocation": "forensics <mint>",
@@ -1567,6 +1571,33 @@
     },
     {
       "command": "token",
+      "subcommand": "exit",
+      "handler": "tokenExit",
+      "file": "commands/token-exit.ts",
+      "flags": {
+        "value": [
+          "--amount",
+          "--wallet"
+        ],
+        "boolean": [
+          "--claim-team",
+          "--dry-run",
+          "--enter-recovery",
+          "--recover",
+          "--yes"
+        ],
+        "path": [],
+        "pathPositionals": []
+      },
+      "identity": "agent",
+      "json": true,
+      "unlocks": "never",
+      "tty": [
+        "stdin"
+      ]
+    },
+    {
+      "command": "token",
       "subcommand": "forensics",
       "handler": "tokenForensics",
       "file": "commands/token-paid.ts",
@@ -2397,6 +2428,7 @@
           "--sort"
         ],
         "boolean": [
+          "--agents",
           "--all"
         ],
         "path": [],
@@ -2424,6 +2456,7 @@
           "--sort"
         ],
         "boolean": [
+          "--agents",
           "--all"
         ],
         "path": [],
@@ -2451,6 +2484,7 @@
           "--sort"
         ],
         "boolean": [
+          "--agents",
           "--all"
         ],
         "path": [],
@@ -2478,6 +2512,7 @@
           "--sort"
         ],
         "boolean": [
+          "--agents",
           "--all"
         ],
         "path": [],

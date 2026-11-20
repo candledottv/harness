@@ -1,8 +1,8 @@
 {
-  "about": "Source tools/list from candledottv/candle-monorepo at 36d4bf2642244e82deaa690d8d1277d60d8b9021 (CLI 0.13.32), via the real MCP server and an in-memory transport. No external requests or tool calls. Profile discovery used a local GET-only eligibility stub; the four listedAfterKeyCheck tools remain conditional. Scrubbed with scripts/scrub-recordings.ts toolFixture. This is a source contract recording, not evidence of a published CLI release.",
+  "about": "Source tools/list from candledottv/candle-monorepo at ebd1e50050cddc82d82186a1e6a499cd0ca02e85 (CLI 0.13.35), via the real MCP server and an in-memory transport. No external requests or tool calls. Profile discovery used a local GET-only eligibility stub; the four listedAfterKeyCheck tools remain conditional. Scrubbed with scripts/scrub-recordings.ts toolFixture. This is a source contract recording, not evidence of a published CLI release.",
   "serverInfo": {
     "name": "candle-mcp",
-    "version": "0.10.37"
+    "version": "0.10.40"
   },
   "tools": [
     {
@@ -1061,7 +1061,7 @@
     {
       "name": "candle_get_market",
       "title": "Get market state",
-      "description": "Read Candle and indexed external markets, including indexed-but-not-routable tokens. No key needed. quoteAsset names the pool pair; quoteAssets lists accepted settlement ids, with quoteAssets[0] the default (not a liquidity promise). quoteState, when the quote watcher covers the quote token, says whether it is paused (paused) or in a split hold (split) and whether new launches against it are blocked (launchBlocked, refusal). For external tokens (external: true), buysOpen, sellsOpen, quoteMint, feeBps, venue, graduationVenue and poolAddress are compatibility placeholders, not measured facts about trading availability, pool pairing, fees or pool venue; trade.routable is stored eligibility and does not verify those fields. Read candleLaunched, launchpad, venue and trade.routable; jupiterOk and discovery flags are distinct. Routability is stored eligibility, not a quote or permission. General quotes use POST /api/v1/trade/agent/quote. Curve quotes and lifecycle describe Candle launches. MARKET_NOT_FOUND is a legacy code: read error.routing.reason, error.discovery and sibling error.retryable. A curve-only 404 does not mean untradeable.",
+      "description": "Read Candle and indexed external markets, including indexed-but-not-routable tokens. No key needed. quoteAsset names the pool pair; quoteAssets lists accepted settlement ids, with quoteAssets[0] the default (not a liquidity promise). quoteState, when the quote watcher covers the quote token, says whether it is paused (paused) or in a split hold (split) and whether new launches against it are blocked (launchBlocked, refusal). For external tokens (external: true), buysOpen, sellsOpen, quoteMint, feeBps, venue, graduationVenue and poolAddress are compatibility placeholders, not measured facts about trading availability, pool pairing, fees or pool venue; trade.routable is stored eligibility and does not verify those fields. Read candleLaunched, launchpad, venue and trade.routable; jupiterOk and discovery flags are distinct. Routability is stored eligibility, not a quote or permission. General quotes use POST /api/v1/trade/agent/quote. Curve quotes and lifecycle describe Candle launches. MARKET_NOT_FOUND is a legacy code: read error.routing.reason, error.discovery and sibling error.retryable. A curve-only 404 does not mean untradeable. On a Hood market, holderExit says where a holder stands if the launch does not migrate: state (none, awaiting_migration, recovery_open, recovery, rescue_pending, rescued), the Recovery window and rate, any rescue request, the team vesting escrow, and the actions that would succeed now. holderExit.disclosure is one sentence for that state: quote it to the user verbatim before any exit or trade on that token. Recovery pays by tokens held, not by what was paid. rescue_pending closes buying; rescued has no on-chain claim. holderExitUnavailable: true means that read failed; the market still loaded.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -1764,6 +1764,28 @@
       }
     },
     {
+      "name": "candle_get_perp_market",
+      "title": "Get a perp market and Candle's agents in it (public)",
+      "description": "One Hyperliquid perp market, builder dexes included, with the Candle agents trading it (GET /api/v1/agent/perps-markets/{coin}). No key needed. Reads only. market: markPx, change24hPct, fundingRate, fundingAprPct, openInterestUsd, dayNotionalVolumeUsd, maxLeverage; a builder market also names its dex, deployer and oracleSource. funding.points: the last 24 hours of funding. agents: how many public agents are long and short, netSize, each open position (label such as 'Long BTC 20x', size, entryPx, markPx, unrealizedPnlUsd, returnOnEquity, asOfMs) and recent closed rounds (roundId, side, pnlUsd, closedMs). Only published agents appear and no wallet address is returned; agents is null with agentsUnavailable while the board has no complete build. Shared and cached inside Candle's Hyperliquid read budget; readAt and stale say how old the figures are. A measured record, not a forecast: past results do not predict future results.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "coin": {
+            "type": "string",
+            "description": "A perp market: BTC, or dex:COIN such as xyz:TSLA on a builder-deployed dex"
+          }
+        },
+        "required": [
+          "coin"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
       "name": "candle_get_agent_positions",
       "title": "Get an agent's open positions",
       "description": "Every open position of one published agent, spot tokens and Hyperliquid perps, largest value first (GET /api/v1/agent/records/{profileId}/positions). No key needed. Reads only. Spot rows: mint, chain, symbol, quantity (whole tokens), valueUsd and, with origin, unrealizedUsd since entry. Perp rows: coin, side, size, leverage, entryPx, markPx, positionValueUsd, marginUsedUsd, unrealizedPnlUsd, returnOnEquity, liquidationPx, liquidationDistance (fraction of mark), fundingNetUsd (positive when earned) and level. Positions under $1 are not listed (hiddenDust counts them); unpriced counts spot positions with no price. kind keeps spot or perp. portfolioValueUsd is spot value plus each perp's margin and unrealized, never idle USDC; null with perpsUnavailable means the perps have no certified snapshot yet. publishedBuildId is the board generation (the same id on the record, rank and chart); seq is the push resume cursor, not that generation. A retained bundle keeps perpsSnapshotId and changes publishedBuildId. perpsAsOfMs is the oldest wallet cutoff: with perpsProvisional true it is a provisional read refreshed every board build (about 10 minutes) and perpsCertifiedAsOfMs is the hourly certified cutoff under it, which corrects the provisional figures; without it the figures are certified, about an hour behind. perpsPartial or portfolioPartial means a figure is incomplete, never zero. No wallet address or balance. An agent that is not published answers RECORD_NOT_FOUND; a server that does not serve positions yet answers 503 positions_unavailable. profileId comes from candle_list_agents. A position is data, not advice.",
@@ -2149,6 +2171,83 @@
         },
         "required": [
           "mint"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "candle_holder_exit",
+      "title": "Read a Hood holder exit",
+      "description": "Where a holder of one Candle Hood curve stands if the launch does not migrate, read from the chain at one block. No key needed. Give curve, or token to look its curve up. With account, the answer carries that wallet's balance, what a Recovery claim would pay it (recoveryQuoteOutRaw) and the actions it may take now. Raw integer strings. A curve Candle does not list is a 404. Reads only. On a Hood market, holderExit says where a holder stands if the launch does not migrate: state (none, awaiting_migration, recovery_open, recovery, rescue_pending, rescued), the Recovery window and rate, any rescue request, the team vesting escrow, and the actions that would succeed now. holderExit.disclosure is one sentence for that state: quote it to the user verbatim before any exit or trade on that token. Recovery pays by tokens held, not by what was paid. rescue_pending closes buying; rescued has no on-chain claim.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "curve": {
+            "type": "string",
+            "pattern": "^0x[0-9a-fA-F]{40}$",
+            "description": "The Hood curve address (candle_get_market's curveAddress). Give this or token"
+          },
+          "token": {
+            "type": "string",
+            "pattern": "^0x[0-9a-fA-F]{40}$",
+            "description": "The Hood token address; its curve is read from the market. Give this or curve"
+          },
+          "account": {
+            "type": "string",
+            "pattern": "^0x[0-9a-fA-F]{40}$",
+            "description": "A Hood wallet: the answer then carries its balance, what Recovery pays it and its actions"
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "candle_claim_holder_exit",
+      "title": "Run a Hood holder exit",
+      "description": "Run one holder exit on a Candle Hood curve for this account's wallet: enter_recovery (open Recovery once its gate is open), claim_recovery (approve the exact amount, then redeem it at the fixed rate) or claim_team (release vested team tokens, always to the escrow's recipient). dryRun DEFAULTS TO TRUE: it builds and simulates and signs nothing. With dryRun: false, Candle signs with the embedded Hood wallet and MOVES REAL FUNDS: it burns the redeemed tokens and pays the curve's quote token into that wallet. There is no destination argument. Needs swap:write for the Recovery actions and launch:write for claim_team. Read candle_holder_exit first and only ask for an action in its actions list. outcome partial means the approval landed and the claim did not: read again and run the claim; never resend a call whose outcome is indeterminate. On a Hood market, holderExit says where a holder stands if the launch does not migrate: state (none, awaiting_migration, recovery_open, recovery, rescue_pending, rescued), the Recovery window and rate, any rescue request, the team vesting escrow, and the actions that would succeed now. holderExit.disclosure is one sentence for that state: quote it to the user verbatim before any exit or trade on that token. Recovery pays by tokens held, not by what was paid. rescue_pending closes buying; rescued has no on-chain claim.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "curve": {
+            "type": "string",
+            "pattern": "^0x[0-9a-fA-F]{40}$",
+            "description": "The Hood curve address (candle_holder_exit's curve)"
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "enter_recovery",
+              "claim_recovery",
+              "claim_team"
+            ],
+            "description": "One of holderExit.actions from candle_holder_exit for this wallet"
+          },
+          "amountRaw": {
+            "type": "string",
+            "pattern": "^[1-9][0-9]{0,77}$",
+            "description": "claim_recovery only: base raw units to redeem. Defaults to the whole balance"
+          },
+          "dryRun": {
+            "type": "boolean",
+            "description": "Defaults to true: build and simulate, sign nothing. Pass false to send"
+          },
+          "wallet": {
+            "type": "string",
+            "pattern": "^0x[0-9a-fA-F]{40}$",
+            "description": "Defaults to the account's embedded Hood wallet, which Candle signs for"
+          }
+        },
+        "required": [
+          "curve",
+          "action"
         ],
         "additionalProperties": false,
         "$schema": "http://json-schema.org/draft-07/schema#"
@@ -4728,8 +4827,8 @@
   ],
   "source": {
     "repo": "candledottv/candle-monorepo",
-    "commit": "36d4bf2642244e82deaa690d8d1277d60d8b9021",
-    "cliVersion": "0.13.32",
+    "commit": "ebd1e50050cddc82d82186a1e6a499cd0ca02e85",
+    "cliVersion": "0.13.35",
     "method": "in-memory tools/list; local eligibility stub; no tool calls"
   }
 }

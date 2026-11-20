@@ -246,8 +246,9 @@ for (const [id, over, wallet] of FILLS) {
   assert.ok(lag, "the webhooks page's lateness paragraph is missing")
   push({ id: "docs-webhooks-rows", scenario: "docs", args: { file: DOCS.webhooks }, outcome: { rows: docRows } })
   push({ id: "docs-webhooks-lateness", scenario: "docs", args: { file: DOCS.webhooks }, outcome: { text: lag } })
-  const changelog = text(DOCS.sdkChangelog).split("\n").find((l) => l.startsWith(`Release ${source.versions.sdk} `))
-  assert.ok(changelog, "the SDK changelog has no entry for this version")
+  // The entry of the release that shipped these events, which a later release's entry doesn't replace.
+  const changelog = text(DOCS.sdkChangelog).split("\n").find((l) => l.startsWith("Release 0.6.26 (BE-3758)"))
+  assert.ok(changelog, "the SDK changelog has no entry for the release that shipped these events")
   push({ id: "sdk-changelog-entry", scenario: "docs", args: { file: DOCS.sdkChangelog }, outcome: { text: changelog } })
 }
 

@@ -4,8 +4,8 @@
 // time says how fresh they are, also when they are too old to serve. Recorded offline from one exact commit
 // (scripts/read-record-source.ts): Candle's pure source builds each answer from made-up stored facts, and
 // `candle agent record`, `candle_get_agent_record` on the local and the hosted server, and the SDK read it.
-// The commit is the head of an open pull request, not a merged build: its CLI 0.13.32, MCP 0.10.37 and SDK 0.6.26
-// are not published with this in them, and the fixtures are re-read once it merges.
+// The commit is #3921's merge on staging (ebd1e5005), the build published to npm as CLI 0.13.35, MCP 0.10.40 and
+// SDK 0.6.29.
 import { describe, expect, test } from "bun:test"
 import { createHash } from "node:crypto"
 import perps from "../../test/fixtures/candle-perps-source.json"
@@ -52,7 +52,7 @@ const ctx = { defaultAgent: "momentum", agents: new Set(["momentum"]) }
 const CERTIFIED = at(2, 9, 2)
 
 test("the recording names the exact source commit, agrees with the other source fixtures, and carries Candle's own limits", () => {
-  expect(recorded.source).toEqual({ repo: "candledottv/candle-monorepo", commit: "36d4bf2642244e82deaa690d8d1277d60d8b9021", versions: { cli: "0.13.32", mcp: "0.10.37", sdk: "0.6.26" } })
+  expect(recorded.source).toEqual({ repo: "candledottv/candle-monorepo", commit: "ebd1e50050cddc82d82186a1e6a499cd0ca02e85", versions: { cli: "0.13.35", mcp: "0.10.40", sdk: "0.6.29" } })
   expect(recorded.source.commit).toBe(SOURCE.source.commit)
   expect(recorded.source.commit).toBe(tools.source.commit)
   expect(recorded.source.commit).toBe(perps.source.commit)

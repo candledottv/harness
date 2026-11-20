@@ -1,0 +1,4727 @@
+{
+  "about": "Offline Hood holder-exit contracts from exact merged source. Every address, amount, hash and time is made up; times are days before or after one made-up instant. api-source rows are Candle's own pure deriveHolderExit run on made-up chain facts at one block, in the read route's envelope (the route, the chain read and its cache are not run). api-stub rows are response stubs for the agent route (a dry run, a completed exit, a partial and an indeterminate one, a refusal), shaped by the SDK's types and the route's refusal table; the route, the builder and the signer are not run. mcp, sdk and cli rows read the same answers through the registered tools, the SDK and `candle token exit <token>` over an intercepted fetch: nothing is sent, signed or read from a chain. portfolio-marks-source and docs rows are the source's own text, read as text; `candle portfolio` itself is not run. No deployed behavior is claimed.",
+  "source": {
+    "repo": "candledottv/candle-monorepo",
+    "commit": "ebd1e50050cddc82d82186a1e6a499cd0ca02e85",
+    "versions": {
+      "cli": "0.13.35",
+      "mcp": "0.10.40",
+      "sdk": "0.6.29"
+    }
+  },
+  "now": "2027-01-12T14:00:00.000Z",
+  "rows": [
+    {
+      "id": "none-api",
+      "scenario": "none",
+      "surface": "api-source",
+      "says": "A launch still trading: state none, no window, no recovery, and an empty disclosure.",
+      "evidence": "Candle's own pure deriveHolderExit on made-up chain facts at one block, in the read route's envelope; the route, the chain read and its cache are not run",
+      "args": {
+        "path": "/api/v1/hood/curves/0x1111111111111111111111111111111111111111/holder-exit"
+      },
+      "outcome": {
+        "status": 200,
+        "body": {
+          "payload": {
+            "curve": "0x1111111111111111111111111111111111111111",
+            "token": "0x2222222222222222222222222222222222222222",
+            "holderExit": {
+              "generation": 2,
+              "state": "none",
+              "lifecycle": "trading",
+              "recoveryWindow": null,
+              "recovery": null,
+              "rescue": null,
+              "team": null,
+              "actions": [],
+              "disclosure": ""
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "none-mcp",
+      "scenario": "none",
+      "surface": "mcp",
+      "args": {
+        "curve": "0x1111111111111111111111111111111111111111"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/hood/curves/0x1111111111111111111111111111111111111111/holder-exit",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "body": {
+          "payload": {
+            "curve": "0x1111111111111111111111111111111111111111",
+            "token": "0x2222222222222222222222222222222222222222",
+            "holderExit": {
+              "generation": 2,
+              "state": "none",
+              "lifecycle": "trading",
+              "recoveryWindow": null,
+              "recovery": null,
+              "rescue": null,
+              "team": null,
+              "actions": [],
+              "disclosure": ""
+            }
+          }
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "none-sdk",
+      "scenario": "none",
+      "surface": "sdk",
+      "args": {
+        "curve": "0x1111111111111111111111111111111111111111"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/hood/curves/0x1111111111111111111111111111111111111111/holder-exit"
+        }
+      ],
+      "outcome": {
+        "body": {
+          "curve": "0x1111111111111111111111111111111111111111",
+          "token": "0x2222222222222222222222222222222222222222",
+          "holderExit": {
+            "generation": 2,
+            "state": "none",
+            "lifecycle": "trading",
+            "recoveryWindow": null,
+            "recovery": null,
+            "rescue": null,
+            "team": null,
+            "actions": [],
+            "disclosure": ""
+          }
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "none-cli",
+      "scenario": "none",
+      "surface": "cli",
+      "args": {
+        "command": "candle token exit 0x2222222222222222222222222222222222222222"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/markets/hood/0x2222222222222222222222222222222222222222",
+          "credential": false
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/hood/curves/0x1111111111111111111111111111111111111111/holder-exit",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "lines": [
+          "  Token      0x2222222222222222222222222222222222222222",
+          "  Curve      0x1111111111111111111111111111111111111111",
+          "  State      none: ordinary trading, nothing to exit",
+          "  Lifecycle  trading"
+        ]
+      }
+    },
+    {
+      "id": "none-cli-json",
+      "scenario": "none",
+      "surface": "cli",
+      "args": {
+        "command": "candle token exit 0x2222222222222222222222222222222222222222 --json"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/markets/hood/0x2222222222222222222222222222222222222222",
+          "credential": false
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/hood/curves/0x1111111111111111111111111111111111111111/holder-exit",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "body": {
+          "payload": {
+            "curve": "0x1111111111111111111111111111111111111111",
+            "token": "0x2222222222222222222222222222222222222222",
+            "holderExit": {
+              "generation": 2,
+              "state": "none",
+              "lifecycle": "trading",
+              "recoveryWindow": null,
+              "recovery": null,
+              "rescue": null,
+              "team": null,
+              "actions": [],
+              "disclosure": ""
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "awaiting-migration-api",
+      "scenario": "awaiting-migration",
+      "surface": "api-source",
+      "says": "Graduated two days ago: trading is closed, Recovery is not open yet (the creator may from day 7, anyone from day 30).",
+      "evidence": "Candle's own pure deriveHolderExit on made-up chain facts at one block, in the read route's envelope; the route, the chain read and its cache are not run",
+      "args": {
+        "path": "/api/v1/hood/curves/0x1111111111111111111111111111111111111111/holder-exit"
+      },
+      "outcome": {
+        "status": 200,
+        "body": {
+          "payload": {
+            "curve": "0x1111111111111111111111111111111111111111",
+            "token": "0x2222222222222222222222222222222222222222",
+            "holderExit": {
+              "generation": 2,
+              "state": "awaiting_migration",
+              "lifecycle": "graduated",
+              "recoveryWindow": {
+                "creatorMayEnterAt": "1800194400",
+                "anyoneMayEnterAt": "1802181600",
+                "creatorMayEnterNow": false,
+                "anyoneMayEnterNow": false,
+                "secondsUntilPermissionlessExit": "2419200"
+              },
+              "recovery": null,
+              "rescue": null,
+              "team": null,
+              "actions": [],
+              "disclosure": "This launch graduated and is waiting for its pool. Trading is closed until it migrates. If it does not, the creator can open Recovery from 1800194400 and anyone can from 1802181600."
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "awaiting-migration-mcp",
+      "scenario": "awaiting-migration",
+      "surface": "mcp",
+      "args": {
+        "curve": "0x1111111111111111111111111111111111111111"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/hood/curves/0x1111111111111111111111111111111111111111/holder-exit",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "body": {
+          "payload": {
+            "curve": "0x1111111111111111111111111111111111111111",
+            "token": "0x2222222222222222222222222222222222222222",
+            "holderExit": {
+              "generation": 2,
+              "state": "awaiting_migration",
+              "lifecycle": "graduated",
+              "recoveryWindow": {
+                "creatorMayEnterAt": "1800194400",
+                "anyoneMayEnterAt": "1802181600",
+                "creatorMayEnterNow": false,
+                "anyoneMayEnterNow": false,
+                "secondsUntilPermissionlessExit": "2419200"
+              },
+              "recovery": null,
+              "rescue": null,
+              "team": null,
+              "actions": [],
+              "disclosure": "This launch graduated and is waiting for its pool. Trading is closed until it migrates. If it does not, the creator can open Recovery from 1800194400 and anyone can from 1802181600."
+            }
+          }
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "awaiting-migration-sdk",
+      "scenario": "awaiting-migration",
+      "surface": "sdk",
+      "args": {
+        "curve": "0x1111111111111111111111111111111111111111"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/hood/curves/0x1111111111111111111111111111111111111111/holder-exit"
+        }
+      ],
+      "outcome": {
+        "body": {
+          "curve": "0x1111111111111111111111111111111111111111",
+          "token": "0x2222222222222222222222222222222222222222",
+          "holderExit": {
+            "generation": 2,
+            "state": "awaiting_migration",
+            "lifecycle": "graduated",
+            "recoveryWindow": {
+              "creatorMayEnterAt": "1800194400",
+              "anyoneMayEnterAt": "1802181600",
+              "creatorMayEnterNow": false,
+              "anyoneMayEnterNow": false,
+              "secondsUntilPermissionlessExit": "2419200"
+            },
+            "recovery": null,
+            "rescue": null,
+            "team": null,
+            "actions": [],
+            "disclosure": "This launch graduated and is waiting for its pool. Trading is closed until it migrates. If it does not, the creator can open Recovery from 1800194400 and anyone can from 1802181600."
+          }
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "awaiting-migration-cli",
+      "scenario": "awaiting-migration",
+      "surface": "cli",
+      "args": {
+        "command": "candle token exit 0x2222222222222222222222222222222222222222"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/markets/hood/0x2222222222222222222222222222222222222222",
+          "credential": false
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/hood/curves/0x1111111111111111111111111111111111111111/holder-exit",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "lines": [
+          "  Token      0x2222222222222222222222222222222222222222",
+          "  Curve      0x1111111111111111111111111111111111111111",
+          "  State      awaiting migration",
+          "  Lifecycle  graduated",
+          "  - This launch graduated and is waiting for its pool. Trading is closed until it migrates. If it",
+          "    does not, the creator can open Recovery from 1800194400 and anyone can from 1802181600.",
+          "  Creator may open Recovery  2027-01-17T14:00:00.000Z",
+          "  Anyone may open Recovery   2027-02-09T14:00:00.000Z"
+        ]
+      }
+    },
+    {
+      "id": "awaiting-migration-cli-json",
+      "scenario": "awaiting-migration",
+      "surface": "cli",
+      "args": {
+        "command": "candle token exit 0x2222222222222222222222222222222222222222 --json"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/markets/hood/0x2222222222222222222222222222222222222222",
+          "credential": false
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/hood/curves/0x1111111111111111111111111111111111111111/holder-exit",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "body": {
+          "payload": {
+            "curve": "0x1111111111111111111111111111111111111111",
+            "token": "0x2222222222222222222222222222222222222222",
+            "holderExit": {
+              "generation": 2,
+              "state": "awaiting_migration",
+              "lifecycle": "graduated",
+              "recoveryWindow": {
+                "creatorMayEnterAt": "1800194400",
+                "anyoneMayEnterAt": "1802181600",
+                "creatorMayEnterNow": false,
+                "anyoneMayEnterNow": false,
+                "secondsUntilPermissionlessExit": "2419200"
+              },
+              "recovery": null,
+              "rescue": null,
+              "team": null,
+              "actions": [],
+              "disclosure": "This launch graduated and is waiting for its pool. Trading is closed until it migrates. If it does not, the creator can open Recovery from 1800194400 and anyone can from 1802181600."
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "recovery-open-api",
+      "scenario": "recovery-open",
+      "surface": "api-source",
+      "says": "Graduated 31 days ago and never migrated: anyone may open Recovery, so the holder's actions name enter_recovery.",
+      "evidence": "Candle's own pure deriveHolderExit on made-up chain facts at one block, in the read route's envelope; the route, the chain read and its cache are not run",
+      "args": {
+        "path": "/api/v1/hood/curves/0x1111111111111111111111111111111111111111/holder-exit?account=0x3333333333333333333333333333333333333333"
+      },
+      "outcome": {
+        "status": 200,
+        "body": {
+          "payload": {
+            "curve": "0x1111111111111111111111111111111111111111",
+            "token": "0x2222222222222222222222222222222222222222",
+            "holderExit": {
+              "generation": 2,
+              "state": "recovery_open",
+              "lifecycle": "graduated",
+              "recoveryWindow": {
+                "creatorMayEnterAt": "1797688800",
+                "anyoneMayEnterAt": "1799676000",
+                "creatorMayEnterNow": true,
+                "anyoneMayEnterNow": true,
+                "secondsUntilPermissionlessExit": "0"
+              },
+              "recovery": null,
+              "rescue": null,
+              "team": null,
+              "account": {
+                "address": "0x3333333333333333333333333333333333333333",
+                "baseBalanceRaw": "10000000000000000000",
+                "allowanceToCurveRaw": "0",
+                "recoveryQuoteOutRaw": "0",
+                "mayEnterRecoveryNow": true,
+                "isTeamRecipient": false
+              },
+              "actions": [
+                "enter_recovery"
+              ],
+              "disclosure": "This launch did not migrate. You can open Recovery now; holders then redeem at a fixed rate."
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "recovery-open-mcp",
+      "scenario": "recovery-open",
+      "surface": "mcp",
+      "args": {
+        "curve": "0x1111111111111111111111111111111111111111",
+        "account": "0x3333333333333333333333333333333333333333"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/hood/curves/0x1111111111111111111111111111111111111111/holder-exit?account=0x3333333333333333333333333333333333333333",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "body": {
+          "payload": {
+            "curve": "0x1111111111111111111111111111111111111111",
+            "token": "0x2222222222222222222222222222222222222222",
+            "holderExit": {
+              "generation": 2,
+              "state": "recovery_open",
+              "lifecycle": "graduated",
+              "recoveryWindow": {
+                "creatorMayEnterAt": "1797688800",
+                "anyoneMayEnterAt": "1799676000",
+                "creatorMayEnterNow": true,
+                "anyoneMayEnterNow": true,
+                "secondsUntilPermissionlessExit": "0"
+              },
+              "recovery": null,
+              "rescue": null,
+              "team": null,
+              "account": {
+                "address": "0x3333333333333333333333333333333333333333",
+                "baseBalanceRaw": "10000000000000000000",
+                "allowanceToCurveRaw": "0",
+                "recoveryQuoteOutRaw": "0",
+                "mayEnterRecoveryNow": true,
+                "isTeamRecipient": false
+              },
+              "actions": [
+                "enter_recovery"
+              ],
+              "disclosure": "This launch did not migrate. You can open Recovery now; holders then redeem at a fixed rate."
+            }
+          }
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "recovery-open-sdk",
+      "scenario": "recovery-open",
+      "surface": "sdk",
+      "args": {
+        "curve": "0x1111111111111111111111111111111111111111",
+        "account": "0x3333333333333333333333333333333333333333"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/hood/curves/0x1111111111111111111111111111111111111111/holder-exit?account=0x3333333333333333333333333333333333333333"
+        }
+      ],
+      "outcome": {
+        "body": {
+          "curve": "0x1111111111111111111111111111111111111111",
+          "token": "0x2222222222222222222222222222222222222222",
+          "holderExit": {
+            "generation": 2,
+            "state": "recovery_open",
+            "lifecycle": "graduated",
+            "recoveryWindow": {
+              "creatorMayEnterAt": "1797688800",
+              "anyoneMayEnterAt": "1799676000",
+              "creatorMayEnterNow": true,
+              "anyoneMayEnterNow": true,
+              "secondsUntilPermissionlessExit": "0"
+            },
+            "recovery": null,
+            "rescue": null,
+            "team": null,
+            "account": {
+              "address": "0x3333333333333333333333333333333333333333",
+              "baseBalanceRaw": "10000000000000000000",
+              "allowanceToCurveRaw": "0",
+              "recoveryQuoteOutRaw": "0",
+              "mayEnterRecoveryNow": true,
+              "isTeamRecipient": false
+            },
+            "actions": [
+              "enter_recovery"
+            ],
+            "disclosure": "This launch did not migrate. You can open Recovery now; holders then redeem at a fixed rate."
+          }
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "recovery-open-cli",
+      "scenario": "recovery-open",
+      "surface": "cli",
+      "args": {
+        "command": "candle token exit 0x2222222222222222222222222222222222222222 --wallet 0x3333333333333333333333333333333333333333"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/markets/hood/0x2222222222222222222222222222222222222222",
+          "credential": false
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/hood/curves/0x1111111111111111111111111111111111111111/holder-exit?account=0x3333333333333333333333333333333333333333",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "lines": [
+          "  Token      0x2222222222222222222222222222222222222222",
+          "  Curve      0x1111111111111111111111111111111111111111",
+          "  State      Recovery can be opened",
+          "  Lifecycle  graduated",
+          "  - This launch did not migrate. You can open Recovery now; holders then redeem at a fixed rate.",
+          "  Creator may open Recovery  2026-12-19T14:00:00.000Z",
+          "  Anyone may open Recovery   2027-01-11T14:00:00.000Z",
+          "  Wallet                     0x3333333333333333333333333333333333333333",
+          "  Balance                    10 tokens",
+          "  - Available now: candle token exit 0x2222222222222222222222222222222222222222 --enter-recovery"
+        ]
+      }
+    },
+    {
+      "id": "recovery-open-cli-json",
+      "scenario": "recovery-open",
+      "surface": "cli",
+      "args": {
+        "command": "candle token exit 0x2222222222222222222222222222222222222222 --wallet 0x3333333333333333333333333333333333333333 --json"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/markets/hood/0x2222222222222222222222222222222222222222",
+          "credential": false
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/hood/curves/0x1111111111111111111111111111111111111111/holder-exit?account=0x3333333333333333333333333333333333333333",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "body": {
+          "payload": {
+            "curve": "0x1111111111111111111111111111111111111111",
+            "token": "0x2222222222222222222222222222222222222222",
+            "holderExit": {
+              "generation": 2,
+              "state": "recovery_open",
+              "lifecycle": "graduated",
+              "recoveryWindow": {
+                "creatorMayEnterAt": "1797688800",
+                "anyoneMayEnterAt": "1799676000",
+                "creatorMayEnterNow": true,
+                "anyoneMayEnterNow": true,
+                "secondsUntilPermissionlessExit": "0"
+              },
+              "recovery": null,
+              "rescue": null,
+              "team": null,
+              "account": {
+                "address": "0x3333333333333333333333333333333333333333",
+                "baseBalanceRaw": "10000000000000000000",
+                "allowanceToCurveRaw": "0",
+                "recoveryQuoteOutRaw": "0",
+                "mayEnterRecoveryNow": true,
+                "isTeamRecipient": false
+              },
+              "actions": [
+                "enter_recovery"
+              ],
+              "disclosure": "This launch did not migrate. You can open Recovery now; holders then redeem at a fixed rate."
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "recovery-api",
+      "scenario": "recovery",
+      "surface": "api-source",
+      "says": "Recovery is open: the fixed rate, what is left, the holder's balance and what Recovery pays it, and claim_recovery as the action.",
+      "evidence": "Candle's own pure deriveHolderExit on made-up chain facts at one block, in the read route's envelope; the route, the chain read and its cache are not run",
+      "args": {
+        "path": "/api/v1/hood/curves/0x1111111111111111111111111111111111111111/holder-exit?account=0x3333333333333333333333333333333333333333"
+      },
+      "outcome": {
+        "status": 200,
+        "body": {
+          "payload": {
+            "curve": "0x1111111111111111111111111111111111111111",
+            "token": "0x2222222222222222222222222222222222222222",
+            "holderExit": {
+              "generation": 2,
+              "state": "recovery",
+              "lifecycle": "recovery",
+              "recoveryWindow": {
+                "creatorMayEnterAt": "1796911200",
+                "anyoneMayEnterAt": "1798898400",
+                "creatorMayEnterNow": true,
+                "anyoneMayEnterNow": true,
+                "secondsUntilPermissionlessExit": "0"
+              },
+              "recovery": {
+                "quoteToken": "0x5555555555555555555555555555555555555555",
+                "quoteDecimals": 6,
+                "reserveSnapshotRaw": "1000000000",
+                "eligibleSupplyRaw": "2000000000000000000000",
+                "surrenderedRaw": "0",
+                "remainingRaw": "2000000000000000000000",
+                "ratePerTokenRaw": "500000",
+                "paysBy": "tokens_held"
+              },
+              "rescue": null,
+              "team": null,
+              "account": {
+                "address": "0x3333333333333333333333333333333333333333",
+                "baseBalanceRaw": "10000000000000000000",
+                "allowanceToCurveRaw": "0",
+                "recoveryQuoteOutRaw": "5000000",
+                "mayEnterRecoveryNow": false,
+                "isTeamRecipient": false
+              },
+              "actions": [
+                "claim_recovery"
+              ],
+              "disclosure": "This launch did not migrate. Holders redeem the curve's reserve at a fixed rate of 500000 raw units of 0x5555555555555555555555555555555555555555 per token. Recovery pays by tokens held, not by what you paid."
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "recovery-mcp",
+      "scenario": "recovery",
+      "surface": "mcp",
+      "args": {
+        "curve": "0x1111111111111111111111111111111111111111",
+        "account": "0x3333333333333333333333333333333333333333"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/hood/curves/0x1111111111111111111111111111111111111111/holder-exit?account=0x3333333333333333333333333333333333333333",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "body": {
+          "payload": {
+            "curve": "0x1111111111111111111111111111111111111111",
+            "token": "0x2222222222222222222222222222222222222222",
+            "holderExit": {
+              "generation": 2,
+              "state": "recovery",
+              "lifecycle": "recovery",
+              "recoveryWindow": {
+                "creatorMayEnterAt": "1796911200",
+                "anyoneMayEnterAt": "1798898400",
+                "creatorMayEnterNow": true,
+                "anyoneMayEnterNow": true,
+                "secondsUntilPermissionlessExit": "0"
+              },
+              "recovery": {
+                "quoteToken": "0x5555555555555555555555555555555555555555",
+                "quoteDecimals": 6,
+                "reserveSnapshotRaw": "1000000000",
+                "eligibleSupplyRaw": "2000000000000000000000",
+                "surrenderedRaw": "0",
+                "remainingRaw": "2000000000000000000000",
+                "ratePerTokenRaw": "500000",
+                "paysBy": "tokens_held"
+              },
+              "rescue": null,
+              "team": null,
+              "account": {
+                "address": "0x3333333333333333333333333333333333333333",
+                "baseBalanceRaw": "10000000000000000000",
+                "allowanceToCurveRaw": "0",
+                "recoveryQuoteOutRaw": "5000000",
+                "mayEnterRecoveryNow": false,
+                "isTeamRecipient": false
+              },
+              "actions": [
+                "claim_recovery"
+              ],
+              "disclosure": "This launch did not migrate. Holders redeem the curve's reserve at a fixed rate of 500000 raw units of 0x5555555555555555555555555555555555555555 per token. Recovery pays by tokens held, not by what you paid."
+            }
+          }
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "recovery-sdk",
+      "scenario": "recovery",
+      "surface": "sdk",
+      "args": {
+        "curve": "0x1111111111111111111111111111111111111111",
+        "account": "0x3333333333333333333333333333333333333333"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/hood/curves/0x1111111111111111111111111111111111111111/holder-exit?account=0x3333333333333333333333333333333333333333"
+        }
+      ],
+      "outcome": {
+        "body": {
+          "curve": "0x1111111111111111111111111111111111111111",
+          "token": "0x2222222222222222222222222222222222222222",
+          "holderExit": {
+            "generation": 2,
+            "state": "recovery",
+            "lifecycle": "recovery",
+            "recoveryWindow": {
+              "creatorMayEnterAt": "1796911200",
+              "anyoneMayEnterAt": "1798898400",
+              "creatorMayEnterNow": true,
+              "anyoneMayEnterNow": true,
+              "secondsUntilPermissionlessExit": "0"
+            },
+            "recovery": {
+              "quoteToken": "0x5555555555555555555555555555555555555555",
+              "quoteDecimals": 6,
+              "reserveSnapshotRaw": "1000000000",
+              "eligibleSupplyRaw": "2000000000000000000000",
+              "surrenderedRaw": "0",
+              "remainingRaw": "2000000000000000000000",
+              "ratePerTokenRaw": "500000",
+              "paysBy": "tokens_held"
+            },
+            "rescue": null,
+            "team": null,
+            "account": {
+              "address": "0x3333333333333333333333333333333333333333",
+              "baseBalanceRaw": "10000000000000000000",
+              "allowanceToCurveRaw": "0",
+              "recoveryQuoteOutRaw": "5000000",
+              "mayEnterRecoveryNow": false,
+              "isTeamRecipient": false
+            },
+            "actions": [
+              "claim_recovery"
+            ],
+            "disclosure": "This launch did not migrate. Holders redeem the curve's reserve at a fixed rate of 500000 raw units of 0x5555555555555555555555555555555555555555 per token. Recovery pays by tokens held, not by what you paid."
+          }
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "recovery-cli",
+      "scenario": "recovery",
+      "surface": "cli",
+      "args": {
+        "command": "candle token exit 0x2222222222222222222222222222222222222222 --wallet 0x3333333333333333333333333333333333333333"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/markets/hood/0x2222222222222222222222222222222222222222",
+          "credential": false
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/hood/curves/0x1111111111111111111111111111111111111111/holder-exit?account=0x3333333333333333333333333333333333333333",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "lines": [
+          "  Token      0x2222222222222222222222222222222222222222",
+          "  Curve      0x1111111111111111111111111111111111111111",
+          "  State      Recovery: redeem at a fixed rate",
+          "  Lifecycle  recovery",
+          "  - This launch did not migrate. Holders redeem the curve's reserve at a fixed rate of 500000 raw",
+          "    units of 0x5555555555555555555555555555555555555555 per token. Recovery pays by tokens held, not",
+          "    by what you paid.",
+          "  Creator may open Recovery  2026-12-10T14:00:00.000Z",
+          "  Anyone may open Recovery   2027-01-02T14:00:00.000Z",
+          "  Recovery rate              0.5 0x5555555555555555555555555555555555555555 per token",
+          "  Recovery left              2000 tokens",
+          "  Wallet                     0x3333333333333333333333333333333333333333",
+          "  Balance                    10 tokens",
+          "  Recovery would pay         5 0x5555555555555555555555555555555555555555",
+          "  - Available now: candle token exit 0x2222222222222222222222222222222222222222 --recover"
+        ]
+      }
+    },
+    {
+      "id": "recovery-cli-json",
+      "scenario": "recovery",
+      "surface": "cli",
+      "args": {
+        "command": "candle token exit 0x2222222222222222222222222222222222222222 --wallet 0x3333333333333333333333333333333333333333 --json"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/markets/hood/0x2222222222222222222222222222222222222222",
+          "credential": false
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/hood/curves/0x1111111111111111111111111111111111111111/holder-exit?account=0x3333333333333333333333333333333333333333",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "body": {
+          "payload": {
+            "curve": "0x1111111111111111111111111111111111111111",
+            "token": "0x2222222222222222222222222222222222222222",
+            "holderExit": {
+              "generation": 2,
+              "state": "recovery",
+              "lifecycle": "recovery",
+              "recoveryWindow": {
+                "creatorMayEnterAt": "1796911200",
+                "anyoneMayEnterAt": "1798898400",
+                "creatorMayEnterNow": true,
+                "anyoneMayEnterNow": true,
+                "secondsUntilPermissionlessExit": "0"
+              },
+              "recovery": {
+                "quoteToken": "0x5555555555555555555555555555555555555555",
+                "quoteDecimals": 6,
+                "reserveSnapshotRaw": "1000000000",
+                "eligibleSupplyRaw": "2000000000000000000000",
+                "surrenderedRaw": "0",
+                "remainingRaw": "2000000000000000000000",
+                "ratePerTokenRaw": "500000",
+                "paysBy": "tokens_held"
+              },
+              "rescue": null,
+              "team": null,
+              "account": {
+                "address": "0x3333333333333333333333333333333333333333",
+                "baseBalanceRaw": "10000000000000000000",
+                "allowanceToCurveRaw": "0",
+                "recoveryQuoteOutRaw": "5000000",
+                "mayEnterRecoveryNow": false,
+                "isTeamRecipient": false
+              },
+              "actions": [
+                "claim_recovery"
+              ],
+              "disclosure": "This launch did not migrate. Holders redeem the curve's reserve at a fixed rate of 500000 raw units of 0x5555555555555555555555555555555555555555 per token. Recovery pays by tokens held, not by what you paid."
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "recovery-no-balance-api",
+      "scenario": "recovery-no-balance",
+      "surface": "api-source",
+      "says": "Recovery is open and this wallet holds none of the token: nothing it can claim.",
+      "evidence": "Candle's own pure deriveHolderExit on made-up chain facts at one block, in the read route's envelope; the route, the chain read and its cache are not run",
+      "args": {
+        "path": "/api/v1/hood/curves/0x1111111111111111111111111111111111111111/holder-exit?account=0x3333333333333333333333333333333333333333"
+      },
+      "outcome": {
+        "status": 200,
+        "body": {
+          "payload": {
+            "curve": "0x1111111111111111111111111111111111111111",
+            "token": "0x2222222222222222222222222222222222222222",
+            "holderExit": {
+              "generation": 2,
+              "state": "recovery",
+              "lifecycle": "recovery",
+              "recoveryWindow": {
+                "creatorMayEnterAt": "1796911200",
+                "anyoneMayEnterAt": "1798898400",
+                "creatorMayEnterNow": true,
+                "anyoneMayEnterNow": true,
+                "secondsUntilPermissionlessExit": "0"
+              },
+              "recovery": {
+                "quoteToken": "0x5555555555555555555555555555555555555555",
+                "quoteDecimals": 6,
+                "reserveSnapshotRaw": "1000000000",
+                "eligibleSupplyRaw": "2000000000000000000000",
+                "surrenderedRaw": "0",
+                "remainingRaw": "2000000000000000000000",
+                "ratePerTokenRaw": "500000",
+                "paysBy": "tokens_held"
+              },
+              "rescue": null,
+              "team": null,
+              "account": {
+                "address": "0x3333333333333333333333333333333333333333",
+                "baseBalanceRaw": "0",
+                "allowanceToCurveRaw": "0",
+                "recoveryQuoteOutRaw": "0",
+                "mayEnterRecoveryNow": false,
+                "isTeamRecipient": false
+              },
+              "actions": [],
+              "disclosure": "This launch did not migrate. Holders redeem the curve's reserve at a fixed rate of 500000 raw units of 0x5555555555555555555555555555555555555555 per token. Recovery pays by tokens held, not by what you paid."
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "recovery-no-balance-mcp",
+      "scenario": "recovery-no-balance",
+      "surface": "mcp",
+      "args": {
+        "curve": "0x1111111111111111111111111111111111111111",
+        "account": "0x3333333333333333333333333333333333333333"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/hood/curves/0x1111111111111111111111111111111111111111/holder-exit?account=0x3333333333333333333333333333333333333333",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "body": {
+          "payload": {
+            "curve": "0x1111111111111111111111111111111111111111",
+            "token": "0x2222222222222222222222222222222222222222",
+            "holderExit": {
+              "generation": 2,
+              "state": "recovery",
+              "lifecycle": "recovery",
+              "recoveryWindow": {
+                "creatorMayEnterAt": "1796911200",
+                "anyoneMayEnterAt": "1798898400",
+                "creatorMayEnterNow": true,
+                "anyoneMayEnterNow": true,
+                "secondsUntilPermissionlessExit": "0"
+              },
+              "recovery": {
+                "quoteToken": "0x5555555555555555555555555555555555555555",
+                "quoteDecimals": 6,
+                "reserveSnapshotRaw": "1000000000",
+                "eligibleSupplyRaw": "2000000000000000000000",
+                "surrenderedRaw": "0",
+                "remainingRaw": "2000000000000000000000",
+                "ratePerTokenRaw": "500000",
+                "paysBy": "tokens_held"
+              },
+              "rescue": null,
+              "team": null,
+              "account": {
+                "address": "0x3333333333333333333333333333333333333333",
+                "baseBalanceRaw": "0",
+                "allowanceToCurveRaw": "0",
+                "recoveryQuoteOutRaw": "0",
+                "mayEnterRecoveryNow": false,
+                "isTeamRecipient": false
+              },
+              "actions": [],
+              "disclosure": "This launch did not migrate. Holders redeem the curve's reserve at a fixed rate of 500000 raw units of 0x5555555555555555555555555555555555555555 per token. Recovery pays by tokens held, not by what you paid."
+            }
+          }
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "recovery-no-balance-sdk",
+      "scenario": "recovery-no-balance",
+      "surface": "sdk",
+      "args": {
+        "curve": "0x1111111111111111111111111111111111111111",
+        "account": "0x3333333333333333333333333333333333333333"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/hood/curves/0x1111111111111111111111111111111111111111/holder-exit?account=0x3333333333333333333333333333333333333333"
+        }
+      ],
+      "outcome": {
+        "body": {
+          "curve": "0x1111111111111111111111111111111111111111",
+          "token": "0x2222222222222222222222222222222222222222",
+          "holderExit": {
+            "generation": 2,
+            "state": "recovery",
+            "lifecycle": "recovery",
+            "recoveryWindow": {
+              "creatorMayEnterAt": "1796911200",
+              "anyoneMayEnterAt": "1798898400",
+              "creatorMayEnterNow": true,
+              "anyoneMayEnterNow": true,
+              "secondsUntilPermissionlessExit": "0"
+            },
+            "recovery": {
+              "quoteToken": "0x5555555555555555555555555555555555555555",
+              "quoteDecimals": 6,
+              "reserveSnapshotRaw": "1000000000",
+              "eligibleSupplyRaw": "2000000000000000000000",
+              "surrenderedRaw": "0",
+              "remainingRaw": "2000000000000000000000",
+              "ratePerTokenRaw": "500000",
+              "paysBy": "tokens_held"
+            },
+            "rescue": null,
+            "team": null,
+            "account": {
+              "address": "0x3333333333333333333333333333333333333333",
+              "baseBalanceRaw": "0",
+              "allowanceToCurveRaw": "0",
+              "recoveryQuoteOutRaw": "0",
+              "mayEnterRecoveryNow": false,
+              "isTeamRecipient": false
+            },
+            "actions": [],
+            "disclosure": "This launch did not migrate. Holders redeem the curve's reserve at a fixed rate of 500000 raw units of 0x5555555555555555555555555555555555555555 per token. Recovery pays by tokens held, not by what you paid."
+          }
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "recovery-no-balance-cli",
+      "scenario": "recovery-no-balance",
+      "surface": "cli",
+      "args": {
+        "command": "candle token exit 0x2222222222222222222222222222222222222222 --wallet 0x3333333333333333333333333333333333333333"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/markets/hood/0x2222222222222222222222222222222222222222",
+          "credential": false
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/hood/curves/0x1111111111111111111111111111111111111111/holder-exit?account=0x3333333333333333333333333333333333333333",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "lines": [
+          "  Token      0x2222222222222222222222222222222222222222",
+          "  Curve      0x1111111111111111111111111111111111111111",
+          "  State      Recovery: redeem at a fixed rate",
+          "  Lifecycle  recovery",
+          "  - This launch did not migrate. Holders redeem the curve's reserve at a fixed rate of 500000 raw",
+          "    units of 0x5555555555555555555555555555555555555555 per token. Recovery pays by tokens held, not",
+          "    by what you paid.",
+          "  Creator may open Recovery  2026-12-10T14:00:00.000Z",
+          "  Anyone may open Recovery   2027-01-02T14:00:00.000Z",
+          "  Recovery rate              0.5 0x5555555555555555555555555555555555555555 per token",
+          "  Recovery left              2000 tokens",
+          "  Wallet                     0x3333333333333333333333333333333333333333",
+          "  Balance                    0 tokens",
+          "  Recovery would pay         0 0x5555555555555555555555555555555555555555"
+        ]
+      }
+    },
+    {
+      "id": "recovery-no-balance-cli-json",
+      "scenario": "recovery-no-balance",
+      "surface": "cli",
+      "args": {
+        "command": "candle token exit 0x2222222222222222222222222222222222222222 --wallet 0x3333333333333333333333333333333333333333 --json"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/markets/hood/0x2222222222222222222222222222222222222222",
+          "credential": false
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/hood/curves/0x1111111111111111111111111111111111111111/holder-exit?account=0x3333333333333333333333333333333333333333",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "body": {
+          "payload": {
+            "curve": "0x1111111111111111111111111111111111111111",
+            "token": "0x2222222222222222222222222222222222222222",
+            "holderExit": {
+              "generation": 2,
+              "state": "recovery",
+              "lifecycle": "recovery",
+              "recoveryWindow": {
+                "creatorMayEnterAt": "1796911200",
+                "anyoneMayEnterAt": "1798898400",
+                "creatorMayEnterNow": true,
+                "anyoneMayEnterNow": true,
+                "secondsUntilPermissionlessExit": "0"
+              },
+              "recovery": {
+                "quoteToken": "0x5555555555555555555555555555555555555555",
+                "quoteDecimals": 6,
+                "reserveSnapshotRaw": "1000000000",
+                "eligibleSupplyRaw": "2000000000000000000000",
+                "surrenderedRaw": "0",
+                "remainingRaw": "2000000000000000000000",
+                "ratePerTokenRaw": "500000",
+                "paysBy": "tokens_held"
+              },
+              "rescue": null,
+              "team": null,
+              "account": {
+                "address": "0x3333333333333333333333333333333333333333",
+                "baseBalanceRaw": "0",
+                "allowanceToCurveRaw": "0",
+                "recoveryQuoteOutRaw": "0",
+                "mayEnterRecoveryNow": false,
+                "isTeamRecipient": false
+              },
+              "actions": [],
+              "disclosure": "This launch did not migrate. Holders redeem the curve's reserve at a fixed rate of 500000 raw units of 0x5555555555555555555555555555555555555555 per token. Recovery pays by tokens held, not by what you paid."
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "rescue-pending-api",
+      "scenario": "rescue-pending",
+      "surface": "api-source",
+      "says": "The quote token was denied and a rescue request is valid: state rescue_pending, with where the quote balance will go and when.",
+      "evidence": "Candle's own pure deriveHolderExit on made-up chain facts at one block, in the read route's envelope; the route, the chain read and its cache are not run",
+      "args": {
+        "path": "/api/v1/hood/curves/0x1111111111111111111111111111111111111111/holder-exit"
+      },
+      "outcome": {
+        "status": 200,
+        "body": {
+          "payload": {
+            "curve": "0x1111111111111111111111111111111111111111",
+            "token": "0x2222222222222222222222222222222222222222",
+            "holderExit": {
+              "generation": 2,
+              "state": "rescue_pending",
+              "lifecycle": "graduated",
+              "recoveryWindow": {
+                "creatorMayEnterAt": "1800108000",
+                "anyoneMayEnterAt": "1802095200",
+                "creatorMayEnterNow": false,
+                "anyoneMayEnterNow": false,
+                "secondsUntilPermissionlessExit": "2332800"
+              },
+              "recovery": null,
+              "rescue": {
+                "to": "0x6666666666666666666666666666666666666666",
+                "executableAt": "1800108000",
+                "executableNow": false,
+                "valid": true,
+                "voidReason": null
+              },
+              "team": null,
+              "actions": [],
+              "disclosure": "The quote token 0x5555555555555555555555555555555555555555 was blocked as unsafe. The curve's quote balance will move to 0x6666666666666666666666666666666666666666 at 1800108000 so holders can be repaid off-chain. Trading is closed."
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "rescue-pending-mcp",
+      "scenario": "rescue-pending",
+      "surface": "mcp",
+      "args": {
+        "curve": "0x1111111111111111111111111111111111111111"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/hood/curves/0x1111111111111111111111111111111111111111/holder-exit",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "body": {
+          "payload": {
+            "curve": "0x1111111111111111111111111111111111111111",
+            "token": "0x2222222222222222222222222222222222222222",
+            "holderExit": {
+              "generation": 2,
+              "state": "rescue_pending",
+              "lifecycle": "graduated",
+              "recoveryWindow": {
+                "creatorMayEnterAt": "1800108000",
+                "anyoneMayEnterAt": "1802095200",
+                "creatorMayEnterNow": false,
+                "anyoneMayEnterNow": false,
+                "secondsUntilPermissionlessExit": "2332800"
+              },
+              "recovery": null,
+              "rescue": {
+                "to": "0x6666666666666666666666666666666666666666",
+                "executableAt": "1800108000",
+                "executableNow": false,
+                "valid": true,
+                "voidReason": null
+              },
+              "team": null,
+              "actions": [],
+              "disclosure": "The quote token 0x5555555555555555555555555555555555555555 was blocked as unsafe. The curve's quote balance will move to 0x6666666666666666666666666666666666666666 at 1800108000 so holders can be repaid off-chain. Trading is closed."
+            }
+          }
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "rescue-pending-sdk",
+      "scenario": "rescue-pending",
+      "surface": "sdk",
+      "args": {
+        "curve": "0x1111111111111111111111111111111111111111"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/hood/curves/0x1111111111111111111111111111111111111111/holder-exit"
+        }
+      ],
+      "outcome": {
+        "body": {
+          "curve": "0x1111111111111111111111111111111111111111",
+          "token": "0x2222222222222222222222222222222222222222",
+          "holderExit": {
+            "generation": 2,
+            "state": "rescue_pending",
+            "lifecycle": "graduated",
+            "recoveryWindow": {
+              "creatorMayEnterAt": "1800108000",
+              "anyoneMayEnterAt": "1802095200",
+              "creatorMayEnterNow": false,
+              "anyoneMayEnterNow": false,
+              "secondsUntilPermissionlessExit": "2332800"
+            },
+            "recovery": null,
+            "rescue": {
+              "to": "0x6666666666666666666666666666666666666666",
+              "executableAt": "1800108000",
+              "executableNow": false,
+              "valid": true,
+              "voidReason": null
+            },
+            "team": null,
+            "actions": [],
+            "disclosure": "The quote token 0x5555555555555555555555555555555555555555 was blocked as unsafe. The curve's quote balance will move to 0x6666666666666666666666666666666666666666 at 1800108000 so holders can be repaid off-chain. Trading is closed."
+          }
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "rescue-pending-cli",
+      "scenario": "rescue-pending",
+      "surface": "cli",
+      "args": {
+        "command": "candle token exit 0x2222222222222222222222222222222222222222"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/markets/hood/0x2222222222222222222222222222222222222222",
+          "credential": false
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/hood/curves/0x1111111111111111111111111111111111111111/holder-exit",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "lines": [
+          "  Token      0x2222222222222222222222222222222222222222",
+          "  Curve      0x1111111111111111111111111111111111111111",
+          "  State      rescue pending: buying is closed",
+          "  Lifecycle  graduated",
+          "  - The quote token 0x5555555555555555555555555555555555555555 was blocked as unsafe. The curve's",
+          "    quote balance will move to 0x6666666666666666666666666666666666666666 at 1800108000 so holders",
+          "    can be repaid off-chain. Trading is closed.",
+          "  Creator may open Recovery  2027-01-16T14:00:00.000Z",
+          "  Anyone may open Recovery   2027-02-08T14:00:00.000Z",
+          "  Rescue to                  0x6666666666666666666666666666666666666666",
+          "  Rescue executes            2027-01-16T14:00:00.000Z"
+        ]
+      }
+    },
+    {
+      "id": "rescue-pending-cli-json",
+      "scenario": "rescue-pending",
+      "surface": "cli",
+      "args": {
+        "command": "candle token exit 0x2222222222222222222222222222222222222222 --json"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/markets/hood/0x2222222222222222222222222222222222222222",
+          "credential": false
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/hood/curves/0x1111111111111111111111111111111111111111/holder-exit",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "body": {
+          "payload": {
+            "curve": "0x1111111111111111111111111111111111111111",
+            "token": "0x2222222222222222222222222222222222222222",
+            "holderExit": {
+              "generation": 2,
+              "state": "rescue_pending",
+              "lifecycle": "graduated",
+              "recoveryWindow": {
+                "creatorMayEnterAt": "1800108000",
+                "anyoneMayEnterAt": "1802095200",
+                "creatorMayEnterNow": false,
+                "anyoneMayEnterNow": false,
+                "secondsUntilPermissionlessExit": "2332800"
+              },
+              "recovery": null,
+              "rescue": {
+                "to": "0x6666666666666666666666666666666666666666",
+                "executableAt": "1800108000",
+                "executableNow": false,
+                "valid": true,
+                "voidReason": null
+              },
+              "team": null,
+              "actions": [],
+              "disclosure": "The quote token 0x5555555555555555555555555555555555555555 was blocked as unsafe. The curve's quote balance will move to 0x6666666666666666666666666666666666666666 at 1800108000 so holders can be repaid off-chain. Trading is closed."
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "rescue-void-api",
+      "scenario": "rescue-void",
+      "surface": "api-source",
+      "says": "A rescue request whose quote token was readmitted is void (quote_readmitted): the state falls back to awaiting_migration and the request says valid false.",
+      "evidence": "Candle's own pure deriveHolderExit on made-up chain facts at one block, in the read route's envelope; the route, the chain read and its cache are not run",
+      "args": {
+        "path": "/api/v1/hood/curves/0x1111111111111111111111111111111111111111/holder-exit"
+      },
+      "outcome": {
+        "status": 200,
+        "body": {
+          "payload": {
+            "curve": "0x1111111111111111111111111111111111111111",
+            "token": "0x2222222222222222222222222222222222222222",
+            "holderExit": {
+              "generation": 2,
+              "state": "awaiting_migration",
+              "lifecycle": "graduated",
+              "recoveryWindow": {
+                "creatorMayEnterAt": "1800108000",
+                "anyoneMayEnterAt": "1802095200",
+                "creatorMayEnterNow": false,
+                "anyoneMayEnterNow": false,
+                "secondsUntilPermissionlessExit": "2332800"
+              },
+              "recovery": null,
+              "rescue": {
+                "to": "0x6666666666666666666666666666666666666666",
+                "executableAt": "1800108000",
+                "executableNow": false,
+                "valid": false,
+                "voidReason": "quote_readmitted"
+              },
+              "team": null,
+              "actions": [],
+              "disclosure": "This launch graduated and is waiting for its pool. Trading is closed until it migrates. If it does not, the creator can open Recovery from 1800108000 and anyone can from 1802095200."
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "rescue-void-mcp",
+      "scenario": "rescue-void",
+      "surface": "mcp",
+      "args": {
+        "curve": "0x1111111111111111111111111111111111111111"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/hood/curves/0x1111111111111111111111111111111111111111/holder-exit",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "body": {
+          "payload": {
+            "curve": "0x1111111111111111111111111111111111111111",
+            "token": "0x2222222222222222222222222222222222222222",
+            "holderExit": {
+              "generation": 2,
+              "state": "awaiting_migration",
+              "lifecycle": "graduated",
+              "recoveryWindow": {
+                "creatorMayEnterAt": "1800108000",
+                "anyoneMayEnterAt": "1802095200",
+                "creatorMayEnterNow": false,
+                "anyoneMayEnterNow": false,
+                "secondsUntilPermissionlessExit": "2332800"
+              },
+              "recovery": null,
+              "rescue": {
+                "to": "0x6666666666666666666666666666666666666666",
+                "executableAt": "1800108000",
+                "executableNow": false,
+                "valid": false,
+                "voidReason": "quote_readmitted"
+              },
+              "team": null,
+              "actions": [],
+              "disclosure": "This launch graduated and is waiting for its pool. Trading is closed until it migrates. If it does not, the creator can open Recovery from 1800108000 and anyone can from 1802095200."
+            }
+          }
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "rescue-void-sdk",
+      "scenario": "rescue-void",
+      "surface": "sdk",
+      "args": {
+        "curve": "0x1111111111111111111111111111111111111111"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/hood/curves/0x1111111111111111111111111111111111111111/holder-exit"
+        }
+      ],
+      "outcome": {
+        "body": {
+          "curve": "0x1111111111111111111111111111111111111111",
+          "token": "0x2222222222222222222222222222222222222222",
+          "holderExit": {
+            "generation": 2,
+            "state": "awaiting_migration",
+            "lifecycle": "graduated",
+            "recoveryWindow": {
+              "creatorMayEnterAt": "1800108000",
+              "anyoneMayEnterAt": "1802095200",
+              "creatorMayEnterNow": false,
+              "anyoneMayEnterNow": false,
+              "secondsUntilPermissionlessExit": "2332800"
+            },
+            "recovery": null,
+            "rescue": {
+              "to": "0x6666666666666666666666666666666666666666",
+              "executableAt": "1800108000",
+              "executableNow": false,
+              "valid": false,
+              "voidReason": "quote_readmitted"
+            },
+            "team": null,
+            "actions": [],
+            "disclosure": "This launch graduated and is waiting for its pool. Trading is closed until it migrates. If it does not, the creator can open Recovery from 1800108000 and anyone can from 1802095200."
+          }
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "rescue-void-cli",
+      "scenario": "rescue-void",
+      "surface": "cli",
+      "args": {
+        "command": "candle token exit 0x2222222222222222222222222222222222222222"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/markets/hood/0x2222222222222222222222222222222222222222",
+          "credential": false
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/hood/curves/0x1111111111111111111111111111111111111111/holder-exit",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "lines": [
+          "  Token      0x2222222222222222222222222222222222222222",
+          "  Curve      0x1111111111111111111111111111111111111111",
+          "  State      awaiting migration",
+          "  Lifecycle  graduated",
+          "  - This launch graduated and is waiting for its pool. Trading is closed until it migrates. If it",
+          "    does not, the creator can open Recovery from 1800108000 and anyone can from 1802095200.",
+          "  Creator may open Recovery  2027-01-16T14:00:00.000Z",
+          "  Anyone may open Recovery   2027-02-08T14:00:00.000Z",
+          "  Rescue to                  0x6666666666666666666666666666666666666666",
+          "  Rescue executes            2027-01-16T14:00:00.000Z",
+          "  Rescue request             void (quote_readmitted)"
+        ]
+      }
+    },
+    {
+      "id": "rescue-void-cli-json",
+      "scenario": "rescue-void",
+      "surface": "cli",
+      "args": {
+        "command": "candle token exit 0x2222222222222222222222222222222222222222 --json"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/markets/hood/0x2222222222222222222222222222222222222222",
+          "credential": false
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/hood/curves/0x1111111111111111111111111111111111111111/holder-exit",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "body": {
+          "payload": {
+            "curve": "0x1111111111111111111111111111111111111111",
+            "token": "0x2222222222222222222222222222222222222222",
+            "holderExit": {
+              "generation": 2,
+              "state": "awaiting_migration",
+              "lifecycle": "graduated",
+              "recoveryWindow": {
+                "creatorMayEnterAt": "1800108000",
+                "anyoneMayEnterAt": "1802095200",
+                "creatorMayEnterNow": false,
+                "anyoneMayEnterNow": false,
+                "secondsUntilPermissionlessExit": "2332800"
+              },
+              "recovery": null,
+              "rescue": {
+                "to": "0x6666666666666666666666666666666666666666",
+                "executableAt": "1800108000",
+                "executableNow": false,
+                "valid": false,
+                "voidReason": "quote_readmitted"
+              },
+              "team": null,
+              "actions": [],
+              "disclosure": "This launch graduated and is waiting for its pool. Trading is closed until it migrates. If it does not, the creator can open Recovery from 1800108000 and anyone can from 1802095200."
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "rescued-api",
+      "scenario": "rescued",
+      "surface": "api-source",
+      "says": "A failed launch with nothing eligible left: state rescued, no on-chain claim, and no recovery block.",
+      "evidence": "Candle's own pure deriveHolderExit on made-up chain facts at one block, in the read route's envelope; the route, the chain read and its cache are not run",
+      "args": {
+        "path": "/api/v1/hood/curves/0x1111111111111111111111111111111111111111/holder-exit?account=0x3333333333333333333333333333333333333333"
+      },
+      "outcome": {
+        "status": 200,
+        "body": {
+          "payload": {
+            "curve": "0x1111111111111111111111111111111111111111",
+            "token": "0x2222222222222222222222222222222222222222",
+            "holderExit": {
+              "generation": 2,
+              "state": "rescued",
+              "lifecycle": "recovery",
+              "recoveryWindow": {
+                "creatorMayEnterAt": "1796911200",
+                "anyoneMayEnterAt": "1798898400",
+                "creatorMayEnterNow": true,
+                "anyoneMayEnterNow": true,
+                "secondsUntilPermissionlessExit": "0"
+              },
+              "recovery": null,
+              "rescue": null,
+              "team": null,
+              "account": {
+                "address": "0x3333333333333333333333333333333333333333",
+                "baseBalanceRaw": "10000000000000000000",
+                "allowanceToCurveRaw": "0",
+                "recoveryQuoteOutRaw": "0",
+                "mayEnterRecoveryNow": false,
+                "isTeamRecipient": false
+              },
+              "actions": [],
+              "disclosure": "The quote token 0x5555555555555555555555555555555555555555 was blocked as unsafe and the curve's funds were moved. There is no on-chain claim; holders are repaid off-chain."
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "rescued-mcp",
+      "scenario": "rescued",
+      "surface": "mcp",
+      "args": {
+        "curve": "0x1111111111111111111111111111111111111111",
+        "account": "0x3333333333333333333333333333333333333333"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/hood/curves/0x1111111111111111111111111111111111111111/holder-exit?account=0x3333333333333333333333333333333333333333",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "body": {
+          "payload": {
+            "curve": "0x1111111111111111111111111111111111111111",
+            "token": "0x2222222222222222222222222222222222222222",
+            "holderExit": {
+              "generation": 2,
+              "state": "rescued",
+              "lifecycle": "recovery",
+              "recoveryWindow": {
+                "creatorMayEnterAt": "1796911200",
+                "anyoneMayEnterAt": "1798898400",
+                "creatorMayEnterNow": true,
+                "anyoneMayEnterNow": true,
+                "secondsUntilPermissionlessExit": "0"
+              },
+              "recovery": null,
+              "rescue": null,
+              "team": null,
+              "account": {
+                "address": "0x3333333333333333333333333333333333333333",
+                "baseBalanceRaw": "10000000000000000000",
+                "allowanceToCurveRaw": "0",
+                "recoveryQuoteOutRaw": "0",
+                "mayEnterRecoveryNow": false,
+                "isTeamRecipient": false
+              },
+              "actions": [],
+              "disclosure": "The quote token 0x5555555555555555555555555555555555555555 was blocked as unsafe and the curve's funds were moved. There is no on-chain claim; holders are repaid off-chain."
+            }
+          }
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "rescued-sdk",
+      "scenario": "rescued",
+      "surface": "sdk",
+      "args": {
+        "curve": "0x1111111111111111111111111111111111111111",
+        "account": "0x3333333333333333333333333333333333333333"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/hood/curves/0x1111111111111111111111111111111111111111/holder-exit?account=0x3333333333333333333333333333333333333333"
+        }
+      ],
+      "outcome": {
+        "body": {
+          "curve": "0x1111111111111111111111111111111111111111",
+          "token": "0x2222222222222222222222222222222222222222",
+          "holderExit": {
+            "generation": 2,
+            "state": "rescued",
+            "lifecycle": "recovery",
+            "recoveryWindow": {
+              "creatorMayEnterAt": "1796911200",
+              "anyoneMayEnterAt": "1798898400",
+              "creatorMayEnterNow": true,
+              "anyoneMayEnterNow": true,
+              "secondsUntilPermissionlessExit": "0"
+            },
+            "recovery": null,
+            "rescue": null,
+            "team": null,
+            "account": {
+              "address": "0x3333333333333333333333333333333333333333",
+              "baseBalanceRaw": "10000000000000000000",
+              "allowanceToCurveRaw": "0",
+              "recoveryQuoteOutRaw": "0",
+              "mayEnterRecoveryNow": false,
+              "isTeamRecipient": false
+            },
+            "actions": [],
+            "disclosure": "The quote token 0x5555555555555555555555555555555555555555 was blocked as unsafe and the curve's funds were moved. There is no on-chain claim; holders are repaid off-chain."
+          }
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "rescued-cli",
+      "scenario": "rescued",
+      "surface": "cli",
+      "args": {
+        "command": "candle token exit 0x2222222222222222222222222222222222222222 --wallet 0x3333333333333333333333333333333333333333"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/markets/hood/0x2222222222222222222222222222222222222222",
+          "credential": false
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/hood/curves/0x1111111111111111111111111111111111111111/holder-exit?account=0x3333333333333333333333333333333333333333",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "lines": [
+          "  Token      0x2222222222222222222222222222222222222222",
+          "  Curve      0x1111111111111111111111111111111111111111",
+          "  State      rescued: no on-chain claim",
+          "  Lifecycle  recovery",
+          "  - The quote token 0x5555555555555555555555555555555555555555 was blocked as unsafe and the curve's",
+          "    funds were moved. There is no on-chain claim; holders are repaid off-chain.",
+          "  Creator may open Recovery  2026-12-10T14:00:00.000Z",
+          "  Anyone may open Recovery   2027-01-02T14:00:00.000Z",
+          "  Wallet                     0x3333333333333333333333333333333333333333",
+          "  Balance                    10 tokens"
+        ]
+      }
+    },
+    {
+      "id": "rescued-cli-json",
+      "scenario": "rescued",
+      "surface": "cli",
+      "args": {
+        "command": "candle token exit 0x2222222222222222222222222222222222222222 --wallet 0x3333333333333333333333333333333333333333 --json"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/markets/hood/0x2222222222222222222222222222222222222222",
+          "credential": false
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/hood/curves/0x1111111111111111111111111111111111111111/holder-exit?account=0x3333333333333333333333333333333333333333",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "body": {
+          "payload": {
+            "curve": "0x1111111111111111111111111111111111111111",
+            "token": "0x2222222222222222222222222222222222222222",
+            "holderExit": {
+              "generation": 2,
+              "state": "rescued",
+              "lifecycle": "recovery",
+              "recoveryWindow": {
+                "creatorMayEnterAt": "1796911200",
+                "anyoneMayEnterAt": "1798898400",
+                "creatorMayEnterNow": true,
+                "anyoneMayEnterNow": true,
+                "secondsUntilPermissionlessExit": "0"
+              },
+              "recovery": null,
+              "rescue": null,
+              "team": null,
+              "account": {
+                "address": "0x3333333333333333333333333333333333333333",
+                "baseBalanceRaw": "10000000000000000000",
+                "allowanceToCurveRaw": "0",
+                "recoveryQuoteOutRaw": "0",
+                "mayEnterRecoveryNow": false,
+                "isTeamRecipient": false
+              },
+              "actions": [],
+              "disclosure": "The quote token 0x5555555555555555555555555555555555555555 was blocked as unsafe and the curve's funds were moved. There is no on-chain claim; holders are repaid off-chain."
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "team-claimable-api",
+      "scenario": "team-claimable",
+      "surface": "api-source",
+      "says": "A migrated generation 2 launch with a vesting escrow: the team recipient may claim what has vested, so claim_team is its action.",
+      "evidence": "Candle's own pure deriveHolderExit on made-up chain facts at one block, in the read route's envelope; the route, the chain read and its cache are not run",
+      "args": {
+        "path": "/api/v1/hood/curves/0x1111111111111111111111111111111111111111/holder-exit?account=0x8888888888888888888888888888888888888888"
+      },
+      "outcome": {
+        "status": 200,
+        "body": {
+          "payload": {
+            "curve": "0x1111111111111111111111111111111111111111",
+            "token": "0x2222222222222222222222222222222222222222",
+            "holderExit": {
+              "generation": 2,
+              "state": "none",
+              "lifecycle": "migrated",
+              "recoveryWindow": {
+                "creatorMayEnterAt": "1797775200",
+                "anyoneMayEnterAt": "1799762400",
+                "creatorMayEnterNow": true,
+                "anyoneMayEnterNow": true,
+                "secondsUntilPermissionlessExit": "0"
+              },
+              "recovery": null,
+              "rescue": null,
+              "team": {
+                "escrow": "0x7777777777777777777777777777777777777777",
+                "recipient": "0x8888888888888888888888888888888888888888",
+                "amountRaw": "100000000000000000000",
+                "startTime": "1794578400",
+                "cliffTime": "1797170400",
+                "vestingDays": 100,
+                "vestedRaw": "30000000000000000000",
+                "claimedRaw": "0",
+                "claimableRaw": "30000000000000000000",
+                "status": "claimable"
+              },
+              "account": {
+                "address": "0x8888888888888888888888888888888888888888",
+                "baseBalanceRaw": "5000000000000000000",
+                "allowanceToCurveRaw": "0",
+                "recoveryQuoteOutRaw": "0",
+                "mayEnterRecoveryNow": false,
+                "isTeamRecipient": true
+              },
+              "actions": [
+                "claim_team"
+              ],
+              "disclosure": ""
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "team-claimable-mcp",
+      "scenario": "team-claimable",
+      "surface": "mcp",
+      "args": {
+        "curve": "0x1111111111111111111111111111111111111111",
+        "account": "0x8888888888888888888888888888888888888888"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/hood/curves/0x1111111111111111111111111111111111111111/holder-exit?account=0x8888888888888888888888888888888888888888",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "body": {
+          "payload": {
+            "curve": "0x1111111111111111111111111111111111111111",
+            "token": "0x2222222222222222222222222222222222222222",
+            "holderExit": {
+              "generation": 2,
+              "state": "none",
+              "lifecycle": "migrated",
+              "recoveryWindow": {
+                "creatorMayEnterAt": "1797775200",
+                "anyoneMayEnterAt": "1799762400",
+                "creatorMayEnterNow": true,
+                "anyoneMayEnterNow": true,
+                "secondsUntilPermissionlessExit": "0"
+              },
+              "recovery": null,
+              "rescue": null,
+              "team": {
+                "escrow": "0x7777777777777777777777777777777777777777",
+                "recipient": "0x8888888888888888888888888888888888888888",
+                "amountRaw": "100000000000000000000",
+                "startTime": "1794578400",
+                "cliffTime": "1797170400",
+                "vestingDays": 100,
+                "vestedRaw": "30000000000000000000",
+                "claimedRaw": "0",
+                "claimableRaw": "30000000000000000000",
+                "status": "claimable"
+              },
+              "account": {
+                "address": "0x8888888888888888888888888888888888888888",
+                "baseBalanceRaw": "5000000000000000000",
+                "allowanceToCurveRaw": "0",
+                "recoveryQuoteOutRaw": "0",
+                "mayEnterRecoveryNow": false,
+                "isTeamRecipient": true
+              },
+              "actions": [
+                "claim_team"
+              ],
+              "disclosure": ""
+            }
+          }
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "team-claimable-sdk",
+      "scenario": "team-claimable",
+      "surface": "sdk",
+      "args": {
+        "curve": "0x1111111111111111111111111111111111111111",
+        "account": "0x8888888888888888888888888888888888888888"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/hood/curves/0x1111111111111111111111111111111111111111/holder-exit?account=0x8888888888888888888888888888888888888888"
+        }
+      ],
+      "outcome": {
+        "body": {
+          "curve": "0x1111111111111111111111111111111111111111",
+          "token": "0x2222222222222222222222222222222222222222",
+          "holderExit": {
+            "generation": 2,
+            "state": "none",
+            "lifecycle": "migrated",
+            "recoveryWindow": {
+              "creatorMayEnterAt": "1797775200",
+              "anyoneMayEnterAt": "1799762400",
+              "creatorMayEnterNow": true,
+              "anyoneMayEnterNow": true,
+              "secondsUntilPermissionlessExit": "0"
+            },
+            "recovery": null,
+            "rescue": null,
+            "team": {
+              "escrow": "0x7777777777777777777777777777777777777777",
+              "recipient": "0x8888888888888888888888888888888888888888",
+              "amountRaw": "100000000000000000000",
+              "startTime": "1794578400",
+              "cliffTime": "1797170400",
+              "vestingDays": 100,
+              "vestedRaw": "30000000000000000000",
+              "claimedRaw": "0",
+              "claimableRaw": "30000000000000000000",
+              "status": "claimable"
+            },
+            "account": {
+              "address": "0x8888888888888888888888888888888888888888",
+              "baseBalanceRaw": "5000000000000000000",
+              "allowanceToCurveRaw": "0",
+              "recoveryQuoteOutRaw": "0",
+              "mayEnterRecoveryNow": false,
+              "isTeamRecipient": true
+            },
+            "actions": [
+              "claim_team"
+            ],
+            "disclosure": ""
+          }
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "team-claimable-cli",
+      "scenario": "team-claimable",
+      "surface": "cli",
+      "args": {
+        "command": "candle token exit 0x2222222222222222222222222222222222222222 --wallet 0x8888888888888888888888888888888888888888"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/markets/hood/0x2222222222222222222222222222222222222222",
+          "credential": false
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/hood/curves/0x1111111111111111111111111111111111111111/holder-exit?account=0x8888888888888888888888888888888888888888",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "lines": [
+          "  Token      0x2222222222222222222222222222222222222222",
+          "  Curve      0x1111111111111111111111111111111111111111",
+          "  State      none: ordinary trading, nothing to exit",
+          "  Lifecycle  migrated",
+          "  Creator may open Recovery  2026-12-20T14:00:00.000Z",
+          "  Anyone may open Recovery   2027-01-12T14:00:00.000Z",
+          "  Team recipient             0x8888888888888888888888888888888888888888",
+          "  Team allocation            100 tokens",
+          "  Team vested                30 tokens",
+          "  Team claimed               0 tokens",
+          "  Team claimable             30 tokens",
+          "  Team status                claimable",
+          "  Wallet                     0x8888888888888888888888888888888888888888",
+          "  Balance                    5 tokens",
+          "  - Available now: candle token exit 0x2222222222222222222222222222222222222222 --claim-team"
+        ]
+      }
+    },
+    {
+      "id": "team-claimable-cli-json",
+      "scenario": "team-claimable",
+      "surface": "cli",
+      "args": {
+        "command": "candle token exit 0x2222222222222222222222222222222222222222 --wallet 0x8888888888888888888888888888888888888888 --json"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/markets/hood/0x2222222222222222222222222222222222222222",
+          "credential": false
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/hood/curves/0x1111111111111111111111111111111111111111/holder-exit?account=0x8888888888888888888888888888888888888888",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "body": {
+          "payload": {
+            "curve": "0x1111111111111111111111111111111111111111",
+            "token": "0x2222222222222222222222222222222222222222",
+            "holderExit": {
+              "generation": 2,
+              "state": "none",
+              "lifecycle": "migrated",
+              "recoveryWindow": {
+                "creatorMayEnterAt": "1797775200",
+                "anyoneMayEnterAt": "1799762400",
+                "creatorMayEnterNow": true,
+                "anyoneMayEnterNow": true,
+                "secondsUntilPermissionlessExit": "0"
+              },
+              "recovery": null,
+              "rescue": null,
+              "team": {
+                "escrow": "0x7777777777777777777777777777777777777777",
+                "recipient": "0x8888888888888888888888888888888888888888",
+                "amountRaw": "100000000000000000000",
+                "startTime": "1794578400",
+                "cliffTime": "1797170400",
+                "vestingDays": 100,
+                "vestedRaw": "30000000000000000000",
+                "claimedRaw": "0",
+                "claimableRaw": "30000000000000000000",
+                "status": "claimable"
+              },
+              "account": {
+                "address": "0x8888888888888888888888888888888888888888",
+                "baseBalanceRaw": "5000000000000000000",
+                "allowanceToCurveRaw": "0",
+                "recoveryQuoteOutRaw": "0",
+                "mayEnterRecoveryNow": false,
+                "isTeamRecipient": true
+              },
+              "actions": [
+                "claim_team"
+              ],
+              "disclosure": ""
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "team-stranded-api",
+      "scenario": "team-stranded",
+      "surface": "api-source",
+      "says": "A failed generation 2 launch with a team escrow: its team status is stranded, and the holder's Recovery claim is the only action.",
+      "evidence": "Candle's own pure deriveHolderExit on made-up chain facts at one block, in the read route's envelope; the route, the chain read and its cache are not run",
+      "args": {
+        "path": "/api/v1/hood/curves/0x1111111111111111111111111111111111111111/holder-exit?account=0x3333333333333333333333333333333333333333"
+      },
+      "outcome": {
+        "status": 200,
+        "body": {
+          "payload": {
+            "curve": "0x1111111111111111111111111111111111111111",
+            "token": "0x2222222222222222222222222222222222222222",
+            "holderExit": {
+              "generation": 2,
+              "state": "recovery",
+              "lifecycle": "recovery",
+              "recoveryWindow": {
+                "creatorMayEnterAt": "1796911200",
+                "anyoneMayEnterAt": "1798898400",
+                "creatorMayEnterNow": true,
+                "anyoneMayEnterNow": true,
+                "secondsUntilPermissionlessExit": "0"
+              },
+              "recovery": {
+                "quoteToken": "0x5555555555555555555555555555555555555555",
+                "quoteDecimals": 6,
+                "reserveSnapshotRaw": "1000000000",
+                "eligibleSupplyRaw": "2000000000000000000000",
+                "surrenderedRaw": "0",
+                "remainingRaw": "2000000000000000000000",
+                "ratePerTokenRaw": "500000",
+                "paysBy": "tokens_held"
+              },
+              "rescue": null,
+              "team": {
+                "escrow": "0x7777777777777777777777777777777777777777",
+                "recipient": "0x8888888888888888888888888888888888888888",
+                "amountRaw": "100000000000000000000",
+                "startTime": "1794578400",
+                "cliffTime": "1797170400",
+                "vestingDays": 100,
+                "vestedRaw": "30000000000000000000",
+                "claimedRaw": "0",
+                "claimableRaw": "0",
+                "status": "stranded"
+              },
+              "account": {
+                "address": "0x3333333333333333333333333333333333333333",
+                "baseBalanceRaw": "10000000000000000000",
+                "allowanceToCurveRaw": "0",
+                "recoveryQuoteOutRaw": "5000000",
+                "mayEnterRecoveryNow": false,
+                "isTeamRecipient": false
+              },
+              "actions": [
+                "claim_recovery"
+              ],
+              "disclosure": "This launch did not migrate. Holders redeem the curve's reserve at a fixed rate of 500000 raw units of 0x5555555555555555555555555555555555555555 per token. Recovery pays by tokens held, not by what you paid."
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "team-stranded-mcp",
+      "scenario": "team-stranded",
+      "surface": "mcp",
+      "args": {
+        "curve": "0x1111111111111111111111111111111111111111",
+        "account": "0x3333333333333333333333333333333333333333"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/hood/curves/0x1111111111111111111111111111111111111111/holder-exit?account=0x3333333333333333333333333333333333333333",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "body": {
+          "payload": {
+            "curve": "0x1111111111111111111111111111111111111111",
+            "token": "0x2222222222222222222222222222222222222222",
+            "holderExit": {
+              "generation": 2,
+              "state": "recovery",
+              "lifecycle": "recovery",
+              "recoveryWindow": {
+                "creatorMayEnterAt": "1796911200",
+                "anyoneMayEnterAt": "1798898400",
+                "creatorMayEnterNow": true,
+                "anyoneMayEnterNow": true,
+                "secondsUntilPermissionlessExit": "0"
+              },
+              "recovery": {
+                "quoteToken": "0x5555555555555555555555555555555555555555",
+                "quoteDecimals": 6,
+                "reserveSnapshotRaw": "1000000000",
+                "eligibleSupplyRaw": "2000000000000000000000",
+                "surrenderedRaw": "0",
+                "remainingRaw": "2000000000000000000000",
+                "ratePerTokenRaw": "500000",
+                "paysBy": "tokens_held"
+              },
+              "rescue": null,
+              "team": {
+                "escrow": "0x7777777777777777777777777777777777777777",
+                "recipient": "0x8888888888888888888888888888888888888888",
+                "amountRaw": "100000000000000000000",
+                "startTime": "1794578400",
+                "cliffTime": "1797170400",
+                "vestingDays": 100,
+                "vestedRaw": "30000000000000000000",
+                "claimedRaw": "0",
+                "claimableRaw": "0",
+                "status": "stranded"
+              },
+              "account": {
+                "address": "0x3333333333333333333333333333333333333333",
+                "baseBalanceRaw": "10000000000000000000",
+                "allowanceToCurveRaw": "0",
+                "recoveryQuoteOutRaw": "5000000",
+                "mayEnterRecoveryNow": false,
+                "isTeamRecipient": false
+              },
+              "actions": [
+                "claim_recovery"
+              ],
+              "disclosure": "This launch did not migrate. Holders redeem the curve's reserve at a fixed rate of 500000 raw units of 0x5555555555555555555555555555555555555555 per token. Recovery pays by tokens held, not by what you paid."
+            }
+          }
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "team-stranded-sdk",
+      "scenario": "team-stranded",
+      "surface": "sdk",
+      "args": {
+        "curve": "0x1111111111111111111111111111111111111111",
+        "account": "0x3333333333333333333333333333333333333333"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/hood/curves/0x1111111111111111111111111111111111111111/holder-exit?account=0x3333333333333333333333333333333333333333"
+        }
+      ],
+      "outcome": {
+        "body": {
+          "curve": "0x1111111111111111111111111111111111111111",
+          "token": "0x2222222222222222222222222222222222222222",
+          "holderExit": {
+            "generation": 2,
+            "state": "recovery",
+            "lifecycle": "recovery",
+            "recoveryWindow": {
+              "creatorMayEnterAt": "1796911200",
+              "anyoneMayEnterAt": "1798898400",
+              "creatorMayEnterNow": true,
+              "anyoneMayEnterNow": true,
+              "secondsUntilPermissionlessExit": "0"
+            },
+            "recovery": {
+              "quoteToken": "0x5555555555555555555555555555555555555555",
+              "quoteDecimals": 6,
+              "reserveSnapshotRaw": "1000000000",
+              "eligibleSupplyRaw": "2000000000000000000000",
+              "surrenderedRaw": "0",
+              "remainingRaw": "2000000000000000000000",
+              "ratePerTokenRaw": "500000",
+              "paysBy": "tokens_held"
+            },
+            "rescue": null,
+            "team": {
+              "escrow": "0x7777777777777777777777777777777777777777",
+              "recipient": "0x8888888888888888888888888888888888888888",
+              "amountRaw": "100000000000000000000",
+              "startTime": "1794578400",
+              "cliffTime": "1797170400",
+              "vestingDays": 100,
+              "vestedRaw": "30000000000000000000",
+              "claimedRaw": "0",
+              "claimableRaw": "0",
+              "status": "stranded"
+            },
+            "account": {
+              "address": "0x3333333333333333333333333333333333333333",
+              "baseBalanceRaw": "10000000000000000000",
+              "allowanceToCurveRaw": "0",
+              "recoveryQuoteOutRaw": "5000000",
+              "mayEnterRecoveryNow": false,
+              "isTeamRecipient": false
+            },
+            "actions": [
+              "claim_recovery"
+            ],
+            "disclosure": "This launch did not migrate. Holders redeem the curve's reserve at a fixed rate of 500000 raw units of 0x5555555555555555555555555555555555555555 per token. Recovery pays by tokens held, not by what you paid."
+          }
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "team-stranded-cli",
+      "scenario": "team-stranded",
+      "surface": "cli",
+      "args": {
+        "command": "candle token exit 0x2222222222222222222222222222222222222222 --wallet 0x3333333333333333333333333333333333333333"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/markets/hood/0x2222222222222222222222222222222222222222",
+          "credential": false
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/hood/curves/0x1111111111111111111111111111111111111111/holder-exit?account=0x3333333333333333333333333333333333333333",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "lines": [
+          "  Token      0x2222222222222222222222222222222222222222",
+          "  Curve      0x1111111111111111111111111111111111111111",
+          "  State      Recovery: redeem at a fixed rate",
+          "  Lifecycle  recovery",
+          "  - This launch did not migrate. Holders redeem the curve's reserve at a fixed rate of 500000 raw",
+          "    units of 0x5555555555555555555555555555555555555555 per token. Recovery pays by tokens held, not",
+          "    by what you paid.",
+          "  Creator may open Recovery  2026-12-10T14:00:00.000Z",
+          "  Anyone may open Recovery   2027-01-02T14:00:00.000Z",
+          "  Recovery rate              0.5 0x5555555555555555555555555555555555555555 per token",
+          "  Recovery left              2000 tokens",
+          "  Team recipient             0x8888888888888888888888888888888888888888",
+          "  Team allocation            100 tokens",
+          "  Team vested                30 tokens",
+          "  Team claimed               0 tokens",
+          "  Team claimable             0 tokens",
+          "  Team status                stranded",
+          "  Wallet                     0x3333333333333333333333333333333333333333",
+          "  Balance                    10 tokens",
+          "  Recovery would pay         5 0x5555555555555555555555555555555555555555",
+          "  - Available now: candle token exit 0x2222222222222222222222222222222222222222 --recover"
+        ]
+      }
+    },
+    {
+      "id": "team-stranded-cli-json",
+      "scenario": "team-stranded",
+      "surface": "cli",
+      "args": {
+        "command": "candle token exit 0x2222222222222222222222222222222222222222 --wallet 0x3333333333333333333333333333333333333333 --json"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/markets/hood/0x2222222222222222222222222222222222222222",
+          "credential": false
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/hood/curves/0x1111111111111111111111111111111111111111/holder-exit?account=0x3333333333333333333333333333333333333333",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "body": {
+          "payload": {
+            "curve": "0x1111111111111111111111111111111111111111",
+            "token": "0x2222222222222222222222222222222222222222",
+            "holderExit": {
+              "generation": 2,
+              "state": "recovery",
+              "lifecycle": "recovery",
+              "recoveryWindow": {
+                "creatorMayEnterAt": "1796911200",
+                "anyoneMayEnterAt": "1798898400",
+                "creatorMayEnterNow": true,
+                "anyoneMayEnterNow": true,
+                "secondsUntilPermissionlessExit": "0"
+              },
+              "recovery": {
+                "quoteToken": "0x5555555555555555555555555555555555555555",
+                "quoteDecimals": 6,
+                "reserveSnapshotRaw": "1000000000",
+                "eligibleSupplyRaw": "2000000000000000000000",
+                "surrenderedRaw": "0",
+                "remainingRaw": "2000000000000000000000",
+                "ratePerTokenRaw": "500000",
+                "paysBy": "tokens_held"
+              },
+              "rescue": null,
+              "team": {
+                "escrow": "0x7777777777777777777777777777777777777777",
+                "recipient": "0x8888888888888888888888888888888888888888",
+                "amountRaw": "100000000000000000000",
+                "startTime": "1794578400",
+                "cliffTime": "1797170400",
+                "vestingDays": 100,
+                "vestedRaw": "30000000000000000000",
+                "claimedRaw": "0",
+                "claimableRaw": "0",
+                "status": "stranded"
+              },
+              "account": {
+                "address": "0x3333333333333333333333333333333333333333",
+                "baseBalanceRaw": "10000000000000000000",
+                "allowanceToCurveRaw": "0",
+                "recoveryQuoteOutRaw": "5000000",
+                "mayEnterRecoveryNow": false,
+                "isTeamRecipient": false
+              },
+              "actions": [
+                "claim_recovery"
+              ],
+              "disclosure": "This launch did not migrate. Holders redeem the curve's reserve at a fixed rate of 500000 raw units of 0x5555555555555555555555555555555555555555 per token. Recovery pays by tokens held, not by what you paid."
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "by-token-mcp",
+      "scenario": "by-token",
+      "surface": "mcp",
+      "says": "candle_holder_exit given a token: its curve is read from the token's market first, then the read.",
+      "args": {
+        "token": "0x2222222222222222222222222222222222222222",
+        "account": "0x3333333333333333333333333333333333333333"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/markets/hood/0x2222222222222222222222222222222222222222",
+          "credential": false
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/hood/curves/0x1111111111111111111111111111111111111111/holder-exit?account=0x3333333333333333333333333333333333333333",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "body": {
+          "payload": {
+            "curve": "0x1111111111111111111111111111111111111111",
+            "token": "0x2222222222222222222222222222222222222222",
+            "holderExit": {
+              "generation": 2,
+              "state": "recovery",
+              "lifecycle": "recovery",
+              "recoveryWindow": {
+                "creatorMayEnterAt": "1796911200",
+                "anyoneMayEnterAt": "1798898400",
+                "creatorMayEnterNow": true,
+                "anyoneMayEnterNow": true,
+                "secondsUntilPermissionlessExit": "0"
+              },
+              "recovery": {
+                "quoteToken": "0x5555555555555555555555555555555555555555",
+                "quoteDecimals": 6,
+                "reserveSnapshotRaw": "1000000000",
+                "eligibleSupplyRaw": "2000000000000000000000",
+                "surrenderedRaw": "0",
+                "remainingRaw": "2000000000000000000000",
+                "ratePerTokenRaw": "500000",
+                "paysBy": "tokens_held"
+              },
+              "rescue": null,
+              "team": null,
+              "account": {
+                "address": "0x3333333333333333333333333333333333333333",
+                "baseBalanceRaw": "10000000000000000000",
+                "allowanceToCurveRaw": "0",
+                "recoveryQuoteOutRaw": "5000000",
+                "mayEnterRecoveryNow": false,
+                "isTeamRecipient": false
+              },
+              "actions": [
+                "claim_recovery"
+              ],
+              "disclosure": "This launch did not migrate. Holders redeem the curve's reserve at a fixed rate of 500000 raw units of 0x5555555555555555555555555555555555555555 per token. Recovery pays by tokens held, not by what you paid."
+            }
+          }
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "by-token-cli-json",
+      "scenario": "by-token",
+      "surface": "cli",
+      "args": {
+        "command": "candle token exit 0x2222222222222222222222222222222222222222 --json"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/markets/hood/0x2222222222222222222222222222222222222222",
+          "credential": false
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/hood/curves/0x1111111111111111111111111111111111111111/holder-exit",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "body": {
+          "payload": {
+            "curve": "0x1111111111111111111111111111111111111111",
+            "token": "0x2222222222222222222222222222222222222222",
+            "holderExit": {
+              "generation": 2,
+              "state": "recovery",
+              "lifecycle": "recovery",
+              "recoveryWindow": {
+                "creatorMayEnterAt": "1796911200",
+                "anyoneMayEnterAt": "1798898400",
+                "creatorMayEnterNow": true,
+                "anyoneMayEnterNow": true,
+                "secondsUntilPermissionlessExit": "0"
+              },
+              "recovery": {
+                "quoteToken": "0x5555555555555555555555555555555555555555",
+                "quoteDecimals": 6,
+                "reserveSnapshotRaw": "1000000000",
+                "eligibleSupplyRaw": "2000000000000000000000",
+                "surrenderedRaw": "0",
+                "remainingRaw": "2000000000000000000000",
+                "ratePerTokenRaw": "500000",
+                "paysBy": "tokens_held"
+              },
+              "rescue": null,
+              "team": null,
+              "account": {
+                "address": "0x3333333333333333333333333333333333333333",
+                "baseBalanceRaw": "10000000000000000000",
+                "allowanceToCurveRaw": "0",
+                "recoveryQuoteOutRaw": "5000000",
+                "mayEnterRecoveryNow": false,
+                "isTeamRecipient": false
+              },
+              "actions": [
+                "claim_recovery"
+              ],
+              "disclosure": "This launch did not migrate. Holders redeem the curve's reserve at a fixed rate of 500000 raw units of 0x5555555555555555555555555555555555555555 per token. Recovery pays by tokens held, not by what you paid."
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "no-curve-mcp",
+      "scenario": "no-curve",
+      "surface": "mcp",
+      "says": "A token whose market has no Hood curve: NO_HOOD_CURVE, and no holder-exit read.",
+      "args": {
+        "token": "0x2222222222222222222222222222222222222222",
+        "account": "0x3333333333333333333333333333333333333333"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/markets/hood/0x2222222222222222222222222222222222222222",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "body": {
+          "success": false,
+          "error": {
+            "code": "NO_HOOD_CURVE",
+            "message": "This token has no Candle Hood curve, so it has no holder exit"
+          }
+        },
+        "isError": true
+      }
+    },
+    {
+      "id": "no-curve-cli-json",
+      "scenario": "no-curve",
+      "surface": "cli",
+      "args": {
+        "command": "candle token exit 0x2222222222222222222222222222222222222222 --json"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/markets/hood/0x2222222222222222222222222222222222222222",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 1,
+        "body": {
+          "ok": false,
+          "code": "NO_HOOD_CURVE",
+          "message": "This token has no Candle Hood curve, so it has no holder exit."
+        }
+      }
+    },
+    {
+      "id": "dry-run-api",
+      "scenario": "dry-run",
+      "surface": "api-stub",
+      "says": "A dry run of claim_recovery: Candle builds and simulates, signs nothing, and the outcome is not_started. The MCP tool's dryRun defaults to true; the SDK and CLI say so.",
+      "evidence": "A response stub shaped by the SDK's types and the route's refusal table: the agent route, the builder and the signer are not run",
+      "args": {
+        "path": "/api/v1/agent/hood/holder-exit/0x1111111111111111111111111111111111111111",
+        "action": "claim_recovery"
+      },
+      "outcome": {
+        "dry": {
+          "status": 200,
+          "body": {
+            "success": true,
+            "curve": "0x1111111111111111111111111111111111111111",
+            "action": "claim_recovery",
+            "wallet": "0x3333333333333333333333333333333333333333",
+            "signer": "embedded",
+            "dryRun": true,
+            "signable": true,
+            "build": {
+              "curve": "0x1111111111111111111111111111111111111111",
+              "account": "0x3333333333333333333333333333333333333333",
+              "action": "claim_recovery",
+              "generation": 2,
+              "blockNumber": "1000000",
+              "amountRaw": "10000000000000000000",
+              "expectedQuoteOutRaw": "5000000",
+              "quoteToken": "0x5555555555555555555555555555555555555555",
+              "quoteDecimals": 6,
+              "calls": [
+                {
+                  "kind": "approve",
+                  "to": "0x2222222222222222222222222222222222222222",
+                  "value": "0",
+                  "gas": "60000",
+                  "gasEstimated": true
+                },
+                {
+                  "kind": "claim_recovery",
+                  "to": "0x1111111111111111111111111111111111111111",
+                  "value": "0",
+                  "gas": "150000",
+                  "gasEstimated": true
+                }
+              ],
+              "gasCost": {
+                "maxFeePerGas": "1000000000",
+                "maxPriorityFeePerGas": "100000000",
+                "requiredWei": "210000000000000",
+                "balanceWei": "5000000000000000"
+              }
+            },
+            "outcome": "not_started",
+            "calls": [
+              {
+                "kind": "approve",
+                "to": "0x2222222222222222222222222222222222222222",
+                "status": "not_sent",
+                "txHash": null
+              },
+              {
+                "kind": "claim_recovery",
+                "to": "0x1111111111111111111111111111111111111111",
+                "status": "not_sent",
+                "txHash": null
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "dry-run-mcp",
+      "scenario": "dry-run",
+      "surface": "mcp",
+      "args": {
+        "curve": "0x1111111111111111111111111111111111111111",
+        "action": "claim_recovery"
+      },
+      "requests": [
+        {
+          "method": "POST",
+          "path": "/api/v1/agent/hood/holder-exit/0x1111111111111111111111111111111111111111",
+          "credential": true,
+          "body": {
+            "action": "claim_recovery",
+            "dryRun": true
+          }
+        }
+      ],
+      "outcome": {
+        "body": {
+          "success": true,
+          "curve": "0x1111111111111111111111111111111111111111",
+          "action": "claim_recovery",
+          "wallet": "0x3333333333333333333333333333333333333333",
+          "signer": "embedded",
+          "dryRun": true,
+          "signable": true,
+          "build": {
+            "curve": "0x1111111111111111111111111111111111111111",
+            "account": "0x3333333333333333333333333333333333333333",
+            "action": "claim_recovery",
+            "generation": 2,
+            "blockNumber": "1000000",
+            "amountRaw": "10000000000000000000",
+            "expectedQuoteOutRaw": "5000000",
+            "quoteToken": "0x5555555555555555555555555555555555555555",
+            "quoteDecimals": 6,
+            "calls": [
+              {
+                "kind": "approve",
+                "to": "0x2222222222222222222222222222222222222222",
+                "value": "0",
+                "gas": "60000",
+                "gasEstimated": true
+              },
+              {
+                "kind": "claim_recovery",
+                "to": "0x1111111111111111111111111111111111111111",
+                "value": "0",
+                "gas": "150000",
+                "gasEstimated": true
+              }
+            ],
+            "gasCost": {
+              "maxFeePerGas": "1000000000",
+              "maxPriorityFeePerGas": "100000000",
+              "requiredWei": "210000000000000",
+              "balanceWei": "5000000000000000"
+            }
+          },
+          "outcome": "not_started",
+          "calls": [
+            {
+              "kind": "approve",
+              "to": "0x2222222222222222222222222222222222222222",
+              "status": "not_sent",
+              "txHash": null
+            },
+            {
+              "kind": "claim_recovery",
+              "to": "0x1111111111111111111111111111111111111111",
+              "status": "not_sent",
+              "txHash": null
+            }
+          ]
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "dry-run-sdk",
+      "scenario": "dry-run",
+      "surface": "sdk",
+      "args": {
+        "curve": "0x1111111111111111111111111111111111111111",
+        "action": "claim_recovery",
+        "dryRun": true
+      },
+      "requests": [
+        {
+          "method": "POST",
+          "path": "/api/v1/agent/hood/holder-exit/0x1111111111111111111111111111111111111111",
+          "body": {
+            "action": "claim_recovery",
+            "dryRun": true
+          }
+        }
+      ],
+      "outcome": {
+        "body": {
+          "success": true,
+          "curve": "0x1111111111111111111111111111111111111111",
+          "action": "claim_recovery",
+          "wallet": "0x3333333333333333333333333333333333333333",
+          "signer": "embedded",
+          "dryRun": true,
+          "signable": true,
+          "build": {
+            "curve": "0x1111111111111111111111111111111111111111",
+            "account": "0x3333333333333333333333333333333333333333",
+            "action": "claim_recovery",
+            "generation": 2,
+            "blockNumber": "1000000",
+            "amountRaw": "10000000000000000000",
+            "expectedQuoteOutRaw": "5000000",
+            "quoteToken": "0x5555555555555555555555555555555555555555",
+            "quoteDecimals": 6,
+            "calls": [
+              {
+                "kind": "approve",
+                "to": "0x2222222222222222222222222222222222222222",
+                "value": "0",
+                "gas": "60000",
+                "gasEstimated": true
+              },
+              {
+                "kind": "claim_recovery",
+                "to": "0x1111111111111111111111111111111111111111",
+                "value": "0",
+                "gas": "150000",
+                "gasEstimated": true
+              }
+            ],
+            "gasCost": {
+              "maxFeePerGas": "1000000000",
+              "maxPriorityFeePerGas": "100000000",
+              "requiredWei": "210000000000000",
+              "balanceWei": "5000000000000000"
+            }
+          },
+          "outcome": "not_started",
+          "calls": [
+            {
+              "kind": "approve",
+              "to": "0x2222222222222222222222222222222222222222",
+              "status": "not_sent",
+              "txHash": null
+            },
+            {
+              "kind": "claim_recovery",
+              "to": "0x1111111111111111111111111111111111111111",
+              "status": "not_sent",
+              "txHash": null
+            }
+          ]
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "dry-run-cli",
+      "scenario": "dry-run",
+      "surface": "cli",
+      "args": {
+        "command": "candle token exit 0x2222222222222222222222222222222222222222 --recover --dry-run"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/markets/hood/0x2222222222222222222222222222222222222222"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/wallets/embedded"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/hood/curves/0x1111111111111111111111111111111111111111/holder-exit?account=0x3333333333333333333333333333333333333333"
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/agent/hood/holder-exit/0x1111111111111111111111111111111111111111",
+          "body": {
+            "action": "claim_recovery",
+            "dryRun": true
+          }
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "lines": [
+          "  - This launch did not migrate. Holders redeem the curve's reserve at a fixed rate of 500000 raw",
+          "    units of 0x5555555555555555555555555555555555555555 per token. Recovery pays by tokens held, not",
+          "    by what you paid.",
+          "Dry run",
+          "  Action     Redeem at the Recovery rate",
+          "  Wallet     0x3333333333333333333333333333333333333333",
+          "  Redeems    10 tokens",
+          "  Would pay  5 0x5555555555555555555555555555555555555555",
+          "  Releases   -",
+          "  To         -",
+          "  Calls      approve not_sent, claim_recovery not_sent",
+          "  Outcome    -",
+          "  - Nothing was sent."
+        ]
+      }
+    },
+    {
+      "id": "dry-run-cli-json",
+      "scenario": "dry-run",
+      "surface": "cli",
+      "args": {
+        "command": "candle token exit 0x2222222222222222222222222222222222222222 --recover --dry-run --json"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/markets/hood/0x2222222222222222222222222222222222222222"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/wallets/embedded"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/hood/curves/0x1111111111111111111111111111111111111111/holder-exit?account=0x3333333333333333333333333333333333333333"
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/agent/hood/holder-exit/0x1111111111111111111111111111111111111111",
+          "body": {
+            "action": "claim_recovery",
+            "dryRun": true
+          }
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "body": {
+          "success": true,
+          "curve": "0x1111111111111111111111111111111111111111",
+          "action": "claim_recovery",
+          "wallet": "0x3333333333333333333333333333333333333333",
+          "signer": "embedded",
+          "dryRun": true,
+          "signable": true,
+          "build": {
+            "curve": "0x1111111111111111111111111111111111111111",
+            "account": "0x3333333333333333333333333333333333333333",
+            "action": "claim_recovery",
+            "generation": 2,
+            "blockNumber": "1000000",
+            "amountRaw": "10000000000000000000",
+            "expectedQuoteOutRaw": "5000000",
+            "quoteToken": "0x5555555555555555555555555555555555555555",
+            "quoteDecimals": 6,
+            "calls": [
+              {
+                "kind": "approve",
+                "to": "0x2222222222222222222222222222222222222222",
+                "value": "0",
+                "gas": "60000",
+                "gasEstimated": true
+              },
+              {
+                "kind": "claim_recovery",
+                "to": "0x1111111111111111111111111111111111111111",
+                "value": "0",
+                "gas": "150000",
+                "gasEstimated": true
+              }
+            ],
+            "gasCost": {
+              "maxFeePerGas": "1000000000",
+              "maxPriorityFeePerGas": "100000000",
+              "requiredWei": "210000000000000",
+              "balanceWei": "5000000000000000"
+            }
+          },
+          "outcome": "not_started",
+          "calls": [
+            {
+              "kind": "approve",
+              "to": "0x2222222222222222222222222222222222222222",
+              "status": "not_sent",
+              "txHash": null
+            },
+            {
+              "kind": "claim_recovery",
+              "to": "0x1111111111111111111111111111111111111111",
+              "status": "not_sent",
+              "txHash": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "complete-api",
+      "scenario": "complete",
+      "surface": "api-stub",
+      "says": "A completed claim_recovery: the approval and the claim both confirmed, and the exit recorded.",
+      "evidence": "A response stub shaped by the SDK's types and the route's refusal table: the agent route, the builder and the signer are not run",
+      "args": {
+        "path": "/api/v1/agent/hood/holder-exit/0x1111111111111111111111111111111111111111",
+        "action": "claim_recovery"
+      },
+      "outcome": {
+        "dry": {
+          "status": 200,
+          "body": {
+            "success": true,
+            "curve": "0x1111111111111111111111111111111111111111",
+            "action": "claim_recovery",
+            "wallet": "0x3333333333333333333333333333333333333333",
+            "signer": "embedded",
+            "dryRun": true,
+            "signable": true,
+            "build": {
+              "curve": "0x1111111111111111111111111111111111111111",
+              "account": "0x3333333333333333333333333333333333333333",
+              "action": "claim_recovery",
+              "generation": 2,
+              "blockNumber": "1000000",
+              "amountRaw": "10000000000000000000",
+              "expectedQuoteOutRaw": "5000000",
+              "quoteToken": "0x5555555555555555555555555555555555555555",
+              "quoteDecimals": 6,
+              "calls": [
+                {
+                  "kind": "approve",
+                  "to": "0x2222222222222222222222222222222222222222",
+                  "value": "0",
+                  "gas": "60000",
+                  "gasEstimated": true
+                },
+                {
+                  "kind": "claim_recovery",
+                  "to": "0x1111111111111111111111111111111111111111",
+                  "value": "0",
+                  "gas": "150000",
+                  "gasEstimated": true
+                }
+              ],
+              "gasCost": {
+                "maxFeePerGas": "1000000000",
+                "maxPriorityFeePerGas": "100000000",
+                "requiredWei": "210000000000000",
+                "balanceWei": "5000000000000000"
+              }
+            },
+            "outcome": "not_started",
+            "calls": [
+              {
+                "kind": "approve",
+                "to": "0x2222222222222222222222222222222222222222",
+                "status": "not_sent",
+                "txHash": null
+              },
+              {
+                "kind": "claim_recovery",
+                "to": "0x1111111111111111111111111111111111111111",
+                "status": "not_sent",
+                "txHash": null
+              }
+            ]
+          }
+        },
+        "real": {
+          "status": 200,
+          "body": {
+            "success": true,
+            "curve": "0x1111111111111111111111111111111111111111",
+            "action": "claim_recovery",
+            "wallet": "0x3333333333333333333333333333333333333333",
+            "signer": "embedded",
+            "dryRun": false,
+            "build": {
+              "curve": "0x1111111111111111111111111111111111111111",
+              "account": "0x3333333333333333333333333333333333333333",
+              "action": "claim_recovery",
+              "generation": 2,
+              "blockNumber": "1000000",
+              "amountRaw": "10000000000000000000",
+              "expectedQuoteOutRaw": "5000000",
+              "quoteToken": "0x5555555555555555555555555555555555555555",
+              "quoteDecimals": 6,
+              "calls": [
+                {
+                  "kind": "approve",
+                  "to": "0x2222222222222222222222222222222222222222",
+                  "value": "0",
+                  "gas": "60000",
+                  "gasEstimated": true
+                },
+                {
+                  "kind": "claim_recovery",
+                  "to": "0x1111111111111111111111111111111111111111",
+                  "value": "0",
+                  "gas": "150000",
+                  "gasEstimated": true
+                }
+              ],
+              "gasCost": {
+                "maxFeePerGas": "1000000000",
+                "maxPriorityFeePerGas": "100000000",
+                "requiredWei": "210000000000000",
+                "balanceWei": "5000000000000000"
+              }
+            },
+            "outcome": "complete",
+            "calls": [
+              {
+                "kind": "approve",
+                "to": "0x2222222222222222222222222222222222222222",
+                "status": "confirmed",
+                "txHash": "0xa1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+                "recorded": "not_recorded"
+              },
+              {
+                "kind": "claim_recovery",
+                "to": "0x1111111111111111111111111111111111111111",
+                "status": "confirmed",
+                "txHash": "0xb2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2",
+                "recorded": "booked"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "complete-mcp",
+      "scenario": "complete",
+      "surface": "mcp",
+      "args": {
+        "curve": "0x1111111111111111111111111111111111111111",
+        "action": "claim_recovery",
+        "dryRun": false
+      },
+      "requests": [
+        {
+          "method": "POST",
+          "path": "/api/v1/agent/hood/holder-exit/0x1111111111111111111111111111111111111111",
+          "credential": true,
+          "body": {
+            "action": "claim_recovery",
+            "dryRun": false
+          }
+        }
+      ],
+      "outcome": {
+        "body": {
+          "success": true,
+          "curve": "0x1111111111111111111111111111111111111111",
+          "action": "claim_recovery",
+          "wallet": "0x3333333333333333333333333333333333333333",
+          "signer": "embedded",
+          "dryRun": false,
+          "build": {
+            "curve": "0x1111111111111111111111111111111111111111",
+            "account": "0x3333333333333333333333333333333333333333",
+            "action": "claim_recovery",
+            "generation": 2,
+            "blockNumber": "1000000",
+            "amountRaw": "10000000000000000000",
+            "expectedQuoteOutRaw": "5000000",
+            "quoteToken": "0x5555555555555555555555555555555555555555",
+            "quoteDecimals": 6,
+            "calls": [
+              {
+                "kind": "approve",
+                "to": "0x2222222222222222222222222222222222222222",
+                "value": "0",
+                "gas": "60000",
+                "gasEstimated": true
+              },
+              {
+                "kind": "claim_recovery",
+                "to": "0x1111111111111111111111111111111111111111",
+                "value": "0",
+                "gas": "150000",
+                "gasEstimated": true
+              }
+            ],
+            "gasCost": {
+              "maxFeePerGas": "1000000000",
+              "maxPriorityFeePerGas": "100000000",
+              "requiredWei": "210000000000000",
+              "balanceWei": "5000000000000000"
+            }
+          },
+          "outcome": "complete",
+          "calls": [
+            {
+              "kind": "approve",
+              "to": "0x2222222222222222222222222222222222222222",
+              "status": "confirmed",
+              "txHash": "0xa1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+              "recorded": "not_recorded"
+            },
+            {
+              "kind": "claim_recovery",
+              "to": "0x1111111111111111111111111111111111111111",
+              "status": "confirmed",
+              "txHash": "0xb2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2",
+              "recorded": "booked"
+            }
+          ]
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "complete-sdk",
+      "scenario": "complete",
+      "surface": "sdk",
+      "args": {
+        "curve": "0x1111111111111111111111111111111111111111",
+        "action": "claim_recovery"
+      },
+      "requests": [
+        {
+          "method": "POST",
+          "path": "/api/v1/agent/hood/holder-exit/0x1111111111111111111111111111111111111111",
+          "body": {
+            "action": "claim_recovery",
+            "dryRun": false
+          }
+        }
+      ],
+      "outcome": {
+        "body": {
+          "success": true,
+          "curve": "0x1111111111111111111111111111111111111111",
+          "action": "claim_recovery",
+          "wallet": "0x3333333333333333333333333333333333333333",
+          "signer": "embedded",
+          "dryRun": false,
+          "build": {
+            "curve": "0x1111111111111111111111111111111111111111",
+            "account": "0x3333333333333333333333333333333333333333",
+            "action": "claim_recovery",
+            "generation": 2,
+            "blockNumber": "1000000",
+            "amountRaw": "10000000000000000000",
+            "expectedQuoteOutRaw": "5000000",
+            "quoteToken": "0x5555555555555555555555555555555555555555",
+            "quoteDecimals": 6,
+            "calls": [
+              {
+                "kind": "approve",
+                "to": "0x2222222222222222222222222222222222222222",
+                "value": "0",
+                "gas": "60000",
+                "gasEstimated": true
+              },
+              {
+                "kind": "claim_recovery",
+                "to": "0x1111111111111111111111111111111111111111",
+                "value": "0",
+                "gas": "150000",
+                "gasEstimated": true
+              }
+            ],
+            "gasCost": {
+              "maxFeePerGas": "1000000000",
+              "maxPriorityFeePerGas": "100000000",
+              "requiredWei": "210000000000000",
+              "balanceWei": "5000000000000000"
+            }
+          },
+          "outcome": "complete",
+          "calls": [
+            {
+              "kind": "approve",
+              "to": "0x2222222222222222222222222222222222222222",
+              "status": "confirmed",
+              "txHash": "0xa1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+              "recorded": "not_recorded"
+            },
+            {
+              "kind": "claim_recovery",
+              "to": "0x1111111111111111111111111111111111111111",
+              "status": "confirmed",
+              "txHash": "0xb2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2",
+              "recorded": "booked"
+            }
+          ]
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "complete-cli",
+      "scenario": "complete",
+      "surface": "cli",
+      "args": {
+        "command": "candle token exit 0x2222222222222222222222222222222222222222 --recover --yes"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/markets/hood/0x2222222222222222222222222222222222222222"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/wallets/embedded"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/hood/curves/0x1111111111111111111111111111111111111111/holder-exit?account=0x3333333333333333333333333333333333333333"
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/agent/hood/holder-exit/0x1111111111111111111111111111111111111111",
+          "body": {
+            "action": "claim_recovery",
+            "dryRun": true
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/agent/hood/holder-exit/0x1111111111111111111111111111111111111111",
+          "body": {
+            "action": "claim_recovery",
+            "dryRun": false
+          }
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "lines": [
+          "  - This launch did not migrate. Holders redeem the curve's reserve at a fixed rate of 500000 raw",
+          "    units of 0x5555555555555555555555555555555555555555 per token. Recovery pays by tokens held, not",
+          "    by what you paid.",
+          "Dry run",
+          "  Action     Redeem at the Recovery rate",
+          "  Wallet     0x3333333333333333333333333333333333333333",
+          "  Redeems    10 tokens",
+          "  Would pay  5 0x5555555555555555555555555555555555555555",
+          "  Releases   -",
+          "  To         -",
+          "  Calls      approve not_sent, claim_recovery not_sent",
+          "  Outcome    -",
+          "  - Nothing was sent.",
+          "Exit",
+          "  Action    Redeem at the Recovery rate",
+          "  Wallet    0x3333333333333333333333333333333333333333",
+          "  Redeems   10 tokens",
+          "  Pays      5 0x5555555555555555555555555555555555555555",
+          "  Releases  -",
+          "  To        -",
+          "  Calls     approve confirmed 0xa1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1,",
+          "            claim_recovery confirmed",
+          "            0xb2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2",
+          "  Outcome   complete"
+        ]
+      }
+    },
+    {
+      "id": "complete-cli-json",
+      "scenario": "complete",
+      "surface": "cli",
+      "args": {
+        "command": "candle token exit 0x2222222222222222222222222222222222222222 --recover --yes --json"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/markets/hood/0x2222222222222222222222222222222222222222"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/wallets/embedded"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/hood/curves/0x1111111111111111111111111111111111111111/holder-exit?account=0x3333333333333333333333333333333333333333"
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/agent/hood/holder-exit/0x1111111111111111111111111111111111111111",
+          "body": {
+            "action": "claim_recovery",
+            "dryRun": true
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/agent/hood/holder-exit/0x1111111111111111111111111111111111111111",
+          "body": {
+            "action": "claim_recovery",
+            "dryRun": false
+          }
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "body": {
+          "success": true,
+          "curve": "0x1111111111111111111111111111111111111111",
+          "action": "claim_recovery",
+          "wallet": "0x3333333333333333333333333333333333333333",
+          "signer": "embedded",
+          "dryRun": false,
+          "build": {
+            "curve": "0x1111111111111111111111111111111111111111",
+            "account": "0x3333333333333333333333333333333333333333",
+            "action": "claim_recovery",
+            "generation": 2,
+            "blockNumber": "1000000",
+            "amountRaw": "10000000000000000000",
+            "expectedQuoteOutRaw": "5000000",
+            "quoteToken": "0x5555555555555555555555555555555555555555",
+            "quoteDecimals": 6,
+            "calls": [
+              {
+                "kind": "approve",
+                "to": "0x2222222222222222222222222222222222222222",
+                "value": "0",
+                "gas": "60000",
+                "gasEstimated": true
+              },
+              {
+                "kind": "claim_recovery",
+                "to": "0x1111111111111111111111111111111111111111",
+                "value": "0",
+                "gas": "150000",
+                "gasEstimated": true
+              }
+            ],
+            "gasCost": {
+              "maxFeePerGas": "1000000000",
+              "maxPriorityFeePerGas": "100000000",
+              "requiredWei": "210000000000000",
+              "balanceWei": "5000000000000000"
+            }
+          },
+          "outcome": "complete",
+          "calls": [
+            {
+              "kind": "approve",
+              "to": "0x2222222222222222222222222222222222222222",
+              "status": "confirmed",
+              "txHash": "0xa1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+              "recorded": "not_recorded"
+            },
+            {
+              "kind": "claim_recovery",
+              "to": "0x1111111111111111111111111111111111111111",
+              "status": "confirmed",
+              "txHash": "0xb2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2",
+              "recorded": "booked"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "partial-api",
+      "scenario": "partial",
+      "surface": "api-stub",
+      "says": "A partial exit: the approval landed and the claim reverted. The SDK throws HolderExitError carrying outcome partial, the calls and the warnings; build again.",
+      "evidence": "A response stub shaped by the SDK's types and the route's refusal table: the agent route, the builder and the signer are not run",
+      "args": {
+        "path": "/api/v1/agent/hood/holder-exit/0x1111111111111111111111111111111111111111",
+        "action": "claim_recovery"
+      },
+      "outcome": {
+        "dry": {
+          "status": 200,
+          "body": {
+            "success": true,
+            "curve": "0x1111111111111111111111111111111111111111",
+            "action": "claim_recovery",
+            "wallet": "0x3333333333333333333333333333333333333333",
+            "signer": "embedded",
+            "dryRun": true,
+            "signable": true,
+            "build": {
+              "curve": "0x1111111111111111111111111111111111111111",
+              "account": "0x3333333333333333333333333333333333333333",
+              "action": "claim_recovery",
+              "generation": 2,
+              "blockNumber": "1000000",
+              "amountRaw": "10000000000000000000",
+              "expectedQuoteOutRaw": "5000000",
+              "quoteToken": "0x5555555555555555555555555555555555555555",
+              "quoteDecimals": 6,
+              "calls": [
+                {
+                  "kind": "approve",
+                  "to": "0x2222222222222222222222222222222222222222",
+                  "value": "0",
+                  "gas": "60000",
+                  "gasEstimated": true
+                },
+                {
+                  "kind": "claim_recovery",
+                  "to": "0x1111111111111111111111111111111111111111",
+                  "value": "0",
+                  "gas": "150000",
+                  "gasEstimated": true
+                }
+              ],
+              "gasCost": {
+                "maxFeePerGas": "1000000000",
+                "maxPriorityFeePerGas": "100000000",
+                "requiredWei": "210000000000000",
+                "balanceWei": "5000000000000000"
+              }
+            },
+            "outcome": "not_started",
+            "calls": [
+              {
+                "kind": "approve",
+                "to": "0x2222222222222222222222222222222222222222",
+                "status": "not_sent",
+                "txHash": null
+              },
+              {
+                "kind": "claim_recovery",
+                "to": "0x1111111111111111111111111111111111111111",
+                "status": "not_sent",
+                "txHash": null
+              }
+            ]
+          }
+        },
+        "real": {
+          "status": 409,
+          "body": {
+            "success": false,
+            "error": {
+              "code": "HOOD_EXIT_FAILED",
+              "message": "The exit did not complete",
+              "retryable": true,
+              "stage": "reverted"
+            },
+            "outcome": "partial",
+            "calls": [
+              {
+                "kind": "approve",
+                "to": "0x2222222222222222222222222222222222222222",
+                "status": "confirmed",
+                "txHash": "0xa1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+                "recorded": "not_recorded"
+              },
+              {
+                "kind": "claim_recovery",
+                "to": "0x1111111111111111111111111111111111111111",
+                "status": "reverted",
+                "txHash": "0xb2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2",
+                "recorded": "not_recorded"
+              }
+            ],
+            "warnings": [
+              "Transaction 0xb2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2 reverted."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "partial-mcp",
+      "scenario": "partial",
+      "surface": "mcp",
+      "args": {
+        "curve": "0x1111111111111111111111111111111111111111",
+        "action": "claim_recovery",
+        "dryRun": false
+      },
+      "requests": [
+        {
+          "method": "POST",
+          "path": "/api/v1/agent/hood/holder-exit/0x1111111111111111111111111111111111111111",
+          "credential": true,
+          "body": {
+            "action": "claim_recovery",
+            "dryRun": false
+          }
+        }
+      ],
+      "outcome": {
+        "body": {
+          "success": false,
+          "error": {
+            "code": "HOOD_EXIT_FAILED",
+            "message": "The exit did not complete",
+            "retryable": true,
+            "stage": "reverted"
+          },
+          "outcome": "partial",
+          "calls": [
+            {
+              "kind": "approve",
+              "to": "0x2222222222222222222222222222222222222222",
+              "status": "confirmed",
+              "txHash": "0xa1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+              "recorded": "not_recorded"
+            },
+            {
+              "kind": "claim_recovery",
+              "to": "0x1111111111111111111111111111111111111111",
+              "status": "reverted",
+              "txHash": "0xb2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2",
+              "recorded": "not_recorded"
+            }
+          ],
+          "warnings": [
+            "Transaction 0xb2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2 reverted."
+          ]
+        },
+        "isError": true
+      }
+    },
+    {
+      "id": "partial-sdk",
+      "scenario": "partial",
+      "surface": "sdk",
+      "args": {
+        "curve": "0x1111111111111111111111111111111111111111",
+        "action": "claim_recovery"
+      },
+      "requests": [
+        {
+          "method": "POST",
+          "path": "/api/v1/agent/hood/holder-exit/0x1111111111111111111111111111111111111111",
+          "body": {
+            "action": "claim_recovery",
+            "dryRun": false
+          }
+        }
+      ],
+      "outcome": {
+        "body": {
+          "code": "HOOD_EXIT_FAILED",
+          "status": 409,
+          "message": "The exit did not complete",
+          "retryable": true,
+          "stage": "reverted",
+          "outcome": "partial",
+          "calls": [
+            {
+              "kind": "approve",
+              "to": "0x2222222222222222222222222222222222222222",
+              "status": "confirmed",
+              "txHash": "0xa1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+              "recorded": "not_recorded"
+            },
+            {
+              "kind": "claim_recovery",
+              "to": "0x1111111111111111111111111111111111111111",
+              "status": "reverted",
+              "txHash": "0xb2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2",
+              "recorded": "not_recorded"
+            }
+          ],
+          "warnings": [
+            "Transaction 0xb2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2 reverted."
+          ]
+        },
+        "isError": true
+      }
+    },
+    {
+      "id": "partial-cli",
+      "scenario": "partial",
+      "surface": "cli",
+      "args": {
+        "command": "candle token exit 0x2222222222222222222222222222222222222222 --recover --yes"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/markets/hood/0x2222222222222222222222222222222222222222"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/wallets/embedded"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/hood/curves/0x1111111111111111111111111111111111111111/holder-exit?account=0x3333333333333333333333333333333333333333"
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/agent/hood/holder-exit/0x1111111111111111111111111111111111111111",
+          "body": {
+            "action": "claim_recovery",
+            "dryRun": true
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/agent/hood/holder-exit/0x1111111111111111111111111111111111111111",
+          "body": {
+            "action": "claim_recovery",
+            "dryRun": false
+          }
+        }
+      ],
+      "outcome": {
+        "exitCode": 1,
+        "lines": [
+          "  - This launch did not migrate. Holders redeem the curve's reserve at a fixed rate of 500000 raw",
+          "    units of 0x5555555555555555555555555555555555555555 per token. Recovery pays by tokens held, not",
+          "    by what you paid.",
+          "Dry run",
+          "  Action     Redeem at the Recovery rate",
+          "  Wallet     0x3333333333333333333333333333333333333333",
+          "  Redeems    10 tokens",
+          "  Would pay  5 0x5555555555555555555555555555555555555555",
+          "  Releases   -",
+          "  To         -",
+          "  Calls      approve not_sent, claim_recovery not_sent",
+          "  Outcome    -",
+          "  - Nothing was sent."
+        ],
+        "stderr": [
+          "  - This launch did not migrate. Holders redeem the curve's reserve at a fixed rate of 500000 raw",
+          "    units of 0x5555555555555555555555555555555555555555 per token. Recovery pays by tokens held, not",
+          "    by what you paid.",
+          "HOOD_EXIT_FAILED: The exit did not complete"
+        ]
+      }
+    },
+    {
+      "id": "partial-cli-json",
+      "scenario": "partial",
+      "surface": "cli",
+      "args": {
+        "command": "candle token exit 0x2222222222222222222222222222222222222222 --recover --yes --json"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/markets/hood/0x2222222222222222222222222222222222222222"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/wallets/embedded"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/hood/curves/0x1111111111111111111111111111111111111111/holder-exit?account=0x3333333333333333333333333333333333333333"
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/agent/hood/holder-exit/0x1111111111111111111111111111111111111111",
+          "body": {
+            "action": "claim_recovery",
+            "dryRun": true
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/agent/hood/holder-exit/0x1111111111111111111111111111111111111111",
+          "body": {
+            "action": "claim_recovery",
+            "dryRun": false
+          }
+        }
+      ],
+      "outcome": {
+        "exitCode": 1,
+        "body": {
+          "ok": false,
+          "code": "HOOD_EXIT_FAILED",
+          "message": "The exit did not complete",
+          "details": {
+            "disclosure": "This launch did not migrate. Holders redeem the curve's reserve at a fixed rate of 500000 raw units of 0x5555555555555555555555555555555555555555 per token. Recovery pays by tokens held, not by what you paid.",
+            "stage": "reverted",
+            "outcome": "partial",
+            "calls": [
+              {
+                "kind": "approve",
+                "to": "0x2222222222222222222222222222222222222222",
+                "status": "confirmed",
+                "txHash": "0xa1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+                "recorded": "not_recorded"
+              },
+              {
+                "kind": "claim_recovery",
+                "to": "0x1111111111111111111111111111111111111111",
+                "status": "reverted",
+                "txHash": "0xb2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2",
+                "recorded": "not_recorded"
+              }
+            ],
+            "warnings": [
+              "Transaction 0xb2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2 reverted."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "indeterminate-api",
+      "scenario": "indeterminate",
+      "surface": "api-stub",
+      "says": "An exit whose last call was sent and not yet known: outcome indeterminate. The CLI exits 3, to be read again before it is run again.",
+      "evidence": "A response stub shaped by the SDK's types and the route's refusal table: the agent route, the builder and the signer are not run",
+      "args": {
+        "path": "/api/v1/agent/hood/holder-exit/0x1111111111111111111111111111111111111111",
+        "action": "claim_recovery"
+      },
+      "outcome": {
+        "dry": {
+          "status": 200,
+          "body": {
+            "success": true,
+            "curve": "0x1111111111111111111111111111111111111111",
+            "action": "claim_recovery",
+            "wallet": "0x3333333333333333333333333333333333333333",
+            "signer": "embedded",
+            "dryRun": true,
+            "signable": true,
+            "build": {
+              "curve": "0x1111111111111111111111111111111111111111",
+              "account": "0x3333333333333333333333333333333333333333",
+              "action": "claim_recovery",
+              "generation": 2,
+              "blockNumber": "1000000",
+              "amountRaw": "10000000000000000000",
+              "expectedQuoteOutRaw": "5000000",
+              "quoteToken": "0x5555555555555555555555555555555555555555",
+              "quoteDecimals": 6,
+              "calls": [
+                {
+                  "kind": "approve",
+                  "to": "0x2222222222222222222222222222222222222222",
+                  "value": "0",
+                  "gas": "60000",
+                  "gasEstimated": true
+                },
+                {
+                  "kind": "claim_recovery",
+                  "to": "0x1111111111111111111111111111111111111111",
+                  "value": "0",
+                  "gas": "150000",
+                  "gasEstimated": true
+                }
+              ],
+              "gasCost": {
+                "maxFeePerGas": "1000000000",
+                "maxPriorityFeePerGas": "100000000",
+                "requiredWei": "210000000000000",
+                "balanceWei": "5000000000000000"
+              }
+            },
+            "outcome": "not_started",
+            "calls": [
+              {
+                "kind": "approve",
+                "to": "0x2222222222222222222222222222222222222222",
+                "status": "not_sent",
+                "txHash": null
+              },
+              {
+                "kind": "claim_recovery",
+                "to": "0x1111111111111111111111111111111111111111",
+                "status": "not_sent",
+                "txHash": null
+              }
+            ]
+          }
+        },
+        "real": {
+          "status": 502,
+          "body": {
+            "success": false,
+            "error": {
+              "code": "HOOD_EXIT_FAILED",
+              "message": "The exit was sent and its result is not known yet",
+              "retryable": true,
+              "stage": "unconfirmed"
+            },
+            "outcome": "indeterminate",
+            "calls": [
+              {
+                "kind": "approve",
+                "to": "0x2222222222222222222222222222222222222222",
+                "status": "confirmed",
+                "txHash": "0xa1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+                "recorded": "not_recorded"
+              },
+              {
+                "kind": "claim_recovery",
+                "to": "0x1111111111111111111111111111111111111111",
+                "status": "submitted_unknown",
+                "txHash": "0xb2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2",
+                "recorded": "not_recorded"
+              }
+            ],
+            "warnings": [
+              "A call was sent and its result is not known: read before running it again."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "indeterminate-mcp",
+      "scenario": "indeterminate",
+      "surface": "mcp",
+      "args": {
+        "curve": "0x1111111111111111111111111111111111111111",
+        "action": "claim_recovery",
+        "dryRun": false
+      },
+      "requests": [
+        {
+          "method": "POST",
+          "path": "/api/v1/agent/hood/holder-exit/0x1111111111111111111111111111111111111111",
+          "credential": true,
+          "body": {
+            "action": "claim_recovery",
+            "dryRun": false
+          }
+        }
+      ],
+      "outcome": {
+        "body": {
+          "success": false,
+          "error": {
+            "code": "HOOD_EXIT_FAILED",
+            "message": "The exit was sent and its result is not known yet",
+            "retryable": true,
+            "stage": "unconfirmed"
+          },
+          "outcome": "indeterminate",
+          "calls": [
+            {
+              "kind": "approve",
+              "to": "0x2222222222222222222222222222222222222222",
+              "status": "confirmed",
+              "txHash": "0xa1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+              "recorded": "not_recorded"
+            },
+            {
+              "kind": "claim_recovery",
+              "to": "0x1111111111111111111111111111111111111111",
+              "status": "submitted_unknown",
+              "txHash": "0xb2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2",
+              "recorded": "not_recorded"
+            }
+          ],
+          "warnings": [
+            "A call was sent and its result is not known: read before running it again."
+          ]
+        },
+        "isError": true
+      }
+    },
+    {
+      "id": "indeterminate-sdk",
+      "scenario": "indeterminate",
+      "surface": "sdk",
+      "args": {
+        "curve": "0x1111111111111111111111111111111111111111",
+        "action": "claim_recovery"
+      },
+      "requests": [
+        {
+          "method": "POST",
+          "path": "/api/v1/agent/hood/holder-exit/0x1111111111111111111111111111111111111111",
+          "body": {
+            "action": "claim_recovery",
+            "dryRun": false
+          }
+        }
+      ],
+      "outcome": {
+        "body": {
+          "code": "HOOD_EXIT_FAILED",
+          "status": 502,
+          "message": "The exit was sent and its result is not known yet",
+          "retryable": true,
+          "stage": "unconfirmed",
+          "outcome": "indeterminate",
+          "calls": [
+            {
+              "kind": "approve",
+              "to": "0x2222222222222222222222222222222222222222",
+              "status": "confirmed",
+              "txHash": "0xa1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+              "recorded": "not_recorded"
+            },
+            {
+              "kind": "claim_recovery",
+              "to": "0x1111111111111111111111111111111111111111",
+              "status": "submitted_unknown",
+              "txHash": "0xb2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2",
+              "recorded": "not_recorded"
+            }
+          ],
+          "warnings": [
+            "A call was sent and its result is not known: read before running it again."
+          ]
+        },
+        "isError": true
+      }
+    },
+    {
+      "id": "indeterminate-cli",
+      "scenario": "indeterminate",
+      "surface": "cli",
+      "args": {
+        "command": "candle token exit 0x2222222222222222222222222222222222222222 --recover --yes"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/markets/hood/0x2222222222222222222222222222222222222222"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/wallets/embedded"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/hood/curves/0x1111111111111111111111111111111111111111/holder-exit?account=0x3333333333333333333333333333333333333333"
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/agent/hood/holder-exit/0x1111111111111111111111111111111111111111",
+          "body": {
+            "action": "claim_recovery",
+            "dryRun": true
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/agent/hood/holder-exit/0x1111111111111111111111111111111111111111",
+          "body": {
+            "action": "claim_recovery",
+            "dryRun": false
+          }
+        }
+      ],
+      "outcome": {
+        "exitCode": 3,
+        "lines": [
+          "  - This launch did not migrate. Holders redeem the curve's reserve at a fixed rate of 500000 raw",
+          "    units of 0x5555555555555555555555555555555555555555 per token. Recovery pays by tokens held, not",
+          "    by what you paid.",
+          "Dry run",
+          "  Action     Redeem at the Recovery rate",
+          "  Wallet     0x3333333333333333333333333333333333333333",
+          "  Redeems    10 tokens",
+          "  Would pay  5 0x5555555555555555555555555555555555555555",
+          "  Releases   -",
+          "  To         -",
+          "  Calls      approve not_sent, claim_recovery not_sent",
+          "  Outcome    -",
+          "  - Nothing was sent."
+        ],
+        "stderr": [
+          "  - This launch did not migrate. Holders redeem the curve's reserve at a fixed rate of 500000 raw",
+          "    units of 0x5555555555555555555555555555555555555555 per token. Recovery pays by tokens held, not",
+          "    by what you paid.",
+          "  ! Swap outcome needs verification. Known hashes: unknown. Do not automatically retry or use a new",
+          "    id.",
+          "HOOD_EXIT_FAILED: The exit was sent and its result is not known yet"
+        ]
+      }
+    },
+    {
+      "id": "indeterminate-cli-json",
+      "scenario": "indeterminate",
+      "surface": "cli",
+      "args": {
+        "command": "candle token exit 0x2222222222222222222222222222222222222222 --recover --yes --json"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/markets/hood/0x2222222222222222222222222222222222222222"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/wallets/embedded"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/hood/curves/0x1111111111111111111111111111111111111111/holder-exit?account=0x3333333333333333333333333333333333333333"
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/agent/hood/holder-exit/0x1111111111111111111111111111111111111111",
+          "body": {
+            "action": "claim_recovery",
+            "dryRun": true
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/agent/hood/holder-exit/0x1111111111111111111111111111111111111111",
+          "body": {
+            "action": "claim_recovery",
+            "dryRun": false
+          }
+        }
+      ],
+      "outcome": {
+        "exitCode": 3,
+        "body": {
+          "ok": false,
+          "code": "HOOD_EXIT_FAILED",
+          "message": "The exit was sent and its result is not known yet",
+          "details": {
+            "disclosure": "This launch did not migrate. Holders redeem the curve's reserve at a fixed rate of 500000 raw units of 0x5555555555555555555555555555555555555555 per token. Recovery pays by tokens held, not by what you paid.",
+            "stage": "unconfirmed",
+            "outcome": "indeterminate",
+            "calls": [
+              {
+                "kind": "approve",
+                "to": "0x2222222222222222222222222222222222222222",
+                "status": "confirmed",
+                "txHash": "0xa1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+                "recorded": "not_recorded"
+              },
+              {
+                "kind": "claim_recovery",
+                "to": "0x1111111111111111111111111111111111111111",
+                "status": "submitted_unknown",
+                "txHash": "0xb2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2",
+                "recorded": "not_recorded"
+              }
+            ],
+            "warnings": [
+              "A call was sent and its result is not known: read before running it again."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "not-ready-api",
+      "scenario": "not-ready",
+      "surface": "api-stub",
+      "says": "enter_recovery before the window: 409 HOOD_RECOVERY_NOT_READY with the two times in details (the dry run is refused first, so nothing is sent).",
+      "evidence": "A response stub shaped by the SDK's types and the route's refusal table: the agent route, the builder and the signer are not run",
+      "args": {
+        "path": "/api/v1/agent/hood/holder-exit/0x1111111111111111111111111111111111111111",
+        "action": "enter_recovery"
+      },
+      "outcome": {
+        "dry": {
+          "status": 409,
+          "body": {
+            "success": false,
+            "error": {
+              "code": "HOOD_RECOVERY_NOT_READY",
+              "message": "Recovery isn't open for this wallet yet. Check when it opens on the token page.",
+              "retryable": false,
+              "stage": "not_broadcast",
+              "details": {
+                "creatorMayEnterAt": "1800194400",
+                "anyoneMayEnterAt": "1802181600"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "not-ready-mcp",
+      "scenario": "not-ready",
+      "surface": "mcp",
+      "args": {
+        "curve": "0x1111111111111111111111111111111111111111",
+        "action": "enter_recovery"
+      },
+      "requests": [
+        {
+          "method": "POST",
+          "path": "/api/v1/agent/hood/holder-exit/0x1111111111111111111111111111111111111111",
+          "credential": true,
+          "body": {
+            "action": "enter_recovery",
+            "dryRun": true
+          }
+        }
+      ],
+      "outcome": {
+        "body": {
+          "success": false,
+          "error": {
+            "code": "HOOD_RECOVERY_NOT_READY",
+            "message": "Recovery isn't open for this wallet yet. Check when it opens on the token page.",
+            "retryable": false,
+            "stage": "not_broadcast",
+            "details": {
+              "creatorMayEnterAt": "1800194400",
+              "anyoneMayEnterAt": "1802181600"
+            }
+          }
+        },
+        "isError": true
+      }
+    },
+    {
+      "id": "not-ready-sdk",
+      "scenario": "not-ready",
+      "surface": "sdk",
+      "args": {
+        "curve": "0x1111111111111111111111111111111111111111",
+        "action": "enter_recovery",
+        "dryRun": true
+      },
+      "requests": [
+        {
+          "method": "POST",
+          "path": "/api/v1/agent/hood/holder-exit/0x1111111111111111111111111111111111111111",
+          "body": {
+            "action": "enter_recovery",
+            "dryRun": true
+          }
+        }
+      ],
+      "outcome": {
+        "body": {
+          "code": "HOOD_RECOVERY_NOT_READY",
+          "status": 409,
+          "message": "Recovery isn't open for this wallet yet. Check when it opens on the token page.",
+          "retryable": false,
+          "stage": "not_broadcast",
+          "details": {
+            "creatorMayEnterAt": "1800194400",
+            "anyoneMayEnterAt": "1802181600"
+          }
+        },
+        "isError": true
+      }
+    },
+    {
+      "id": "not-ready-cli",
+      "scenario": "not-ready",
+      "surface": "cli",
+      "args": {
+        "command": "candle token exit 0x2222222222222222222222222222222222222222 --enter-recovery --dry-run"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/markets/hood/0x2222222222222222222222222222222222222222"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/wallets/embedded"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/hood/curves/0x1111111111111111111111111111111111111111/holder-exit?account=0x3333333333333333333333333333333333333333"
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/agent/hood/holder-exit/0x1111111111111111111111111111111111111111",
+          "body": {
+            "action": "enter_recovery",
+            "dryRun": true
+          }
+        }
+      ],
+      "outcome": {
+        "exitCode": 1,
+        "lines": [
+          "  - This launch graduated and is waiting for its pool. Trading is closed until it migrates. If it",
+          "    does not, the creator can open Recovery from 1800194400 and anyone can from 1802181600."
+        ],
+        "stderr": [
+          "  - This launch graduated and is waiting for its pool. Trading is closed until it migrates. If it",
+          "    does not, the creator can open Recovery from 1800194400 and anyone can from 1802181600.",
+          "HOOD_RECOVERY_NOT_READY: Recovery isn't open for this wallet yet. Check when it opens on the token page."
+        ]
+      }
+    },
+    {
+      "id": "not-ready-cli-json",
+      "scenario": "not-ready",
+      "surface": "cli",
+      "args": {
+        "command": "candle token exit 0x2222222222222222222222222222222222222222 --enter-recovery --dry-run --json"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/markets/hood/0x2222222222222222222222222222222222222222"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/wallets/embedded"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/hood/curves/0x1111111111111111111111111111111111111111/holder-exit?account=0x3333333333333333333333333333333333333333"
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/agent/hood/holder-exit/0x1111111111111111111111111111111111111111",
+          "body": {
+            "action": "enter_recovery",
+            "dryRun": true
+          }
+        }
+      ],
+      "outcome": {
+        "exitCode": 1,
+        "body": {
+          "ok": false,
+          "code": "HOOD_RECOVERY_NOT_READY",
+          "message": "Recovery isn't open for this wallet yet. Check when it opens on the token page.",
+          "details": {
+            "disclosure": "This launch graduated and is waiting for its pool. Trading is closed until it migrates. If it does not, the creator can open Recovery from 1800194400 and anyone can from 1802181600.",
+            "stage": "not_broadcast",
+            "refusal": {
+              "creatorMayEnterAt": "1800194400",
+              "anyoneMayEnterAt": "1802181600"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "declined-api",
+      "scenario": "declined",
+      "surface": "api-stub",
+      "says": "A real run the user declines at the confirmation: nothing is sent and the CLI exits 5. Only the dry run reached the route.",
+      "evidence": "A response stub shaped by the SDK's types and the route's refusal table: the agent route, the builder and the signer are not run",
+      "args": {
+        "path": "/api/v1/agent/hood/holder-exit/0x1111111111111111111111111111111111111111",
+        "action": "claim_recovery"
+      },
+      "outcome": {
+        "dry": {
+          "status": 200,
+          "body": {
+            "success": true,
+            "curve": "0x1111111111111111111111111111111111111111",
+            "action": "claim_recovery",
+            "wallet": "0x3333333333333333333333333333333333333333",
+            "signer": "embedded",
+            "dryRun": true,
+            "signable": true,
+            "build": {
+              "curve": "0x1111111111111111111111111111111111111111",
+              "account": "0x3333333333333333333333333333333333333333",
+              "action": "claim_recovery",
+              "generation": 2,
+              "blockNumber": "1000000",
+              "amountRaw": "10000000000000000000",
+              "expectedQuoteOutRaw": "5000000",
+              "quoteToken": "0x5555555555555555555555555555555555555555",
+              "quoteDecimals": 6,
+              "calls": [
+                {
+                  "kind": "approve",
+                  "to": "0x2222222222222222222222222222222222222222",
+                  "value": "0",
+                  "gas": "60000",
+                  "gasEstimated": true
+                },
+                {
+                  "kind": "claim_recovery",
+                  "to": "0x1111111111111111111111111111111111111111",
+                  "value": "0",
+                  "gas": "150000",
+                  "gasEstimated": true
+                }
+              ],
+              "gasCost": {
+                "maxFeePerGas": "1000000000",
+                "maxPriorityFeePerGas": "100000000",
+                "requiredWei": "210000000000000",
+                "balanceWei": "5000000000000000"
+              }
+            },
+            "outcome": "not_started",
+            "calls": [
+              {
+                "kind": "approve",
+                "to": "0x2222222222222222222222222222222222222222",
+                "status": "not_sent",
+                "txHash": null
+              },
+              {
+                "kind": "claim_recovery",
+                "to": "0x1111111111111111111111111111111111111111",
+                "status": "not_sent",
+                "txHash": null
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "declined-mcp",
+      "scenario": "declined",
+      "surface": "mcp",
+      "args": {
+        "curve": "0x1111111111111111111111111111111111111111",
+        "action": "claim_recovery"
+      },
+      "requests": [
+        {
+          "method": "POST",
+          "path": "/api/v1/agent/hood/holder-exit/0x1111111111111111111111111111111111111111",
+          "credential": true,
+          "body": {
+            "action": "claim_recovery",
+            "dryRun": true
+          }
+        }
+      ],
+      "outcome": {
+        "body": {
+          "success": true,
+          "curve": "0x1111111111111111111111111111111111111111",
+          "action": "claim_recovery",
+          "wallet": "0x3333333333333333333333333333333333333333",
+          "signer": "embedded",
+          "dryRun": true,
+          "signable": true,
+          "build": {
+            "curve": "0x1111111111111111111111111111111111111111",
+            "account": "0x3333333333333333333333333333333333333333",
+            "action": "claim_recovery",
+            "generation": 2,
+            "blockNumber": "1000000",
+            "amountRaw": "10000000000000000000",
+            "expectedQuoteOutRaw": "5000000",
+            "quoteToken": "0x5555555555555555555555555555555555555555",
+            "quoteDecimals": 6,
+            "calls": [
+              {
+                "kind": "approve",
+                "to": "0x2222222222222222222222222222222222222222",
+                "value": "0",
+                "gas": "60000",
+                "gasEstimated": true
+              },
+              {
+                "kind": "claim_recovery",
+                "to": "0x1111111111111111111111111111111111111111",
+                "value": "0",
+                "gas": "150000",
+                "gasEstimated": true
+              }
+            ],
+            "gasCost": {
+              "maxFeePerGas": "1000000000",
+              "maxPriorityFeePerGas": "100000000",
+              "requiredWei": "210000000000000",
+              "balanceWei": "5000000000000000"
+            }
+          },
+          "outcome": "not_started",
+          "calls": [
+            {
+              "kind": "approve",
+              "to": "0x2222222222222222222222222222222222222222",
+              "status": "not_sent",
+              "txHash": null
+            },
+            {
+              "kind": "claim_recovery",
+              "to": "0x1111111111111111111111111111111111111111",
+              "status": "not_sent",
+              "txHash": null
+            }
+          ]
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "declined-sdk",
+      "scenario": "declined",
+      "surface": "sdk",
+      "args": {
+        "curve": "0x1111111111111111111111111111111111111111",
+        "action": "claim_recovery",
+        "dryRun": true
+      },
+      "requests": [
+        {
+          "method": "POST",
+          "path": "/api/v1/agent/hood/holder-exit/0x1111111111111111111111111111111111111111",
+          "body": {
+            "action": "claim_recovery",
+            "dryRun": true
+          }
+        }
+      ],
+      "outcome": {
+        "body": {
+          "success": true,
+          "curve": "0x1111111111111111111111111111111111111111",
+          "action": "claim_recovery",
+          "wallet": "0x3333333333333333333333333333333333333333",
+          "signer": "embedded",
+          "dryRun": true,
+          "signable": true,
+          "build": {
+            "curve": "0x1111111111111111111111111111111111111111",
+            "account": "0x3333333333333333333333333333333333333333",
+            "action": "claim_recovery",
+            "generation": 2,
+            "blockNumber": "1000000",
+            "amountRaw": "10000000000000000000",
+            "expectedQuoteOutRaw": "5000000",
+            "quoteToken": "0x5555555555555555555555555555555555555555",
+            "quoteDecimals": 6,
+            "calls": [
+              {
+                "kind": "approve",
+                "to": "0x2222222222222222222222222222222222222222",
+                "value": "0",
+                "gas": "60000",
+                "gasEstimated": true
+              },
+              {
+                "kind": "claim_recovery",
+                "to": "0x1111111111111111111111111111111111111111",
+                "value": "0",
+                "gas": "150000",
+                "gasEstimated": true
+              }
+            ],
+            "gasCost": {
+              "maxFeePerGas": "1000000000",
+              "maxPriorityFeePerGas": "100000000",
+              "requiredWei": "210000000000000",
+              "balanceWei": "5000000000000000"
+            }
+          },
+          "outcome": "not_started",
+          "calls": [
+            {
+              "kind": "approve",
+              "to": "0x2222222222222222222222222222222222222222",
+              "status": "not_sent",
+              "txHash": null
+            },
+            {
+              "kind": "claim_recovery",
+              "to": "0x1111111111111111111111111111111111111111",
+              "status": "not_sent",
+              "txHash": null
+            }
+          ]
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "declined-cli",
+      "scenario": "declined",
+      "surface": "cli",
+      "args": {
+        "command": "candle token exit 0x2222222222222222222222222222222222222222 --recover",
+        "answer": "n"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/markets/hood/0x2222222222222222222222222222222222222222"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/wallets/embedded"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/hood/curves/0x1111111111111111111111111111111111111111/holder-exit?account=0x3333333333333333333333333333333333333333"
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/agent/hood/holder-exit/0x1111111111111111111111111111111111111111",
+          "body": {
+            "action": "claim_recovery",
+            "dryRun": true
+          }
+        }
+      ],
+      "outcome": {
+        "exitCode": 5,
+        "lines": [
+          "  - This launch did not migrate. Holders redeem the curve's reserve at a fixed rate of 500000 raw",
+          "    units of 0x5555555555555555555555555555555555555555 per token. Recovery pays by tokens held, not",
+          "    by what you paid.",
+          "Dry run",
+          "  Action     Redeem at the Recovery rate",
+          "  Wallet     0x3333333333333333333333333333333333333333",
+          "  Redeems    10 tokens",
+          "  Would pay  5 0x5555555555555555555555555555555555555555",
+          "  Releases   -",
+          "  To         -",
+          "  Calls      approve not_sent, claim_recovery not_sent",
+          "  Outcome    -",
+          "  - Nothing was sent.",
+          "  - Cancelled. Nothing was sent."
+        ],
+        "prompts": [
+          "Redeem at the Recovery rate now? [y/N] "
+        ]
+      }
+    },
+    {
+      "id": "no-key-mcp",
+      "scenario": "no-key",
+      "surface": "mcp",
+      "says": "An exit with no key configured is refused before any request.",
+      "args": {
+        "curve": "0x1111111111111111111111111111111111111111",
+        "action": "claim_recovery"
+      },
+      "requests": [],
+      "outcome": {
+        "body": {
+          "text": "CANDLE_AGENT_API_KEY is required for this tool. Set it in the environment or MCP client config."
+        },
+        "isError": true
+      }
+    },
+    {
+      "id": "no-key-sdk",
+      "scenario": "no-key",
+      "surface": "sdk",
+      "says": "holderExit() with no key throws before any request.",
+      "args": {
+        "curve": "0x1111111111111111111111111111111111111111",
+        "action": "claim_recovery"
+      },
+      "requests": [],
+      "outcome": {
+        "isError": true,
+        "message": "holderExit() requires an apiKey: pass one in CandleClientOptions (new CandleClient({ apiKey }))"
+      }
+    },
+    {
+      "id": "portfolio-marks-source",
+      "scenario": "portfolio",
+      "surface": "source-text",
+      "args": {
+        "file": "packages/cli/src/commands/portfolio.ts"
+      },
+      "outcome": {
+        "states": "const OPEN_EXIT_STATES = [\"recovery\", \"rescue_pending\", \"rescued\"] as const\n",
+        "words": [
+          "recovery: \"in Recovery\",",
+          "rescue_pending: \"rescue pending, buying closed\",",
+          "rescued: \"rescued, no on-chain claim\","
+        ],
+        "limits": [
+          "const EXIT_MARKS_MAX_TOKENS = 50",
+          "const EXIT_MARKS_IN_FLIGHT = 8"
+        ],
+        "jsonKeys": [
+          "holderExits",
+          "holderExitsUnread",
+          "holderExit"
+        ]
+      }
+    },
+    {
+      "id": "docs-cli",
+      "scenario": "docs",
+      "surface": "docs",
+      "args": {
+        "files": [
+          "apps/docs/src/content/docs/developers/cli.md"
+        ]
+      },
+      "outcome": {
+        "text": "| `token exit <token> [--wallet <0x address\\|main>] [--recover [--amount <tokens>] \\| --enter-recovery \\| --claim-team] [--dry-run] [--yes] [--json]` | Hood only. Where a holder of a Candle Hood launch stands if it does not migrate: the state (none, awaiting migration, Recovery can be opened, Recovery, rescue pending, rescued), the API's one-sentence disclosure printed verbatim, when Recovery opens (the creator after 7 days, anyone after 30), the fixed Recovery rate and what is left, any rescue request, the team vesting escrow, and for the wallet its balance, what Recovery would pay it and the actions it may take now. The read needs no key; the wallet is `--wallet`, else the account's embedded Hood wallet when a key is selected. `--recover` (approves the exact `--amount`, default all, then redeems), `--enter-recovery` and `--claim-team` run that action through Candle with the embedded Hood wallet (`swap:write` for the Recovery actions, `launch:write` for `--claim-team`): the API's dry run is shown first, then the CLI asks, or takes `--yes`; `--dry-run` stops after it and sends nothing. There is no destination: Recovery pays the wallet that redeems and a team claim always pays the escrow's recipient. A refusal prints the API's code beside the disclosure. Exit codes: 0 done, 1 refused or partial (the approval landed and the claim did not: run it again), 3 indeterminate (a call was sent and its result is not known yet: read again before running it again), 5 you declined the prompt and nothing was sent. `candle portfolio` marks Hood positions whose launch is in Recovery, has a pending rescue or was rescued, and points at this command. |"
+      }
+    },
+    {
+      "id": "docs-mcp-read",
+      "scenario": "docs",
+      "surface": "docs",
+      "args": {
+        "files": [
+          "apps/docs/src/content/docs/developers/mcp-server.md"
+        ]
+      },
+      "outcome": {
+        "text": "| `candle_holder_exit` | `GET /api/v1/hood/curves/:curve/holder-exit` (with `token`, `GET /api/v1/markets/hood/:token` first): where a holder of a Candle Hood launch stands if it does not migrate: state, Recovery window and fixed rate, any rescue request, the team vesting escrow, and with `account` that wallet's balance, Recovery payout and the actions it may take now. Give `curve` or `token`; quote `holderExit.disclosure` verbatim | No |"
+      }
+    },
+    {
+      "id": "docs-mcp-claim",
+      "scenario": "docs",
+      "surface": "docs",
+      "args": {
+        "files": [
+          "apps/docs/src/content/docs/developers/mcp-server.md"
+        ]
+      },
+      "outcome": {
+        "text": "| `candle_claim_holder_exit` | `POST /api/v1/agent/hood/holder-exit/:curve`: one Hood holder exit for the account's wallet: `enter_recovery`, `claim_recovery` (approves the exact amount, then redeems) or `claim_team` (always pays the escrow's recipient). Candle signs with the embedded Hood wallet; `dryRun` defaults to true; no destination argument | Yes (`swap:write`; `launch:write` for `claim_team`) |"
+      }
+    },
+    {
+      "id": "docs-sdk-changelog",
+      "scenario": "docs",
+      "surface": "docs",
+      "args": {
+        "files": [
+          "packages/sdk/CHANGELOG.md"
+        ]
+      },
+      "outcome": {
+        "text": "Release 0.6.28 (BE-3794), with CLI 0.13.34 and MCP 0.10.39. Hood holder exits (BE-3630 design section 6): `MarketState.holderExit` (type `HolderExit`, optional; absent on an older API) says where a holder stands if a Hood launch does not migrate: `state` (`none`, `awaiting_migration`, `recovery_open`, `recovery`, `rescue_pending`, `rescued`), the Recovery window, the fixed rate and progress, any rescue request, the team vesting escrow, the `actions` that would succeed now, and `disclosure`, one sentence to show verbatim; `holderExitUnavailable: true` when that read failed. `getHolderExit(curve, account?)` and `getHolderExits(account)` read it per curve and per account, with no key. `buildHolderExit({ curve, account, action, amountRaw? })` returns the unsigned calls for the holder's own wallet (no key; nothing signed) and `recordHolderExit({ curve, account, txHash })` records a sent one. `holderExit({ curve, action, amountRaw?, dryRun?, wallet?, linkedSigning? })` runs it on an agent key (Candle signs with the embedded Hood wallet; a linked wallet gets `signing[]` for `submitHolderExit`), with the fee claim's per-call `not_sent` / `submitted_unknown` / `confirmed` / `reverted` and a sequence `outcome`. Every refusal from these routes is a `HolderExitError` (a `CandleApiError`) with the API's code, `details`, and for a sequence that did not complete `outcome`, `calls` and `warnings`. No request has a destination field and the SDK encodes no calldata. MCP adds `candle_holder_exit` and `candle_claim_holder_exit` (`dryRun` defaults to true) and quotes the holder-exit disclosure on `candle_get_market`; the CLI adds `candle token exit <token>` (`--recover`, `--enter-recovery`, `--claim-team`, `--dry-run`) and `candle portfolio` marks Hood positions with an open exit."
+      }
+    }
+  ]
+}

@@ -109,7 +109,9 @@ try {
   const { pemToStoredSigner } = await load("packages/cli/src/secret-store.ts")
   const ephemeral = generateKeyPairSync("ec", { namedCurve: "P-256" }).privateKey.export({ type: "pkcs8", format: "pem" }).toString()
   const wallets = { scopes: ["perps:write"], privyAppId: "fixture-app", page: [{ id: "wallet", address: ADDRESS, label: "perps", chain: "evm", active: true, allowLaunch: false, privyWalletId: "fixture-privy" }], isDone: true }
-  const runCli = async (argv: string[], answer: (path: string, body: any) => unknown, opts: { json?: boolean } = {}) => {
+  const runCli = (argv: string[], answer: (path: string, body: any) => unknown, opts: { json?: boolean; prompt?: string; sign?: boolean; wallets?: typeof wallets } = {}) =>
+    runCmd(cli.perpsTransfer, argv, answer, opts)
+  const runCmd = async (cmd: (args: string[], ctx: any) => Promise<number>, argv: string[], answer: (path: string, body: any) => unknown, opts: { json?: boolean; prompt?: string; sign?: boolean; wallets?: typeof wallets } = {}) => {
     const requests: Request[] = []
     const stdout = createCapture(), stderr = createCapture()
     let shown = "", stop = "exit"
@@ -117,8 +119,14 @@ try {
       const u = new URL(String(url))
       const body = init?.body ? JSON.parse(String(init.body)) : undefined
       requests.push({ method: init?.method ?? "GET", host: u.host, path: u.pathname, ...(u.pathname === "/api/v1/agent/perps/transfer" && body ? { body } : {}) })
-      if (u.pathname.endsWith("/sign")) { shown = stderr.text; stop = "before-relay"; throw new Error("offline recorder stops before signing") }
-      if (u.pathname === "/api/v1/agent/wallets/trading") return Response.json(wallets)
+      // The full-flow rows (opts.sign) let the recorder answer the relay, the venue and the acknowledgement itself.
+      if (u.pathname.endsWith("/sign")) {
+        if (opts.sign) return Response.json({ success: true, signature: SIG })
+        shown = stderr.text; stop = "before-relay"; throw new Error("offline recorder stops before signing")
+      }
+      if (u.host === "api.hyperliquid.xyz") return Response.json({ status: "ok", response: { type: "default" } })
+      if (u.pathname === "/api/v1/agent/wallets/trading") return Response.json(opts.wallets ?? wallets)
+      if (u.pathname === "/api/v1/agent/perps/transfer/submitted") return Response.json({ success: true, status: "submitted", id: body?.clientTransferId })
       const reply = answer(u.pathname, body)
       if (reply instanceof Response) return reply
       if (reply === undefined) throw new Error(`unexpected request ${u.host}${u.pathname}`)
@@ -127,9 +135,9 @@ try {
     const deps = createTestDeps({ stdout, stderr, now: () => NOW, fetch: fetcher,
       env: { CANDLE_API_KEY: cfg.apiKey },
       store: createFakeStore({ wallet_signer_wallet: pemToStoredSigner(ephemeral) }),
-      promptLine: async () => { shown = stderr.text; stop = "before-prompt"; return "n" },
+      promptLine: async () => { shown = stderr.text; stop = "before-prompt"; return opts.prompt ?? "n" },
     })
-    const exitCode = await cli.perpsTransfer(argv, { deps, apiUrl: cfg.apiUrl, json: opts.json === true })
+    const exitCode = await cmd(argv, { deps, apiUrl: cfg.apiUrl, json: opts.json === true })
     return { exitCode, stop, shown, stdout: stdout.text, stderr: stderr.text, requests }
   }
   // The lines before the confirm: the id, the amount and the two balances. The wallet address stays out of a fixture.
@@ -209,6 +217,64 @@ try {
     assert.ok(!r.requests.some((q) => q.path.endsWith("/sign")))
     assert.equal(JSON.parse(r.stdout || r.stderr).code, code)
     rows.push({ id: `cli-refused-${id}`, surface: "cli", evidence: "response-stub: the code is the API route's own; the keyed API route is not executed", args: { argv: argv.map((a) => (a === "perps" ? "<tee>" : a)) }, requests: r.requests, outcome: { exitCode: r.exitCode, code } })
+  }
+
+  // 2b. The happy path and the read-backs (BE-3910), every stand-in answered by the recorder: the
+  //     relay's signature, the venue and the acknowledgement. Nothing is signed with a real key.
+  const flowCases: [string, string[], string][] = [
+    ["to-dex", ["--to-dex", "xyz", "5", "--id", "t1", "--wallet", "perps", "--yes"], "Moved 5 USDC: Main perps -> builder dex xyz."],
+    ["from-dex-all", ["--from-dex", "xyz", "--all", "--id", "t3", "--wallet", "perps", "--yes"], "Moved 5 USDC: builder dex xyz -> Main perps."],
+  ]
+  for (const [id, argv, moved] of flowCases) {
+    const r = await runCli(argv, (path) => (path === transferPath ? buildFor(argv) : undefined), { json: true, sign: true })
+    assert.equal(r.exitCode, 0, r.stdout + r.stderr)
+    assert.ok(r.stderr.includes(moved), r.stderr)
+    const order = r.requests.map((q) => `${q.host === "api.hyperliquid.xyz" ? "venue:" : ""}${q.path}`)
+    const at = (needle: string) => order.findIndex((p) => p === needle || p.endsWith(needle))
+    assert.ok(at(transferPath) < at("/wallets/wallet/sign") && at("/wallets/wallet/sign") < at("venue:/exchange")
+      && at("venue:/exchange") < at("/perps/transfer/submitted"), JSON.stringify(order))
+    rows.push({ id: `cli-${id}-full-flow-synthetic-venue`, surface: "cli", evidence: "stand-in: the relay and the venue are answered by the recorder; nothing is signed with a real key",
+      args: { argv }, requests: r.requests, outcome: { exitCode: r.exitCode, notice: moved } })
+  }
+  {
+    // The transfer's own read-back: `candle perps transfer status` after the move.
+    const r = await runCli(["status", "t1"], (path) => (path === "/api/v1/agent/perps/transfer/t1"
+      ? { success: true, id: "t1", status: "submitted", amountUsdc: "5", mode: "toDex" } : undefined), { json: true })
+    assert.equal(r.exitCode, 0, r.stdout + r.stderr)
+    rows.push({ id: "cli-status-read-back", surface: "cli", evidence: "response-stub: the read is the API route's own shape; the keyed route is not executed",
+      args: { argv: ["status", "t1"] }, requests: r.requests, outcome: { exitCode: r.exitCode, body: JSON.parse(r.stdout) } })
+  }
+  {
+    // The balances read-back: `candle perps positions` reports the main perps balance that moved.
+    const perps = await load("packages/cli/src/commands/perps.ts")
+    const r = await runCmd(perps.perpsPositions, ["--wallet", "perps"], (path) => (path === "/api/v1/agent/perps/positions"
+      ? { success: true, address: ADDRESS, network: "hyperliquid", mode: "cross", withdrawable: "12", positions: [], openWithdrawals: [] } : undefined))
+    assert.equal(r.exitCode, 0, r.stdout + r.stderr)
+    const withdrawable = r.stdout.split("\n").find((l: string) => l.includes("Withdrawable now"))?.trim().replace(/\s+/g, " ")
+    assert.equal(withdrawable, "Withdrawable now 12 USDC", r.stdout)
+    rows.push({ id: "cli-positions-read-back", surface: "cli", evidence: "stand-in: the direct Hyperliquid reads are answered by the recorder and fail closed; the balance line is the API route's own",
+      args: { argv: ["positions", "--wallet", "perps"] }, requests: r.requests, outcome: { exitCode: r.exitCode, withdrawable } })
+  }
+  {
+    // The sweep before a withdrawal, and its read-back of the resulting balances: the first build
+    // answers `sweeping` with one own-balance move and the balances that stay; the move runs on the
+    // same stand-ins, and the re-asked build answers a withdrawal past its quote, so nothing else signs.
+    const withdraw = await load("packages/cli/src/commands/perps-withdraw.ts")
+    const next = { ...sendAsset({ id: "child-xyz", mode: "fromDex", dex: "xyz", amount: "2" }), signature: SIG }
+    const builds = [
+      { id: "w1", status: "sweeping", nextTransfer: next, retained: [{ dex: "xyz", amountUsdc: "40" }] },
+      { id: "w1", status: "settled", amountUsdc: "5", to: { chain: "hood", address: ADDRESS } },
+    ]
+    const r = await runCmd(withdraw.perpsWithdraw, ["5", "--to", "hood", "--id", "w1", "--wallet", "perps"],
+      (path) => (path === "/api/v1/agent/perps/withdraw" ? builds.shift() : undefined),
+      { prompt: "confirm", sign: true, wallets: { ...wallets, scopes: ["perps:withdraw"] } })
+    assert.equal(r.exitCode, 0, r.stdout + r.stderr)
+    const retained = r.stderr.split("\n").find((l: string) => l.includes("Retained balances"))?.trim().replace(/\s+/g, " ")
+    assert.ok(retained && retained.includes("xyz") && retained.includes("40"), r.stderr)
+    const order = r.requests.map((q) => `${q.host === "api.hyperliquid.xyz" ? "venue:" : ""}${q.path}`)
+    assert.ok(order.indexOf("venue:/exchange") < order.lastIndexOf("/api/v1/agent/perps/withdraw"), JSON.stringify(order))
+    rows.push({ id: "cli-withdraw-sweep-read-back", surface: "cli", evidence: "stand-in: the venue and the acknowledgement are answered by the recorder; the withdrawal never reaches a quote, so the vault gate never opens",
+      args: { argv: ["5", "--to", "hood", "--id", "w1", "--wallet", "perps"] }, requests: r.requests, outcome: { exitCode: r.exitCode, retained } })
   }
 
   // 3. The MCP tool and the SDK method on the same builds and refusals.
@@ -310,7 +376,7 @@ try {
   }
 
   writeFileSync(join(import.meta.dir, "../test/fixtures/candle-transfer-source.json"), `${JSON.stringify({
-    about: "Offline own-balance transfer contracts (BE-3765, SendAsset only: main perps <-> a builder dex; perps <-> spot is BE-3864 and not covered) from exact merged source. check rows run the transfer check through its SDK, MCP and CLI copies, which agree; cli rows run `candle perps transfer` with an ephemeral in-memory key, declining at the prompt or stopping before the relay signs; mcp and sdk rows run candle_perps_transfer and perpsTransfer() against response stubs. API refusals are response stubs carrying the route's own codes; the keyed API route is not executed. All addresses are made up. No funded account, signature, submission or deployed behavior is claimed.",
+    about: "Offline own-balance transfer contracts (BE-3765, SendAsset only: main perps <-> a builder dex; perps <-> spot is BE-3864 and not covered) from exact merged source. check rows run the transfer check through its SDK, MCP and CLI copies, which agree; cli rows run `candle perps transfer` with an ephemeral in-memory key, declining at the prompt or stopping before the relay signs, except the full-flow and read-back rows (BE-3910), where the recorder itself answers the relay, the venue and the acknowledgement, and nothing is signed with a real key; mcp and sdk rows run candle_perps_transfer and perpsTransfer() against response stubs. API refusals are response stubs carrying the route's own codes; the keyed API route is not executed. All addresses are made up. No funded account, signature, submission or deployed behavior is claimed.",
     source, rows,
   }, null, 2)}\n`)
   console.log(`Recorded ${rows.length} offline transfer contracts from ${source.commit}.`)

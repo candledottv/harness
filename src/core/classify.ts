@@ -75,12 +75,17 @@ export const TOOL_CLASSES: Readonly<Record<string, ToolClass>> = {
   // Server 0.10.28 (CLI 0.13.9): keyless reads. A token page's public reads answer that it's off until
   // Candle's deployment switches it on, which is the server's answer.
   candle_get_agent_positions: READ,
+  // Public measured record: spot swaps and closed perps, keyless (MCP 0.10.40 / CLI 0.13.35).
   candle_get_agent_record: READ,
   // Source after MCP 0.10.34 (candle-monorepo 578db6462): keyless reads of a published agent's perps record and
   // Candle's cached perp candles, builder-dex (dex:COIN) markets included.
   candle_get_agent_perp_round: READ,
   candle_get_agent_open_orders: READ,
   candle_get_perp_candles: READ,
+  // One perp market's public figures and the published Candle agents long and short in it, keyless.
+  candle_get_perp_market: READ,
+  // A Hood holder's standing on one curve, read from the chain at one block; keyless.
+  candle_holder_exit: READ,
   candle_token_clusters: READ,
   candle_token_history: READ,
   candle_token_page_about: READ,
@@ -137,6 +142,8 @@ export const TOOL_CLASSES: Readonly<Record<string, ToolClass>> = {
   candle_swap: card("swap", "clientSwapId"),
   // Only narrows from a key (widening is LOOSEN_REQUIRES_SESSION): less access.
   candle_set_profile_wallets: card("lessaccess"),
+  // Approves and redeems (or opens Recovery, or releases vested team tokens) from the account's wallet. No card carries it yet.
+  candle_claim_holder_exit: notYet("A holder exit moves funds from the account's wallet, and the Candle Harness has no card for it yet. Read where the holder stands with candle_holder_exit; the user runs the exit with candle token exit in their own terminal, dry run first."),
   // From the embedded wallet, through Candle's own tools. A TEE wallet's staking and
   // launches are the CLI's card rows through candle_cli.
   candle_launch_token: card("launch", "clientLaunchId"),

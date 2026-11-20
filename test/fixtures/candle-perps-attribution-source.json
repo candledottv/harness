@@ -1,0 +1,1520 @@
+{
+  "about": "Offline contracts for embedded-wallet perps in the public record, from exact source (BE-3773). Every time is an hour and minute of one made-up day, and every figure is made up. api-source rows are answers built by Candle's board path (attribution by order, the profile engine, the board publish, record and positions composition) from one made-up embedded wallet's stored facts and a made-up order inventory: the agent's own fills only, the owner's trades in no answer, a cloid the venue never pinned claiming nothing, and a round with no id and no hash. The wallet's address and the owner's fill hashes are in no row. mcp, sdk and cli rows read the same positions answer through the registered tool, the SDK and `candle agent positions` over an intercepted fetch. The docs row is the public page's own by-order section (its copies agree), read as text. The database, the perps jobs, the venue and the keyed API route are not executed, and no deployed behavior is claimed.",
+  "source": {
+    "repo": "candledottv/candle-monorepo",
+    "commit": "cf2c16863597e065855d7e9856a216ecfd15bc9c",
+    "versions": {
+      "cli": "0.13.32",
+      "mcp": "0.10.37",
+      "sdk": "0.6.26"
+    }
+  },
+  "profile": "prof_0123456789abcdef",
+  "day": "2027-01-12",
+  "rows": [
+    {
+      "id": "owner-trade-excluded-open-attribution",
+      "scenario": "owner-trade-excluded-open",
+      "buildAt": "10:30",
+      "surface": "api-source",
+      "evidence": "Candle's attribution by order on the same made-up facts; not the database or the venue",
+      "outcome": {
+        "fills": [
+          {
+            "time": "09:10",
+            "reason": "order",
+            "holder": [
+              "agent"
+            ]
+          },
+          {
+            "time": "09:20",
+            "reason": "no_order",
+            "holder": [
+              "not public"
+            ]
+          }
+        ],
+        "partialEvents": [
+          "unmatched_fill"
+        ]
+      }
+    },
+    {
+      "id": "owner-trade-excluded-open-api",
+      "scenario": "owner-trade-excluded-open",
+      "buildAt": "10:30",
+      "surface": "api-source",
+      "says": "The agent opened 2 ETH at 100 and the owner bought 1 more from another tool: the agent's position is its own 2 at its own entry, not the wallet's 3. No closed round yet.",
+      "evidence": "board path on made-up stored facts and a made-up order inventory; the database, the perps jobs, the venue and the keyed route are not executed",
+      "outcome": {
+        "served": true,
+        "available": true,
+        "perpRounds": [],
+        "positions": {
+          "success": true,
+          "publishedBuildId": "build_fixture_01",
+          "asOfMs": 1799748120000,
+          "spotAsOfMs": 1799749680000,
+          "perpsAsOfMs": 1799748120000,
+          "perpsSnapshotId": "ps1_8ce0dee6c71f881a63296844df11d814",
+          "perpsPartial": true,
+          "portfolioValueUsd": 42,
+          "portfolioPartial": true,
+          "hiddenDust": 0,
+          "unpriced": 0,
+          "positions": [
+            {
+              "kind": "perp",
+              "coin": "ETH",
+              "side": "long",
+              "size": "2",
+              "leverage": {
+                "value": 10,
+                "type": "cross"
+              },
+              "entryPx": "100",
+              "markPx": "110",
+              "positionValueUsd": "220",
+              "marginUsedUsd": "22",
+              "unrealizedPnlUsd": "20",
+              "returnOnEquity": "1",
+              "liquidationPx": null,
+              "liquidationDistance": null,
+              "fundingNetUsd": "0",
+              "level": "none"
+            }
+          ],
+          "seq": 1
+        },
+        "totals": {
+          "realizedNetUsd": 0,
+          "wins": 0,
+          "losses": 0,
+          "counted": 0,
+          "perpsRealizedUsd": 0,
+          "perpsFundingUsd": 0,
+          "perpsFeesUsd": 0,
+          "perpsUnrealizedUsd": 20,
+          "perpsNetUsd": 20,
+          "perpsPartial": true,
+          "perpsAsOfMs": 1799748120000,
+          "perpsSnapshotId": "ps1_8ce0dee6c71f881a63296844df11d814"
+        }
+      }
+    },
+    {
+      "id": "owner-trade-excluded-open-mcp",
+      "scenario": "owner-trade-excluded-open",
+      "buildAt": "10:30",
+      "surface": "mcp",
+      "args": {
+        "profileId": "prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/positions",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "body": {
+          "success": true,
+          "publishedBuildId": "build_fixture_01",
+          "asOfMs": 1799748120000,
+          "spotAsOfMs": 1799749680000,
+          "perpsAsOfMs": 1799748120000,
+          "perpsSnapshotId": "ps1_8ce0dee6c71f881a63296844df11d814",
+          "perpsPartial": true,
+          "portfolioValueUsd": 42,
+          "portfolioPartial": true,
+          "hiddenDust": 0,
+          "unpriced": 0,
+          "positions": [
+            {
+              "kind": "perp",
+              "coin": "ETH",
+              "side": "long",
+              "size": "2",
+              "leverage": {
+                "value": 10,
+                "type": "cross"
+              },
+              "entryPx": "100",
+              "markPx": "110",
+              "positionValueUsd": "220",
+              "marginUsedUsd": "22",
+              "unrealizedPnlUsd": "20",
+              "returnOnEquity": "1",
+              "liquidationPx": null,
+              "liquidationDistance": null,
+              "fundingNetUsd": "0",
+              "level": "none"
+            }
+          ],
+          "seq": 1
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "owner-trade-excluded-open-sdk",
+      "scenario": "owner-trade-excluded-open",
+      "buildAt": "10:30",
+      "surface": "sdk",
+      "args": {
+        "profileId": "prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/positions",
+          "credential": true
+        }
+      ],
+      "outcome": {
+        "body": {
+          "publishedBuildId": "build_fixture_01",
+          "asOfMs": 1799748120000,
+          "spotAsOfMs": 1799749680000,
+          "perpsAsOfMs": 1799748120000,
+          "perpsSnapshotId": "ps1_8ce0dee6c71f881a63296844df11d814",
+          "perpsPartial": true,
+          "portfolioValueUsd": 42,
+          "portfolioPartial": true,
+          "hiddenDust": 0,
+          "unpriced": 0,
+          "positions": [
+            {
+              "kind": "perp",
+              "coin": "ETH",
+              "side": "long",
+              "size": "2",
+              "leverage": {
+                "value": 10,
+                "type": "cross"
+              },
+              "entryPx": "100",
+              "markPx": "110",
+              "positionValueUsd": "220",
+              "marginUsedUsd": "22",
+              "unrealizedPnlUsd": "20",
+              "returnOnEquity": "1",
+              "liquidationPx": null,
+              "liquidationDistance": null,
+              "fundingNetUsd": "0",
+              "level": "none"
+            }
+          ],
+          "seq": 1
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "owner-trade-excluded-open-cli",
+      "scenario": "owner-trade-excluded-open",
+      "buildAt": "10:30",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent positions prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/positions",
+          "credential": false
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/open-orders",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "lines": [
+          "Portfolio $42.00 (partial)",
+          "Updated Jan 12 10:02Z; perps partial",
+          "Perps as of Jan 12 10:02Z (certified hourly)",
+          "",
+          "Kind                 Position  Amount  Value                    P&L                    Details",
+          "-------------------  --------  ------  -----------------------  ---------------------  ------------------------------------------",
+          "perp 10x Long cross  ETH       2       $220.00 (margin $22.00)  +$20.00 (+100.0% ROE)  no liquidation price; funding earned $0.00"
+        ]
+      }
+    },
+    {
+      "id": "owner-trade-excluded-open-cli-json",
+      "scenario": "owner-trade-excluded-open",
+      "buildAt": "10:30",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent positions prof_0123456789abcdef --json"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/positions",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "body": {
+          "success": true,
+          "publishedBuildId": "build_fixture_01",
+          "asOfMs": 1799748120000,
+          "spotAsOfMs": 1799749680000,
+          "perpsAsOfMs": 1799748120000,
+          "perpsSnapshotId": "ps1_8ce0dee6c71f881a63296844df11d814",
+          "perpsPartial": true,
+          "portfolioValueUsd": 42,
+          "portfolioPartial": true,
+          "hiddenDust": 0,
+          "unpriced": 0,
+          "positions": [
+            {
+              "kind": "perp",
+              "coin": "ETH",
+              "side": "long",
+              "size": "2",
+              "leverage": {
+                "value": 10,
+                "type": "cross"
+              },
+              "entryPx": "100",
+              "markPx": "110",
+              "positionValueUsd": "220",
+              "marginUsedUsd": "22",
+              "unrealizedPnlUsd": "20",
+              "returnOnEquity": "1",
+              "liquidationPx": null,
+              "liquidationDistance": null,
+              "fundingNetUsd": "0",
+              "level": "none"
+            }
+          ],
+          "seq": 1
+        }
+      }
+    },
+    {
+      "id": "owner-trade-excluded-closed-attribution",
+      "scenario": "owner-trade-excluded-closed",
+      "buildAt": "11:30",
+      "surface": "api-source",
+      "evidence": "Candle's attribution by order on the same made-up facts; not the database or the venue",
+      "outcome": {
+        "fills": [
+          {
+            "time": "09:10",
+            "reason": "order",
+            "holder": [
+              "agent"
+            ]
+          },
+          {
+            "time": "09:20",
+            "reason": "no_order",
+            "holder": [
+              "not public"
+            ]
+          },
+          {
+            "time": "10:10",
+            "reason": "order",
+            "holder": [
+              "agent"
+            ]
+          }
+        ],
+        "partialEvents": [
+          "unmatched_fill"
+        ]
+      }
+    },
+    {
+      "id": "owner-trade-excluded-closed-api",
+      "scenario": "owner-trade-excluded-closed",
+      "buildAt": "11:30",
+      "surface": "api-source",
+      "says": "The agent closed its 2 ETH while the owner stayed long 1: the round holds only the agent's fills, its P&L is against its own entry (2 x (120 - 100) less funding share), it is partial (unmatched_fill) because the owner's trade shared the coin, and it carries no id and no hash.",
+      "evidence": "board path on made-up stored facts and a made-up order inventory; the database, the perps jobs, the venue and the keyed route are not executed",
+      "outcome": {
+        "served": true,
+        "available": true,
+        "perpRounds": [
+          {
+            "kind": "perp_round",
+            "coin": "ETH",
+            "side": "long",
+            "leverage": {
+              "value": 10,
+              "type": "cross"
+            },
+            "pnlUsd": 38,
+            "liquidated": false,
+            "openedMs": 1799745000000,
+            "closedMs": 1799748600000,
+            "hash": null,
+            "partial": true,
+            "partialReasons": [
+              "unmatched_fill"
+            ]
+          }
+        ],
+        "positions": {
+          "success": true,
+          "publishedBuildId": "build_fixture_02",
+          "asOfMs": 1799751720000,
+          "spotAsOfMs": 1799753280000,
+          "perpsAsOfMs": 1799751720000,
+          "perpsSnapshotId": "ps1_161945021225d9ec5c8106d4406111dc",
+          "perpsPartial": true,
+          "portfolioValueUsd": 0,
+          "portfolioPartial": true,
+          "hiddenDust": 0,
+          "unpriced": 0,
+          "positions": [],
+          "seq": 2
+        },
+        "totals": {
+          "realizedNetUsd": 38,
+          "wins": 1,
+          "losses": 0,
+          "counted": 1,
+          "bestUsd": 38,
+          "worstUsd": 38,
+          "perpsRealizedUsd": 40,
+          "perpsFundingUsd": -2,
+          "perpsFeesUsd": 0,
+          "perpsUnrealizedUsd": 0,
+          "perpsNetUsd": 38,
+          "perpsPartial": true,
+          "perpsAsOfMs": 1799751720000,
+          "perpsSnapshotId": "ps1_161945021225d9ec5c8106d4406111dc"
+        }
+      }
+    },
+    {
+      "id": "owner-trade-excluded-closed-mcp",
+      "scenario": "owner-trade-excluded-closed",
+      "buildAt": "11:30",
+      "surface": "mcp",
+      "args": {
+        "profileId": "prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/positions",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "body": {
+          "success": true,
+          "publishedBuildId": "build_fixture_02",
+          "asOfMs": 1799751720000,
+          "spotAsOfMs": 1799753280000,
+          "perpsAsOfMs": 1799751720000,
+          "perpsSnapshotId": "ps1_161945021225d9ec5c8106d4406111dc",
+          "perpsPartial": true,
+          "portfolioValueUsd": 0,
+          "portfolioPartial": true,
+          "hiddenDust": 0,
+          "unpriced": 0,
+          "positions": [],
+          "seq": 2
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "owner-trade-excluded-closed-sdk",
+      "scenario": "owner-trade-excluded-closed",
+      "buildAt": "11:30",
+      "surface": "sdk",
+      "args": {
+        "profileId": "prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/positions",
+          "credential": true
+        }
+      ],
+      "outcome": {
+        "body": {
+          "publishedBuildId": "build_fixture_02",
+          "asOfMs": 1799751720000,
+          "spotAsOfMs": 1799753280000,
+          "perpsAsOfMs": 1799751720000,
+          "perpsSnapshotId": "ps1_161945021225d9ec5c8106d4406111dc",
+          "perpsPartial": true,
+          "portfolioValueUsd": 0,
+          "portfolioPartial": true,
+          "hiddenDust": 0,
+          "unpriced": 0,
+          "positions": [],
+          "seq": 2
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "owner-trade-excluded-closed-cli",
+      "scenario": "owner-trade-excluded-closed",
+      "buildAt": "11:30",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent positions prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/positions",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "lines": [
+          "Portfolio $0.00 (partial)",
+          "Updated Jan 12 11:02Z; perps partial",
+          "Perps as of Jan 12 11:02Z (certified hourly)",
+          "",
+          "No open positions."
+        ]
+      }
+    },
+    {
+      "id": "owner-trade-excluded-closed-cli-json",
+      "scenario": "owner-trade-excluded-closed",
+      "buildAt": "11:30",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent positions prof_0123456789abcdef --json"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/positions",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "body": {
+          "success": true,
+          "publishedBuildId": "build_fixture_02",
+          "asOfMs": 1799751720000,
+          "spotAsOfMs": 1799753280000,
+          "perpsAsOfMs": 1799751720000,
+          "perpsSnapshotId": "ps1_161945021225d9ec5c8106d4406111dc",
+          "perpsPartial": true,
+          "portfolioValueUsd": 0,
+          "portfolioPartial": true,
+          "hiddenDust": 0,
+          "unpriced": 0,
+          "positions": [],
+          "seq": 2
+        }
+      }
+    },
+    {
+      "id": "sole-agent-attribution",
+      "scenario": "sole-agent",
+      "buildAt": "11:30",
+      "surface": "api-source",
+      "evidence": "Candle's attribution by order on the same made-up facts; not the database or the venue",
+      "outcome": {
+        "fills": [
+          {
+            "time": "09:10",
+            "reason": "order",
+            "holder": [
+              "agent"
+            ]
+          },
+          {
+            "time": "10:10",
+            "reason": "order",
+            "holder": [
+              "agent"
+            ]
+          }
+        ],
+        "partialEvents": []
+      }
+    },
+    {
+      "id": "sole-agent-api",
+      "scenario": "sole-agent",
+      "buildAt": "11:30",
+      "surface": "api-source",
+      "says": "Only the agent trades the wallet: the round is exact, not partial, and still carries no id and no hash on an embedded wallet.",
+      "evidence": "board path on made-up stored facts and a made-up order inventory; the database, the perps jobs, the venue and the keyed route are not executed",
+      "outcome": {
+        "served": true,
+        "available": true,
+        "perpRounds": [
+          {
+            "kind": "perp_round",
+            "coin": "ETH",
+            "side": "long",
+            "leverage": {
+              "value": 10,
+              "type": "cross"
+            },
+            "pnlUsd": 14.8,
+            "liquidated": false,
+            "openedMs": 1799745000000,
+            "closedMs": 1799748600000,
+            "hash": null
+          }
+        ],
+        "positions": {
+          "success": true,
+          "publishedBuildId": "build_fixture_03",
+          "asOfMs": 1799751720000,
+          "spotAsOfMs": 1799753280000,
+          "perpsAsOfMs": 1799751720000,
+          "perpsSnapshotId": "ps1_161945021225d9ec5c8106d4406111dc",
+          "perpsPartial": false,
+          "portfolioValueUsd": 0,
+          "portfolioPartial": false,
+          "hiddenDust": 0,
+          "unpriced": 0,
+          "positions": [],
+          "seq": 3
+        },
+        "totals": {
+          "realizedNetUsd": 14.8,
+          "wins": 1,
+          "losses": 0,
+          "counted": 1,
+          "bestUsd": 14.8,
+          "worstUsd": 14.8,
+          "perpsRealizedUsd": 15,
+          "perpsFundingUsd": 0,
+          "perpsFeesUsd": 0.2,
+          "perpsUnrealizedUsd": 0,
+          "perpsNetUsd": 14.8,
+          "perpsPartial": false,
+          "perpsAsOfMs": 1799751720000,
+          "perpsSnapshotId": "ps1_161945021225d9ec5c8106d4406111dc"
+        }
+      }
+    },
+    {
+      "id": "sole-agent-mcp",
+      "scenario": "sole-agent",
+      "buildAt": "11:30",
+      "surface": "mcp",
+      "args": {
+        "profileId": "prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/positions",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "body": {
+          "success": true,
+          "publishedBuildId": "build_fixture_03",
+          "asOfMs": 1799751720000,
+          "spotAsOfMs": 1799753280000,
+          "perpsAsOfMs": 1799751720000,
+          "perpsSnapshotId": "ps1_161945021225d9ec5c8106d4406111dc",
+          "perpsPartial": false,
+          "portfolioValueUsd": 0,
+          "portfolioPartial": false,
+          "hiddenDust": 0,
+          "unpriced": 0,
+          "positions": [],
+          "seq": 3
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "sole-agent-sdk",
+      "scenario": "sole-agent",
+      "buildAt": "11:30",
+      "surface": "sdk",
+      "args": {
+        "profileId": "prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/positions",
+          "credential": true
+        }
+      ],
+      "outcome": {
+        "body": {
+          "publishedBuildId": "build_fixture_03",
+          "asOfMs": 1799751720000,
+          "spotAsOfMs": 1799753280000,
+          "perpsAsOfMs": 1799751720000,
+          "perpsSnapshotId": "ps1_161945021225d9ec5c8106d4406111dc",
+          "perpsPartial": false,
+          "portfolioValueUsd": 0,
+          "portfolioPartial": false,
+          "hiddenDust": 0,
+          "unpriced": 0,
+          "positions": [],
+          "seq": 3
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "sole-agent-cli",
+      "scenario": "sole-agent",
+      "buildAt": "11:30",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent positions prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/positions",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "lines": [
+          "Portfolio $0.00",
+          "Updated Jan 12 11:02Z",
+          "Perps as of Jan 12 11:02Z (certified hourly)",
+          "",
+          "No open positions."
+        ]
+      }
+    },
+    {
+      "id": "sole-agent-cli-json",
+      "scenario": "sole-agent",
+      "buildAt": "11:30",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent positions prof_0123456789abcdef --json"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/positions",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "body": {
+          "success": true,
+          "publishedBuildId": "build_fixture_03",
+          "asOfMs": 1799751720000,
+          "spotAsOfMs": 1799753280000,
+          "perpsAsOfMs": 1799751720000,
+          "perpsSnapshotId": "ps1_161945021225d9ec5c8106d4406111dc",
+          "perpsPartial": false,
+          "portfolioValueUsd": 0,
+          "portfolioPartial": false,
+          "hiddenDust": 0,
+          "unpriced": 0,
+          "positions": [],
+          "seq": 3
+        }
+      }
+    },
+    {
+      "id": "unpinned-cloid-attribution",
+      "scenario": "unpinned-cloid",
+      "buildAt": "11:30",
+      "surface": "api-source",
+      "evidence": "Candle's attribution by order on the same made-up facts; not the database or the venue",
+      "outcome": {
+        "fills": [
+          {
+            "time": "09:10",
+            "reason": "order_unverified",
+            "holder": [
+              "not public"
+            ]
+          },
+          {
+            "time": "10:10",
+            "reason": "order_unverified",
+            "holder": [
+              "not public"
+            ]
+          }
+        ],
+        "partialEvents": []
+      }
+    },
+    {
+      "id": "unpinned-cloid-api",
+      "scenario": "unpinned-cloid",
+      "buildAt": "11:30",
+      "surface": "api-source",
+      "says": "Candle built both orders, but the venue order that first carried each cloid was never observed, so the fills' oids cannot be checked: the fills are order_unverified, left out of the agent's profile, and the agent has no perps round.",
+      "evidence": "board path on made-up stored facts and a made-up order inventory; the database, the perps jobs, the venue and the keyed route are not executed",
+      "outcome": {
+        "served": true,
+        "available": true,
+        "perpRounds": [],
+        "positions": {
+          "success": true,
+          "publishedBuildId": "build_fixture_04",
+          "asOfMs": 1799751720000,
+          "spotAsOfMs": 1799753280000,
+          "perpsAsOfMs": 1799751720000,
+          "perpsSnapshotId": "ps1_161945021225d9ec5c8106d4406111dc",
+          "perpsPartial": false,
+          "portfolioValueUsd": 0,
+          "portfolioPartial": false,
+          "hiddenDust": 0,
+          "unpriced": 0,
+          "positions": [],
+          "seq": 4
+        },
+        "totals": {
+          "realizedNetUsd": 0,
+          "wins": 0,
+          "losses": 0,
+          "counted": 0,
+          "perpsRealizedUsd": 0,
+          "perpsFundingUsd": 0,
+          "perpsFeesUsd": 0,
+          "perpsUnrealizedUsd": 0,
+          "perpsNetUsd": 0,
+          "perpsPartial": false,
+          "perpsAsOfMs": 1799751720000,
+          "perpsSnapshotId": "ps1_161945021225d9ec5c8106d4406111dc"
+        }
+      }
+    },
+    {
+      "id": "unpinned-cloid-mcp",
+      "scenario": "unpinned-cloid",
+      "buildAt": "11:30",
+      "surface": "mcp",
+      "args": {
+        "profileId": "prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/positions",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "body": {
+          "success": true,
+          "publishedBuildId": "build_fixture_04",
+          "asOfMs": 1799751720000,
+          "spotAsOfMs": 1799753280000,
+          "perpsAsOfMs": 1799751720000,
+          "perpsSnapshotId": "ps1_161945021225d9ec5c8106d4406111dc",
+          "perpsPartial": false,
+          "portfolioValueUsd": 0,
+          "portfolioPartial": false,
+          "hiddenDust": 0,
+          "unpriced": 0,
+          "positions": [],
+          "seq": 4
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "unpinned-cloid-sdk",
+      "scenario": "unpinned-cloid",
+      "buildAt": "11:30",
+      "surface": "sdk",
+      "args": {
+        "profileId": "prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/positions",
+          "credential": true
+        }
+      ],
+      "outcome": {
+        "body": {
+          "publishedBuildId": "build_fixture_04",
+          "asOfMs": 1799751720000,
+          "spotAsOfMs": 1799753280000,
+          "perpsAsOfMs": 1799751720000,
+          "perpsSnapshotId": "ps1_161945021225d9ec5c8106d4406111dc",
+          "perpsPartial": false,
+          "portfolioValueUsd": 0,
+          "portfolioPartial": false,
+          "hiddenDust": 0,
+          "unpriced": 0,
+          "positions": [],
+          "seq": 4
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "unpinned-cloid-cli",
+      "scenario": "unpinned-cloid",
+      "buildAt": "11:30",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent positions prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/positions",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "lines": [
+          "Portfolio $0.00",
+          "Updated Jan 12 11:02Z",
+          "Perps as of Jan 12 11:02Z (certified hourly)",
+          "",
+          "No open positions."
+        ]
+      }
+    },
+    {
+      "id": "unpinned-cloid-cli-json",
+      "scenario": "unpinned-cloid",
+      "buildAt": "11:30",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent positions prof_0123456789abcdef --json"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/positions",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "body": {
+          "success": true,
+          "publishedBuildId": "build_fixture_04",
+          "asOfMs": 1799751720000,
+          "spotAsOfMs": 1799753280000,
+          "perpsAsOfMs": 1799751720000,
+          "perpsSnapshotId": "ps1_161945021225d9ec5c8106d4406111dc",
+          "perpsPartial": false,
+          "portfolioValueUsd": 0,
+          "portfolioPartial": false,
+          "hiddenDust": 0,
+          "unpriced": 0,
+          "positions": [],
+          "seq": 4
+        }
+      }
+    },
+    {
+      "id": "reused-cloid-attribution",
+      "scenario": "reused-cloid",
+      "buildAt": "10:30",
+      "surface": "api-source",
+      "evidence": "Candle's attribution by order on the same made-up facts; not the database or the venue",
+      "outcome": {
+        "fills": [
+          {
+            "time": "09:10",
+            "reason": "cloid_reused",
+            "holder": [
+              "not public"
+            ]
+          }
+        ],
+        "partialEvents": []
+      }
+    },
+    {
+      "id": "reused-cloid-api",
+      "scenario": "reused-cloid",
+      "buildAt": "10:30",
+      "surface": "api-source",
+      "says": "The venue pinned the open's cloid to order 7, but the fill is on order 1 (the cloid carried by another venue order, from another tool): the fill claims nothing, so the agent holds nothing.",
+      "evidence": "board path on made-up stored facts and a made-up order inventory; the database, the perps jobs, the venue and the keyed route are not executed",
+      "outcome": {
+        "served": true,
+        "available": true,
+        "perpRounds": [],
+        "positions": {
+          "success": true,
+          "publishedBuildId": "build_fixture_05",
+          "asOfMs": 1799748120000,
+          "spotAsOfMs": 1799749680000,
+          "perpsAsOfMs": 1799748120000,
+          "perpsSnapshotId": "ps1_8ce0dee6c71f881a63296844df11d814",
+          "perpsPartial": false,
+          "portfolioValueUsd": 0,
+          "portfolioPartial": false,
+          "hiddenDust": 0,
+          "unpriced": 0,
+          "positions": [],
+          "seq": 5
+        },
+        "totals": {
+          "realizedNetUsd": 0,
+          "wins": 0,
+          "losses": 0,
+          "counted": 0,
+          "perpsRealizedUsd": 0,
+          "perpsFundingUsd": 0,
+          "perpsFeesUsd": 0,
+          "perpsUnrealizedUsd": 0,
+          "perpsNetUsd": 0,
+          "perpsPartial": false,
+          "perpsAsOfMs": 1799748120000,
+          "perpsSnapshotId": "ps1_8ce0dee6c71f881a63296844df11d814"
+        }
+      }
+    },
+    {
+      "id": "reused-cloid-mcp",
+      "scenario": "reused-cloid",
+      "buildAt": "10:30",
+      "surface": "mcp",
+      "args": {
+        "profileId": "prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/positions",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "body": {
+          "success": true,
+          "publishedBuildId": "build_fixture_05",
+          "asOfMs": 1799748120000,
+          "spotAsOfMs": 1799749680000,
+          "perpsAsOfMs": 1799748120000,
+          "perpsSnapshotId": "ps1_8ce0dee6c71f881a63296844df11d814",
+          "perpsPartial": false,
+          "portfolioValueUsd": 0,
+          "portfolioPartial": false,
+          "hiddenDust": 0,
+          "unpriced": 0,
+          "positions": [],
+          "seq": 5
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "reused-cloid-sdk",
+      "scenario": "reused-cloid",
+      "buildAt": "10:30",
+      "surface": "sdk",
+      "args": {
+        "profileId": "prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/positions",
+          "credential": true
+        }
+      ],
+      "outcome": {
+        "body": {
+          "publishedBuildId": "build_fixture_05",
+          "asOfMs": 1799748120000,
+          "spotAsOfMs": 1799749680000,
+          "perpsAsOfMs": 1799748120000,
+          "perpsSnapshotId": "ps1_8ce0dee6c71f881a63296844df11d814",
+          "perpsPartial": false,
+          "portfolioValueUsd": 0,
+          "portfolioPartial": false,
+          "hiddenDust": 0,
+          "unpriced": 0,
+          "positions": [],
+          "seq": 5
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "reused-cloid-cli",
+      "scenario": "reused-cloid",
+      "buildAt": "10:30",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent positions prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/positions",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "lines": [
+          "Portfolio $0.00",
+          "Updated Jan 12 10:02Z",
+          "Perps as of Jan 12 10:02Z (certified hourly)",
+          "",
+          "No open positions."
+        ]
+      }
+    },
+    {
+      "id": "reused-cloid-cli-json",
+      "scenario": "reused-cloid",
+      "buildAt": "10:30",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent positions prof_0123456789abcdef --json"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/positions",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "body": {
+          "success": true,
+          "publishedBuildId": "build_fixture_05",
+          "asOfMs": 1799748120000,
+          "spotAsOfMs": 1799749680000,
+          "perpsAsOfMs": 1799748120000,
+          "perpsSnapshotId": "ps1_8ce0dee6c71f881a63296844df11d814",
+          "perpsPartial": false,
+          "portfolioValueUsd": 0,
+          "portfolioPartial": false,
+          "hiddenDust": 0,
+          "unpriced": 0,
+          "positions": [],
+          "seq": 5
+        }
+      }
+    },
+    {
+      "id": "owner-only-attribution",
+      "scenario": "owner-only",
+      "buildAt": "11:30",
+      "surface": "api-source",
+      "evidence": "Candle's attribution by order on the same made-up facts; not the database or the venue",
+      "outcome": {
+        "fills": [
+          {
+            "time": "09:20",
+            "reason": "no_order",
+            "holder": [
+              "not public"
+            ]
+          },
+          {
+            "time": "10:20",
+            "reason": "no_order",
+            "holder": [
+              "not public"
+            ]
+          }
+        ],
+        "partialEvents": []
+      }
+    },
+    {
+      "id": "owner-only-api",
+      "scenario": "owner-only",
+      "buildAt": "11:30",
+      "surface": "api-source",
+      "says": "The owner's own trades on the wallet and an agent order that never filled: the agent has no perps in its record, and none of the owner's fills appears.",
+      "evidence": "board path on made-up stored facts and a made-up order inventory; the database, the perps jobs, the venue and the keyed route are not executed",
+      "outcome": {
+        "served": true,
+        "available": true,
+        "perpRounds": [],
+        "positions": {
+          "success": true,
+          "publishedBuildId": "build_fixture_06",
+          "asOfMs": 1799751720000,
+          "spotAsOfMs": 1799753280000,
+          "perpsAsOfMs": 1799751720000,
+          "perpsSnapshotId": "ps1_161945021225d9ec5c8106d4406111dc",
+          "perpsPartial": false,
+          "portfolioValueUsd": 0,
+          "portfolioPartial": false,
+          "hiddenDust": 0,
+          "unpriced": 0,
+          "positions": [],
+          "seq": 6
+        },
+        "totals": {
+          "realizedNetUsd": 0,
+          "wins": 0,
+          "losses": 0,
+          "counted": 0,
+          "perpsRealizedUsd": 0,
+          "perpsFundingUsd": 0,
+          "perpsFeesUsd": 0,
+          "perpsUnrealizedUsd": 0,
+          "perpsNetUsd": 0,
+          "perpsPartial": false,
+          "perpsAsOfMs": 1799751720000,
+          "perpsSnapshotId": "ps1_161945021225d9ec5c8106d4406111dc"
+        }
+      }
+    },
+    {
+      "id": "owner-only-mcp",
+      "scenario": "owner-only",
+      "buildAt": "11:30",
+      "surface": "mcp",
+      "args": {
+        "profileId": "prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/positions",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "body": {
+          "success": true,
+          "publishedBuildId": "build_fixture_06",
+          "asOfMs": 1799751720000,
+          "spotAsOfMs": 1799753280000,
+          "perpsAsOfMs": 1799751720000,
+          "perpsSnapshotId": "ps1_161945021225d9ec5c8106d4406111dc",
+          "perpsPartial": false,
+          "portfolioValueUsd": 0,
+          "portfolioPartial": false,
+          "hiddenDust": 0,
+          "unpriced": 0,
+          "positions": [],
+          "seq": 6
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "owner-only-sdk",
+      "scenario": "owner-only",
+      "buildAt": "11:30",
+      "surface": "sdk",
+      "args": {
+        "profileId": "prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/positions",
+          "credential": true
+        }
+      ],
+      "outcome": {
+        "body": {
+          "publishedBuildId": "build_fixture_06",
+          "asOfMs": 1799751720000,
+          "spotAsOfMs": 1799753280000,
+          "perpsAsOfMs": 1799751720000,
+          "perpsSnapshotId": "ps1_161945021225d9ec5c8106d4406111dc",
+          "perpsPartial": false,
+          "portfolioValueUsd": 0,
+          "portfolioPartial": false,
+          "hiddenDust": 0,
+          "unpriced": 0,
+          "positions": [],
+          "seq": 6
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "owner-only-cli",
+      "scenario": "owner-only",
+      "buildAt": "11:30",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent positions prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/positions",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "lines": [
+          "Portfolio $0.00",
+          "Updated Jan 12 11:02Z",
+          "Perps as of Jan 12 11:02Z (certified hourly)",
+          "",
+          "No open positions."
+        ]
+      }
+    },
+    {
+      "id": "owner-only-cli-json",
+      "scenario": "owner-only",
+      "buildAt": "11:30",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent positions prof_0123456789abcdef --json"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/positions",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "body": {
+          "success": true,
+          "publishedBuildId": "build_fixture_06",
+          "asOfMs": 1799751720000,
+          "spotAsOfMs": 1799753280000,
+          "perpsAsOfMs": 1799751720000,
+          "perpsSnapshotId": "ps1_161945021225d9ec5c8106d4406111dc",
+          "perpsPartial": false,
+          "portfolioValueUsd": 0,
+          "portfolioPartial": false,
+          "hiddenDust": 0,
+          "unpriced": 0,
+          "positions": [],
+          "seq": 6
+        }
+      }
+    },
+    {
+      "id": "agent-not-public-attribution",
+      "scenario": "agent-not-public",
+      "buildAt": "11:30",
+      "surface": "api-source",
+      "evidence": "Candle's attribution by order on the same made-up facts; not the database or the venue",
+      "outcome": {
+        "fills": [
+          {
+            "time": "09:10",
+            "reason": "order",
+            "holder": [
+              "agent"
+            ]
+          },
+          {
+            "time": "10:10",
+            "reason": "order",
+            "holder": [
+              "agent"
+            ]
+          }
+        ],
+        "partialEvents": []
+      }
+    },
+    {
+      "id": "agent-not-public-api",
+      "scenario": "agent-not-public",
+      "buildAt": "11:30",
+      "surface": "api-source",
+      "says": "The same wallet for an agent that is not public (private, hidden or turned off): nothing is served.",
+      "evidence": "board path on made-up stored facts and a made-up order inventory; the database, the perps jobs, the venue and the keyed route are not executed",
+      "outcome": {
+        "served": false,
+        "available": null,
+        "perpRounds": [],
+        "positions": {
+          "success": true,
+          "publishedBuildId": "build_fixture_07",
+          "asOfMs": 1799753280000,
+          "spotAsOfMs": 1799753280000,
+          "perpsAsOfMs": null,
+          "perpsSnapshotId": null,
+          "perpsPartial": false,
+          "portfolioValueUsd": 0,
+          "portfolioPartial": false,
+          "hiddenDust": 0,
+          "unpriced": 0,
+          "positions": [],
+          "seq": 7
+        },
+        "totals": {
+          "realizedNetUsd": 0,
+          "wins": 0,
+          "losses": 0,
+          "counted": 0
+        }
+      }
+    },
+    {
+      "id": "agent-not-public-mcp",
+      "scenario": "agent-not-public",
+      "buildAt": "11:30",
+      "surface": "mcp",
+      "args": {
+        "profileId": "prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/positions",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "body": {
+          "success": true,
+          "publishedBuildId": "build_fixture_07",
+          "asOfMs": 1799753280000,
+          "spotAsOfMs": 1799753280000,
+          "perpsAsOfMs": null,
+          "perpsSnapshotId": null,
+          "perpsPartial": false,
+          "portfolioValueUsd": 0,
+          "portfolioPartial": false,
+          "hiddenDust": 0,
+          "unpriced": 0,
+          "positions": [],
+          "seq": 7
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "agent-not-public-sdk",
+      "scenario": "agent-not-public",
+      "buildAt": "11:30",
+      "surface": "sdk",
+      "args": {
+        "profileId": "prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/positions",
+          "credential": true
+        }
+      ],
+      "outcome": {
+        "body": {
+          "publishedBuildId": "build_fixture_07",
+          "asOfMs": 1799753280000,
+          "spotAsOfMs": 1799753280000,
+          "perpsAsOfMs": null,
+          "perpsSnapshotId": null,
+          "perpsPartial": false,
+          "portfolioValueUsd": 0,
+          "portfolioPartial": false,
+          "hiddenDust": 0,
+          "unpriced": 0,
+          "positions": [],
+          "seq": 7
+        },
+        "isError": false
+      }
+    },
+    {
+      "id": "agent-not-public-cli",
+      "scenario": "agent-not-public",
+      "buildAt": "11:30",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent positions prof_0123456789abcdef"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/positions",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "lines": [
+          "Portfolio $0.00",
+          "Updated Jan 12 11:28Z",
+          "",
+          "No open positions."
+        ]
+      }
+    },
+    {
+      "id": "agent-not-public-cli-json",
+      "scenario": "agent-not-public",
+      "buildAt": "11:30",
+      "surface": "cli",
+      "args": {
+        "command": "candle agent positions prof_0123456789abcdef --json"
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/records/prof_0123456789abcdef/positions",
+          "credential": false
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "body": {
+          "success": true,
+          "publishedBuildId": "build_fixture_07",
+          "asOfMs": 1799753280000,
+          "spotAsOfMs": 1799753280000,
+          "perpsAsOfMs": null,
+          "perpsSnapshotId": null,
+          "perpsPartial": false,
+          "portfolioValueUsd": 0,
+          "portfolioPartial": false,
+          "hiddenDust": 0,
+          "unpriced": 0,
+          "positions": [],
+          "seq": 7
+        }
+      }
+    },
+    {
+      "id": "docs-agent-trading",
+      "scenario": "docs",
+      "surface": "docs",
+      "args": {
+        "files": [
+          "docs/agent-trading.md",
+          "apps/docs/src/content/docs/developers/agent-trading.md",
+          "apps/frontend/public/docs/agent-trading.md"
+        ]
+      },
+      "outcome": {
+        "text": "#### Which perps count for an agent: by order, not by wallet\n\nAn agent's perps record holds the fills of the Hyperliquid orders its own keys built through\nCandle, matched by client order id (`cloid`): opens, closes, Candle modifies (the replacement\norder carries its own cloid) and take-profit / stop-loss legs (a triggered leg keeps its cloid).\nOn an EVM TEE wallet every fill is the bound key's, as before; where a key's order rests across a\nrebind and fills after it, the order's key wins over the binding period.\n\nPerps traded from the owner's **embedded wallet** (`walletId: \"embedded\"`) count the same way.\nOne embedded wallet can carry the owner's own trades and several agents' orders, so the record\nnever credits the wallet as a whole: a fill no Candle order of an agent key claims (the owner's\nown trade, another tool, an order modified outside Candle) is in no public figure, rank, round,\nchart or position. No fill counts for two agents. Each agent keeps its own position in a coin it\nshares with the owner or another agent: its own size and average entry, its unrealized P&L at the\nvenue's mark, and its share of each hour's funding by its share of the size. A liquidation,\nauto-deleveraging or settlement (no Candle order) is shared among the holders of the position by\ntheir sizes. Where a split cannot be exact (holders on opposite sides of a coin, a forced fill\nshared, an unmatched fill while the agent is in the coin, funding whose size disagrees, a gap in\nthe venue's fill history), the round carries `partial: true` and `partialReasons`, and the window\nis `perpsPartial`. An embedded wallet's round has `hash: null` and its position rows have\n`liquidationPx` and `liquidationDistance` `null` unless the agent holds the whole position: no\npublic answer names the embedded wallet or shows the owner's own trades. Those trades show only\nin the owner's console.\n\n`series` contains the newest 2,000 realized points, oldest first, and `seriesTruncated` says\nwhether older points were omitted. `scannedTrades` and `truncated` describe the stored\nrefresh's coverage. Before the first refresh, a newly published profile returns an empty record."
+      }
+    }
+  ]
+}

@@ -188,7 +188,9 @@ const STAKE_NOTE = "From the embedded wallet: candle_stake, candle_unstake or ca
 const LP_HELD = "Candle serves LP now (LP_ENABLED, on since 2026-11-06), but no key preset grants lp:write yet, which these cards need. candle-harness doctor says where LP stands."
 const STAKE_ROW = (stops: boolean): CardRow => ({ kind: "stake", idFlag: "--client-stake-id", readBack: "rerun", stops, wallet: "tee" })
 /** Why own-balance funding on Hyperliquid is still coming: it signs a typed action, which a card doesn't yet run. */
-export const TRANSFER_LATER = "Moving USDC between this wallet's own main perps and a builder dex isn't a card in the Candle Harness yet. In your own terminal, candle perps transfer --to-dex or --from-dex shows the amount and both balances before it asks, and only ever moves money to the wallet itself."
+/** The CLI release that publishes the transfer commands (monorepo #3977). The draft harness PR that pins this waits on npm carrying it. */
+export const TRANSFER_CLI_VERSION = "0.13.31"
+export const TRANSFER_LATER = `Moving USDC between this wallet's own main perps and a builder dex isn't a card in the Candle Harness yet. In your own terminal (CLI ${TRANSFER_CLI_VERSION} or newer), candle perps transfer --to-dex or --from-dex shows the amount and both balances before it asks, and only ever moves money to the wallet itself.`
 
 /** Why a Hyperliquid spot write is still coming: the CLI shows the pair, Hyperliquid's spot fee and Candle's builder fee (sells only) before its own confirm. */
 export const SPOT_LATER = "Hyperliquid spot orders aren't cards in the Candle Harness yet. In your own terminal the CLI shows the pair, Hyperliquid's spot fee and Candle's builder fee (on sells only) before it asks."
@@ -304,7 +306,11 @@ const ROWS: readonly RowInput[] = [
   r("lp claim", "card", "card", "agent", { card: LP_ROW(false) }),
   // Perps: reads through Candle's MCP tools and the statuses; what lowers risk is a card; opening risk and moving funds come later.
   mcp("perps markets", "candle_perps_markets"),
-  mcp("perps market", "candle_perps_market"),
+  // `--agents` is the public read of the market's figures and the published Candle agents in it: candle_get_perp_market.
+  r("perps market", "mcp", "cli", "agent", {
+    mcpTool: "candle_perps_market",
+    note: "Use candle_perps_market for the market's terms, or candle_get_perp_market (--agents) for its figures and the public Candle agents long and short in it: Candle's own tools, and faster.",
+  }),
   mcp("perps book", "candle_perps_book"),
   mcp("perps candles", "candle_perps_candles"),
   mcp("perps orders", "candle_perps_orders"),
@@ -378,9 +384,8 @@ const ROWS: readonly RowInput[] = [
     via: "candle_update_profile",
     note: "Use candle_update_profile: a one-press card, public. Its avatar and banner take only an uploads.candle.tv URL: for an image at another https address, use candle_upload_profile_image (its own card); for a file in your research folder, upload it with candle image upload first, then pass its URL.",
   }),
-  // A published agent's open positions (0.13.9), keyless.
+  // A published agent's open positions (0.13.9) and measured record (0.13.35), keyless.
   mcp("agent positions", "candle_get_agent_positions"),
-  // One published agent's measured record, its swaps and closed perp rounds in one list: a keyless read.
   mcp("agent record", "candle_get_agent_record"),
   mcp("agent round", "candle_get_agent_perp_round"),
   mcp("agent post", "candle_list_agent_posts"),
@@ -477,6 +482,14 @@ const ROWS: readonly RowInput[] = [
   r("token about", "read", "cli", "agent"),
   r("token history", "read", "cli", "agent"),
   r("token comments", "read", "cli", "agent"),
+  // A Hood holder exit (0.13.34): without a flag it reads where a holder stands on one curve; --dry-run reads
+  // what a run would do. --recover, --enter-recovery and --claim-team move funds (approve, then redeem) from the
+  // account's wallet, and no card carries them yet: a funds-out row, later.
+  r("token exit", "read", "cli", "agent", {
+    takes: 1,
+    byFlags: (flags) => (flags.has("--dry-run") ? { rule: "read", route: "cli" } : ["--recover", "--enter-recovery", "--claim-team"].some((f) => flags.has(f)) ? { rule: "funds-out", route: "later" } : undefined),
+    partly: "--recover, --enter-recovery and --claim-team: coming",
+  }),
   // The creator's edit of a token's description and links (0.13.9), under launch:write, which Write holds.
   r("token edit", "card", "card", "agent", {
     via: "candle_token_edit",

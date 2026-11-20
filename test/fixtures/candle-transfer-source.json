@@ -1,12 +1,12 @@
 {
-  "about": "Offline own-balance transfer contracts (BE-3765, SendAsset only: main perps <-> a builder dex; perps <-> spot is BE-3864 and not covered) from exact merged source. check rows run the transfer check through its SDK, MCP and CLI copies, which agree; cli rows run `candle perps transfer` with an ephemeral in-memory key, declining at the prompt or stopping before the relay signs; mcp and sdk rows run candle_perps_transfer and perpsTransfer() against response stubs. API refusals are response stubs carrying the route's own codes; the keyed API route is not executed. All addresses are made up. No funded account, signature, submission or deployed behavior is claimed.",
+  "about": "Offline own-balance transfer contracts (BE-3765, SendAsset only: main perps <-> a builder dex; perps <-> spot is BE-3864 and not covered) from exact merged source. check rows run the transfer check through its SDK, MCP and CLI copies, which agree; cli rows run `candle perps transfer` with an ephemeral in-memory key, declining at the prompt or stopping before the relay signs, except the full-flow and read-back rows (BE-3910), where the recorder itself answers the relay, the venue and the acknowledgement, and nothing is signed with a real key; mcp and sdk rows run candle_perps_transfer and perpsTransfer() against response stubs. API refusals are response stubs carrying the route's own codes; the keyed API route is not executed. All addresses are made up. No funded account, signature, submission or deployed behavior is claimed.",
   "source": {
     "repo": "candledottv/candle-monorepo",
-    "commit": "36d4bf2642244e82deaa690d8d1277d60d8b9021",
+    "commit": "cccd02f77719331cb0bcb24d08e3cf6a77fbf805",
     "versions": {
-      "cli": "0.13.32",
-      "mcp": "0.10.37",
-      "sdk": "0.6.26"
+      "cli": "0.13.31",
+      "mcp": "0.10.36",
+      "sdk": "0.6.25"
     },
     "transferCheck": {
       "files": [
@@ -1137,6 +1137,249 @@
       "outcome": {
         "exitCode": 1,
         "code": "PERPS_TRANSFER_NOTHING_TO_MOVE"
+      }
+    },
+    {
+      "id": "cli-to-dex-full-flow-synthetic-venue",
+      "surface": "cli",
+      "evidence": "stand-in: the relay and the venue are answered by the recorder; nothing is signed with a real key",
+      "args": {
+        "argv": [
+          "--to-dex",
+          "xyz",
+          "5",
+          "--id",
+          "t1",
+          "--wallet",
+          "perps",
+          "--yes"
+        ]
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/trading"
+        },
+        {
+          "method": "POST",
+          "host": "api.test",
+          "path": "/api/v1/agent/perps/transfer",
+          "body": {
+            "clientTransferId": "t1",
+            "mode": "toDex",
+            "dex": "xyz",
+            "amountUsdc": "5",
+            "walletId": "wallet"
+          }
+        },
+        {
+          "method": "POST",
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/wallet/sign"
+        },
+        {
+          "method": "POST",
+          "host": "api.hyperliquid.xyz",
+          "path": "/exchange"
+        },
+        {
+          "method": "POST",
+          "host": "api.test",
+          "path": "/api/v1/agent/perps/transfer/submitted"
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "notice": "Moved 5 USDC: Main perps -> builder dex xyz."
+      }
+    },
+    {
+      "id": "cli-from-dex-all-full-flow-synthetic-venue",
+      "surface": "cli",
+      "evidence": "stand-in: the relay and the venue are answered by the recorder; nothing is signed with a real key",
+      "args": {
+        "argv": [
+          "--from-dex",
+          "xyz",
+          "--all",
+          "--id",
+          "t3",
+          "--wallet",
+          "perps",
+          "--yes"
+        ]
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/trading"
+        },
+        {
+          "method": "POST",
+          "host": "api.test",
+          "path": "/api/v1/agent/perps/transfer",
+          "body": {
+            "clientTransferId": "t3",
+            "mode": "fromDex",
+            "dex": "xyz",
+            "all": true,
+            "walletId": "wallet"
+          }
+        },
+        {
+          "method": "POST",
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/wallet/sign"
+        },
+        {
+          "method": "POST",
+          "host": "api.hyperliquid.xyz",
+          "path": "/exchange"
+        },
+        {
+          "method": "POST",
+          "host": "api.test",
+          "path": "/api/v1/agent/perps/transfer/submitted"
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "notice": "Moved 5 USDC: builder dex xyz -> Main perps."
+      }
+    },
+    {
+      "id": "cli-status-read-back",
+      "surface": "cli",
+      "evidence": "response-stub: the read is the API route's own shape; the keyed route is not executed",
+      "args": {
+        "argv": [
+          "status",
+          "t1"
+        ]
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "host": "api.test",
+          "path": "/api/v1/agent/perps/transfer/t1"
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "body": {
+          "success": true,
+          "id": "t1",
+          "status": "submitted",
+          "amountUsdc": "5",
+          "mode": "toDex"
+        }
+      }
+    },
+    {
+      "id": "cli-positions-read-back",
+      "surface": "cli",
+      "evidence": "stand-in: the direct Hyperliquid reads are answered by the recorder and fail closed; the balance line is the API route's own",
+      "args": {
+        "argv": [
+          "positions",
+          "--wallet",
+          "perps"
+        ]
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/trading"
+        },
+        {
+          "method": "GET",
+          "host": "api.test",
+          "path": "/api/v1/agent/perps/positions"
+        },
+        {
+          "method": "GET",
+          "host": "api.test",
+          "path": "/api/v1/agent/keys/self/limits"
+        },
+        {
+          "method": "POST",
+          "host": "api.hyperliquid.xyz",
+          "path": "/info"
+        },
+        {
+          "method": "POST",
+          "host": "api.hyperliquid.xyz",
+          "path": "/info"
+        },
+        {
+          "method": "POST",
+          "host": "api.hyperliquid.xyz",
+          "path": "/info"
+        },
+        {
+          "method": "POST",
+          "host": "api.hyperliquid.xyz",
+          "path": "/info"
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "withdrawable": "Withdrawable now 12 USDC"
+      }
+    },
+    {
+      "id": "cli-withdraw-sweep-read-back",
+      "surface": "cli",
+      "evidence": "stand-in: the venue and the acknowledgement are answered by the recorder; the withdrawal never reaches a quote, so the vault gate never opens",
+      "args": {
+        "argv": [
+          "5",
+          "--to",
+          "hood",
+          "--id",
+          "w1",
+          "--wallet",
+          "perps"
+        ]
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/trading"
+        },
+        {
+          "method": "GET",
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/trading"
+        },
+        {
+          "method": "POST",
+          "host": "api.test",
+          "path": "/api/v1/agent/perps/withdraw"
+        },
+        {
+          "method": "POST",
+          "host": "api.hyperliquid.xyz",
+          "path": "/exchange"
+        },
+        {
+          "method": "POST",
+          "host": "api.test",
+          "path": "/api/v1/agent/perps/transfer/submitted"
+        },
+        {
+          "method": "POST",
+          "host": "api.test",
+          "path": "/api/v1/agent/perps/withdraw"
+        }
+      ],
+      "outcome": {
+        "exitCode": 0,
+        "retained": "Retained balances [{\"dex\":\"xyz\",\"amountUsdc\":\"40\"}]"
       }
     },
     {
