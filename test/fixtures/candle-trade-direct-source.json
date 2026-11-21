@@ -1,0 +1,1126 @@
+{
+  "about": "Offline contracts for candle_trade skipping its market read when the server converts the amount (BE-3924), from exact source. mcp rows call the registered candle_trade tool through an in-memory MCP client; its requests are answered by stand-ins for Candle's API. The stand-in build converts amountDecimal with Candle's own decimalAmountToRaw at a made-up asset's scale (a sell in the token's 6 decimals, a buy in the quote asset's 9), and every refusal is the API's own errorBody and status, in words the route-words row finds in the route's source (a spend cap's words are a stand-in). api-source rows run the server's conversion beside the MCP's own decimalToRaw. The route, the database, the planner and the signer are not run; every fetch is intercepted, nothing is signed, and every address and signature is made up.",
+  "source": {
+    "repo": "candledottv/candle-monorepo",
+    "commit": "1774b96b49afda56dd1c97b52f8b12263c468b51",
+    "versions": {
+      "cli": "0.13.45",
+      "mcp": "0.10.45",
+      "sdk": "0.6.36"
+    },
+    "files": [
+      "packages/mcp/src/orchestrate.ts",
+      "packages/mcp/src/tools.ts",
+      "packages/mcp/src/convert.ts",
+      "apps/api/src/lib/decimal-amount.ts",
+      "apps/api/src/lib/launch-errors.ts",
+      "apps/api/src/routes/trade-agent.ts"
+    ]
+  },
+  "rows": [
+    {
+      "id": "fast-buy",
+      "scenario": "fast-path",
+      "surface": "mcp",
+      "says": "A live buy by amount: one build with amountDecimal, no market read; the server converts 0.5 at the quote asset's 9 decimals.",
+      "evidence": "stand-in build: Candle's decimalAmountToRaw converts the decimal at the made-up asset's scale",
+      "args": {
+        "mint": "<mint>",
+        "side": "buy",
+        "amount": "0.5",
+        "clientTradeId": "trade-fast-buy"
+      },
+      "world": {
+        "api": "current",
+        "market": "candle"
+      },
+      "requests": [
+        {
+          "n": 1,
+          "method": "POST",
+          "path": "/api/v1/trade/agent/build",
+          "key": true,
+          "client": "mcp/0.10.45",
+          "body": {
+            "clientTradeId": "trade-fast-buy",
+            "mint": "<mint>",
+            "side": "buy",
+            "amountDecimal": "0.5",
+            "payer": {
+              "type": "main"
+            }
+          }
+        }
+      ],
+      "reply": {
+        "isError": false,
+        "text": "{\"clientTradeId\":\"trade-fast-buy\",\"resolved\":{\"amountDecimal\":\"0.5\"},\"api\":{\"success\":true,\"clientTradeId\":\"trade-fast-buy\",\"side\":\"buy\",\"status\":\"executed\",\"signature\":\"<signature>\",\"amountRaw\":\"500000000\"}}"
+      }
+    },
+    {
+      "id": "fast-buy-paper",
+      "scenario": "fast-path",
+      "surface": "mcp",
+      "says": "A paper buy by amount: the same one build, marked paper.",
+      "evidence": "stand-in build: Candle's decimalAmountToRaw converts the decimal at the made-up asset's scale",
+      "args": {
+        "mint": "<mint>",
+        "side": "buy",
+        "amount": "0.5",
+        "paper": true,
+        "clientTradeId": "trade-fast-buy-paper"
+      },
+      "world": {
+        "api": "current",
+        "market": "candle"
+      },
+      "requests": [
+        {
+          "n": 1,
+          "method": "POST",
+          "path": "/api/v1/trade/agent/build",
+          "key": true,
+          "client": "mcp/0.10.45",
+          "body": {
+            "clientTradeId": "trade-fast-buy-paper",
+            "mint": "<mint>",
+            "side": "buy",
+            "amountDecimal": "0.5",
+            "payer": {
+              "type": "main"
+            },
+            "paper": true
+          }
+        }
+      ],
+      "reply": {
+        "isError": false,
+        "text": "{\"clientTradeId\":\"trade-fast-buy-paper\",\"resolved\":{\"amountDecimal\":\"0.5\"},\"api\":{\"success\":true,\"clientTradeId\":\"trade-fast-buy-paper\",\"side\":\"buy\",\"status\":\"paper\",\"paper\":true,\"amountRaw\":\"500000000\"}}"
+      }
+    },
+    {
+      "id": "fast-sell-paper",
+      "scenario": "fast-path",
+      "surface": "mcp",
+      "says": "A paper sell by amount: one build with amountDecimal, converted at the token's 6 decimals; the paper book is not read.",
+      "evidence": "stand-in build: Candle's decimalAmountToRaw converts the decimal at the made-up asset's scale",
+      "args": {
+        "mint": "<mint>",
+        "side": "sell",
+        "amount": "2.5",
+        "paper": true,
+        "clientTradeId": "trade-fast-sell-paper"
+      },
+      "world": {
+        "api": "current",
+        "market": "candle"
+      },
+      "requests": [
+        {
+          "n": 1,
+          "method": "POST",
+          "path": "/api/v1/trade/agent/build",
+          "key": true,
+          "client": "mcp/0.10.45",
+          "body": {
+            "clientTradeId": "trade-fast-sell-paper",
+            "mint": "<mint>",
+            "side": "sell",
+            "amountDecimal": "2.5",
+            "payer": {
+              "type": "main"
+            },
+            "paper": true
+          }
+        }
+      ],
+      "reply": {
+        "isError": false,
+        "text": "{\"clientTradeId\":\"trade-fast-sell-paper\",\"resolved\":{\"amountDecimal\":\"2.5\"},\"api\":{\"success\":true,\"clientTradeId\":\"trade-fast-sell-paper\",\"side\":\"sell\",\"status\":\"paper\",\"paper\":true,\"amountRaw\":\"2500000\"}}"
+      }
+    },
+    {
+      "id": "fast-buy-hide",
+      "scenario": "fast-path",
+      "surface": "mcp",
+      "says": "A hidden buy by amount: the same one build, hide sent and echoed.",
+      "evidence": "stand-in build: Candle's decimalAmountToRaw converts the decimal at the made-up asset's scale",
+      "args": {
+        "mint": "<mint>",
+        "side": "buy",
+        "amount": "0.5",
+        "hide": true,
+        "clientTradeId": "trade-fast-buy-hide"
+      },
+      "world": {
+        "api": "current",
+        "market": "candle"
+      },
+      "requests": [
+        {
+          "n": 1,
+          "method": "POST",
+          "path": "/api/v1/trade/agent/build",
+          "key": true,
+          "client": "mcp/0.10.45",
+          "body": {
+            "clientTradeId": "trade-fast-buy-hide",
+            "mint": "<mint>",
+            "side": "buy",
+            "amountDecimal": "0.5",
+            "payer": {
+              "type": "main"
+            },
+            "hide": true
+          }
+        }
+      ],
+      "reply": {
+        "isError": false,
+        "text": "{\"clientTradeId\":\"trade-fast-buy-hide\",\"resolved\":{\"amountDecimal\":\"0.5\"},\"api\":{\"success\":true,\"clientTradeId\":\"trade-fast-buy-hide\",\"side\":\"buy\",\"status\":\"executed\",\"signature\":\"<signature>\",\"amountRaw\":\"500000000\",\"hide\":true}}"
+      }
+    },
+    {
+      "id": "fast-buy-hood",
+      "scenario": "fast-path",
+      "surface": "mcp",
+      "says": "A buy of a Hood token by amount: one build with amountDecimal and no market read, converted at USDG's 6 decimals, so the MCP no longer reads the token's market to size it.",
+      "evidence": "stand-in build: Candle's decimalAmountToRaw converts the decimal at the made-up asset's scale",
+      "args": {
+        "mint": "<hood-token>",
+        "side": "buy",
+        "amount": "10",
+        "quoteAsset": "usdg",
+        "clientTradeId": "trade-fast-buy-hood"
+      },
+      "world": {
+        "api": "current",
+        "market": "candle"
+      },
+      "requests": [
+        {
+          "n": 1,
+          "method": "POST",
+          "path": "/api/v1/trade/agent/build",
+          "key": true,
+          "client": "mcp/0.10.45",
+          "body": {
+            "clientTradeId": "trade-fast-buy-hood",
+            "mint": "<hood-token>",
+            "side": "buy",
+            "amountDecimal": "10",
+            "payer": {
+              "type": "main"
+            },
+            "quoteAsset": "usdg"
+          }
+        }
+      ],
+      "reply": {
+        "isError": false,
+        "text": "{\"clientTradeId\":\"trade-fast-buy-hood\",\"resolved\":{\"amountDecimal\":\"10\"},\"api\":{\"success\":true,\"clientTradeId\":\"trade-fast-buy-hood\",\"side\":\"buy\",\"status\":\"executed\",\"signature\":\"<signature>\",\"amountRaw\":\"10000000\"}}"
+      }
+    },
+    {
+      "id": "fallback-old-api",
+      "scenario": "fallback",
+      "surface": "mcp",
+      "says": "An API that predates amountDecimal ignores it and asks for amountRaw: the MCP reads the market and builds again with amountRaw and amountDecimals, same clientTradeId.",
+      "args": {
+        "mint": "<mint>",
+        "side": "buy",
+        "amount": "0.5",
+        "clientTradeId": "trade-old-api"
+      },
+      "world": {
+        "api": "old",
+        "market": "candle"
+      },
+      "requests": [
+        {
+          "n": 1,
+          "method": "POST",
+          "path": "/api/v1/trade/agent/build",
+          "key": true,
+          "client": "mcp/0.10.45",
+          "body": {
+            "clientTradeId": "trade-old-api",
+            "mint": "<mint>",
+            "side": "buy",
+            "amountDecimal": "0.5",
+            "payer": {
+              "type": "main"
+            }
+          }
+        },
+        {
+          "n": 2,
+          "method": "GET",
+          "path": "/api/v1/markets/solana/<mint>",
+          "key": false,
+          "client": "mcp/0.10.45"
+        },
+        {
+          "n": 3,
+          "method": "POST",
+          "path": "/api/v1/trade/agent/build",
+          "key": true,
+          "client": "mcp/0.10.45",
+          "body": {
+            "clientTradeId": "trade-old-api",
+            "mint": "<mint>",
+            "side": "buy",
+            "amountRaw": "500000000",
+            "amountDecimals": 9,
+            "payer": {
+              "type": "main"
+            }
+          }
+        }
+      ],
+      "reply": {
+        "isError": false,
+        "text": "{\"clientTradeId\":\"trade-old-api\",\"resolved\":{\"amountDecimal\":\"0.5\",\"decimals\":9,\"amountRaw\":\"500000000\"},\"api\":{\"success\":true,\"clientTradeId\":\"trade-old-api\",\"side\":\"buy\",\"status\":\"executed\",\"signature\":\"<signature>\",\"amountRaw\":\"500000000\"}}"
+      }
+    },
+    {
+      "id": "fallback-no-decimals",
+      "scenario": "fallback",
+      "surface": "mcp",
+      "says": "The server can't name the quote asset's decimals (QUOTE_UNAVAILABLE on amountDecimal, retryable): retried through the market read, same id.",
+      "args": {
+        "mint": "<mint>",
+        "side": "buy",
+        "amount": "0.5",
+        "clientTradeId": "trade-no-decimals"
+      },
+      "world": {
+        "api": "current",
+        "decimalRefusal": "QUOTE_UNAVAILABLE",
+        "market": "candle"
+      },
+      "requests": [
+        {
+          "n": 1,
+          "method": "POST",
+          "path": "/api/v1/trade/agent/build",
+          "key": true,
+          "client": "mcp/0.10.45",
+          "body": {
+            "clientTradeId": "trade-no-decimals",
+            "mint": "<mint>",
+            "side": "buy",
+            "amountDecimal": "0.5",
+            "payer": {
+              "type": "main"
+            }
+          }
+        },
+        {
+          "n": 2,
+          "method": "GET",
+          "path": "/api/v1/markets/solana/<mint>",
+          "key": false,
+          "client": "mcp/0.10.45"
+        },
+        {
+          "n": 3,
+          "method": "POST",
+          "path": "/api/v1/trade/agent/build",
+          "key": true,
+          "client": "mcp/0.10.45",
+          "body": {
+            "clientTradeId": "trade-no-decimals",
+            "mint": "<mint>",
+            "side": "buy",
+            "amountRaw": "500000000",
+            "amountDecimals": 9,
+            "payer": {
+              "type": "main"
+            }
+          }
+        }
+      ],
+      "reply": {
+        "isError": false,
+        "text": "{\"clientTradeId\":\"trade-no-decimals\",\"resolved\":{\"amountDecimal\":\"0.5\",\"decimals\":9,\"amountRaw\":\"500000000\"},\"api\":{\"success\":true,\"clientTradeId\":\"trade-no-decimals\",\"side\":\"buy\",\"status\":\"executed\",\"signature\":\"<signature>\",\"amountRaw\":\"500000000\"}}"
+      }
+    },
+    {
+      "id": "fallback-feed-down",
+      "scenario": "fallback",
+      "surface": "mcp",
+      "says": "The server can't check the mint's chain against the feed (QUOTE_UNAVAILABLE on amountDecimal, retryable): retried through the market read, which decides.",
+      "args": {
+        "mint": "<mint>",
+        "side": "buy",
+        "amount": "0.5",
+        "clientTradeId": "trade-feed-down"
+      },
+      "world": {
+        "api": "current",
+        "decimalRefusal": "QUOTE_UNAVAILABLE",
+        "market": "candle"
+      },
+      "requests": [
+        {
+          "n": 1,
+          "method": "POST",
+          "path": "/api/v1/trade/agent/build",
+          "key": true,
+          "client": "mcp/0.10.45",
+          "body": {
+            "clientTradeId": "trade-feed-down",
+            "mint": "<mint>",
+            "side": "buy",
+            "amountDecimal": "0.5",
+            "payer": {
+              "type": "main"
+            }
+          }
+        },
+        {
+          "n": 2,
+          "method": "GET",
+          "path": "/api/v1/markets/solana/<mint>",
+          "key": false,
+          "client": "mcp/0.10.45"
+        },
+        {
+          "n": 3,
+          "method": "POST",
+          "path": "/api/v1/trade/agent/build",
+          "key": true,
+          "client": "mcp/0.10.45",
+          "body": {
+            "clientTradeId": "trade-feed-down",
+            "mint": "<mint>",
+            "side": "buy",
+            "amountRaw": "500000000",
+            "amountDecimals": 9,
+            "payer": {
+              "type": "main"
+            }
+          }
+        }
+      ],
+      "reply": {
+        "isError": false,
+        "text": "{\"clientTradeId\":\"trade-feed-down\",\"resolved\":{\"amountDecimal\":\"0.5\",\"decimals\":9,\"amountRaw\":\"500000000\"},\"api\":{\"success\":true,\"clientTradeId\":\"trade-feed-down\",\"side\":\"buy\",\"status\":\"executed\",\"signature\":\"<signature>\",\"amountRaw\":\"500000000\"}}"
+      }
+    },
+    {
+      "id": "fallback-old-api-paper-sell",
+      "scenario": "fallback",
+      "surface": "mcp",
+      "says": "A paper sell by amount on an API that predates amountDecimal: the market read gives the token's 6 decimals, and the second build is paper with amountRaw.",
+      "args": {
+        "mint": "<mint>",
+        "side": "sell",
+        "amount": "2.5",
+        "paper": true,
+        "clientTradeId": "trade-old-api-sell"
+      },
+      "world": {
+        "api": "old",
+        "market": "candle"
+      },
+      "requests": [
+        {
+          "n": 1,
+          "method": "POST",
+          "path": "/api/v1/trade/agent/build",
+          "key": true,
+          "client": "mcp/0.10.45",
+          "body": {
+            "clientTradeId": "trade-old-api-sell",
+            "mint": "<mint>",
+            "side": "sell",
+            "amountDecimal": "2.5",
+            "payer": {
+              "type": "main"
+            },
+            "paper": true
+          }
+        },
+        {
+          "n": 2,
+          "method": "GET",
+          "path": "/api/v1/markets/solana/<mint>",
+          "key": false,
+          "client": "mcp/0.10.45"
+        },
+        {
+          "n": 3,
+          "method": "POST",
+          "path": "/api/v1/trade/agent/build",
+          "key": true,
+          "client": "mcp/0.10.45",
+          "body": {
+            "clientTradeId": "trade-old-api-sell",
+            "mint": "<mint>",
+            "side": "sell",
+            "amountRaw": "2500000",
+            "amountDecimals": 6,
+            "payer": {
+              "type": "main"
+            },
+            "paper": true
+          }
+        }
+      ],
+      "reply": {
+        "isError": false,
+        "text": "{\"clientTradeId\":\"trade-old-api-sell\",\"resolved\":{\"amountDecimal\":\"2.5\",\"decimals\":6,\"amountRaw\":\"2500000\"},\"api\":{\"success\":true,\"clientTradeId\":\"trade-old-api-sell\",\"side\":\"sell\",\"status\":\"paper\",\"paper\":true,\"amountRaw\":\"2500000\"}}"
+      }
+    },
+    {
+      "id": "fallback-chain-mismatch",
+      "scenario": "fallback",
+      "surface": "mcp",
+      "says": "A mint indexed on another chain: the build refuses on the chain_mismatch: prefix, the MCP retries through the market read, and relays the read's MARKET_NOT_FOUND with its discovery hint. Nothing is built twice.",
+      "evidence": "stand-in market refusal in the API's errorBody envelope, with the route's reason and docs path",
+      "args": {
+        "mint": "<mint>",
+        "side": "buy",
+        "amount": "0.5",
+        "clientTradeId": "trade-chain-mismatch"
+      },
+      "world": {
+        "api": "current",
+        "decimalRefusal": "VALIDATION_FAILED",
+        "market": "chain-mismatch"
+      },
+      "requests": [
+        {
+          "n": 1,
+          "method": "POST",
+          "path": "/api/v1/trade/agent/build",
+          "key": true,
+          "client": "mcp/0.10.45",
+          "body": {
+            "clientTradeId": "trade-chain-mismatch",
+            "mint": "<mint>",
+            "side": "buy",
+            "amountDecimal": "0.5",
+            "payer": {
+              "type": "main"
+            }
+          }
+        },
+        {
+          "n": 2,
+          "method": "GET",
+          "path": "/api/v1/markets/solana/<mint>",
+          "key": false,
+          "client": "mcp/0.10.45"
+        }
+      ],
+      "reply": {
+        "isError": true,
+        "text": "{\"clientTradeId\":\"trade-chain-mismatch\",\"success\":false,\"api\":{\"success\":false,\"error\":{\"code\":\"MARKET_NOT_FOUND\",\"message\":\"No market for this mint on solana (stand-in words); it is indexed on hood\",\"retryable\":false,\"docsPath\":\"developers/market-state\",\"discovery\":{\"chain\":\"hood\"},\"routing\":{\"reason\":\"chain_mismatch\"}}}}"
+      }
+    },
+    {
+      "id": "relayed-buy-precision",
+      "scenario": "relayed",
+      "surface": "mcp",
+      "says": "A buy with more fraction digits than the quote asset's 9: Candle's conversion refuses it (VALIDATION_FAILED on amountDecimal), and nothing is truncated.",
+      "args": {
+        "mint": "<mint>",
+        "side": "buy",
+        "amount": "0.1234567891",
+        "clientTradeId": "trade-precision-buy"
+      },
+      "world": {
+        "api": "current",
+        "market": "candle"
+      },
+      "requests": [
+        {
+          "n": 1,
+          "method": "POST",
+          "path": "/api/v1/trade/agent/build",
+          "key": true,
+          "client": "mcp/0.10.45",
+          "body": {
+            "clientTradeId": "trade-precision-buy",
+            "mint": "<mint>",
+            "side": "buy",
+            "amountDecimal": "0.1234567891",
+            "payer": {
+              "type": "main"
+            }
+          }
+        }
+      ],
+      "reply": {
+        "isError": true,
+        "text": "{\"clientTradeId\":\"trade-precision-buy\",\"resolved\":{\"amountDecimal\":\"0.1234567891\"},\"api\":{\"success\":false,\"error\":{\"code\":\"VALIDATION_FAILED\",\"message\":\"amountDecimal \\\"0.1234567891\\\" has more fraction digits than the asset's 9 decimals\",\"field\":\"amountDecimal\",\"retryable\":false}}}"
+      }
+    },
+    {
+      "id": "relayed-sell-precision",
+      "scenario": "relayed",
+      "surface": "mcp",
+      "says": "A paper sell with more fraction digits than the token's 6: refused by the server's conversion, relayed.",
+      "args": {
+        "mint": "<mint>",
+        "side": "sell",
+        "amount": "1.1234567",
+        "paper": true,
+        "clientTradeId": "trade-precision-sell"
+      },
+      "world": {
+        "api": "current",
+        "market": "candle"
+      },
+      "requests": [
+        {
+          "n": 1,
+          "method": "POST",
+          "path": "/api/v1/trade/agent/build",
+          "key": true,
+          "client": "mcp/0.10.45",
+          "body": {
+            "clientTradeId": "trade-precision-sell",
+            "mint": "<mint>",
+            "side": "sell",
+            "amountDecimal": "1.1234567",
+            "payer": {
+              "type": "main"
+            },
+            "paper": true
+          }
+        }
+      ],
+      "reply": {
+        "isError": true,
+        "text": "{\"clientTradeId\":\"trade-precision-sell\",\"resolved\":{\"amountDecimal\":\"1.1234567\"},\"api\":{\"success\":false,\"error\":{\"code\":\"VALIDATION_FAILED\",\"message\":\"amountDecimal \\\"1.1234567\\\" has more fraction digits than the asset's 6 decimals\",\"field\":\"amountDecimal\",\"retryable\":false}}}"
+      }
+    },
+    {
+      "id": "relayed-spend-cap",
+      "scenario": "relayed",
+      "surface": "mcp",
+      "says": "A buy over the key's spend cap: the server converts, then refuses; relayed, no read.",
+      "evidence": "stand-in refusal: the code is the API's, the words are not",
+      "args": {
+        "mint": "<mint>",
+        "side": "buy",
+        "amount": "0.5",
+        "clientTradeId": "trade-spend-cap"
+      },
+      "world": {
+        "api": "current",
+        "buildRefusal": "SPEND_LIMIT_EXCEEDED",
+        "market": "candle"
+      },
+      "requests": [
+        {
+          "n": 1,
+          "method": "POST",
+          "path": "/api/v1/trade/agent/build",
+          "key": true,
+          "client": "mcp/0.10.45",
+          "body": {
+            "clientTradeId": "trade-spend-cap",
+            "mint": "<mint>",
+            "side": "buy",
+            "amountDecimal": "0.5",
+            "payer": {
+              "type": "main"
+            }
+          }
+        }
+      ],
+      "reply": {
+        "isError": true,
+        "text": "{\"clientTradeId\":\"trade-spend-cap\",\"resolved\":{\"amountDecimal\":\"0.5\"},\"api\":{\"success\":false,\"error\":{\"code\":\"SPEND_LIMIT_EXCEEDED\",\"message\":\"Over this key's per-trade spend cap (stand-in words)\",\"retryable\":false}}}"
+      }
+    },
+    {
+      "id": "relayed-hood-scale",
+      "scenario": "relayed",
+      "surface": "mcp",
+      "says": "A graduated Hood token's buy that would settle at another scale than the amount was read at: refused before anything is planned or signed (stage not_broadcast), relayed.",
+      "args": {
+        "mint": "<hood-token>",
+        "side": "buy",
+        "amount": "10",
+        "clientTradeId": "trade-hood-scale"
+      },
+      "world": {
+        "api": "current",
+        "decimalRefusal": "VALIDATION_FAILED",
+        "market": "candle"
+      },
+      "requests": [
+        {
+          "n": 1,
+          "method": "POST",
+          "path": "/api/v1/trade/agent/build",
+          "key": true,
+          "client": "mcp/0.10.45",
+          "body": {
+            "clientTradeId": "trade-hood-scale",
+            "mint": "<hood-token>",
+            "side": "buy",
+            "amountDecimal": "10",
+            "payer": {
+              "type": "main"
+            }
+          }
+        }
+      ],
+      "reply": {
+        "isError": true,
+        "text": "{\"clientTradeId\":\"trade-hood-scale\",\"resolved\":{\"amountDecimal\":\"10\"},\"api\":{\"success\":false,\"error\":{\"code\":\"VALIDATION_FAILED\",\"message\":\"This buy settles in usdg (6 decimals), not at the 18 decimals the amount was read at. Send amountRaw in usdg's raw units, or name the quoteAsset the token trades against.\",\"field\":\"amountDecimal\",\"retryable\":false,\"stage\":\"not_broadcast\"}}}"
+      }
+    },
+    {
+      "id": "relayed-transport",
+      "scenario": "relayed",
+      "surface": "mcp",
+      "says": "The build fails in transit: MCP_TRANSPORT with the same clientTradeId, retryable, and no market read or second build behind it.",
+      "args": {
+        "mint": "<mint>",
+        "side": "buy",
+        "amount": "0.5",
+        "clientTradeId": "trade-transport"
+      },
+      "world": {
+        "api": "current",
+        "market": "candle",
+        "buildThrows": true
+      },
+      "requests": [
+        {
+          "n": 1,
+          "method": "POST",
+          "path": "/api/v1/trade/agent/build",
+          "key": true,
+          "client": "mcp/0.10.45",
+          "body": {
+            "clientTradeId": "trade-transport",
+            "mint": "<mint>",
+            "side": "buy",
+            "amountDecimal": "0.5",
+            "payer": {
+              "type": "main"
+            }
+          }
+        }
+      ],
+      "reply": {
+        "isError": true,
+        "text": "{\"clientTradeId\":\"trade-transport\",\"success\":false,\"error\":{\"code\":\"MCP_TRANSPORT\",\"message\":\"The request failed in transit (fetch failed (stand-in: the connection dropped)). It may or may not have reached Candle. Retry with THIS SAME clientTradeId (\\\"trade-transport\\\") and the same body: the same id replays the original result instead of executing a second time, while a NEW id is a second, independent trade or launch.\",\"retryable\":true}}"
+      }
+    },
+    {
+      "id": "read-live-sell-amount",
+      "scenario": "read-path",
+      "surface": "mcp",
+      "says": "A live sell by amount still reads the market (a mint with no Candle market falls back to the paper book, which only the read can tell), then builds with amountRaw and amountDecimals.",
+      "args": {
+        "mint": "<mint>",
+        "side": "sell",
+        "amount": "2.5",
+        "clientTradeId": "trade-live-sell"
+      },
+      "world": {
+        "api": "current",
+        "market": "candle"
+      },
+      "requests": [
+        {
+          "n": 1,
+          "method": "GET",
+          "path": "/api/v1/markets/solana/<mint>",
+          "key": false,
+          "client": "mcp/0.10.45"
+        },
+        {
+          "n": 2,
+          "method": "POST",
+          "path": "/api/v1/trade/agent/build",
+          "key": true,
+          "client": "mcp/0.10.45",
+          "body": {
+            "clientTradeId": "trade-live-sell",
+            "mint": "<mint>",
+            "side": "sell",
+            "amountRaw": "2500000",
+            "amountDecimals": 6,
+            "payer": {
+              "type": "main"
+            }
+          }
+        }
+      ],
+      "reply": {
+        "isError": false,
+        "text": "{\"clientTradeId\":\"trade-live-sell\",\"resolved\":{\"amountDecimal\":\"2.5\",\"decimals\":6,\"amountRaw\":\"2500000\"},\"api\":{\"success\":true,\"clientTradeId\":\"trade-live-sell\",\"side\":\"sell\",\"status\":\"executed\",\"signature\":\"<signature>\",\"amountRaw\":\"2500000\"}}"
+      }
+    },
+    {
+      "id": "read-live-sell-percent",
+      "scenario": "read-path",
+      "surface": "mcp",
+      "says": "A live percent sell still reads the embedded wallet and its balance, then builds 50% of it as amountRaw.",
+      "args": {
+        "mint": "<mint>",
+        "side": "sell",
+        "percent": 50,
+        "clientTradeId": "trade-live-percent"
+      },
+      "world": {
+        "api": "current",
+        "market": "candle"
+      },
+      "requests": [
+        {
+          "n": 1,
+          "method": "GET",
+          "path": "/api/v1/agent/wallets/embedded",
+          "key": true,
+          "client": "mcp/0.10.45"
+        },
+        {
+          "n": 2,
+          "method": "GET",
+          "path": "/api/v1/tokens/<mint>/balance/<embedded-sol>",
+          "key": false,
+          "client": "mcp/0.10.45"
+        },
+        {
+          "n": 3,
+          "method": "POST",
+          "path": "/api/v1/trade/agent/build",
+          "key": true,
+          "client": "mcp/0.10.45",
+          "body": {
+            "clientTradeId": "trade-live-percent",
+            "mint": "<mint>",
+            "side": "sell",
+            "amountRaw": "2500000",
+            "payer": {
+              "type": "main"
+            }
+          }
+        }
+      ],
+      "reply": {
+        "isError": false,
+        "text": "{\"clientTradeId\":\"trade-live-percent\",\"resolved\":{\"percent\":50,\"balanceRaw\":\"5000000\",\"amountRaw\":\"2500000\"},\"api\":{\"success\":true,\"clientTradeId\":\"trade-live-percent\",\"side\":\"sell\",\"status\":\"executed\",\"signature\":\"<signature>\",\"amountRaw\":\"2500000\"}}"
+      }
+    },
+    {
+      "id": "read-paper-sell-percent",
+      "scenario": "read-path",
+      "surface": "mcp",
+      "says": "A paper percent sell sends percent alone, sized by the paper book on the server, as before.",
+      "args": {
+        "mint": "<mint>",
+        "side": "sell",
+        "percent": 100,
+        "paper": true,
+        "clientTradeId": "trade-paper-percent"
+      },
+      "world": {
+        "api": "current",
+        "market": "candle"
+      },
+      "requests": [
+        {
+          "n": 1,
+          "method": "POST",
+          "path": "/api/v1/trade/agent/build",
+          "key": true,
+          "client": "mcp/0.10.45",
+          "body": {
+            "clientTradeId": "trade-paper-percent",
+            "mint": "<mint>",
+            "side": "sell",
+            "percent": 100,
+            "payer": {
+              "type": "main"
+            },
+            "paper": true
+          }
+        }
+      ],
+      "reply": {
+        "isError": false,
+        "text": "{\"clientTradeId\":\"trade-paper-percent\",\"resolved\":{\"percent\":100},\"api\":{\"success\":true,\"clientTradeId\":\"trade-paper-percent\",\"side\":\"sell\",\"status\":\"paper\",\"paper\":true,\"percent\":100}}"
+      }
+    },
+    {
+      "id": "local-amount-and-percent",
+      "scenario": "local",
+      "surface": "mcp",
+      "says": "Both amount and percent: refused by the MCP before any request, as before.",
+      "args": {
+        "mint": "<mint>",
+        "side": "buy",
+        "amount": "0.5",
+        "percent": 50,
+        "clientTradeId": "trade-local"
+      },
+      "world": {
+        "api": "current",
+        "market": "candle"
+      },
+      "requests": [],
+      "reply": {
+        "isError": true,
+        "text": "{\"clientTradeId\":\"trade-local\",\"success\":false,\"error\":{\"code\":\"MCP_VALIDATION\",\"message\":\"pass exactly one of amount or percent, not both\"}}"
+      }
+    },
+    {
+      "id": "conversion-table",
+      "scenario": "conversion",
+      "surface": "api-source",
+      "says": "Candle's decimalAmountToRaw, the server's conversion, beside the MCP's own decimalToRaw it replaces on the fast path: the raw each gives, or its refusal.",
+      "evidence": "pure functions from apps/api/src/lib/decimal-amount.ts and packages/mcp/src/convert.ts",
+      "outcome": {
+        "rows": [
+          {
+            "amount": "0.5",
+            "decimals": 9,
+            "api": {
+              "raw": "500000000"
+            },
+            "mcp": {
+              "raw": "500000000"
+            },
+            "agree": true
+          },
+          {
+            "amount": "2.5",
+            "decimals": 6,
+            "api": {
+              "raw": "2500000"
+            },
+            "mcp": {
+              "raw": "2500000"
+            },
+            "agree": true
+          },
+          {
+            "amount": "1",
+            "decimals": 6,
+            "api": {
+              "raw": "1000000"
+            },
+            "mcp": {
+              "raw": "1000000"
+            },
+            "agree": true
+          },
+          {
+            "amount": "0.000001",
+            "decimals": 6,
+            "api": {
+              "raw": "1"
+            },
+            "mcp": {
+              "raw": "1"
+            },
+            "agree": true
+          },
+          {
+            "amount": "10",
+            "decimals": 18,
+            "api": {
+              "raw": "10000000000000000000"
+            },
+            "mcp": {
+              "raw": "10000000000000000000"
+            },
+            "agree": true
+          },
+          {
+            "amount": "1.1234567",
+            "decimals": 6,
+            "api": {
+              "refused": "amountDecimal \"1.1234567\" has more fraction digits than the asset's 6 decimals"
+            },
+            "mcp": {
+              "refused": "amount \"1.1234567\" has more fraction digits than the asset's 6 decimals"
+            },
+            "agree": true
+          },
+          {
+            "amount": "0.1234567891",
+            "decimals": 9,
+            "api": {
+              "refused": "amountDecimal \"0.1234567891\" has more fraction digits than the asset's 9 decimals"
+            },
+            "mcp": {
+              "refused": "amount \"0.1234567891\" has more fraction digits than the asset's 9 decimals"
+            },
+            "agree": true
+          },
+          {
+            "amount": "0",
+            "decimals": 6,
+            "api": {
+              "refused": "amountDecimal must be greater than zero"
+            },
+            "mcp": {
+              "refused": "amount must be greater than zero"
+            },
+            "agree": true
+          },
+          {
+            "amount": "0.000",
+            "decimals": 6,
+            "api": {
+              "refused": "amountDecimal must be greater than zero"
+            },
+            "mcp": {
+              "refused": "amount must be greater than zero"
+            },
+            "agree": true
+          },
+          {
+            "amount": "1e3",
+            "decimals": 6,
+            "api": {
+              "refused": "amountDecimal must be a plain positive decimal string, such as \"1.5\""
+            },
+            "mcp": {
+              "refused": "amount must be a plain positive decimal string, got \"1e3\""
+            },
+            "agree": true
+          },
+          {
+            "amount": "-1",
+            "decimals": 6,
+            "api": {
+              "refused": "amountDecimal must be a plain positive decimal string, such as \"1.5\""
+            },
+            "mcp": {
+              "refused": "amount must be a plain positive decimal string, got \"-1\""
+            },
+            "agree": true
+          },
+          {
+            "amount": ".5",
+            "decimals": 6,
+            "api": {
+              "refused": "amountDecimal must be a plain positive decimal string, such as \"1.5\""
+            },
+            "mcp": {
+              "refused": "amount must be a plain positive decimal string, got \".5\""
+            },
+            "agree": true
+          },
+          {
+            "amount": "5.",
+            "decimals": 6,
+            "api": {
+              "refused": "amountDecimal must be a plain positive decimal string, such as \"1.5\""
+            },
+            "mcp": {
+              "refused": "amount must be a plain positive decimal string, got \"5.\""
+            },
+            "agree": true
+          },
+          {
+            "amount": " 1",
+            "decimals": 6,
+            "api": {
+              "refused": "amountDecimal must be a plain positive decimal string, such as \"1.5\""
+            },
+            "mcp": {
+              "refused": "amount must be a plain positive decimal string, got \" 1\""
+            },
+            "agree": true
+          },
+          {
+            "amount": "1,5",
+            "decimals": 6,
+            "api": {
+              "refused": "amountDecimal must be a plain positive decimal string, such as \"1.5\""
+            },
+            "mcp": {
+              "refused": "amount must be a plain positive decimal string, got \"1,5\""
+            },
+            "agree": true
+          },
+          {
+            "amount": "<81 nines>",
+            "decimals": 6,
+            "api": {
+              "refused": "amountDecimal must be a plain positive decimal string, such as \"1.5\""
+            },
+            "mcp": {
+              "raw": "999999999999999999999999999999999999999999999999999999999999999999999999999999999000000"
+            },
+            "agree": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "route-words",
+      "scenario": "source-text",
+      "surface": "source-text",
+      "says": "Each refusal a stand-in answers is made with the API's errorBody, and these fragments of it are in the route's source at this commit.",
+      "outcome": {
+        "found": [
+          {
+            "file": "apps/api/src/routes/trade-agent.ts",
+            "words": [
+              "\"amountRaw is required (or percent on a paper sell)\", { field: \"amountRaw\" }"
+            ]
+          },
+          {
+            "file": "apps/api/src/routes/trade-agent.ts",
+            "words": [
+              "decimals could not be read to ${",
+              "\"convert amountDecimal\"",
+              "{ field: sizedField, retryable: true }"
+            ]
+          },
+          {
+            "file": "apps/api/src/routes/trade-agent.ts",
+            "words": [
+              "The mint's chain could not be checked against the feed to convert amountDecimal; retry later",
+              "{ field: \"amountDecimal\", retryable: true }"
+            ]
+          },
+          {
+            "file": "apps/api/src/routes/trade-agent.ts",
+            "words": [
+              "\"chain_mismatch: this mint is indexed on a different chain\""
+            ]
+          },
+          {
+            "file": "apps/api/src/routes/trade-agent.ts",
+            "words": [
+              "`This buy settles in ${plan.quoteAsset} (${plan.quoteDecimals} decimals), not at the ${sizedScale} decimals the amount was read at.",
+              "{ field, stage: \"not_broadcast\", retryable: false }"
+            ]
+          },
+          {
+            "file": "apps/api/src/routes/markets.ts",
+            "words": [
+              "new MarketNotFoundError(\"chain_mismatch\"",
+              "routing: { reason: error.reason }",
+              "docsPath: \"developers/market-state\""
+            ]
+          },
+          {
+            "file": "apps/api/src/routes/trade-agent.ts",
+            "words": [
+              "if (!converted.ok) return fail(c, \"VALIDATION_FAILED\", converted.message, { field: \"amountDecimal\" })"
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}
