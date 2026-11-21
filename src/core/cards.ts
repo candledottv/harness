@@ -2069,9 +2069,12 @@ export function hideAsked(value: unknown): boolean | null {
 }
 
 /** What a hidden order's card says before the press, or nothing for a public one: an MCP card's `hide`, or a TEE card's `--hide`. */
-export function hiddenWords(kind: CardKind, planned: { params: Record<string, unknown>; cli?: readonly string[] }): string | undefined {
-  const hidden = hideAsked(planned.params.hide) === true || planned.cli?.includes("--hide") === true
+export function hiddenWords(kind: CardKind, planned: { params: Record<string, unknown>; cli?: readonly string[]; cliRow?: { row: string; argv: readonly string[] } }): string | undefined {
+  const hidden = hideAsked(planned.params.hide) === true || planned.cli?.includes("--hide") === true || planned.cliRow?.argv.includes("--hide") === true
   if (!hidden) return undefined
+  // A perps order (BE-3769): its fills stay out of the stream; Hyperliquid's own public data still shows them. A TP/SL
+  // change hides only the legs it attaches: the plain cancel before them, and a leg already hidden, are as they were.
+  if (planned.cliRow?.row.startsWith("perps ")) return `hidden: Candle keeps this order's fills out of its public activity stream${planned.cliRow.row === "perps tpsl" ? " (the legs it attaches; a leg it cancels was not on the stream)" : ""}; they still count in the agent's own record, and Hyperliquid's own public data still shows them`
   // A hidden launch (design D1 = A): Candle shows no name on it, and the creator wallet stays public on chain.
   if (kind === "launch") return "hidden: Candle keeps this launch out of its public activity stream and shows no name on it; the creator wallet is still public on chain"
   return "hidden: Candle keeps this order out of its public activity stream; it still counts in the agent's own record, and the trade is on chain"

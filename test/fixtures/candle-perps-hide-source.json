@@ -1,0 +1,414 @@
+{
+  "about": "Offline contracts for `hide` on perps orders in Candle's CLI, MCP server and SDK (BE-3996, the client half of BE-3769). echo rows run the three packages' echo helpers on one table of bodies; sdk-run rows run the SDK's open, close and modify over an intercepted fetch whose build lacks the `hide: true` echo and count what was requested; the rest are source text and the clients' facts. The fixture holds no address, key or account value; every fetch was intercepted and none reached the network.",
+  "source": {
+    "repo": "candledottv/candle-monorepo",
+    "commit": "bdf8548b9d6c3844b014f25ae1725cbae6f8b544",
+    "versions": {
+      "cli": "0.13.39",
+      "mcp": "0.10.42",
+      "sdk": "0.6.32"
+    },
+    "files": [
+      "packages/cli/src/commands/perps.ts",
+      "packages/cli/src/commands/perps-manage.ts",
+      "packages/cli/src/hyperliquid-manage.ts",
+      "packages/cli/src/trading.ts",
+      "packages/mcp/src/perps.ts",
+      "packages/mcp/src/hyperliquid-manage.ts",
+      "packages/mcp/src/hide.ts",
+      "packages/sdk/src/client.ts",
+      "packages/sdk/src/hyperliquid-manage.ts",
+      "packages/sdk/src/hide-echo.ts"
+    ]
+  },
+  "rows": [
+    {
+      "id": "echo-hide-true",
+      "scenario": "echo",
+      "args": {
+        "body": {
+          "hide": true
+        }
+      },
+      "outcome": {
+        "cli": true,
+        "mcp": true,
+        "sdk": true
+      }
+    },
+    {
+      "id": "echo-stream-hidden-true",
+      "scenario": "echo",
+      "args": {
+        "body": {
+          "streamHidden": true
+        }
+      },
+      "outcome": {
+        "cli": true,
+        "mcp": false,
+        "sdk": false
+      }
+    },
+    {
+      "id": "echo-hide-false",
+      "scenario": "echo",
+      "args": {
+        "body": {
+          "hide": false
+        }
+      },
+      "outcome": {
+        "cli": false,
+        "mcp": false,
+        "sdk": false
+      }
+    },
+    {
+      "id": "echo-hide-string-true",
+      "scenario": "echo",
+      "args": {
+        "body": {
+          "hide": "true"
+        }
+      },
+      "outcome": {
+        "cli": false,
+        "mcp": false,
+        "sdk": false
+      }
+    },
+    {
+      "id": "echo-hide-one",
+      "scenario": "echo",
+      "args": {
+        "body": {
+          "hide": 1
+        }
+      },
+      "outcome": {
+        "cli": false,
+        "mcp": false,
+        "sdk": false
+      }
+    },
+    {
+      "id": "echo-no-key",
+      "scenario": "echo",
+      "args": {
+        "body": {
+          "success": true
+        }
+      },
+      "outcome": {
+        "cli": false,
+        "mcp": false,
+        "sdk": false
+      }
+    },
+    {
+      "id": "echo-null",
+      "scenario": "echo",
+      "args": {
+        "body": null
+      },
+      "outcome": {
+        "cli": false,
+        "mcp": false,
+        "sdk": false
+      }
+    },
+    {
+      "id": "echo-array",
+      "scenario": "echo",
+      "args": {
+        "body": [
+          {
+            "hide": true
+          }
+        ]
+      },
+      "outcome": {
+        "cli": false,
+        "mcp": false,
+        "sdk": false
+      }
+    },
+    {
+      "id": "echo-text",
+      "scenario": "echo",
+      "args": {
+        "body": "hide"
+      },
+      "outcome": {
+        "cli": false,
+        "mcp": false,
+        "sdk": false
+      }
+    },
+    {
+      "id": "echo-not-asked-checks-nothing",
+      "scenario": "echo",
+      "args": {
+        "asked": false
+      },
+      "outcome": {
+        "sdk": "no refusal",
+        "cli": "no refusal"
+      }
+    },
+    {
+      "id": "echo-refusal-words",
+      "scenario": "echo",
+      "args": {},
+      "outcome": {
+        "cliCode": {
+          "code": "HIDE_NOT_CONFIRMED",
+          "says": true,
+          "warnsNotHidden": true
+        },
+        "mcpSays": true,
+        "sdkRetryable": false
+      }
+    },
+    {
+      "id": "sdk-open-without-echo-is-refused",
+      "scenario": "sdk-run",
+      "args": {
+        "method": "perpsOpen",
+        "hide": true,
+        "buildEchoesHide": false
+      },
+      "outcome": {
+        "refused": {
+          "code": "HIDE_NOT_CONFIRMED",
+          "status": 502
+        },
+        "requests": [
+          {
+            "path": "/api/v1/agent/perps/open",
+            "sendsHide": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "sdk-close-without-echo-is-refused",
+      "scenario": "sdk-run",
+      "args": {
+        "method": "perpsClose",
+        "hide": true,
+        "buildEchoesHide": false
+      },
+      "outcome": {
+        "refused": {
+          "code": "HIDE_NOT_CONFIRMED",
+          "status": 502
+        },
+        "requests": [
+          {
+            "path": "/api/v1/agent/perps/close",
+            "sendsHide": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "sdk-modify-without-echo-is-refused",
+      "scenario": "sdk-run",
+      "args": {
+        "method": "perpsModify",
+        "hide": true,
+        "buildEchoesHide": false
+      },
+      "outcome": {
+        "refused": {
+          "code": "HIDE_NOT_CONFIRMED",
+          "status": 502
+        },
+        "requests": [
+          {
+            "path": "/api/v1/agent/perps/modify",
+            "sendsHide": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "sdk-open-without-hide-sends-no-hide-key",
+      "scenario": "sdk-run",
+      "args": {
+        "hide": "false or omitted"
+      },
+      "outcome": {
+        "bodiesWithAHideKey": 0,
+        "requests": 2
+      }
+    },
+    {
+      "id": "cli-perps-open-usage-has-hide",
+      "scenario": "source-pin",
+      "args": {
+        "file": "packages/cli/src/commands/perps.ts / packages/cli/src/commands/perps-manage.ts"
+      },
+      "outcome": {
+        "found": true
+      }
+    },
+    {
+      "id": "cli-perps-close-usage-has-hide",
+      "scenario": "source-pin",
+      "args": {
+        "file": "packages/cli/src/commands/perps.ts / packages/cli/src/commands/perps-manage.ts"
+      },
+      "outcome": {
+        "found": true
+      }
+    },
+    {
+      "id": "cli-perps-modify-usage-has-hide",
+      "scenario": "source-pin",
+      "args": {
+        "file": "packages/cli/src/commands/perps.ts / packages/cli/src/commands/perps-manage.ts"
+      },
+      "outcome": {
+        "found": true
+      }
+    },
+    {
+      "id": "cli-perps-tpsl-usage-has-hide",
+      "scenario": "source-pin",
+      "args": {
+        "file": "packages/cli/src/commands/perps.ts / packages/cli/src/commands/perps-manage.ts"
+      },
+      "outcome": {
+        "found": true
+      }
+    },
+    {
+      "id": "cli-perps-hide-boolean-flag",
+      "scenario": "source-pin",
+      "args": {
+        "file": "packages/cli/src/commands/perps.ts"
+      },
+      "outcome": {
+        "found": true
+      }
+    },
+    {
+      "id": "cli-write-refuses-an-unechoed-build-before-signing",
+      "scenario": "source-pin",
+      "args": {
+        "file": "packages/cli/src/commands/perps.ts"
+      },
+      "outcome": {
+        "found": true
+      }
+    },
+    {
+      "id": "cli-tpsl-step-not-signed-without-the-echo",
+      "scenario": "source-pin",
+      "args": {
+        "file": "packages/cli/src/hyperliquid-manage.ts"
+      },
+      "outcome": {
+        "found": true
+      }
+    },
+    {
+      "id": "mcp-perps-tools-take-hide",
+      "scenario": "source-pin",
+      "args": {
+        "file": "packages/mcp/src/perps.ts"
+      },
+      "outcome": {
+        "found": true
+      }
+    },
+    {
+      "id": "mcp-hide-only-on-open-close-modify-tpsl",
+      "scenario": "source-pin",
+      "args": {
+        "file": "packages/mcp/src/perps.ts"
+      },
+      "outcome": {
+        "found": true
+      }
+    },
+    {
+      "id": "mcp-refuses-an-unechoed-build-before-the-relay",
+      "scenario": "source-pin",
+      "args": {
+        "file": "packages/mcp/src/perps.ts"
+      },
+      "outcome": {
+        "found": true
+      }
+    },
+    {
+      "id": "mcp-tpsl-attach-carries-hide",
+      "scenario": "source-pin",
+      "args": {
+        "file": "packages/mcp/src/hyperliquid-manage.ts"
+      },
+      "outcome": {
+        "found": true
+      }
+    },
+    {
+      "id": "sdk-open-close-modify-assert-the-echo",
+      "scenario": "source-pin",
+      "args": {
+        "file": "packages/sdk/src/client.ts"
+      },
+      "outcome": {
+        "found": true
+      }
+    },
+    {
+      "id": "sdk-tpsl-passes-hide-to-the-attach",
+      "scenario": "source-pin",
+      "args": {
+        "file": "packages/sdk/src/client.ts"
+      },
+      "outcome": {
+        "found": true
+      }
+    },
+    {
+      "id": "sdk-tpsl-attach-checks-the-echo",
+      "scenario": "source-pin",
+      "args": {
+        "file": "packages/sdk/src/hyperliquid-manage.ts"
+      },
+      "outcome": {
+        "found": true
+      }
+    },
+    {
+      "id": "clients-carry-perps-hide",
+      "scenario": "clients",
+      "args": {
+        "files": [
+          "packages/cli/src/commands/perps.ts",
+          "packages/cli/src/commands/perps-manage.ts",
+          "packages/cli/src/hyperliquid-manage.ts",
+          "packages/cli/src/trading.ts",
+          "packages/mcp/src/perps.ts",
+          "packages/mcp/src/hyperliquid-manage.ts",
+          "packages/mcp/src/hide.ts",
+          "packages/sdk/src/client.ts",
+          "packages/sdk/src/hyperliquid-manage.ts",
+          "packages/sdk/src/hide-echo.ts"
+        ]
+      },
+      "outcome": {
+        "cliPerpsTakesHide": true,
+        "mcpPerpsTakesHide": true,
+        "mcpManageTakesHide": true,
+        "sdkOpenCloseModifyTakeHide": true,
+        "sdkTpslTakesHide": true
+      }
+    }
+  ]
+}

@@ -1,12 +1,12 @@
 {
-  "about": "Offline perps activity-stream contracts (BE-3769): the one eligibility rule applied to perps events exactly as to a trade (the switch, a published agent's key, never a hidden order), the event kind from the position's size before and after a fill, one fill announced end to end through announcePerpFill and broadcastActivity onto a subscribed stream with stand-in venue reads and a stand-in published-agent lookup, the fills summary, and `hide` as the perps routes parse it. The routes, the settle claim and the schema are pinned as source text. Recorded from an exact staging commit with every fetch refused; the commit changes no CLI, MCP or SDK file, and at it no perps order in the CLI, MCP or SDK takes `hide`.",
+  "about": "Offline perps activity-stream contracts (BE-3769): the one eligibility rule applied to perps events exactly as to a trade (a published agent's key, never a hidden order), the event kind from the position's size before and after a fill, one fill announced end to end through announcePerpFill and broadcastActivity onto a subscribed stream with stand-in venue reads and a stand-in published-agent lookup, the fills summary, and `hide` as the perps routes parse it. The routes, the settle claim and the schema are pinned as source text. Recorded from an exact staging commit with every fetch refused; at it the CLI, MCP and SDK perps orders take `hide` (BE-3996), and the switches that gated the stream and `hide` are gone (BE-3970).",
   "source": {
     "repo": "candledottv/candle-monorepo",
-    "commit": "ba1be9ffa03a841c058bf72d6b9ffd270b0552be",
+    "commit": "bdf8548b9d6c3844b014f25ae1725cbae6f8b544",
     "versions": {
-      "cli": "0.13.31",
-      "mcp": "0.10.36",
-      "sdk": "0.6.25"
+      "cli": "0.13.39",
+      "mcp": "0.10.42",
+      "sdk": "0.6.32"
     },
     "files": [
       "apps/api/src/lib/stream-eligibility.ts",
@@ -37,10 +37,10 @@
       }
     },
     {
-      "id": "eligible-published-agent-key-switch-on",
+      "id": "eligible-published-agent-key",
       "scenario": "eligibility",
       "args": {
-        "case": "published-agent-key-switch-on"
+        "case": "published-agent-key"
       },
       "outcome": {
         "perps": {
@@ -51,23 +51,6 @@
           "perp_liquidation": true
         },
         "buy": true
-      }
-    },
-    {
-      "id": "eligible-switch-off",
-      "scenario": "eligibility",
-      "args": {
-        "case": "switch-off"
-      },
-      "outcome": {
-        "perps": {
-          "perp_open": false,
-          "perp_add": false,
-          "perp_reduce": false,
-          "perp_close": false,
-          "perp_liquidation": false
-        },
-        "buy": false
       }
     },
     {
@@ -221,22 +204,6 @@
       }
     },
     {
-      "id": "trades-in-stream-switch-values",
-      "scenario": "eligibility",
-      "args": {
-        "case": "AGENT_TRADES_IN_STREAM_ENABLED"
-      },
-      "outcome": {
-        "0": false,
-        "1": true,
-        "true": true,
-        "TRUE": false,
-        "yes": false,
-        "false": false,
-        "unset": false
-      }
-    },
-    {
       "id": "kind-flat-to-long",
       "scenario": "event-kind",
       "args": {
@@ -378,7 +345,6 @@
         "px": 3000,
         "positionAfter": "1.5",
         "hidden": false,
-        "switchOn": true,
         "agent": "published"
       },
       "outcome": {
@@ -414,7 +380,6 @@
         "px": 60000,
         "positionAfter": "-0.25",
         "hidden": false,
-        "switchOn": true,
         "agent": "published"
       },
       "outcome": {
@@ -450,7 +415,6 @@
         "px": 3100,
         "positionAfter": "2",
         "hidden": false,
-        "switchOn": true,
         "agent": "published"
       },
       "outcome": {
@@ -487,7 +451,6 @@
         "realizedPnlUsd": 87.654,
         "positionAfter": "1.5",
         "hidden": false,
-        "switchOn": true,
         "agent": "published"
       },
       "outcome": {
@@ -524,7 +487,6 @@
         "realizedPnlUsd": 412.345,
         "positionAfter": null,
         "hidden": false,
-        "switchOn": true,
         "agent": "published"
       },
       "outcome": {
@@ -563,7 +525,6 @@
         "realizedPnlUsd": -250.004,
         "positionAfter": null,
         "hidden": false,
-        "switchOn": true,
         "agent": "published"
       },
       "outcome": {
@@ -601,7 +562,6 @@
         "px": 3000,
         "positionAfter": "-0.5",
         "hidden": false,
-        "switchOn": true,
         "agent": "published"
       },
       "outcome": {
@@ -637,7 +597,6 @@
         "px": 41.237,
         "positionAfter": "3",
         "hidden": false,
-        "switchOn": true,
         "agent": "published"
       },
       "outcome": {
@@ -673,7 +632,6 @@
         "px": 3000,
         "positionAfter": null,
         "hidden": false,
-        "switchOn": true,
         "agent": "published"
       },
       "outcome": {
@@ -709,7 +667,6 @@
         "px": 3000,
         "positionAfter": "1.5",
         "hidden": true,
-        "switchOn": true,
         "agent": "published"
       },
       "outcome": {
@@ -731,7 +688,6 @@
         "px": 3000,
         "positionAfter": "1.5",
         "hidden": false,
-        "switchOn": true,
         "agent": "private"
       },
       "outcome": {
@@ -749,28 +705,6 @@
       }
     },
     {
-      "id": "announce-switch-off-sends-nothing",
-      "scenario": "announce",
-      "args": {
-        "coin": "ETH",
-        "sizeDelta": 1.5,
-        "side": "buy",
-        "px": 3000,
-        "positionAfter": "1.5",
-        "hidden": false,
-        "switchOn": false,
-        "agent": "published"
-      },
-      "outcome": {
-        "sent": false,
-        "lookups": [],
-        "venueReads": [
-          "clearinghouse"
-        ],
-        "threw": false
-      }
-    },
-    {
       "id": "announce-lookup-failure-sends-nothing",
       "scenario": "announce",
       "args": {
@@ -780,7 +714,6 @@
         "px": 3000,
         "positionAfter": "1.5",
         "hidden": false,
-        "switchOn": true,
         "agent": "lookup fails"
       },
       "outcome": {
@@ -807,7 +740,6 @@
         "px": 3000,
         "positionAfter": "1.5",
         "hidden": false,
-        "switchOn": true,
         "agent": "published",
         "agentKey": "blank"
       },
@@ -830,7 +762,6 @@
         "px": 3000,
         "positionAfter": null,
         "hidden": false,
-        "switchOn": true,
         "agent": "published"
       },
       "outcome": {
@@ -852,7 +783,6 @@
         "px": 3000,
         "positionAfter": "not-a-number",
         "hidden": false,
-        "switchOn": true,
         "agent": "published"
       },
       "outcome": {
@@ -1373,7 +1303,7 @@
       }
     },
     {
-      "id": "clients-carry-no-perps-hide",
+      "id": "clients-carry-perps-hide",
       "scenario": "clients",
       "args": {
         "files": [
@@ -1385,11 +1315,11 @@
         ]
       },
       "outcome": {
-        "cliPerpsTakesHide": false,
-        "mcpPerpsTakesHide": false,
-        "mcpManageTakesHide": false,
-        "sdkOpenCloseModifyTakeHide": false,
-        "sdkTpslTakesHide": false
+        "cliPerpsTakesHide": true,
+        "mcpPerpsTakesHide": true,
+        "mcpManageTakesHide": true,
+        "sdkOpenCloseModifyTakeHide": true,
+        "sdkTpslTakesHide": true
       }
     }
   ]

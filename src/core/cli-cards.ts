@@ -21,7 +21,7 @@ import type { PayerResult } from "./agent-wallets"
 import { isBaseAsset } from "./assets"
 import type { CandleCli, CliResult } from "./candle-cli"
 import { type CardRow, isFlagWord, rowFor, sourceForWords } from "./cli-table"
-import { PRE_BUILD_CODES } from "./cli-trade"
+import { isHideUnknown, PRE_BUILD_CODES } from "./cli-trade"
 import type { Mapped, Operation, OperationError } from "./execute"
 import { refusalMessage } from "./execute"
 import { type EmptyState, isCounted } from "./empty-accounts"
@@ -533,7 +533,7 @@ const NOTHING_SENT: Record<CardRow["kind"], ReadonlySet<string>> = {
   // PERPS_SCHEDULE_CANCEL_REJECTED are raised after the action was signed and posted, when Hyperliquid answers `err`
   // (perps.ts, 421-433): counted as refused only because close, cancel and schedule-cancel are one action, so an `err`
   // means that action did not take effect. tpsl and flatten are several steps and use PLAN_NOTHING_SENT instead.
-  perps: new Set([...BEFORE_ANYTHING, "TEE_WALLET_REQUIRED", "PERPS_UNAVAILABLE", "PERPS_BUILD_REFUSED", "PERPS_CLIENT_ID_UNSUPPORTED", "PERPS_VENUE_REFUSED", "PERPS_SCHEDULE_CANCEL_REJECTED"]),
+  perps: new Set([...BEFORE_ANYTHING, "TEE_WALLET_REQUIRED", "PERPS_UNAVAILABLE", "PERPS_BUILD_REFUSED", "PERPS_CLIENT_ID_UNSUPPORTED", "PERPS_VENUE_REFUSED", "PERPS_SCHEDULE_CANCEL_REJECTED", "HIDE_NOT_CONFIRMED"]),
 }
 
 /**
@@ -592,6 +592,9 @@ function closeState(body: Record<string, unknown>): Mapped["state"] {
 }
 
 function errorOf(code: string, body: Record<string, unknown>): OperationError {
+  // A candle CLI older than perps `--hide` (0.13.39) doesn't know the flag and runs nothing; it isn't a Candle Harness bug.
+  if (isHideUnknown(body)) return { code: "HIDE_NEEDS_NEWER_CLI", message: "This candle CLI doesn't have --hide on perps orders yet, so it refused the order. Nothing was sent, and nothing went public. Update the Candle CLI, or ask again without --hide.", retryable: false }
+  if (code === "HIDE_NOT_CONFIRMED") return { code, message: "--hide was asked for, but Candle's answer did not confirm the order is hidden (an API that predates hide would place it publicly). The candle CLI signed and sent nothing for this order. Remove --hide to place a visible order.", retryable: false }
   if (code === "SIGNER_UNAVAILABLE") return { code, message: "This machine doesn't hold the TEE wallet's signer, so the candle CLI couldn't sign. Nothing was sent. candle-harness doctor shows which wallets have one.", retryable: false }
   if (code === "USAGE") return { code, message: "The Candle Harness built a command the candle CLI didn't accept. Nothing was sent. This is a bug in the Candle Harness.", retryable: false }
   const message = refusalMessage(code, body) ?? (typeof body.message === "string" ? terminalText(body.message, { maxLength: 500 }) : code)

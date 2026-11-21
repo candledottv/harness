@@ -1,10 +1,10 @@
 // Perps fills in Candle's public activity stream, and `hide` on perps orders (BE-3769), as Candle's API runs them:
 // a published agent's fill goes out as perp_open, perp_add, perp_reduce or perp_close under the trade rule (the
-// AGENT_TRADES_IN_STREAM_ENABLED switch, a published agent's key, never a hidden order), with no wallet, account
-// or key on the wire. Recorded offline from one exact commit (scripts/read-perps-stream-source.ts). The commit is a
-// staging build that changes no CLI, MCP or SDK file, and at it no perps order in those clients takes `hide`: the
-// Candle Harness refuses `--hide` on a perps order and every MCP perps write, so nothing it sends can be a perps
-// order the agent believed hidden.
+// a published agent's key, never a hidden order), with no wallet, account or key on the wire. Recorded offline from
+// one exact commit (scripts/read-perps-stream-source.ts). At it the CLI, MCP and SDK perps orders take `hide`
+// (BE-3996, recorded in scripts/read-perps-hide-source.ts), and the Candle Harness takes `--hide` on the perps cards
+// it runs (`perps close` and `perps tpsl`); every MCP perps write is still refused, and `perps open` and `modify`
+// are still coming.
 import { expect, test } from "bun:test"
 import fixture from "../../test/fixtures/candle-perps-stream-source.json"
 import { hideAsked } from "./cards"
@@ -22,11 +22,11 @@ const scenario = (name: string) => rows.filter((r) => r.scenario === name)
 const TYPES = ["perp_open", "perp_add", "perp_reduce", "perp_close", "perp_liquidation"]
 const sent = (id: string) => row(`announce-${id}`).outcome
 
-test("the recording names the exact staging build, the files, and that no CLI, MCP or SDK file moved", () => {
+test("the recording names the exact staging build and the files", () => {
   expect(fixture.source).toMatchObject({
     repo: "candledottv/candle-monorepo",
-    commit: "ba1be9ffa03a841c058bf72d6b9ffd270b0552be",
-    versions: { cli: "0.13.31", mcp: "0.10.36", sdk: "0.6.25" },
+    commit: "bdf8548b9d6c3844b014f25ae1725cbae6f8b544",
+    versions: { cli: "0.13.39", mcp: "0.10.42", sdk: "0.6.32" },
     files: [
       "apps/api/src/lib/stream-eligibility.ts",
       "apps/api/src/lib/perps-stream.ts",
@@ -38,7 +38,7 @@ test("the recording names the exact staging build, the files, and that no CLI, M
       "packages/db/convex/schema.ts",
     ],
   })
-  expect(rows).toHaveLength(86)
+  expect(rows).toHaveLength(83)
   expect(new Set(rows.map((r) => r.id)).size).toBe(rows.length)
   expect(new Set(rows.map((r) => r.scenario))).toEqual(new Set(["types", "eligibility", "event-kind", "announce", "payload", "fills", "hide-parse", "source-pin", "clients"]))
 })
@@ -59,21 +59,21 @@ test("the perps event types are the five Candle pins", () => {
   expect(row("perp-stream-types").outcome.types).toEqual(TYPES)
 })
 
-test("a perps event follows the trade rule exactly: switch on, a published agent's key, never hidden", () => {
+test("a perps event follows the trade rule exactly: a published agent's key, never hidden", () => {
   const cases = scenario("eligibility").filter((r) => r.outcome.perps)
-  expect(cases).toHaveLength(9)
+  expect(cases).toHaveLength(8)
   for (const r of cases) {
     expect(Object.keys(r.outcome.perps)).toEqual(TYPES)
     for (const v of Object.values(r.outcome.perps)) expect(v).toBe(r.outcome.buy)
   }
-  expect(Object.values(row("eligible-published-agent-key-switch-on").outcome.perps).every(Boolean)).toBe(true)
-  for (const id of ["switch-off", "hidden-order", "private-agent-no-name", "blank-agent-name", "human-order-no-agent-key", "agent-key-missing", "agent-key-blank", "via-api-key-not-boolean-true"])
+  expect(Object.values(row("eligible-published-agent-key").outcome.perps).every(Boolean)).toBe(true)
+  for (const id of ["hidden-order", "private-agent-no-name", "blank-agent-name", "human-order-no-agent-key", "agent-key-missing", "agent-key-blank", "via-api-key-not-boolean-true"])
     expect(Object.values(row(`eligible-${id}`).outcome.perps).some(Boolean)).toBe(false)
   for (const asks of Object.values(row("perp-events-ask-for-the-agent-name").outcome.asksName)) expect(asks).toEqual({ agentKey: true, noAgentKey: false })
 })
 
-test("the switch is on only for true or 1", () => {
-  expect(row("trades-in-stream-switch-values").outcome).toEqual({ true: true, 1: true, TRUE: false, yes: false, 0: false, false: false, unset: false })
+test("the switch that gated perps events and trades in the stream is gone at this commit (BE-3970)", () => {
+  expect(rows.some((r) => r.id === "trades-in-stream-switch-values" || r.id === "eligible-switch-off")).toBe(false)
 })
 
 test("the kind comes from the position's size before and after the fill; a flip through zero is an open", () => {
@@ -114,15 +114,15 @@ test("a builder-dex fill names its market as dex:COIN", () => {
   expect(sent("builder-dex-coin").wire).toMatchObject({ type: "perp_open", coin: "xyz:XYZ100", notionalUsd: 123.71 })
 })
 
-test("a hidden order, a private agent, the switch off, a failed lookup, a blank key and a failed venue read send nothing", () => {
-  for (const id of ["hidden-order", "private-agent", "switch-off", "lookup-failure", "blank-agent-key", "venue-read-failure", "unreadable-size"]) {
+test("a hidden order, a private agent, a failed lookup, a blank key and a failed venue read send nothing", () => {
+  for (const id of ["hidden-order", "private-agent", "lookup-failure", "blank-agent-key", "venue-read-failure", "unreadable-size"]) {
     const o = sent(`${id}-sends-nothing`)
     expect(o.sent).toBe(false)
     expect(o).not.toHaveProperty("wire")
     expect(o.threw).toBe(false)
   }
-  // Hidden and switch-off stop before the agent lookup; a blank key never reaches it either.
-  for (const id of ["hidden-order", "switch-off", "blank-agent-key"]) expect(sent(`${id}-sends-nothing`).lookups).toEqual([])
+  // A hidden order stops before the agent lookup; a blank key never reaches it either.
+  for (const id of ["hidden-order", "blank-agent-key"]) expect(sent(`${id}-sends-nothing`).lookups).toEqual([])
   expect(sent("private-agent-sends-nothing").lookups).toHaveLength(1)
 })
 
@@ -175,17 +175,21 @@ test("each fill increase is claimed once in the settle transaction and announced
     expect(row(id).outcome.found).toBe(true)
 })
 
-test("no perps order in Candle's CLI, MCP server or SDK takes hide at this commit", () => {
-  expect(row("clients-carry-no-perps-hide").outcome).toEqual({ cliPerpsTakesHide: false, mcpPerpsTakesHide: false, mcpManageTakesHide: false, sdkOpenCloseModifyTakeHide: false, sdkTpslTakesHide: false })
+test("the perps orders in Candle's CLI, MCP server and SDK take hide at this commit", () => {
+  expect(row("clients-carry-perps-hide").outcome).toEqual({ cliPerpsTakesHide: true, mcpPerpsTakesHide: true, mcpManageTakesHide: true, sdkOpenCloseModifyTakeHide: true, sdkTpslTakesHide: true })
 })
 
-test("the Candle Harness refuses --hide on a perps order, and every MCP perps write, so nothing is sent public by mistake", () => {
+test("the Candle Harness takes --hide on the perps rows it can run, and still refuses every MCP perps write", () => {
   const ctx = { defaultAgent: "momentum", agents: new Set(["momentum"]) }
-  const plain = resolveCall({ command: "perps", subcommand: "close", args: ["BTC"] }, ctx)
-  expect(plain.ok).toBe(true)
-  for (const [subcommand, args] of [["open", ["BTC", "long", "10"]], ["close", ["BTC"]], ["modify", ["0xabc", "--price", "1"]], ["tpsl", ["BTC"]]] as const) {
+  for (const [subcommand, args] of [["close", ["BTC"]], ["tpsl", ["BTC", "--stop-loss", "50000"]]] as const) {
     const r = resolveCall({ command: "perps", subcommand, args: [...args, "--hide"] }, ctx)
-    expect(r).toEqual({ ok: false, code: "FLAG_NOT_ALLOWED", message: `candle perps ${subcommand} has no --hide flag.` })
+    expect(r.ok).toBe(true)
+    expect(r.ok ? r.call.argv : []).toContain("--hide")
+  }
+  // `perps open` and `modify` have no card yet: they are taken as a command (no unknown-flag refusal), then held as coming.
+  for (const [subcommand, args] of [["open", ["BTC", "long", "10"]], ["modify", ["--cloid", `0x${"1".repeat(32)}`, "--price", "1"]]] as const) {
+    const r = resolveCall({ command: "perps", subcommand, args: [...args, "--hide"] }, ctx)
+    expect(r.ok ? r.call.argv : []).toContain("--hide")
   }
   for (const tool of ["candle_perps_open", "candle_perps_close", "candle_perps_modify"]) for (const mode of ["live", "paper"] as const) expect(classify(tool, { hide: true }, mode)).toMatchObject({ class: "refused", code: "NOT_YET_SUPPORTED" })
 })
