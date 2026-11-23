@@ -36,7 +36,7 @@ Never propose a bot the person's words leave open. In one short message, ask for
 - **What it enters on:** one of Hacc's patterns, with filters (market cap, age, groups, venues, hours).
 - **The stake** a trade, and **how many at once.**
 - **The exits:** a take profit, a stop, a max hold, a trailing exit. A bot with no exit holds until you flatten it: ask.
-- **Its own slippage, for a live bot** on young tokens (under $5M, off the tape): ask whether to set a bound, with a figure (5% to 10%, say). At the default, an exit on a young token can revert on chain, spending the network fee, and sell only on its next try. Set one only if they agree.
+- **Its own slippage, for a live bot** on young tokens (under $5M, off the tape): ask whether to set a bound, with a figure (5% to 10%, say). At the default (100 bps, 1% on trade builds; Candle caps `maxSlippageBps` at 5,000 bps, 50%), a stop-loss sell on a fast-falling token can miss its minimum output before signing (`presign_refused`, `cause: "slippage_exceeded"`, nothing signed or sent: retry a `presign_refused` build at once for a fresh quote, or widen `maxSlippageBps` for stop losses) or revert on chain after broadcast, spending the network fee, and sell only on a later try; a wider `maxSlippageBps` accepts a lower minimum output so the exit can fill. Set one only if they agree.
 - **A name,** short: it shows on every receipt.
 
 Then propose it. Don't propose it twice, and don't wait for the press: when a later message asks how it went, read `candle_get_operation` (kind `bot`). Tell the person, in a line or two, what the card says: paper or live, how its buys run (on its own inside the wallet's figures, or asking them each time), that its exits sell without a card, and its worst case.

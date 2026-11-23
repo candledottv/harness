@@ -1,0 +1,503 @@
+{
+  "about": "Offline pre-sign build refusal and stop-loss retry contracts (BE-4292, BE-4293, BE-4342, BE-4345) recorded from the published npm packages (@candledottv/agent-sdk 0.6.39, @candledottv/mcp 0.10.45, @candledottv/cli 0.13.47), not a monorepo checkout: CandleApiError carrying refusal and detail (plus requestId and trade()'s clientTradeId), immediate rebuilds on retryable presign_refused builds with the same or a new clientTradeId, the shipped MCP server relaying cause \"slippage_exceeded\", and the shipped CLI exiting 1 before signing. Every fetch is intercepted in memory.",
+  "packages": {
+    "@candledottv/cli": {
+      "version": "0.13.47",
+      "integrity": "sha512-uLAExcASXpChLY6vJwzHsmkQb1AyfW2yE6B3aeq9UBNNOEsbEbcDt8O32rnNTQQl3huRu0hwE6EI6+yJtgLI5g=="
+    },
+    "@candledottv/mcp": {
+      "version": "0.10.45",
+      "integrity": "sha512-DzGN3F6HKd51JvCHTTIGPFVhlJ4ESPD7pzZBaqgZthbW2pa5brTQCyGbWVmgMs+CQTgmE5ydCkfWG/+Ssbar/A=="
+    },
+    "@candledottv/agent-sdk": {
+      "version": "0.6.39",
+      "integrity": "sha512-BZATsnpq0ZGSE0vBX/zwbY6DvC91u4G7Dtk0eHmNtDb5T2sGbCY8mUFPyvjNF2gxnKD6tV1i2h+3APRK4sc7DA=="
+    }
+  },
+  "entryPoints": {
+    "sdk": "./dist/index.js",
+    "mcp": "./dist/index.js",
+    "cli": "./dist/index.js"
+  },
+  "rows": [
+    {
+      "id": "sdk-pkg-slippage-refused",
+      "scenario": "sdk-envelope",
+      "surface": "sdk",
+      "args": {
+        "status": 500,
+        "hasRequestId": true,
+        "wireCause": "slippage_exceeded"
+      },
+      "outcome": {
+        "code": "SWAP_FAILED",
+        "status": 500,
+        "retryable": true,
+        "stage": "not_broadcast",
+        "reason": "presign_refused",
+        "refusal": "simulation_failed",
+        "detail": "The price moved past maxSlippageBps before the transaction could land; retry at once for a fresh quote, or raise maxSlippageBps (default 100, cap 5000). ({\"InstructionError\":[3,{\"Custom\":6001}]}; Program <redacted> failed: custom program error: 0x1771)",
+        "requestId": "req_fixture_064152",
+        "message": "The built transaction failed the pre-sign safety check (simulation_failed); nothing was signed or sent. (request id req_fixture_064152)"
+      }
+    },
+    {
+      "id": "sdk-pkg-fee-mismatch",
+      "scenario": "sdk-envelope",
+      "surface": "sdk",
+      "args": {
+        "status": 500,
+        "hasRequestId": false
+      },
+      "outcome": {
+        "code": "SWAP_FAILED",
+        "status": 500,
+        "retryable": true,
+        "stage": "not_broadcast",
+        "reason": "presign_refused",
+        "refusal": "fee_amount_mismatch",
+        "detail": "expected fee 50000 lamports, simulated transfer 48500 lamports",
+        "requestId": null,
+        "message": "The built transaction failed the pre-sign safety check (fee_amount_mismatch); nothing was signed or sent."
+      }
+    },
+    {
+      "id": "sdk-pkg-insufficient-lamports",
+      "scenario": "sdk-envelope",
+      "surface": "sdk",
+      "args": {
+        "status": 400,
+        "hasRequestId": false
+      },
+      "outcome": {
+        "code": "INSUFFICIENT_OWNER_BALANCE",
+        "status": 400,
+        "retryable": false,
+        "stage": "not_broadcast",
+        "reason": "presign_refused",
+        "refusal": "simulation_failed",
+        "detail": "Transfer: insufficient lamports 900000, need 2039280",
+        "requestId": null,
+        "message": "The paying wallet <payer> does not hold enough SOL for this sell; nothing was signed or sent."
+      }
+    },
+    {
+      "id": "sdk-pkg-no-presign-fields",
+      "scenario": "sdk-envelope",
+      "surface": "sdk",
+      "args": {
+        "status": 403,
+        "hasRequestId": false
+      },
+      "outcome": {
+        "code": "SPEND_LIMIT_EXCEEDED",
+        "status": 403,
+        "retryable": false,
+        "stage": null,
+        "reason": null,
+        "refusal": null,
+        "detail": null,
+        "requestId": null,
+        "message": "Exceeds per-trade spend cap."
+      }
+    },
+    {
+      "id": "sdk-pkg-non-string-ignored",
+      "scenario": "sdk-envelope",
+      "surface": "sdk",
+      "args": {
+        "status": 500,
+        "hasRequestId": false
+      },
+      "outcome": {
+        "code": "SWAP_FAILED",
+        "status": 500,
+        "retryable": true,
+        "stage": "not_broadcast",
+        "reason": "presign_refused",
+        "refusal": null,
+        "detail": null,
+        "requestId": null,
+        "message": "Refused."
+      }
+    },
+    {
+      "id": "sdk-pkg-non-json-502",
+      "scenario": "sdk-envelope",
+      "surface": "sdk",
+      "args": {
+        "status": 502,
+        "hasRequestId": true
+      },
+      "outcome": {
+        "code": "HTTP_502",
+        "status": 502,
+        "retryable": false,
+        "stage": null,
+        "reason": null,
+        "refusal": null,
+        "detail": null,
+        "requestId": "req_proxy_502_abcd",
+        "message": "Bad Gateway (request id req_proxy_502_abcd)"
+      }
+    },
+    {
+      "id": "sdk-pkg-build-trade-presign-refused",
+      "scenario": "sdk-client",
+      "surface": "sdk",
+      "args": {
+        "method": "buildTrade",
+        "side": "sell",
+        "clientTradeId": "stop-sell-1"
+      },
+      "requests": [
+        {
+          "n": 1,
+          "method": "POST",
+          "host": "api.test",
+          "path": "/api/v1/trade/agent/build",
+          "clientTradeId": "stop-sell-1"
+        }
+      ],
+      "outcome": {
+        "threw": "CandleApiError",
+        "code": "SWAP_FAILED",
+        "status": 500,
+        "retryable": true,
+        "stage": "not_broadcast",
+        "reason": "presign_refused",
+        "refusal": "simulation_failed",
+        "detail": "The price moved past maxSlippageBps before the transaction could land; retry at once for a fresh quote, or raise maxSlippageBps (default 100, cap 5000). ({\"InstructionError\":[3,{\"Custom\":6001}]}; Program <redacted> failed: custom program error: 0x1771)",
+        "requestId": "req_build_refused_1",
+        "clientTradeId": null
+      }
+    },
+    {
+      "id": "sdk-pkg-one-call-trade-presign-refused",
+      "scenario": "sdk-client",
+      "surface": "sdk",
+      "args": {
+        "method": "trade",
+        "side": "sell",
+        "clientTradeId": "stop-sell-onecall"
+      },
+      "requests": [
+        {
+          "n": 1,
+          "method": "POST",
+          "host": "api.test",
+          "path": "/api/v1/trade/agent/build",
+          "clientTradeId": "stop-sell-onecall"
+        }
+      ],
+      "outcome": {
+        "threw": "CandleApiError",
+        "code": "SWAP_FAILED",
+        "status": 500,
+        "retryable": true,
+        "stage": "not_broadcast",
+        "reason": "presign_refused",
+        "refusal": "simulation_failed",
+        "detail": "The price moved past maxSlippageBps before the transaction could land; retry at once for a fresh quote, or raise maxSlippageBps (default 100, cap 5000). ({\"InstructionError\":[3,{\"Custom\":6001}]}; Program <redacted> failed: custom program error: 0x1771)",
+        "requestId": "req_onecall_refused_1",
+        "clientTradeId": "stop-sell-onecall",
+        "signedCalls": 0
+      }
+    },
+    {
+      "id": "sdk-pkg-retry-same-id-fresh-quote",
+      "scenario": "sdk-client",
+      "surface": "sdk",
+      "args": {
+        "idStrategy": "same-clientTradeId",
+        "maxSlippageBps": "default"
+      },
+      "requests": [
+        {
+          "n": 1,
+          "method": "POST",
+          "host": "api.test",
+          "path": "/api/v1/trade/agent/build",
+          "clientTradeId": "stop-sell-same-id"
+        },
+        {
+          "n": 2,
+          "method": "POST",
+          "host": "api.test",
+          "path": "/api/v1/trade/agent/build",
+          "clientTradeId": "stop-sell-same-id"
+        }
+      ],
+      "outcome": {
+        "firstRefusal": "simulation_failed",
+        "firstRetryable": true,
+        "secondStatus": "built",
+        "sameClientTradeId": true,
+        "minOutRaw": "1960200"
+      }
+    },
+    {
+      "id": "sdk-pkg-retry-wider-slippage-new-id",
+      "scenario": "sdk-client",
+      "surface": "sdk",
+      "args": {
+        "idStrategy": "new-clientTradeId-on-param-change",
+        "fromBps": 100,
+        "toBps": 500
+      },
+      "requests": [
+        {
+          "n": 1,
+          "method": "POST",
+          "host": "api.test",
+          "path": "/api/v1/trade/agent/build",
+          "clientTradeId": "stop-sell-100bps",
+          "maxSlippageBps": 100
+        },
+        {
+          "n": 2,
+          "method": "POST",
+          "host": "api.test",
+          "path": "/api/v1/trade/agent/build",
+          "clientTradeId": "stop-sell-500bps",
+          "maxSlippageBps": 500
+        }
+      ],
+      "outcome": {
+        "firstRefusal": "simulation_failed",
+        "secondStatus": "built",
+        "distinctClientTradeId": true,
+        "minOutRawAt500Bps": "1881000"
+      }
+    },
+    {
+      "id": "mcp-pkg-trade-stop-sell-presign-slippage",
+      "scenario": "mcp-package",
+      "surface": "mcp",
+      "args": {
+        "tool": "candle_trade",
+        "mint": "<mint>",
+        "side": "sell",
+        "percent": 100,
+        "maxSlippageBps": 100,
+        "clientTradeId": "mcp-stop-sell-1"
+      },
+      "requests": [
+        {
+          "n": 1,
+          "method": "GET",
+          "host": "api.test",
+          "path": "/api/v1/agent/keys/self/public-profile"
+        },
+        {
+          "n": 2,
+          "method": "GET",
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/embedded"
+        },
+        {
+          "n": 3,
+          "method": "GET",
+          "host": "api.test",
+          "path": "/api/v1/tokens/<mint>/balance/<payer>"
+        },
+        {
+          "n": 4,
+          "method": "POST",
+          "host": "api.test",
+          "path": "/api/v1/trade/agent/build",
+          "clientTradeId": "mcp-stop-sell-1",
+          "maxSlippageBps": 100
+        }
+      ],
+      "outcome": {
+        "isError": true,
+        "reply": {
+          "clientTradeId": "mcp-stop-sell-1",
+          "resolved": {
+            "percent": 100,
+            "balanceRaw": "91598938670",
+            "amountRaw": "91598938670"
+          },
+          "api": {
+            "success": false,
+            "error": {
+              "code": "SWAP_FAILED",
+              "message": "The built transaction failed the pre-sign safety check (simulation_failed); nothing was signed or sent.",
+              "retryable": true,
+              "stage": "not_broadcast",
+              "reason": "presign_refused",
+              "refusal": "simulation_failed",
+              "detail": "The price moved past maxSlippageBps before the transaction could land; retry at once for a fresh quote, or raise maxSlippageBps (default 100, cap 5000). ({\"InstructionError\":[3,{\"Custom\":6001}]}; Program <redacted> failed: custom program error: 0x1771)",
+              "cause": "slippage_exceeded"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "mcp-pkg-trade-buy-presign-insufficient-lamports",
+      "scenario": "mcp-package",
+      "surface": "mcp",
+      "args": {
+        "tool": "candle_trade",
+        "mint": "<mint>",
+        "side": "buy",
+        "amount": "0.05",
+        "clientTradeId": "mcp-buy-lamports-1"
+      },
+      "requests": [
+        {
+          "n": 1,
+          "method": "GET",
+          "host": "api.test",
+          "path": "/api/v1/agent/keys/self/public-profile"
+        },
+        {
+          "n": 2,
+          "method": "POST",
+          "host": "api.test",
+          "path": "/api/v1/trade/agent/build",
+          "clientTradeId": "mcp-buy-lamports-1"
+        }
+      ],
+      "outcome": {
+        "isError": true,
+        "reply": {
+          "clientTradeId": "mcp-buy-lamports-1",
+          "resolved": {
+            "amountDecimal": "0.05"
+          },
+          "api": {
+            "success": false,
+            "error": {
+              "code": "INSUFFICIENT_OWNER_BALANCE",
+              "message": "The paying wallet <payer> does not hold enough SOL for this buy; nothing was signed or sent.",
+              "retryable": false,
+              "stage": "not_broadcast",
+              "reason": "presign_refused",
+              "refusal": "simulation_failed",
+              "detail": "Transfer: insufficient lamports 500000, need 52000000"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "mcp-pkg-swap-presign-slippage",
+      "scenario": "mcp-package",
+      "surface": "mcp",
+      "args": {
+        "tool": "candle_swap",
+        "from": "SOL",
+        "to": "USDC",
+        "amount": "0.25",
+        "maxSlippageBps": 100,
+        "clientSwapId": "mcp-swap-1"
+      },
+      "requests": [
+        {
+          "n": 1,
+          "method": "GET",
+          "host": "api.test",
+          "path": "/api/v1/agent/keys/self/public-profile"
+        },
+        {
+          "n": 2,
+          "method": "POST",
+          "host": "api.test",
+          "path": "/api/v1/agent/swap",
+          "clientTradeId": "mcp-swap-1",
+          "maxSlippageBps": 100
+        }
+      ],
+      "outcome": {
+        "isError": true,
+        "reply": {
+          "clientSwapId": "mcp-swap-1",
+          "success": false,
+          "error": {
+            "code": "SWAP_FAILED",
+            "message": "The built transaction failed the pre-sign safety check (simulation_failed); nothing was signed or sent.",
+            "retryable": true,
+            "stage": "not_broadcast",
+            "reason": "presign_refused",
+            "refusal": "simulation_failed",
+            "detail": "The price moved past maxSlippageBps before the transaction could land; retry at once for a fresh quote, or raise maxSlippageBps (default 100, cap 5000). ({\"InstructionError\":[3,{\"Custom\":6001}]}; Program <redacted> failed: custom program error: 0x1771)",
+            "cause": "slippage_exceeded"
+          }
+        }
+      }
+    },
+    {
+      "id": "cli-pkg-swap-presign-slippage",
+      "scenario": "cli-package",
+      "surface": "cli",
+      "args": {
+        "command": "swap SOL <mint> --amount 0.05 --wallet <payer> --client-trade-id cli-tee-stop-1 --yes --json"
+      },
+      "requests": [
+        {
+          "n": 1,
+          "method": "GET",
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/trading"
+        },
+        {
+          "n": 2,
+          "method": "GET",
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/embedded"
+        },
+        {
+          "n": 3,
+          "method": "GET",
+          "host": "api.test",
+          "path": "/api/v1/agent/swap/jobs/<id>"
+        },
+        {
+          "n": 4,
+          "method": "POST",
+          "host": "api.test",
+          "path": "/api/v1/agent/swap/build",
+          "clientTradeId": "cli-tee-stop-1",
+          "maxSlippageBps": 50
+        }
+      ],
+      "outcome": {
+        "exitCode": 1,
+        "json": {
+          "ok": false,
+          "code": "SWAP_FAILED",
+          "message": "The built transaction failed the pre-sign safety check (simulation_failed); nothing was signed or sent. Operation cli-tee-stop-1; use candle swap status cli-tee-stop-1 before another attempt."
+        }
+      }
+    },
+    {
+      "id": "sdk-pkg-readme-errors",
+      "scenario": "package-docs",
+      "surface": "docs",
+      "args": {
+        "file": "@candledottv/agent-sdk/README.md"
+      },
+      "outcome": {
+        "text": "Every non-2xx response throws `CandleApiError` with `code`, `status`, `retryable`, and\n(for field-level validation) `field`, plus `routing`, `discovery`, `coverage`, `uiHint` and\n`docsPath` when the envelope carries them. A refused build (`reason: \"presign_refused\"`) also carries `refusal` (the pre-sign check that fired) and `detail` (its sentence for why, for example that the price moved past `maxSlippageBps`) from 0.6.37; nothing was signed or sent, so it is safe to build again. `requestId` (SDK 0.6.38) is the API's\n`X-Candle-Request-Id` for the failed response, also on non-envelope errors, and the message ends with\n`(request id <id>)`: quote it when reporting a failed call, since it finds the exact log line. It is\nabsent from an older API. `REQUEST_ID_HEADER` and `requestIdOf(response)` are exported. Structured envelopes map straight through; the few\nlegacy endpoints without envelopes (activity, users) surface as `code: \"HTTP_<status>\"`. A\nSolana or EVM JSON-RPC failure throws `JsonRpcError`, with the RPC's numeric `code` and its\n`data` (for a failed simulation, `{ err, logs }`). The one-call write methods also put the\nidempotency id they sent on these errors, and wrap any other failure in `CandleOperationError`:\nsee \"Retrying a write that failed or timed out\" above. The full code table is on\n[Headless launch](https://docs.candle.tv/developers/headless-launch)."
+      }
+    },
+    {
+      "id": "sdk-pkg-dts-fields",
+      "scenario": "package-docs",
+      "surface": "docs",
+      "args": {
+        "file": "@candledottv/agent-sdk/dist/errors.d.ts"
+      },
+      "outcome": {
+        "payloadRefusal": true,
+        "payloadDetail": true,
+        "classRefusal": true,
+        "classDetail": true,
+        "classRequestId": true
+      }
+    }
+  ]
+}

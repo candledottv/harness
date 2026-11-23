@@ -53,12 +53,37 @@ export interface OperationError {
   stage?: string
   /** KEY_LIMIT_REACHED: when the key's window resets (epoch ms), or null for a lifetime cap. */
   resetsAt?: number | null
-  /** KEY_LIMIT_REACHED's `limit_unavailable`: Candle couldn't value the trade or read the key's use. */
+  /** KEY_LIMIT_REACHED's `limit_unavailable`, or `presign_refused` when Candle's pre-sign guard refused the build. */
   reason?: string
+  /** With `presign_refused`: the pre-sign check that fired (`simulation_failed`, `fee_amount_mismatch`, ...). */
+  refusal?: string
+  /** With `presign_refused`: Candle's redacted sentence for why the pre-sign check refused the build. */
+  detail?: string
+  /** With `presign_refused`: the named cause when Candle knows it (`slippage_exceeded`, `insufficient_lamports`). */
+  cause?: string
   /** With `limit_unavailable`: when to ask again (epoch ms), about 30 s out. */
   retryAfter?: number
   /** SWAP_ROUTE_FAILING: how long Candle refuses the pair from this key. */
   retryAfterSeconds?: number
+}
+
+/** Pre-sign build refusal fields (`reason: "presign_refused"`), wherever Candle or the CLI put them. */
+export function presignRefusedFields(raw: Record<string, unknown>): Pick<OperationError, "reason" | "refusal" | "detail" | "cause"> {
+  const details = typeof raw.details === "object" && raw.details !== null ? (raw.details as Record<string, unknown>) : {}
+  const pick = (name: string) => (name in raw ? raw[name] : details[name])
+  const reason = pick("reason")
+  const stage = pick("stage")
+  if (reason !== "presign_refused" && stage !== "presign_refused") return {}
+  const refusal = pick("refusal")
+  const detail = pick("detail")
+  const cause = pick("cause")
+  const cleanedDetail = typeof detail === "string" ? terminalText(detail, { maxLength: 500 }) : ""
+  return {
+    ...(reason === "presign_refused" ? { reason } : {}),
+    ...(typeof refusal === "string" && /^[a-z0-9_]{1,64}$/.test(refusal) ? { refusal } : {}),
+    ...(cleanedDetail.length > 0 ? { detail: cleanedDetail } : {}),
+    ...(typeof cause === "string" && /^[a-z0-9_]{1,64}$/.test(cause) ? { cause } : {}),
+  }
 }
 
 /** SWAP_ROUTE_FAILING's wait, wherever Candle or the CLI put it. */
@@ -357,11 +382,18 @@ export function outcomeOf(kind: Card["kind"], outcome: ToolOutcome, chain?: Chai
 
 function errorOf(code: string, raw: Record<string, unknown>, chain?: ChainSlug): OperationError {
   const serverText = typeof raw.message === "string" ? terminalText(raw.message, { maxLength: 500 }) : code
+  const presign = presignRefusedFields(raw)
+  const causeNote = presign.cause && !serverText.includes(presign.cause) && !presign.detail?.includes(presign.cause) ? ` (${presign.cause})` : ""
+  const presignText =
+    code === "SWAP_FAILED" && (presign.detail || causeNote)
+      ? terminalText(`${serverText}${causeNote}${presign.detail && !serverText.includes(presign.detail) ? ` ${presign.detail}` : ""}`, { maxLength: 500 })
+      : undefined
   return {
     code,
-    message: refusalMessage(code, raw, chain) ?? serverText,
+    message: refusalMessage(code, raw, chain) ?? presignText ?? serverText,
     retryable: raw.retryable === true,
     ...(typeof raw.stage === "string" ? { stage: raw.stage } : {}),
+    ...presign,
     ...(code === "KEY_LIMIT_REACHED" ? keyLimitFields(raw) : {}),
     ...(code === "SWAP_ROUTE_FAILING" ? routeWaitFields(raw) : {}),
   }

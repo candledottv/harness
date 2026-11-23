@@ -1,0 +1,279 @@
+{
+  "about": "Offline API pre-sign guard and fast-market stop-loss docs contracts (BE-3904, BE-4292, BE-4343, BE-4344) recorded from the published release commit 5d7a861a8 (CLI 0.13.47, MCP 0.10.45, SDK 0.6.39): Jupiter 6001 slippage_exceeded classification, inner-CPI exclusion, redaction, maxSlippageBps default (100) and cap (5,000), countRisk: false, and Fast markets and stop losses docs parity plus offline fastConnectFetch execution. The SDK, MCP and CLI package contracts live in candle-presign-refused-packages.json.",
+  "source": {
+    "repo": "candledottv/candle-monorepo",
+    "commit": "5d7a861a83bcc5c4f2c3dace9897c325b3525e43",
+    "versions": {
+      "cli": "0.13.47",
+      "mcp": "0.10.45",
+      "sdk": "0.6.39"
+    },
+    "files": [
+      "apps/api/src/services/solana/presign-guard.ts",
+      "apps/api/src/lib/launch-errors.ts",
+      "apps/api/src/lib/agent-slippage.ts",
+      "apps/api/src/routes/trade-agent.ts",
+      "docs/agent-trading.md",
+      "apps/docs/src/content/docs/developers/agent-trading.md",
+      "apps/frontend/public/docs/agent-trading.md",
+      "apps/docs/src/content/docs/developers/sdk.md",
+      "packages/sdk/CHANGELOG.md"
+    ]
+  },
+  "rows": [
+    {
+      "id": "api-jupiter-6001-labelled-and-redacted",
+      "scenario": "api-presign",
+      "args": {
+        "err": {
+          "InstructionError": [
+            3,
+            {
+              "Custom": 6001
+            }
+          ]
+        },
+        "program": "<jupiter-v6>"
+      },
+      "outcome": {
+        "slippageExceeded": true,
+        "otherProgram6001": false,
+        "innerCpi6001": false,
+        "diagnosticBeforeJupiter6001": true,
+        "jupiter6000": false,
+        "nullLogs": false,
+        "jupiterIdRedacted": true,
+        "otherAddressRedacted": true,
+        "envelope": {
+          "success": false,
+          "error": {
+            "code": "SWAP_FAILED",
+            "message": "The built transaction failed the pre-sign safety check (simulation_failed); nothing was signed or sent.",
+            "retryable": true,
+            "stage": "not_broadcast",
+            "reason": "presign_refused",
+            "refusal": "simulation_failed",
+            "detail": "The price moved past maxSlippageBps before the transaction could land; retry at once for a fresh quote, or raise maxSlippageBps (default 100, cap 5000). ({\"InstructionError\":[3,{\"Custom\":6001}]}; payer <payer> pool [redacted address]; Program [redacted address] failed: custom program error: 0x1771)",
+            "cause": "slippage_exceeded"
+          }
+        }
+      }
+    },
+    {
+      "id": "api-slippage-bounds-and-risk-breaker",
+      "scenario": "api-presign",
+      "args": {
+        "route": "/api/v1/trade/agent/build"
+      },
+      "outcome": {
+        "defaultMaxSlippageBps": 100,
+        "capMaxSlippageBps": 5000,
+        "presignCountsTowardRiskBreaker": false
+      }
+    },
+    {
+      "id": "docs-fast-markets-and-stop-losses",
+      "scenario": "docs",
+      "args": {
+        "files": [
+          "docs/agent-trading.md",
+          "apps/docs/src/content/docs/developers/agent-trading.md",
+          "apps/frontend/public/docs/agent-trading.md"
+        ]
+      },
+      "outcome": {
+        "identicalCopies": true,
+        "text": "## Fast markets and stop losses\n\nWhen a build returns `reason: \"presign_refused\"` and `retryable: true`, rebuild immediately for a\nfresh quote. Nothing was signed or broadcast. You can reuse the same `clientTradeId` for an\nunchanged request or use a new one. Use a new ID if you change the request. If the response sets\n`retryable: false`, resolve the reported cause before rebuilding.\n\nFor stop-loss sells on fast-moving tokens, pass a wider `maxSlippageBps` on the build if you can\naccept a lower minimum output. The default is 100 bps (1%) and the cap is 5,000 bps (50%). A Jupiter\nslippage refusal (error 6001) can be identified by `cause: \"slippage_exceeded\"` in the API response.\nThe TypeScript SDK exposes `refusal` and `detail` on `CandleApiError`.\n\nIn Node.js, pass `fetch: fastConnectFetch(apiUrl)` to `CandleClient`. This example gives API reads and\ntrade builds a 3-second connection timeout and retries once immediately on `UND_ERR_CONNECT_TIMEOUT`.\nThe retry sends the same request body and `clientTradeId`. If a submit or confirm times out, look up\nthe trade's status before deciding what to do.\n\n```ts\nimport { Agent, fetch as undiciFetch, type RequestInit } from \"undici\"\n\nfunction fastConnectFetch(apiUrl: string): typeof fetch {\n  const origin = new URL(apiUrl).origin\n  const dispatcher = new Agent({ connect: { timeout: 3_000 } })\n\n  return async (input, init) => {\n    if (typeof input !== \"string\") return fetch(input, init)\n    const url = new URL(input)\n    const method = (init?.method ?? \"GET\").toUpperCase()\n    const isRead = method === \"GET\" || method === \"HEAD\"\n    const isBuild = method === \"POST\" && url.pathname === \"/api/v1/trade/agent/build\"\n    if (url.origin !== origin || !(isRead || isBuild)) return fetch(input, init)\n\n    const options: RequestInit = { ...(init as RequestInit), dispatcher, redirect: \"manual\" }\n    const send = () => undiciFetch(input, options) as unknown as Promise<Response>\n    try {\n      return await send()\n    } catch (error) {\n      const code = (error as { cause?: { code?: string } }).cause?.code\n      if (code !== \"UND_ERR_CONNECT_TIMEOUT\") throw error\n      return await send()\n    }\n  }\n}\n```",
+        "sdkDocsErrors": "Every structured error response becomes a `CandleApiError` carrying `code`, `status`, `retryable`, and `field` where the API supplied one. A refused build (`reason: \"presign_refused\"`) also carries `refusal` (the pre-sign check that fired) and `detail` (its sentence for why, for example that the price moved past `maxSlippageBps`) from 0.6.37; nothing was signed or sent, so it is safe to build again. Branch on `code`, never on message text. Responses that are not structured envelopes throw the same error type with `code` set to `HTTP_<status>`.",
+        "sdkChangelogEntry": "Release 0.6.37 (BE-4292); it carries the 0.6.36 code, so it waits on the same 2026-11-24T09:00Z gate. `CandleApiError` and `CandleErrorPayload` now carry `refusal` (the pre-sign check that fired) and `detail` (the server's redacted sentence for why) when the API sends them, as on a `presign_refused` build. A Jupiter slippage refusal's detail says the price moved past `maxSlippageBps`. No new method or request; an older API answers without them."
+      }
+    },
+    {
+      "id": "docs-connect-retry-get-read",
+      "scenario": "docs",
+      "args": {
+        "method": "GET",
+        "host": "api.test",
+        "path": "/api/v1/markets/feed"
+      },
+      "outcome": {
+        "agentOptions": {
+          "connect": {
+            "timeout": 3000
+          }
+        },
+        "attempts": 2,
+        "transports": [
+          "undici",
+          "undici"
+        ],
+        "sameBodyAcrossAttempts": true,
+        "status": 200,
+        "threwCode": null
+      }
+    },
+    {
+      "id": "docs-connect-retry-trade-build",
+      "scenario": "docs",
+      "args": {
+        "method": "POST",
+        "host": "api.test",
+        "path": "/api/v1/trade/agent/build"
+      },
+      "outcome": {
+        "agentOptions": {
+          "connect": {
+            "timeout": 3000
+          }
+        },
+        "attempts": 2,
+        "transports": [
+          "undici",
+          "undici"
+        ],
+        "sameBodyAcrossAttempts": true,
+        "status": 200,
+        "threwCode": null
+      }
+    },
+    {
+      "id": "docs-connect-second-timeout-throws",
+      "scenario": "docs",
+      "args": {
+        "method": "POST",
+        "host": "api.test",
+        "path": "/api/v1/trade/agent/build"
+      },
+      "outcome": {
+        "agentOptions": {
+          "connect": {
+            "timeout": 3000
+          }
+        },
+        "attempts": 2,
+        "transports": [
+          "undici",
+          "undici"
+        ],
+        "sameBodyAcrossAttempts": true,
+        "status": null,
+        "threwCode": "UND_ERR_CONNECT_TIMEOUT"
+      }
+    },
+    {
+      "id": "docs-connect-headers-timeout-no-retry",
+      "scenario": "docs",
+      "args": {
+        "method": "POST",
+        "host": "api.test",
+        "path": "/api/v1/trade/agent/build"
+      },
+      "outcome": {
+        "agentOptions": {
+          "connect": {
+            "timeout": 3000
+          }
+        },
+        "attempts": 1,
+        "transports": [
+          "undici"
+        ],
+        "sameBodyAcrossAttempts": true,
+        "status": null,
+        "threwCode": "UND_ERR_HEADERS_TIMEOUT"
+      }
+    },
+    {
+      "id": "docs-connect-submit-never-retried",
+      "scenario": "docs",
+      "args": {
+        "method": "POST",
+        "host": "api.test",
+        "path": "/api/v1/trade/agent/submit"
+      },
+      "outcome": {
+        "agentOptions": {
+          "connect": {
+            "timeout": 3000
+          }
+        },
+        "attempts": 1,
+        "transports": [
+          "default"
+        ],
+        "sameBodyAcrossAttempts": true,
+        "status": null,
+        "threwCode": "UND_ERR_CONNECT_TIMEOUT"
+      }
+    },
+    {
+      "id": "docs-connect-confirm-never-retried",
+      "scenario": "docs",
+      "args": {
+        "method": "POST",
+        "host": "api.test",
+        "path": "/api/v1/trade/agent/confirm"
+      },
+      "outcome": {
+        "agentOptions": {
+          "connect": {
+            "timeout": 3000
+          }
+        },
+        "attempts": 1,
+        "transports": [
+          "default"
+        ],
+        "sameBodyAcrossAttempts": true,
+        "status": null,
+        "threwCode": "UND_ERR_CONNECT_TIMEOUT"
+      }
+    },
+    {
+      "id": "docs-connect-execute-never-retried",
+      "scenario": "docs",
+      "args": {
+        "method": "POST",
+        "host": "api.test",
+        "path": "/api/v1/trade/agent/execute"
+      },
+      "outcome": {
+        "agentOptions": {
+          "connect": {
+            "timeout": 3000
+          }
+        },
+        "attempts": 1,
+        "transports": [
+          "default"
+        ],
+        "sameBodyAcrossAttempts": true,
+        "status": null,
+        "threwCode": "UND_ERR_CONNECT_TIMEOUT"
+      }
+    },
+    {
+      "id": "docs-connect-other-origin-never-retried",
+      "scenario": "docs",
+      "args": {
+        "method": "GET",
+        "host": "rpc.private.test",
+        "path": "/health"
+      },
+      "outcome": {
+        "agentOptions": {
+          "connect": {
+            "timeout": 3000
+          }
+        },
+        "attempts": 1,
+        "transports": [
+          "default"
+        ],
+        "sameBodyAcrossAttempts": true,
+        "status": null,
+        "threwCode": "UND_ERR_CONNECT_TIMEOUT"
+      }
+    }
+  ]
+}
