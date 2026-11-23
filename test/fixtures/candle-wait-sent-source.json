@@ -2,7 +2,7 @@
   "about": "Offline wait:\"sent\" contracts (BE-3929): a linked Solana trade's POST /api/v1/trade/agent/submit with wait \"sent\" answers HTTP 202 (status broadcast, signature, clientTradeId) once the RPC acknowledges the send, and Candle books it in the background; the trading-background-booking worker books any the request did not, once, with zero double-booking and zero lost fees. Recorded by running Candle's own broadcaster, confirm loop, Solana wire checks, pre-send record rules, confirmSolanaTrade booking races, worker pass and worker confirm against stand-ins, with the route's checks pinned as source text, and the SDK and CLI through their own code, from the source commit named below (CLI 0.13.47, MCP 0.10.45, SDK 0.6.39); every fetch is intercepted and no database is used.",
   "source": {
     "repo": "candledottv/candle-monorepo",
-    "commit": "b5b0a1f75371f595d5c7dd172e380451d056c9c3",
+    "commit": "ead243bdc14b9076c248191aef9be97297ae1cdb",
     "versions": {
       "cli": "0.13.47",
       "mcp": "0.10.45",
@@ -23,7 +23,8 @@
       "apps/api/src/openapi/agent-api.ts",
       "packages/sdk/src/client.ts",
       "packages/cli/src/commands/swap.ts",
-      "docs/agent-trading.md"
+      "docs/agent-trading.md",
+      "apps/api/src/services/solana/send-paths.ts"
     ]
   },
   "rows": [
@@ -377,6 +378,105 @@
         "firstSendPreflight": true,
         "statusReads": 0,
         "firstStatusReadAtMs": null
+      }
+    },
+    {
+      "id": "sent-extra-rpc-acknowledges",
+      "scenario": "broadcast",
+      "evidence": "the primary reply was lost: an extra RPC accepts the preflight send, the 202 precedes confirmation, and the confirm loop does not resend",
+      "args": {
+        "wait": "sent",
+        "primary": "lost",
+        "extra": "expected",
+        "landsOnRead": 20
+      },
+      "outcome": {
+        "answer": {
+          "httpStatus": 202,
+          "atMs": 0,
+          "body": {
+            "success": true,
+            "status": "broadcast",
+            "chain": "solana",
+            "clientTradeId": "<id>",
+            "signature": "<signature>"
+          }
+        },
+        "background": {
+          "atMs": 5000,
+          "landed": "<signature>",
+          "booking": "request"
+        },
+        "events": [
+          {
+            "atMs": 0,
+            "event": "onBroadcast",
+            "signature": "<signature>"
+          },
+          {
+            "atMs": 0,
+            "event": "onSent",
+            "signature": "<signature>"
+          }
+        ],
+        "sendsAtMs": [
+          0
+        ],
+        "firstSendPreflight": true,
+        "statusReads": 20,
+        "firstStatusReadAtMs": 250,
+        "extraSends": [
+          {
+            "atMs": 0,
+            "preflight": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "sent-extra-rpc-names-another-signature",
+      "scenario": "broadcast",
+      "evidence": "an extra RPC returns a different signature: no acknowledgement or confirmation read, and the worker keeps the original reservation",
+      "args": {
+        "wait": "sent",
+        "primary": "lost",
+        "extra": "other-signature"
+      },
+      "outcome": {
+        "answer": {
+          "atMs": 0,
+          "code": "SWAP_FAILED",
+          "retryable": false,
+          "stage": "unconfirmed",
+          "signature": "<signature>",
+          "message": "unconfirmed",
+          "thrown": "TradeUnconfirmedError"
+        },
+        "background": {
+          "atMs": 0,
+          "thrown": "TradeUnconfirmedError",
+          "signature": "<signature>",
+          "booking": "worker"
+        },
+        "events": [
+          {
+            "atMs": 0,
+            "event": "onBroadcast",
+            "signature": "<signature>"
+          }
+        ],
+        "sendsAtMs": [
+          0
+        ],
+        "firstSendPreflight": true,
+        "statusReads": 0,
+        "firstStatusReadAtMs": null,
+        "extraSends": [
+          {
+            "atMs": 0,
+            "preflight": true
+          }
+        ]
       }
     },
     {
@@ -1397,16 +1497,6 @@
         "stage": "unconfirmed",
         "retryable": false,
         "carries": "signature"
-      }
-    },
-    {
-      "id": "broadcast-acknowledges-before-the-confirm",
-      "scenario": "route",
-      "args": {
-        "file": "apps/api/src/services/candle/trade-broadcast.ts"
-      },
-      "outcome": {
-        "found": true
       }
     },
     {

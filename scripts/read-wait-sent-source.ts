@@ -62,6 +62,7 @@ const FILES = [
   "packages/sdk/src/client.ts",
   "packages/cli/src/commands/swap.ts",
   "docs/agent-trading.md",
+  "apps/api/src/services/solana/send-paths.ts",
 ]
 const text = (path: string) => readFileSync(join(checkout, path), "utf8")
 const source = {
@@ -180,7 +181,12 @@ const sigLabel = (s: unknown) => (s === TX.sig ? "<signature>" : s === OTHER.sig
 try {
   // 1. The broadcaster with onSent, driven as the route drives it.
   type Status = null | "confirmed" | { err: true } | "throw"
-  type Plan = { status: Status[]; valid?: boolean[]; send?: "ok" | "refused" | "lost" | "other-signature" }
+  type Plan = {
+    status: Status[]
+    valid?: boolean[]
+    send?: "ok" | "refused" | "lost" | "other-signature"
+    extra?: "expected" | "other-signature"
+  }
   const rpc = (plan: Plan) => {
     const calls: Array<{ t: number; rpc: string; preflight?: boolean }> = []
     let statusN = 0
@@ -259,11 +265,24 @@ try {
   })
   const viaRoute = async (id: string, wait: "sent" | "confirmed", args: Record<string, unknown>, plan: Plan, evidence?: string) => {
     const c = rpc(plan)
-    __setSwapBroadcastInternalsForTest({ connection: c.conn })
+    const extraSends: Array<{ atMs: number; preflight: boolean }> = []
+    const extraUrl = "https://extra-rpc.test"
+    const extraFetch = (async (...[url, init]: Parameters<typeof fetch>) => {
+      assert.equal(String(url), extraUrl)
+      const request = JSON.parse(String(init?.body))
+      assert.equal(request.method, "sendTransaction")
+      assert.ok(request.params[0] === TX.b64, "the fallback must send the same signed bytes")
+      extraSends.push({ atMs: clock, preflight: request.params[1].skipPreflight === false })
+      return Response.json({ jsonrpc: "2.0", id: 1, result: plan.extra === "expected" ? TX.sig : OTHER.sig })
+    }) as typeof fetch
+    __setSwapBroadcastInternalsForTest({
+      connection: c.conn,
+      ...(plan.extra ? { sendPaths: { urls: [extraUrl], deps: { fetch: extraFetch } } } : {}),
+    })
     const r = await drive<Record<string, unknown>>(() => (wait === "sent" ? sentRoute() : defaultRoute()))
     __setSwapBroadcastInternalsForTest(null)
     assert.ok(r.ok, `${id}: the route stand-in threw`)
-    const outcome = { ...r.value, ...sendShape(c) }
+    const outcome = { ...r.value, ...sendShape(c), ...(plan.extra ? { extraSends } : {}) }
     record(id, "broadcast", { wait, ...args }, outcome, evidence)
     return outcome as any
   }
@@ -294,6 +313,16 @@ try {
   o = await viaRoute("sent-rpc-named-another-signature", "sent", { send: "other-signature" }, { status: [null], send: "other-signature" },
     "the RPC answered a signature that is not the signed bytes' own: no acknowledgement, the bytes' own signature is recorded and the answer is unconfirmed")
   assert.deepEqual([o.answer.code, o.answer.message, o.events.map((e: Event) => e.event)], ["SWAP_FAILED", "unconfirmed", ["onBroadcast"]])
+  o = await viaRoute("sent-extra-rpc-acknowledges", "sent", { primary: "lost", extra: "expected", landsOnRead: 20 },
+    { status: landsAt(20), send: "lost", extra: "expected" },
+    "the primary reply was lost: an extra RPC accepts the preflight send, the 202 precedes confirmation, and the confirm loop does not resend")
+  assert.deepEqual([o.answer.httpStatus, o.answer.atMs, o.firstStatusReadAtMs, o.background.atMs, o.sendsAtMs, o.extraSends],
+    [202, 0, 250, 5000, [0], [{ atMs: 0, preflight: true }]])
+  o = await viaRoute("sent-extra-rpc-names-another-signature", "sent", { primary: "lost", extra: "other-signature" },
+    { status: [null], send: "lost", extra: "other-signature" },
+    "an extra RPC returns a different signature: no acknowledgement or confirmation read, and the worker keeps the original reservation")
+  assert.deepEqual([o.answer.code, o.answer.stage, o.statusReads, o.background.booking, o.extraSends],
+    ["SWAP_FAILED", "unconfirmed", 0, "worker", [{ atMs: 0, preflight: true }]])
 
   // 2. The confirm loop with resend: false.
   {
@@ -817,7 +846,6 @@ try {
     { books: ["landed", "TradeRevertedError"], defersToWorker: "any other confirm error", store: "postgres" })
   pin("route-sent-failure-answer", FILES[0]!, /"SWAP_FAILED",\s*isSolanaSendRefusal\(err\)\s*\?\s*"The RPC refused this submit\. Candle will reconcile the recorded signature; check the trade job before retrying\."\s*:\s*TRADE_UNCONFIRMED_MESSAGE,\s*false,\s*\{ stage: "unconfirmed", signature \},/,
     { code: "SWAP_FAILED", stage: "unconfirmed", retryable: false, carries: "signature" }, "even a refused send keeps the reserved signature: another caller may hold the same bytes")
-  pin("broadcast-acknowledges-before-the-confirm", "apps/api/src/services/candle/trade-broadcast.ts", /opts\?\.onSent\?\.\(sig\)\s*return confirmSent\(sig, opts\?\.onSent \? \{ resend: false \} : undefined\)/)
   pin("confirm-resend-false", "apps/api/src/services/candle/launch-confirm.ts", /if \(opts\.resend !== false && Date\.now\(\) - lastResend > 3000\) \{/)
   pin("reserve-checks", "apps/api/src/ledger/trading/trades/outcomes.ts", /trade\.doc\.status !== "built" \|\|\s*trade\.doc\.chain !== "solana" \|\|\s*trade\.doc\.payerType !== "linked" \|\|\s*typeof trade\.doc\.linkedWalletId !== "string" \|\|\s*!trade\.doc\.keyPrefix \|\|\s*trade\.doc\.builtAt !== args\.builtAt \|\|\s*hasBroadcastEvidence\(trade\.doc\)\s*\)\s*return "in_flight"\s*if \(!\(await tradeBuildBinds\(tx\.sql, \{ \.\.\.args, linkedWalletId: trade\.doc\.linkedWalletId \}\)\)\) return "unbound"\s*const result = await recordBroadcastInTx\(tx, trade, \{ signature: args\.signature, backgroundBooking: true \}\)\s*return result\.recorded && result\.stamped \? "reserved" : "in_flight"/,
     { answers: ["reserved", "in_flight", "unbound"] }, "one row lock: the build the route checked, no broadcast evidence, the signed bytes bound to this build's sign claim, then the signature and broadcastAt stamped with the marker")
@@ -1052,7 +1080,7 @@ try {
     const phrases = ["HTTP 202 acknowledges broadcast", "TRADE_REVERTED", "candle swap status <client-trade-id>", "client.waitForTrade(clientTradeId)", "--wait-sent"]
     for (const phrase of phrases) assert.ok(section.includes(phrase), `docs: ${phrase}`)
     const sdkChangelog = text("packages/sdk/CHANGELOG.md")
-    const releasePrefix = `Release ${source.versions.sdk} (BE-3929), with CLI ${source.versions.cli}`
+    const releasePrefix = "Release 0.6.39 (BE-3929), with CLI 0.13.47"
     const releaseEntry = sdkChangelog.split("\n").find((l) => l.startsWith(releasePrefix)) ?? ""
     assert.ok(releaseEntry.length > 0, `sdk changelog missing ${releasePrefix}`)
     record("docs-return-at-broadcast", "docs", { files: ["docs/agent-trading.md", "packages/sdk/CHANGELOG.md"] }, { found: true, phrases, releasePrefix })

@@ -21,16 +21,16 @@ const row = (id: string) => {
   return found
 }
 const scenario = (name: string) => rows.filter((r) => r.scenario === name)
-const SOURCE_COMMIT = "b5b0a1f75371f595d5c7dd172e380451d056c9c3"
+const SOURCE_COMMIT = "ead243bdc14b9076c248191aef9be97297ae1cdb"
 const VERSIONS = { cli: "0.13.47", mcp: "0.10.45", sdk: "0.6.39" }
 
 test("the recording names the exact source commit, its CLI and SDK versions, and the files the submit lives in", () => {
   expect(fixture.source).toMatchObject({ repo: "candledottv/candle-monorepo", commit: SOURCE_COMMIT, versions: VERSIONS })
-  for (const f of ["apps/api/src/routes/trade-agent.ts", "apps/api/src/routes/trade-agent-confirm.ts", "apps/api/src/lib/sign-hash.ts", "apps/api/src/ledger/trading/trades/passes.ts", "apps/api/src/services/candle/trade-broadcast.ts", "packages/sdk/src/client.ts", "packages/cli/src/commands/swap.ts"]) {
+  for (const f of ["apps/api/src/routes/trade-agent.ts", "apps/api/src/routes/trade-agent-confirm.ts", "apps/api/src/lib/sign-hash.ts", "apps/api/src/ledger/trading/trades/passes.ts", "apps/api/src/services/candle/trade-broadcast.ts", "apps/api/src/services/solana/send-paths.ts", "packages/sdk/src/client.ts", "packages/cli/src/commands/swap.ts"]) {
     expect(fixture.source.files).toContain(f)
   }
   expect(fixture.about).toContain(`CLI ${VERSIONS.cli}, MCP ${VERSIONS.mcp}, SDK ${VERSIONS.sdk}`)
-  expect(rows).toHaveLength(85)
+  expect(rows).toHaveLength(86)
   expect(new Set(rows.map((r) => r.id)).size).toBe(rows.length)
   expect(new Set(rows.map((r) => r.scenario))).toEqual(new Set(["broadcast", "confirm", "wire", "fence", "worker", "worker-confirm", "booking", "route", "openapi", "sdk", "cli", "docs", "codes"]))
 })
@@ -62,8 +62,32 @@ test("a sent submit's confirm never resends; the default's still does", () => {
   expect(row("confirm-resend-false-lands").outcome).toEqual({ resendsAtMs: [], statusReads: 30, endedAtMs: 7500, result: "returned" })
   expect(row("confirm-resend-false-budget").outcome).toMatchObject({ resendsAtMs: [], endedAtMs: 60_000, result: "LaunchConfirmationTimeoutError" })
   expect(row("confirm-default-resends").outcome.resendsAtMs).toEqual([3250, 6500])
-  expect(row("broadcast-acknowledges-before-the-confirm").outcome.found).toBe(true)
   expect(row("confirm-resend-false").outcome.found).toBe(true)
+})
+
+test("an extra RPC can acknowledge wait sent after a lost primary reply only with the reserved signature", () => {
+  const accepted = row("sent-extra-rpc-acknowledges").outcome
+  expect(accepted).toMatchObject({
+    answer: { httpStatus: 202, atMs: 0, body: { status: "broadcast", signature: "<signature>" } },
+    firstStatusReadAtMs: 250,
+    background: { atMs: 5000, landed: "<signature>", booking: "request" },
+    sendsAtMs: [0],
+    extraSends: [{ atMs: 0, preflight: true }],
+  })
+  expect(accepted.events.map((event: { event: string }) => event.event)).toEqual(["onBroadcast", "onSent"])
+
+  const mismatch = row("sent-extra-rpc-names-another-signature").outcome
+  expect(mismatch.answer).toEqual({
+    atMs: 0, code: "SWAP_FAILED", retryable: false, stage: "unconfirmed", signature: "<signature>",
+    message: "unconfirmed", thrown: "TradeUnconfirmedError",
+  })
+  expect(mismatch).toMatchObject({
+    events: [{ atMs: 0, event: "onBroadcast", signature: "<signature>" }],
+    statusReads: 0,
+    background: { booking: "worker", signature: "<signature>" },
+    sendsAtMs: [0],
+    extraSends: [{ atMs: 0, preflight: true }],
+  })
 })
 
 test("after the 202, a revert is booked TRADE_REVERTED by the request and anything unconfirmed is left to the worker", () => {
@@ -237,7 +261,7 @@ test("the CLI: swap --wait-sent exits 0 at broadcast; it refuses anything but a 
     expect(row(id).outcome, id).toMatchObject({ exitCode: 0, json: { kind: "trade", status, clientTradeId: "cli-sent-1" }, submitBodies: [] })
     expect(row(id).outcome.apiRequests.every((p: string) => p.startsWith("GET ")), id).toBe(true)
   }
-  expect(row("docs-return-at-broadcast").outcome).toMatchObject({ found: true, releasePrefix: `Release ${VERSIONS.sdk} (BE-3929), with CLI ${VERSIONS.cli}` })
+  expect(row("docs-return-at-broadcast").outcome).toMatchObject({ found: true, releasePrefix: "Release 0.6.39 (BE-3929), with CLI 0.13.47" })
 })
 
 /** What the Candle Harness makes of each code these answers carry, and the answer it maps. */
