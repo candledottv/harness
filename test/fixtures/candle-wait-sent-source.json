@@ -1,0 +1,2434 @@
+{
+  "about": "Offline wait:\"sent\" contracts (BE-3929): a linked Solana trade's POST /api/v1/trade/agent/submit with wait \"sent\" answers HTTP 202 (status broadcast, signature, clientTradeId) once the RPC acknowledges the send, and Candle books it in the background; the trading-background-booking worker books any the request did not, once, with zero double-booking and zero lost fees. Recorded by running Candle's own broadcaster, confirm loop, Solana wire checks, pre-send record rules, confirmSolanaTrade booking races, worker pass and worker confirm against stand-ins, with the route's checks pinned as source text, and the SDK and CLI through their own code, from the source commit named below (CLI 0.13.47, MCP 0.10.45, SDK 0.6.39); every fetch is intercepted and no database is used.",
+  "source": {
+    "repo": "candledottv/candle-monorepo",
+    "commit": "ead243bdc14b9076c248191aef9be97297ae1cdb",
+    "versions": {
+      "cli": "0.13.47",
+      "mcp": "0.10.45",
+      "sdk": "0.6.39"
+    },
+    "files": [
+      "apps/api/src/routes/trade-agent.ts",
+      "apps/api/src/routes/trade-agent-confirm.ts",
+      "apps/api/src/lib/sign-hash.ts",
+      "apps/api/src/services/candle/trade-broadcast.ts",
+      "apps/api/src/services/candle/launch-confirm.ts",
+      "apps/api/src/ledger/trading/trades/outcomes.ts",
+      "apps/api/src/ledger/trading/trades/passes.ts",
+      "apps/api/src/ledger/trading/trades/resolve-confirm.ts",
+      "apps/api/src/ledger/trading/trades/projection.ts",
+      "apps/api/src/ledger/trading/trades/sign-claims.ts",
+      "packages/db/convex/lib/agentTradeExecutePolicy.ts",
+      "apps/api/src/openapi/agent-api.ts",
+      "packages/sdk/src/client.ts",
+      "packages/cli/src/commands/swap.ts",
+      "docs/agent-trading.md",
+      "apps/api/src/services/solana/send-paths.ts"
+    ]
+  },
+  "rows": [
+    {
+      "id": "sent-answers-at-the-acknowledgement",
+      "scenario": "broadcast",
+      "evidence": "the 202 goes out when the RPC acknowledges the send, before the first status read; the booking runs once the confirm loop reads it landed",
+      "args": {
+        "wait": "sent",
+        "landsOnRead": 2
+      },
+      "outcome": {
+        "answer": {
+          "httpStatus": 202,
+          "atMs": 0,
+          "body": {
+            "success": true,
+            "status": "broadcast",
+            "chain": "solana",
+            "clientTradeId": "<id>",
+            "signature": "<signature>"
+          }
+        },
+        "background": {
+          "atMs": 500,
+          "landed": "<signature>",
+          "booking": "request"
+        },
+        "events": [
+          {
+            "atMs": 0,
+            "event": "onBroadcast",
+            "signature": "<signature>"
+          },
+          {
+            "atMs": 0,
+            "event": "onSent",
+            "signature": "<signature>"
+          }
+        ],
+        "sendsAtMs": [
+          0
+        ],
+        "firstSendPreflight": true,
+        "statusReads": 2,
+        "firstStatusReadAtMs": 250
+      }
+    },
+    {
+      "id": "confirmed-answers-after-the-confirmation",
+      "scenario": "broadcast",
+      "evidence": "the default waits for the confirm loop and books before it answers",
+      "args": {
+        "wait": "confirmed",
+        "landsOnRead": 2
+      },
+      "outcome": {
+        "answer": {
+          "atMs": 500,
+          "after": "confirmation",
+          "landed": "<signature>",
+          "booking": "inline, before the answer"
+        },
+        "events": [
+          {
+            "atMs": 0,
+            "event": "onBroadcast",
+            "signature": "<signature>"
+          }
+        ],
+        "sendsAtMs": [
+          0
+        ],
+        "firstSendPreflight": true,
+        "statusReads": 2,
+        "firstStatusReadAtMs": 250
+      }
+    },
+    {
+      "id": "sent-no-resend-while-it-waits",
+      "scenario": "broadcast",
+      "evidence": "a sent caller's confirm never resends: the request has already answered and the worker holds the recorded signature",
+      "args": {
+        "wait": "sent",
+        "landsOnRead": 20
+      },
+      "outcome": {
+        "answer": {
+          "httpStatus": 202,
+          "atMs": 0,
+          "body": {
+            "success": true,
+            "status": "broadcast",
+            "chain": "solana",
+            "clientTradeId": "<id>",
+            "signature": "<signature>"
+          }
+        },
+        "background": {
+          "atMs": 5000,
+          "landed": "<signature>",
+          "booking": "request"
+        },
+        "events": [
+          {
+            "atMs": 0,
+            "event": "onBroadcast",
+            "signature": "<signature>"
+          },
+          {
+            "atMs": 0,
+            "event": "onSent",
+            "signature": "<signature>"
+          }
+        ],
+        "sendsAtMs": [
+          0
+        ],
+        "firstSendPreflight": true,
+        "statusReads": 20,
+        "firstStatusReadAtMs": 250
+      }
+    },
+    {
+      "id": "confirmed-resends-while-it-waits",
+      "scenario": "broadcast",
+      "args": {
+        "wait": "confirmed",
+        "landsOnRead": 20
+      },
+      "outcome": {
+        "answer": {
+          "atMs": 5000,
+          "after": "confirmation",
+          "landed": "<signature>",
+          "booking": "inline, before the answer"
+        },
+        "events": [
+          {
+            "atMs": 0,
+            "event": "onBroadcast",
+            "signature": "<signature>"
+          }
+        ],
+        "sendsAtMs": [
+          0,
+          3250
+        ],
+        "firstSendPreflight": true,
+        "statusReads": 20,
+        "firstStatusReadAtMs": 250
+      }
+    },
+    {
+      "id": "sent-landed-revert",
+      "scenario": "broadcast",
+      "evidence": "acknowledged, then reverted on chain: the 202 already went out; the request's background booking fails the row TRADE_REVERTED with the signature",
+      "args": {
+        "wait": "sent",
+        "revertsOnRead": 2
+      },
+      "outcome": {
+        "answer": {
+          "httpStatus": 202,
+          "atMs": 0,
+          "body": {
+            "success": true,
+            "status": "broadcast",
+            "chain": "solana",
+            "clientTradeId": "<id>",
+            "signature": "<signature>"
+          }
+        },
+        "background": {
+          "atMs": 500,
+          "thrown": "TradeRevertedError",
+          "signature": "<signature>",
+          "booking": "request"
+        },
+        "events": [
+          {
+            "atMs": 0,
+            "event": "onBroadcast",
+            "signature": "<signature>"
+          },
+          {
+            "atMs": 0,
+            "event": "onSent",
+            "signature": "<signature>"
+          }
+        ],
+        "sendsAtMs": [
+          0
+        ],
+        "firstSendPreflight": true,
+        "statusReads": 2,
+        "firstStatusReadAtMs": 250
+      }
+    },
+    {
+      "id": "sent-unconfirmed-left-to-the-worker",
+      "scenario": "broadcast",
+      "evidence": "acknowledged, then unconfirmed: the 202 already went out; the request stops and the worker confirms the recorded signature",
+      "args": {
+        "wait": "sent",
+        "hash": "dead at the first check"
+      },
+      "outcome": {
+        "answer": {
+          "httpStatus": 202,
+          "atMs": 0,
+          "body": {
+            "success": true,
+            "status": "broadcast",
+            "chain": "solana",
+            "clientTradeId": "<id>",
+            "signature": "<signature>"
+          }
+        },
+        "background": {
+          "atMs": 2000,
+          "thrown": "TradeUnconfirmedError",
+          "signature": "<signature>",
+          "booking": "worker"
+        },
+        "events": [
+          {
+            "atMs": 0,
+            "event": "onBroadcast",
+            "signature": "<signature>"
+          },
+          {
+            "atMs": 0,
+            "event": "onSent",
+            "signature": "<signature>"
+          }
+        ],
+        "sendsAtMs": [
+          0
+        ],
+        "firstSendPreflight": true,
+        "statusReads": 9,
+        "firstStatusReadAtMs": 250
+      }
+    },
+    {
+      "id": "sent-rpc-refused-the-send",
+      "scenario": "broadcast",
+      "evidence": "the RPC refused the bytes: no acknowledgement, no 202; SWAP_FAILED at stage unconfirmed keeps the reserved signature until the worker has chain proof",
+      "args": {
+        "wait": "sent",
+        "send": "refused"
+      },
+      "outcome": {
+        "answer": {
+          "atMs": 0,
+          "code": "SWAP_FAILED",
+          "retryable": false,
+          "stage": "unconfirmed",
+          "signature": "<signature>",
+          "message": "rpc-refused",
+          "thrown": "Error"
+        },
+        "background": {
+          "atMs": 0,
+          "thrown": "Error",
+          "booking": "worker"
+        },
+        "events": [],
+        "sendsAtMs": [
+          0
+        ],
+        "firstSendPreflight": true,
+        "statusReads": 0,
+        "firstStatusReadAtMs": null
+      }
+    },
+    {
+      "id": "sent-reply-lost",
+      "scenario": "broadcast",
+      "evidence": "the send threw after the bytes may have reached the node: no acknowledgement, SWAP_FAILED at stage unconfirmed",
+      "args": {
+        "wait": "sent",
+        "send": "lost"
+      },
+      "outcome": {
+        "answer": {
+          "atMs": 0,
+          "code": "SWAP_FAILED",
+          "retryable": false,
+          "stage": "unconfirmed",
+          "signature": "<signature>",
+          "message": "unconfirmed",
+          "thrown": "TradeUnconfirmedError"
+        },
+        "background": {
+          "atMs": 0,
+          "thrown": "TradeUnconfirmedError",
+          "signature": "<signature>",
+          "booking": "worker"
+        },
+        "events": [
+          {
+            "atMs": 0,
+            "event": "onBroadcast",
+            "signature": "<signature>"
+          }
+        ],
+        "sendsAtMs": [
+          0
+        ],
+        "firstSendPreflight": true,
+        "statusReads": 0,
+        "firstStatusReadAtMs": null
+      }
+    },
+    {
+      "id": "sent-rpc-named-another-signature",
+      "scenario": "broadcast",
+      "evidence": "the RPC answered a signature that is not the signed bytes' own: no acknowledgement, the bytes' own signature is recorded and the answer is unconfirmed",
+      "args": {
+        "wait": "sent",
+        "send": "other-signature"
+      },
+      "outcome": {
+        "answer": {
+          "atMs": 0,
+          "code": "SWAP_FAILED",
+          "retryable": false,
+          "stage": "unconfirmed",
+          "signature": "<signature>",
+          "message": "unconfirmed",
+          "thrown": "TradeUnconfirmedError"
+        },
+        "background": {
+          "atMs": 0,
+          "thrown": "TradeUnconfirmedError",
+          "signature": "<signature>",
+          "booking": "worker"
+        },
+        "events": [
+          {
+            "atMs": 0,
+            "event": "onBroadcast",
+            "signature": "<signature>"
+          }
+        ],
+        "sendsAtMs": [
+          0
+        ],
+        "firstSendPreflight": true,
+        "statusReads": 0,
+        "firstStatusReadAtMs": null
+      }
+    },
+    {
+      "id": "sent-extra-rpc-acknowledges",
+      "scenario": "broadcast",
+      "evidence": "the primary reply was lost: an extra RPC accepts the preflight send, the 202 precedes confirmation, and the confirm loop does not resend",
+      "args": {
+        "wait": "sent",
+        "primary": "lost",
+        "extra": "expected",
+        "landsOnRead": 20
+      },
+      "outcome": {
+        "answer": {
+          "httpStatus": 202,
+          "atMs": 0,
+          "body": {
+            "success": true,
+            "status": "broadcast",
+            "chain": "solana",
+            "clientTradeId": "<id>",
+            "signature": "<signature>"
+          }
+        },
+        "background": {
+          "atMs": 5000,
+          "landed": "<signature>",
+          "booking": "request"
+        },
+        "events": [
+          {
+            "atMs": 0,
+            "event": "onBroadcast",
+            "signature": "<signature>"
+          },
+          {
+            "atMs": 0,
+            "event": "onSent",
+            "signature": "<signature>"
+          }
+        ],
+        "sendsAtMs": [
+          0
+        ],
+        "firstSendPreflight": true,
+        "statusReads": 20,
+        "firstStatusReadAtMs": 250,
+        "extraSends": [
+          {
+            "atMs": 0,
+            "preflight": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "sent-extra-rpc-names-another-signature",
+      "scenario": "broadcast",
+      "evidence": "an extra RPC returns a different signature: no acknowledgement or confirmation read, and the worker keeps the original reservation",
+      "args": {
+        "wait": "sent",
+        "primary": "lost",
+        "extra": "other-signature"
+      },
+      "outcome": {
+        "answer": {
+          "atMs": 0,
+          "code": "SWAP_FAILED",
+          "retryable": false,
+          "stage": "unconfirmed",
+          "signature": "<signature>",
+          "message": "unconfirmed",
+          "thrown": "TradeUnconfirmedError"
+        },
+        "background": {
+          "atMs": 0,
+          "thrown": "TradeUnconfirmedError",
+          "signature": "<signature>",
+          "booking": "worker"
+        },
+        "events": [
+          {
+            "atMs": 0,
+            "event": "onBroadcast",
+            "signature": "<signature>"
+          }
+        ],
+        "sendsAtMs": [
+          0
+        ],
+        "firstSendPreflight": true,
+        "statusReads": 0,
+        "firstStatusReadAtMs": null,
+        "extraSends": [
+          {
+            "atMs": 0,
+            "preflight": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "confirm-resend-false-lands",
+      "scenario": "confirm",
+      "args": {
+        "landsOnRead": 30,
+        "options": {
+          "fast": true,
+          "resend": false
+        }
+      },
+      "outcome": {
+        "resendsAtMs": [],
+        "statusReads": 30,
+        "endedAtMs": 7500,
+        "result": "returned"
+      }
+    },
+    {
+      "id": "confirm-resend-false-budget",
+      "scenario": "confirm",
+      "args": {
+        "lands": "never",
+        "options": {
+          "fast": true,
+          "resend": false
+        }
+      },
+      "outcome": {
+        "resendsAtMs": [],
+        "statusReads": 240,
+        "endedAtMs": 60000,
+        "result": "LaunchConfirmationTimeoutError"
+      }
+    },
+    {
+      "id": "confirm-default-resends",
+      "scenario": "confirm",
+      "args": {
+        "landsOnRead": 30,
+        "options": {
+          "fast": true
+        }
+      },
+      "outcome": {
+        "resendsAtMs": [
+          3250,
+          6500
+        ],
+        "statusReads": 30,
+        "endedAtMs": 7500,
+        "result": "returned"
+      }
+    },
+    {
+      "id": "wire-signed-by-payer",
+      "scenario": "wire",
+      "evidence": "a genuine signature by the linked payer verifies, matches the first slot, and hashes back to the stamped unsigned build",
+      "args": {
+        "wire": "signed by linked payer"
+      },
+      "outcome": {
+        "verifies": true,
+        "matchesSignature": true,
+        "unsignedHashMatchesBuild": true
+      }
+    },
+    {
+      "id": "wire-borrowed-signature",
+      "scenario": "wire",
+      "evidence": "the unsigned hash still matches the build and the slot matches the pasted signature, so only ed25519 verification catches it before a pre-send write",
+      "args": {
+        "wire": "another signature pasted onto the build's message"
+      },
+      "outcome": {
+        "verifies": false,
+        "matchesSlotSignature": true,
+        "unsignedHashMatchesBuild": true,
+        "routeCode": "SIGNATURE_MISMATCH"
+      }
+    },
+    {
+      "id": "wire-other-payer",
+      "scenario": "wire",
+      "args": {
+        "wire": "checked against another wallet"
+      },
+      "outcome": {
+        "verifies": false,
+        "routeCode": "SIGNATURE_MISMATCH"
+      }
+    },
+    {
+      "id": "wire-malformed",
+      "scenario": "wire",
+      "args": {
+        "wire": "truncated bytes"
+      },
+      "outcome": {
+        "verifies": false,
+        "unsignedHash": null
+      }
+    },
+    {
+      "id": "fence-sent-then-default-same-bytes",
+      "scenario": "fence",
+      "evidence": "the reservation stamped the signature and broadcastAt: the default submit of the same bytes stamps nothing and answers in flight",
+      "args": {
+        "steps": [
+          {
+            "who": "wait:sent",
+            "signature": "<signature>"
+          },
+          {
+            "who": "wait:confirmed",
+            "signature": "<signature>"
+          }
+        ]
+      },
+      "outcome": {
+        "steps": [
+          {
+            "who": "wait:sent",
+            "signature": "<signature>",
+            "reservation": "reserved",
+            "patch": {
+              "signature": "<signature>",
+              "broadcastAt": "<now>",
+              "updatedAt": "<now>"
+            },
+            "sends": true
+          },
+          {
+            "who": "wait:confirmed",
+            "signature": "<signature>",
+            "presendStamped": false,
+            "patch": null,
+            "sends": false
+          }
+        ],
+        "senders": 1,
+        "rowSignature": "<signature>",
+        "otherBytesHeld": true
+      }
+    },
+    {
+      "id": "fence-sent-then-default-other-bytes",
+      "scenario": "fence",
+      "evidence": "other signed bytes for the same trade: the held signature refuses them, nothing is stamped or sent",
+      "args": {
+        "steps": [
+          {
+            "who": "wait:sent",
+            "signature": "<signature>"
+          },
+          {
+            "who": "wait:confirmed",
+            "signature": "<other signature>"
+          }
+        ]
+      },
+      "outcome": {
+        "steps": [
+          {
+            "who": "wait:sent",
+            "signature": "<signature>",
+            "reservation": "reserved",
+            "patch": {
+              "signature": "<signature>",
+              "broadcastAt": "<now>",
+              "updatedAt": "<now>"
+            },
+            "sends": true
+          },
+          {
+            "who": "wait:confirmed",
+            "signature": "<other signature>",
+            "presendStamped": false,
+            "patch": null,
+            "sends": false
+          }
+        ],
+        "senders": 1,
+        "rowSignature": "<signature>",
+        "otherBytesHeld": true
+      }
+    },
+    {
+      "id": "fence-default-then-sent",
+      "scenario": "fence",
+      "evidence": "the default submit fenced first: the reservation sees broadcast evidence and answers in flight",
+      "args": {
+        "steps": [
+          {
+            "who": "wait:confirmed",
+            "signature": "<signature>"
+          },
+          {
+            "who": "wait:sent",
+            "signature": "<signature>"
+          }
+        ]
+      },
+      "outcome": {
+        "steps": [
+          {
+            "who": "wait:confirmed",
+            "signature": "<signature>",
+            "presendStamped": true,
+            "patch": {
+              "signature": "<signature>",
+              "broadcastAt": "<now>",
+              "updatedAt": "<now>"
+            },
+            "sends": true
+          },
+          {
+            "who": "wait:sent",
+            "signature": "<signature>",
+            "reservation": "in_flight",
+            "patch": null,
+            "sends": false
+          }
+        ],
+        "senders": 1,
+        "rowSignature": "<signature>",
+        "otherBytesHeld": true
+      }
+    },
+    {
+      "id": "fence-sent-then-sent",
+      "scenario": "fence",
+      "evidence": "two sent submits: the second sees the first's evidence",
+      "args": {
+        "steps": [
+          {
+            "who": "wait:sent",
+            "signature": "<signature>"
+          },
+          {
+            "who": "wait:sent",
+            "signature": "<signature>"
+          }
+        ]
+      },
+      "outcome": {
+        "steps": [
+          {
+            "who": "wait:sent",
+            "signature": "<signature>",
+            "reservation": "reserved",
+            "patch": {
+              "signature": "<signature>",
+              "broadcastAt": "<now>",
+              "updatedAt": "<now>"
+            },
+            "sends": true
+          },
+          {
+            "who": "wait:sent",
+            "signature": "<signature>",
+            "reservation": "in_flight",
+            "patch": null,
+            "sends": false
+          }
+        ],
+        "senders": 1,
+        "rowSignature": "<signature>",
+        "otherBytesHeld": true
+      }
+    },
+    {
+      "id": "reserve-refuses-main-payer",
+      "scenario": "fence",
+      "args": {
+        "row": {
+          "payerType": "main"
+        }
+      },
+      "outcome": {
+        "reservation": "in_flight"
+      }
+    },
+    {
+      "id": "reserve-refuses-hood",
+      "scenario": "fence",
+      "args": {
+        "row": {
+          "chain": "hood"
+        }
+      },
+      "outcome": {
+        "reservation": "in_flight"
+      }
+    },
+    {
+      "id": "reserve-refuses-settled-row",
+      "scenario": "fence",
+      "args": {
+        "row": {
+          "status": "confirmed"
+        }
+      },
+      "outcome": {
+        "reservation": "in_flight"
+      }
+    },
+    {
+      "id": "reserve-refuses-no-linked-wallet",
+      "scenario": "fence",
+      "args": {
+        "row": {
+          "linkedWalletId": null
+        }
+      },
+      "outcome": {
+        "reservation": "in_flight"
+      }
+    },
+    {
+      "id": "projection-drops-background-booking",
+      "scenario": "fence",
+      "evidence": "the marker stays in Postgres: the compatibility projection to Convex never carries it",
+      "args": {
+        "fields": [
+          "_creationTime",
+          "_id",
+          "backgroundBooking",
+          "broadcastAt",
+          "builtAt",
+          "chain",
+          "deferredPlan",
+          "keyPrefix",
+          "linkedWalletId",
+          "payerType",
+          "signature",
+          "status"
+        ]
+      },
+      "outcome": {
+        "projected": [
+          "broadcastAt",
+          "builtAt",
+          "chain",
+          "keyPrefix",
+          "linkedWalletId",
+          "payerType",
+          "signature",
+          "status"
+        ],
+        "keepsSignature": true
+      }
+    },
+    {
+      "id": "worker-books-a-sent-trade",
+      "scenario": "worker",
+      "evidence": "the request never booked it (its process ended after the 202): the worker confirms the recorded signature and books it once",
+      "args": {
+        "pass": "trading-background-booking",
+        "confirm": "confirmed",
+        "ageMs": 20000
+      },
+      "outcome": {
+        "query": {
+          "backgroundBooking": "true",
+          "olderThanMs": 15000
+        },
+        "docsRecheck": "state built",
+        "confirmCalls": 1,
+        "verdictReads": 0,
+        "counts": {
+          "candidates": 1,
+          "confirmed": 1,
+          "failed": 0,
+          "notLanded": 0,
+          "left": 0,
+          "errors": 0
+        },
+        "sync": {
+          "name": "trading-background-booking",
+          "leftByReason": {}
+        }
+      }
+    },
+    {
+      "id": "worker-bound-revert",
+      "scenario": "worker",
+      "evidence": "the confirm bound a landed revert and failed the row TRADE_REVERTED with its signature",
+      "args": {
+        "pass": "trading-background-booking",
+        "confirm": "failed",
+        "ageMs": 20000
+      },
+      "outcome": {
+        "query": {
+          "backgroundBooking": "true",
+          "olderThanMs": 15000
+        },
+        "docsRecheck": "state built",
+        "confirmCalls": 1,
+        "verdictReads": 0,
+        "counts": {
+          "candidates": 1,
+          "confirmed": 0,
+          "failed": 1,
+          "notLanded": 0,
+          "left": 0,
+          "errors": 0
+        },
+        "sync": {
+          "name": "trading-background-booking",
+          "leftByReason": {}
+        }
+      }
+    },
+    {
+      "id": "worker-unseen-keeps-the-hold",
+      "scenario": "worker",
+      "evidence": "the RPC has not seen the transaction: left built with its signature and hold, never released on a missing read alone",
+      "args": {
+        "pass": "trading-background-booking",
+        "confirm": "unseen",
+        "ageMs": 20000
+      },
+      "outcome": {
+        "query": {
+          "backgroundBooking": "true",
+          "olderThanMs": 15000
+        },
+        "docsRecheck": "state built",
+        "confirmCalls": 1,
+        "verdictReads": 0,
+        "counts": {
+          "candidates": 1,
+          "confirmed": 0,
+          "failed": 0,
+          "notLanded": 0,
+          "left": 1,
+          "errors": 0
+        },
+        "sync": {
+          "name": "trading-background-booking",
+          "leftByReason": {
+            "unseen": 1
+          }
+        }
+      }
+    },
+    {
+      "id": "worker-unseen-past-the-window-reads-the-ledger",
+      "scenario": "worker",
+      "evidence": "past the 30-minute window an unseen trade falls to the ledger's own finality proof; unproven, it is still left",
+      "args": {
+        "pass": "trading-background-booking",
+        "confirm": "unseen",
+        "ageMs": 1860000,
+        "verdict": "payer not settled"
+      },
+      "outcome": {
+        "query": {
+          "backgroundBooking": "true",
+          "olderThanMs": 15000
+        },
+        "docsRecheck": "state built",
+        "confirmCalls": 1,
+        "verdictReads": 1,
+        "counts": {
+          "candidates": 1,
+          "confirmed": 0,
+          "failed": 0,
+          "notLanded": 0,
+          "left": 1,
+          "errors": 0
+        },
+        "sync": {
+          "name": "trading-background-booking",
+          "leftByReason": {
+            "payer_not_settled": 1
+          }
+        }
+      }
+    },
+    {
+      "id": "worker-unseen-but-finalized",
+      "scenario": "worker",
+      "args": {
+        "pass": "trading-background-booking",
+        "confirm": "unseen",
+        "ageMs": 1860000,
+        "verdict": "finalized"
+      },
+      "outcome": {
+        "query": {
+          "backgroundBooking": "true",
+          "olderThanMs": 15000
+        },
+        "docsRecheck": "state built",
+        "confirmCalls": 1,
+        "verdictReads": 1,
+        "counts": {
+          "candidates": 1,
+          "confirmed": 0,
+          "failed": 0,
+          "notLanded": 0,
+          "left": 1,
+          "errors": 0
+        },
+        "sync": {
+          "name": "trading-background-booking",
+          "leftByReason": {
+            "finalized_unseen": 1
+          }
+        }
+      }
+    },
+    {
+      "id": "worker-confirm-refused",
+      "scenario": "worker",
+      "args": {
+        "pass": "trading-background-booking",
+        "confirm": "refused",
+        "ageMs": 20000
+      },
+      "outcome": {
+        "query": {
+          "backgroundBooking": "true",
+          "olderThanMs": 15000
+        },
+        "docsRecheck": "state built",
+        "confirmCalls": 1,
+        "verdictReads": 0,
+        "counts": {
+          "candidates": 1,
+          "confirmed": 0,
+          "failed": 0,
+          "notLanded": 0,
+          "left": 1,
+          "errors": 0
+        },
+        "sync": {
+          "name": "trading-background-booking",
+          "leftByReason": {
+            "confirm_refused": 1
+          }
+        }
+      }
+    },
+    {
+      "id": "worker-confirm-unavailable",
+      "scenario": "worker",
+      "evidence": "an unavailable confirm is an error for this run: the trade stays built for the next one",
+      "args": {
+        "pass": "trading-background-booking",
+        "confirm": "throws (HTTP 5xx)",
+        "ageMs": 20000
+      },
+      "outcome": {
+        "query": {
+          "backgroundBooking": "true",
+          "olderThanMs": 15000
+        },
+        "docsRecheck": "state built",
+        "confirmCalls": 1,
+        "verdictReads": 0,
+        "counts": {
+          "candidates": 1,
+          "confirmed": 0,
+          "failed": 0,
+          "notLanded": 0,
+          "left": 0,
+          "errors": 1
+        },
+        "sync": {
+          "name": "trading-background-booking",
+          "leftByReason": {}
+        }
+      }
+    },
+    {
+      "id": "worker-skips-a-trade-the-request-booked",
+      "scenario": "worker",
+      "evidence": "the request booked it after the page was read: the document read re-checks state built, so the worker confirms nothing and books nothing twice",
+      "args": {
+        "pass": "trading-background-booking",
+        "requestBookedBetweenPageAndRead": true
+      },
+      "outcome": {
+        "query": {
+          "backgroundBooking": "true",
+          "olderThanMs": 15000
+        },
+        "docsRecheck": "state built",
+        "confirmCalls": 0,
+        "verdictReads": 0,
+        "counts": {
+          "candidates": 0,
+          "confirmed": 0,
+          "failed": 0,
+          "notLanded": 0,
+          "left": 0,
+          "errors": 0
+        },
+        "sync": {
+          "name": "trading-background-booking",
+          "leftByReason": {}
+        }
+      }
+    },
+    {
+      "id": "resolve-pass-leaves-sent-trades",
+      "scenario": "worker",
+      "evidence": "the ordinary pass asks only for rows without the marker, after 30 minutes, and reads the ledger before it confirms",
+      "args": {
+        "pass": "trading-resolve",
+        "ageMs": 1860000
+      },
+      "outcome": {
+        "query": {
+          "backgroundBooking": "false",
+          "olderThanMs": 1800000
+        },
+        "docsRecheck": "state built",
+        "confirmCalls": 1,
+        "verdictReads": 1,
+        "counts": {
+          "candidates": 1,
+          "confirmed": 1,
+          "failed": 0,
+          "notLanded": 0,
+          "left": 0,
+          "errors": 0
+        },
+        "sync": {
+          "name": "trading-resolve",
+          "leftByReason": {}
+        }
+      }
+    },
+    {
+      "id": "resolve-confirm-unseen",
+      "scenario": "worker-confirm",
+      "evidence": "the chain read found no transaction: unseen, so the pass keeps the signature and the hold; a recovery reads nothing else before it finds one",
+      "args": {
+        "chain": "solana",
+        "payerType": "linked",
+        "backgroundBooking": true,
+        "signature": "<signature>"
+      },
+      "outcome": {
+        "answer": "unseen",
+        "chainReads": 1,
+        "wireReads": 0
+      }
+    },
+    {
+      "id": "resolve-confirm-unseen-without-marker",
+      "scenario": "worker-confirm",
+      "evidence": "without the marker the same read is a plain refusal, left built",
+      "args": {
+        "chain": "solana",
+        "payerType": "linked",
+        "backgroundBooking": false,
+        "signature": "<signature>"
+      },
+      "outcome": {
+        "answer": "refused",
+        "chainReads": 1,
+        "wireReads": 1
+      }
+    },
+    {
+      "id": "resolve-confirm-hood",
+      "scenario": "worker-confirm",
+      "evidence": "only a linked Solana trade is confirmed here",
+      "args": {
+        "chain": "hood",
+        "payerType": "linked",
+        "backgroundBooking": true,
+        "signature": "<signature>"
+      },
+      "outcome": {
+        "answer": "refused",
+        "chainReads": 0,
+        "wireReads": 0
+      }
+    },
+    {
+      "id": "resolve-confirm-main-payer",
+      "scenario": "worker-confirm",
+      "args": {
+        "chain": "solana",
+        "payerType": "main",
+        "backgroundBooking": true,
+        "signature": "<signature>"
+      },
+      "outcome": {
+        "answer": "refused",
+        "chainReads": 0,
+        "wireReads": 0
+      }
+    },
+    {
+      "id": "resolve-confirm-no-signature",
+      "scenario": "worker-confirm",
+      "args": {
+        "chain": "solana",
+        "payerType": "linked",
+        "backgroundBooking": true,
+        "signature": null
+      },
+      "outcome": {
+        "answer": "refused",
+        "chainReads": 0,
+        "wireReads": 0
+      }
+    },
+    {
+      "id": "booking-race-api-then-worker",
+      "scenario": "booking",
+      "evidence": "both callers read the landed transaction before either booked; api booked first, worker saw applied false, and the trade and its fee were booked once",
+      "args": {
+        "first": "api",
+        "second": "worker",
+        "feeRaw": "10000"
+      },
+      "outcome": {
+        "winnerStatus": 200,
+        "loserStatus": 200,
+        "loserBodyStatus": "executed",
+        "completeCalls": 2,
+        "bookings": [
+          {
+            "clientTradeId": "race-1",
+            "feeRaw": "10000"
+          }
+        ],
+        "zeroDoubleBooking": true,
+        "zeroLostFees": true,
+        "rowStatus": "confirmed",
+        "feeSignatureHeld": true,
+        "effects": {
+          "usage": 1,
+          "webhooks": 1,
+          "accruals": 1,
+          "accrualFeeRaw": "10000"
+        }
+      }
+    },
+    {
+      "id": "booking-race-worker-then-api",
+      "scenario": "booking",
+      "evidence": "both callers read the landed transaction before either booked; worker booked first, api saw applied false, and the trade and its fee were booked once",
+      "args": {
+        "first": "worker",
+        "second": "api",
+        "feeRaw": "10000"
+      },
+      "outcome": {
+        "winnerStatus": 200,
+        "loserStatus": 200,
+        "loserBodyStatus": "executed",
+        "completeCalls": 2,
+        "bookings": [
+          {
+            "clientTradeId": "race-1",
+            "feeRaw": "10000"
+          }
+        ],
+        "zeroDoubleBooking": true,
+        "zeroLostFees": true,
+        "rowStatus": "confirmed",
+        "feeSignatureHeld": true,
+        "effects": {
+          "usage": 1,
+          "webhooks": 1,
+          "accruals": 1,
+          "accrualFeeRaw": "10000"
+        }
+      }
+    },
+    {
+      "id": "booking-unseen-then-api-then-stale-worker",
+      "scenario": "booking",
+      "evidence": "an unseen read leaves the reservation untouched; after the API books, a stale worker snapshot adds no second booking or side effect",
+      "args": {
+        "sequence": [
+          "worker unseen",
+          "api books",
+          "stale worker retries"
+        ]
+      },
+      "outcome": {
+        "early": {
+          "status": 400,
+          "code": "VALIDATION_FAILED",
+          "retryable": true,
+          "unseen": 1,
+          "rowStatus": "built"
+        },
+        "apiStatus": 200,
+        "staleWorkerRetryStatus": 200,
+        "bookings": [
+          {
+            "clientTradeId": "race-1",
+            "feeRaw": "10000"
+          }
+        ],
+        "effects": {
+          "usage": 1,
+          "webhooks": 1,
+          "accruals": 1,
+          "accrualFeeRaw": "10000"
+        }
+      }
+    },
+    {
+      "id": "booking-bound-revert",
+      "scenario": "booking",
+      "evidence": "a bound landed revert settles the row as failed with TRADE_REVERTED and its signature, with zero bookings",
+      "args": {
+        "landed": "InstructionError"
+      },
+      "outcome": {
+        "api": {
+          "status": 400,
+          "code": "VALIDATION_FAILED",
+          "stage": "reverted",
+          "recorded": true
+        },
+        "workerAfterFailStatus": 400,
+        "row": {
+          "status": "failed",
+          "errorCode": "TRADE_REVERTED",
+          "signatureKept": true
+        },
+        "bookings": 0,
+        "effects": {
+          "usage": 0,
+          "webhooks": 0,
+          "accruals": 0,
+          "accrualFeeRaw": null
+        }
+      }
+    },
+    {
+      "id": "booking-unbound-wire-retries",
+      "scenario": "booking",
+      "evidence": "a background confirm whose binding proof cannot be matched answers 500 SWAP_FAILED retryable and books nothing",
+      "args": {
+        "wire": "does not match the row's stamped claim"
+      },
+      "outcome": {
+        "status": 500,
+        "code": "SWAP_FAILED",
+        "retryable": true,
+        "rowStatus": "built",
+        "bookings": 0,
+        "effects": {
+          "usage": 0,
+          "webhooks": 0,
+          "accruals": 0,
+          "accrualFeeRaw": null
+        }
+      }
+    },
+    {
+      "id": "route-wait-values",
+      "scenario": "route",
+      "evidence": "any other wait value is refused before the row is read",
+      "args": {
+        "file": "apps/api/src/routes/trade-agent.ts"
+      },
+      "outcome": {
+        "found": true,
+        "code": "VALIDATION_FAILED",
+        "field": "wait",
+        "values": [
+          "confirmed",
+          "sent"
+        ],
+        "default": "confirmed"
+      }
+    },
+    {
+      "id": "route-sent-refuses-a-sequenced-hood-leg",
+      "scenario": "route",
+      "args": {
+        "file": "apps/api/src/routes/trade-agent.ts"
+      },
+      "outcome": {
+        "found": true,
+        "code": "VALIDATION_FAILED",
+        "field": "wait"
+      }
+    },
+    {
+      "id": "route-sent-refuses-a-non-linked-or-hood-row",
+      "scenario": "route",
+      "evidence": "an embedded (main) payer or a Hood trade: refused at the gate, nothing sent",
+      "args": {
+        "file": "apps/api/src/routes/trade-agent.ts"
+      },
+      "outcome": {
+        "found": true,
+        "code": "VALIDATION_FAILED",
+        "field": "wait",
+        "message": "wait: \"sent\" requires a linked Solana trade"
+      }
+    },
+    {
+      "id": "route-order",
+      "scenario": "route",
+      "evidence": "a borrowed signature is refused before either pre-send write, so it is never stamped on the row and never sent",
+      "args": {
+        "file": "apps/api/src/routes/trade-agent.ts"
+      },
+      "outcome": {
+        "found": true,
+        "order": [
+          "SIGNATURE_MISMATCH check",
+          "wait:sent: reserveBackgroundBooking, then the send",
+          "wait:confirmed: recordSolanaBeforeSend, then the send"
+        ],
+        "signatureMismatch": {
+          "code": "SIGNATURE_MISMATCH",
+          "retryable": false,
+          "field": "signedTransactions"
+        }
+      }
+    },
+    {
+      "id": "route-reservation-answers",
+      "scenario": "route",
+      "evidence": "the reservation could not be written: nothing sent; the bytes are not this build's: nothing sent; another attempt holds the row: nothing sent",
+      "args": {
+        "file": "apps/api/src/routes/trade-agent.ts"
+      },
+      "outcome": {
+        "found": true,
+        "failed": {
+          "code": "SWAP_FAILED",
+          "retryable": true,
+          "stage": "not_broadcast",
+          "reason": "record_unavailable"
+        },
+        "unbound": {
+          "code": "UNRECOGNIZED_TRANSACTION"
+        },
+        "in_flight": {
+          "code": "IDEMPOTENCY_CONFLICT",
+          "retryable": false,
+          "stage": "not_broadcast"
+        }
+      }
+    },
+    {
+      "id": "route-default-fence",
+      "scenario": "route",
+      "evidence": "the default submit's own pre-send record: one that stamps nothing answers in flight and sends nothing",
+      "args": {
+        "file": "apps/api/src/routes/trade-agent.ts"
+      },
+      "outcome": {
+        "found": true,
+        "in_flight": {
+          "code": "IDEMPOTENCY_CONFLICT",
+          "retryable": false,
+          "stage": "not_broadcast"
+        }
+      }
+    },
+    {
+      "id": "route-sent-answer",
+      "scenario": "route",
+      "evidence": "the same race section 1 drives",
+      "args": {
+        "file": "apps/api/src/routes/trade-agent.ts"
+      },
+      "outcome": {
+        "found": true,
+        "httpStatus": 202,
+        "body": [
+          "success",
+          "status",
+          "chain",
+          "clientTradeId",
+          "signature"
+        ]
+      }
+    },
+    {
+      "id": "route-sent-background-booking",
+      "scenario": "route",
+      "args": {
+        "file": "apps/api/src/routes/trade-agent.ts"
+      },
+      "outcome": {
+        "found": true,
+        "books": [
+          "landed",
+          "TradeRevertedError"
+        ],
+        "defersToWorker": "any other confirm error",
+        "store": "postgres"
+      }
+    },
+    {
+      "id": "route-sent-failure-answer",
+      "scenario": "route",
+      "evidence": "even a refused send keeps the reserved signature: another caller may hold the same bytes",
+      "args": {
+        "file": "apps/api/src/routes/trade-agent.ts"
+      },
+      "outcome": {
+        "found": true,
+        "code": "SWAP_FAILED",
+        "stage": "unconfirmed",
+        "retryable": false,
+        "carries": "signature"
+      }
+    },
+    {
+      "id": "confirm-resend-false",
+      "scenario": "route",
+      "args": {
+        "file": "apps/api/src/services/candle/launch-confirm.ts"
+      },
+      "outcome": {
+        "found": true
+      }
+    },
+    {
+      "id": "reserve-checks",
+      "scenario": "route",
+      "evidence": "one row lock: the build the route checked, no broadcast evidence, the signed bytes bound to this build's sign claim, then the signature and broadcastAt stamped with the marker",
+      "args": {
+        "file": "apps/api/src/ledger/trading/trades/outcomes.ts"
+      },
+      "outcome": {
+        "found": true,
+        "answers": [
+          "reserved",
+          "in_flight",
+          "unbound"
+        ]
+      }
+    },
+    {
+      "id": "binding-names-the-build",
+      "scenario": "route",
+      "args": {
+        "file": "apps/api/src/ledger/trading/trades/sign-claims.ts"
+      },
+      "outcome": {
+        "found": true
+      }
+    },
+    {
+      "id": "worker-confirm-binds-or-retries",
+      "scenario": "route",
+      "evidence": "a background booking that cannot read its binding proof retries; it never books unbound bytes",
+      "args": {
+        "file": "apps/api/src/routes/trade-agent-confirm.ts"
+      },
+      "outcome": {
+        "found": true,
+        "code": "SWAP_FAILED",
+        "retryable": true
+      }
+    },
+    {
+      "id": "worker-confirm-unseen",
+      "scenario": "route",
+      "args": {
+        "file": "apps/api/src/routes/trade-agent-confirm.ts"
+      },
+      "outcome": {
+        "found": true,
+        "code": "VALIDATION_FAILED",
+        "retryable": true
+      }
+    },
+    {
+      "id": "worker-not-landed-needs-the-ledger",
+      "scenario": "route",
+      "evidence": "only the ledger's not-landed proof (payer watched and settled past the window) fails a signed trade and releases its hold",
+      "args": {
+        "file": "apps/api/src/ledger/trading/trades/passes.ts"
+      },
+      "outcome": {
+        "found": true
+      }
+    },
+    {
+      "id": "worker-interval",
+      "scenario": "route",
+      "args": {
+        "file": "apps/api/src/ledger/trading/trades/passes.ts"
+      },
+      "outcome": {
+        "found": true,
+        "everyMs": 15000,
+        "syncName": "trading-background-booking"
+      }
+    },
+    {
+      "id": "openapi-submit",
+      "scenario": "openapi",
+      "args": {
+        "path": "/api/v1/trade/agent/submit"
+      },
+      "outcome": {
+        "responses": [
+          "200",
+          "202",
+          "400",
+          "401",
+          "403",
+          "429"
+        ],
+        "accepted": {
+          "description": "The RPC acknowledged a linked Solana broadcast. Confirmation and booking are pending.",
+          "schema": "#/components/schemas/TradeBroadcast"
+        },
+        "wait": {
+          "type": "string",
+          "enum": [
+            "confirmed",
+            "sent"
+          ],
+          "default": "confirmed",
+          "description": "Sent is available for linked Solana trades only."
+        },
+        "broadcast": {
+          "required": [
+            "success",
+            "status",
+            "chain",
+            "clientTradeId",
+            "signature"
+          ],
+          "properties": {
+            "success": true,
+            "status": "broadcast",
+            "chain": "solana",
+            "clientTradeId": "string",
+            "signature": "string"
+          }
+        }
+      }
+    },
+    {
+      "id": "sdk-submit-sent",
+      "scenario": "sdk",
+      "evidence": "HTTP 202 is the BroadcastTradeResult, signature and trade id included",
+      "args": {
+        "method": "submit",
+        "wait": "sent"
+      },
+      "outcome": {
+        "returned": {
+          "success": true,
+          "status": "broadcast",
+          "chain": "solana",
+          "clientTradeId": "sdk-sent-1",
+          "signature": "<signature>"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "path": "/api/v1/trade/agent/submit",
+            "body": {
+              "clientTradeId": "sdk-sent-1",
+              "signedTransactions": [
+                "<signed>"
+              ],
+              "wait": "sent"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sdk-submit-default",
+      "scenario": "sdk",
+      "evidence": "no wait field is sent: the API's default, confirmed",
+      "args": {
+        "method": "submit"
+      },
+      "outcome": {
+        "returned": {
+          "success": true,
+          "status": "executed",
+          "clientTradeId": "sdk-default-1",
+          "chain": "solana",
+          "signature": "<signature>"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "path": "/api/v1/trade/agent/submit",
+            "body": {
+              "clientTradeId": "sdk-default-1",
+              "signedTransactions": [
+                "<signed>"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sdk-submit-sent-refused",
+      "scenario": "sdk",
+      "evidence": "the API's refusal of a main payer or Hood row reaches the caller as a CandleApiError with its code",
+      "args": {
+        "method": "submit",
+        "wait": "sent",
+        "api": "VALIDATION_FAILED on field wait"
+      },
+      "outcome": {
+        "threw": "CandleApiError",
+        "message": "wait: \"sent\" requires a linked Solana trade",
+        "code": "VALIDATION_FAILED",
+        "requests": [
+          {
+            "method": "POST",
+            "path": "/api/v1/trade/agent/submit",
+            "body": {
+              "clientTradeId": "sdk-sent-2",
+              "signedTransactions": [
+                "<signed>"
+              ],
+              "wait": "sent"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sdk-submit-invalid-wait",
+      "scenario": "sdk",
+      "evidence": "thrown before any request",
+      "args": {
+        "method": "submit"
+      },
+      "outcome": {
+        "threw": "Error",
+        "message": "Trade wait must be \"sent\" or \"confirmed\"",
+        "requests": []
+      }
+    },
+    {
+      "id": "sdk-trade-invalid-wait",
+      "scenario": "sdk",
+      "evidence": "thrown before any request",
+      "args": {
+        "method": "trade"
+      },
+      "outcome": {
+        "threw": "Error",
+        "message": "Trade wait must be \"sent\" or \"confirmed\"",
+        "requests": []
+      }
+    },
+    {
+      "id": "sdk-trade-sent-main-payer",
+      "scenario": "sdk",
+      "evidence": "thrown before any request",
+      "args": {
+        "method": "trade"
+      },
+      "outcome": {
+        "threw": "Error",
+        "message": "trade({ wait: \"sent\" }) requires a linked Solana trade",
+        "requests": []
+      }
+    },
+    {
+      "id": "sdk-trade-sent-hood-token",
+      "scenario": "sdk",
+      "evidence": "thrown before any request",
+      "args": {
+        "method": "trade"
+      },
+      "outcome": {
+        "threw": "Error",
+        "message": "trade({ wait: \"sent\" }) requires a linked Solana trade",
+        "requests": []
+      }
+    },
+    {
+      "id": "sdk-trade-sent-linked",
+      "scenario": "sdk",
+      "evidence": "build, the relay's sign, then submit with wait sent: the broadcast result comes back as it is",
+      "args": {
+        "method": "trade",
+        "wait": "sent",
+        "from": "linked Solana wallet"
+      },
+      "outcome": {
+        "returned": {
+          "success": true,
+          "status": "broadcast",
+          "chain": "solana",
+          "clientTradeId": "sdk-trade-sent",
+          "signature": "<signature>"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "path": "/api/v1/trade/agent/build",
+            "body": {
+              "clientTradeId": "sdk-trade-sent",
+              "mint": "<mint>",
+              "side": "buy",
+              "amountRaw": "500000",
+              "payer": {
+                "type": "linked",
+                "linkedWalletId": "wallet-1"
+              }
+            }
+          },
+          {
+            "method": "POST",
+            "path": "/api/v1/agent/wallets/wallet-1/sign",
+            "body": {
+              "authorizationSignature": "<authorization-signature>",
+              "body": {
+                "method": "signTransaction",
+                "params": {
+                  "transaction": "AQADunsigned",
+                  "encoding": "base64"
+                }
+              }
+            }
+          },
+          {
+            "method": "POST",
+            "path": "/api/v1/trade/agent/submit",
+            "body": {
+              "clientTradeId": "sdk-trade-sent",
+              "signedTransactions": [
+                "<signed>"
+              ],
+              "wait": "sent"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sdk-wait-for-trade-confirmed",
+      "scenario": "sdk",
+      "evidence": "polls the trade job, reads only, until it is confirmed (booked) or failed",
+      "args": {
+        "method": "waitForTrade",
+        "pollMs": 1
+      },
+      "outcome": {
+        "returned": {
+          "clientTradeId": "sdk-sent-1",
+          "status": "confirmed",
+          "chain": "solana",
+          "signature": "<signature>"
+        },
+        "requests": [
+          {
+            "method": "GET",
+            "path": "/api/v1/trade/agent/jobs/sdk-sent-1"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/trade/agent/jobs/sdk-sent-1"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/trade/agent/jobs/sdk-sent-1"
+          }
+        ]
+      }
+    },
+    {
+      "id": "sdk-wait-for-trade-failed",
+      "scenario": "sdk",
+      "evidence": "polls the trade job, reads only, until it is confirmed (booked) or failed",
+      "args": {
+        "method": "waitForTrade",
+        "pollMs": 1
+      },
+      "outcome": {
+        "returned": {
+          "clientTradeId": "sdk-sent-1",
+          "status": "failed",
+          "chain": "solana",
+          "signature": "<signature>",
+          "errorCode": "TRADE_REVERTED"
+        },
+        "requests": [
+          {
+            "method": "GET",
+            "path": "/api/v1/trade/agent/jobs/sdk-sent-1"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/trade/agent/jobs/sdk-sent-1"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/trade/agent/jobs/sdk-sent-1"
+          }
+        ]
+      }
+    },
+    {
+      "id": "sdk-wait-for-trade-timeout",
+      "scenario": "sdk",
+      "evidence": "a timeout throws and leaves the trade running on the server",
+      "args": {
+        "method": "waitForTrade",
+        "timeoutMs": 5,
+        "pollMs": 1
+      },
+      "outcome": {
+        "threw": "Error",
+        "message": "waitForTrade(\"sdk-sent-1\") timed out after 5ms (last status: built)",
+        "requests": [
+          {
+            "method": "GET",
+            "path": "/api/v1/trade/agent/jobs/sdk-sent-1"
+          }
+        ]
+      }
+    },
+    {
+      "id": "cli-wait-sent",
+      "scenario": "cli",
+      "evidence": "a Solana TEE token trade: the submit carries wait sent, and the command exits 0 at broadcast with the signature and the trade id",
+      "args": {
+        "argv": [
+          "swap",
+          "SOL",
+          "<mint>",
+          "--amount",
+          "1",
+          "--wallet",
+          "tee",
+          "--yes",
+          "--json",
+          "--client-trade-id",
+          "cli-sent-1",
+          "--wait-sent"
+        ]
+      },
+      "outcome": {
+        "exitCode": 0,
+        "json": {
+          "success": true,
+          "status": "broadcast",
+          "chain": "solana",
+          "clientTradeId": "cli-sent-1",
+          "signature": "<signature>",
+          "kind": "trade",
+          "quote": {
+            "intent": "Swap 1.000000000 SOL to <mint>",
+            "wallet": "<tee>",
+            "venue": "jupiter",
+            "priceImpactPct": "0.1",
+            "fee": {
+              "bps": 50,
+              "feeRaw": "5000"
+            },
+            "minimumReceived": "0.123456 <mint>",
+            "minOutRaw": "123456",
+            "minimumReceivedRaw": "123456",
+            "tokenRisks": []
+          },
+          "wallet": "<tee>",
+          "signatures": [
+            "<signature>"
+          ],
+          "raw": {
+            "success": true,
+            "status": "broadcast",
+            "chain": "solana",
+            "clientTradeId": "cli-sent-1",
+            "signature": "<signature>",
+            "kind": "trade",
+            "quote": {
+              "intent": "Swap 1.000000000 SOL to <mint>",
+              "wallet": "<tee>",
+              "venue": "jupiter",
+              "priceImpactPct": "0.1",
+              "fee": {
+                "bps": 50,
+                "feeRaw": "5000"
+              },
+              "minimumReceived": "0.123456 <mint>",
+              "minOutRaw": "123456",
+              "minimumReceivedRaw": "123456",
+              "tokenRisks": []
+            },
+            "wallet": "<tee>"
+          }
+        },
+        "apiRequests": [
+          "GET /api/v1/agent/wallets/trading",
+          "GET /api/v1/agent/wallets/embedded",
+          "GET /api/v1/trade/agent/jobs/<id>",
+          "POST /api/v1/trade/agent/build",
+          "POST /api/v1/agent/wallets/wallet/sign",
+          "POST /api/v1/trade/agent/submit"
+        ],
+        "submitBodies": [
+          {
+            "clientTradeId": "cli-sent-1",
+            "signedTransactions": [
+              "<signed>"
+            ],
+            "wait": "sent"
+          }
+        ]
+      }
+    },
+    {
+      "id": "cli-default-submit",
+      "scenario": "cli",
+      "evidence": "without the flag the submit carries no wait and the command answers once booked",
+      "args": {
+        "argv": [
+          "swap",
+          "SOL",
+          "<mint>",
+          "--amount",
+          "1",
+          "--wallet",
+          "tee",
+          "--yes",
+          "--json",
+          "--client-trade-id",
+          "cli-default-1"
+        ]
+      },
+      "outcome": {
+        "exitCode": 0,
+        "json": {
+          "success": true,
+          "status": "executed",
+          "signature": "<signature>",
+          "clientTradeId": "cli-default-1",
+          "kind": "trade",
+          "quote": {
+            "intent": "Swap 1.000000000 SOL to <mint>",
+            "wallet": "<tee>",
+            "venue": "jupiter",
+            "priceImpactPct": "0.1",
+            "fee": {
+              "bps": 50,
+              "feeRaw": "5000"
+            },
+            "minimumReceived": "0.123456 <mint>",
+            "minOutRaw": "123456",
+            "minimumReceivedRaw": "123456",
+            "tokenRisks": []
+          },
+          "wallet": "<tee>",
+          "signatures": [
+            "<signature>"
+          ],
+          "raw": {
+            "success": true,
+            "status": "executed",
+            "signature": "<signature>",
+            "clientTradeId": "cli-default-1",
+            "kind": "trade",
+            "quote": {
+              "intent": "Swap 1.000000000 SOL to <mint>",
+              "wallet": "<tee>",
+              "venue": "jupiter",
+              "priceImpactPct": "0.1",
+              "fee": {
+                "bps": 50,
+                "feeRaw": "5000"
+              },
+              "minimumReceived": "0.123456 <mint>",
+              "minOutRaw": "123456",
+              "minimumReceivedRaw": "123456",
+              "tokenRisks": []
+            },
+            "wallet": "<tee>"
+          }
+        },
+        "apiRequests": [
+          "GET /api/v1/agent/wallets/trading",
+          "GET /api/v1/agent/wallets/embedded",
+          "GET /api/v1/trade/agent/jobs/<id>",
+          "POST /api/v1/trade/agent/build",
+          "POST /api/v1/agent/wallets/wallet/sign",
+          "POST /api/v1/trade/agent/submit"
+        ],
+        "submitBodies": [
+          {
+            "clientTradeId": "cli-default-1",
+            "signedTransactions": [
+              "<signed>"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "cli-wait-sent-with-wait",
+      "scenario": "cli",
+      "evidence": "the two waits are exclusive",
+      "args": {
+        "argv": [
+          "swap",
+          "SOL",
+          "<mint>",
+          "--amount",
+          "1",
+          "--wallet",
+          "tee",
+          "--yes",
+          "--json",
+          "--client-trade-id",
+          "cli-sent-2",
+          "--wait-sent",
+          "--wait"
+        ]
+      },
+      "outcome": {
+        "exitCode": 2,
+        "json": {
+          "ok": false,
+          "code": "USAGE",
+          "message": "--wait-sent requires a Solana TEE token trade and cannot be combined with --wait."
+        },
+        "apiRequests": [],
+        "submitBodies": []
+      }
+    },
+    {
+      "id": "cli-wait-sent-base-to-base",
+      "scenario": "cli",
+      "evidence": "a base-to-base swap is not a token trade",
+      "args": {
+        "argv": [
+          "swap",
+          "SOL",
+          "USDC",
+          "--amount",
+          "1",
+          "--wallet",
+          "tee",
+          "--yes",
+          "--json",
+          "--wait-sent"
+        ]
+      },
+      "outcome": {
+        "exitCode": 2,
+        "json": {
+          "ok": false,
+          "code": "USAGE",
+          "message": "--wait-sent requires a Solana TEE token trade and cannot be combined with --wait."
+        },
+        "apiRequests": [],
+        "submitBodies": []
+      }
+    },
+    {
+      "id": "cli-wait-sent-bridge",
+      "scenario": "cli",
+      "evidence": "a bridge is not a Solana token trade",
+      "args": {
+        "argv": [
+          "swap",
+          "SOL",
+          "ETH",
+          "--amount",
+          "1",
+          "--wallet",
+          "tee",
+          "--yes",
+          "--json",
+          "--wait-sent"
+        ]
+      },
+      "outcome": {
+        "exitCode": 2,
+        "json": {
+          "ok": false,
+          "code": "USAGE",
+          "message": "--wait-sent requires a Solana TEE token trade and cannot be combined with --wait."
+        },
+        "apiRequests": [],
+        "submitBodies": []
+      }
+    },
+    {
+      "id": "cli-wait-sent-hood",
+      "scenario": "cli",
+      "evidence": "a Hood swap is refused",
+      "args": {
+        "argv": [
+          "swap",
+          "ETH",
+          "<hood-token>",
+          "--amount",
+          "1",
+          "--wallet",
+          "tee",
+          "--yes",
+          "--json",
+          "--wait-sent"
+        ]
+      },
+      "outcome": {
+        "exitCode": 2,
+        "json": {
+          "ok": false,
+          "code": "USAGE",
+          "message": "--wait-sent requires a Solana TEE token trade and cannot be combined with --wait."
+        },
+        "apiRequests": [],
+        "submitBodies": []
+      }
+    },
+    {
+      "id": "cli-wait-sent-embedded",
+      "scenario": "cli",
+      "evidence": "an embedded payer is refused once the payer is read, before any build",
+      "args": {
+        "argv": [
+          "swap",
+          "SOL",
+          "<mint>",
+          "--amount",
+          "1",
+          "--wallet",
+          "<embedded>",
+          "--yes",
+          "--json",
+          "--client-trade-id",
+          "cli-sent-3",
+          "--wait-sent"
+        ]
+      },
+      "outcome": {
+        "exitCode": 2,
+        "json": {
+          "ok": false,
+          "code": "USAGE",
+          "message": "--wait-sent requires a Solana TEE wallet."
+        },
+        "apiRequests": [
+          "GET /api/v1/agent/wallets/trading",
+          "GET /api/v1/agent/wallets/embedded",
+          "GET /api/v1/trade/agent/jobs/<id>"
+        ],
+        "submitBodies": []
+      }
+    },
+    {
+      "id": "cli-status-after-broadcast",
+      "scenario": "cli",
+      "evidence": "candle swap status <client-trade-id> follows the booking; it reads and sends nothing",
+      "args": {
+        "argv": [
+          "swap",
+          "status",
+          "cli-sent-1",
+          "--json"
+        ]
+      },
+      "outcome": {
+        "exitCode": 0,
+        "json": {
+          "job": {
+            "status": "built",
+            "clientTradeId": "cli-sent-1",
+            "chain": "solana",
+            "signature": "<signature>"
+          },
+          "success": true,
+          "kind": "trade",
+          "clientTradeId": "cli-sent-1",
+          "status": "built",
+          "signature": "<signature>",
+          "signatures": [
+            "<signature>"
+          ],
+          "raw": {
+            "job": {
+              "status": "built",
+              "clientTradeId": "cli-sent-1",
+              "chain": "solana",
+              "signature": "<signature>"
+            },
+            "success": true,
+            "kind": "trade",
+            "clientTradeId": "cli-sent-1"
+          }
+        },
+        "apiRequests": [
+          "GET /api/v1/trade/agent/jobs/<id>",
+          "GET /api/v1/agent/swap/jobs/<id>",
+          "GET /api/v1/launch/headless/jobs/<id>"
+        ],
+        "submitBodies": []
+      }
+    },
+    {
+      "id": "cli-status-booked",
+      "scenario": "cli",
+      "evidence": "candle swap status <client-trade-id> follows the booking; it reads and sends nothing",
+      "args": {
+        "argv": [
+          "swap",
+          "status",
+          "cli-sent-1",
+          "--json"
+        ]
+      },
+      "outcome": {
+        "exitCode": 0,
+        "json": {
+          "job": {
+            "status": "confirmed",
+            "clientTradeId": "cli-sent-1",
+            "chain": "solana",
+            "signature": "<signature>"
+          },
+          "success": true,
+          "kind": "trade",
+          "clientTradeId": "cli-sent-1",
+          "status": "confirmed",
+          "signature": "<signature>",
+          "signatures": [
+            "<signature>"
+          ],
+          "raw": {
+            "job": {
+              "status": "confirmed",
+              "clientTradeId": "cli-sent-1",
+              "chain": "solana",
+              "signature": "<signature>"
+            },
+            "success": true,
+            "kind": "trade",
+            "clientTradeId": "cli-sent-1"
+          }
+        },
+        "apiRequests": [
+          "GET /api/v1/trade/agent/jobs/<id>",
+          "GET /api/v1/agent/swap/jobs/<id>",
+          "GET /api/v1/launch/headless/jobs/<id>"
+        ],
+        "submitBodies": []
+      }
+    },
+    {
+      "id": "cli-status-reverted",
+      "scenario": "cli",
+      "evidence": "candle swap status <client-trade-id> follows the booking; it reads and sends nothing",
+      "args": {
+        "argv": [
+          "swap",
+          "status",
+          "cli-sent-1",
+          "--json"
+        ]
+      },
+      "outcome": {
+        "exitCode": 0,
+        "json": {
+          "job": {
+            "status": "failed",
+            "clientTradeId": "cli-sent-1",
+            "chain": "solana",
+            "signature": "<signature>",
+            "errorCode": "TRADE_REVERTED"
+          },
+          "success": true,
+          "kind": "trade",
+          "clientTradeId": "cli-sent-1",
+          "status": "failed",
+          "signature": "<signature>",
+          "signatures": [
+            "<signature>"
+          ],
+          "raw": {
+            "job": {
+              "status": "failed",
+              "clientTradeId": "cli-sent-1",
+              "chain": "solana",
+              "signature": "<signature>",
+              "errorCode": "TRADE_REVERTED"
+            },
+            "success": true,
+            "kind": "trade",
+            "clientTradeId": "cli-sent-1"
+          }
+        },
+        "apiRequests": [
+          "GET /api/v1/trade/agent/jobs/<id>",
+          "GET /api/v1/agent/swap/jobs/<id>",
+          "GET /api/v1/launch/headless/jobs/<id>"
+        ],
+        "submitBodies": []
+      }
+    },
+    {
+      "id": "docs-return-at-broadcast",
+      "scenario": "docs",
+      "args": {
+        "files": [
+          "docs/agent-trading.md",
+          "packages/sdk/CHANGELOG.md"
+        ]
+      },
+      "outcome": {
+        "found": true,
+        "phrases": [
+          "HTTP 202 acknowledges broadcast",
+          "TRADE_REVERTED",
+          "candle swap status <client-trade-id>",
+          "client.waitForTrade(clientTradeId)",
+          "--wait-sent"
+        ],
+        "releasePrefix": "Release 0.6.39 (BE-3929), with CLI 0.13.47"
+      }
+    },
+    {
+      "id": "codes",
+      "scenario": "codes",
+      "args": {
+        "from": "every row"
+      },
+      "outcome": {
+        "codes": [
+          "IDEMPOTENCY_CONFLICT",
+          "SIGNATURE_MISMATCH",
+          "SWAP_FAILED",
+          "TRADE_REVERTED",
+          "UNRECOGNIZED_TRANSACTION",
+          "USAGE",
+          "VALIDATION_FAILED"
+        ]
+      }
+    }
+  ]
+}
