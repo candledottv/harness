@@ -1,9 +1,9 @@
 // candle_trade skipping its market read when Candle's server converts the amount (BE-3924), as Candle's MCP server
 // runs it. Recorded offline from one exact commit (scripts/read-trade-direct-source.ts): the registered tool is
 // called through an in-memory MCP client against stand-ins for the API, whose build converts with Candle's own
-// decimalAmountToRaw and refuses with the API's own errorBody. The commit is #3988's merge on staging (1774b96b4):
-// CLI 0.13.45, MCP 0.10.45 and SDK 0.6.36, not on npm yet (npm's latest is 0.10.40), so these rows hold until a release carries it and the pin
-// below moves with it.
+// decimalAmountToRaw and refuses with the API's own errorBody. The commit is 5d7a861a8 (#4232 on staging), the
+// gitHead npm records for the published CLI 0.13.47, MCP 0.10.45 and SDK 0.6.39 (2026-11-24). BE-3924 merged
+// at #3988 (1774b96b4); its MCP source is unchanged between the two, and every row recorded there reads the same here.
 //
 // Each recorded reply is read the way the Candle Harness reads a live one: toOutcome, then outcomeOf for a trade.
 // Every code the Candle Harness can meet here is one it maps to a settled state; none is UNKNOWN_ERROR.
@@ -34,11 +34,11 @@ const reading = (r: Row) => {
   return { outcome, mapped: outcomeOf("trade", outcome) }
 }
 
-test("the recording names #3988's merge on staging, MCP 0.10.45, and the files the change is in", () => {
+test("the recording names the published release commit, MCP 0.10.45, and the files the change is in", () => {
   expect(recorded.source).toEqual({
     repo: "candledottv/candle-monorepo",
-    commit: "1774b96b49afda56dd1c97b52f8b12263c468b51",
-    versions: { cli: "0.13.45", mcp: "0.10.45", sdk: "0.6.36" },
+    commit: "5d7a861a83bcc5c4f2c3dace9897c325b3525e43",
+    versions: { cli: "0.13.47", mcp: "0.10.45", sdk: "0.6.39" },
     files: ["packages/mcp/src/orchestrate.ts", "packages/mcp/src/tools.ts", "packages/mcp/src/convert.ts", "apps/api/src/lib/decimal-amount.ts", "apps/api/src/lib/launch-errors.ts", "apps/api/src/routes/trade-agent.ts"],
   })
   expect(rows).toHaveLength(21)

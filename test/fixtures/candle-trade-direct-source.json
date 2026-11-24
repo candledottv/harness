@@ -2,11 +2,11 @@
   "about": "Offline contracts for candle_trade skipping its market read when the server converts the amount (BE-3924), from exact source. mcp rows call the registered candle_trade tool through an in-memory MCP client; its requests are answered by stand-ins for Candle's API. The stand-in build converts amountDecimal with Candle's own decimalAmountToRaw at a made-up asset's scale (a sell in the token's 6 decimals, a buy in the quote asset's 9), and every refusal is the API's own errorBody and status, in words the route-words row finds in the route's source (a spend cap's words are a stand-in). api-source rows run the server's conversion beside the MCP's own decimalToRaw. The route, the database, the planner and the signer are not run; every fetch is intercepted, nothing is signed, and every address and signature is made up.",
   "source": {
     "repo": "candledottv/candle-monorepo",
-    "commit": "1774b96b49afda56dd1c97b52f8b12263c468b51",
+    "commit": "5d7a861a83bcc5c4f2c3dace9897c325b3525e43",
     "versions": {
-      "cli": "0.13.45",
+      "cli": "0.13.47",
       "mcp": "0.10.45",
-      "sdk": "0.6.36"
+      "sdk": "0.6.39"
     },
     "files": [
       "packages/mcp/src/orchestrate.ts",
