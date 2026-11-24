@@ -4,7 +4,7 @@ What changed in each version of Candle Harness (called the Candle TUI before 0.3
 
 ## 0.6.14 (unreleased)
 
-`--hide` on perps orders (BE-3770, the harness sibling of BE-3769), as Candle's CLI, MCP server and SDK now take it (BE-3996, #4033, which first added it at CLI 0.13.36 / MCP 0.10.41 / SDK 0.6.30): an agent can keep a Hyperliquid perps order's fills out of Candle's public activity stream. **Draft until the release ships on npm.** Source is candle-monorepo `95bad55f6`, carrying CLI 0.13.47, MCP 0.10.45 and SDK 0.6.39 (queued to publish 2026-11-24 around 09:00Z; npm latest are still 0.13.35, 0.10.40 and 0.6.29). When the published packages land on npm, verify the release commit, re-run both recorders if the commit moved, and mark ready. The source/build version is 0.6.14; publishing remains a separate release step.
+`--hide` on perps orders (BE-3770, the harness sibling of BE-3769), as Candle's CLI, MCP server and SDK now take it (BE-3996, #4033, which first added it at CLI 0.13.36 / MCP 0.10.41 / SDK 0.6.30): an agent can keep a Hyperliquid perps order's fills out of Candle's public activity stream. Source is candle-monorepo `5d7a861a8`, the published npm release commit for `@candledottv/cli@0.13.47`, `@candledottv/mcp@0.10.45` and `@candledottv/agent-sdk@0.6.39`. The source/build version is 0.6.14; publishing remains a separate release step.
 
 ### What the Candle Harness does with it
 
@@ -15,7 +15,7 @@ What changed in each version of Candle Harness (called the Candle TUI before 0.3
 
 ### Recordings
 
-- **The perps activity stream, re-read at `95bad55f6`** (`test/fixtures/candle-perps-stream-source.json`, 83 rows, was 86 at `ba1be9ffa`). The three rows that tested the `AGENT_TRADES_IN_STREAM_ENABLED` switch are gone because Candle deleted the switch (BE-3970, #4020); a perps event is eligible on a published agent's key and never for a hidden order, with no wallet, account value or key on the wire. The recorder's client facts now read that the CLI, MCP and SDK perps orders take `hide`. The card's "400 while `AGENT_HIDE_ENABLED` is off" case no longer exists in the source (BE-3734), and the recording says so.
+- **The perps activity stream, re-read at `5d7a861a8`** (`test/fixtures/candle-perps-stream-source.json`, 83 rows, was 86 at `ba1be9ffa`). The three rows that tested the `AGENT_TRADES_IN_STREAM_ENABLED` switch are gone because Candle deleted the switch (BE-3970, #4020); a perps event is eligible on a published agent's key and never for a hidden order, with no wallet, account value or key on the wire. The recorder's client facts now read that the CLI, MCP and SDK perps orders take `hide`. The card's "400 while `AGENT_HIDE_ENABLED` is off" case no longer exists in the source (BE-3734), and the recording says so.
 - **The client half** (`scripts/read-perps-hide-source.ts`, `test/fixtures/candle-perps-hide-source.json`, 36 rows):
   - The three packages' echo helpers on one table of bodies: only `hide: true` counts in the MCP and SDK, the CLI also takes the stored `streamHidden: true`, and `false`, `"true"`, `1`, no key, `null`, an array and text are all refused.
   - The SDK's `perpsOpen`, `perpsClose` and `perpsModify` run over an intercepted fetch whose build lacks the echo: each is refused `HIDE_NOT_CONFIRMED` after exactly one request (the build, which carried `hide: true`), with the venue, the relay and the exchange never reached; without `hide` the body has no `hide` key.

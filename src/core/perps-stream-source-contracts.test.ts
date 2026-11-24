@@ -22,10 +22,10 @@ const scenario = (name: string) => rows.filter((r) => r.scenario === name)
 const TYPES = ["perp_open", "perp_add", "perp_reduce", "perp_close", "perp_liquidation"]
 const sent = (id: string) => row(`announce-${id}`).outcome
 
-test("the recording names the exact staging build and the files", () => {
+test("the recording names the exact published release build and the files", () => {
   expect(fixture.source).toMatchObject({
     repo: "candledottv/candle-monorepo",
-    commit: "95bad55f61ae7e29a181c9d1c0e8fabaca8e104c",
+    commit: "5d7a861a83bcc5c4f2c3dace9897c325b3525e43",
     versions: { cli: "0.13.47", mcp: "0.10.45", sdk: "0.6.39" },
     files: [
       "apps/api/src/lib/stream-eligibility.ts",
@@ -34,7 +34,7 @@ test("the recording names the exact staging build and the files", () => {
       "apps/api/src/lib/agent-hide.ts",
       "apps/api/src/routes/agent-perps.ts",
       "apps/api/src/lib/perps-reconcile.ts",
-      "packages/db/runtime/perpOrders.ts",
+      "packages/db/convex/perpOrders.ts",
       "packages/db/convex/schema.ts",
     ],
   })
@@ -46,7 +46,7 @@ test("the recording names the exact staging build and the files", () => {
 test("nothing in the recording is a wallet address, a key or a member's handle", () => {
   const text = JSON.stringify(fixture)
   expect(text.match(/0x[0-9a-fA-F]{32,}/g) ?? []).toEqual([])
-  expect(text.match(/[1-9A-HJ-NP-Za-km-z]{32,}/g) ?? []).toEqual([])
+  expect((text.match(/[1-9A-HJ-NP-Za-km-z]{32,}/g) ?? []).filter((m) => m !== fixture.source.commit)).toEqual([])
   expect(text).not.toMatch(/cndl_|sk_live|BEGIN/)
   for (const r of scenario("announce")) {
     const wire = r.outcome.wire as Record<string, unknown> | undefined

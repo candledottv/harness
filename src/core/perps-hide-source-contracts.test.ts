@@ -30,10 +30,10 @@ const row = (id: string) => {
 const scenario = (name: string) => rows.filter((r) => r.scenario === name)
 const ctx = { defaultAgent: "momentum", agents: new Set(["momentum"]) }
 
-test("the recording names the exact staging build, the versions that carry hide, and the files", () => {
+test("the recording names the exact published release build, the versions that carry hide, and the files", () => {
   expect(fixture.source).toMatchObject({
     repo: "candledottv/candle-monorepo",
-    commit: "95bad55f61ae7e29a181c9d1c0e8fabaca8e104c",
+    commit: "5d7a861a83bcc5c4f2c3dace9897c325b3525e43",
     versions: { cli: "0.13.47", mcp: "0.10.45", sdk: "0.6.39" },
   })
   expect(fixture.source.files).toContain("packages/cli/src/commands/perps-manage.ts")
@@ -46,7 +46,7 @@ test("the recording names the exact staging build, the versions that carry hide,
 test("nothing in the recording is a wallet address, a key or an account value", () => {
   const text = JSON.stringify(fixture)
   expect(text.match(/0x[0-9a-fA-F]{40}\b/g) ?? []).toEqual([])
-  expect(text.match(/[1-9A-HJ-NP-Za-km-z]{32,}/g) ?? []).toEqual([])
+  expect((text.match(/[1-9A-HJ-NP-Za-km-z]{32,}/g) ?? []).filter((m) => m !== fixture.source.commit)).toEqual([])
   expect(text).not.toMatch(/cndl_|sk_live|BEGIN|accountValue|walletAddress/)
 })
 
