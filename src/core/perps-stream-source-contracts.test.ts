@@ -25,8 +25,8 @@ const sent = (id: string) => row(`announce-${id}`).outcome
 test("the recording names the exact staging build and the files", () => {
   expect(fixture.source).toMatchObject({
     repo: "candledottv/candle-monorepo",
-    commit: "bdf8548b9d6c3844b014f25ae1725cbae6f8b544",
-    versions: { cli: "0.13.39", mcp: "0.10.42", sdk: "0.6.32" },
+    commit: "95bad55f61ae7e29a181c9d1c0e8fabaca8e104c",
+    versions: { cli: "0.13.47", mcp: "0.10.45", sdk: "0.6.39" },
     files: [
       "apps/api/src/lib/stream-eligibility.ts",
       "apps/api/src/lib/perps-stream.ts",
@@ -34,7 +34,7 @@ test("the recording names the exact staging build and the files", () => {
       "apps/api/src/lib/agent-hide.ts",
       "apps/api/src/routes/agent-perps.ts",
       "apps/api/src/lib/perps-reconcile.ts",
-      "packages/db/convex/perpOrders.ts",
+      "packages/db/runtime/perpOrders.ts",
       "packages/db/convex/schema.ts",
     ],
   })

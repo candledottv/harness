@@ -18,7 +18,7 @@
 // The checkout needs its own dependencies installed.
 import { strict as assert } from "node:assert"
 import { spawnSync } from "node:child_process"
-import { readFileSync, writeFileSync } from "node:fs"
+import { existsSync, readFileSync, writeFileSync } from "node:fs"
 import { join, resolve } from "node:path"
 import { pathToFileURL } from "node:url"
 
@@ -30,6 +30,9 @@ const git = (...args: string[]) => {
   return r.stdout.trim()
 }
 git("diff", "--exit-code", "HEAD", "--", "apps/api/src", "packages")
+const perpOrdersPath = existsSync(join(checkout, "packages/db/runtime/perpOrders.ts"))
+  ? "packages/db/runtime/perpOrders.ts"
+  : "packages/db/convex/perpOrders.ts"
 const FILES = [
   "apps/api/src/lib/stream-eligibility.ts",
   "apps/api/src/lib/perps-stream.ts",
@@ -37,7 +40,7 @@ const FILES = [
   "apps/api/src/lib/agent-hide.ts",
   "apps/api/src/routes/agent-perps.ts",
   "apps/api/src/lib/perps-reconcile.ts",
-  "packages/db/convex/perpOrders.ts",
+  perpOrdersPath,
   "packages/db/convex/schema.ts",
 ]
 const CLIENT_FILES = {
@@ -264,7 +267,7 @@ pin("reconcile-announces-only-the-claim", FILES[5]!, /if \(result\?\.ok && resul
 pin("reconcile-announces-order-kinds-only", FILES[5]!, /if \(!\["open", "close", "modify", "tpsl"\]\.includes\(row\.kind\) \|\| !row\.coin\) return/.test(reconcile))
 pin("reconcile-passes-the-rows-hide", FILES[5]!, /streamHidden: row\.streamHidden === true,/.test(reconcile))
 pin("schema-perp-orders-stream-fields", FILES[7]!, /streamHidden: v\.optional\(v\.boolean\(\)\),\s*streamedSz: v\.optional\(v\.string\(\)\),/.test(schema))
-pin("perps-agent-named-from-the-key-not-the-payload", FILES[2]!, /PERP_STREAM_TYPES as readonly string\[\]\)\.includes\(type\)[\s\S]{0,700}?streamDeps\.agentNameForKey\(userAddress, keyPrefix\)/.test(broadcastSrc))
+pin("perps-agent-named-from-the-key-not-the-payload", FILES[2]!, /(?:isHyperliquidStreamType\(type\)|PERP_STREAM_TYPES as readonly string\[\]\)\.includes\(type\))[\s\S]{0,700}?streamDeps\.agentNameForKey\(userAddress, keyPrefix\)/.test(broadcastSrc))
 pin("no-liquidation-emitter-yet", FILES[1]!, !/perp_liquidation"\s*[,)]/.test(text(FILES[1]!).replace(/Exclude<PerpStreamType, "perp_liquidation">/, "")) && !/type: "perp_liquidation"/.test(reconcile))
 
 // 6. The clients at this commit: the perps orders take `hide` (BE-3996); scripts/read-perps-hide-source.ts records them.

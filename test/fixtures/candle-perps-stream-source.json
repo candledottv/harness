@@ -2,11 +2,11 @@
   "about": "Offline perps activity-stream contracts (BE-3769): the one eligibility rule applied to perps events exactly as to a trade (a published agent's key, never a hidden order), the event kind from the position's size before and after a fill, one fill announced end to end through announcePerpFill and broadcastActivity onto a subscribed stream with stand-in venue reads and a stand-in published-agent lookup, the fills summary, and `hide` as the perps routes parse it. The routes, the settle claim and the schema are pinned as source text. Recorded from an exact staging commit with every fetch refused; at it the CLI, MCP and SDK perps orders take `hide` (BE-3996), and the switches that gated the stream and `hide` are gone (BE-3970).",
   "source": {
     "repo": "candledottv/candle-monorepo",
-    "commit": "bdf8548b9d6c3844b014f25ae1725cbae6f8b544",
+    "commit": "95bad55f61ae7e29a181c9d1c0e8fabaca8e104c",
     "versions": {
-      "cli": "0.13.39",
-      "mcp": "0.10.42",
-      "sdk": "0.6.32"
+      "cli": "0.13.47",
+      "mcp": "0.10.45",
+      "sdk": "0.6.39"
     },
     "files": [
       "apps/api/src/lib/stream-eligibility.ts",
@@ -15,7 +15,7 @@
       "apps/api/src/lib/agent-hide.ts",
       "apps/api/src/routes/agent-perps.ts",
       "apps/api/src/lib/perps-reconcile.ts",
-      "packages/db/convex/perpOrders.ts",
+      "packages/db/runtime/perpOrders.ts",
       "packages/db/convex/schema.ts"
     ]
   },
@@ -1236,7 +1236,7 @@
       "id": "settle-claims-each-increase-once",
       "scenario": "source-pin",
       "args": {
-        "file": "packages/db/convex/perpOrders.ts"
+        "file": "packages/db/runtime/perpOrders.ts"
       },
       "outcome": {
         "found": true

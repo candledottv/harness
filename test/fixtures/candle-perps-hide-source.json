@@ -1,12 +1,12 @@
 {
-  "about": "Offline contracts for `hide` on perps orders in Candle's CLI, MCP server and SDK (BE-3996, the client half of BE-3769). echo rows run the three packages' echo helpers on one table of bodies; sdk-run rows run the SDK's open, close and modify over an intercepted fetch whose build lacks the `hide: true` echo and count what was requested; the rest are source text and the clients' facts. The fixture holds no address, key or account value; every fetch was intercepted and none reached the network.",
+  "about": "Offline contracts for `hide` on perps orders in Candle's CLI, MCP server and SDK (BE-3996, the client half of BE-3769). echo rows run the three packages' echo helpers on one table of bodies; sdk-run rows run the SDK's open, close and modify over an intercepted fetch whose build lacks the `hide: true` echo and count what was requested; tpsl-run rows run the shared TP/SL workflow (`runPerpsTpsl`, byte-identical across CLI, MCP and SDK) offline against a stand-in venue and builder for a hidden replacement, an unechoed attach refusal (attach never signed) and a remove-only plan; the rest are source text, docs pins and the clients' facts. The fixture holds no address, key or account value; every fetch was intercepted and none reached the network.",
   "source": {
     "repo": "candledottv/candle-monorepo",
-    "commit": "bdf8548b9d6c3844b014f25ae1725cbae6f8b544",
+    "commit": "95bad55f61ae7e29a181c9d1c0e8fabaca8e104c",
     "versions": {
-      "cli": "0.13.39",
-      "mcp": "0.10.42",
-      "sdk": "0.6.32"
+      "cli": "0.13.47",
+      "mcp": "0.10.45",
+      "sdk": "0.6.39"
     },
     "files": [
       "packages/cli/src/commands/perps.ts",
@@ -17,8 +17,14 @@
       "packages/mcp/src/hyperliquid-manage.ts",
       "packages/mcp/src/hide.ts",
       "packages/sdk/src/client.ts",
+      "packages/sdk/src/hyperliquid.ts",
       "packages/sdk/src/hyperliquid-manage.ts",
-      "packages/sdk/src/hide-echo.ts"
+      "packages/sdk/src/hide-echo.ts",
+      "docs/agent-trading.md",
+      "packages/cli/README.md",
+      "packages/mcp/README.md",
+      "packages/sdk/README.md",
+      "packages/sdk/CHANGELOG.md"
     ]
   },
   "rows": [
@@ -246,6 +252,115 @@
       }
     },
     {
+      "id": "sdk-tpsl-hidden-replacement-echoed",
+      "scenario": "tpsl-run",
+      "args": {
+        "coin": "BTC",
+        "stopLoss": "56000",
+        "hide": true,
+        "echoAttachHide": true
+      },
+      "outcome": {
+        "complete": true,
+        "signs": 2,
+        "builds": [
+          {
+            "path": "/api/v1/agent/perps/tpsl",
+            "operation": "cancel",
+            "hasHideKey": false,
+            "hide": null
+          },
+          {
+            "path": "/api/v1/agent/perps/tpsl",
+            "operation": "attach",
+            "hasHideKey": true,
+            "hide": true
+          }
+        ],
+        "steps": [
+          {
+            "kind": "cancel",
+            "status": "confirmed"
+          },
+          {
+            "kind": "attach",
+            "status": "confirmed"
+          }
+        ],
+        "remainingTriggerPx": [
+          "56000"
+        ]
+      }
+    },
+    {
+      "id": "sdk-tpsl-hidden-attach-without-echo-refused",
+      "scenario": "tpsl-run",
+      "args": {
+        "coin": "BTC",
+        "takeProfit": "66000",
+        "hide": true,
+        "echoAttachHide": false
+      },
+      "outcome": {
+        "complete": false,
+        "signs": 1,
+        "builds": [
+          {
+            "path": "/api/v1/agent/perps/tpsl",
+            "operation": "cancel",
+            "hasHideKey": false,
+            "hide": null
+          },
+          {
+            "path": "/api/v1/agent/perps/tpsl",
+            "operation": "attach",
+            "hasHideKey": true,
+            "hide": true
+          }
+        ],
+        "steps": [
+          {
+            "kind": "cancel",
+            "status": "confirmed"
+          },
+          {
+            "kind": "attach",
+            "status": "rejected",
+            "detail": "HIDE_NOT_CONFIRMED: the API did not echo hide: true. This step was not signed."
+          }
+        ],
+        "remainingTriggerPx": []
+      }
+    },
+    {
+      "id": "sdk-tpsl-remove-only-with-hide-uses-plain-cancel",
+      "scenario": "tpsl-run",
+      "args": {
+        "coin": "BTC",
+        "removeSl": true,
+        "hide": true
+      },
+      "outcome": {
+        "complete": true,
+        "signs": 1,
+        "builds": [
+          {
+            "path": "/api/v1/agent/perps/tpsl",
+            "operation": "cancel",
+            "hasHideKey": false,
+            "hide": null
+          }
+        ],
+        "steps": [
+          {
+            "kind": "cancel",
+            "status": "confirmed"
+          }
+        ],
+        "remainingTriggerPx": []
+      }
+    },
+    {
       "id": "cli-perps-open-usage-has-hide",
       "scenario": "source-pin",
       "args": {
@@ -316,6 +431,16 @@
       }
     },
     {
+      "id": "manage-helpers-identical-across-cli-mcp-sdk",
+      "scenario": "source-pin",
+      "args": {
+        "file": "packages/cli/src/hyperliquid-manage.ts / packages/mcp/src/hyperliquid-manage.ts / packages/sdk/src/hyperliquid-manage.ts"
+      },
+      "outcome": {
+        "found": true
+      }
+    },
+    {
       "id": "mcp-perps-tools-take-hide",
       "scenario": "source-pin",
       "args": {
@@ -326,7 +451,7 @@
       }
     },
     {
-      "id": "mcp-hide-only-on-open-close-modify-tpsl",
+      "id": "mcp-hide-on-perps-open-close-modify-tpsl",
       "scenario": "source-pin",
       "args": {
         "file": "packages/mcp/src/perps.ts"
@@ -386,6 +511,26 @@
       }
     },
     {
+      "id": "docs-agent-trading-covers-perps-hide-and-echo",
+      "scenario": "source-pin",
+      "args": {
+        "file": "docs/agent-trading.md"
+      },
+      "outcome": {
+        "found": true
+      }
+    },
+    {
+      "id": "docs-package-readmes-and-changelog-cover-perps-hide",
+      "scenario": "source-pin",
+      "args": {
+        "file": "packages/cli/README.md / packages/mcp/README.md / packages/sdk/README.md / packages/sdk/CHANGELOG.md"
+      },
+      "outcome": {
+        "found": true
+      }
+    },
+    {
       "id": "clients-carry-perps-hide",
       "scenario": "clients",
       "args": {
@@ -398,8 +543,14 @@
           "packages/mcp/src/hyperliquid-manage.ts",
           "packages/mcp/src/hide.ts",
           "packages/sdk/src/client.ts",
+          "packages/sdk/src/hyperliquid.ts",
           "packages/sdk/src/hyperliquid-manage.ts",
-          "packages/sdk/src/hide-echo.ts"
+          "packages/sdk/src/hide-echo.ts",
+          "docs/agent-trading.md",
+          "packages/cli/README.md",
+          "packages/mcp/README.md",
+          "packages/sdk/README.md",
+          "packages/sdk/CHANGELOG.md"
         ]
       },
       "outcome": {

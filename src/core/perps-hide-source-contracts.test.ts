@@ -1,16 +1,24 @@
 // `hide` on perps orders (BE-3996, the client half of BE-3769) and the Candle Harness's own handling of it (BE-3770).
 // Candle's CLI, MCP server and SDK are recorded offline from one exact commit (scripts/read-perps-hide-source.ts):
 // the three echo helpers on one table of bodies, the SDK's open, close and modify run over an intercepted fetch whose
-// build lacks the `hide: true` echo, and the clients' hide as source text. The Candle Harness's side is read against
-// them: `--hide` goes through on `perps close` and `perps tpsl` (the rows with a card), the card says the order is
-// hidden, a refusal for a missing echo is a refusal only where nothing was signed, and a candle CLI that predates the
-// flag is told apart from a bug. Nothing here reaches Candle, a wallet or a venue.
+// build lacks the `hide: true` echo, the shared TP/SL workflow (`runPerpsTpsl`, byte-identical across CLI, MCP and
+// SDK) run offline against a stand-in venue and builder, and the clients' hide and docs as source text. The Candle
+// Harness's side is read against them: `--hide` goes through on `perps close` and `perps tpsl` (the rows with a card),
+// the card says the order is hidden, a refusal for a missing echo is a refusal only where nothing was signed, and a
+// candle CLI that predates the flag is told apart from a bug (and logs no `core.bug`). Nothing here reaches Candle, a
+// wallet or a venue.
 import { expect, test } from "bun:test"
+import { mkdtempSync, rmSync } from "node:fs"
+import { tmpdir } from "node:os"
+import { join } from "node:path"
 import fixture from "../../test/fixtures/candle-perps-hide-source.json"
+import { Redactor } from "../shared/redact"
 import { hiddenWords } from "./cards"
 import { classify } from "./classify"
-import { mapCliRow } from "./cli-cards"
+import { CliCards, mapCliRow, UploadStage } from "./cli-cards"
 import { resolveCall } from "./cli-tool"
+import type { Operation } from "./execute"
+import { Journal } from "./journal"
 
 type Row = { id: string; scenario: string; args: Record<string, any>; outcome: Record<string, any> }
 const rows = fixture.rows as Row[]
@@ -23,11 +31,16 @@ const scenario = (name: string) => rows.filter((r) => r.scenario === name)
 const ctx = { defaultAgent: "momentum", agents: new Set(["momentum"]) }
 
 test("the recording names the exact staging build, the versions that carry hide, and the files", () => {
-  expect(fixture.source).toMatchObject({ repo: "candledottv/candle-monorepo", commit: "bdf8548b9d6c3844b014f25ae1725cbae6f8b544", versions: { cli: "0.13.39", mcp: "0.10.42", sdk: "0.6.32" } })
+  expect(fixture.source).toMatchObject({
+    repo: "candledottv/candle-monorepo",
+    commit: "95bad55f61ae7e29a181c9d1c0e8fabaca8e104c",
+    versions: { cli: "0.13.47", mcp: "0.10.45", sdk: "0.6.39" },
+  })
   expect(fixture.source.files).toContain("packages/cli/src/commands/perps-manage.ts")
-  expect(rows).toHaveLength(30)
+  expect(fixture.source.files).toContain("docs/agent-trading.md")
+  expect(rows).toHaveLength(36)
   expect(new Set(rows.map((r) => r.id)).size).toBe(rows.length)
-  expect(new Set(rows.map((r) => r.scenario))).toEqual(new Set(["echo", "sdk-run", "source-pin", "clients"]))
+  expect(new Set(rows.map((r) => r.scenario))).toEqual(new Set(["echo", "sdk-run", "tpsl-run", "source-pin", "clients"]))
 })
 
 test("nothing in the recording is a wallet address, a key or an account value", () => {
@@ -55,9 +68,49 @@ test("the SDK refuses a hidden open, close and modify whose build lacks the echo
   expect(row("sdk-open-without-hide-sends-no-hide-key").outcome).toEqual({ bodiesWithAHideKey: 0, requests: 2 })
 })
 
-test("every pinned source line is found, and the four orders take hide in all three clients", () => {
-  expect(scenario("source-pin").length).toBeGreaterThanOrEqual(13)
+test("the shared TP/SL workflow keeps cancels plain, echoes hide on attach, and never signs an unechoed attach", () => {
+  const replaced = row("sdk-tpsl-hidden-replacement-echoed").outcome
+  expect(replaced).toEqual({
+    complete: true,
+    signs: 2,
+    builds: [
+      { path: "/api/v1/agent/perps/tpsl", operation: "cancel", hasHideKey: false, hide: null },
+      { path: "/api/v1/agent/perps/tpsl", operation: "attach", hasHideKey: true, hide: true },
+    ],
+    steps: [
+      { kind: "cancel", status: "confirmed" },
+      { kind: "attach", status: "confirmed" },
+    ],
+    remainingTriggerPx: ["56000"],
+  })
+  const refused = row("sdk-tpsl-hidden-attach-without-echo-refused").outcome
+  expect(refused).toEqual({
+    complete: false,
+    signs: 1,
+    builds: [
+      { path: "/api/v1/agent/perps/tpsl", operation: "cancel", hasHideKey: false, hide: null },
+      { path: "/api/v1/agent/perps/tpsl", operation: "attach", hasHideKey: true, hide: true },
+    ],
+    steps: [
+      { kind: "cancel", status: "confirmed" },
+      { kind: "attach", status: "rejected", detail: "HIDE_NOT_CONFIRMED: the API did not echo hide: true. This step was not signed." },
+    ],
+    remainingTriggerPx: [],
+  })
+  const removed = row("sdk-tpsl-remove-only-with-hide-uses-plain-cancel").outcome
+  expect(removed).toEqual({
+    complete: true,
+    signs: 1,
+    builds: [{ path: "/api/v1/agent/perps/tpsl", operation: "cancel", hasHideKey: false, hide: null }],
+    steps: [{ kind: "cancel", status: "confirmed" }],
+    remainingTriggerPx: [],
+  })
+})
+
+test("every pinned source and docs line is found, and the four orders take hide in all three clients", () => {
+  expect(scenario("source-pin").length).toBeGreaterThanOrEqual(17)
   for (const r of scenario("source-pin")) expect(r.outcome.found).toBe(true)
+  expect(row("manage-helpers-identical-across-cli-mcp-sdk").outcome.found).toBe(true)
   expect(row("clients-carry-perps-hide").outcome).toEqual({ cliPerpsTakesHide: true, mcpPerpsTakesHide: true, mcpManageTakesHide: true, sdkOpenCloseModifyTakeHide: true, sdkTpslTakesHide: true })
 })
 
@@ -100,11 +153,38 @@ test("a TP/SL plan whose attach step wasn't signed for a missing echo isn't repo
   expect(mapCliRow("perps tpsl", { exitCode: 0, timedOut: false, json: body }).state).toBe("unknown")
 })
 
-test("a candle CLI older than perps --hide is said to be old, not a Candle Harness bug, and nothing was sent", () => {
-  const old = mapCliRow("perps close", { exitCode: 2, timedOut: false, json: { ok: false, code: "USAGE", message: "Unknown flag: --hide" } })
-  expect(old.state).toBe("refused")
-  expect(old.error).toMatchObject({ code: "HIDE_NEEDS_NEWER_CLI", retryable: false })
-  expect(old.error?.message).not.toContain("bug in the Candle Harness")
+test("a candle CLI older than perps --hide is refused on both close and tpsl, not called a Candle Harness bug, and logs no core.bug", async () => {
+  for (const rowName of ["perps close", "perps tpsl"]) {
+    const old = mapCliRow(rowName, { exitCode: 2, timedOut: false, json: { ok: false, code: "USAGE", message: "Unknown flag: --hide" } })
+    expect(old.state).toBe("refused")
+    expect(old.error).toMatchObject({ code: "HIDE_NEEDS_NEWER_CLI", retryable: false })
+    expect(old.error?.message).not.toContain("bug in the Candle Harness")
+  }
   const other = mapCliRow("perps close", { exitCode: 2, timedOut: false, json: { ok: false, code: "USAGE", message: "Unknown flag: --nope" } })
   expect(other.error?.message).toContain("bug in the Candle Harness")
+
+  const dir = mkdtempSync(join(tmpdir(), "chrn-perps-hide-"))
+  const journal = await Journal.open({ path: join(dir, "journal.jsonl"), redactor: new Redactor(), account: "acct_fake", now: () => 1_790_000_000_000 })
+  try {
+    const stage = new UploadStage(join(dir, "uploads"))
+    let reply = { exitCode: 2, stdout: "", stderr: "", timedOut: false, json: { ok: false, code: "USAGE", message: "Unknown flag: --hide" } }
+    const cards = new CliCards({
+      cli: { runExact: async () => reply },
+      redactor: new Redactor(),
+      journal,
+      stage,
+      now: () => 1_790_000_000_000,
+    })
+    const op = { opId: "op_1", mode: "live", agent: "momentum", params: { row: "perps tpsl", agent: "momentum", argv: ["perps", "tpsl", "BTC", "--stop-loss", "50000", "--hide", "--yes"] } } as unknown as Operation
+    const oldRun = await cards.execute(op)
+    expect(oldRun).toMatchObject({ state: "refused", error: { code: "HIDE_NEEDS_NEWER_CLI" } })
+    expect(journal.rows().filter((e) => e.type === "core.bug")).toEqual([])
+
+    reply = { exitCode: 2, stdout: "", stderr: "", timedOut: false, json: { ok: false, code: "USAGE", message: "Unknown flag: --nope" } }
+    await cards.execute(op)
+    expect(journal.rows().filter((e) => e.type === "core.bug")).toHaveLength(1)
+  } finally {
+    await journal.close().catch(() => {})
+    rmSync(dir, { recursive: true, force: true })
+  }
 })
