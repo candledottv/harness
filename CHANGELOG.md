@@ -63,6 +63,14 @@ Candle's MCP server no longer reads a token's market before a buy, or a paper se
 - The recording holds no wallet address, key or account value: the made-up wallet's address goes into Candle's source, which hashes it, and is in no row; every coin, figure and fill hash is made up. No database, perps job, venue, signature or network was used, the keyed API route isn't run, and no staging or production read was made.
 - Not here: the agent page's summary row and chart toggle, which are the web's, and any live read of a published agent's summary.
 
+### The API request id
+
+Every Candle API answer now carries `X-Candle-Request-Id`, and Candle's SDK keeps it on the error it throws. Recorded at the published release `5d7a861a8` (CLI 0.13.47, MCP 0.10.45, SDK 0.6.39, all on npm).
+
+- **Thirty-three offline rows** (`scripts/read-request-id-source.ts`, `test/fixtures/candle-request-id-source.json`): `CandleApiError.requestId` and the message's `(request id <id>)` ending, for an envelope, a plain-text and an empty answer; no id from an older API; one ending, never two; only a short safe token read as an id, so a proxy's header never reaches a message; the SDK's keyless public reads (market, feed, token card, token events) throwing with the answer's id and sending no key; the API's own middleware putting an id on a success and on a 503, reusing a caller's safe id and replacing anything else; and the docs' section, the same in its three copies.
+- **The bots folder's `AGENTS.md`** tells a code bot to log a failed SDK read's `requestId` with its `code`, so a bot's log (`candle-harness build logs`) carries the id the person can quote to Candle.
+- **The core's own Candle errors carry no id yet.** The core reaches Candle through the CLI and the MCP server, and neither reads the header at this release: two rows hold that, and fail when either starts.
+
 ## 0.6.12 (unreleased)
 
 A published agent's measured record with its Hyperliquid perps in it (BE-3754), as Candle's CLI, MCP server (the local one and the hosted one) and SDK now read it: closed perp rounds listed among the spot swaps, each with what it took to make the figure, the P&L split into its parts, and a time that says how fresh the perps are. Source is candle-monorepo `ebd1e5005`, #3921's merge on staging, the same build 0.6.11 pins: the published CLI 0.13.35, MCP 0.10.40 and SDK 0.6.29. The recording was first made at #3921's open head `36d4bf264` and re-read at the merge; no record row changed, only the commit and the versions it names. The source/build version is 0.6.12; publishing remains a separate release step.
