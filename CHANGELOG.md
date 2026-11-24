@@ -4,6 +4,15 @@ What changed in each version of Candle Harness (called the Candle TUI before 0.3
 
 ## 0.6.13 (unreleased)
 
+### Key-signer rebind takes one approval (BE-4316)
+
+`candle tee rebind` onto a key with a signer, as the published CLI 0.13.47 (MCP 0.10.45, SDK 0.6.39; candle-monorepo `5d7a861a8`) runs it after BE-4315. Recorded offline (`scripts/read-rebind-source.ts`, `test/fixtures/candle-rebind-source.json`, five rows) by running the CLI's own `run()` against its own key-signer simulator; nothing reaches a network.
+
+- **One approval on the fixed API:** the unsigned request is refused for the owner signatures before any approval is issued, the signed request asks once, and the approved resend finishes: preview, unsigned, signed, signed; one confirm issued and redeemed; the wallet is bound to the target key and owned by its signer.
+- **`REBIND_CONFIRM_SPENT` on an older API:** an API that uses the approval before asking for the signatures answers the approved resend 409 `KEY_SIGNER_SIGNATURE_REQUIRED`. The CLI stops there, mints no second confirm, changes nothing, and says not to run it again until the API carries the fix (`--json` carries the code and the same advice).
+- **`REBIND_OWNERS_CHANGED`:** on the fixed API a wallet's owner changing while the approval is pending is refused before the approval is used; the CLI stops and the confirm stays unredeemed.
+- **Source commit:** this recording stays at its own commit, like the unified-account one. The CLI table (`src/core/cli-source.json`), tools/list and the other source fixtures are still read at `bdf8548b9` (CLI 0.13.39), so the doctor and the refusal of an unknown command still name 0.13.39; moving them to 0.13.47 re-reads every recording that asserts the shared commit and is not done here.
+
 A published agent's Hyperliquid perps summary for a window (BE-3775), as Candle's CLI, local MCP server and SDK now read it: P&L and its parts, volume and fees to volume, rounds, win rate, largest win and loss, leverage, liquidations and max drawdown in dollars. Source is candle-monorepo `bdf8548b9`, #4073's merge on staging: CLI 0.13.39, MCP 0.10.42 and SDK 0.6.32, which wait on a promote and are not on npm yet. The shared source fixtures are re-read at that commit.
 
 ### The perps summary
