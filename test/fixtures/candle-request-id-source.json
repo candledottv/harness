@@ -1,0 +1,530 @@
+{
+  "about": "Offline request-id contracts: the X-Candle-Request-Id the API puts on every response, how Candle's SDK keeps it on CandleApiError (requestId, and a message ending `(request id <id>)`), and which of Candle's clients read it. Recorded by running Candle's own source against stand-ins from the published release commit; every fetch is intercepted.",
+  "source": {
+    "repo": "candledottv/candle-monorepo",
+    "commit": "5d7a861a83bcc5c4f2c3dace9897c325b3525e43",
+    "versions": {
+      "cli": "0.13.47",
+      "mcp": "0.10.45",
+      "sdk": "0.6.39"
+    },
+    "files": [
+      "packages/sdk/src/errors.ts",
+      "packages/sdk/src/client.ts",
+      "packages/sdk/CHANGELOG.md",
+      "apps/api/src/lib/request-id.ts",
+      "apps/api/src/middleware/request-timing.ts",
+      "apps/api/src/app.ts",
+      "docs/agent-trading.md",
+      "apps/docs/src/content/docs/developers/agent-trading.md",
+      "apps/frontend/public/docs/agent-trading.md"
+    ]
+  },
+  "rows": [
+    {
+      "id": "sdk-exports",
+      "scenario": "sdk-error",
+      "args": {},
+      "outcome": {
+        "header": "x-candle-request-id",
+        "exported": [
+          "REQUEST_ID_HEADER",
+          "requestIdOf",
+          "CandleApiError"
+        ]
+      }
+    },
+    {
+      "id": "sdk-error-envelope-with-id",
+      "scenario": "sdk-error",
+      "args": {
+        "status": 503,
+        "body": "envelope",
+        "requestId": "0f3c2a9e-6b1d-4e57-9a2c-5d8e7f6a1b20"
+      },
+      "outcome": {
+        "name": "CandleApiError",
+        "code": "QUOTE_UNAVAILABLE",
+        "status": 503,
+        "retryable": true,
+        "requestId": "0f3c2a9e-6b1d-4e57-9a2c-5d8e7f6a1b20",
+        "message": "No quote is available right now (request id 0f3c2a9e-6b1d-4e57-9a2c-5d8e7f6a1b20)"
+      }
+    },
+    {
+      "id": "sdk-error-envelope-without-id",
+      "scenario": "sdk-error",
+      "args": {
+        "status": 503,
+        "body": "envelope",
+        "requestId": null
+      },
+      "outcome": {
+        "name": "CandleApiError",
+        "code": "QUOTE_UNAVAILABLE",
+        "status": 503,
+        "retryable": true,
+        "requestId": null,
+        "message": "No quote is available right now"
+      }
+    },
+    {
+      "id": "sdk-error-plain-text-with-id",
+      "scenario": "sdk-error",
+      "args": {
+        "status": 502,
+        "body": "Bad Gateway",
+        "requestId": "0f3c2a9e-6b1d-4e57-9a2c-5d8e7f6a1b20"
+      },
+      "outcome": {
+        "name": "CandleApiError",
+        "code": "HTTP_502",
+        "status": 502,
+        "retryable": false,
+        "requestId": "0f3c2a9e-6b1d-4e57-9a2c-5d8e7f6a1b20",
+        "message": "Bad Gateway (request id 0f3c2a9e-6b1d-4e57-9a2c-5d8e7f6a1b20)"
+      }
+    },
+    {
+      "id": "sdk-error-empty-body-with-id",
+      "scenario": "sdk-error",
+      "args": {
+        "status": 500,
+        "body": "",
+        "requestId": "0f3c2a9e-6b1d-4e57-9a2c-5d8e7f6a1b20"
+      },
+      "outcome": {
+        "name": "CandleApiError",
+        "code": "HTTP_500",
+        "status": 500,
+        "retryable": false,
+        "requestId": "0f3c2a9e-6b1d-4e57-9a2c-5d8e7f6a1b20",
+        "message": "HTTP 500 (request id 0f3c2a9e-6b1d-4e57-9a2c-5d8e7f6a1b20)"
+      }
+    },
+    {
+      "id": "sdk-error-suffixed-once",
+      "scenario": "sdk-error",
+      "args": {
+        "from": "sdk-error-envelope-with-id"
+      },
+      "outcome": {
+        "message": "No quote is available right now (request id 0f3c2a9e-6b1d-4e57-9a2c-5d8e7f6a1b20)",
+        "suffixes": 1
+      }
+    },
+    {
+      "id": "sdk-request-id-of-api-uuid",
+      "scenario": "sdk-error",
+      "args": {
+        "header": "36 chars"
+      },
+      "outcome": {
+        "requestId": "0f3c2a9e-6b1d-4e57-9a2c-5d8e7f6a1b20"
+      }
+    },
+    {
+      "id": "sdk-request-id-of-caller-token",
+      "scenario": "sdk-error",
+      "args": {
+        "header": "bot-run.42_a"
+      },
+      "outcome": {
+        "requestId": "bot-run.42_a"
+      }
+    },
+    {
+      "id": "sdk-request-id-of-absent",
+      "scenario": "sdk-error",
+      "args": {
+        "header": "absent"
+      },
+      "outcome": {
+        "requestId": null
+      }
+    },
+    {
+      "id": "sdk-request-id-of-empty",
+      "scenario": "sdk-error",
+      "args": {
+        "header": ""
+      },
+      "outcome": {
+        "requestId": null
+      }
+    },
+    {
+      "id": "sdk-request-id-of-too-short",
+      "scenario": "sdk-error",
+      "args": {
+        "header": "abc1234"
+      },
+      "outcome": {
+        "requestId": null
+      }
+    },
+    {
+      "id": "sdk-request-id-of-too-long",
+      "scenario": "sdk-error",
+      "args": {
+        "header": "65 chars"
+      },
+      "outcome": {
+        "requestId": null
+      }
+    },
+    {
+      "id": "sdk-request-id-of-with-space",
+      "scenario": "sdk-error",
+      "args": {
+        "header": "abc 12345"
+      },
+      "outcome": {
+        "requestId": null
+      }
+    },
+    {
+      "id": "sdk-request-id-of-markup",
+      "scenario": "sdk-error",
+      "args": {
+        "header": "<b>12345678</b>"
+      },
+      "outcome": {
+        "requestId": null
+      }
+    },
+    {
+      "id": "sdk-request-id-of-no-headers",
+      "scenario": "sdk-error",
+      "args": {
+        "response": "no headers object"
+      },
+      "outcome": {
+        "requestId": null
+      }
+    },
+    {
+      "id": "sdk-client-market-not-found",
+      "scenario": "sdk-client",
+      "args": {
+        "read": "getMarket",
+        "status": 404,
+        "body": "envelope",
+        "requestId": "0f3c2a9e-6b1d-4e57-9a2c-5d8e7f6a1b20"
+      },
+      "requests": [
+        {
+          "n": 1,
+          "method": "GET",
+          "host": "api.test",
+          "path": "/api/v1/markets/solana/<mint>",
+          "key": false
+        }
+      ],
+      "outcome": {
+        "threw": true,
+        "name": "CandleApiError",
+        "code": "TOKEN_NOT_FOUND",
+        "status": 404,
+        "retryable": false,
+        "requestId": "0f3c2a9e-6b1d-4e57-9a2c-5d8e7f6a1b20",
+        "message": "No market for that token (request id 0f3c2a9e-6b1d-4e57-9a2c-5d8e7f6a1b20)"
+      }
+    },
+    {
+      "id": "sdk-client-feed-unavailable",
+      "scenario": "sdk-client",
+      "args": {
+        "read": "getFeed",
+        "status": 503,
+        "body": "envelope",
+        "requestId": "0f3c2a9e-6b1d-4e57-9a2c-5d8e7f6a1b20"
+      },
+      "requests": [
+        {
+          "n": 1,
+          "method": "GET",
+          "host": "api.test",
+          "path": "/api/v1/markets/feed",
+          "key": false
+        }
+      ],
+      "outcome": {
+        "threw": true,
+        "name": "CandleApiError",
+        "code": "FEED_UNAVAILABLE",
+        "status": 503,
+        "retryable": true,
+        "requestId": "0f3c2a9e-6b1d-4e57-9a2c-5d8e7f6a1b20",
+        "message": "The feed is unavailable right now (request id 0f3c2a9e-6b1d-4e57-9a2c-5d8e7f6a1b20)"
+      }
+    },
+    {
+      "id": "sdk-client-token-card-proxy-page",
+      "scenario": "sdk-client",
+      "args": {
+        "read": "getTokenCard",
+        "status": 502,
+        "body": "Bad Gateway",
+        "requestId": "0f3c2a9e-6b1d-4e57-9a2c-5d8e7f6a1b20"
+      },
+      "requests": [
+        {
+          "n": 1,
+          "method": "GET",
+          "host": "api.test",
+          "path": "/api/v1/tokens/solana/<mint>/card",
+          "key": false
+        }
+      ],
+      "outcome": {
+        "threw": true,
+        "name": "CandleApiError",
+        "code": "HTTP_502",
+        "status": 502,
+        "retryable": false,
+        "requestId": "0f3c2a9e-6b1d-4e57-9a2c-5d8e7f6a1b20",
+        "message": "Bad Gateway (request id 0f3c2a9e-6b1d-4e57-9a2c-5d8e7f6a1b20)"
+      }
+    },
+    {
+      "id": "sdk-client-token-events-rate-limited-older-api",
+      "scenario": "sdk-client",
+      "args": {
+        "read": "getTokenEvents",
+        "status": 429,
+        "body": "envelope",
+        "requestId": null
+      },
+      "requests": [
+        {
+          "n": 1,
+          "method": "GET",
+          "host": "api.test",
+          "path": "/api/v1/tokens/solana/<mint>/events",
+          "key": false
+        }
+      ],
+      "outcome": {
+        "threw": true,
+        "name": "CandleApiError",
+        "code": "RATE_LIMITED",
+        "status": 429,
+        "retryable": true,
+        "requestId": null,
+        "message": "Too many requests"
+      }
+    },
+    {
+      "id": "sdk-client-market-proxy-header",
+      "scenario": "sdk-client",
+      "args": {
+        "read": "getMarket",
+        "status": 503,
+        "body": "envelope",
+        "requestId": "<proxy page>"
+      },
+      "requests": [
+        {
+          "n": 1,
+          "method": "GET",
+          "host": "api.test",
+          "path": "/api/v1/markets/solana/<mint>",
+          "key": false
+        }
+      ],
+      "outcome": {
+        "threw": true,
+        "name": "CandleApiError",
+        "code": "QUOTE_UNAVAILABLE",
+        "status": 503,
+        "retryable": true,
+        "requestId": null,
+        "message": "No quote is available right now"
+      }
+    },
+    {
+      "id": "sdk-client-market-ok",
+      "scenario": "sdk-client",
+      "args": {
+        "read": "getMarket",
+        "status": 200,
+        "body": "envelope",
+        "requestId": "0f3c2a9e-6b1d-4e57-9a2c-5d8e7f6a1b20"
+      },
+      "requests": [
+        {
+          "n": 1,
+          "method": "GET",
+          "host": "api.test",
+          "path": "/api/v1/markets/solana/<mint>",
+          "key": false
+        }
+      ],
+      "outcome": {
+        "threw": false,
+        "value": "object"
+      }
+    },
+    {
+      "id": "api-success-gets-an-id",
+      "scenario": "api",
+      "args": {
+        "path": "/api/v1/markets/solana/mint",
+        "incoming": null
+      },
+      "outcome": {
+        "status": 200,
+        "header": "X-Candle-Request-Id",
+        "id": "uuid"
+      }
+    },
+    {
+      "id": "api-503-gets-an-id",
+      "scenario": "api",
+      "args": {
+        "path": "/api/v1/markets/feed",
+        "incoming": null
+      },
+      "outcome": {
+        "status": 503,
+        "header": "X-Candle-Request-Id",
+        "id": "uuid"
+      }
+    },
+    {
+      "id": "api-reuses-a-safe-caller-id",
+      "scenario": "api",
+      "args": {
+        "path": "/api/v1/markets/solana/mint",
+        "incoming": "bot-run.42_a"
+      },
+      "outcome": {
+        "status": 200,
+        "header": "X-Candle-Request-Id",
+        "id": "caller's id"
+      }
+    },
+    {
+      "id": "api-replaces-a-short-caller-id",
+      "scenario": "api",
+      "args": {
+        "path": "/api/v1/markets/solana/mint",
+        "incoming": "abc1234"
+      },
+      "outcome": {
+        "status": 200,
+        "header": "X-Candle-Request-Id",
+        "id": "uuid"
+      }
+    },
+    {
+      "id": "api-replaces-markup",
+      "scenario": "api",
+      "args": {
+        "path": "/api/v1/markets/solana/mint",
+        "incoming": "<b>12345678</b>"
+      },
+      "outcome": {
+        "status": 200,
+        "header": "X-Candle-Request-Id",
+        "id": "uuid"
+      }
+    },
+    {
+      "id": "api-fresh-ids-differ",
+      "scenario": "api",
+      "args": {
+        "calls": 2
+      },
+      "outcome": {
+        "shapes": [
+          "uuid",
+          "uuid"
+        ],
+        "differ": true
+      }
+    },
+    {
+      "id": "source-cors-exposes-the-id",
+      "scenario": "source",
+      "evidence": "pinned as source text: app.ts is the whole API and is not run here",
+      "args": {
+        "file": "apps/api/src/app.ts"
+      },
+      "outcome": {
+        "corsBlocks": 2,
+        "everyBlockExposesIt": true
+      }
+    },
+    {
+      "id": "source-cli-reads-the-id",
+      "scenario": "source",
+      "evidence": "pinned as source text: every non-test source file of the package, searched for the header's name or the SDK's reader",
+      "args": {
+        "dir": "packages/cli/src"
+      },
+      "outcome": {
+        "files": 280,
+        "readsTheHeader": false,
+        "reading": []
+      }
+    },
+    {
+      "id": "source-mcp-reads-the-id",
+      "scenario": "source",
+      "evidence": "pinned as source text: every non-test source file of the package, searched for the header's name or the SDK's reader",
+      "args": {
+        "dir": "packages/mcp/src"
+      },
+      "outcome": {
+        "files": 42,
+        "readsTheHeader": false,
+        "reading": []
+      }
+    },
+    {
+      "id": "source-sdk-reads-the-id",
+      "scenario": "source",
+      "evidence": "pinned as source text: every non-test source file of the package, searched for the header's name or the SDK's reader",
+      "args": {
+        "dir": "packages/sdk/src"
+      },
+      "outcome": {
+        "files": 34,
+        "readsTheHeader": true,
+        "reading": [
+          "packages/sdk/src/index.ts",
+          "packages/sdk/src/client.ts",
+          "packages/sdk/src/errors.ts",
+          "packages/sdk/src/token-pages.ts"
+        ]
+      }
+    },
+    {
+      "id": "docs-quoting-the-request-id",
+      "scenario": "docs",
+      "args": {
+        "files": [
+          "docs/agent-trading.md",
+          "apps/docs/src/content/docs/developers/agent-trading.md",
+          "apps/frontend/public/docs/agent-trading.md"
+        ]
+      },
+      "outcome": {
+        "identical": true,
+        "text": "## Quoting the request id\n\nEvery API response carries `X-Candle-Request-Id` (browsers can read it; CORS exposes it). When you report a failed trade or any other failed call, quote that id: it is on the request's `[AgentRequest]` and error log lines, so it finds the exact one. `CandleApiError.requestId` in the SDK holds it, and the error message ends with `(request id <id>)`. You may send your own `X-Candle-Request-Id` (8 to 64 characters from `A-Za-z0-9._-`); anything else is replaced."
+      }
+    },
+    {
+      "id": "docs-sdk-changelog",
+      "scenario": "docs",
+      "args": {
+        "file": "packages/sdk/CHANGELOG.md"
+      },
+      "outcome": {
+        "entry": "Release 0.6.38 (BE-4297); it carries the 0.6.37 code, so it waits on the same 2026-11-24T09:00Z gate, for an API that sends `X-Candle-Request-Id` in production. `CandleApiError.requestId` keeps the API's `X-Candle-Request-Id` from the failed response (also from a non-envelope `HTTP_<status>` answer), and the error message ends with `(request id <id>)`; quote it when reporting a failed call. Absent from an older API. `REQUEST_ID_HEADER` and `requestIdOf(response)` are exported. No request or route changes. A `failed` or `timeout` outcome from `submitAtomicLaunch()` carries `requestId` when the submit response sent one, and the `JITO_BUNDLE_*` error `selfLaunch()` builds from it keeps it; token-page and holder-exit errors keep it too."
+      }
+    }
+  ]
+}
