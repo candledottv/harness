@@ -21,7 +21,7 @@ import type { PayerResult } from "./agent-wallets"
 import { isBaseAsset } from "./assets"
 import type { CandleCli, CliResult } from "./candle-cli"
 import { type CardRow, isFlagWord, rowFor, sourceForWords } from "./cli-table"
-import { PRE_BUILD_CODES } from "./cli-trade"
+import { isHideUnknown, PRE_BUILD_CODES } from "./cli-trade"
 import type { Mapped, Operation, OperationError } from "./execute"
 import { refusalMessage } from "./execute"
 import { type EmptyState, isCounted } from "./empty-accounts"
@@ -533,7 +533,7 @@ const NOTHING_SENT: Record<CardRow["kind"], ReadonlySet<string>> = {
   // PERPS_SCHEDULE_CANCEL_REJECTED are raised after the action was signed and posted, when Hyperliquid answers `err`
   // (perps.ts, 421-433): counted as refused only because close, cancel and schedule-cancel are one action, so an `err`
   // means that action did not take effect. tpsl and flatten are several steps and use PLAN_NOTHING_SENT instead.
-  perps: new Set([...BEFORE_ANYTHING, "TEE_WALLET_REQUIRED", "PERPS_UNAVAILABLE", "PERPS_BUILD_REFUSED", "PERPS_CLIENT_ID_UNSUPPORTED", "PERPS_VENUE_REFUSED", "PERPS_SCHEDULE_CANCEL_REJECTED"]),
+  perps: new Set([...BEFORE_ANYTHING, "TEE_WALLET_REQUIRED", "PERPS_UNAVAILABLE", "PERPS_BUILD_REFUSED", "PERPS_CLIENT_ID_UNSUPPORTED", "PERPS_VENUE_REFUSED", "PERPS_SCHEDULE_CANCEL_REJECTED", "HIDE_NOT_CONFIRMED"]),
 }
 
 /**
@@ -541,8 +541,8 @@ const NOTHING_SENT: Record<CardRow["kind"], ReadonlySet<string>> = {
  * plan is made, before its one confirm, is sure to have sent nothing. A later step's error may follow a sent one.
  */
 const PLAN_NOTHING_SENT: Record<string, ReadonlySet<string>> = {
-  "perps tpsl": new Set(["TEE_WALLET_REQUIRED", "VALIDATION_FAILED", "PERPS_NO_POSITION", "PERPS_ORDER_NOT_FOUND", "PERPS_TPSL_CONFLICT"]),
-  "perps flatten": new Set(["TEE_WALLET_REQUIRED"]),
+  "perps tpsl": new Set(["USAGE", "TEE_WALLET_REQUIRED", "VALIDATION_FAILED", "PERPS_NO_POSITION", "PERPS_ORDER_NOT_FOUND", "PERPS_TPSL_CONFLICT"]),
+  "perps flatten": new Set(["USAGE", "TEE_WALLET_REQUIRED"]),
 }
 
 /** Whether an exit-0 answer says it went through, by kind. */
@@ -591,7 +591,10 @@ function closeState(body: Record<string, unknown>): Mapped["state"] {
   return "unknown"
 }
 
-function errorOf(code: string, body: Record<string, unknown>): OperationError {
+function errorOf(code: string, body: Record<string, unknown>, kind: CardRow["kind"]): OperationError {
+  // A candle CLI older than perps `--hide` (0.13.36 / BE-3996) doesn't know the flag and runs nothing; it isn't a Candle Harness bug.
+  if (isHideUnknown(body)) return { code: "HIDE_NEEDS_NEWER_CLI", message: `This candle CLI doesn't have --hide ${kind === "perps" ? "on perps orders " : ""}yet, so it refused the order. Nothing was sent, and nothing went public. Update the Candle CLI, or ask again without --hide.`, retryable: false }
+  if (code === "HIDE_NOT_CONFIRMED") return { code, message: "--hide was asked for, but Candle's answer did not confirm the order is hidden (an API that predates hide would place it publicly). The candle CLI signed and sent nothing for this order. Remove --hide to place a visible order.", retryable: false }
   if (code === "SIGNER_UNAVAILABLE") return { code, message: "This machine doesn't hold the TEE wallet's signer, so the candle CLI couldn't sign. Nothing was sent. candle-harness doctor shows which wallets have one.", retryable: false }
   if (code === "USAGE") return { code, message: "The Candle Harness built a command the candle CLI didn't accept. Nothing was sent. This is a bug in the Candle Harness.", retryable: false }
   const message = refusalMessage(code, body) ?? (typeof body.message === "string" ? terminalText(body.message, { maxLength: 500 }) : code)
@@ -614,7 +617,7 @@ export function mapCliRow(row: string, run: Pick<CliResult, "exitCode" | "timedO
     return state === "unknown" ? { state, result: body, reason: "the candle CLI's answer didn't say it went through" } : { state, result: body }
   }
   const code = typeof body.code === "string" ? body.code : `CLI_EXIT_${run.exitCode}`
-  const error = errorOf(code, body)
+  const error = errorOf(code, body, kind)
   if (run.exitCode === 3) return { state: "unknown", result: body, error, reason: "the candle CLI says it may have gone through (exit 3)" }
   if ((run.exitCode === 1 || run.exitCode === 2) && (PLAN_NOTHING_SENT[row] ?? NOTHING_SENT[kind]).has(code)) return { state: "refused", result: body, error }
   return { state: "unknown", result: body, error, reason: `${code}: it may have gone through` }
@@ -639,7 +642,7 @@ export class CliCards {
     }
     const run = await this.deps.cli.runExact({ agent: p.agent, argv: p.argv, json: true })
     const clean = { ...run, ...(run.json !== undefined ? { json: this.deps.redactor.value(run.json) } : {}) }
-    if (record(clean.json)?.code === "USAGE") {
+    if (record(clean.json)?.code === "USAGE" && !isHideUnknown(record(clean.json))) {
       await this.deps.journal.append({ type: "core.bug", mode: op.mode, agent: op.agent, opId: op.opId, what: `candle ${p.row} refused the Candle Harness's argv as USAGE`, argv: p.argv })
     }
     return mapCliRow(p.row, clean)

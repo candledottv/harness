@@ -798,22 +798,8 @@ export const FORBIDDEN_FLAGS = new Set([
  * The flags a row takes from the agent: what the command's source declares (for an action word with
  * a table of its own, that action's), less the forbidden (but those the row lifts) and the path flags.
  */
-/**
- * Flags the pinned source declares that the Candle Harness doesn't take yet, by command: read as flags the command
- * doesn't have. Source 0.13.39 carries `--hide` on perps orders (BE-3996); until the Candle Harness covers it
- * (BE-3770), a perps order never goes out hidden or public by a flag the harness hasn't checked.
- */
-const WITHHELD_FLAGS: Readonly<Record<string, readonly string[]>> = {
-  "perps open": ["--hide"],
-  "perps close": ["--hide"],
-  "perps modify": ["--hide"],
-  "perps tpsl": ["--hide"],
-}
-/** Whether a flag the source declares for this command is withheld (WITHHELD_FLAGS). */
-export const withheldFlag = (entry: SourceEntry, flag: string): boolean => WITHHELD_FLAGS[entry.subcommand === null ? entry.command : `${entry.command} ${entry.subcommand}`]?.includes(flag) ?? false
-
 export function allowedFlags(entry: SourceEntry, action?: string, lifts: readonly string[] = []): { value: Set<string>; boolean: Set<string> } {
-  const ok = (f: string) => (!FORBIDDEN_FLAGS.has(f) || lifts.includes(f)) && !f.startsWith("--accept-") && !(entry.flags?.path ?? []).includes(f) && f.startsWith("-") && !withheldFlag(entry, f)
+  const ok = (f: string) => (!FORBIDDEN_FLAGS.has(f) || lifts.includes(f)) && !f.startsWith("--accept-") && !(entry.flags?.path ?? []).includes(f) && f.startsWith("-")
   const values = action !== undefined && entry.flags?.byAction?.[action] !== undefined ? entry.flags.byAction[action]! : (entry.flags?.value ?? [])
   return { value: new Set(values.filter(ok)), boolean: new Set((entry.flags?.boolean ?? []).filter(ok)) }
 }

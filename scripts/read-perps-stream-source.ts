@@ -2,7 +2,7 @@
 // sends to Candle's public activity stream (the site banner's and the Discord announcer's feed), and the `hide` flag
 // on perps orders, recorded by running the API's own source against stand-ins.
 //   1. the one eligibility rule (apps/api/src/lib/stream-eligibility.ts): a perps event follows the trade rule
-//      exactly (the AGENT_TRADES_IN_STREAM_ENABLED switch, a published agent's key, never a hidden order), case by
+//      exactly (a published agent's key, never a hidden order; the AGENT_TRADES_IN_STREAM_ENABLED switch is gone at this commit, BE-3970), case by
 //      case beside a `buy` given the same facts;
 //   2. the event kind (apps/api/src/lib/perps-stream.ts): open, add, reduce, close, read from the position's size
 //      before and after the fill, a flip through zero being an open;
@@ -18,7 +18,7 @@
 // The checkout needs its own dependencies installed.
 import { strict as assert } from "node:assert"
 import { spawnSync } from "node:child_process"
-import { readFileSync, writeFileSync } from "node:fs"
+import { existsSync, readFileSync, writeFileSync } from "node:fs"
 import { join, resolve } from "node:path"
 import { pathToFileURL } from "node:url"
 
@@ -30,6 +30,9 @@ const git = (...args: string[]) => {
   return r.stdout.trim()
 }
 git("diff", "--exit-code", "HEAD", "--", "apps/api/src", "packages")
+const perpOrdersPath = existsSync(join(checkout, "packages/db/runtime/perpOrders.ts"))
+  ? "packages/db/runtime/perpOrders.ts"
+  : "packages/db/convex/perpOrders.ts"
 const FILES = [
   "apps/api/src/lib/stream-eligibility.ts",
   "apps/api/src/lib/perps-stream.ts",
@@ -37,7 +40,7 @@ const FILES = [
   "apps/api/src/lib/agent-hide.ts",
   "apps/api/src/routes/agent-perps.ts",
   "apps/api/src/lib/perps-reconcile.ts",
-  "packages/db/convex/perpOrders.ts",
+  perpOrdersPath,
   "packages/db/convex/schema.ts",
 ]
 const CLIENT_FILES = {
@@ -56,7 +59,7 @@ const text = (path: string) => readFileSync(join(checkout, path), "utf8")
 const load = (path: string) => import(pathToFileURL(join(checkout, path)).href)
 
 // No real deployment is reachable from here: every fetch is refused and named, and the stores are unset.
-for (const name of ["CONVEX_URL", "CONVEX_SITE_URL", "API_DATABASE_URL", "LEDGER_TEST_DATABASE_URL", "AGENT_TRADES_IN_STREAM_ENABLED"]) delete process.env[name]
+for (const name of ["CONVEX_URL", "CONVEX_SITE_URL", "API_DATABASE_URL", "LEDGER_TEST_DATABASE_URL"]) delete process.env[name]
 const network: string[] = []
 globalThis.fetch = (async (input: string | URL | Request) => {
   const url = new URL(String(input instanceof Request ? input.url : input))
@@ -69,7 +72,7 @@ console.warn = () => {}
 console.error = () => {}
 
 const eligibility = await load(FILES[0]!)
-const { PERP_STREAM_TYPES, isStreamEligible, needsAgentName, agentTradesInStreamEnabled, streamPayload } = eligibility
+const { PERP_STREAM_TYPES, isStreamEligible, needsAgentName, streamPayload } = eligibility
 const stream = await load(FILES[1]!)
 const { perpEventType, perpEventPayload, announcePerpFill, summarizeFills } = stream
 const broadcast = await load(FILES[2]!)
@@ -89,10 +92,9 @@ const rows: Row[] = []
 // 1. The one rule: perps types beside a trade, on the same facts.
 {
   rows.push({ id: "perp-stream-types", scenario: "types", args: { file: FILES[0]! }, outcome: { types: [...PERP_STREAM_TYPES] } })
-  const published = { viaApiKey: true, keyPrefix: KEY_PREFIX, agentName: AGENT, agentTradesEnabled: true }
+  const published = { viaApiKey: true, keyPrefix: KEY_PREFIX, agentName: AGENT }
   const cases: Array<[string, Record<string, unknown>]> = [
-    ["published-agent-key-switch-on", published],
-    ["switch-off", { ...published, agentTradesEnabled: false }],
+    ["published-agent-key", published],
     ["hidden-order", { ...published, streamHidden: true }],
     ["private-agent-no-name", { ...published, agentName: undefined }],
     ["blank-agent-name", { ...published, agentName: "  " }],
@@ -109,8 +111,6 @@ const rows: Row[] = []
   }
   const asksName = Object.fromEntries(PERP_STREAM_TYPES.map((type: string) => [type, { agentKey: needsAgentName(type, true), noAgentKey: needsAgentName(type, false) }]))
   rows.push({ id: "perp-events-ask-for-the-agent-name", scenario: "eligibility", args: { case: "needsAgentName" }, outcome: { asksName } })
-  const switchValues: Array<[string, string | undefined]> = [["true", "true"], ["1", "1"], ["TRUE", "TRUE"], ["yes", "yes"], ["0", "0"], ["false", "false"], ["unset", undefined]]
-  rows.push({ id: "trades-in-stream-switch-values", scenario: "eligibility", args: { case: "AGENT_TRADES_IN_STREAM_ENABLED" }, outcome: Object.fromEntries(switchValues.map(([name, v]) => [name, agentTradesInStreamEnabled(v)])) })
 }
 
 // 2. The event kind from the position's signed size before and after the fill.
@@ -146,7 +146,7 @@ function venue(coin: string, v: Venue) {
 }
 type Announce = {
   coin?: string; sizeDelta: number; isBuy: boolean; px: number; realizedPnlUsd?: number
-  venue: Venue; hidden?: boolean; switchOn?: boolean; name?: string | null | "throw"; keyPrefix?: string
+  venue: Venue; hidden?: boolean; name?: string | null | "throw"; keyPrefix?: string
 }
 async function announce(id: string, a: Announce) {
   const coin = a.coin ?? "ETH"
@@ -161,8 +161,6 @@ async function announce(id: string, a: Announce) {
     },
     launchFacts: async () => { throw new Error("a perps event never reads the launch ledger") },
   })
-  if (a.switchOn !== false) process.env.AGENT_TRADES_IN_STREAM_ENABLED = "true"
-  else delete process.env.AGENT_TRADES_IN_STREAM_ENABLED
   const { info, reads } = venue(coin, a.venue)
   let threw = false
   try {
@@ -175,11 +173,10 @@ async function announce(id: string, a: Announce) {
   }
   unsubscribe()
   __setStreamDepsForTest(null)
-  delete process.env.AGENT_TRADES_IN_STREAM_ENABLED
   assert.ok(wire.length <= 1, `${id}: more than one line for one fill`)
   rows.push({
     id: `announce-${id}`, scenario: "announce",
-    args: { coin, sizeDelta: a.sizeDelta, side: a.isBuy ? "buy" : "sell", px: a.px, ...(a.realizedPnlUsd !== undefined ? { realizedPnlUsd: a.realizedPnlUsd } : {}), positionAfter: a.venue.szi ?? null, hidden: a.hidden === true, switchOn: a.switchOn !== false, agent: a.name === undefined ? "published" : a.name === null ? "private" : a.name === "throw" ? "lookup fails" : "published", ...(a.keyPrefix !== undefined ? { agentKey: a.keyPrefix.trim() === "" ? "blank" : "other" } : {}) },
+    args: { coin, sizeDelta: a.sizeDelta, side: a.isBuy ? "buy" : "sell", px: a.px, ...(a.realizedPnlUsd !== undefined ? { realizedPnlUsd: a.realizedPnlUsd } : {}), positionAfter: a.venue.szi ?? null, hidden: a.hidden === true, agent: a.name === undefined ? "published" : a.name === null ? "private" : a.name === "throw" ? "lookup fails" : "published", ...(a.keyPrefix !== undefined ? { agentKey: a.keyPrefix.trim() === "" ? "blank" : "other" } : {}) },
     outcome: { sent: wire.length === 1, ...(wire[0] ? { wire: wire[0] } : {}), lookups, venueReads: reads, threw },
   })
 }
@@ -194,7 +191,6 @@ await announce("builder-dex-coin", { coin: "xyz:XYZ100", sizeDelta: 3, isBuy: tr
 await announce("close-leverage-unreadable-is-left-out", { sizeDelta: 1, isBuy: false, px: 3_000, venue: { szi: null, activeLeverage: "throw" } })
 await announce("hidden-order-sends-nothing", { sizeDelta: 1.5, isBuy: true, px: 3_000, hidden: true, venue: { szi: "1.5" } })
 await announce("private-agent-sends-nothing", { sizeDelta: 1.5, isBuy: true, px: 3_000, name: null, venue: { szi: "1.5" } })
-await announce("switch-off-sends-nothing", { sizeDelta: 1.5, isBuy: true, px: 3_000, switchOn: false, venue: { szi: "1.5" } })
 await announce("lookup-failure-sends-nothing", { sizeDelta: 1.5, isBuy: true, px: 3_000, name: "throw", venue: { szi: "1.5" } })
 await announce("blank-agent-key-sends-nothing", { sizeDelta: 1.5, isBuy: true, px: 3_000, keyPrefix: " ", venue: { szi: "1.5" } })
 await announce("venue-read-failure-sends-nothing", { sizeDelta: 1.5, isBuy: true, px: 3_000, venue: { clearinghouse: "throw" } })
@@ -271,10 +267,10 @@ pin("reconcile-announces-only-the-claim", FILES[5]!, /if \(result\?\.ok && resul
 pin("reconcile-announces-order-kinds-only", FILES[5]!, /if \(!\["open", "close", "modify", "tpsl"\]\.includes\(row\.kind\) \|\| !row\.coin\) return/.test(reconcile))
 pin("reconcile-passes-the-rows-hide", FILES[5]!, /streamHidden: row\.streamHidden === true,/.test(reconcile))
 pin("schema-perp-orders-stream-fields", FILES[7]!, /streamHidden: v\.optional\(v\.boolean\(\)\),\s*streamedSz: v\.optional\(v\.string\(\)\),/.test(schema))
-pin("perps-agent-named-from-the-key-not-the-payload", FILES[2]!, /PERP_STREAM_TYPES as readonly string\[\]\)\.includes\(type\)[\s\S]{0,700}?streamDeps\.agentNameForKey\(userAddress, keyPrefix\)/.test(broadcastSrc))
+pin("perps-agent-named-from-the-key-not-the-payload", FILES[2]!, /(?:isHyperliquidStreamType\(type\)|PERP_STREAM_TYPES as readonly string\[\]\)\.includes\(type\))[\s\S]{0,700}?streamDeps\.agentNameForKey\(userAddress, keyPrefix\)/.test(broadcastSrc))
 pin("no-liquidation-emitter-yet", FILES[1]!, !/perp_liquidation"\s*[,)]/.test(text(FILES[1]!).replace(/Exclude<PerpStreamType, "perp_liquidation">/, "")) && !/type: "perp_liquidation"/.test(reconcile))
 
-// 6. The clients at this commit: no perps order takes `hide` yet.
+// 6. The clients at this commit: the perps orders take `hide` (BE-3996); scripts/read-perps-hide-source.ts records them.
 {
   const cli = text(CLIENT_FILES.cli)
   const sdk = text(CLIENT_FILES.sdk)
@@ -288,7 +284,7 @@ pin("no-liquidation-emitter-yet", FILES[1]!, !/perp_liquidation"\s*[,)]/.test(te
     sdkTpslTakesHide: /\bhide\b/.test(tpsl(CLIENT_FILES.sdkManage)),
   }
   assert.ok(sdkParams.includes("PerpsCloseParams") && sdkParams.includes("PerpsModifyParams"), "SDK perps params not found")
-  rows.push({ id: "clients-carry-no-perps-hide", scenario: "clients", args: { files: Object.values(CLIENT_FILES) }, outcome: facts })
+  rows.push({ id: "clients-carry-perps-hide", scenario: "clients", args: { files: Object.values(CLIENT_FILES) }, outcome: facts })
 }
 
 console.warn = originalWarn
@@ -297,7 +293,7 @@ assert.deepEqual(network.filter((h) => h !== ""), [], `the recording reached for
 const textOut = JSON.stringify(rows)
 for (const secret of [OWNER, VENUE_WALLET, KEY_PREFIX, CLOID, "fixture-member"]) assert.ok(!textOut.toLowerCase().includes(secret.toLowerCase()), `a fixture carries ${secret.slice(0, 6)}`)
 writeFileSync(join(import.meta.dir, "../test/fixtures/candle-perps-stream-source.json"), `${JSON.stringify({
-  about: "Offline perps activity-stream contracts (BE-3769): the one eligibility rule applied to perps events exactly as to a trade (the switch, a published agent's key, never a hidden order), the event kind from the position's size before and after a fill, one fill announced end to end through announcePerpFill and broadcastActivity onto a subscribed stream with stand-in venue reads and a stand-in published-agent lookup, the fills summary, and `hide` as the perps routes parse it. The routes, the settle claim and the schema are pinned as source text. Recorded from an exact staging commit with every fetch refused; the commit changes no CLI, MCP or SDK file, and at it no perps order in the CLI, MCP or SDK takes `hide`.",
+  about: "Offline perps activity-stream contracts (BE-3769): the one eligibility rule applied to perps events exactly as to a trade (a published agent's key, never a hidden order), the event kind from the position's size before and after a fill, one fill announced end to end through announcePerpFill and broadcastActivity onto a subscribed stream with stand-in venue reads and a stand-in published-agent lookup, the fills summary, and `hide` as the perps routes parse it. The routes, the settle claim and the schema are pinned as source text. Recorded from an exact staging commit with every fetch refused; at it the CLI, MCP and SDK perps orders take `hide` (BE-3996), and the switches that gated the stream and `hide` are gone (BE-3970).",
   source, rows,
 }, null, 2)}\n`)
 console.log(`Recorded ${rows.length} offline perps stream contracts from ${source.commit}.`)

@@ -2,6 +2,29 @@
 
 What changed in each version of Candle Harness (called the Candle TUI before 0.3.0). Versions follow [semantic versioning](https://semver.org), and each release is listed on [GitHub](https://github.com/candledottv/harness/releases).
 
+## 0.6.14 (unreleased)
+
+`--hide` on perps orders (BE-3770, the harness sibling of BE-3769), as Candle's CLI, MCP server and SDK now take it (BE-3996, #4033, which first added it at CLI 0.13.36 / MCP 0.10.41 / SDK 0.6.30): an agent can keep a Hyperliquid perps order's fills out of Candle's public activity stream. Source is candle-monorepo `5d7a861a8`, the published npm release commit for `@candledottv/cli@0.13.47`, `@candledottv/mcp@0.10.45` and `@candledottv/agent-sdk@0.6.39`. The source/build version is 0.6.14; publishing remains a separate release step.
+
+### What the Candle Harness does with it
+
+- **`--hide` goes through on `candle perps close` and `candle perps tpsl`,** the perps rows that have a card, and the card says so before the press: "hidden: Candle keeps this order's fills out of its public activity stream; they still count in the agent's own record, and Hyperliquid's own public data still shows them". A TP/SL card says only the legs it attaches are hidden (the cancel before them was never on the stream). `perps open` and `perps modify` are taken as a command with `--hide` too, then held as coming, as they were: they have no card yet. The flag was withheld until now, so a perps order never went out hidden or public by a flag the harness hadn't checked.
+- **Fail-closed stays in the candle CLI,** and the harness reads its refusal for what it is. A hidden order whose build lacks the API's `hide: true` echo is refused by the CLI before anything is signed, so a close that comes back `HIDE_NOT_CONFIRMED` is a refusal, with words that say nothing was sent and to remove `--hide` for a visible order. A TP/SL is several signed steps (a cancel can go before the attach), so the same code there is read as unknown, not refused, and an attach step the CLI did not sign leaves the plan not-complete, which is unknown too.
+- **A candle CLI older than perps `--hide` (0.13.36)** answers `Unknown flag: --hide` and runs nothing; on both `perps close` and `perps tpsl`, the harness reads that as a refusal (`HIDE_NEEDS_NEWER_CLI`, nothing sent, nothing public) and writes no `core.bug` entry instead of calling it a bug in the harness.
+- **Still refused:** every MCP perps write (`candle_perps_open`, `close`, `modify`, `tpsl`), with or without `hide`. The harness's own SDK use doesn't write perps. The signed CLI release pin (`install.sh`) and the runtime minimum (0.13.28) don't move.
+
+### Recordings
+
+- **The perps activity stream, re-read at `5d7a861a8`** (`test/fixtures/candle-perps-stream-source.json`, 83 rows, was 86 at `ba1be9ffa`). The three rows that tested the `AGENT_TRADES_IN_STREAM_ENABLED` switch are gone because Candle deleted the switch (BE-3970, #4020); a perps event is eligible on a published agent's key and never for a hidden order, with no wallet, account value or key on the wire. The recorder's client facts now read that the CLI, MCP and SDK perps orders take `hide`. The card's "400 while `AGENT_HIDE_ENABLED` is off" case no longer exists in the source (BE-3734), and the recording says so.
+- **The client half** (`scripts/read-perps-hide-source.ts`, `test/fixtures/candle-perps-hide-source.json`, 36 rows):
+  - The three packages' echo helpers on one table of bodies: only `hide: true` counts in the MCP and SDK, the CLI also takes the stored `streamHidden: true`, and `false`, `"true"`, `1`, no key, `null`, an array and text are all refused.
+  - The SDK's `perpsOpen`, `perpsClose` and `perpsModify` run over an intercepted fetch whose build lacks the echo: each is refused `HIDE_NOT_CONFIRMED` after exactly one request (the build, which carried `hide: true`), with the venue, the relay and the exchange never reached; without `hide` the body has no `hide` key.
+  - The shared TP/SL workflow (`runPerpsTpsl`, pinned byte-identical across CLI, MCP and SDK) run offline against a stand-in venue and builder: a hidden replacement sends a plain cancel then a hidden echoed attach (`complete: true`, 2 signs); an unechoed attach is rejected with `HIDE_NOT_CONFIRMED` and never signed (`complete: false`, 1 sign for the cancel only); a remove-only call with `hide: true` sends one plain cancel build.
+  - The CLI's usage lines and boolean flags, the MCP tool shapes and the unechoed-build refusal, the SDK's echo assertions and TP/SL attach, and the package docs/READMEs (`docs/agent-trading.md`, CLI/MCP/SDK READMEs and SDK CHANGELOG), read as source text (17 pins, each checked to be found).
+- **No wallet address, key or account value in either fixture;** every fetch was intercepted, nothing was signed with a real key or sent, and no staging or production read was made.
+- **Tests:** `src/core/perps-hide-source-contracts.test.ts` (14) and the stream contract test (19), which now says the harness takes `--hide` on the rows it can run.
+- **Not here:** the MCP perps writes (still refused), and `--hide` on the `perps open` and `modify` cards, which wait on those cards.
+
 ## 0.6.13 (unreleased)
 
 A published agent's Hyperliquid perps summary for a window (BE-3775), as Candle's CLI, local MCP server and SDK now read it: P&L and its parts, volume and fees to volume, rounds, win rate, largest win and loss, leverage, liquidations and max drawdown in dollars. Source is candle-monorepo `bdf8548b9`, #4073's merge on staging: CLI 0.13.39, MCP 0.10.42 and SDK 0.6.32, which wait on a promote and are not on npm yet. The shared source fixtures are re-read at that commit.
