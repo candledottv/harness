@@ -35,7 +35,7 @@ test("the recording pins the exact published source; the CLI table, tools/list a
   })
   // 0.6.13 re-reads the other source fixtures at #4073's merge (bdf8548b9, CLI 0.13.39); this one stays at the
   // published release (ebd1e5005) with the published-package run that must match it row for row.
-  for (const other of [SOURCE, tools, perps]) expect(other.source.commit).toBe("bdf8548b9d6c3844b014f25ae1725cbae6f8b544")
+  for (const other of [SOURCE, tools, perps]) expect(other.source.commit).toBe("5d7a861a83bcc5c4f2c3dace9897c325b3525e43")
   // One shared risk engine copied byte-identically into SDK, MCP and CLI.
   expect(unified.source.riskEngine.files).toEqual([
     "packages/sdk/src/hyperliquid-risk.ts",

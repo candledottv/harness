@@ -17,6 +17,11 @@ const SHIPPED = readFileSync(join(ROOT, "install.sh"), "utf8")
 const SCRIPT = testCopy(SHIPPED)
 const ISSUER = "https://token.actions.githubusercontent.com"
 const PREFIX = "https://github.com/candledottv/harness/.github/workflows/release.yaml@refs/tags/v"
+const versionAtLeastForTest = (a: string, b: string) => {
+  const pa = a.split(".").map(Number), pb = b.split(".").map(Number)
+  for (let i = 0; i < 3; i++) if (pa[i] !== pb[i]) return (pa[i] ?? 0) > (pb[i] ?? 0)
+  return true
+}
 const CLI_BINARY_VERSION = /^CLI_TAG='cli-v([^']+)'/m.exec(SHIPPED)![1]!
 const CLI_IDENTITY = `https://github.com/candledottv/cli/.github/workflows/release.yaml@refs/tags/cli-v${CLI_BINARY_VERSION}`
 const BOOTSTRAP_SCRIPT = SCRIPT.replace(`CLI_MIN_VERSION='${MIN_CANDLE_CLI}'`, `CLI_MIN_VERSION='${CLI_BINARY_VERSION}'`)
@@ -425,8 +430,8 @@ describe("a good install", () => {
     expect(r.code).toBe(0)
     expect(r.out).toContain("signature wasn't checked (CANDLE_HARNESS_INSTALL_UNSIGNED_FOR_TESTING=1, for testing only)")
     expect(existsSync(join(s.home, ".local", "bin", "candle-harness"))).toBe(true)
-    // The npm minimum is newer than the signed native bootstrap; installation is an explicit user step.
-    expect(r.out).toContain(`npm install -g @candledottv/cli@${MIN_CANDLE_CLI}`)
+    // The signed native bootstrap is at or above the npm minimum, so the Candle CLI is offered with --yes, never piped.
+    expect(r.out).toContain(`run this installer again with --yes, which installs Candle's CLI ${CLI_BINARY_VERSION}`)
     expect(r.out).not.toContain("| bash")
   })
 })
@@ -563,13 +568,13 @@ describe("refusals leave the machine unchanged", () => {
     release(s, "1.2.3")
     const r = refused(s, ["--from", s.release])
     expect(r.out).toContain(`The Candle CLI isn't installed, and the Candle Harness needs it (${MIN_CANDLE_CLI}).`)
-    expect(r.out).toContain(`npm install -g @candledottv/cli@${MIN_CANDLE_CLI}`)
-    expect(r.out).toContain("Install the signed CLI signature verifier now?")
+    expect(r.out).toContain(`This can install Candle's CLI ${CLI_BINARY_VERSION}`)
+    expect(r.out).toContain("Install the Candle CLI now?")
     expect(r.out).toContain("No: there's no terminal to answer on")
     expect(r.out).toContain("The Candle CLI wasn't installed, and nothing else here can check")
     const s2 = scene()
     release(s2, "1.2.3")
-    expect(refused(s2, ["--from", s2.release], { tty: answer(s2, "n") }).out).toContain("Install the signed CLI signature verifier now? [y/N]")
+    expect(refused(s2, ["--from", s2.release], { tty: answer(s2, "n") }).out).toContain("Install the Candle CLI now? [y/N]")
   })
 
   test("a folder that isn't the user's", () => {
@@ -615,7 +620,7 @@ function cliRelease(s: Scene, opts: { signedAs?: string; tamper?: boolean } = {}
 }
 
 describe("the Candle CLI first", () => {
-  test("the published npm minimum qualifies; the older native pin is never offered as sufficient", () => {
+  test("the published npm minimum qualifies; the signed native pin is at or above it, so it is offered as sufficient", () => {
     const s = scene()
     release(s, "1.2.3")
     const bin = join(s.home, "bin")
@@ -624,17 +629,19 @@ describe("the Candle CLI first", () => {
     expect(ready.code).toBe(0)
     expect(ready.out).toContain(`The Candle CLI ${MIN_CANDLE_CLI} is already installed`)
     expect(ready.out).not.toContain("Run candle update")
+    // A CLI at the minimum still verifies the download, though the pin moved above it (BE-4316).
+    expect(verifyCalls(s)).toHaveLength(1)
+    expect(versionAtLeastForTest(CLI_BINARY_VERSION, MIN_CANDLE_CLI)).toBe(true)
     const bootstrap = scene()
     release(bootstrap, "1.2.3")
     const cli = cliRelease(bootstrap)
     const script = cli.script.replace(`CLI_MIN_VERSION='${CLI_BINARY_VERSION}'`, `CLI_MIN_VERSION='${MIN_CANDLE_CLI}'`)
     const verified = run(bootstrap, ["--from", bootstrap.release, "--yes"], { script, env: { CANDLE_HARNESS_CLI_RELEASE_DIR: cli.dir } })
     expect(verified.code).toBe(0)
-    expect(verified.out).toContain("Install the signed CLI signature verifier now?")
-    expect(verified.out).toContain(`can verify this download, but cannot run this Harness`)
-    expect(verified.out).toContain(`below required ${MIN_CANDLE_CLI}`)
-    expect(verified.out).toContain(`npm install -g @candledottv/cli@${MIN_CANDLE_CLI}`)
-    expect(verified.out).not.toContain(`The Candle CLI ${CLI_BINARY_VERSION} is already installed`)
+    expect(verified.out).toContain("Install the Candle CLI now? yes (--yes)")
+    expect(verified.out).toContain(`Installed the Candle CLI ${CLI_BINARY_VERSION}`)
+    expect(verified.out).not.toContain("cannot run this Harness")
+    expect(verified.out).not.toContain(`below required ${MIN_CANDLE_CLI}`)
     expect(verifyCalls(bootstrap)).toHaveLength(3)
   })
 

@@ -2,11 +2,11 @@
   "about": "Offline perp market contracts from exact merged source. Every figure, market, dex, agent and time is made up; times are minutes before one made-up instant. api-source rows are Candle's own `GET /api/v1/agent/perps-markets/:coin` route and its governed market-data reads, run against a stand-in Hyperliquid (requests lists each venue read one page load makes); the agents half is Candle's pure composeMarketAgents on three made-up public agents' published bundles, put in where the route reads the database. The bundles carry a made-up wallet, account value and fill hash that no row carries; the builder dex's made-up deployer is named by its role. mcp, sdk and cli rows read the same answer through the registered tool, the SDK and `candle perps market <coin> --agents` over an intercepted fetch. docs rows are the public pages' own lines, read as text. The database, the public gate and the venue are not executed, and no deployed behavior is claimed.",
   "source": {
     "repo": "candledottv/candle-monorepo",
-    "commit": "bdf8548b9d6c3844b014f25ae1725cbae6f8b544",
+    "commit": "5d7a861a83bcc5c4f2c3dace9897c325b3525e43",
     "versions": {
-      "cli": "0.13.39",
-      "mcp": "0.10.42",
-      "sdk": "0.6.32"
+      "cli": "0.13.47",
+      "mcp": "0.10.45",
+      "sdk": "0.6.39"
     }
   },
   "limits": {

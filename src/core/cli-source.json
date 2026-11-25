@@ -3,8 +3,8 @@
   "source": {
     "repo": "candledottv/candle-monorepo",
     "path": "packages/cli/src",
-    "commit": "bdf8548b9d6c3844b014f25ae1725cbae6f8b544",
-    "cliVersion": "0.13.39"
+    "commit": "5d7a861a83bcc5c4f2c3dace9897c325b3525e43",
+    "cliVersion": "0.13.47"
   },
   "aliases": {
     "wallet": "wallets"
@@ -91,7 +91,7 @@
       "summary": "Quote, confirm and swap on Solana or Hood, bridge between them; read an operation by id",
       "rows": [
         {
-          "invocation": "<from> <to> --amount <n>|--percent <n> --wallet <tee> [--to <tee>] [--wait] [--hide]",
+          "invocation": "<from> <to> --amount <n>|--percent <n> --wallet <tee> [--to <tee>] [--wait | --wait-sent] [--hide]",
           "description": "Quote, confirm and swap on Solana or Hood, or bridge between them"
         },
         {
@@ -246,7 +246,7 @@
         },
         {
           "invocation": "spot <markets|balances|buy|sell|cancel> ...",
-          "description": "Hyperliquid spot from the same TEE wallet (BE-3771): markets [--all] [--limit <n>]; balances; buy|sell <pair> <size> [--price <px>] [--tif <t>] [--slippage-bps <n>] [--client-id <id>]; cancel <cloid>. <pair> is HYPE/USDC or @107, size in the base token; USDC-quoted pairs only; a buy spends the spot USDC balance, which is separate from perps"
+          "description": "Hyperliquid spot from the same TEE wallet (BE-3771): markets [--all] [--limit <n>]; balances; buy|sell <pair> <size> [--price <px>] [--tif <t>] [--slippage-bps <n>] [--client-id <id>] [--hide]; cancel <cloid>. <pair> is HYPE/USDC or @107, size in the base token; USDC-quoted pairs only; a buy spends the spot USDC balance, which is separate from perps"
         },
         {
           "invocation": "positions [--wallet <tee>]",
@@ -1089,6 +1089,7 @@
           "--dry-run",
           "--hide",
           "--wait",
+          "--wait-sent",
           "--yes"
         ],
         "path": [],
@@ -3115,6 +3116,7 @@
         ],
         "boolean": [
           "--all",
+          "--hide",
           "--no-submit",
           "--sign-only",
           "--yes"

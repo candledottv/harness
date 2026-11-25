@@ -2,11 +2,11 @@
   "about": "Offline agent record contracts from exact source. Every time is on three made-up days, and every figure, token and hash is made up. api-source rows are answers built by Candle's pure source (the perps profile bundle, the board publish, the record composition, the round rows and the union of swaps and rounds with its cursor) from one made-up wallet's stored facts, over a stand-in spot record; each also carries the server's best closes and the web's own split of the headline figure, run as the pure function it is. The wallet's address is hashed inside that source and is in no row. api-stub rows are response stand-ins: an older bundle's rows, and refusals carrying the route's own code and words. mcp, mcp-hosted, sdk and cli rows read the same answers through the registered tool, the hosted server's route, the SDK and `candle agent record` over an intercepted fetch; a served answer is kept once, in its api row, and each of those rows names it (`relays`) with the SHA-256 of the canonical JSON of what that surface gave, which the recorder checked is the same answer. docs rows are the public page's own paragraphs (its three copies agree), read as text. The database, the perps jobs, the venue and the keyed API route are not executed, and no deployed behavior is claimed.",
   "source": {
     "repo": "candledottv/candle-monorepo",
-    "commit": "bdf8548b9d6c3844b014f25ae1725cbae6f8b544",
+    "commit": "5d7a861a83bcc5c4f2c3dace9897c325b3525e43",
     "versions": {
-      "cli": "0.13.39",
-      "mcp": "0.10.42",
-      "sdk": "0.6.32"
+      "cli": "0.13.47",
+      "mcp": "0.10.45",
+      "sdk": "0.6.39"
     }
   },
   "rules": {
@@ -4411,7 +4411,17 @@
             "perpsNetUsd": 1694.7,
             "perpsAsOfMs": 1794924000000,
             "perpsCoverageFromMs": 1794398400000,
-            "perpsPartial": false
+            "perpsPartial": false,
+            "hyperliquidSpot": {
+              "realizedUsd": 0,
+              "unrealizedUsd": 0,
+              "feesUsd": 0,
+              "volumeUsd": 0,
+              "trades": 0,
+              "unpriced": 0,
+              "untrackedSoldCoins": 0,
+              "partial": false
+            }
           }
         }
       }
@@ -4432,7 +4442,7 @@
       ],
       "outcome": {
         "relays": "route-fixture-api",
-        "sha256": "695162160998a2a4f7b1d30de362521b712feb38417031602e4118fc552ccad6",
+        "sha256": "8bddd5362de44b0e6219938e8d8c4decb8e8b4ff1c0b5afd7df9bf42f6eaa12a",
         "isError": false
       }
     },
@@ -4453,7 +4463,7 @@
       "outcome": {
         "preamble": true,
         "relays": "route-fixture-api",
-        "sha256": "695162160998a2a4f7b1d30de362521b712feb38417031602e4118fc552ccad6",
+        "sha256": "8bddd5362de44b0e6219938e8d8c4decb8e8b4ff1c0b5afd7df9bf42f6eaa12a",
         "isError": false
       }
     },
@@ -4474,7 +4484,7 @@
       "outcome": {
         "relays": "route-fixture-api",
         "part": "record",
-        "sha256": "1397cd4743301dfc3702e765d53e6ec517509cc97fff950ae7b95feacadb413d",
+        "sha256": "4018cc61affe38e6e7cc55bb5a38dc5f302ac3a48020c5728d538c22a7ca82b8",
         "isError": false
       }
     },
@@ -4497,6 +4507,7 @@
         "lines": [
           "Perps fixture",
           "Perps as of 2026-11-17T14:00:00.000Z",
+          "Spot P&L includes Hyperliquid spot: realized $0.00, unrealized $0.00 · fees $0.00, volume $0.00, 0 trades",
           "Long xyz:S&P500 20x · size 6 · entry 7687.5 · exit 7969.95 · +$1,694.70 · 73.5% ROE · funding 2 · fees 7 · duration 3600s · https://app.hyperliquid.xyz/explorer/tx/0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
         ]
       }
@@ -4518,7 +4529,7 @@
       "outcome": {
         "exitCode": 0,
         "relays": "route-fixture-api",
-        "sha256": "695162160998a2a4f7b1d30de362521b712feb38417031602e4118fc552ccad6"
+        "sha256": "8bddd5362de44b0e6219938e8d8c4decb8e8b4ff1c0b5afd7df9bf42f6eaa12a"
       }
     },
     {

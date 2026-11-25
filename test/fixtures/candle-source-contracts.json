@@ -2,7 +2,7 @@
   "about": "Synthetic response stubs exercised through the actual MCP/SDK source, with network disabled. No deployed behavior is claimed. Embedded perps stops at a local refusal before build/sign/send. Builder-dex (HIP-3) rows read a synthetic Hyperliquid with made-up dexes and addresses; api-gate rows run the API gate source on the same universes.",
   "source": {
     "repo": "candledottv/candle-monorepo",
-    "commit": "bdf8548b9d6c3844b014f25ae1725cbae6f8b544"
+    "commit": "5d7a861a83bcc5c4f2c3dace9897c325b3525e43"
   },
   "rows": [
     {

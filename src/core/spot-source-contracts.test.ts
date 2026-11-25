@@ -20,7 +20,7 @@ const ctx = { defaultAgent: "momentum", agents: new Set(["momentum"]) }
 const resolve = (args: string[]) => resolveCall({ command: "perps", subcommand: "spot", args }, ctx)
 
 test("the recording names the exact merged source, the same commit as the CLI table and the other source fixtures", () => {
-  expect(spot.source).toMatchObject({ repo: "candledottv/candle-monorepo", commit: "bdf8548b9d6c3844b014f25ae1725cbae6f8b544", versions: { cli: "0.13.39", mcp: "0.10.42", sdk: "0.6.32" } })
+  expect(spot.source).toMatchObject({ repo: "candledottv/candle-monorepo", commit: "5d7a861a83bcc5c4f2c3dace9897c325b3525e43", versions: { cli: "0.13.47", mcp: "0.10.45", sdk: "0.6.39" } })
   expect(spot.source.commit).toBe(SOURCE.source.commit)
   expect(spot.source.commit).toBe(tools.source.commit)
   expect(spot.source.commit).toBe(perps.source.commit)
@@ -180,7 +180,7 @@ describe("how candle_cli routes perps spot", () => {
     const entry = sourceFor("perps", "spot")!
     expect(entry).toMatchObject({ handler: "perpsSpot", identity: "agent", unlocks: "never" })
     expect(Object.keys(entry.actions!)).toEqual(["markets", "balances", "buy", "sell", "cancel"])
-    expect(entry.flags!.boolean).toEqual(["--all", "--no-submit", "--sign-only", "--yes"])
+    expect(entry.flags!.boolean).toEqual(["--all", "--hide", "--no-submit", "--sign-only", "--yes"])
   })
 
   test("markets and balances run at once as reads with the agent's key", () => {

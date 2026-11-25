@@ -2,11 +2,11 @@
   "about": "Offline perps position webhook contracts and the perps wallet activity read, from exact merged source: the events an endpoint may register, which event a fill is (open from flat, close to zero, liquidation of this wallet), the `candle.perps.position_event/1` payload with the exchange's fillTime, the emit with a stand-in owner lookup and enqueue (one per new fill and owner, nothing for a re-ingest, an unlinked wallet or a fill more than a day old), one signed delivery each to a stand-in endpoint verified by the SDK's own code, the docs and changelog text, and `candle perps activity`, `candle_perps_activity` and `perpsOverviewActivity()` on the same stand-in answers. Every fetch, lookup and enqueue is a stand-in; made-up addresses are replaced by their role.",
   "source": {
     "repo": "candledottv/candle-monorepo",
-    "commit": "bdf8548b9d6c3844b014f25ae1725cbae6f8b544",
+    "commit": "5d7a861a83bcc5c4f2c3dace9897c325b3525e43",
     "versions": {
-      "cli": "0.13.39",
-      "mcp": "0.10.42",
-      "sdk": "0.6.32"
+      "cli": "0.13.47",
+      "mcp": "0.10.45",
+      "sdk": "0.6.39"
     },
     "files": [
       "packages/db/convex/lib/webhookPolicy.ts",

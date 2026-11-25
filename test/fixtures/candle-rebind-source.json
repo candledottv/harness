@@ -1,0 +1,166 @@
+{
+  "about": "Offline `candle tee rebind` onto a key with a signer (BE-4315, harness sibling BE-4316): one owner approval on the fixed API, and the CLI-local stops REBIND_CONFIRM_SPENT (an older API used the approval before asking for the owner signatures) and REBIND_OWNERS_CHANGED. Recorded by running the CLI's own run() against its own key-signer simulator, from the published release commit (CLI 0.13.47, MCP 0.10.45, SDK 0.6.39); every fetch is intercepted.",
+  "source": {
+    "repo": "candledottv/candle-monorepo",
+    "commit": "5d7a861a83bcc5c4f2c3dace9897c325b3525e43",
+    "versions": {
+      "cli": "0.13.47",
+      "mcp": "0.10.45",
+      "sdk": "0.6.39"
+    },
+    "files": [
+      "packages/cli/src/commands/tee-rebind.ts",
+      "packages/cli/src/client.ts",
+      "packages/cli/src/commands/__fixtures__/key-signer-sim.ts"
+    ]
+  },
+  "rows": [
+    {
+      "id": "fixed-api-one-approval",
+      "scenario": "fixed-api",
+      "args": {
+        "argv": [
+          "tee",
+          "rebind",
+          "<wallet>",
+          "--to-key",
+          "<key>"
+        ],
+        "api": "signatures asked for before the approval"
+      },
+      "outcome": {
+        "exitCode": 0,
+        "requests": [
+          "preview",
+          "unsigned",
+          "signed",
+          "signed"
+        ],
+        "confirmsIssued": 1,
+        "confirmsRedeemed": 1,
+        "approvalPrompts": 1,
+        "signedWallets": 1,
+        "wallet": {
+          "boundTo": "target-key",
+          "owner": "target-signer"
+        }
+      }
+    },
+    {
+      "id": "older-api-confirm-spent",
+      "scenario": "older-api",
+      "args": {
+        "argv": [
+          "tee",
+          "rebind",
+          "<wallet>",
+          "--to-key",
+          "<key>"
+        ],
+        "api": "approval spent before the signatures are asked for"
+      },
+      "outcome": {
+        "exitCode": 1,
+        "requests": [
+          "preview",
+          "unsigned",
+          "unsigned"
+        ],
+        "confirmsIssued": 1,
+        "confirmsRedeemed": 1,
+        "approvalPrompts": 1,
+        "says": [
+          "Approved, but the server then asked for the wallets' owner signatures",
+          "nothing changed and nothing more was sent",
+          "Do not run it again yet",
+          "Once the API carries the BE-4315 fix"
+        ],
+        "wallet": {
+          "boundTo": "original-key",
+          "owner": "legacy-signer"
+        }
+      }
+    },
+    {
+      "id": "older-api-confirm-spent-json",
+      "scenario": "older-api",
+      "evidence": "each further run on the older API issues and spends one more approval and stops at the same place: the advice is to wait for the fix",
+      "args": {
+        "argv": [
+          "tee",
+          "rebind",
+          "<wallet>",
+          "--to-key",
+          "<key>",
+          "--json"
+        ],
+        "api": "approval spent before the signatures are asked for"
+      },
+      "outcome": {
+        "exitCode": 1,
+        "code": "REBIND_CONFIRM_SPENT",
+        "suggestionStartsWith": "Do not run it again yet",
+        "newConfirmsIssued": 1,
+        "wallet": {
+          "boundTo": "original-key",
+          "owner": "legacy-signer"
+        }
+      }
+    },
+    {
+      "id": "fixed-api-owners-changed",
+      "scenario": "owners-changed",
+      "args": {
+        "argv": [
+          "tee",
+          "rebind",
+          "<wallet>",
+          "--to-key",
+          "<key>"
+        ],
+        "api": "signatures asked for before the approval; a wallet's owner changes while it is pending"
+      },
+      "outcome": {
+        "exitCode": 1,
+        "requests": [
+          "preview",
+          "unsigned",
+          "unsigned"
+        ],
+        "confirmsIssued": 1,
+        "confirmsRedeemed": 0,
+        "approvalPrompts": 1,
+        "says": [
+          "refused before using it"
+        ],
+        "wallet": {
+          "boundTo": "original-key",
+          "owner": "changed-elsewhere"
+        }
+      }
+    },
+    {
+      "id": "source-cli-local-codes",
+      "scenario": "source",
+      "evidence": "pinned as source text: the codes are CLI-local, the server never sends them",
+      "args": {
+        "file": "packages/cli/src/commands/tee-rebind.ts"
+      },
+      "outcome": {
+        "codes": [
+          {
+            "name": "REBIND_CONFIRM_SPENT",
+            "code": "REBIND_CONFIRM_SPENT"
+          },
+          {
+            "name": "REBIND_OWNERS_CHANGED",
+            "code": "REBIND_OWNERS_CHANGED"
+          }
+        ],
+        "stopsOn": "KEY_SIGNER_SIGNATURE_REQUIRED after an approved resend",
+        "spent": "REBIND_CONFIRM_SPENT",
+        "unspent": "REBIND_OWNERS_CHANGED"
+      }
+    }
+  ]
+}

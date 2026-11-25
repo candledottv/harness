@@ -139,6 +139,9 @@ export const TOOL_CLASSES: Readonly<Record<string, ToolClass>> = {
   candle_perps_account: READ,
   candle_perps_risk: READ,
   candle_perps_thresholds: READ,
+  // Hyperliquid spot reads (source MCP 0.10.45, CLI 0.13.47).
+  candle_perps_spot_markets: READ,
+  candle_perps_spot_balances: READ,
   // Money writes from the embedded main wallet: one-press cards.
   candle_trade: card("trade", "clientTradeId"),
   candle_swap: card("swap", "clientSwapId"),
@@ -215,6 +218,9 @@ export const TOOL_CLASSES: Readonly<Record<string, ToolClass>> = {
   candle_perps_deposit: PERPS,
   candle_perps_transfer: PERPS,
   candle_perps_set_thresholds: PERPS,
+  // Hyperliquid spot orders move funds: a perps write, refused over MCP like the rest.
+  candle_perps_spot_order: PERPS,
+  candle_perps_spot_cancel: PERPS,
   // Funds out: never offered to the agent.
   candle_transfer: TRANSFER,
   candle_sweep: TRANSFER,
