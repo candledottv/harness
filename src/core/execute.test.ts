@@ -87,6 +87,62 @@ describe("outcome rules", () => {
     expect(out.error!.message).not.toContain("doesn't reset")
   })
 
+  test("a presign_refused build is refused with its refusal, detail and cause surfaced", () => {
+    const detail = "The price moved past maxSlippageBps before the transaction could land; retry at once for a fresh quote, or raise maxSlippageBps."
+    const out = outcomeOf(
+      "trade",
+      tradeError({
+        code: "SWAP_FAILED",
+        message: "The built transaction failed the pre-sign safety check (simulation_failed); nothing was signed or sent.",
+        retryable: true,
+        stage: "not_broadcast",
+        reason: "presign_refused",
+        refusal: "simulation_failed",
+        detail,
+        cause: "slippage_exceeded",
+      }),
+    )
+    expect(out).toMatchObject({
+      state: "refused",
+      error: {
+        code: "SWAP_FAILED",
+        retryable: true,
+        stage: "not_broadcast",
+        reason: "presign_refused",
+        refusal: "simulation_failed",
+        detail,
+        cause: "slippage_exceeded",
+      },
+    })
+    expect(out.error!.message).toContain("nothing was signed or sent")
+    expect(out.error!.message).toContain("maxSlippageBps")
+
+    const unfunded = outcomeOf(
+      "trade",
+      tradeError({
+        code: "INSUFFICIENT_OWNER_BALANCE",
+        message: "The paying wallet does not hold enough SOL; nothing was signed or sent.",
+        retryable: false,
+        stage: "not_broadcast",
+        reason: "presign_refused",
+        refusal: "simulation_failed",
+        detail: "Transfer: insufficient lamports 100, need 5000",
+      }),
+    )
+    expect(unfunded).toMatchObject({
+      state: "refused",
+      error: {
+        code: "INSUFFICIENT_OWNER_BALANCE",
+        retryable: false,
+        stage: "not_broadcast",
+        reason: "presign_refused",
+        refusal: "simulation_failed",
+        detail: "Transfer: insufficient lamports 100, need 5000",
+      },
+    })
+    expect(unfunded.error!.message).toContain("Send SOL to it")
+  })
+
   test("a swap error in the { success: false, error } shape is read the same way", () => {
     expect(outcomeOf("swap", swapError({ code: "SWAP_FAILED", stage: "unconfirmed" })).state).toBe("unknown")
     expect(outcomeOf("swap", swapError({ code: "RATE_LIMITED", retryable: true })).state).toBe("refused")

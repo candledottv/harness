@@ -546,6 +546,36 @@ describe("outcome rules (mapCliTrade)", () => {
     // Another simulation failure says only Candle's words.
     const other = mapCliTrade("trade", run(1, { ok: false, code: "SWAP_FAILED", message: 'failed simulation ({"InstructionError":[2,{"Custom":6024}]})' }), none)
     expect(other.error!.message).toBe('Candle refused it before anything was signed, so nothing was sent. Candle said: failed simulation ({"InstructionError":[2,{"Custom":6024}]})')
+    // A forwarded presign_refused build answer keeps refusal, detail and cause and is refused before signing.
+    const presign = mapCliTrade(
+      "trade",
+      run(1, {
+        ok: false,
+        code: "SWAP_FAILED",
+        message: "The built transaction failed the pre-sign safety check (simulation_failed); nothing was signed or sent.",
+        retryable: true,
+        stage: "not_broadcast",
+        reason: "presign_refused",
+        refusal: "simulation_failed",
+        detail: 'The price moved past maxSlippageBps before the transaction could land; retry at once for a fresh quote, or raise maxSlippageBps. ({"InstructionError":[3,{"Custom":6001}]})',
+        cause: "slippage_exceeded",
+      }),
+      none,
+    )
+    expect(presign).toMatchObject({
+      state: "refused",
+      error: {
+        code: "SWAP_FAILED",
+        retryable: true,
+        stage: "not_broadcast",
+        reason: "presign_refused",
+        refusal: "simulation_failed",
+        cause: "slippage_exceeded",
+      },
+    })
+    expect(presign.error!.detail).toContain("maxSlippageBps")
+    expect(presign.error!.message).toContain("before anything was signed")
+    expect(presign.error!.message).toContain("maxSlippageBps")
     // Anything from a submit keeps it unknown: a stage, a signature, the legs.
     expect(mapCliTrade("trade", run(1, { ok: false, code: "SWAP_FAILED", details: { stage: "executed", signature: "S" } }), none).state).toBe("unknown")
     expect(mapCliTrade("swap", run(1, { ok: false, code: "SWAP_FAILED", details: { legs: [] } }), none).state).toBe("unknown")

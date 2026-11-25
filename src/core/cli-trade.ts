@@ -14,7 +14,7 @@ import type { Redactor } from "../shared/redact"
 import { terminalText } from "../shared/terminal-text"
 import type { CandleCli, CliResult } from "./candle-cli"
 import type { Mapped, Operation, OperationError } from "./execute"
-import { keyLimitFields, refusalMessage, routeWaitFields } from "./execute"
+import { keyLimitFields, presignRefusedFields, refusalMessage, routeWaitFields } from "./execute"
 import { EVM_ADDRESS_SOURCE } from "../shared/chains"
 import type { Journal } from "./journal"
 import { type JobState, jobState, sequencedFailure, type TradeRead } from "./reconcile"
@@ -186,8 +186,14 @@ function cliMessage(code: string, body: Record<string, unknown>): string {
   if (code === "QUOTE_EXPIRED") return "The quote expired before the trade was sent. Asking again quotes it fresh."
   const plain = refusalMessage(code, body)
   if (plain) return plain
-  const message = typeof body.message === "string" ? body.message.replace(/ Operation \S+; use candle swap status \S+ before another attempt\.$/, "") : code
-  return terminalText(message, { maxLength: 500 })
+  const presign = presignRefusedFields(body)
+  const rawMessage = typeof body.message === "string" ? body.message.replace(/ Operation \S+; use candle swap status \S+ before another attempt\.$/, "") : code
+  const causeNote = presign.cause && !rawMessage.includes(presign.cause) && !presign.detail?.includes(presign.cause) ? ` (${presign.cause})` : ""
+  const withDetail =
+    code === "SWAP_FAILED" && (presign.detail || causeNote)
+      ? `${rawMessage}${causeNote}${presign.detail && !rawMessage.includes(presign.detail) ? ` ${presign.detail}` : ""}`
+      : rawMessage
+  return terminalText(withDetail, { maxLength: 500 })
 }
 
 /**
@@ -202,21 +208,31 @@ function sequencedWords(job: Record<string, unknown>, error: OperationError): Op
 
 /** A CLI refusal as an operation's error, in the Candle Harness's words where Candle's would mislead. */
 export function cliError(code: string, body: Record<string, unknown>): OperationError {
-  // A held key needs when Candle's window resets, where the CLI passes it on.
-  return { code, message: cliMessage(code, body), retryable: body.retryable === true, ...(code === "KEY_LIMIT_REACHED" ? keyLimitFields(body) : {}), ...(code === "SWAP_ROUTE_FAILING" ? routeWaitFields(body) : {}) }
+  // A held key needs when Candle's window resets, where the CLI passes it on; a pre-sign build refusal keeps its check, sentence and cause.
+  return {
+    code,
+    message: cliMessage(code, body),
+    retryable: body.retryable === true,
+    ...(typeof body.stage === "string" ? { stage: body.stage } : {}),
+    ...presignRefusedFields(body),
+    ...(code === "KEY_LIMIT_REACHED" ? keyLimitFields(body) : {}),
+    ...(code === "SWAP_ROUTE_FAILING" ? routeWaitFields(body) : {}),
+  }
 }
 
 /**
  * A `SWAP_FAILED` with nothing from a submit in it. The CLI keeps `details` (a stage, a signature,
  * the legs) only from the calls that sign and send, so an answer without them came from the build,
  * before anything was signed; with nothing stored under the id either, nothing was sent. Candle's
- * own simulation refusing a built trade answers this way.
+ * own simulation refusing a built trade answers this way, including when `reason: "presign_refused"` is forwarded.
  */
 function refusedAtBuild(code: string, body: Record<string, unknown>): boolean {
   // A Hood trade's legs are signed one by one after the build: "The approval leg failed" is past it, and that leg may
   // have landed though Candle says it didn't.
   const legFailed = typeof body.message === "string" && /\bleg failed\b/i.test(body.message)
-  return code === "SWAP_FAILED" && !legFailed && body.details === undefined && body.stage === undefined && body.signature === undefined
+  if (legFailed || body.signature !== undefined) return false
+  if (presignRefusedFields(body).reason === "presign_refused" && (body.stage === undefined || body.stage === "not_broadcast" || body.stage === "presign_refused")) return true
+  return code === "SWAP_FAILED" && body.details === undefined && body.stage === undefined
 }
 
 /** Jupiter's 6001, slippage exceeded, as Candle's simulation reports it: the price moved between quote and build. */

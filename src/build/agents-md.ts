@@ -59,7 +59,7 @@ harness.on("kill", () => console.log("the kill switch is on: buys are held"))
 
 \`harness-client.ts\` is one file with no dependencies, for Bun or Node 20 and later; its comments document every call. Run a bot with \`bun run <bot>/bot.ts\` or \`node\`, from its own folder.
 
-**Candle's SDK, for keyless public reads only.** When one of its reads fails it throws \`CandleApiError\`: branch on its \`code\`, never its message, and log its \`requestId\` with it. That's the id of Candle's answer (from \`@candledottv/agent-sdk\` 0.6.37, and the message already ends with \`(request id <id>)\`): the person can quote it to Candle, and it finds that exact request. An older SDK, or an answer from a proxy, has none.
+**Candle's SDK, for keyless public reads only.** When one of its reads fails it throws \`CandleApiError\`: branch on its \`code\`, never its message, and log its \`requestId\` with it. That's the id of Candle's answer (from \`@candledottv/agent-sdk\` 0.6.39, and the message already ends with \`(request id <id>)\`): the person can quote it to Candle, and it finds that exact request. An older SDK, or an answer from a proxy, has none.
 
 **Never write a mint from memory.** One a character off is another token, or none. Trade the mints the bot's signals carry, or one the person gave you. To find a token by its name or ticker, look it up through the client, in a \`candle-harness build test\` run: \`harness.hacc("hacc_token", { view: "search", q: "JUP" })\`. The answers are candidates, so ask the person which they mean. Then check it with \`harness.market(mint)\`, and copy the mint into the code exactly as the lookup gave it.
 
