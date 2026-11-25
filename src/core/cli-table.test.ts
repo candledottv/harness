@@ -12,7 +12,7 @@ const baseOf = (path: string) => {
 describe("the table and the source", () => {
   test("it was read from the pinned CLI source", () => {
     // Source contracts can advance before the separately signed native bootstrap release.
-    expect(SOURCE.source).toMatchObject({ repo: "candledottv/candle-monorepo", commit: "bdf8548b9d6c3844b014f25ae1725cbae6f8b544", cliVersion: "0.13.39" })
+    expect(SOURCE.source).toMatchObject({ repo: "candledottv/candle-monorepo", commit: "5d7a861a83bcc5c4f2c3dace9897c325b3525e43", cliVersion: "0.13.47" })
     expect(SOURCE.commands.length).toBe(178)
     expect((SOURCE as { unread?: string[] }).unread).toEqual([])
   })
@@ -236,7 +236,7 @@ describe("the read at 0.13.5", () => {
   })
 
   test("0.13.19's words the handler finds itself: swap's --dry-run before its parse, transfer's status as its first argument", () => {
-    expect(sourceFor("swap", null)!.flags!.boolean).toEqual(["--dry-run", "--hide", "--wait", "--yes"])
+    expect(sourceFor("swap", null)!.flags!.boolean).toEqual(["--dry-run", "--hide", "--wait", "--wait-sent", "--yes"])
     expect(rowFor("swap")!.byFlags!(new Map([["--dry-run", true]]))).toEqual({ rule: "read", route: "cli" })
     expect(rowFor("swap")!.byFlags!(new Map())).toBeUndefined()
     expect(sourceFor("transfer", null)!.actions).toEqual({ status: { unlocks: "never", tty: [] } })

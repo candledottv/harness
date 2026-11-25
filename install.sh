@@ -34,18 +34,18 @@ UNSIGNED_OK=0
 # SHA-256 of each of its release files this script may install. scripts/pin-cli.ts writes this block
 # from Candle's own latest.json, and scripts/install.test.ts holds it to the doctor's minimum.
 # BEGIN CLI PINS
-CLI_TAG='cli-v0.13.24'
-CLI_IDENTITY='https://github.com/candledottv/cli/.github/workflows/release.yaml@refs/tags/cli-v0.13.24'
+CLI_TAG='cli-v0.13.47'
+CLI_IDENTITY='https://github.com/candledottv/cli/.github/workflows/release.yaml@refs/tags/cli-v0.13.47'
 cli_pin() {
   case "$1" in
-    candle-darwin-arm64) echo 'b60ce01d285137eea548c9f5a8dabe40e0cb065d12d654ea767076775abac07a' ;;
-    candle-darwin-x64) echo '699b6a17f462d2804dda29c759544d24b71207f22ef3ae0c5a2b410c13eaef0b' ;;
-    candle-linux-arm64) echo 'a6376ca384a99dcc744d2f3ebab6db671f3b5d5d4ee8880fe655886e9fe1b966' ;;
-    candle-linux-x64) echo 'accfd4feab28be2380cdf5c79cb0353c3f70481b0ef401d8e2f31ca9cd7a7654' ;;
-    candle-fido2-darwin-arm64) echo 'b3042850e0ed9bf251f334bd5373957ed460da603950a996863b2af9e64f0785' ;;
-    candle-fido2-darwin-x64) echo '51fe11c5ac0d29253714922d5e9073877917d8f211402da51aef8f13860a8de4' ;;
-    candle-fido2-linux-arm64) echo '5773998c4fb8adde54f8e0bb17775b124dbdc0e388afa2258bded6c537dba259' ;;
-    candle-fido2-linux-x64) echo 'c5b3e074ef6a4334dae2892942b2c3c7ac5735a923ee2ec9a4442ecf9d255e29' ;;
+    candle-darwin-arm64) echo '02bc1b9f8c1b8eb0f83248ba4d14d342f8286525ce5f506bf62382445e0e6a33' ;;
+    candle-darwin-x64) echo '5b89f539c64d305f0628ffeb7332904ed9a6c7e797355aa370f886af9ab130ea' ;;
+    candle-linux-arm64) echo 'c765c39b11df3de7c95a7c873e79c4ba65b9422b4c1248d5b02627bf136a7d2c' ;;
+    candle-linux-x64) echo '51d959519f3a45309df314fe021c739f678f9113e8858af3d6e33238b26d504e' ;;
+    candle-fido2-darwin-arm64) echo 'd2803c2c16f5c3678c9bca6d9774f488415f4d4db42b69c8c73b99d88d51ed25' ;;
+    candle-fido2-darwin-x64) echo 'd9b6fc745b901a83758735a0badb4f1b7c5ef8cf2ab9b54dfb5752345b897990' ;;
+    candle-fido2-linux-arm64) echo 'bd3c1721d60d4639007dba8f3f7e6999c233ee780a50cb5e9a3e931d06660441' ;;
+    candle-fido2-linux-x64) echo '0e00e46874e3aee6db5bb554ab44a5bf15d7b7502c0b4c827a33cc08b7f6c473' ;;
     *) echo '' ;;
   esac
 }
@@ -348,8 +348,12 @@ else
 fi
 # Verifying a release file does not authorize running this Harness with an older CLI.
 # Keep the established verifier floor while enforcing the newer runtime minimum above.
+# The floor is the older of the pinned bootstrap and the runtime minimum: moving the pin up must not stop a CLI
+# that already met the minimum from verifying (a CLI at the minimum verified under every earlier pin).
+verify_floor="$CLI_VERSION"
+if at_least "$CLI_VERSION" "$CLI_MIN_VERSION"; then verify_floor="$CLI_MIN_VERSION"; fi
 candle_verify_ready=0
-if [ -n "$candle_path" ] && [ -n "$candle_version" ] && at_least "$candle_version" "$CLI_VERSION"; then candle_verify_ready=1; fi
+if [ -n "$candle_path" ] && [ -n "$candle_version" ] && at_least "$candle_version" "$verify_floor"; then candle_verify_ready=1; fi
 
 # 4. The release: latest.json names its version and tag, both checked before they pin anything.
 fetch "$release_source" latest.json "$tmp/latest.json" || fail "couldn't fetch latest.json from ${release_source}"

@@ -52,7 +52,7 @@ const ctx = { defaultAgent: "momentum", agents: new Set(["momentum"]) }
 const CERTIFIED = at(2, 9, 2)
 
 test("the recording names the exact source commit, agrees with the other source fixtures, and carries Candle's own limits", () => {
-  expect(recorded.source).toEqual({ repo: "candledottv/candle-monorepo", commit: "bdf8548b9d6c3844b014f25ae1725cbae6f8b544", versions: { cli: "0.13.39", mcp: "0.10.42", sdk: "0.6.32" } })
+  expect(recorded.source).toEqual({ repo: "candledottv/candle-monorepo", commit: "5d7a861a83bcc5c4f2c3dace9897c325b3525e43", versions: { cli: "0.13.47", mcp: "0.10.45", sdk: "0.6.39" } })
   expect(recorded.source.commit).toBe(SOURCE.source.commit)
   expect(recorded.source.commit).toBe(tools.source.commit)
   expect(recorded.source.commit).toBe(perps.source.commit)
@@ -144,7 +144,9 @@ describe("perp rounds among the swaps", () => {
     const shared = answer("route-fixture").record.rows[0]
     expect(shared).toMatchObject({ kind: "perp_round", coin: "xyz:S&P500", size: "6", initialMarginUsd: 2306.25, leverage: { value: 20, type: "isolated" } })
     expect(shared.returnPct.toFixed(1)).toBe("73.5")
-    expect(row("route-fixture-cli").outcome.lines[2]).toStartWith("Long xyz:S&P500 20x · size 6 · entry 7687.5 · exit 7969.95 · +$1,694.70 · 73.5% ROE · funding 2 · fees 7 · duration 3600s · https://app.hyperliquid.xyz/explorer/tx/0x")
+    // At 0.13.47 the CLI prints the record's Hyperliquid spot line (zero here) before the rounds.
+    expect(row("route-fixture-cli").outcome.lines[2]).toBe("Spot P&L includes Hyperliquid spot: realized $0.00, unrealized $0.00 · fees $0.00, volume $0.00, 0 trades")
+    expect(row("route-fixture-cli").outcome.lines[3]).toStartWith("Long xyz:S&P500 20x · size 6 · entry 7687.5 · exit 7969.95 · +$1,694.70 · 73.5% ROE · funding 2 · fees 7 · duration 3600s · https://app.hyperliquid.xyz/explorer/tx/0x")
   })
 })
 
