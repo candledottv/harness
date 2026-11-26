@@ -2,6 +2,20 @@
 
 What changed in each version of Candle Harness (called the Candle TUI before 0.3.0). Versions follow [semantic versioning](https://semver.org), and each release is listed on [GitHub](https://github.com/candledottv/harness/releases).
 
+## 0.6.15 (unreleased)
+
+Hyperliquid spot at the published SDK, MCP and CLI (BE-3772, the harness sibling of BE-3771; part 1 was #22). The card named SDK 0.6.34 and 0.6.36, CLI 0.13.44 and MCP 0.10.43 (candle-monorepo #4122, #4128, #4133), but those were never published separately; the surface ships in `@candledottv/agent-sdk@0.6.39`, `@candledottv/cli@0.13.47` and `@candledottv/mcp@0.10.45`, the pins already in use. The source/build version is 0.6.15; publishing remains a separate release step.
+
+### Recordings
+
+- **Published-package spot contracts** (`scripts/run-spot-packages.ts`, `scripts/spot-packages.json`, `test/fixtures/candle-spot-packages.json`, 19 rows, `src/core/spot-packages-contracts.test.ts`): installs the pinned tarballs, then runs the SDK's `perpsSpotMarkets`, `perpsSpotBalances`, `perpsSpotOrder` and `perpsSpotCancel` over an intercepted fetch.
+  - A spot order with `hide: true` whose build lacks the `hide: true` echo is refused `HIDE_NOT_CONFIRMED` after the one build request, by pair name (`HYPE/USDC`) and by `@107`; without `hide` the body has no `hide` key.
+  - The embedded wallet, a bad side and a bad cloid are refused with nothing requested.
+  - `getAgentPositions` and `getAgentRecord` keep the venue tag: a Hyperliquid row has no `mint` or `chain`, and `hyperliquidSpot` figures ride on the record.
+  - Twelve symbol pins in the shipped dist, each naming file and symbol: the CLI usage line with `--hide`, `@index` resolution, the spot fee and builder fee lines before the order (no builder fee on buys), the `delisted` refusal, the `Hyperliquid spot` positions row and the `Spot P&L includes Hyperliquid spot` record line; the four MCP spot tools, TEE-wallet-only signing, the no-builder-on-buy check and the venue note on `candle_get_agent_positions`.
+- **No wallet address, key or account value;** made-up ids only, every fetch intercepted, nothing signed, no staging or production read, no live order.
+- **Not here:** the below-floor refusal and the full `@index` resolution are the API's and were not found as separate package-side symbols; they stay with the source recording of part 1 (`candle-spot-source.json`).
+
 ## 0.6.14 (unreleased)
 
 `--hide` on perps orders (BE-3770, the harness sibling of BE-3769), as Candle's CLI, MCP server and SDK now take it (BE-3996, #4033, which first added it at CLI 0.13.36 / MCP 0.10.41 / SDK 0.6.30): an agent can keep a Hyperliquid perps order's fills out of Candle's public activity stream. Source is candle-monorepo `5d7a861a8`, the published npm release commit for `@candledottv/cli@0.13.47`, `@candledottv/mcp@0.10.45` and `@candledottv/agent-sdk@0.6.39`. The source/build version is 0.6.14; publishing remains a separate release step.
