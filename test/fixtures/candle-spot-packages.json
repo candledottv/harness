@@ -1,0 +1,312 @@
+{
+  "about": "Offline Hyperliquid spot contracts (HM2, BE-3772) recorded from the published npm packages (@candledottv/agent-sdk 0.6.39, @candledottv/mcp 0.10.45, @candledottv/cli 0.13.47), not a monorepo checkout. sdk-run rows run the SDK's spot methods over an intercepted fetch (spot order `hide` without the echo is refused HIDE_NOT_CONFIRMED after the one build request, refusals send nothing); sdk-read rows run the positions and record readers on made-up bodies; package-text rows pin symbols in the shipped dist. Made-up ids only; no wallet address, key or account value; no fetch reached the network.",
+  "packages": {
+    "@candledottv/cli": {
+      "version": "0.13.47",
+      "integrity": "sha512-uLAExcASXpChLY6vJwzHsmkQb1AyfW2yE6B3aeq9UBNNOEsbEbcDt8O32rnNTQQl3huRu0hwE6EI6+yJtgLI5g=="
+    },
+    "@candledottv/mcp": {
+      "version": "0.10.45",
+      "integrity": "sha512-DzGN3F6HKd51JvCHTTIGPFVhlJ4ESPD7pzZBaqgZthbW2pa5brTQCyGbWVmgMs+CQTgmE5ydCkfWG/+Ssbar/A=="
+    },
+    "@candledottv/agent-sdk": {
+      "version": "0.6.39",
+      "integrity": "sha512-BZATsnpq0ZGSE0vBX/zwbY6DvC91u4G7Dtk0eHmNtDb5T2sGbCY8mUFPyvjNF2gxnKD6tV1i2h+3APRK4sc7DA=="
+    }
+  },
+  "rows": [
+    {
+      "id": "sdk-spot-order-hide-without-echo-refused",
+      "scenario": "sdk-run",
+      "surface": "sdk",
+      "args": {
+        "method": "perpsSpotOrder",
+        "market": "HYPE/USDC",
+        "hide": true,
+        "buildEchoesHide": false
+      },
+      "outcome": {
+        "refused": {
+          "code": "HIDE_NOT_CONFIRMED",
+          "message": "perpsSpotOrder() asked for hide, but the API did not confirm it. Its server may predate hide, so the order may have been placed publicly. Check the order before"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "path": "/api/v1/agent/perps/spot/order",
+            "sendsHide": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "sdk-spot-order-by-index-hide-without-echo-refused",
+      "scenario": "sdk-run",
+      "surface": "sdk",
+      "args": {
+        "method": "perpsSpotOrder",
+        "market": "@107",
+        "side": "sell",
+        "hide": true
+      },
+      "outcome": {
+        "refused": {
+          "code": "HIDE_NOT_CONFIRMED",
+          "message": "perpsSpotOrder() asked for hide, but the API did not confirm it. Its server may predate hide, so the order may have been placed publicly. Check the order before"
+        },
+        "requests": [
+          {
+            "path": "/api/v1/agent/perps/spot/order",
+            "market": "@107",
+            "sendsHide": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "sdk-spot-order-without-hide-sends-no-hide-key",
+      "scenario": "sdk-run",
+      "surface": "sdk",
+      "args": {
+        "hide": "false or omitted"
+      },
+      "outcome": {
+        "bodiesWithAHideKey": 0,
+        "requests": 2
+      }
+    },
+    {
+      "id": "sdk-spot-refusals-send-nothing",
+      "scenario": "sdk-run",
+      "surface": "sdk",
+      "args": {
+        "cases": [
+          "embeddedOrder",
+          "embeddedBalances",
+          "badSide",
+          "badCloid"
+        ]
+      },
+      "outcome": {
+        "embeddedOrder": {
+          "code": null,
+          "message": "perpsSpotOrder(): Hyperliquid spot signs only from the key's EVM TEE wallet; the embedded wallet is not offered for spot. Nothing was requested."
+        },
+        "embeddedBalances": {
+          "code": null,
+          "message": "perpsSpotBalances(): Hyperliquid spot signs only from the key's EVM TEE wallet; the embedded wallet is not offered for spot. Nothing was requested."
+        },
+        "badSide": {
+          "code": null,
+          "message": "perpsSpotOrder(): side must be buy or sell"
+        },
+        "badCloid": {
+          "code": null,
+          "message": "perpsSpotCancel(): cloid must be 0x followed by 32 hex digits"
+        },
+        "requests": 0
+      }
+    },
+    {
+      "id": "sdk-spot-reads-paths",
+      "scenario": "sdk-run",
+      "surface": "sdk",
+      "args": {
+        "methods": [
+          "perpsSpotMarkets",
+          "perpsSpotBalances"
+        ]
+      },
+      "outcome": {
+        "requests": [
+          "GET /api/v1/agent/perps/spot/markets?limit=5&all=true",
+          "GET /api/v1/agent/perps/spot/markets",
+          "GET /api/v1/agent/perps/spot/balances?walletId=wallet-fixture"
+        ]
+      }
+    },
+    {
+      "id": "sdk-positions-carry-venue-tag",
+      "scenario": "sdk-read",
+      "surface": "sdk",
+      "args": {
+        "kind": "spot"
+      },
+      "outcome": {
+        "path": "/api/v1/agent/records/profile-fixture/positions?kind=spot",
+        "venues": [
+          "solana",
+          "hyperliquid"
+        ],
+        "hyperliquidRowHasMintOrChain": false,
+        "successKeyDropped": true
+      }
+    },
+    {
+      "id": "sdk-record-carries-hyperliquid-spot-figures",
+      "scenario": "sdk-read",
+      "surface": "sdk",
+      "args": {},
+      "outcome": {
+        "hyperliquidSpot": {
+          "realizedUsd": 4.2,
+          "unrealizedUsd": 1.1,
+          "feesUsd": 0.3,
+          "volumeUsd": 500,
+          "trades": 6
+        },
+        "totalsHyperliquidSpot": {
+          "realizedUsd": 4.2,
+          "unrealizedUsd": 1.1,
+          "feesUsd": 0.3,
+          "volumeUsd": 500,
+          "trades": 6
+        }
+      }
+    },
+    {
+      "id": "sdk-types-spot-methods-and-hide",
+      "scenario": "package-text",
+      "surface": "sdk",
+      "args": {
+        "file": "@candledottv/agent-sdk dist/client.d.ts",
+        "symbol": "perpsSpotMarkets / perpsSpotBalances / perpsSpotOrder / perpsSpotCancel"
+      },
+      "outcome": {
+        "found": true
+      }
+    },
+    {
+      "id": "sdk-types-venue-tagged-positions",
+      "scenario": "package-text",
+      "surface": "sdk",
+      "args": {
+        "file": "@candledottv/agent-sdk dist/client.d.ts",
+        "symbol": "AgentSpotPosition = AgentChainSpotPosition | AgentHyperliquidSpotPosition; AgentHyperliquidSpotFigures"
+      },
+      "outcome": {
+        "found": true
+      }
+    },
+    {
+      "id": "cli-usage-spot-buy-sell-with-hide",
+      "scenario": "package-text",
+      "surface": "cli",
+      "args": {
+        "file": "@candledottv/cli dist/index.js",
+        "symbol": "usage: candle perps spot buy|sell <pair> <size> ... [--hide]"
+      },
+      "outcome": {
+        "found": true
+      }
+    },
+    {
+      "id": "cli-resolves-at-index",
+      "scenario": "package-text",
+      "surface": "cli",
+      "args": {
+        "file": "@candledottv/cli dist/index.js",
+        "symbol": "/^@(0|[1-9][0-9]{0,5})$/ market test"
+      },
+      "outcome": {
+        "found": true
+      }
+    },
+    {
+      "id": "cli-spot-fee-and-builder-fee-before-the-order",
+      "scenario": "package-text",
+      "surface": "cli",
+      "args": {
+        "file": "@candledottv/cli dist/index.js",
+        "symbol": "t.venue === \"hyperliquid-spot\" lines"
+      },
+      "outcome": {
+        "found": true
+      }
+    },
+    {
+      "id": "cli-delisted-refusal",
+      "scenario": "package-text",
+      "surface": "cli",
+      "args": {
+        "file": "@candledottv/cli dist/index.js",
+        "symbol": "{ tradeable: false, reason: \"delisted\" }"
+      },
+      "outcome": {
+        "found": true
+      }
+    },
+    {
+      "id": "cli-positions-hyperliquid-spot-row",
+      "scenario": "package-text",
+      "surface": "cli",
+      "args": {
+        "file": "@candledottv/cli dist/index.js",
+        "symbol": "rowOf: p.kind === \"spot\" && p.venue === \"hyperliquid\""
+      },
+      "outcome": {
+        "found": true
+      }
+    },
+    {
+      "id": "cli-record-hyperliquid-spot-line",
+      "scenario": "package-text",
+      "surface": "cli",
+      "args": {
+        "file": "@candledottv/cli dist/index.js",
+        "symbol": "Spot P&L includes Hyperliquid spot: realized ..."
+      },
+      "outcome": {
+        "found": true
+      }
+    },
+    {
+      "id": "mcp-spot-tools",
+      "scenario": "package-text",
+      "surface": "mcp",
+      "args": {
+        "file": "@candledottv/mcp dist/index.js",
+        "symbol": "PERPS_SPOT_TOOL_NAMES"
+      },
+      "outcome": {
+        "found": true
+      }
+    },
+    {
+      "id": "mcp-spot-signs-only-from-tee-wallet",
+      "scenario": "package-text",
+      "surface": "mcp",
+      "args": {
+        "file": "@candledottv/mcp dist/index.js",
+        "symbol": "SPOT_TEE_ONLY"
+      },
+      "outcome": {
+        "found": true
+      }
+    },
+    {
+      "id": "mcp-spot-buy-has-no-builder-field",
+      "scenario": "package-text",
+      "surface": "mcp",
+      "args": {
+        "file": "@candledottv/mcp dist/index.js",
+        "symbol": "pre-sign spot check"
+      },
+      "outcome": {
+        "found": true
+      }
+    },
+    {
+      "id": "mcp-positions-kind-spot-or-perp",
+      "scenario": "package-text",
+      "surface": "mcp",
+      "args": {
+        "file": "@candledottv/mcp dist/index.js",
+        "symbol": "candle_get_agent_positions kind enum and venue note"
+      },
+      "outcome": {
+        "found": true
+      }
+    }
+  ]
+}
