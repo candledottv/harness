@@ -1,0 +1,274 @@
+{
+  "about": "Offline swap build refusal contracts (BE-4462, the harness sibling of BE-4461 / candle-monorepo #4279) recorded from the published @candledottv/cli, not a monorepo checkout: candle swap --yes --json against recorder stand-in answers using mapped API codes only (422 PRESIGN_SIMULATION_REFUSED with and without cause, and a 500 SWAP_FAILED where the guard could not run). Each row records the exit code, the --json failure with its structured details, and that no sign, submit, execute or RPC send happened. Every fetch is intercepted in memory.",
+  "packages": {
+    "@candledottv/cli": {
+      "version": "0.13.51",
+      "integrity": "sha512-8fNlNaAz9MuI5nEITX6Nx3MwdQNWB8iPbPKW6br3p63CR4tJbtfqY6oHm0U0SF6hrbxPiC8YPYihaQ/H72fMrA=="
+    }
+  },
+  "entryPoints": {
+    "cli": "./dist/index.js"
+  },
+  "rows": [
+    {
+      "id": "cli-swap-build-422-slippage-exceeded",
+      "scenario": "cli-package",
+      "surface": "cli",
+      "args": {
+        "command": "swap SOL <mint> --amount 0.05 --wallet <payer> --yes --json",
+        "clientTradeId": "cli-build-422-slip",
+        "apiStatus": 422,
+        "apiBody": {
+          "success": false,
+          "error": {
+            "code": "PRESIGN_SIMULATION_REFUSED",
+            "message": "The built transaction failed the pre-sign safety check (simulation_failed); nothing was signed or sent.",
+            "retryable": true,
+            "stage": "not_broadcast",
+            "reason": "presign_refused",
+            "refusal": "simulation_failed",
+            "detail": "The price moved past maxSlippageBps before the transaction could land; retry at once for a fresh quote, or raise maxSlippageBps (default 100, cap 5000). ({\"InstructionError\":[3,{\"Custom\":6001}]}; Program <redacted> failed: custom program error: 0x1771)",
+            "cause": "slippage_exceeded"
+          }
+        }
+      },
+      "requests": [
+        {
+          "n": 1,
+          "method": "GET",
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/trading"
+        },
+        {
+          "n": 2,
+          "method": "GET",
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/embedded"
+        },
+        {
+          "n": 3,
+          "method": "GET",
+          "host": "api.test",
+          "path": "/api/v1/agent/swap/jobs/<id>"
+        },
+        {
+          "n": 4,
+          "method": "POST",
+          "host": "api.test",
+          "path": "/api/v1/agent/swap/build"
+        }
+      ],
+      "outcome": {
+        "exitCode": 1,
+        "json": {
+          "ok": false,
+          "code": "PRESIGN_SIMULATION_REFUSED",
+          "message": "The built transaction failed the pre-sign safety check (simulation_failed); nothing was signed or sent. Operation cli-build-422-slip; use candle swap status cli-build-422-slip before another attempt.",
+          "details": {
+            "stage": "not_broadcast",
+            "reason": "presign_refused",
+            "refusal": "simulation_failed",
+            "detail": "The price moved past maxSlippageBps before the transaction could land; retry at once for a fresh quote, or raise maxSlippageBps (default 100, cap 5000). ({\"InstructionError\":[3,{\"Custom\":6001}]}; Program <redacted> failed: custom program error: 0x1771)",
+            "cause": "slippage_exceeded",
+            "retryable": true
+          }
+        },
+        "signedOrSubmitted": false
+      }
+    },
+    {
+      "id": "cli-swap-build-422-insufficient-lamports",
+      "scenario": "cli-package",
+      "surface": "cli",
+      "args": {
+        "command": "swap SOL <mint> --amount 0.05 --wallet <payer> --yes --json",
+        "clientTradeId": "cli-build-422-lamports",
+        "apiStatus": 422,
+        "apiBody": {
+          "success": false,
+          "error": {
+            "code": "PRESIGN_SIMULATION_REFUSED",
+            "message": "The built transaction failed the pre-sign safety check (simulation_failed); nothing was signed or sent.",
+            "retryable": true,
+            "stage": "not_broadcast",
+            "reason": "presign_refused",
+            "refusal": "simulation_failed",
+            "detail": "Transfer: insufficient lamports 900000, need 2039280",
+            "cause": "insufficient_lamports"
+          }
+        }
+      },
+      "requests": [
+        {
+          "n": 1,
+          "method": "GET",
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/trading"
+        },
+        {
+          "n": 2,
+          "method": "GET",
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/embedded"
+        },
+        {
+          "n": 3,
+          "method": "GET",
+          "host": "api.test",
+          "path": "/api/v1/agent/swap/jobs/<id>"
+        },
+        {
+          "n": 4,
+          "method": "POST",
+          "host": "api.test",
+          "path": "/api/v1/agent/swap/build"
+        }
+      ],
+      "outcome": {
+        "exitCode": 1,
+        "json": {
+          "ok": false,
+          "code": "PRESIGN_SIMULATION_REFUSED",
+          "message": "The built transaction failed the pre-sign safety check (simulation_failed); nothing was signed or sent. Operation cli-build-422-lamports; use candle swap status cli-build-422-lamports before another attempt.",
+          "details": {
+            "stage": "not_broadcast",
+            "reason": "presign_refused",
+            "refusal": "simulation_failed",
+            "detail": "Transfer: insufficient lamports 900000, need 2039280",
+            "cause": "insufficient_lamports",
+            "retryable": true
+          }
+        },
+        "signedOrSubmitted": false
+      }
+    },
+    {
+      "id": "cli-swap-build-422-no-cause",
+      "scenario": "cli-package",
+      "surface": "cli",
+      "args": {
+        "command": "swap SOL <mint> --amount 0.05 --wallet <payer> --yes --json",
+        "clientTradeId": "cli-build-422-nocause",
+        "apiStatus": 422,
+        "apiBody": {
+          "success": false,
+          "error": {
+            "code": "PRESIGN_SIMULATION_REFUSED",
+            "message": "The built transaction failed the pre-sign safety check (simulation_failed); nothing was signed or sent.",
+            "retryable": true,
+            "stage": "not_broadcast",
+            "reason": "presign_refused",
+            "refusal": "simulation_failed",
+            "detail": "InstructionError [2,{\"Custom\":1}]"
+          }
+        }
+      },
+      "requests": [
+        {
+          "n": 1,
+          "method": "GET",
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/trading"
+        },
+        {
+          "n": 2,
+          "method": "GET",
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/embedded"
+        },
+        {
+          "n": 3,
+          "method": "GET",
+          "host": "api.test",
+          "path": "/api/v1/agent/swap/jobs/<id>"
+        },
+        {
+          "n": 4,
+          "method": "POST",
+          "host": "api.test",
+          "path": "/api/v1/agent/swap/build"
+        }
+      ],
+      "outcome": {
+        "exitCode": 1,
+        "json": {
+          "ok": false,
+          "code": "PRESIGN_SIMULATION_REFUSED",
+          "message": "The built transaction failed the pre-sign safety check (simulation_failed); nothing was signed or sent. Operation cli-build-422-nocause; use candle swap status cli-build-422-nocause before another attempt.",
+          "details": {
+            "stage": "not_broadcast",
+            "reason": "presign_refused",
+            "refusal": "simulation_failed",
+            "detail": "InstructionError [2,{\"Custom\":1}]",
+            "retryable": true
+          }
+        },
+        "signedOrSubmitted": false
+      }
+    },
+    {
+      "id": "cli-swap-build-500-guard-could-not-run",
+      "scenario": "cli-package",
+      "surface": "cli",
+      "args": {
+        "command": "swap SOL <mint> --amount 0.05 --wallet <payer> --yes --json",
+        "clientTradeId": "cli-build-500-guard",
+        "apiStatus": 500,
+        "apiBody": {
+          "success": false,
+          "error": {
+            "code": "SWAP_FAILED",
+            "message": "The built transaction failed the pre-sign safety check (simulation_failed); nothing was signed or sent.",
+            "retryable": true,
+            "stage": "not_broadcast",
+            "reason": "presign_refused",
+            "refusal": "simulation_failed",
+            "detail": "BlockhashNotFound"
+          }
+        }
+      },
+      "requests": [
+        {
+          "n": 1,
+          "method": "GET",
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/trading"
+        },
+        {
+          "n": 2,
+          "method": "GET",
+          "host": "api.test",
+          "path": "/api/v1/agent/wallets/embedded"
+        },
+        {
+          "n": 3,
+          "method": "GET",
+          "host": "api.test",
+          "path": "/api/v1/agent/swap/jobs/<id>"
+        },
+        {
+          "n": 4,
+          "method": "POST",
+          "host": "api.test",
+          "path": "/api/v1/agent/swap/build"
+        }
+      ],
+      "outcome": {
+        "exitCode": 1,
+        "json": {
+          "ok": false,
+          "code": "SWAP_FAILED",
+          "message": "The built transaction failed the pre-sign safety check (simulation_failed); nothing was signed or sent. Operation cli-build-500-guard; use candle swap status cli-build-500-guard before another attempt.",
+          "details": {
+            "stage": "not_broadcast",
+            "reason": "presign_refused",
+            "refusal": "simulation_failed",
+            "detail": "BlockhashNotFound",
+            "retryable": true
+          }
+        },
+        "signedOrSubmitted": false
+      }
+    }
+  ]
+}
