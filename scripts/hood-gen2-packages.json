@@ -1,0 +1,5 @@
+{
+  "@candledottv/cli": "0.13.50",
+  "@candledottv/mcp": "0.10.48",
+  "@candledottv/agent-sdk": "0.6.41"
+}

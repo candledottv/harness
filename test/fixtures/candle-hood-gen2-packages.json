@@ -1,0 +1,1303 @@
+{
+  "about": "Offline Hood generation 2 launch-option contracts (BE-4351, the harness sibling of BE-4350 / candle-monorepo #4291) recorded from the published npm packages (@candledottv/agent-sdk 0.6.41, @candledottv/mcp 0.10.48, @candledottv/cli 0.13.50), not a monorepo checkout. Hood rows run each gen 2 option through the SDK (dryRunLaunch, one stubbed launch), the shipped CLI (candle launch --dry-run --json) and the shipped MCP server (candle_launch_token over stdio) and record the request body the API would receive: snipeExempt, feeWallet, creatorFeeBps, teamAllocation and launchRules as TOP-LEVEL keys, never a hoodGen2Options wrapper. MCP withholds feeWallet. Refusal rows send zero launch requests. Solana rows pin that the Hood-only fields are refused (explicit null included, except creatorFeeBps: null) and that a Solana body is otherwise unchanged. Made-up ids only; every fetch is intercepted; no launch reached any network.",
+  "packages": {
+    "@candledottv/cli": {
+      "version": "0.13.50",
+      "integrity": "sha512-bHqHVwJnE3RvMVm2B6xkv/WqK4zgQLoD0ZQ377UtOhRHwPyejuIwpATRIadVQ9Tzxs7Ty0PfU2rX7hjZcbNiRw=="
+    },
+    "@candledottv/mcp": {
+      "version": "0.10.48",
+      "integrity": "sha512-LDTEKagxmB7xeiSkok2Wi9eGx4oY8FQOrSHGC1fjUhot/SjKVZH0ArjBHrQNIdopBc2vnMXobEy9mph+jwG2gw=="
+    },
+    "@candledottv/agent-sdk": {
+      "version": "0.6.41",
+      "integrity": "sha512-NeAqjgLCKR45JlUyqHvRH53NSX544B+tKDeETvwzw1v5k7Wmd0VYA9H0okd5KjDtfZn30TlVFI+/tk/ALd3wJw=="
+    }
+  },
+  "rows": [
+    {
+      "id": "sdk-hood-dry-run-snipe-exempt",
+      "scenario": "hood-body",
+      "surface": "sdk",
+      "args": {
+        "method": "dryRunLaunch",
+        "options": [
+          "snipeExempt"
+        ]
+      },
+      "outcome": {
+        "path": "/api/v1/launch/headless/dry-run",
+        "body": {
+          "name": "T",
+          "symbol": "TT",
+          "imageUrl": "https://img.fixture.test/a.png",
+          "clientLaunchId": "cl-fixture-1",
+          "chain": "hood",
+          "quoteAsset": "eth",
+          "dexVersion": "v3",
+          "snipeExempt": [
+            "0x1111111111111111111111111111111111111111",
+            "0x2222222222222222222222222222222222222222"
+          ]
+        },
+        "topLevelKeys": [
+          "snipeExempt"
+        ],
+        "wrapperSent": false
+      }
+    },
+    {
+      "id": "sdk-hood-dry-run-snipe-exempt-empty",
+      "scenario": "hood-body",
+      "surface": "sdk",
+      "args": {
+        "method": "dryRunLaunch",
+        "options": [
+          "snipeExempt"
+        ]
+      },
+      "outcome": {
+        "path": "/api/v1/launch/headless/dry-run",
+        "body": {
+          "name": "T",
+          "symbol": "TT",
+          "imageUrl": "https://img.fixture.test/a.png",
+          "clientLaunchId": "cl-fixture-1",
+          "chain": "hood",
+          "quoteAsset": "eth",
+          "dexVersion": "v3",
+          "snipeExempt": []
+        },
+        "topLevelKeys": [
+          "snipeExempt"
+        ],
+        "wrapperSent": false
+      }
+    },
+    {
+      "id": "sdk-hood-dry-run-fee-wallet",
+      "scenario": "hood-body",
+      "surface": "sdk",
+      "args": {
+        "method": "dryRunLaunch",
+        "options": [
+          "feeWallet",
+          "creatorFeeBps"
+        ]
+      },
+      "outcome": {
+        "path": "/api/v1/launch/headless/dry-run",
+        "body": {
+          "name": "T",
+          "symbol": "TT",
+          "imageUrl": "https://img.fixture.test/a.png",
+          "clientLaunchId": "cl-fixture-1",
+          "chain": "hood",
+          "quoteAsset": "eth",
+          "dexVersion": "v3",
+          "feeWallet": "0x3333333333333333333333333333333333333333",
+          "creatorFeeBps": 150
+        },
+        "topLevelKeys": [
+          "feeWallet",
+          "creatorFeeBps"
+        ],
+        "wrapperSent": false
+      }
+    },
+    {
+      "id": "sdk-hood-dry-run-creator-fee-bps",
+      "scenario": "hood-body",
+      "surface": "sdk",
+      "args": {
+        "method": "dryRunLaunch",
+        "options": [
+          "creatorFeeBps"
+        ]
+      },
+      "outcome": {
+        "path": "/api/v1/launch/headless/dry-run",
+        "body": {
+          "name": "T",
+          "symbol": "TT",
+          "imageUrl": "https://img.fixture.test/a.png",
+          "clientLaunchId": "cl-fixture-1",
+          "chain": "hood",
+          "quoteAsset": "eth",
+          "dexVersion": "v3",
+          "creatorFeeBps": 150
+        },
+        "topLevelKeys": [
+          "creatorFeeBps"
+        ],
+        "wrapperSent": false
+      }
+    },
+    {
+      "id": "sdk-hood-dry-run-creator-fee-bps-zero",
+      "scenario": "hood-body",
+      "surface": "sdk",
+      "args": {
+        "method": "dryRunLaunch",
+        "options": [
+          "creatorFeeBps"
+        ]
+      },
+      "outcome": {
+        "path": "/api/v1/launch/headless/dry-run",
+        "body": {
+          "name": "T",
+          "symbol": "TT",
+          "imageUrl": "https://img.fixture.test/a.png",
+          "clientLaunchId": "cl-fixture-1",
+          "chain": "hood",
+          "quoteAsset": "eth",
+          "dexVersion": "v3",
+          "creatorFeeBps": 0
+        },
+        "topLevelKeys": [
+          "creatorFeeBps"
+        ],
+        "wrapperSent": false
+      }
+    },
+    {
+      "id": "sdk-hood-dry-run-team-allocation",
+      "scenario": "hood-body",
+      "surface": "sdk",
+      "args": {
+        "method": "dryRunLaunch",
+        "options": [
+          "teamAllocation"
+        ]
+      },
+      "outcome": {
+        "path": "/api/v1/launch/headless/dry-run",
+        "body": {
+          "name": "T",
+          "symbol": "TT",
+          "imageUrl": "https://img.fixture.test/a.png",
+          "clientLaunchId": "cl-fixture-1",
+          "chain": "hood",
+          "quoteAsset": "eth",
+          "dexVersion": "v3",
+          "teamAllocation": {
+            "recipient": "0x4444444444444444444444444444444444444444",
+            "percent": 2.5,
+            "cliffDays": 30,
+            "vestingDays": 90
+          }
+        },
+        "topLevelKeys": [
+          "teamAllocation"
+        ],
+        "wrapperSent": false
+      }
+    },
+    {
+      "id": "sdk-hood-dry-run-launch-rules-sniper-fee",
+      "scenario": "hood-body",
+      "surface": "sdk",
+      "args": {
+        "method": "dryRunLaunch",
+        "options": [
+          "launchRules"
+        ]
+      },
+      "outcome": {
+        "path": "/api/v1/launch/headless/dry-run",
+        "body": {
+          "name": "T",
+          "symbol": "TT",
+          "imageUrl": "https://img.fixture.test/a.png",
+          "clientLaunchId": "cl-fixture-1",
+          "chain": "hood",
+          "quoteAsset": "eth",
+          "dexVersion": "v3",
+          "launchRules": {
+            "snipeFeeStartBps": 500,
+            "snipeFeeDecaySecs": 60
+          }
+        },
+        "topLevelKeys": [
+          "launchRules"
+        ],
+        "wrapperSent": false
+      }
+    },
+    {
+      "id": "sdk-hood-dry-run-launch-rules-open-cap-allowlist",
+      "scenario": "hood-body",
+      "surface": "sdk",
+      "args": {
+        "method": "dryRunLaunch",
+        "options": [
+          "launchRules",
+          "buyAmount"
+        ]
+      },
+      "outcome": {
+        "path": "/api/v1/launch/headless/dry-run",
+        "body": {
+          "name": "T",
+          "symbol": "TT",
+          "imageUrl": "https://img.fixture.test/a.png",
+          "clientLaunchId": "cl-fixture-1",
+          "chain": "hood",
+          "quoteAsset": "eth",
+          "dexVersion": "v3",
+          "launchRules": {
+            "openDelaySecs": 5400,
+            "maxBuyPerWalletRaw": "500000000000000000",
+            "capWindowSecs": 3600,
+            "allowlist": [
+              "0x5555555555555555555555555555555555555555",
+              "0x6666666666666666666666666666666666666666"
+            ],
+            "allowlistWindowSecs": 1800,
+            "devBuyMaxRaw": "100000000000000000"
+          },
+          "buyAmount": "100000000000000000"
+        },
+        "topLevelKeys": [
+          "launchRules"
+        ],
+        "wrapperSent": false
+      }
+    },
+    {
+      "id": "sdk-hood-dry-run-all-options-together",
+      "scenario": "hood-body",
+      "surface": "sdk",
+      "args": {
+        "method": "dryRunLaunch",
+        "options": [
+          "snipeExempt",
+          "feeWallet",
+          "creatorFeeBps",
+          "teamAllocation",
+          "launchRules"
+        ]
+      },
+      "outcome": {
+        "path": "/api/v1/launch/headless/dry-run",
+        "body": {
+          "name": "T",
+          "symbol": "TT",
+          "imageUrl": "https://img.fixture.test/a.png",
+          "clientLaunchId": "cl-fixture-1",
+          "chain": "hood",
+          "quoteAsset": "eth",
+          "dexVersion": "v3",
+          "snipeExempt": [
+            "0x1111111111111111111111111111111111111111"
+          ],
+          "feeWallet": "0x3333333333333333333333333333333333333333",
+          "creatorFeeBps": 150,
+          "teamAllocation": {
+            "recipient": "0x4444444444444444444444444444444444444444",
+            "percent": 2.5,
+            "cliffDays": 30,
+            "vestingDays": 90
+          },
+          "launchRules": {
+            "snipeFeeStartBps": 500,
+            "snipeFeeDecaySecs": 60
+          }
+        },
+        "topLevelKeys": [
+          "snipeExempt",
+          "feeWallet",
+          "creatorFeeBps",
+          "teamAllocation",
+          "launchRules"
+        ],
+        "wrapperSent": false
+      }
+    },
+    {
+      "id": "sdk-hood-launch-all-options-stubbed",
+      "scenario": "hood-body",
+      "surface": "sdk",
+      "args": {
+        "method": "launch (stubbed response, no spend)"
+      },
+      "outcome": {
+        "path": "/api/v1/launch/headless",
+        "body": {
+          "name": "T",
+          "symbol": "TT",
+          "imageUrl": "https://img.fixture.test/a.png",
+          "clientLaunchId": "cl-fixture-1",
+          "chain": "hood",
+          "quoteAsset": "eth",
+          "dexVersion": "v3",
+          "snipeExempt": [
+            "0x1111111111111111111111111111111111111111"
+          ],
+          "feeWallet": "0x3333333333333333333333333333333333333333",
+          "creatorFeeBps": 150,
+          "teamAllocation": {
+            "recipient": "0x4444444444444444444444444444444444444444",
+            "percent": 2.5,
+            "cliffDays": 30,
+            "vestingDays": 90
+          },
+          "launchRules": {
+            "snipeFeeStartBps": 500,
+            "snipeFeeDecaySecs": 60
+          }
+        },
+        "wrapperSent": false
+      }
+    },
+    {
+      "id": "sdk-hood-refusals-send-nothing",
+      "scenario": "hood-refusal",
+      "surface": "sdk",
+      "args": {
+        "cases": [
+          "wrapper",
+          "unknownRule",
+          "unknownTeamKey",
+          "creatorFeeOver",
+          "feeStack"
+        ]
+      },
+      "outcome": {
+        "wrapper": {
+          "code": "VALIDATION_FAILED",
+          "message": "Send Hood generation 2 options as top-level fields (launchRules, snipeExempt, feeWallet, creatorFeeBps, teamAllocation), not hoodGen2Options."
+        },
+        "unknownRule": {
+          "code": "VALIDATION_FAILED",
+          "message": "launchRules.notARule is not a launch rule."
+        },
+        "unknownTeamKey": {
+          "code": "VALIDATION_FAILED",
+          "message": "teamAllocation.bogus is not a teamAllocation field."
+        },
+        "creatorFeeOver": {
+          "code": "VALIDATION_FAILED",
+          "message": "creatorFeeBps must be a whole number from 0 to 9999."
+        },
+        "feeStack": {
+          "code": "VALIDATION_FAILED",
+          "message": "the curve fee, creator fee and sniper fee at its peak must total under 100%"
+        },
+        "requests": 0
+      }
+    },
+    {
+      "id": "sdk-solana-hood-only-fields-refused",
+      "scenario": "solana-refusal",
+      "surface": "sdk",
+      "args": {
+        "cases": [
+          "snipeExempt",
+          "snipeExempt-null",
+          "teamAllocation",
+          "teamAllocation-null",
+          "launchRules.snipeFeeStartBps",
+          "launchRules.snipeFeeStartBps-null",
+          "launchRules.snipeFeeDecaySecs",
+          "launchRules.snipeFeeDecaySecs-null",
+          "creatorFeeBps-150"
+        ]
+      },
+      "outcome": {
+        "refusals": {
+          "snipeExempt": {
+            "code": "VALIDATION_FAILED",
+            "message": "snipeExempt is only available on Hood launches."
+          },
+          "snipeExempt-null": {
+            "code": "VALIDATION_FAILED",
+            "message": "snipeExempt is only available on Hood launches."
+          },
+          "teamAllocation": {
+            "code": "VALIDATION_FAILED",
+            "message": "teamAllocation is only available on Hood launches."
+          },
+          "teamAllocation-null": {
+            "code": "VALIDATION_FAILED",
+            "message": "teamAllocation is only available on Hood launches."
+          },
+          "launchRules.snipeFeeStartBps": {
+            "code": "VALIDATION_FAILED",
+            "message": "launchRules.snipeFeeStartBps is only available on Hood launches."
+          },
+          "launchRules.snipeFeeStartBps-null": {
+            "code": "VALIDATION_FAILED",
+            "message": "launchRules.snipeFeeStartBps is only available on Hood launches."
+          },
+          "launchRules.snipeFeeDecaySecs": {
+            "code": "VALIDATION_FAILED",
+            "message": "launchRules.snipeFeeDecaySecs is only available on Hood launches."
+          },
+          "launchRules.snipeFeeDecaySecs-null": {
+            "code": "VALIDATION_FAILED",
+            "message": "launchRules.snipeFeeDecaySecs is only available on Hood launches."
+          },
+          "creatorFeeBps-150": {
+            "code": "VALIDATION_FAILED",
+            "message": "creatorFeeBps must be 0, 100 or 200."
+          }
+        },
+        "requests": 0
+      }
+    },
+    {
+      "id": "sdk-solana-creator-fee-bps-null-accepted",
+      "scenario": "solana-body",
+      "surface": "sdk",
+      "args": {
+        "creatorFeeBps": null
+      },
+      "outcome": {
+        "body": {
+          "name": "T",
+          "symbol": "TT",
+          "imageUrl": "https://img.fixture.test/a.png",
+          "clientLaunchId": "cl-fixture-1",
+          "chain": "solana",
+          "creatorFeeBps": null
+        }
+      }
+    },
+    {
+      "id": "sdk-solana-body-unchanged",
+      "scenario": "solana-body",
+      "surface": "sdk",
+      "args": {},
+      "outcome": {
+        "body": {
+          "name": "T",
+          "symbol": "TT",
+          "imageUrl": "https://img.fixture.test/a.png",
+          "clientLaunchId": "cl-fixture-1",
+          "chain": "solana"
+        },
+        "hoodOnlyKeysPresent": []
+      }
+    },
+    {
+      "id": "cli-hood-dry-run-snipe-exempt",
+      "scenario": "hood-body",
+      "surface": "cli",
+      "args": {
+        "flags": [
+          "--snipe-exempt",
+          "0x1111111111111111111111111111111111111111,0x2222222222222222222222222222222222222222"
+        ]
+      },
+      "outcome": {
+        "exitCode": 0,
+        "path": "/api/v1/launch/headless/dry-run",
+        "body": {
+          "clientLaunchId": "cl-fixture-1",
+          "chain": "hood",
+          "name": "T",
+          "symbol": "TT",
+          "imageUrl": "https://img.fixture.test/a.png",
+          "quoteAsset": "eth",
+          "dexVersion": "v3",
+          "snipeExempt": [
+            "0x1111111111111111111111111111111111111111",
+            "0x2222222222222222222222222222222222222222"
+          ]
+        },
+        "topLevelKeys": [
+          "snipeExempt"
+        ],
+        "wrapperSent": false
+      }
+    },
+    {
+      "id": "cli-hood-dry-run-snipe-exempt-empty",
+      "scenario": "hood-body",
+      "surface": "cli",
+      "args": {
+        "flags": [
+          "--snipe-exempt",
+          ""
+        ]
+      },
+      "outcome": {
+        "exitCode": 0,
+        "path": "/api/v1/launch/headless/dry-run",
+        "body": {
+          "clientLaunchId": "cl-fixture-1",
+          "chain": "hood",
+          "name": "T",
+          "symbol": "TT",
+          "imageUrl": "https://img.fixture.test/a.png",
+          "quoteAsset": "eth",
+          "dexVersion": "v3",
+          "snipeExempt": []
+        },
+        "topLevelKeys": [
+          "snipeExempt"
+        ],
+        "wrapperSent": false
+      }
+    },
+    {
+      "id": "cli-hood-dry-run-fee-wallet",
+      "scenario": "hood-body",
+      "surface": "cli",
+      "args": {
+        "flags": [
+          "--fee-wallet",
+          "0x3333333333333333333333333333333333333333",
+          "--creator-fee-bps",
+          "150"
+        ]
+      },
+      "outcome": {
+        "exitCode": 0,
+        "path": "/api/v1/launch/headless/dry-run",
+        "body": {
+          "clientLaunchId": "cl-fixture-1",
+          "chain": "hood",
+          "name": "T",
+          "symbol": "TT",
+          "imageUrl": "https://img.fixture.test/a.png",
+          "quoteAsset": "eth",
+          "dexVersion": "v3",
+          "creatorFeeBps": 150,
+          "feeWallet": "0x3333333333333333333333333333333333333333"
+        },
+        "topLevelKeys": [
+          "feeWallet",
+          "creatorFeeBps"
+        ],
+        "wrapperSent": false
+      }
+    },
+    {
+      "id": "cli-hood-dry-run-creator-fee-bps",
+      "scenario": "hood-body",
+      "surface": "cli",
+      "args": {
+        "flags": [
+          "--creator-fee-bps",
+          "150"
+        ]
+      },
+      "outcome": {
+        "exitCode": 0,
+        "path": "/api/v1/launch/headless/dry-run",
+        "body": {
+          "clientLaunchId": "cl-fixture-1",
+          "chain": "hood",
+          "name": "T",
+          "symbol": "TT",
+          "imageUrl": "https://img.fixture.test/a.png",
+          "quoteAsset": "eth",
+          "dexVersion": "v3",
+          "creatorFeeBps": 150
+        },
+        "topLevelKeys": [
+          "creatorFeeBps"
+        ],
+        "wrapperSent": false
+      }
+    },
+    {
+      "id": "cli-hood-dry-run-creator-fee-bps-zero",
+      "scenario": "hood-body",
+      "surface": "cli",
+      "args": {
+        "flags": [
+          "--creator-fee-bps",
+          "0"
+        ]
+      },
+      "outcome": {
+        "exitCode": 0,
+        "path": "/api/v1/launch/headless/dry-run",
+        "body": {
+          "clientLaunchId": "cl-fixture-1",
+          "chain": "hood",
+          "name": "T",
+          "symbol": "TT",
+          "imageUrl": "https://img.fixture.test/a.png",
+          "quoteAsset": "eth",
+          "dexVersion": "v3",
+          "creatorFeeBps": 0
+        },
+        "topLevelKeys": [
+          "creatorFeeBps"
+        ],
+        "wrapperSent": false
+      }
+    },
+    {
+      "id": "cli-hood-dry-run-team-allocation",
+      "scenario": "hood-body",
+      "surface": "cli",
+      "args": {
+        "flags": [
+          "--team-recipient",
+          "0x4444444444444444444444444444444444444444",
+          "--team-percent",
+          "2.5",
+          "--team-cliff-days",
+          "30",
+          "--team-vesting-days",
+          "90"
+        ]
+      },
+      "outcome": {
+        "exitCode": 0,
+        "path": "/api/v1/launch/headless/dry-run",
+        "body": {
+          "clientLaunchId": "cl-fixture-1",
+          "chain": "hood",
+          "name": "T",
+          "symbol": "TT",
+          "imageUrl": "https://img.fixture.test/a.png",
+          "quoteAsset": "eth",
+          "dexVersion": "v3",
+          "teamAllocation": {
+            "recipient": "0x4444444444444444444444444444444444444444",
+            "percent": 2.5,
+            "cliffDays": 30,
+            "vestingDays": 90
+          }
+        },
+        "topLevelKeys": [
+          "teamAllocation"
+        ],
+        "wrapperSent": false
+      }
+    },
+    {
+      "id": "cli-hood-dry-run-launch-rules-sniper-fee",
+      "scenario": "hood-body",
+      "surface": "cli",
+      "args": {
+        "flags": [
+          "--snipe-fee-start-bps",
+          "500",
+          "--snipe-fee-decay",
+          "60"
+        ]
+      },
+      "outcome": {
+        "exitCode": 0,
+        "path": "/api/v1/launch/headless/dry-run",
+        "body": {
+          "clientLaunchId": "cl-fixture-1",
+          "chain": "hood",
+          "name": "T",
+          "symbol": "TT",
+          "imageUrl": "https://img.fixture.test/a.png",
+          "quoteAsset": "eth",
+          "dexVersion": "v3",
+          "launchRules": {
+            "snipeFeeStartBps": 500,
+            "snipeFeeDecaySecs": 60
+          }
+        },
+        "topLevelKeys": [
+          "launchRules"
+        ],
+        "wrapperSent": false
+      }
+    },
+    {
+      "id": "cli-hood-dry-run-launch-rules-open-cap-allowlist",
+      "scenario": "hood-body",
+      "surface": "cli",
+      "args": {
+        "flags": [
+          "--open-in",
+          "90m",
+          "--max-buy-per-wallet",
+          "0.5",
+          "--cap-window",
+          "1h",
+          "--allowlist",
+          "<allowlist-file>",
+          "--allowlist-window",
+          "30m",
+          "--dev-buy-max",
+          "0.1",
+          "--buy",
+          "0.1"
+        ]
+      },
+      "outcome": {
+        "exitCode": 0,
+        "path": "/api/v1/launch/headless/dry-run",
+        "body": {
+          "clientLaunchId": "cl-fixture-1",
+          "chain": "hood",
+          "name": "T",
+          "symbol": "TT",
+          "imageUrl": "https://img.fixture.test/a.png",
+          "quoteAsset": "eth",
+          "dexVersion": "v3",
+          "launchRules": {
+            "openDelaySecs": 5400,
+            "maxBuyPerWalletRaw": "500000000000000000",
+            "capWindowSecs": 3600,
+            "allowlist": [
+              "0x5555555555555555555555555555555555555555",
+              "0x6666666666666666666666666666666666666666"
+            ],
+            "allowlistWindowSecs": 1800,
+            "devBuyMaxRaw": "100000000000000000"
+          },
+          "buyAmount": "100000000000000000"
+        },
+        "topLevelKeys": [
+          "launchRules"
+        ],
+        "wrapperSent": false
+      }
+    },
+    {
+      "id": "cli-hood-dry-run-all-options-together",
+      "scenario": "hood-body",
+      "surface": "cli",
+      "args": {
+        "flags": [
+          "--snipe-exempt",
+          "0x1111111111111111111111111111111111111111",
+          "--fee-wallet",
+          "0x3333333333333333333333333333333333333333",
+          "--creator-fee-bps",
+          "150",
+          "--team-recipient",
+          "0x4444444444444444444444444444444444444444",
+          "--team-percent",
+          "2.5",
+          "--team-cliff-days",
+          "30",
+          "--team-vesting-days",
+          "90",
+          "--snipe-fee-start-bps",
+          "500",
+          "--snipe-fee-decay",
+          "60"
+        ]
+      },
+      "outcome": {
+        "exitCode": 0,
+        "path": "/api/v1/launch/headless/dry-run",
+        "body": {
+          "clientLaunchId": "cl-fixture-1",
+          "chain": "hood",
+          "name": "T",
+          "symbol": "TT",
+          "imageUrl": "https://img.fixture.test/a.png",
+          "quoteAsset": "eth",
+          "dexVersion": "v3",
+          "creatorFeeBps": 150,
+          "snipeExempt": [
+            "0x1111111111111111111111111111111111111111"
+          ],
+          "feeWallet": "0x3333333333333333333333333333333333333333",
+          "teamAllocation": {
+            "recipient": "0x4444444444444444444444444444444444444444",
+            "percent": 2.5,
+            "cliffDays": 30,
+            "vestingDays": 90
+          },
+          "launchRules": {
+            "snipeFeeStartBps": 500,
+            "snipeFeeDecaySecs": 60
+          }
+        },
+        "topLevelKeys": [
+          "snipeExempt",
+          "feeWallet",
+          "creatorFeeBps",
+          "teamAllocation",
+          "launchRules"
+        ],
+        "wrapperSent": false
+      }
+    },
+    {
+      "id": "cli-solana-hood-only-flags-refused",
+      "scenario": "solana-refusal",
+      "surface": "cli",
+      "args": {
+        "cases": [
+          "team-percent",
+          "snipe-exempt",
+          "snipe-fee-start-bps",
+          "creator-fee-bps-150"
+        ]
+      },
+      "outcome": {
+        "refusals": {
+          "team-percent": {
+            "exitCode": 2,
+            "message": "--team-percent is only available on Hood launches."
+          },
+          "snipe-exempt": {
+            "exitCode": 2,
+            "message": "--snipe-exempt is only available on Hood launches."
+          },
+          "snipe-fee-start-bps": {
+            "exitCode": 2,
+            "message": "--snipe-fee-start-bps is only available on Hood launches."
+          },
+          "creator-fee-bps-150": {
+            "exitCode": 2,
+            "message": "--creator-fee-bps takes 0, 100, 200."
+          }
+        },
+        "requests": 0
+      }
+    },
+    {
+      "id": "cli-solana-creator-fee-bps-accepted",
+      "scenario": "solana-body",
+      "surface": "cli",
+      "args": {
+        "flags": [
+          "--mode",
+          "exp-a",
+          "--creator-fee-bps",
+          "100"
+        ]
+      },
+      "outcome": {
+        "body": {
+          "clientLaunchId": "cl-fixture-1",
+          "chain": "solana",
+          "name": "T",
+          "symbol": "TT",
+          "imageUrl": "https://img.fixture.test/a.png",
+          "quoteAsset": "sol",
+          "mode": "exp-a",
+          "creatorFeeBps": 100
+        }
+      }
+    },
+    {
+      "id": "cli-solana-body-unchanged",
+      "scenario": "solana-body",
+      "surface": "cli",
+      "args": {},
+      "outcome": {
+        "body": {
+          "clientLaunchId": "cl-fixture-1",
+          "chain": "solana",
+          "name": "T",
+          "symbol": "TT",
+          "imageUrl": "https://img.fixture.test/a.png",
+          "quoteAsset": "sol"
+        },
+        "hoodOnlyKeysPresent": []
+      }
+    },
+    {
+      "id": "mcp-hood-dry-run-snipe-exempt",
+      "scenario": "hood-body",
+      "surface": "mcp",
+      "args": {
+        "tool": "candle_launch_token",
+        "options": [
+          "snipeExempt"
+        ]
+      },
+      "outcome": {
+        "isError": false,
+        "path": "/api/v1/launch/headless/dry-run",
+        "body": {
+          "clientLaunchId": "cl-fixture-1",
+          "name": "T",
+          "symbol": "TT",
+          "imageUrl": "https://img.fixture.test/a.png",
+          "chain": "hood",
+          "quoteAsset": "eth",
+          "snipeExempt": [
+            "0x1111111111111111111111111111111111111111",
+            "0x2222222222222222222222222222222222222222"
+          ]
+        },
+        "topLevelKeys": [
+          "snipeExempt"
+        ],
+        "wrapperSent": false
+      }
+    },
+    {
+      "id": "mcp-hood-dry-run-snipe-exempt-empty",
+      "scenario": "hood-body",
+      "surface": "mcp",
+      "args": {
+        "tool": "candle_launch_token",
+        "options": [
+          "snipeExempt"
+        ]
+      },
+      "outcome": {
+        "isError": false,
+        "path": "/api/v1/launch/headless/dry-run",
+        "body": {
+          "clientLaunchId": "cl-fixture-1",
+          "name": "T",
+          "symbol": "TT",
+          "imageUrl": "https://img.fixture.test/a.png",
+          "chain": "hood",
+          "quoteAsset": "eth",
+          "snipeExempt": []
+        },
+        "topLevelKeys": [
+          "snipeExempt"
+        ],
+        "wrapperSent": false
+      }
+    },
+    {
+      "id": "mcp-hood-dry-run-creator-fee-bps",
+      "scenario": "hood-body",
+      "surface": "mcp",
+      "args": {
+        "tool": "candle_launch_token",
+        "options": [
+          "creatorFeeBps"
+        ]
+      },
+      "outcome": {
+        "isError": false,
+        "path": "/api/v1/launch/headless/dry-run",
+        "body": {
+          "clientLaunchId": "cl-fixture-1",
+          "name": "T",
+          "symbol": "TT",
+          "imageUrl": "https://img.fixture.test/a.png",
+          "chain": "hood",
+          "quoteAsset": "eth",
+          "creatorFeeBps": 150
+        },
+        "topLevelKeys": [
+          "creatorFeeBps"
+        ],
+        "wrapperSent": false
+      }
+    },
+    {
+      "id": "mcp-hood-dry-run-creator-fee-bps-zero",
+      "scenario": "hood-body",
+      "surface": "mcp",
+      "args": {
+        "tool": "candle_launch_token",
+        "options": [
+          "creatorFeeBps"
+        ]
+      },
+      "outcome": {
+        "isError": false,
+        "path": "/api/v1/launch/headless/dry-run",
+        "body": {
+          "clientLaunchId": "cl-fixture-1",
+          "name": "T",
+          "symbol": "TT",
+          "imageUrl": "https://img.fixture.test/a.png",
+          "chain": "hood",
+          "quoteAsset": "eth",
+          "creatorFeeBps": 0
+        },
+        "topLevelKeys": [
+          "creatorFeeBps"
+        ],
+        "wrapperSent": false
+      }
+    },
+    {
+      "id": "mcp-hood-dry-run-team-allocation",
+      "scenario": "hood-body",
+      "surface": "mcp",
+      "args": {
+        "tool": "candle_launch_token",
+        "options": [
+          "teamAllocation"
+        ]
+      },
+      "outcome": {
+        "isError": false,
+        "path": "/api/v1/launch/headless/dry-run",
+        "body": {
+          "clientLaunchId": "cl-fixture-1",
+          "name": "T",
+          "symbol": "TT",
+          "imageUrl": "https://img.fixture.test/a.png",
+          "chain": "hood",
+          "quoteAsset": "eth",
+          "teamAllocation": {
+            "recipient": "0x4444444444444444444444444444444444444444",
+            "percent": 2.5,
+            "cliffDays": 30,
+            "vestingDays": 90
+          }
+        },
+        "topLevelKeys": [
+          "teamAllocation"
+        ],
+        "wrapperSent": false
+      }
+    },
+    {
+      "id": "mcp-hood-dry-run-launch-rules-sniper-fee",
+      "scenario": "hood-body",
+      "surface": "mcp",
+      "args": {
+        "tool": "candle_launch_token",
+        "options": [
+          "launchRules"
+        ]
+      },
+      "outcome": {
+        "isError": false,
+        "path": "/api/v1/launch/headless/dry-run",
+        "body": {
+          "clientLaunchId": "cl-fixture-1",
+          "name": "T",
+          "symbol": "TT",
+          "imageUrl": "https://img.fixture.test/a.png",
+          "chain": "hood",
+          "quoteAsset": "eth",
+          "launchRules": {
+            "snipeFeeStartBps": 500,
+            "snipeFeeDecaySecs": 60
+          }
+        },
+        "topLevelKeys": [
+          "launchRules"
+        ],
+        "wrapperSent": false
+      }
+    },
+    {
+      "id": "mcp-hood-dry-run-launch-rules-open-cap-allowlist",
+      "scenario": "hood-body",
+      "surface": "mcp",
+      "args": {
+        "tool": "candle_launch_token",
+        "options": [
+          "launchRules"
+        ]
+      },
+      "outcome": {
+        "isError": false,
+        "path": "/api/v1/launch/headless/dry-run",
+        "body": {
+          "clientLaunchId": "cl-fixture-1",
+          "name": "T",
+          "symbol": "TT",
+          "imageUrl": "https://img.fixture.test/a.png",
+          "chain": "hood",
+          "quoteAsset": "eth",
+          "launchRules": {
+            "openDelaySecs": 5400,
+            "maxBuyPerWalletRaw": "500000000000000000",
+            "capWindowSecs": 3600,
+            "allowlist": [
+              "0x5555555555555555555555555555555555555555",
+              "0x6666666666666666666666666666666666666666"
+            ],
+            "allowlistWindowSecs": 1800,
+            "devBuyMaxRaw": "100000000000000000"
+          }
+        },
+        "topLevelKeys": [
+          "launchRules"
+        ],
+        "wrapperSent": false
+      }
+    },
+    {
+      "id": "mcp-check-refuses-misplaced-or-unknown-gen2-key",
+      "scenario": "check-refusal",
+      "surface": "mcp",
+      "args": {
+        "cases": [
+          "wrapper-hoodGen2Options",
+          "unknown-top-level-key",
+          "unknown-launchRules-key",
+          "unknown-teamAllocation-key",
+          "snipeExempt-nested-in-launchRules",
+          "feeWallet-withheld-on-mcp"
+        ]
+      },
+      "outcome": {
+        "refusals": {
+          "wrapper-hoodGen2Options": {
+            "isError": true,
+            "httpCalls": 0,
+            "mentionsKey": true
+          },
+          "unknown-top-level-key": {
+            "isError": true,
+            "httpCalls": 0,
+            "mentionsKey": true
+          },
+          "unknown-launchRules-key": {
+            "isError": true,
+            "httpCalls": 0,
+            "mentionsKey": true
+          },
+          "unknown-teamAllocation-key": {
+            "isError": true,
+            "httpCalls": 0,
+            "mentionsKey": true
+          },
+          "snipeExempt-nested-in-launchRules": {
+            "isError": true,
+            "httpCalls": 0,
+            "mentionsKey": true
+          },
+          "feeWallet-withheld-on-mcp": {
+            "isError": true,
+            "httpCalls": 0,
+            "mentionsKey": true
+          }
+        }
+      }
+    },
+    {
+      "id": "mcp-check-valid-gen2-keys-reach-preflight-only",
+      "scenario": "check-body",
+      "surface": "mcp",
+      "args": {
+        "check": true,
+        "options": [
+          "snipeExempt",
+          "creatorFeeBps"
+        ]
+      },
+      "outcome": {
+        "requests": [
+          {
+            "method": "GET",
+            "path": "/api/v1/launch/preflight"
+          }
+        ]
+      }
+    },
+    {
+      "id": "mcp-hood-launch-refuses-wrapper-and-unknown-key",
+      "scenario": "hood-refusal",
+      "surface": "mcp",
+      "args": {
+        "cases": [
+          "wrapper",
+          "unknownKey"
+        ]
+      },
+      "outcome": {
+        "refusals": {
+          "wrapper": {
+            "isError": true,
+            "httpCalls": 0
+          },
+          "unknownKey": {
+            "isError": true,
+            "httpCalls": 0
+          }
+        }
+      }
+    },
+    {
+      "id": "mcp-solana-hood-only-fields-refused",
+      "scenario": "solana-refusal",
+      "surface": "mcp",
+      "args": {
+        "cases": [
+          "snipeExempt",
+          "snipeExempt-null",
+          "teamAllocation",
+          "teamAllocation-null",
+          "launchRules.snipeFeeStartBps",
+          "launchRules.snipeFeeStartBps-null",
+          "launchRules.snipeFeeDecaySecs",
+          "launchRules.snipeFeeDecaySecs-null",
+          "creatorFeeBps-150"
+        ]
+      },
+      "outcome": {
+        "refusals": {
+          "snipeExempt": {
+            "isError": true,
+            "httpCalls": 0
+          },
+          "snipeExempt-null": {
+            "isError": true,
+            "httpCalls": 0
+          },
+          "teamAllocation": {
+            "isError": true,
+            "httpCalls": 0
+          },
+          "teamAllocation-null": {
+            "isError": true,
+            "httpCalls": 0
+          },
+          "launchRules.snipeFeeStartBps": {
+            "isError": true,
+            "httpCalls": 0
+          },
+          "launchRules.snipeFeeStartBps-null": {
+            "isError": true,
+            "httpCalls": 0
+          },
+          "launchRules.snipeFeeDecaySecs": {
+            "isError": true,
+            "httpCalls": 0
+          },
+          "launchRules.snipeFeeDecaySecs-null": {
+            "isError": true,
+            "httpCalls": 0
+          },
+          "creatorFeeBps-150": {
+            "isError": true,
+            "httpCalls": 0
+          }
+        }
+      }
+    },
+    {
+      "id": "mcp-solana-creator-fee-bps-null-accepted",
+      "scenario": "solana-body",
+      "surface": "mcp",
+      "args": {
+        "creatorFeeBps": null
+      },
+      "outcome": {
+        "body": {
+          "clientLaunchId": "cl-fixture-1",
+          "name": "T",
+          "symbol": "TT",
+          "imageUrl": "https://img.fixture.test/a.png",
+          "chain": "solana",
+          "creatorFeeBps": null
+        }
+      }
+    },
+    {
+      "id": "mcp-solana-body-unchanged",
+      "scenario": "solana-body",
+      "surface": "mcp",
+      "args": {},
+      "outcome": {
+        "body": {
+          "clientLaunchId": "cl-fixture-1",
+          "name": "T",
+          "symbol": "TT",
+          "imageUrl": "https://img.fixture.test/a.png",
+          "chain": "solana"
+        },
+        "hoodOnlyKeysPresent": []
+      }
+    }
+  ]
+}
