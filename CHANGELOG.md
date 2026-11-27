@@ -2,6 +2,18 @@
 
 What changed in each version of Candle Harness (called the Candle TUI before 0.3.0). Versions follow [semantic versioning](https://semver.org), and each release is listed on [GitHub](https://github.com/candledottv/harness/releases).
 
+## 0.6.17 (unreleased)
+
+Swap build refusal at the published CLI (BE-4462, the harness sibling of BE-4461, candle-monorepo #4279). Pins `@candledottv/cli@0.13.51`: the card gated on 0.13.49, and 0.13.49 and 0.13.51 record identical rows, so the pin is the current published release (the repo's other CLI pin is 0.13.50). The source/build version is 0.6.17; publishing remains a separate release step.
+
+### Recordings
+
+- **Published-CLI swap build refusal** (`scripts/run-swap-build-refused-packages.ts`, `scripts/swap-build-refused-packages.json`, `scripts/swap-build-refused-preload.ts`, `test/fixtures/candle-swap-build-refused-packages.json`, 4 rows, `src/core/swap-build-refused-packages-contracts.test.ts`): spawns the shipped `candle swap --yes --json` against an offline fetch preload.
+  - A build refused with 422 `PRESIGN_SIMULATION_REFUSED` (with `cause: "slippage_exceeded"`, with `cause: "insufficient_lamports"`, and with no cause) exits 1 with that code and the structured `details` (`stage`, `reason`, `refusal`, `detail`, `cause`, `retryable`).
+  - A 500 `SWAP_FAILED` (the guard could not run) keeps its code.
+  - No sign, submit, execute or RPC send in any row.
+- **Mapped codes only, made-up ids,** every fetch intercepted.
+
 ## 0.6.16 (unreleased)
 
 Hood generation 2 launch options at the published SDK, CLI and MCP (BE-4351, the harness sibling of BE-4350, candle-monorepo #4291, merged as `d3606e7e`). Pins `@candledottv/agent-sdk@0.6.41`, `@candledottv/cli@0.13.50` and `@candledottv/mcp@0.10.48`. The source/build version is 0.6.16; publishing remains a separate release step.
