@@ -27,7 +27,7 @@ test("chips are readable: a control on its tint and on hover, approve's dark tex
 test("the status bar's blocks: LIVE dark on green, PAUSED white on red, PAPER bright on grey", () => {
   expect(contrast(C.page, C.good)).toBeGreaterThanOrEqual(4.5)
   expect(contrast(C.hi, C.paperBg)).toBeGreaterThanOrEqual(4.5)
-  // White on #ff5c5c is 3.0:1; PAUSED is bold and short, so it's drawn dark on red instead.
+  // White on #f2536d is 3.0:1; PAUSED is bold and short, so it's drawn dark on red instead.
   expect(contrast(C.page, C.bad)).toBeGreaterThanOrEqual(4.5)
 })
 
@@ -40,9 +40,9 @@ test("Candle dark is the default look, and every built-in theme passes the check
 
 test("the check names unreadable text and meanings made alike, in words", () => {
   const faint = { ...BUILT_IN[CANDLE_DARK]!, dim: "#33373f" }
-  expect(problemsOf(faint)).toContain("dim text on term is 1.5:1, under 4:1")
+  expect(problemsOf(faint)).toContain("dim text on term is 1.6:1, under 4:1")
   // Green the same as red hides what a fill and a refusal mean.
-  const alike = { ...BUILT_IN[CANDLE_DARK]!, good: "#ff5c5c" }
+  const alike = { ...BUILT_IN[CANDLE_DARK]!, good: "#f2536d" }
   expect(problemsOf(alike)).toContain("good and bad are too alike to tell apart")
   const plain = { ...BUILT_IN[CANDLE_DARK]!, ctl: "#c9cfd9" }
   expect(problemsOf(plain)).toContain("ctl is too like ink text to stand out")

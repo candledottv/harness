@@ -680,7 +680,7 @@ export function OnboardingScreen(props: {
   return (
     <box position="absolute" left={0} top={0} width={width} height={height} backgroundColor={C.page}>
       <box position="absolute" left={0} top={0} width={width} height={1} backgroundColor={C.bar} flexDirection="row">
-        <text fg={C.hi} bg={C.bar}>{" ▲ candle  "}</text>
+        <text fg={C.hi} bg={C.bar}>{" candle  "}</text>
         <text fg={C.hi} bg={C.paperBg}>{straight ? " STRAIGHT IN " : " SETUP "}</text>
         <text fg={C.dim} bg={C.bar}>{fit(`  ${straight ? "sign in, your model and its key, then straight to trading" : "nothing trades until your agent and its limits exist"}`, Math.max(0, width - (straight ? 24 : 18)))}</text>
       </box>

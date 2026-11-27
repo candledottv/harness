@@ -45,7 +45,7 @@ test("a file that isn't TOML is named, and nothing of it is used", () => {
 })
 
 test("a theme that would make text unreadable or hide a meaning isn't used, and says why", () => {
-  const store = memoryThemes({ Faint: 'dim = "#2a2e36"', Alike: 'good = "#ff5c5c"' })
+  const store = memoryThemes({ Faint: 'dim = "#2a2e36"', Alike: 'good = "#f2536d"' })
   const faint = loadTheme("Faint", store)
   expect(faint.used).toBe(false)
   expect(faint.colours).toEqual(DARK)

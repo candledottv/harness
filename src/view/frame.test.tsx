@@ -133,7 +133,7 @@ async function attached(over: Partial<StatusView> = {}) {
 test("draws the status bar, the tab bar and the input line from the core's status", async () => {
   await attached()
   const top = frame().split("\n")[0]!
-  for (const s of ["▲ candle", "momentum ▾", "LIVE", "today $12.00 / $50.00", "exposure $140.00", "● 0 cards waiting", "ctrl-x ×2 kill"]) expect(top).toContain(s)
+  for (const s of ["candle", "momentum ▾", "LIVE", "today $12.00 / $50.00", "exposure $140.00", "● 0 cards waiting", "ctrl-x ×2 kill"]) expect(top).toContain(s)
   expect(frame()).toContain("1 Trade")
   // The tabs still to come aren't announced.
   expect(frame()).not.toContain("more tabs are coming")

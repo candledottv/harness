@@ -55,7 +55,7 @@ describe("the docs' pictures", () => {
   })
 
   test("a colour that isn't Candle dark's has no light shade, and is refused rather than guessed", () => {
-    const odd = parseFrame("x\n--- colours ---\n0: 123456/0b0d10×1\n")
+    const odd = parseFrame("x\n--- colours ---\n0: 123456/0a0a0a×1\n")
     expect(() => renderSvg(odd, "light", { frame: "odd", alt: "odd" })).toThrow("#123456 isn't one of Candle dark's colours")
     expect(renderSvg(odd, "dark", { frame: "odd", alt: "odd" })).toContain("<svg")
   })
