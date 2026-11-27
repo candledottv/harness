@@ -15,9 +15,9 @@ export interface Colours {
   edge: string
   sel: string
   /**
-   * A focused pane's border, and an overlay's. Orange (a grey was too faint to notice); in Candle dark,
-   * Candle's own mint, #32FE9F, since Candle's colours are black and mint. Borders only, never text, so it
-   * doesn't stand for good.
+   * A focused pane's border, and an overlay's. In Candle dark, Candle's own mint, #32FE9F; in Candle light,
+   * the mint-as-text green #006B40 (#32FE9F is 1.4:1 on white). Borders only, never text, so it doesn't
+   * stand for good.
    */
   focus: string
   // Text, in three levels: what you act on, content, and labels, times and sources.
@@ -25,7 +25,7 @@ export interface Colours {
   ink: string
   dim: string
   // Meanings, one job each.
-  /** Pane headings. */
+  /** Pane headings: a neutral text level (brand 2D, no accent colour). */
   head: string
   /** Look at this: a waiting card, a near limit, a flag. */
   look: string
@@ -56,9 +56,9 @@ export interface Colours {
 export type Role = keyof Colours
 
 const DARK: Colours = {
-  page: "#0b0d10",
-  bar: "#0e1115",
-  term: "#111419",
+  page: "#0a0a0a",
+  bar: "#0e0e10",
+  term: "#111113",
   edge: "#252a33",
   sel: "#1d2430",
   focus: "#32fe9f",
@@ -67,16 +67,16 @@ const DARK: Colours = {
   hi: "#f6f8fb",
   ink: "#dde2ea",
   dim: "#959dab",
-  head: "#b392f0",
+  head: "#f6f8fb",
   look: "#f5a524",
-  good: "#3ddc84",
-  bad: "#ff5c5c",
+  good: "#32d583",
+  bad: "#f2536d",
   ctl: "#6cb6ff",
   ctlBg: "#16263a",
   ctlHover: "#1f3654",
   badBg: "#3a1619",
   paperBg: "#2a2f3a",
-  mdHead: "#b392f0",
+  mdHead: "#f6f8fb",
   mdBright: "#f6f8fb",
   mdDim: "#959dab",
   // Code in its own colour, as glow draws it, pink rather than glow's red, which means bad here.
@@ -91,11 +91,11 @@ const LIGHT: Colours = {
   term: "#ffffff",
   edge: "#cdd3dc",
   sel: "#e4e9f1",
-  focus: "#e8590c",
+  focus: "#006b40",
   hi: "#0d1117",
   ink: "#2e3640",
   dim: "#5c6470",
-  head: "#6639ba",
+  head: "#0d1117",
   look: "#8a5a00",
   good: "#116329",
   bad: "#c4161c",
@@ -104,7 +104,7 @@ const LIGHT: Colours = {
   ctlHover: "#cfe3fc",
   badBg: "#ffe9e8",
   paperBg: "#d9dee6",
-  mdHead: "#6639ba",
+  mdHead: "#0d1117",
   mdBright: "#0d1117",
   mdDim: "#5c6470",
   mdCode: "#a3215b",
@@ -199,7 +199,7 @@ const PAIRS: readonly [Role, Role, number, string][] = [
 ]
 
 /** The meanings, which must each read as their own: no two alike, and none like plain text. */
-const MEANINGS: readonly Role[] = ["look", "good", "bad", "ctl", "head"]
+const MEANINGS: readonly Role[] = ["look", "good", "bad", "ctl"]
 
 /**
  * What would make a theme unreadable or hide a meaning, each said in words; empty when it holds. The
@@ -274,7 +274,7 @@ export function terminalColours(t: TerminalColours): Colours | undefined {
     const ink = text(fg)
     const hi = text(p[up ? 15 : 0] ?? fg)
     const dim = lifted(grey, [base.page, base.bar, base.term], DIM_FLOOR + 0.2, up)
-    const head = text(slot(5, 13))
+    const head = hi
     const look = text(slot(3, 11))
     const good = text(slot(2, 10))
     const bad = text(bad0, [tints.badBg])

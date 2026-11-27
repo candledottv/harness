@@ -36,7 +36,7 @@ test("triggers on: how many, while keep-awake holds the Mac awake; quitting says
 test("the longest agent name at 80 columns: the name gives up its end, so the waiting count and the kill switch both stay", () => {
   const name = `${"m".repeat(28)}-bot`
   const bar = [
-    { key: "brand", text: "▲ candle", priority: 5 },
+    { key: "brand", text: "candle", priority: 5 },
     { key: "agent", text: `${name} · only ▾`, priority: 0, shrink: true },
     { key: "chain", text: "all chains ▾", priority: 2, gap: true },
     { key: "mode", text: "LIVE", priority: 0 },

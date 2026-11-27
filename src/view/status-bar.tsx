@@ -199,21 +199,21 @@ export function StatusBar(props: StatusBarProps) {
   )
   if (props.lost && props.restarting) {
     return bar([
-      { key: "brand", text: "▲ candle", fg: C.hi, priority: 1 },
+      { key: "brand", text: "candle", fg: C.hi, priority: 1 },
       { key: "lost", text: "restarting the core…", fg: C.look, priority: 0 },
       { key: "how", text: "the view reattaches by itself", fg: C.dim, priority: 2 },
     ])
   }
   if (props.lost) {
     return bar([
-      { key: "brand", text: "▲ candle", fg: C.hi, priority: 1 },
+      { key: "brand", text: "candle", fg: C.hi, priority: 1 },
       { key: "lost", text: "the core stopped · reconnecting…", fg: C.look, priority: 0 },
       { key: "how", text: "quit and run candle-harness to start it again", fg: C.dim, priority: 2 },
     ])
   }
   if (!props.connected || !status) {
     return bar([
-      { key: "brand", text: "▲ candle", fg: C.hi, priority: 1 },
+      { key: "brand", text: "candle", fg: C.hi, priority: 1 },
       { key: "connecting", text: "connecting to the core…", fg: C.dim, priority: 0 },
     ])
   }
@@ -221,7 +221,7 @@ export function StatusBar(props: StatusBarProps) {
   const live = status.mode === "live"
   const waiting = props.cardsWaiting
   const segments: SegmentSpec[] = [
-    { key: "brand", text: "▲ candle", fg: C.hi, priority: 5 },
+    { key: "brand", text: "candle", fg: C.hi, priority: 5 },
     { key: "agent", text: `${status.activeAgent}${props.oneAgent ? " · only" : ""} ▾`, fg: C.ctl, onClick: props.onAgent, priority: 0, shrink: true },
     // The chain every pane shows: its menu opens under it. On a narrow bar it goes before a waiting card's count
     // (it's also in the palette); a card waits only a minute, and on a tab without the agent's pane this is where it shows.
