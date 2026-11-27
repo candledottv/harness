@@ -2,6 +2,18 @@
 
 What changed in each version of Candle Harness (called the Candle TUI before 0.3.0). Versions follow [semantic versioning](https://semver.org), and each release is listed on [GitHub](https://github.com/candledottv/harness/releases).
 
+## 0.6.16 (unreleased)
+
+Hood generation 2 launch options at the published SDK, CLI and MCP (BE-4351, the harness sibling of BE-4350, candle-monorepo #4291, merged as `d3606e7e`). Pins `@candledottv/agent-sdk@0.6.41`, `@candledottv/cli@0.13.50` and `@candledottv/mcp@0.10.48`. The source/build version is 0.6.16; publishing remains a separate release step.
+
+### Recordings
+
+- **Published-package Hood gen 2 contracts** (`scripts/run-hood-gen2-packages.ts`, `scripts/hood-gen2-packages.json`, `scripts/hood-gen2-preload.ts`, `test/fixtures/candle-hood-gen2-packages.json`, 39 rows, `src/core/hood-gen2-packages-contracts.test.ts`): installs the pinned tarballs, runs the SDK's `dryRunLaunch` (and one stubbed `launch`), spawns the shipped CLI (`candle launch --dry-run --json`) and calls the shipped MCP server's `candle_launch_token` over stdio, all against an offline fetch.
+  - Each gen 2 option (`snipeExempt` including `[]`, `feeWallet`, `creatorFeeBps` including 0, `teamAllocation`, `launchRules` for the sniper fee and for open/cap/allowlist) goes out as the API's top-level key on all three surfaces; a `hoodGen2Options` wrapper is never sent. MCP withholds `feeWallet` (kept by BE-4350).
+  - MCP check mode refuses a misplaced or unknown gen 2 key (the wrapper, an unknown top-level key, an unknown `launchRules` or `teamAllocation` key, a key nested under the wrong object, `feeWallet`) with zero HTTP calls.
+  - On Solana the Hood-only fields are refused with nothing requested, an explicit `null` included (the MCP schema refuses `snipeExempt: null` and `teamAllocation: null` outright); `creatorFeeBps: null` is accepted; a plain Solana body carries none of the gen 2 keys.
+- **No wallet address, key or account value;** made-up ids only, every fetch intercepted, dry runs or stubbed responses, no launch and no spend.
+
 ## 0.6.15 (unreleased)
 
 Hyperliquid spot at the published SDK, MCP and CLI (BE-3772, the harness sibling of BE-3771; part 1 was #22). The card named SDK 0.6.34 and 0.6.36, CLI 0.13.44 and MCP 0.10.43 (candle-monorepo #4122, #4128, #4133), but those were never published separately; the surface ships in `@candledottv/agent-sdk@0.6.39`, `@candledottv/cli@0.13.47` and `@candledottv/mcp@0.10.45`, the pins already in use. The source/build version is 0.6.15; publishing remains a separate release step.
